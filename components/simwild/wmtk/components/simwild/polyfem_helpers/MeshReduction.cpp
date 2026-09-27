@@ -49,51 +49,27 @@ ReducedBody classify_reduced_cell(
 }
 
 ReducedMsh polyfem_reduced_msh(
-    const std::string& input_msh,
+    const TaggedMesh& mesh,
     const std::vector<std::string>& ambient_like_tags)
 {
-    const GroupedMsh in = read_grouped(input_msh);
-
-    // Sorted by tag so the reduced mesh's storage order is monotonic; see the header.
-    std::vector<size_t> order(in.node_tags.size());
-    for (size_t i = 0; i < order.size(); ++i) order[i] = i;
-    std::sort(order.begin(), order.end(), [&in](size_t a, size_t b) {
-        return in.node_tags[a] < in.node_tags[b];
-    });
-
     ReducedMsh out;
-    out.dim = in.dim;
-    out.vertices.resize(Eigen::Index(order.size()), 3);
-    std::map<int64_t, int> row_of_tag;
-    for (size_t r = 0; r < order.size(); ++r) {
-        for (int d = 0; d < 3; ++d) {
-            out.vertices(Eigen::Index(r), d) = in.node_coords[order[r]][size_t(d)];
-        }
-        row_of_tag[in.node_tags[order[r]]] = int(r);
-    }
+    out.dim = mesh.mesh_dim;
+    out.vertices = MatrixXd::Zero(mesh.total_n_nodes, 3);
+    out.vertices.leftCols(mesh.mesh_dim) = mesh.coords;
 
-    // Cells in first-appearance order, keyed by their vertex SET; the first copy's vertex ORDER is
-    // the one kept, and every copy's group name joins the cell's tag set.
-    std::map<std::vector<int64_t>, size_t> index_of;
-    std::vector<std::vector<int64_t>> cell_nodes;
-    std::vector<TagNames> cell_tags;
-    for (const auto& item : in.items) {
-        const std::vector<int64_t> key = sorted_copy(item.nodes);
-        auto [it, inserted] = index_of.emplace(key, cell_nodes.size());
-        if (inserted) {
-            cell_nodes.push_back(item.nodes);
-            cell_tags.emplace_back();
-        }
-        cell_tags[it->second].insert(item.group_name);
-    }
+    // Node id -> gmsh tag, for the refusal message, which names the cell by its node tags.
+    std::vector<int64_t> tag_of_node(size_t(mesh.total_n_nodes));
+    for (const auto& [tag, idx] : mesh.node_tag_to_idx) tag_of_node[size_t(idx)] = tag;
 
     std::set<std::string> ambient_like(ambient_like_tags.begin(), ambient_like_tags.end());
     ambient_like.insert("ambient");
 
     std::vector<size_t> ambient_cells;
     std::vector<size_t> body_cells;
-    for (size_t c = 0; c < cell_nodes.size(); ++c) {
-        switch (classify_reduced_cell(cell_tags[c], ambient_like, sorted_copy(cell_nodes[c]))) {
+    for (size_t c = 0; c < mesh.prim_nodes.size(); ++c) {
+        std::vector<int64_t> node_tags;
+        for (const int64_t v : mesh.prim_nodes[c]) node_tags.push_back(tag_of_node[size_t(v)]);
+        switch (classify_reduced_cell(mesh.prim_tags[c], ambient_like, sorted_copy(node_tags))) {
         case ReducedBody::ambient: ambient_cells.push_back(c); break;
         case ReducedBody::body: body_cells.push_back(c); break;
         case ReducedBody::skip: break;
@@ -101,12 +77,12 @@ ReducedMsh polyfem_reduced_msh(
     }
 
     out.n_ambient = int64_t(ambient_cells.size());
-    out.cells.resize(Eigen::Index(ambient_cells.size() + body_cells.size()), in.dim + 1);
+    out.cells.resize(Eigen::Index(ambient_cells.size() + body_cells.size()), mesh.mesh_dim + 1);
     Eigen::Index row = 0;
     for (const auto* cells : {&ambient_cells, &body_cells}) {
         for (const size_t c : *cells) {
-            for (int k = 0; k <= in.dim; ++k) {
-                out.cells(row, k) = row_of_tag.at(cell_nodes[c][size_t(k)]);
+            for (int k = 0; k <= mesh.mesh_dim; ++k) {
+                out.cells(row, k) = int(mesh.prim_nodes[c][size_t(k)]);
             }
             ++row;
         }

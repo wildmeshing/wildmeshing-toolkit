@@ -4,6 +4,7 @@
 #include <wmtk/components/simwild/polyfem_helpers/LaplacianSmoothing.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/MinimumSeparation.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/TaggedMesh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -46,6 +47,8 @@ using wmtk::components::simwild::polyfem_helpers::ReducedMsh;
 using wmtk::components::simwild::polyfem_helpers::run_polyfem_single;
 using wmtk::components::simwild::polyfem_helpers::SolveInputs;
 using wmtk::components::simwild::polyfem_helpers::split_lines;
+using wmtk::components::simwild::polyfem_helpers::TaggedMesh;
+using wmtk::components::simwild::polyfem_helpers::TagNames;
 using wmtk::components::simwild::polyfem_helpers::write_operation_result;
 
 namespace fs = std::filesystem;
@@ -1085,4 +1088,88 @@ TEST_CASE(
                 "rebuilding it with nothing moved does not give the same content"));
     CHECK(directory_contents(root / "smooth_output").empty()); // no solve ran, not even its log
     CHECK_FALSE(fs::exists(root / "out.msh"));
+}
+
+// A TaggedMesh is built from arrays or read from a .msh, and what is derived from it must not tell
+// the two apart, so both constructors have to build the same mesh. Each fixture's arrays, with
+// multi-tagged cells added, are written the way WMTK writes a multi-tag mesh -- one copy of a cell
+// per name it carries, group by group in tag order -- and the mesh read back from that file has to
+// be the one built from the arrays, in every field: the copies merged back into one cell, in the
+// same order, with the same faces.
+TEST_CASE(
+    "polyfem_helpers a TaggedMesh from arrays is the one read from their .msh",
+    "[components][polyfem_helpers]")
+{
+    const auto check = [](const std::string& name, const mshio::MshSpec& fixture) {
+        // The fixture's arrays, as `groups_msh` laid them out: node tag i + 1 at position i of the
+        // one node block, and one element block per group with cells, carrying the group's tag.
+        const int dim = fixture.physical_groups.front().dim;
+        const auto& node_block = fixture.nodes.entity_blocks.front();
+        std::vector<std::array<double, 3>> coords(node_block.num_nodes_in_block);
+        Eigen::MatrixXd vertices(Eigen::Index(coords.size()), dim);
+        for (size_t i = 0; i < coords.size(); ++i) {
+            for (size_t d = 0; d < 3; ++d) coords[i][d] = node_block.data[3 * i + d];
+            for (int d = 0; d < dim; ++d) vertices(Eigen::Index(i), d) = coords[i][size_t(d)];
+        }
+        std::map<std::string, int64_t> group_tags;
+        std::map<int, std::string> name_of_tag;
+        for (const auto& group : fixture.physical_groups) {
+            group_tags[group.name] = group.tag;
+            name_of_tag[group.tag] = group.name;
+        }
+        std::vector<std::vector<size_t>> cells; // 1-based node tags
+        std::vector<TagNames> cell_tags;
+        const size_t stride = size_t(dim) + 2;
+        for (const auto& block : fixture.elements.entity_blocks) {
+            for (size_t j = 0; j < block.num_elements_in_block; ++j) {
+                const auto first = block.data.begin() + std::ptrdiff_t(j * stride);
+                cells.emplace_back(first + 1, first + std::ptrdiff_t(stride));
+                cell_tags.push_back({name_of_tag.at(block.entity_tag)});
+            }
+        }
+
+        // Every third cell also carries "overlap", a group after the fixture's, so each such cell's
+        // second copy comes after its first and the cell keeps its place in the order. "unused"
+        // carries no cell and is still a group of the mesh.
+        const int64_t n_groups = int64_t(group_tags.size());
+        group_tags["overlap"] = n_groups + 1;
+        group_tags["unused"] = n_groups + 2;
+        for (size_t c = 0; c < cells.size(); c += 3) cell_tags[c].insert("overlap");
+
+        std::vector<Group> groups(group_tags.size());
+        for (const auto& [group, tag] : group_tags) groups[size_t(tag - 1)].first = group;
+        size_t n_copies = 0;
+        for (size_t c = 0; c < cells.size(); ++c) {
+            for (const auto& group : cell_tags[c]) {
+                groups[size_t(group_tags.at(group) - 1)].second.push_back(cells[c]);
+                ++n_copies;
+            }
+        }
+        const fs::path root = case_input(name, groups_msh(dim, coords, groups));
+        const TaggedMesh from_file((root / "input.msh").string());
+
+        Eigen::MatrixXi cell_rows(Eigen::Index(cells.size()), dim + 1);
+        for (size_t c = 0; c < cells.size(); ++c) {
+            for (int k = 0; k <= dim; ++k) {
+                cell_rows(Eigen::Index(c), k) = int(cells[c][size_t(k)]) - 1;
+            }
+        }
+        const TaggedMesh from_arrays(vertices, cell_rows, cell_tags, group_tags);
+
+        // The premise: the file holds a second copy of some cells, which the reader merged.
+        REQUIRE(n_copies > cells.size());
+        REQUIRE(from_file.prim_nodes.size() == cells.size());
+
+        CHECK(from_arrays.total_n_nodes == from_file.total_n_nodes);
+        CHECK(from_arrays.mesh_dim == from_file.mesh_dim);
+        CHECK(from_arrays.node_tag_to_idx == from_file.node_tag_to_idx);
+        CHECK(same(from_arrays.coords, from_file.coords));
+        CHECK(from_arrays.names == from_file.names);
+        CHECK(from_arrays.prim_nodes == from_file.prim_nodes);
+        CHECK(from_arrays.prim_tags == from_file.prim_tags);
+        CHECK(from_arrays.face_repr == from_file.face_repr);
+        CHECK(from_arrays.face_to_prims == from_file.face_to_prims);
+    };
+    SECTION("3D") { check("tagged_mesh3d", boxes_3d()); }
+    SECTION("2D") { check("tagged_mesh2d", jagged_2d()); }
 }

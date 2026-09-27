@@ -63,15 +63,17 @@ struct ReducedMesh
  * AMIPS in separation and segfaults during constraint setup in smoothing. Collision filtering is
  * unaffected either way, because it works on the proxy mesh and not on body ids.
  *
- * The file is `<input stem>_polyfem.msh` in the simulation input directory, where the Python engine
- * put it next to the other generated inputs; only inputs_only writes it. The groups are read off
- * the content in both modes, in the order the file lists them, where the Python read them back off
+ * `mesh` is the caller's mesh, `input` the file it was read from. The reduced mesh's file is
+ * `<input stem>_polyfem.msh` in the simulation input directory, where the Python engine put it
+ * next to the other generated inputs; only inputs_only writes it. The groups are read off the
+ * content in both modes, in the order the file lists them, where the Python read them back off
  * the file: the per-group volume is a running sum that divides every AMIPS weight in the
  * simulation JSON, so this is what keeps that JSON the same byte for byte in both modes (checked
  * in tests/test_polyfem_in_process.cpp).
  */
 ReducedMesh reduce_mesh(
     const std::string& input,
+    const TaggedMesh& mesh,
     const std::vector<std::string>& ambient_like_tags,
     const std::filesystem::path& sim_in_dir,
     bool inputs_only);

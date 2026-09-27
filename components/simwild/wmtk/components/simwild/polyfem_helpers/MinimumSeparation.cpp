@@ -169,7 +169,7 @@ void log_if_out_of_iterations(
  * simulation JSON as `constraints.hard`.
  */
 std::vector<std::string> protected_pins(
-    const std::string& input,
+    const TaggedMesh& mesh,
     const nlohmann::json& protected_regions,
     const std::filesystem::path& sim_in_dir,
     const bool inputs_only,
@@ -178,9 +178,8 @@ std::vector<std::string> protected_pins(
     if (protected_regions.empty()) {
         return {};
     }
-    // The Python reads the mesh dimension off the reduced mesh and loads the original mesh again
-    // for the pin nodes; both give the mesh's own dimension, so one load answers both.
-    const TaggedMesh mesh_for_pins(input);
+    // The Python reads the mesh dimension off the reduced mesh and the pin nodes off the original
+    // mesh, which it loads again; both give the mesh's own dimension, so `mesh` answers both.
 
     // Insertion-ordered grouping by the parsed axes, as the Python dict is.
     std::vector<std::pair<std::optional<std::vector<int>>, std::vector<std::string>>> groups;
@@ -191,7 +190,7 @@ std::vector<std::string> protected_pins(
             expr = entry.at("region").get<std::string>();
             axes = parse_axes(
                 entry.contains("axes") ? entry["axes"] : nlohmann::json(),
-                mesh_for_pins.mesh_dim);
+                mesh.mesh_dim);
         } else {
             expr = entry.get<std::string>();
         }
@@ -207,7 +206,7 @@ std::vector<std::string> protected_pins(
 
     std::vector<std::string> pin_paths;
     for (const auto& [axes, exprs] : groups) {
-        const std::vector<int64_t> pin_ids = select_region_nodes(mesh_for_pins, exprs);
+        const std::vector<int64_t> pin_ids = select_region_nodes(mesh, exprs);
         std::string suffix;
         if (axes.has_value()) {
             suffix = "_";
@@ -215,7 +214,7 @@ std::vector<std::string> protected_pins(
         }
         const std::filesystem::path pin_path =
             sim_in_dir / ("protected_pin" + suffix + ".hdf5");
-        ConstraintHdf5 pin = pin_constraint(pin_ids, mesh_for_pins.mesh_dim, axes);
+        ConstraintHdf5 pin = pin_constraint(pin_ids, mesh.mesh_dim, axes);
         pin_paths.push_back(std::filesystem::weakly_canonical(pin_path).string());
         if (inputs_only) {
             write_constraint_hdf5(pin_path.string(), pin);
@@ -265,13 +264,15 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
     out.sim_out_dir = sim_dir(output, "sep_output");
     logger().info("Input  : {}", input);
     logger().info("Output : {}.msh", output);
+    logger().info("Reading {} ...", input);
+    const TaggedMesh mesh(input);
     // smooth_positions is false here and has no spec key: minimum_separation.run reads it
     // from cfg["smoothDisplacementsOrPositions"], whose OPT_DEFAULTS value is 0, and
     // simwild.py's minimum_separation engine never puts that key in cfg. Separation smooths
     // displacements (L u = 0), so the rest state stays an equilibrium of the penalty.
     emit_interface_constraint(
         make_interface_constraint(
-            input,
+            mesh,
             sides,
             params["use_graph_laplacian"],
             params["normalize_penalties"],
@@ -283,7 +284,7 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
         out.inputs);
 
     ReducedMesh reduced =
-        reduce_mesh(input, params["ambient_like_tags"], sim_in_dir, inputs_only);
+        reduce_mesh(input, mesh, params["ambient_like_tags"], sim_in_dir, inputs_only);
 
     out.cfg = minimum_separation_cfg(params, polyfem_pairs);
     out.cfg["amips_weights"] = resolve_amips_weights(out.cfg);
@@ -302,7 +303,7 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
     // The pins are made after the JSON and their paths are appended to it, as in run():
     // `constraints.hard` belongs to the operation, not to the shared builder.
     const std::vector<std::string> pin_paths =
-        protected_pins(input, params["protected_regions"], sim_in_dir, inputs_only, out.inputs);
+        protected_pins(mesh, params["protected_regions"], sim_in_dir, inputs_only, out.inputs);
     if (!params["protected_regions"].empty()) {
         out.sim_json["constraints"]["hard"] = pin_paths;
     }

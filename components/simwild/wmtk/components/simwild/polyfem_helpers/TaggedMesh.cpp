@@ -356,24 +356,35 @@ void assign_selection_ids(
 // Tagged-mesh loading
 // ---------------------------------------------------------------------------
 
-TaggedMesh::TaggedMesh(const std::string& msh_path)
+namespace {
+
+/// A .msh as the arrays TaggedMesh is built from, and its node tags.
+struct MshArrays
+{
+    std::map<int64_t, int64_t> node_tag_to_idx;
+    MatrixXd vertices;
+    MatrixXi cells;
+    std::vector<TagNames> cell_tags;
+    std::map<std::string, int64_t> group_tags;
+};
+
+MshArrays read_msh_arrays(const std::string& msh_path)
 {
     const GroupedMsh in = read_grouped(msh_path);
+    MshArrays out;
 
     // --- nodes -------------------------------------------------------------
-    total_n_nodes = static_cast<int64_t>(in.node_tags.size());
-    if (total_n_nodes == 0) {
+    if (in.node_tags.empty()) {
         log_and_throw_error("No nodes found in {}", msh_path);
     }
-    node_tag_to_idx = node_tag_to_index(in.node_tags);
+    out.node_tag_to_idx = node_tag_to_index(in.node_tags);
 
     // --- dimension and coordinates ----------------------------------------
-    mesh_dim = in.dim;
-    coords = MatrixXd::Zero(total_n_nodes, mesh_dim);
+    out.vertices = MatrixXd::Zero(Eigen::Index(in.node_tags.size()), in.dim);
     for (size_t i = 0; i < in.node_tags.size(); ++i) {
-        const int64_t idx = node_tag_to_idx.at(in.node_tags[i]);
-        for (int d = 0; d < mesh_dim; ++d) {
-            coords(idx, d) = in.node_coords[i][d];
+        const int64_t idx = out.node_tag_to_idx.at(in.node_tags[i]);
+        for (int d = 0; d < in.dim; ++d) {
+            out.vertices(idx, d) = in.node_coords[i][d];
         }
     }
 
@@ -381,25 +392,61 @@ TaggedMesh::TaggedMesh(const std::string& msh_path)
     // Every group of the mesh's own dimension is named, whether or not it carries a cell, as the
     // Python's `names` dict is; the traversal lists them in ascending tag order.
     for (const auto& [tag, name] : in.groups) {
-        names[name] = tag;
+        out.group_tags[name] = tag;
     }
 
     // cell node-tag set -> cell index. WMTK writes one copy of a multi-tagged cell per tag; the
     // copies share a node set, so this map is what merges them (Python: `canonical`).
-    std::map<std::vector<int64_t>, int64_t> canonical;
+    std::map<std::vector<int64_t>, size_t> canonical;
+    std::vector<std::vector<int64_t>> cell_nodes;
     for (const auto& item : in.items) {
         const std::vector<int64_t> vt = sorted_key(item.nodes);
-        auto [it, inserted] = canonical.emplace(vt, static_cast<int64_t>(prim_nodes.size()));
+        auto [it, inserted] = canonical.emplace(vt, cell_nodes.size());
         if (inserted) {
-            std::vector<int64_t> nodes;
-            nodes.reserve(item.nodes.size());
-            for (const int64_t t : item.nodes) {
-                nodes.push_back(node_tag_to_idx.at(t));
-            }
-            prim_nodes.push_back(std::move(nodes));
-            prim_tags.emplace_back();
+            cell_nodes.push_back(item.nodes);
+            out.cell_tags.emplace_back();
         }
-        prim_tags[it->second].insert(item.group_name);
+        out.cell_tags[it->second].insert(item.group_name);
+    }
+    out.cells.resize(Eigen::Index(cell_nodes.size()), in.dim + 1);
+    for (size_t c = 0; c < cell_nodes.size(); ++c) {
+        for (int k = 0; k <= in.dim; ++k) {
+            out.cells(Eigen::Index(c), k) = int(out.node_tag_to_idx.at(cell_nodes[c][size_t(k)]));
+        }
+    }
+    return out;
+}
+
+} // namespace
+
+TaggedMesh::TaggedMesh(const std::string& msh_path)
+{
+    MshArrays in = read_msh_arrays(msh_path);
+    *this = TaggedMesh(in.vertices, in.cells, in.cell_tags, in.group_tags);
+    node_tag_to_idx = std::move(in.node_tag_to_idx);
+}
+
+TaggedMesh::TaggedMesh(
+    const MatrixXd& vertices,
+    const MatrixXi& cells,
+    const std::vector<TagNames>& cell_tags,
+    const std::map<std::string, int64_t>& group_tags)
+    : total_n_nodes(vertices.rows())
+    , mesh_dim(int(vertices.cols()))
+    , coords(vertices)
+    , names(group_tags)
+    , prim_tags(cell_tags)
+{
+    for (int64_t i = 0; i < total_n_nodes; ++i) {
+        node_tag_to_idx.emplace(i + 1, i);
+    }
+    prim_nodes.reserve(size_t(cells.rows()));
+    for (Eigen::Index p = 0; p < cells.rows(); ++p) {
+        std::vector<int64_t> nodes(size_t(cells.cols()));
+        for (Eigen::Index k = 0; k < cells.cols(); ++k) {
+            nodes[size_t(k)] = cells(p, k);
+        }
+        prim_nodes.push_back(std::move(nodes));
     }
 
     // --- face adjacency ----------------------------------------------------

@@ -41,6 +41,7 @@ std::filesystem::path sim_dir(const std::string& output, const std::string& subd
 
 ReducedMesh reduce_mesh(
     const std::string& input,
+    const TaggedMesh& mesh,
     const std::vector<std::string>& ambient_like_tags,
     const std::filesystem::path& sim_in_dir,
     const bool inputs_only)
@@ -48,7 +49,7 @@ ReducedMesh reduce_mesh(
     ReducedMesh out;
     out.path = sim_in_dir / (std::filesystem::path(input).stem().string() + "_polyfem.msh");
     logger().info("[reduce mesh for polyfem]");
-    out.content = polyfem_reduced_msh(input, ambient_like_tags);
+    out.content = polyfem_reduced_msh(mesh, ambient_like_tags);
     if (inputs_only) {
         write_polyfem_reduced_msh(out.path.string(), out.content);
     }

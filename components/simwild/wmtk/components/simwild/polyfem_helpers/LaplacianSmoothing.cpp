@@ -59,12 +59,14 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
     out.sim_out_dir = sim_dir(output, "smooth_output");
     logger().info("Input  : {}", input);
     logger().info("Output : {}.msh", output);
+    logger().info("Reading {} ...", input);
+    const TaggedMesh mesh(input);
     // Positions mode by default (laplacian_smoothing.run's own default, and the spec's):
     // in displacement mode the rest configuration is already a minimum and the solve
     // terminates with a zero gradient, so nothing moves.
     emit_interface_constraint(
         make_interface_constraint(
-            input,
+            mesh,
             interfaces,
             params["use_graph_laplacian"],
             params["normalize_penalties"],
@@ -77,7 +79,7 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
         out.inputs);
 
     ReducedMesh reduced =
-        reduce_mesh(input, params["ambient_like_tags"], sim_in_dir, inputs_only);
+        reduce_mesh(input, mesh, params["ambient_like_tags"], sim_in_dir, inputs_only);
 
     // The reduced mesh's two groups are "ambient" and "body", which is the scheme
     // build_polyfem_json looks weights up in, so the resolved pair replaces whatever the

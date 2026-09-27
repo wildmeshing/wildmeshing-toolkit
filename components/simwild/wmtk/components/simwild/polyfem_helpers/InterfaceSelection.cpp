@@ -414,10 +414,8 @@ std::vector<std::array<int64_t, 2>> orient_edge_loops_2d(
 // load_mesh
 // ---------------------------------------------------------------------------
 
-LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& selections)
+LoadedMesh load_mesh(const TaggedMesh& mesh, const std::vector<Selection>& selections)
 {
-    const TaggedMesh mesh(msh_path);
-
     std::vector<std::array<int64_t, 3>> faces3d;
     std::vector<std::array<int64_t, 2>> edges2d;
     std::vector<std::vector<int64_t>> face_tags;
@@ -608,7 +606,7 @@ void normalize_collision_pairs(
 }
 
 InterfaceConstraint make_interface_constraint(
-    const std::string& mesh_path,
+    const TaggedMesh& mesh,
     const std::vector<Selection>& selections,
     bool use_graph,
     bool normalize,
@@ -616,8 +614,7 @@ InterfaceConstraint make_interface_constraint(
     bool smooth_positions,
     const std::map<int64_t, double>& laplacian_row_factor_by_id)
 {
-    logger().info("Reading {} ...", mesh_path);
-    const LoadedMesh m = load_mesh(mesh_path, selections);
+    const LoadedMesh m = load_mesh(mesh, selections);
 
     if (m.interface_edges.empty()) {
         log_and_throw_error(

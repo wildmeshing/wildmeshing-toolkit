@@ -39,11 +39,11 @@ std::vector<std::array<int64_t, 2>> orient_edge_loops_2d(
     const std::vector<std::array<int64_t, 2>>& oriented_edges);
 
 /**
- * @brief Load a multi-tag .msh and extract its material-interface surfaces. Mirrors
- * `constraints.load_mesh`: every interface when `selections` is empty (the legacy auto-detect),
- * else those picked by the given selections.
+ * @brief The material-interface surfaces of a multi-tag mesh. Mirrors `constraints.load_mesh`
+ * after its read of the file: every interface when `selections` is empty (the legacy
+ * auto-detect), else those picked by the given selections.
  */
-LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& selections);
+LoadedMesh load_mesh(const TaggedMesh& mesh, const std::vector<Selection>& selections);
 
 /// What interface_collision.obj holds, one entry per line of it: the "v" lines, then either the
 /// "f" lines (3D) or the "l" lines (2D), with the indices 0-based here and 1-based in the file.
@@ -108,7 +108,7 @@ struct InterfaceConstraint
  * weighted and the Laplacian constraint is left exactly as it was.
  */
 InterfaceConstraint make_interface_constraint(
-    const std::string& mesh_path,
+    const TaggedMesh& mesh,
     const std::vector<Selection>& selections,
     bool use_graph,
     bool normalize,

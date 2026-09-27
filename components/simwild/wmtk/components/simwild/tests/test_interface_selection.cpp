@@ -126,7 +126,7 @@ const std::vector<Selection> two_interfaces{
 InterfaceConstraint build(const fs::path& mesh, const std::map<int64_t, double>& row_factors)
 {
     return make_interface_constraint(
-        mesh.string(),
+        TaggedMesh(mesh.string()),
         two_interfaces,
         /*use_graph=*/false,
         /*normalize=*/true,
@@ -184,7 +184,7 @@ TEST_CASE("an empty weight map leaves the Laplacian constraint untouched", "[pol
     const fs::path mesh = two_interfaces_2d();
     // The call the operations made before the weight existed: no map argument at all.
     const ConstraintHdf5 base = make_interface_constraint(
-                                    mesh.string(),
+                                    TaggedMesh(mesh.string()),
                                     two_interfaces,
                                     /*use_graph=*/false,
                                     /*normalize=*/true,

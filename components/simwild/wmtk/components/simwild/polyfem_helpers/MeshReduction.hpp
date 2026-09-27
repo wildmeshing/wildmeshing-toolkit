@@ -48,9 +48,10 @@ struct ReducedMsh
     static constexpr int body_tag = 2;
 
     int dim = 3; ///< 2 (triangles) or 3 (tetrahedra)
-    /// Every node of the input, in ascending gmsh tag order, with all three coordinates the input
-    /// stores. The file numbers them 1..n in this row order, which is the input's own numbering
-    /// when its tags are 1..n.
+    /// Every node of the input, in node-id order (ascending gmsh tag order for a .msh input),
+    /// x y z, with z = 0 in 2D: polyfem's MshReader reads only x and y of a triangle mesh, and the
+    /// in-memory mesh takes `leftCols(dim)`. The file numbers them 1..n in this row order, which is
+    /// the input's own numbering when its tags are 1..n.
     MatrixXd vertices;
     /// One row per cell: its dim + 1 rows of `vertices`, in the vertex order the input stores.
     MatrixXi cells;
@@ -62,17 +63,17 @@ struct ReducedMsh
  * `polyfem_utils._write_polyfem_reduced_msh` up to the write.
  *
  * WMTK's `write_msh_groups` writes one copy of a multi-tagged cell per tag; polyfem reads the
- * copies as distinct elements, double-counting AMIPS and corrupting assembly. Cells are therefore
- * deduped by their vertex SET (the first copy's vertex order is the one kept) and classified by
- * the union of the copies' tag names, into the two groups of `ReducedMsh`, ambient first, each in
- * the order the cells first appear.
+ * copies as distinct elements, double-counting AMIPS and corrupting assembly. The cells are
+ * therefore `mesh`'s, which are deduped by their vertex SET (the first copy's vertex order is the
+ * one kept), and each is classified by its union of tag names, into the two groups of
+ * `ReducedMsh`, ambient first, each in the order `mesh` lists the cells.
  *
- * Every node of the input is kept, in ascending tag order, which is what makes polyfem's
- * `in_node_to_node` the identity (input vertex id i <-> gmsh tag i+1) for both the original and
- * the reduced mesh -- the collision artifacts index either one.
+ * Every node of `mesh` is kept, in node-id order, which is what makes polyfem's `in_node_to_node`
+ * the identity (input vertex id i <-> gmsh tag i+1) for both the original and the reduced mesh --
+ * the collision artifacts index either one.
  */
 ReducedMsh polyfem_reduced_msh(
-    const std::string& input_msh,
+    const TaggedMesh& mesh,
     const std::vector<std::string>& ambient_like_tags);
 
 /**

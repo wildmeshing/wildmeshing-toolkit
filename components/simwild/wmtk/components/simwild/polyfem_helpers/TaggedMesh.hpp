@@ -30,9 +30,9 @@ using TagNames = std::set<std::string>;
  * element.
  *
  * `mesh_core.TaggedMesh.__init__` and `polyfem_utils._write_polyfem_reduced_msh` each open the
- * file and walk it themselves, and the two walk it in exactly this order; what differs between
- * them is only what they record per element, so the traversal is done once here and each mirror
- * keeps its own recording step.
+ * file and walk it themselves, in exactly this order, and both merge the copies of a cell the same
+ * way (keyed by its node set, the first copy's vertex order kept, the copies' names unioned, in
+ * first-appearance order). So one walk, into one TaggedMesh, is what both mirrors read.
  */
 struct GroupedMsh
 {
@@ -136,8 +136,8 @@ void assign_selection_ids(
     bool require_ids = false);
 
 /**
- * @brief A physical-groups .msh with WMTK's duplicate cells merged. Mirrors
- * `mesh_core.TaggedMesh`.
+ * @brief A physical-groups .msh with WMTK's duplicate cells merged, or the same mesh given as
+ * arrays. Mirrors `mesh_core.TaggedMesh`.
  *
  * WMTK's `write_msh_groups` writes one copy of a multi-tagged cell per tag in its tag set; the
  * copies are merged back into one cell carrying the union of the names, keyed by the cell's node
@@ -155,7 +155,28 @@ void assign_selection_ids(
 class TaggedMesh
 {
 public:
+    /// The .msh read into the arrays of the other constructor -- node ids, merged cells in
+    /// first-appearance order, each with the union of its copies' names, and every group's
+    /// name and tag -- and built by it; `node_tag_to_idx` is then the file's own.
     explicit TaggedMesh(const std::string& msh_path);
+
+    /**
+     * @brief A mesh held as arrays. Everything else is derived from them exactly as from a .msh.
+     *
+     * @param vertices one row per node id, mesh_dim columns; becomes `coords`
+     * @param cells one row of mesh_dim + 1 node ids per cell, in the order `prim_nodes` lists
+     * them; a multi-tagged cell is ONE row, carrying all its names in `cell_tags`
+     * @param cell_tags each cell's group names; becomes `prim_tags`
+     * @param group_tags every group name -> its physical tag, cells or none; becomes `names`
+     *
+     * `node_tag_to_idx` is tag i + 1 -> i: the tags a .msh written from these arrays gives the
+     * nodes (MshData numbers them 1..n), so the mesh read back from that file has the same map.
+     */
+    TaggedMesh(
+        const MatrixXd& vertices,
+        const MatrixXi& cells,
+        const std::vector<TagNames>& cell_tags,
+        const std::map<std::string, int64_t>& group_tags);
 
     int64_t total_n_nodes = 0;
     int mesh_dim = 3;
