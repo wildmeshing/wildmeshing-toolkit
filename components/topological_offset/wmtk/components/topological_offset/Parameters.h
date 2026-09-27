@@ -218,12 +218,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// 3D only (2D has no swap half to the guard). See the spec: how much of the
-    /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
-    /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
-    /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
-    /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
-    double flip_sag_margin;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -292,7 +286,6 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
-        flip_sag_margin = json_params["flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

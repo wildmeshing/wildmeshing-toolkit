@@ -634,7 +634,8 @@ size_t TetOptimizerMesh::coarsen_mesh()
         //
         // Every collapse above is kept only if the region it disturbed came out no worse
         // (collapse_edge_after, coarsen branch). This smoothing has no such test, and with
-        // smooth_quality_veto off -- which is topological_offset's default -- smooth_vertex_3d
+        // smooth_quality_veto off -- topological_offset's default when this was written; on
+        // today -- smooth_vertex_3d
         // accepts any move that neither inverts a cell nor leaves the envelope, however much it
         // degrades one. So the pass could hand back a mesh worse than it was given, which is the
         // one thing it promises not to do.

@@ -50,7 +50,6 @@
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
       "pre_smooth",
-      "flip_sag_margin",
       "max_iterations",
       "offset_envelope",
       "offset_envelope_rel",
@@ -415,13 +414,6 @@
     "type": "bool",
     "default": false,
     "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: in 3D num_smoothing_passes sweeps under interleaved_smoothing false (the default) and interleaved_smoothing_passes under true, in 2D always interleaved_smoothing_passes; or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
-  },
-  {
-    "pointer": "/flip_sag_margin",
-    "type": "float",
-    "default": 0.0001,
-    "min": 0.0,
-    "doc": "3D single-phase loop only; 2D does not read it. How much of the resolution bar a flip of the offset surface must WIN for the ops divergence guard to accept it. In the units the turn line reports, so 1 is the bar itself and the default 1e-4 is a ten-thousandth of it. The whole rule for such a flip is then: max sag after <= max sag before - this margin, AND the cells it creates are under stop_energy. A flip that misses the margin is refused outright; it does not fall back on the base's strict improvement in AMIPS, and whether the pair was over the bar plays no part. WHY IT EXISTS: to keep noise out, and with it the pass does not finish. Two diagonals of a small quad on a curved part of the offset surface sag almost identically, so a flip between them moves nothing a criterion can see while still being a strict improvement. Measured on the cube at target_distance_rel 1e-3, one swap pass accepted 3020000 surface flips of which 3019913 (99.997%) won less than 1e-12 of the bar; every one was monotone and the pass never ended. The default sits in an empty gap: of the 87 that won more than 1e-12, 47 won at least 1e-4 and none landed between 1e-9 and 1e-4. 0 restores the behaviour that does not finish."
   },
   {
     "pointer": "/coarsen_pass",

@@ -1797,10 +1797,12 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // Front convergence diagnostics, as point data: what the convergence test measures next to
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
-    //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
-    //                         objective along the move direction, over its bar. This is the ONLY
-    //                         per-vertex quantity converged_single() tests, so <= 1 reads as
-    //                         "placed" and the loop may exit on it.
+    //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
+    //                         |Phi - c| / c over the relative bar -- face_conv_ratio()'s measure
+    //                         at the vertex alone; for the euclidean field |d - target_distance|
+    //                         / front_conv. This is the ONLY per-vertex quantity
+    //                         converged_single() tests, so <= 1 reads as "placed" and the loop
+    //                         may exit on it.
     //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
     //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
     //                         tested by the loop -- front_conv_ratio is what converged_single()
@@ -1819,9 +1821,10 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                         a barrier-value residual, not a length to the complex. -2 before the
     //                         BVH exists (the construction frames written ahead of it).
     //
-    // Together they separate "placed" from "stationary but wrong": on the medial axis of the
-    // field there is no gradient to move along, so the ratio goes to zero while the residual
-    // stays at whatever the geometry left. -1 marks a vertex that is not on the front, -2 a
+    // Together they separate "placed" from "stationary but wrong": where the field gives the
+    // objective no gradient to move along (front_grad_norm near zero, as on the medial axis of
+    // the smooth field), the vertex stops while front_conv_ratio stays at whatever error the
+    // geometry left. -1 marks a vertex that is not on the front, -2 a
     // value that is not finite. Costs one objective build per front vertex per frame, which is
     // the same work energy_criterion() does once a turn; debug output only.
     VectorXd v_conv(vert_capacity()), v_resid(vert_capacity()), v_grad(vert_capacity()),
