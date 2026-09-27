@@ -968,6 +968,15 @@ public:
     };
     SmoothTrace m_smooth_trace;
 
+    /// How the solves this class makes itself ended, per smoothing pass, beside the base's
+    /// m_newton (the background, through TetOptimizerMesh::smooth_after()). Front: every front
+    /// placement in the phases that place it -- the 1-D solve along the field normal and the 3-D
+    /// solve it falls back to. Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged
+    /// and reset by log_smoothing_pass_accounting().
+    optimization::NewtonCounters m_newton_front;
+    optimization::NewtonCounters m_newton_plastic;
+    void log_smoothing_pass_accounting() override;
+
     /**
      * @brief Why smoothing does not repair a sliver in its one-ring. Same counters as 2D:
      * offered / reached / fixed / stationary. See TopoOffsetTriMesh::m_needle_pre.

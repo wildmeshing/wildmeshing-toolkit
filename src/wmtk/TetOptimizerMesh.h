@@ -138,6 +138,10 @@ public:
 
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
+    /// How the solves smooth_after() makes ended -- iterations and stop status -- reported and
+    /// reset once per pass, beside m_smooth_rejects. An application that solves on a path of its
+    /// own keeps its own counters and reports them from log_smoothing_pass_accounting().
+    optimization::NewtonCounters m_newton;
 
     /// Whether the current collapse pass applies the target-length limit; read by
     /// collapse_edge_before, which is where that limit is enforced.
@@ -466,6 +470,9 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
+    /// that solves some vertices on a path of its own logs, and then resets, its counters here.
+    virtual void log_smoothing_pass_accounting() {}
 
     bool invariants(const std::vector<Tuple>& t) override;
 
@@ -573,13 +580,18 @@ protected:
     // surface flip is never accepted; the counters cost one relaxed atomic increment on a path
     // that is already refusing the operation, and nothing reads them unless a caller asks.
     //
-    // NOT covered, because they live in TetMesh below this class: the connectivity-level
-    // refusals inside TetMesh::swap_edge / _44 / _56 (the `affected.size() != N` valence tests
-    // and the `verts.size() != affected.size() + 2` boundary test). Those are reached only after
-    // a before-hook has passed, so they are recovered as before_pass - after_enter rather than
-    // by editing TetMesh.
+    // The refusals TetMesh makes itself, below every hook (the valence re-test, an open ring, a
+    // face or edge that already exists, no allowed 4-4 / 5-6 case beating the current cells, out
+    // of slots, a duplicate tet), were once visible here only as before_pass - after_enter. They
+    // are now reported one by one through TetMesh::op_event(); see op_accounting_report(). The
+    // per-turn line of this block still prints that difference as `connectivity`.
+    //
+    // Face swaps count their own reasons (face_*, and base_before / interior_hook / base_after /
+    // after_cells on their path) in the per-kind table alone -- swap_reject_kind_only() -- so
+    // swap_reject_report(), which has only ever described edge swaps, keeps meaning what it meant.
     enum class SwapReject : int {
         base_before, // TetMesh::swap_*_before said no
+        base_after, // TetMesh::swap_*_after said no
         valence, // wrong incident-tet count for this swap kind
         bbox, // edge on the bounding box
         surface_not_allowed, // has surface faces and allow_surface_swap() is false
@@ -601,8 +613,14 @@ protected:
         app_sag_raised, // application: the flip would raise the local sag
         after_inverted, // a created cell is inverted
         after_quality, // swap_quality_allowed() said no
-        after_cells, // swap_after_cells() refused
+        after_cells, // swap_after_cells() refused (see the app_after_* reasons)
+        app_after_side_conflict, // application: two ring vertices of a new cell sit on two sides
+        app_after_no_side, // application: a new cell holds no ring vertex to take a side from
         after_envelope, // a new surface triangle left the envelope
+        face_tracked_surface, // face swap: the face is a tracked surface face
+        face_tracked_bbox, // face swap: the face is on the bounding box
+        face_inverted, // face swap: one of the three new cells would be inverted
+        face_not_better, // face swap: a new cell is not strictly better than the two old ones
         COUNT
     };
     /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
@@ -622,6 +640,15 @@ protected:
     bool swap_reject(SwapReject r) const
     {
         m_swap_reject[size_t(r)].fetch_add(1, std::memory_order_relaxed);
+        return swap_reject_kind_only(r);
+    }
+    /// The per-kind table alone (see op_accounting_report()), charged to the operation running
+    /// on this thread. Face swaps use it directly; swap_reject() calls it for edge swaps.
+    bool swap_reject_kind_only(SwapReject r) const
+    {
+        m_swap_reject_by_kind[size_t(current_op_kind())][size_t(r)].fetch_add(
+            1,
+            std::memory_order_relaxed);
         return false;
     }
     void swap_stage(SwapStage s) const
@@ -634,6 +661,99 @@ protected:
 
     mutable std::array<std::atomic<long>, size_t(SwapReject::COUNT)> m_swap_reject{};
     mutable std::array<std::atomic<long>, size_t(SwapStage::COUNT)> m_swap_stage{};
+
+    // ---- COLLAPSE REJECTION INSTRUMENTATION (see op_accounting_report()) ----
+    // Every place a collapse is turned down in a hook, counted once, at the place that decided.
+    // Before this, 85% of the collapse attempts on the deliverable cube (target_distance_rel 1e-2
+    // / front_conv_rel 1e-4, turn 5: 213k of 232k) were refused with nothing recorded but the
+    // ops guard's 367. What TetMesh refuses below the hooks (the link condition, a duplicate tet)
+    // arrives through op_event(). Before-hook reasons come first, after-hook reasons from
+    // after_base on.
+    enum class CollapseReject : int {
+        coarsen_length, // coarsening pass only: the edge is at or above the collapse target
+        bbox, // v1 sits on a bounding-box face that v2 does not
+        surface_leaves_envelope, // v1 on the surface, v2 not, and v2 not inside the envelope
+        inverted, // a cell the collapse reshapes would invert
+        quality, // collapse_quality_allowed() said no
+        substructure_link, // preserve_topology, both ends on the surface: substructure link
+        app_both_surfaces, // application: an end on the input complex and an end on the offset
+        app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
+        app_leaves_input, // application: v1 on the input complex, v2 not
+        app_leaves_offset, // application: v1 on the offset surface, v2 not
+        app_leaves_region, // application: v1 on a region boundary, v2 not
+        app_order2, // application: an order-2 vertex would merge into a lower-order one
+        app_substructure_link, // application: the substructure link condition, unconditional
+        app_ops_guard, // application: the ops divergence guard
+        after_base, // TetMesh::collapse_edge_after said no
+        after_connectivity, // collapse_after_connectivity() said no
+        after_envelope, // a surface face the survivor keeps left the envelope
+        after_face_attribute, // a face attribute found no face left to land on
+        after_coarsen_region, // coarsening only: the region's worst quality rose
+        COUNT
+    };
+    static const char* collapse_reject_name(CollapseReject r);
+    bool collapse_reject(CollapseReject r) const
+    {
+        m_collapse_reject[size_t(r)].fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    mutable std::array<std::atomic<long>, size_t(CollapseReject::COUNT)> m_collapse_reject{};
+
+    // ---- OPERATION ACCOUNTING (counting only) ----
+    // TetMesh reports every operation's attempt and its one outcome through op_event(); this
+    // counts them per kind. op_accounting_report() then checks, per kind, that the outcomes add
+    // up to the attempts, and that the before- and after-hook refusals add up to the reasons the
+    // hooks counted (SwapReject / CollapseReject). A nonzero remainder is a refusal nobody named.
+    void op_event(OpKind k, OpEvent e) const override
+    {
+        if (e == OpEvent::attempt) current_op_kind() = k;
+        m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+    }
+    /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
+    /// can be charged to the right kind without passing the kind through every hook. COUNT
+    /// (its own row, never reported) until the thread's first operation.
+    static OpKind& current_op_kind()
+    {
+        static thread_local OpKind k = OpKind::COUNT;
+        return k;
+    }
+    /// One line for kind @p k: attempts, the outcome partition, each hook's refusals split by
+    /// reason, and the two remainders that must be 0. Does not reset.
+    std::string op_accounting_report(OpKind k) const;
+    /// True when the report for @p k has a nonzero remainder: a refusal no counter named.
+    bool op_accounting_unexplained(OpKind k) const;
+    void op_accounting_reset();
+    static const char* op_kind_name(OpKind k);
+    static const char* op_event_name(OpEvent e);
+
+    /// Where a SwapReject is decided, for the partition. A LEAF is the one place a refusal was
+    /// decided and is counted once. A WRAPPER re-counts on its way out a refusal a leaf further
+    /// in already counted: prepare_flip around the flip_* leaves and flip_app_refused,
+    /// flip_app_refused around the app_* leaves, interior_hook around app_capture_*, after_cells
+    /// around app_after_*. flip_wrong_case is counted once per candidate CASE inside TetMesh's
+    /// case loop, not once per operation, so it is in neither sum.
+    enum class SwapRejectRole { before_leaf, after_leaf, wrapper, per_case };
+    static SwapRejectRole swap_reject_role(SwapReject r);
+    /// A kind's hook refusals by reason: the nonzero leaves as "name=n" and their sums.
+    struct OpHookReasons
+    {
+        std::string before, after;
+        long before_sum = 0, after_sum = 0;
+        bool counted = true; // false: this kind's hooks count no reasons (split)
+    };
+    OpHookReasons op_hook_reasons(OpKind k) const;
+    long op_event_count(const OpKind k, const OpEvent e) const
+    {
+        return m_op_events[size_t(k)][size_t(e)].load(std::memory_order_relaxed);
+    }
+    /// Attempts minus every outcome: 0 unless an exit of the TetMesh operation reports nothing.
+    long op_unaccounted(OpKind k) const;
+
+    mutable std::array<std::array<std::atomic<long>, size_t(OpEvent::COUNT)>, size_t(OpKind::COUNT)>
+        m_op_events{};
+    mutable std::
+        array<std::array<std::atomic<long>, size_t(SwapReject::COUNT)>, size_t(OpKind::COUNT) + 1>
+            m_swap_reject_by_kind{};
 
     /// Whether a swap's quality outcome is acceptable, given the max cell energy over the cells
     /// it creates and over the cells it destroyed. The default is STRICT improvement, which is

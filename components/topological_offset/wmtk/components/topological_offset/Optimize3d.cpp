@@ -640,10 +640,13 @@ bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
     }
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd x = x0;
+    bool threw = false;
     try {
         solver->minimize(*energy, x);
     } catch (const std::exception&) {
+        threw = true;
     }
+    m_newton_plastic.record(*solver, threw);
     set_vertex_position(vid, Vector3d(x));
     for (const Tuple& loc : ring) {
         if (is_inverted(loc)) {
@@ -873,10 +876,12 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         for (const size_t v : oriented_tet_vids(t)) {
             const auto it = sides.by_vertex.find(v);
             if (it == sides.by_vertex.end()) continue;
-            if (side != nullptr && *side != it->second) return false;
+            if (side != nullptr && *side != it->second) {
+                return swap_reject(SwapReject::app_after_side_conflict);
+            }
             side = &it->second;
         }
-        if (side == nullptr) return false;
+        if (side == nullptr) return swap_reject(SwapReject::app_after_no_side);
         m_tet_attribute[t].tag = side->first;
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t);
@@ -930,12 +935,12 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // tracked simplex: the offset region is a thin shell, so a collapse with one endpoint in the
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
-        return false;
+        return collapse_reject(CollapseReject::app_substructure_link);
     }
     // The ops divergence guard; see ops_guard_refuses_collapse().
     if (ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
-        return false;
+        return collapse_reject(CollapseReject::app_ops_guard);
     }
     return true;
 }
@@ -1077,32 +1082,32 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
         const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
         if (input && offset) {
-            return false;
+            return collapse_reject(CollapseReject::app_both_surfaces);
         }
     }
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
     if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
-        return false;
+        return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not leave
     // the particular surface it belongs to, and each class is checked separately.
     if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_input);
     }
     if (VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_offset);
     }
     if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_region);
     }
 
     // open boundary: an order-2 vertex may not merge into a lower-order one.
     if (edge_length > 0 && m_vertex_attribute[v1_id].m_order == 2 &&
         m_vertex_attribute[v2_id].m_order < 2) {
-        return false;
+        return collapse_reject(CollapseReject::app_order2);
     }
 
     return true;
@@ -1777,6 +1782,19 @@ void TopoOffsetTetMesh::log_region_face_mask_health(const std::string& when) con
             n_ends_input,
             worst);
     }
+}
+
+void TopoOffsetTetMesh::log_smoothing_pass_accounting()
+{
+    // Per pass, after the base's own "newton, smooth_after" line (the background). The plastic
+    // line only when the plastic medium solved anything, which it does only under deform_others
+    // with a released region in the scene.
+    logger().info("\tnewton, front: {}", m_newton_front.to_string());
+    if (m_newton_plastic.solves() > 0) {
+        logger().info("\tnewton, plastic: {}", m_newton_plastic.to_string());
+    }
+    m_newton_front.reset();
+    m_newton_plastic.reset();
 }
 
 void TopoOffsetTetMesh::log_smooth_trace() const
@@ -4321,6 +4339,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         }
         rebuild_offset_envelope();
     }
+    op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -4393,6 +4412,24 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // is never accepted, and the counters are reset each turn so the line is per-turn.
         logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
         swap_counters_reset();
+        // Every split, collapse and swap this turn attempted, each ended at exactly one named
+        // place; see TetOptimizerMesh::op_accounting_report(). A line warns when a refusal was
+        // made that no counter named -- that is a silent refusal site, i.e. a defect in the
+        // accounting, and it should not exist.
+        for (const OpKind k :
+             {OpKind::split,
+              OpKind::collapse,
+              OpKind::swap_32,
+              OpKind::swap_44,
+              OpKind::swap_56,
+              OpKind::swap_face}) {
+            logger().log(
+                op_accounting_unexplained(k) ? spdlog::level::warn : spdlog::level::info,
+                "\t[ops accounting] turn {} {}",
+                it + 1,
+                op_accounting_report(k));
+        }
+        op_accounting_reset();
         logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
         flip_funnel_reset();
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when

@@ -779,6 +779,46 @@ private:
 public:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
 
+    // ---- OPERATION ACCOUNTING (counting only) ----
+    // Every call into split_edge, collapse_edge, swap_edge, swap_edge_44, swap_edge_56 and
+    // swap_face reports `attempt` on entry and exactly ONE other event on the way out: `committed`,
+    // or the place that refused it. The application's hooks are two of those places (before_hook,
+    // after_hook); why a hook said no is the hook's own to count. So for each kind, attempt equals
+    // the sum of the other events, and a subclass that counts can check both that identity and a
+    // hook's refusals against the reasons the hook counted. Added because the refusals made here,
+    // below every hook, were visible only as a difference: on the deliverable cube at
+    // target_distance_rel 1e-2 / front_conv_rel 1e-4, 521142 of the 542123 edge swaps that
+    // passed every before-hook in turn 5 were refused inside this class with no reason recorded.
+    //
+    // The default does nothing and no site reads a count: the mesh behaves identically with or
+    // without an override.
+    enum class OpKind : int { split, collapse, swap_32, swap_44, swap_56, swap_face, COUNT };
+    enum class OpEvent : int {
+        attempt,
+        before_hook, // the application's *_before said no
+        link_condition, // collapse: the classical link condition (m_collapse_check_link_condition)
+        no_return_tet, // collapse: both probes for the return tuple hit a boundary face
+        duplicate_tet, // a new tet repeats an existing one (collapse manifold check, 4-4, 5-6)
+        topology, // collapse: m_collapse_check_topology found a face missing
+        valence, // edge swap: the edge does not have this swap's number of tets around it
+        boundary, // edge swap: the edge's ring of tets is open; face swap: a boundary face
+        exists, // 3-2: the new face already exists; face swap: the new edge already exists
+        no_case_allowed, // 4-4 / 5-6: every candidate was vetoed by *_accept_case
+        no_better_case, // 4-4 / 5-6: no allowed candidate scored below the current cells
+        out_of_slots, // the preallocated vertex or tet slots ran out
+        after_hook, // the application's *_after said no, so the operation was rolled back
+        invariants, // invariants() said no after the after-hook passed; rolled back
+        committed,
+        COUNT
+    };
+    virtual void op_event(OpKind, OpEvent) const {}
+    /// op_event() for a refusal, returning false so a site reads `return op_refused(...)`.
+    bool op_refused(const OpKind k, const OpEvent e) const
+    {
+        op_event(k, e);
+        return false;
+    }
+
 protected:
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
     virtual bool triangle_insertion_after(const std::vector<std::vector<Tuple>>&) { return true; }

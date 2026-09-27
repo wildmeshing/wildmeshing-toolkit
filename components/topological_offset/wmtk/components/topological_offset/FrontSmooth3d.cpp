@@ -218,7 +218,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
             opt_logger());
     }
     if (!m_offset_params.front_normal_projection) {
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -231,7 +237,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     const size_t vid = t.vid(*this);
     const Vector3d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) { // no direction here: the 3-D solve is the fallback
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -240,7 +252,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     // where it opposes the placement pull it cancels it and the jog freezes. The trap is the
     // fight, not the perpendicular face -- both conditions in the predicate, as in 2D.
     if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -255,10 +273,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
     auto line = std::make_shared<LineProblem3D>(phase_b_front_objective(vid, x0), x0, n);
     Eigen::VectorXd s = Eigen::VectorXd::Zero(1);
+    bool threw = false;
     try {
         solver->minimize(*line, s);
     } catch (const std::exception&) {
+        threw = true;
     }
+    m_newton_front.record(*solver, threw);
     set_vertex_position(vid, Vector3d(x0 + s(0) * n));
     if (hold) { // the boundary's tube, on the region faces the move reshaped -- as the shared
                 // smoother

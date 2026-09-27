@@ -160,6 +160,7 @@ const char* TetOptimizerMesh::swap_reject_name(const SwapReject r)
 {
     switch (r) {
     case SwapReject::base_before: return "base_before";
+    case SwapReject::base_after: return "base_after";
     case SwapReject::valence: return "valence";
     case SwapReject::bbox: return "bbox";
     case SwapReject::surface_not_allowed: return "surface_not_allowed";
@@ -181,7 +182,13 @@ const char* TetOptimizerMesh::swap_reject_name(const SwapReject r)
     case SwapReject::after_inverted: return "after_inverted";
     case SwapReject::after_quality: return "after_quality";
     case SwapReject::after_cells: return "after_cells";
+    case SwapReject::app_after_side_conflict: return "app_after_side_conflict";
+    case SwapReject::app_after_no_side: return "app_after_no_side";
     case SwapReject::after_envelope: return "after_envelope";
+    case SwapReject::face_tracked_surface: return "face_tracked_surface";
+    case SwapReject::face_tracked_bbox: return "face_tracked_bbox";
+    case SwapReject::face_inverted: return "face_inverted";
+    case SwapReject::face_not_better: return "face_not_better";
     default: return "?";
     }
 }
@@ -363,7 +370,7 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
 {
     swap_stage(SwapStage::after_enter);
     if (!TetMesh::swap_edge_after(t)) {
-        return swap_reject(SwapReject::base_before);
+        return swap_reject(SwapReject::base_after);
     }
 
     const auto& cache = swap_cache.local();
@@ -460,8 +467,10 @@ size_t TetOptimizerMesh::swap_all_faces()
 
 bool TetOptimizerMesh::swap_face_before(const Tuple& t)
 {
+    // Every refusal below is counted in the per-kind table alone (swap_reject_kind_only()), so
+    // the edge-swap line swap_reject_report() prints is untouched by face swaps.
     if (!TetMesh::swap_face_before(t)) {
-        return false;
+        return swap_reject_kind_only(SwapReject::base_before);
     }
     // if (m_params.preserve_global_topology) return false;
 
@@ -472,7 +481,9 @@ bool TetOptimizerMesh::swap_face_before(const Tuple& t)
 
     auto fid = tt.fid();
     if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_bbox_fs >= 0) {
-        return false;
+        return swap_reject_kind_only(
+            m_face_attribute[fid].m_is_surface_fs ? SwapReject::face_tracked_surface
+                                                  : SwapReject::face_tracked_bbox);
     }
     auto oppo_tet = tt.switch_tetrahedron();
     assert(oppo_tet.has_value() && "Should not swap boundary.");
@@ -497,11 +508,11 @@ bool TetOptimizerMesh::swap_face_before(const Tuple& t)
             std::array<size_t, 4> new_tet = t1_vids;
             wmtk::array_replace_inline(new_tet, tri[i], v3);
             if (is_inverted(new_tet)) {
-                return false;
+                return swap_reject_kind_only(SwapReject::face_inverted);
             }
             const double q = get_quality(new_tet);
             if (q >= max_energy) {
-                return false;
+                return swap_reject_kind_only(SwapReject::face_not_better);
             }
         }
     }
@@ -509,7 +520,7 @@ bool TetOptimizerMesh::swap_face_before(const Tuple& t)
     std::vector<size_t> twotets{t0, t1};
 
     if (!swap_before_interior(twotets)) {
-        return false;
+        return swap_reject_kind_only(SwapReject::interior_hook);
     }
 
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
@@ -518,7 +529,7 @@ bool TetOptimizerMesh::swap_face_before(const Tuple& t)
 
 bool TetOptimizerMesh::swap_face_after(const Tuple& t)
 {
-    if (!TetMesh::swap_face_after(t)) return false;
+    if (!TetMesh::swap_face_after(t)) return swap_reject_kind_only(SwapReject::base_after);
 
     auto incident_tets = get_incident_tets_for_edge(t);
 
@@ -530,7 +541,7 @@ bool TetOptimizerMesh::swap_face_after(const Tuple& t)
     std::vector<size_t> new_tids;
     new_tids.reserve(incident_tets.size());
     for (const Tuple& tet : incident_tets) new_tids.push_back(tet.tid(*this));
-    if (!swap_after_cells(new_tids, false)) return false;
+    if (!swap_after_cells(new_tids, false)) return swap_reject_kind_only(SwapReject::after_cells);
 
     tracker_assign_after(*this, incident_tets, swap_cache.local().changed_faces, m_face_attribute);
 
@@ -664,7 +675,7 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
 bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
 {
     swap_stage(SwapStage::after_enter);
-    if (!TetMesh::swap_edge_44_after(t)) return swap_reject(SwapReject::base_before);
+    if (!TetMesh::swap_edge_44_after(t)) return swap_reject(SwapReject::base_after);
 
     auto incident_tets = get_incident_tets_for_edge(t);
 
@@ -794,7 +805,7 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
 {
     swap_stage(SwapStage::after_enter);
     if (!TetMesh::swap_edge_56_after(t)) {
-        return swap_reject(SwapReject::base_before);
+        return swap_reject(SwapReject::base_after);
     }
 
     /**

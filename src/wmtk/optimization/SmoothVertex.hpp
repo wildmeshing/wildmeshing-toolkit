@@ -57,6 +57,108 @@ struct SmoothRejectCounters
 };
 
 /**
+ * @brief How the vertex solves of a smoothing pass ended: Newton iterations taken and the status
+ * polysolve stopped on, counted per pass.
+ *
+ * The solver runs basic_nonlinear_solver_params (solver.hpp): DenseNewton, at most 10
+ * iterations, allow_out_of_iterations, rel_grad_norm_tol 0. So a solve stops on an absolute
+ * tolerance, on the iteration cap without complaint, or on a failure polysolve reports by
+ * throwing (a failed line search on the last strategy, a NaN). The accepted / rejected line
+ * cannot tell a pass whose solves all hit the cap from one whose solves converge in two
+ * iterations; this does.
+ *
+ * Read from the solver object, not from info(): status() and current_criteria().iterations are
+ * set before polysolve throws, while info() is not updated on that path, so a thrown solve is
+ * still classified by the status it stopped on.
+ */
+struct NewtonCounters
+{
+    /// 0 .. 10 iterations, and one bucket for more than 10.
+    static constexpr size_t kIterBuckets = 12;
+    /// polysolve::nonlinear::Status, NotStarted (-1) .. UpdateDirectionFailed (12), shifted by 1.
+    static constexpr size_t kStatuses = 14;
+    static_assert(
+        int(polysolve::nonlinear::Status::UpdateDirectionFailed) == int(kStatuses) - 2,
+        "polysolve's Status enum changed; update kStatuses and status_name()");
+
+    std::array<std::atomic<size_t>, kIterBuckets> iterations{};
+    std::array<std::atomic<size_t>, kStatuses> status{};
+    std::atomic<size_t> iterations_total{0};
+    std::atomic<size_t> threw{0};
+
+    /// One solve that just returned from minimize(), or threw out of it (@p did_throw).
+    void record(const polysolve::nonlinear::Solver& s, const bool did_throw)
+    {
+        const size_t it = s.current_criteria().iterations;
+        iterations[std::min(it, kIterBuckets - 1)].fetch_add(1, std::memory_order_relaxed);
+        iterations_total.fetch_add(it, std::memory_order_relaxed);
+        const int st = int(s.status()) + 1;
+        if (st >= 0 && size_t(st) < kStatuses) {
+            status[size_t(st)].fetch_add(1, std::memory_order_relaxed);
+        }
+        if (did_throw) threw.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    size_t solves() const
+    {
+        size_t n = 0;
+        for (const auto& c : iterations) n += c.load();
+        return n;
+    }
+
+    void reset()
+    {
+        for (auto& c : iterations) c = 0;
+        for (auto& c : status) c = 0;
+        iterations_total = 0;
+        threw = 0;
+    }
+
+    static const char* status_name(const size_t i)
+    {
+        static constexpr std::array<const char*, kStatuses> names = {
+            {"NotStarted",
+             "Continue",
+             "IterationLimit",
+             "XDeltaTolerance",
+             "RelXDeltaTolerance",
+             "FDeltaTolerance",
+             "GradNormTolerance",
+             "RelGradNormTolerance",
+             "NewtonDecrementTolerance",
+             "ObjectiveCustomStop",
+             "NanEncountered",
+             "NotDescentDirection",
+             "LineSearchFailed",
+             "UpdateDirectionFailed"}};
+        return i < kStatuses ? names[i] : "?";
+    }
+
+    /// `solves=N mean_iterations=m | iterations 0=a 1=b ... 10=k >10=l | stop <nonzero statuses> |
+    /// threw=t`. Every iteration bucket is printed, zeros included, so the histogram's shape reads
+    /// at a glance.
+    std::string to_string() const
+    {
+        const size_t n = solves();
+        std::string out = fmt::format(
+            "solves={} mean_iterations={:.3g} | iterations",
+            n,
+            n > 0 ? double(iterations_total.load()) / double(n) : 0.);
+        for (size_t i = 0; i < kIterBuckets; ++i) {
+            out += i + 1 < kIterBuckets ? fmt::format(" {}={}", i, iterations[i].load())
+                                        : fmt::format(" >{}={}", i - 1, iterations[i].load());
+        }
+        out += " | stop";
+        for (size_t i = 0; i < kStatuses; ++i) {
+            if (status[i].load() != 0)
+                out += fmt::format(" {}={}", status_name(i), status[i].load());
+        }
+        out += fmt::format(" | threw={}", threw.load());
+        return out;
+    }
+};
+
+/**
  * @brief Weights and policy for smooth_vertex_3d.
  *
  * The weights follow simwild's convention: `w_envelope = 1 - w_amips`, with w_amips small
@@ -196,7 +298,8 @@ bool smooth_vertex_3d(
     const typename Mesh::Tuple& t,
     const SmoothVertexOptions& opts,
     std::unique_ptr<polysolve::nonlinear::Solver>& solver,
-    SmoothRejectCounters* counters = nullptr)
+    SmoothRejectCounters* counters = nullptr,
+    NewtonCounters* newton = nullptr)
 {
     using Tuple = typename Mesh::Tuple;
 
@@ -253,12 +356,15 @@ bool smooth_vertex_3d(
 
     auto solve = [&]() {
         VectorXd x = VA[vid].m_posf;
+        bool threw = false;
         try {
             solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
             // polysolve reports a failed line search by throwing; the position it reached
             // is still the best it found, and the checks below decide whether to keep it.
+            threw = true;
         }
+        if (newton) newton->record(*solver, threw);
         VA[vid].m_posf = x;
     };
 

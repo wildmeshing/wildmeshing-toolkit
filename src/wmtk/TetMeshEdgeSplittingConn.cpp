@@ -5,8 +5,9 @@
 
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
+    op_event(OpKind::split, OpEvent::attempt);
     if (!split_edge_before(loc0)) {
-        return false;
+        return op_refused(OpKind::split, OpEvent::before_hook);
     }
 
     // backup of everything
@@ -40,7 +41,8 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     /// update connectivity
     int v_id = get_next_empty_slot_v();
     if (v_id == INVALID_SLOT) {
-        return false; // out of preallocated vertex slots: abort before mutating
+        // out of preallocated vertex slots: abort before mutating
+        return op_refused(OpKind::split, OpEvent::out_of_slots);
     }
     std::vector<TetrahedronConnectivity> old_tets_conn;
     std::vector<std::array<size_t, 4>> new_tet_conn;
@@ -68,7 +70,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (!conn_ok) {
         // out of preallocated tet slots: free the reserved vertex slot and abort
         m_vertex_connectivity[v_id].m_is_removed = true;
-        return false;
+        return op_refused(OpKind::split, OpEvent::out_of_slots);
     }
 
     // get tid. eid, fid for return
@@ -91,13 +93,18 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     Tuple new_loc = Tuple(*this, v_id, eid_for_return, fid_for_return, tid_for_return);
 
     start_protect_attributes();
-    if (!split_edge_after(new_loc) || !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    // The two tests in the order and with the short-circuit of `!after || !invariants`.
+    const OpEvent refused = !split_edge_after(new_loc) ? OpEvent::after_hook
+                            : !invariants(get_one_ring_tets_for_vertex(new_loc))
+                                ? OpEvent::invariants
+                                : OpEvent::committed;
+    if (refused != OpEvent::committed) {
         m_vertex_connectivity[v_id].m_is_removed = true;
         m_vertex_connectivity[v_id].m_conn_tets.clear();
 
         operation_failure_rollback_imp(rollback_vert_conn, n12_t_ids, new_tet_id, old_tets_conn);
 
-        return false;
+        return op_refused(OpKind::split, refused);
     }
     release_protect_attributes();
 
@@ -110,5 +117,6 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
     unique_edge_tuples(*this, new_edges);
 
+    op_event(OpKind::split, OpEvent::committed);
     return true;
 }
