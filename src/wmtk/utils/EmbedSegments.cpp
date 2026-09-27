@@ -115,7 +115,8 @@ void embed_segments(
     std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out,
-    std::vector<std::vector<int>>* E_out_sources)
+    std::vector<std::vector<int>>* E_out_sources,
+    std::vector<int>* point_map)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -224,6 +225,20 @@ void embed_segments(
                 (*E_out_sources)[idx] = src;
             }
             ++idx;
+        }
+    }
+
+    // Where did each input point end up? The remesher reports {triangle, vertex} per input
+    // point, in input order; the input points went in first, so the first V.rows() entries
+    // are ours and the background-grid entries after them are dropped.
+    if (point_map != nullptr) {
+        assert(point_provenance.size() >= size_t(V.rows()));
+        point_map->assign(V.rows(), -1);
+        for (int i = 0; i < V.rows(); ++i) {
+            const uint32_t v = point_provenance[i][1];
+            if (v != UINT32_MAX) {
+                (*point_map)[i] = int(v);
+            }
         }
     }
 

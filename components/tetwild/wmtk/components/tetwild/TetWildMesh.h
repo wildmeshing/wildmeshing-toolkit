@@ -26,6 +26,7 @@
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -62,8 +63,36 @@ public:
         /// counterpart is TriWildMesh::VertexExtras::m_feature_id, which differs deliberately
         /// -- see the comment there.
         bool m_is_on_open_boundary = false;
+        /// Whether the vertex lies on an input feature curve (see EdgeAttributes).
+        bool m_is_on_feature_curve = false;
+        /**
+         * Index into TetWildMesh::m_feature_points, or NO_FEATURE. The port of
+         * TriWildMesh::VertexExtras::m_feature_id, and for the same reason: preserving a
+         * 0-dimensional feature -- an input point, or a feature curve's endpoint -- is a
+         * COVERAGE property, and a containment test passes trivially when one anchor
+         * vertex is collapsed onto another while the first quietly stops being
+         * represented. See the discussion there.
+         */
+        size_t m_feature_point_id = std::numeric_limits<size_t>::max();
     };
     wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+
+
+    /// A vertex that stands for no input feature point. See VertexExtras::m_feature_point_id.
+    static constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
+
+    /**
+     * Anchor positions of the 0-dimensional features, indexed by
+     * VertexExtras::m_feature_point_id: the input feature points, and the feature-curve
+     * endpoints (junctions too, when allow_junction_cleanup is off). A vertex carrying
+     * feature f may never end up further than m_feature_eps from m_feature_points[f]; the
+     * anchor never moves, so the id is a direct lookup.
+     */
+    std::vector<Vector3d> m_feature_points;
+    /// Radius of the anchor ball. Set by the driver alongside m_feature_envelope; kept a
+    /// separate name from the tube eps for the same reason triwild keeps m_feature_eps
+    /// separate from m_envelope_eps.
+    double m_feature_eps = -1;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
@@ -92,12 +121,65 @@ public:
     {
         m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
     }
+    bool boundary_edges_at_vertex_inside(size_t vid) const override
+    {
+        if (!m_vertex_extra[vid].m_is_on_open_boundary || !m_order2_envelope) {
+            return true;
+        }
+        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+            if (!m_vertex_extra[u].m_is_on_open_boundary) {
+                continue;
+            }
+            // Exact membership: an open boundary edge has exactly one incident tracked
+            // face. Flags alone would also catch interior chords between two boundary
+            // vertices (e.g. across a corner), which must not be tube-tested.
+            if (get_num_surface_faces_for_edge({{vid, u}}) != 1) {
+                continue;
+            }
+            if (m_order2_envelope->is_outside(
+                    std::array<Eigen::Vector3d, 2>{
+                        {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
+        if (collapse_breaks_feature_point(v1, v2)) return false;
         if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
         return m_vertex_extra[v2].m_is_on_open_boundary ||
                !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
     }
+
+    /**
+     * True iff collapsing v1 into v2 would drop or displace a feature-point anchor.
+     * Port of TriWildMesh::collapse_breaks_feature, distance test included: two anchors
+     * within m_feature_eps of each other are allowed to merge -- the survivor covers both
+     * -- and forbidding that deadlocks the mesh (measured in 2D, see the triwild comment).
+     */
+    bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
+    {
+        if (!m_tet_params.preserve_feature_points) return false;
+        const size_t f1 = m_vertex_extra[v1_id].m_feature_point_id;
+        if (f1 == NO_FEATURE) return false;
+        return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
+               m_feature_eps * m_feature_eps;
+    }
+
+    bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const override
+    {
+        const size_t f = m_vertex_extra[vid].m_feature_point_id;
+        if (f == NO_FEATURE || !m_tet_params.preserve_feature_points) return true;
+        // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
+        // anchor, exactly the freedom the envelope gives everywhere else.
+        return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+    }
+
+    /// {anchors still represented within m_feature_eps, total}. Geometric, like triwild's:
+    /// "some vertex is within eps of this anchor", whether or not it carries the id.
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
     bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
     {
         return is_open_boundary_edge(e);
@@ -109,14 +191,35 @@ public:
     {
         m_vertex_extra[v2].m_is_on_open_boundary =
             m_vertex_extra[v1].m_is_on_open_boundary || m_vertex_extra[v2].m_is_on_open_boundary;
+        m_vertex_extra[v2].m_is_on_feature_curve =
+            m_vertex_extra[v1].m_is_on_feature_curve || m_vertex_extra[v2].m_is_on_feature_curve;
         return true;
     }
-    void collapse_after_vertex(size_t, size_t v2) override
+    void collapse_after_vertex(size_t v1, size_t v2) override
     {
+        // The survivor picks up the anchor the collapsed vertex carried, if it has none.
+        if (m_vertex_extra[v2].m_feature_point_id == NO_FEATURE) {
+            m_vertex_extra[v2].m_feature_point_id = m_vertex_extra[v1].m_feature_point_id;
+        }
         if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
             m_vertex_extra[v2].m_is_on_open_boundary = false;
         }
+        // Same cleanup for the feature flag: v1's flag was OR-ed in (see
+        // collapse_after_connectivity), but if the survivor has no incident tagged edge the
+        // curve rerouted around it and the flag is stale.
+        if (m_track_feature_edges && m_vertex_extra[v2].m_is_on_feature_curve &&
+            !vertex_has_feature_edge(v2)) {
+            m_vertex_extra[v2].m_is_on_feature_curve = false;
+        }
     }
+
+    void split_after_vertex_feature(size_t vid, bool on_feature) override
+    {
+        m_vertex_extra[vid].m_is_on_feature_curve = on_feature;
+        // A fresh split vertex stands for no anchor; its slot may be reused and stale.
+        m_vertex_extra[vid].m_feature_point_id = NO_FEATURE;
+    }
+
 
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
@@ -224,6 +327,26 @@ public:
     void filter_with_tracked_surface_winding_number();
     void filter_with_flood_fill();
 
+    /**
+     * The 'hybrid' filter: keep only tets inside (winding > 0.5) at least one of the
+     * inputs listed in `volume_inputs` (indices into the input list, matching
+     * m_winding_number_per_input). Everything else is scaffolding; the driver collects
+     * the surface-role faces and the feature curves BEFORE calling this, because they
+     * live on the tets this deletes.
+     */
+    void filter_with_roles(const std::vector<size_t>& volume_inputs);
+
+    /**
+     * Write the mixed-dimensional output of the hybrid filter: the (already filtered)
+     * tet mesh, plus the collected surface-role triangles as a face block and the
+     * feature curves as an edge block and the anchor points as 0D point elements.
+     */
+    void output_hybrid_mesh(
+        const std::string& file,
+        const std::vector<std::array<Vector3d, 3>>& sheet_triangles,
+        const std::vector<std::array<Vector3d, 2>>& curve_segments,
+        const std::vector<Vector3d>& anchor_points);
+
 
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
@@ -250,6 +373,14 @@ public:
      *
      * This is the insertion path. See the banner in VolumemesherInsertion.cpp.
      */
+    /**
+     * Optional feature inputs: `feature_edge_vertices`/`feature_edges` is an edge mesh to
+     * force into the tetrahedralization as tet edges, `feature_points` are points to force
+     * in as tet vertices. Where they ended up comes back in `features_out` (compacted
+     * output ids, see utils::EmbedFeaturesResult), which is required when features are
+     * passed. Features and their forcing-triangle apexes must lie inside the background
+     * box; the caller grows the input bounding box over them (tetwild.cpp does).
+     */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -257,14 +388,24 @@ public:
         std::vector<std::array<size_t, 3>>& facets_after,
         std::vector<bool>& is_v_on_input,
         std::vector<std::array<size_t, 4>>& tets_after,
-        std::vector<bool>& tet_face_on_input_surface);
+        std::vector<bool>& tet_face_on_input_surface,
+        const std::vector<Vector3d>& feature_edge_vertices = {},
+        const std::vector<std::array<size_t, 2>>& feature_edges = {},
+        const std::vector<Vector3d>& feature_points = {},
+        utils::EmbedFeaturesResult* features_out = nullptr);
 
+    /**
+     * `features` tags the feature-edge tilings on the initial mesh; passing it registers
+     * m_edge_attribute with p_edge_attrs. Null => no feature tracking, nothing allocated.
+     */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
         const std::vector<std::array<size_t, 3>>& facets,
         const std::vector<bool>& is_v_on_input,
         const std::vector<std::array<size_t, 4>>& tets,
-        const std::vector<bool>& tet_face_on_input_surface);
+        const std::vector<bool>& tet_face_on_input_surface,
+        const utils::EmbedFeaturesResult* features = nullptr,
+        const std::vector<Vector3d>* feature_anchors = nullptr);
 
     void init_from_file(std::string input_dir);
 

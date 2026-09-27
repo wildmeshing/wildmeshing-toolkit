@@ -45,9 +45,20 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<std::array<size_t, 3>>& polygon_faces, // out: triangular facets
     std::vector<bool>& is_v_on_input, // out: vertex-on-input-surface flags
     std::vector<std::array<size_t, 4>>& tets_after, // out: output tets
-    std::vector<bool>& tet_face_on_input_surface) // out: 4 face-on-surface flags per tet
+    std::vector<bool>& tet_face_on_input_surface, // out: 4 face-on-surface flags per tet
+    const std::vector<Vector3d>& feature_edge_vertices, // optional feature-edge vertices
+    const std::vector<std::array<size_t, 2>>& feature_edges, // optional feature edges
+    const std::vector<Vector3d>& feature_points, // optional feature points
+    utils::EmbedFeaturesResult* features_out) // out: where the features ended up
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
+    if (!feature_edges.empty() || !feature_points.empty()) {
+        logger().info(
+            "Insertion features: #E = {} ({} vertices), #P = {}",
+            feature_edges.size(),
+            feature_edge_vertices.size(),
+            feature_points.size());
+    }
 
     // Step 1: build the Delaunay background mesh.
     // generate background mesh
@@ -118,6 +129,70 @@ void TetWildMesh::insertion_by_volumeremesher(
     opts.check_collinear_input = m_params.perform_sanity_checks;
     opts.check_orientation = m_params.perform_sanity_checks;
     opts.check_surface_provenance = m_params.perform_sanity_checks;
+
+    // Marshal the feature inputs into the remesher's flat arrays, and check the domain: the
+    // features AND their forcing-triangle apexes -- which stick out by up to 0.1x the edge
+    // length along an axis -- must lie inside the background box, or the remesher's
+    // non-Delaunay insertion cannot locate them. The caller grows the input bbox over the
+    // features, so a violation here means only one thing: a feature edge so long that a
+    // tenth of it exceeds the box padding (diag/15). Throw with that diagnosis rather than
+    // letting the remesher assert.
+    const bool has_features = !feature_edges.empty() || !feature_points.empty();
+    utils::EmbedFeaturesInput vr_features;
+    if (has_features) {
+        const auto& lo = m_tet_params.box_min;
+        const auto& hi = m_tet_params.box_max;
+        const auto in_box = [&](const Vector3d& p, double margin) {
+            for (int d = 0; d < 3; ++d) {
+                if (p[d] - margin < lo[d] || p[d] + margin > hi[d]) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        vr_features.edge_vrt_coord.reserve(3 * feature_edge_vertices.size());
+        for (const Vector3d& p : feature_edge_vertices) {
+            vr_features.edge_vrt_coord.insert(
+                vr_features.edge_vrt_coord.end(),
+                p.data(),
+                p.data() + 3);
+        }
+        vr_features.edge_indices.reserve(2 * feature_edges.size());
+        for (const auto& e : feature_edges) {
+            const Vector3d& a = feature_edge_vertices.at(e[0]);
+            const Vector3d& b = feature_edge_vertices.at(e[1]);
+            const double apex_margin = 0.1 * (a - b).norm();
+            if (!in_box(a, apex_margin) || !in_box(b, apex_margin)) {
+                log_and_throw_error(
+                    "Feature edge ({}, {}) or its forcing-triangle apexes (offset 0.1 x its "
+                    "length {}) leave the background box [{}, {}]; the edge is too long "
+                    "relative to the box padding",
+                    a.transpose(),
+                    b.transpose(),
+                    (a - b).norm(),
+                    lo.transpose(),
+                    hi.transpose());
+            }
+            vr_features.edge_indices.push_back(uint32_t(e[0]));
+            vr_features.edge_indices.push_back(uint32_t(e[1]));
+        }
+        // Point apexes are offset by 0.1x the estimated point spacing, itself bounded by the
+        // point set's own bbox diagonal -- small against the box padding; checked with the
+        // conservative margin of the padding itself would over-reject, so points are checked
+        // with no margin and the remesher's own debug assert stays as the backstop.
+        vr_features.point_coord.reserve(3 * feature_points.size());
+        for (const Vector3d& p : feature_points) {
+            if (!in_box(p, 0)) {
+                log_and_throw_error(
+                    "Feature point ({}) lies outside the background box [{}, {}]",
+                    p.transpose(),
+                    lo.transpose(),
+                    hi.transpose());
+            }
+            vr_features.point_coord.insert(vr_features.point_coord.end(), p.data(), p.data() + 3);
+        }
+    }
+
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -129,7 +204,10 @@ void TetWildMesh::insertion_by_volumeremesher(
         is_v_on_input,
         tets_after,
         tet_face_on_input_surface,
-        opts);
+        opts,
+        nullptr,
+        has_features ? &vr_features : nullptr,
+        has_features ? features_out : nullptr);
 
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is
@@ -165,8 +243,17 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<std::array<size_t, 3>>& facets,
     const std::vector<bool>& is_v_on_input,
     const std::vector<std::array<size_t, 4>>& tets,
-    const std::vector<bool>& tet_face_on_input_surface)
+    const std::vector<bool>& tet_face_on_input_surface,
+    const utils::EmbedFeaturesResult* features,
+    const std::vector<Vector3d>* feature_anchors)
 {
+    // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
+    // attributes along with everything else. Only when features exist: with the flag off the
+    // shared operations skip every edge-tag branch and nothing is allocated.
+    if (features != nullptr) {
+        enable_feature_edge_tracking();
+    }
+
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
 
@@ -230,6 +317,76 @@ void TetWildMesh::init_from_Volumeremesher(
             }
         },
         NUM_THREADS);
+
+    // Feature tags: mark each tiling edge with its input file id and flag its vertices.
+    // The tiling pairs come out of the same arrangement as the connectivity, so a missing
+    // edge is a contract violation, not an input problem -- throw, don't warn.
+    if (features != nullptr) {
+        size_t n_tagged = 0;
+        for (size_t e = 0; e < features->edge_tiling.size(); ++e) {
+            for (const auto& seg : features->edge_tiling[e]) {
+                const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
+                if (!t.is_valid(*this)) {
+                    log_and_throw_error(
+                        "Feature tiling edge ({}, {}) is not an edge of the initial mesh",
+                        seg[0],
+                        seg[1]);
+                }
+                m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = true;
+                m_vertex_extra[seg[0]].m_is_on_feature_curve = true;
+                m_vertex_extra[seg[1]].m_is_on_feature_curve = true;
+                ++n_tagged;
+            }
+        }
+        logger().info(
+            "feature tags: {} tet edges tagged across {} input edges",
+            n_tagged,
+            features->edge_tiling.size());
+
+        // Anchor the 0-dimensional features. Anchor positions are input coordinates, and
+        // every one of them exists in the output exactly -- input points via the point
+        // provenance, curve endpoints as tiling vertices -- and input coordinates are
+        // explicit points, so their rationals ARE doubles and an exact double lookup finds
+        // them. A vertex already carrying an id keeps it: one anchor per position is
+        // enough, the retention audit is geometric.
+        if (feature_anchors != nullptr && !feature_anchors->empty()) {
+            std::map<std::array<double, 3>, size_t> vid_of;
+            const auto key = [](const Vector3d& p) {
+                return std::array<double, 3>{{p[0], p[1], p[2]}};
+            };
+            for (const int64_t v : features->point_vertex) {
+                if (v >= 0) {
+                    vid_of.emplace(key(m_vertex_attribute[size_t(v)].m_posf), size_t(v));
+                }
+            }
+            for (const auto& tiling : features->edge_tiling) {
+                for (const auto& seg : tiling) {
+                    for (const size_t v : {seg[0], seg[1]}) {
+                        vid_of.emplace(key(m_vertex_attribute[v].m_posf), v);
+                    }
+                }
+            }
+            size_t n_anchored = 0;
+            for (const Vector3d& p : *feature_anchors) {
+                const auto it = vid_of.find(key(p));
+                if (it == vid_of.end()) {
+                    log_and_throw_error(
+                        "Feature anchor ({}) is not a vertex of the initial mesh",
+                        p.transpose());
+                }
+                if (m_vertex_extra[it->second].m_feature_point_id != NO_FEATURE) {
+                    continue;
+                }
+                m_vertex_extra[it->second].m_feature_point_id = m_feature_points.size();
+                m_feature_points.push_back(p);
+                ++n_anchored;
+            }
+            logger().info(
+                "feature anchors: {} points anchored within {:.6} of their input positions",
+                n_anchored,
+                m_feature_eps);
+        }
+    }
 
     // track bounding box (parallel). The per-face exact-rational corner test is the
     // cost; on-bbox faces are rare, so each chunk collects (vertex, bbox-side) pairs
