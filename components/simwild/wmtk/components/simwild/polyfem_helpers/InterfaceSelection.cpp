@@ -424,7 +424,6 @@ LoadedMesh load_mesh(const TaggedMesh& mesh, const std::vector<Selection>& selec
     }
 
     LoadedMesh out;
-    out.node_tag_to_idx = mesh.node_tag_to_idx;
     out.coords = mesh.coords;
     out.total_n_nodes = mesh.total_n_nodes;
     out.mesh_dim = mesh.mesh_dim;

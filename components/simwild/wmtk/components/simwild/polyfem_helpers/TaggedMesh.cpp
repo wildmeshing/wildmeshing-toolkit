@@ -64,15 +64,10 @@ std::vector<int64_t> sorted_key(const std::vector<int64_t>& v)
 // Reading a .msh
 // ---------------------------------------------------------------------------
 
-GroupedMsh read_grouped(const std::string& msh_path)
-{
-    if (!std::filesystem::exists(msh_path)) {
-        log_and_throw_error("File {} does not exist.", msh_path);
-    }
-    return read_grouped(mshio::load_msh(msh_path));
-}
+namespace {
 
-GroupedMsh read_grouped(const mshio::MshSpec& spec)
+/// `read_grouped` after `mshio::load_msh`: the walk over the loaded file.
+GroupedMsh walk_groups(const mshio::MshSpec& spec)
 {
     GroupedMsh out;
     for (const auto& block : spec.nodes.entity_blocks) {
@@ -142,6 +137,17 @@ GroupedMsh read_grouped(const mshio::MshSpec& spec)
     }
     return out;
 }
+
+} // namespace
+
+GroupedMsh read_grouped(const std::string& msh_path)
+{
+    if (!std::filesystem::exists(msh_path)) {
+        log_and_throw_error("File {} does not exist.", msh_path);
+    }
+    return walk_groups(mshio::load_msh(msh_path));
+}
+
 
 std::map<int64_t, int64_t> node_tag_to_index(const std::vector<int64_t>& tags)
 {

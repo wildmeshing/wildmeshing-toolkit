@@ -9,10 +9,10 @@
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
-/// Everything `constraints.load_mesh` returns, in the same order as its 9-tuple.
+/// Everything `constraints.load_mesh` returns but its node-tag map, which nothing here reads, in
+/// the order of its 9-tuple.
 struct LoadedMesh
 {
-    std::map<int64_t, int64_t> node_tag_to_idx;
     MatrixXd coords; ///< (n, mesh_dim), in mesh units
     std::vector<std::array<int64_t, 2>> interface_edges;
     int64_t total_n_nodes = 0;
