@@ -1040,9 +1040,18 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// The ops divergence guard: one face's sag as face_conv_ratio() gives it, with an
+    /// The ops divergence guard: one face's measure as face_conv_ratio() gives it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
+    /// THE ops guards' comparison, one implementation for the collapse and the swap guard:
+    /// {before, after}, the largest measure among the elements the operation changes. `before`
+    /// holds the offset faces the operation changes as they are, `after` what replaces them (the
+    /// collapse's relabelled ring, the swap's two new faces); the elements are those faces
+    /// themselves, each measured by face_resolution_or_inf(). See the definition for why the
+    /// guard compares the changed faces and not the vertices around them.
+    std::pair<double, double> ops_guard_measures(
+        const std::vector<std::array<size_t, 3>>& before,
+        const std::vector<std::array<size_t, 3>>& after) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1334,7 +1343,9 @@ public:
     /// The chord twin of face_conv_ratio(): the RMS relative error over the chord's two
     /// endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// THE measure, as a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
+    /// THE FACE MEASURE, and the ONE function every reader of it calls: energy_criterion()'s exit
+    /// and refinement, the ops guards through face_resolution_or_inf(), and the debug frames'
+    /// front_err_ratio. As a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
     /// the face's `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since
     /// the stencil contains the CORNERS, this one number answers both questions the loop used to
     /// ask separately -- a face is resolved when it is <= 1, and a vertex is placed when the
@@ -1718,6 +1729,9 @@ public:
     /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded
     /// outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// The same halving at the listed vertices themselves: each lowered once per call, floored,
+    /// then graded. The face form above is this on its faces' corners, in the order given.
+    size_t refine_front_by_halving(const std::vector<size_t>& vertices);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

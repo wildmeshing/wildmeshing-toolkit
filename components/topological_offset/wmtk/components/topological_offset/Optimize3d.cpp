@@ -324,10 +324,11 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // The ops divergence guard, the sag half of the acceptance rule for a flip OF THE OFFSET
     // SURFACE: the flip may not make the pair's worst face measure worse -- max over (a,c,d),
     // (b,c,d) after <= max over (a,b,c), (a,b,d) before, a tie passing. That is the rule the
-    // collapse half applies (ops_guard_refuses_collapse()). The quality half is the base's own,
-    // the same as for an interior swap: the cells the flip makes must be STRICTLY better than
-    // the cells it replaces (swap_quality_allowed() for a 3-2, the case search of
-    // TetMesh::swap_edge_44() / swap_edge_56() otherwise).
+    // collapse half applies (ops_guard_refuses_collapse()), through the same comparison,
+    // ops_guard_measures(). The quality half is the base's own, the same as for an interior
+    // swap: the cells the flip makes must be STRICTLY better than the cells it replaces
+    // (swap_quality_allowed() for a 3-2, the case search of TetMesh::swap_edge_44() /
+    // swap_edge_56() otherwise).
     //
     // The quality half is also what makes the swap pass finish: every accepted swap strictly
     // lowers the worst energy among the cells it replaces, the base's argument for every swap.
@@ -358,10 +359,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
     // A flip of the input complex or of a region boundary has no sag half.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
-        const double before =
-            std::max(face_resolution_or_inf(a, b, c), face_resolution_or_inf(a, b, d));
-        const double after =
-            std::max(face_resolution_or_inf(a, c, d), face_resolution_or_inf(b, c, d));
+        const auto [before, after] =
+            ops_guard_measures({{{a, b, c}}, {{a, b, d}}}, {{{a, c, d}}, {{b, c, d}}});
         // THE WHOLE SAG RULE: not worse. Written as a negated <= so a NaN on either side refuses.
         if (!(after <= before)) {
             ++iter_cnt_swap_guard_reject;
@@ -912,7 +911,7 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
 double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b, const size_t c)
     const
 {
-    // The ops divergence guard: one face's sag against the tube. An unmeasurable face
+    // The ops divergence guard: one face's measure against the bar. An unmeasurable face
     // is infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
     // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
     // infinity is not strictly greater than infinity, which is the comparison the guard makes.
@@ -948,6 +947,7 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // THE TEST: the maximum resolution measure over the union of both endpoints' offset faces
     // BEFORE, against the maximum over the faces the survivor is left with AFTER. Strictly
     // greater is refused, so a collapse that leaves the worst face exactly as bad is allowed.
+    // The comparison itself is ops_guard_measures(), shared with the swap guard.
     //
     // Exact here, before anything is modified: v2 keeps its position and the base moves no
     // vertex, so the survivor's faces are this ring minus the ones on the collapsed edge, with
@@ -971,14 +971,6 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // set, where 0 would read as "perfectly resolved".
     if (ring_before.empty()) return false;
 
-    const auto worst = [this](const std::vector<std::array<size_t, 3>>& faces) {
-        double w = 0.;
-        for (const std::array<size_t, 3>& f : faces) {
-            w = std::max(w, face_resolution_or_inf(f[0], f[1], f[2]));
-        }
-        return w;
-    };
-
     std::vector<std::array<size_t, 3>> ring_after;
     ring_after.reserve(ring_before.size());
     for (std::array<size_t, 3> f : ring_before) {
@@ -993,7 +985,33 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
         }
         ring_after.push_back(f);
     }
-    return worst(ring_after) > worst(ring_before);
+    const auto [before, after] = ops_guard_measures(ring_before, ring_after);
+    return after > before;
+}
+
+std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
+    const std::vector<std::array<size_t, 3>>& before,
+    const std::vector<std::array<size_t, 3>>& after) const
+{
+    // THE ops guards' comparison, for the collapse (ops_guard_refuses_collapse()) and the swap
+    // (swap_before_surface()) alike: the operation may not raise the largest measure among the
+    // elements it changes. Every measure goes through face_conv_ratio(), the one face measure,
+    // so the guards judge exactly what the loop exits on.
+    //
+    // The elements are the changed faces. The exit tests max over faces, which is also max over
+    // front vertices v of V(v) = max over v's faces. The guard does NOT take that vertex form,
+    // because for a guard the two are not the same: over the affected vertices, max_v V(v) =
+    // max(max over the changed faces, max over the UNCHANGED faces of the affected vertices), and
+    // the unchanged part hides a rise -- a changed face going from 0.5 to 0.8 passes the vertex
+    // form next to an unchanged neighbour face at 0.9 and is refused by the face form.
+    double b = 0., a = 0.;
+    for (const std::array<size_t, 3>& f : before) {
+        b = std::max(b, face_resolution_or_inf(f[0], f[1], f[2]));
+    }
+    for (const std::array<size_t, 3>& f : after) {
+        a = std::max(a, face_resolution_or_inf(f[0], f[1], f[2]));
+    }
+    return {b, a};
 }
 
 
@@ -3175,23 +3193,32 @@ double TopoOffsetTetMesh::front_chord_target(
 size_t TopoOffsetTetMesh::refine_front_by_halving(
     const std::vector<EnergyCriterion::Refinable>& faces)
 {
+    // The corners, face by face in the order given; the vertex form halves each once.
+    std::vector<size_t> corners;
+    corners.reserve(3 * faces.size());
+    for (const EnergyCriterion::Refinable& r : faces) {
+        for (const size_t v : {r.a, r.b, r.c}) corners.push_back(v);
+    }
+    return refine_front_by_halving(corners);
+}
+
+size_t TopoOffsetTetMesh::refine_front_by_halving(const std::vector<size_t>& vertices)
+{
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    // Each corner is halved once per call: the first face that names it does the halving and
+    // Each vertex is halved once per call: the first entry that names it does the halving and
     // marks it, so a vertex shared by several refinable faces is not halved several times.
     std::vector<size_t> changed;
     std::vector<char> done(vert_capacity(), 0);
-    for (const EnergyCriterion::Refinable& r : faces) {
-        for (const size_t v : {r.a, r.b, r.c}) {
-            if (done[v]) continue;
-            done[v] = 1;
-            double& sc = m_vertex_attribute[v].m_sizing_scalar;
-            const double sn = std::max(0.5 * sc, s_floor);
-            if (sn < sc) {
-                sc = sn;
-                changed.push_back(v);
-            }
+    for (const size_t v : vertices) {
+        if (done[v]) continue;
+        done[v] = 1;
+        double& sc = m_vertex_attribute[v].m_sizing_scalar;
+        const double sn = std::max(0.5 * sc, s_floor);
+        if (sn < sc) {
+            sc = sn;
+            changed.push_back(v);
         }
     }
     grade_sizing(m_offset_params.sizing_gradation, changed);
