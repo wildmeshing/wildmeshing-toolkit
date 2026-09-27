@@ -550,6 +550,13 @@ private:
  * faces contributes its own r(x)^2 with coefficient V/N_s, since it is a stencil point of every
  * one of them. The energy therefore grows with valence, which the AMIPS term beside it does too.
  *
+ * Face::weight multiplies a face's mean, and is 1 unless front_measure is "vertex_ring". There the
+ * caller sets it to A_f / A_mean, the face's area over the mean area of the vertex's incident
+ * offset faces, both from the positions at the start of the visit and held fixed for the solve:
+ * the error being the surface integral of r^2, faces vote by area, and dividing by the mean keeps
+ * the energy's scale at the vertex unchanged. The loop's ring measure uses the same weighting, so
+ * the smoother and the criterion agree.
+ *
  * The derivatives are exact and the Hessian is Gauss-Newton, which here is also PSD by
  * construction (a sum of a_i^2 dr dr^T outer products), so no eigenvalue projection is needed --
  * unlike the L1 sag term this replaces, whose Hessian was indefinite. LineProblem3D takes
@@ -567,11 +574,13 @@ public:
     {
         double a, b, c;
     };
-    /// One incident offset face, the moving vertex implicit.
+    /// One incident offset face, the moving vertex implicit. `weight` multiplies the face's
+    /// stencil mean; 1 except under front_measure "vertex_ring" (see the class comment).
     struct Face
     {
         Eigen::Vector3d q1, q2;
         std::vector<Sample> samples;
+        double weight = 1.;
     };
 
     StencilEnergy3D(

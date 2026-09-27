@@ -2544,6 +2544,19 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
     std::vector<char> placed(vert_capacity(), 0);
+    // front_measure "vertex_ring": the ring measure is accumulated per end from the chord loop's
+    // own edge_conv_ratio() calls below, so it judges exactly the chord numbers the face mode
+    // does, each weighted by its length. See EnergyCriterion::ring_exit.
+    s.ring_exit = m_offset_params.front_measure == "vertex_ring";
+    std::vector<double> ring_sum, ring_w;
+    std::vector<size_t> ring_n;
+    std::vector<char> ring_bad;
+    if (s.ring_exit) {
+        ring_sum.assign(vert_capacity(), 0.);
+        ring_w.assign(vert_capacity(), 0.);
+        ring_n.assign(vert_capacity(), 0);
+        ring_bad.assign(vert_capacity(), 0);
+    }
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
@@ -2579,7 +2592,16 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         const double gn = edge_conv_ratio(e); // sag / tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
+            if (s.ring_exit) ring_bad[va] = ring_bad[vb] = 1;
             continue;
+        }
+        if (s.ring_exit) {
+            const double w = (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+            for (const size_t u : {va, vb}) {
+                ring_sum[u] += w * gn * gn;
+                ring_w[u] += w;
+                ++ring_n[u];
+            }
         }
         ++s.n_edges;
         if (gn > s.max_edge) {
@@ -2593,6 +2615,14 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
             ++s.n_edges_over;
             if (placed[va] && placed[vb]) {
                 ++s.n_edges_over_placed;
+                if (gn > s.max_edge_placed) {
+                    s.max_edge_placed = gn;
+                    s.worst_placed_mid =
+                        0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+                }
+                // Under the ring measure no chord is handed to the refinement: the vertices are,
+                // after this loop.
+                if (s.ring_exit) continue;
                 const double len =
                     (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
                 // Refinable only if the rule can still lower a target: at the sizing floor
@@ -2648,10 +2678,50 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                         }
                     }
                 }
-                if (gn > s.max_edge_placed) {
-                    s.max_edge_placed = gn;
-                    s.worst_placed_mid =
-                        0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+            }
+        }
+    }
+    if (s.ring_exit) {
+        // The ring measure and its refinement, as in 3D: a vertex over the bar is refinable
+        // while the halving can still lower its own scalar -- the floor rule of
+        // refine_front_by_halving(), nothing else: no chord target, no placement gate. One at the
+        // floor blocks the exit.
+        const double l = std::max(m_params.l, 1e-300);
+        const double s_floor =
+            std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (!front(vid)) continue;
+            if (ring_bad[vid]) {
+                ++s.n_rings_unmeasurable;
+                continue;
+            }
+            if (ring_n[vid] == 0) continue; // no measured front chord: no ring to judge
+            if (!(ring_w[vid] > 0.)) {
+                // Every incident chord of zero length: undefined, and blocks the exit.
+                ++s.n_rings_unmeasurable;
+                ++s.n_unmeasurable;
+                continue;
+            }
+            const double r = std::sqrt(ring_sum[vid] / ring_w[vid]);
+            ++s.n_rings;
+            if (r > s.max_ring) {
+                s.max_ring = r;
+                s.worst_ring_vid = vid;
+            }
+            if (!(r > s.bar)) continue;
+            ++s.n_rings_over;
+            const double have = m_vertex_attribute[vid].m_sizing_scalar;
+            if (have > s_floor) {
+                s.refinable_vertices.push_back(vid);
+            } else {
+                ++s.n_rings_at_floor;
+                s.floor_scalar = s_floor;
+                s.floor_from_min_edge_length =
+                    m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
+                if (r > s.max_ring_at_floor) {
+                    s.max_ring_at_floor = r;
+                    s.worst_ring_at_floor_pos = m_vertex_attribute[vid].m_posf;
                 }
             }
         }
@@ -2662,6 +2732,22 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
 
 std::string TopoOffsetTriMesh::EnergyCriterion::sizing_floor_fact() const
 {
+    if (ring_exit) {
+        if (n_rings_at_floor == 0) return "";
+        const char* origin =
+            floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
+        return fmt::format(
+            "{} front vertex(es) with the {} over the bar have their sizing scalar at the "
+            "sizing floor {:.4g} (from {}), so they cannot be refined and the loop cannot "
+            "converge on them: worst {:.4}x the bar at ({:.4}, {:.4})",
+            n_rings_at_floor,
+            ring_name(),
+            floor_scalar,
+            origin,
+            max_ring_at_floor,
+            worst_ring_at_floor_pos.x(),
+            worst_ring_at_floor_pos.y());
+    }
     if (n_at_floor == 0) return "";
     const char* origin = floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
     if (n_corners_at_floor > 0) {
@@ -3030,23 +3116,32 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
 size_t TopoOffsetTriMesh::refine_front_by_halving(
     const std::vector<EnergyCriterion::Refinable>& edges)
 {
+    // The ends, edge by edge in the order given; the vertex form halves each once.
+    std::vector<size_t> ends;
+    ends.reserve(2 * edges.size());
+    for (const EnergyCriterion::Refinable& r : edges) {
+        for (const size_t v : {r.a, r.b}) ends.push_back(v);
+    }
+    return refine_front_by_halving(ends);
+}
+
+size_t TopoOffsetTriMesh::refine_front_by_halving(const std::vector<size_t>& vertices)
+{
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    // Each end is halved once per call: the first edge that names it does the halving and
+    // Each vertex is halved once per call: the first entry that names it does the halving and
     // marks it, so a vertex shared by several refinable edges is not halved several times.
     std::vector<size_t> changed;
     std::vector<char> done(vert_capacity(), 0);
-    for (const EnergyCriterion::Refinable& r : edges) {
-        for (const size_t v : {r.a, r.b}) {
-            if (done[v]) continue;
-            done[v] = 1;
-            double& sc = m_vertex_attribute[v].m_sizing_scalar;
-            const double sn = std::max(0.5 * sc, s_floor);
-            if (sn < sc) {
-                sc = sn;
-                changed.push_back(v);
-            }
+    for (const size_t v : vertices) {
+        if (done[v]) continue;
+        done[v] = 1;
+        double& sc = m_vertex_attribute[v].m_sizing_scalar;
+        const double sn = std::max(0.5 * sc, s_floor);
+        if (sn < sc) {
+            sc = sn;
+            changed.push_back(v);
         }
     }
     grade_sizing(m_offset_params.sizing_gradation, changed);
@@ -4072,31 +4167,67 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         const Vector2d wx = ec.worst_vid != static_cast<size_t>(-1)
                                 ? m_vertex_attribute[ec.worst_vid].m_posf
                                 : Vector2d::Zero();
-        logger().info(
-            "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})) (diagnostic), edges max {:.4}x at "
-            "the midpoint, {} unmeasurable (the exit test) | {} vertices, {} edges | edges over "
-            "the tube: {}, of which {} with both ends placed (worst {:.4}x, midpoint ({:.4}, "
-            "{:.4})) | refinable edges {} (at the sizing floor {}) ========",
-            it + 1,
-            budget,
-            amips,
-            bar,
-            ec.max_vertex,
-            ec.worst_vid,
-            wx.x(),
-            wx.y(),
-            ec.max_edge,
-            ec.n_unmeasurable,
-            ec.n_vertices,
-            ec.n_edges,
-            ec.n_edges_over,
-            ec.n_edges_over_placed,
-            ec.max_edge_placed,
-            ec.worst_placed_mid.x(),
-            ec.worst_placed_mid.y(),
-            ec.refinable.size(),
-            ec.n_at_floor);
+        if (ec.ring_exit) {
+            // front_measure "vertex_ring": the ring measure is the exit test; the chord measure
+            // and the vertex measure are the same numbers the face mode prints, as diagnostics.
+            const Vector2d rx = ec.worst_ring_vid != static_cast<size_t>(-1)
+                                    ? m_vertex_attribute[ec.worst_ring_vid].m_posf
+                                    : Vector2d::Zero();
+            logger().info(
+                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
+                "{:.4}x the bar (worst v{} at ({:.4}, {:.4})) over {} front vertices, {} rings "
+                "unmeasurable, {} unmeasurable in all (the exit test) | diagnostic: edges max "
+                "{:.4}x at the midpoint, {} edges over the bar of {}; front vertices max {:.4}x, "
+                "{} not placed of {} | vertices over the bar: {}, refinable {} (at the sizing "
+                "floor {}) ========",
+                it + 1,
+                budget,
+                amips,
+                bar,
+                ec.ring_name(),
+                ec.max_ring,
+                ec.worst_ring_vid,
+                rx.x(),
+                rx.y(),
+                ec.n_rings,
+                ec.n_rings_unmeasurable,
+                ec.n_unmeasurable,
+                ec.max_edge,
+                ec.n_edges_over,
+                ec.n_edges,
+                ec.max_vertex,
+                ec.n_unplaced,
+                ec.n_vertices,
+                ec.n_rings_over,
+                ec.refinable_vertices.size(),
+                ec.n_rings_at_floor);
+        } else {
+            logger().info(
+                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
+                "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})) (diagnostic), edges max {:.4}x "
+                "at the midpoint, {} unmeasurable (the exit test) | {} vertices, {} edges | edges "
+                "over the tube: {}, of which {} with both ends placed (worst {:.4}x, midpoint "
+                "({:.4}, {:.4})) | refinable edges {} (at the sizing floor {}) ========",
+                it + 1,
+                budget,
+                amips,
+                bar,
+                ec.max_vertex,
+                ec.worst_vid,
+                wx.x(),
+                wx.y(),
+                ec.max_edge,
+                ec.n_unmeasurable,
+                ec.n_vertices,
+                ec.n_edges,
+                ec.n_edges_over,
+                ec.n_edges_over_placed,
+                ec.max_edge_placed,
+                ec.worst_placed_mid.x(),
+                ec.worst_placed_mid.y(),
+                ec.refinable.size(),
+                ec.n_at_floor);
+        }
         // Chords over the bar with both ends at the sizing floor block the exit (they are over
         // the bar) and no refinement will ever take them, so a run that keeps them never
         // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
@@ -4109,6 +4240,12 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 "\t[sizing floor] turn {}: {}",
                 it + 1,
                 ec.sizing_floor_fact());
+        }
+        // Under the ring measure the same line names the VERTICES over the bar at the floor,
+        // always a warning, as in 3D: the vertex form of the halving has no chord rule, so every
+        // vertex it cannot take is one nothing will ever take.
+        if (ec.ring_exit && ec.n_rings_at_floor > 0) {
+            logger().warn("\t[sizing floor] turn {}: {}", it + 1, ec.sizing_floor_fact());
         }
         logger().info(
             "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
@@ -4143,12 +4280,31 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 ec.worst_placed_mid.y(),
                 n);
         }
+        if (ec.ring_exit && ec.n_rings_over > 0) {
+            // front_measure "vertex_ring": the halving takes each vertex over the bar, that
+            // vertex alone. refinable is empty in this mode, so the chord line above is silent.
+            const size_t n = refine_front_by_halving(ec.refinable_vertices);
+            lowered_last_turn = n;
+            logger().info(
+                "\t[resolution] turn {}: {} front vertex(es) whose {} (the RMS, weighted by chord "
+                "length, of the chord measures of its incident front chords) is over the bar, {} "
+                "of them at the sizing floor (worst {:.4}x) -> sizing scalar halved at {} "
+                "vertices",
+                it + 1,
+                ec.n_rings_over,
+                ec.ring_name(),
+                ec.n_rings_at_floor,
+                ec.max_ring,
+                n);
+        }
         // Termination: every front chord's measure within the bar and nothing unmeasurable
         // (EnergyCriterion::converged(), the 3D rule with the chord measure for the face
         // measure), AND no sizing scalar lowered on the previous turn -- then quality with the
         // front frozen (below). Nothing refinable is implied, a refinable chord being over the
         // bar. The vertex measure is reported and tested nowhere; see converged() for what that
-        // means in 2D, where the chord measure does not sample the chord's ends.
+        // means in 2D, where the chord measure does not sample the chord's ends. Under
+        // front_measure "vertex_ring" the tested measure is every front vertex's ring measure
+        // instead, and the chord measure joins the vertex measure as a diagnostic.
         //
         // lowered_prev is 2D's own and stays: the lowering at the end of a turn is realized by
         // the NEXT turn's split pass (see lowered_last_turn above), and 3D dropped the same
@@ -4160,15 +4316,31 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             // end of optimize_offset() requires this AND the front's.
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
-            logger().info(
-                "Single phase: the front is resolved after {} iteration(s): every front chord "
-                "within the bar (edges max {:.4}x), nothing unmeasurable; front vertices max "
-                "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
-                it + 1,
-                ec.max_edge / ec.bar,
-                ec.max_vertex / ec.bar,
-                amips,
-                bar);
+            if (ec.ring_exit) {
+                logger().info(
+                    "Single phase: the front is resolved after {} iteration(s): every front "
+                    "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; front "
+                    "chords max {:.4}x with {} over the bar (diagnostic); front vertices max "
+                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
+                    it + 1,
+                    ec.ring_name(),
+                    ec.max_ring / ec.bar,
+                    ec.max_edge / ec.bar,
+                    ec.n_edges_over,
+                    ec.max_vertex / ec.bar,
+                    amips,
+                    bar);
+            } else {
+                logger().info(
+                    "Single phase: the front is resolved after {} iteration(s): every front chord "
+                    "within the bar (edges max {:.4}x), nothing unmeasurable; front vertices max "
+                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
+                    it + 1,
+                    ec.max_edge / ec.bar,
+                    ec.max_vertex / ec.bar,
+                    amips,
+                    bar);
+            }
             if (amips >= bar) {
                 logger().info(
                     "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
@@ -4401,32 +4573,70 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         front_ok = ec.converged();
         m_converged = front_ok && m_quality_converged;
         floor_fact = ec.sizing_floor_fact();
-        logger().log(
-            m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- tested (every chord within the bar, nothing unmeasurable): {} "
-            "chords max {:.4}x the bar at the midpoint, {} unmeasurable | diagnostic, not "
-            "tested: {} front vertices max {:.4}x the bar, {} | chords to resolve {} (at the "
-            "sizing floor {}) | front_conv {:.4}, front_conv {:.4} || final quality {}: max "
-            "AMIPS {:.4} vs stop_energy {}{}{}",
-            m_converged ? "Converged" : "Optimization did not converge",
-            m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
-            front_ok ? "resolved" : "NOT resolved",
-            ec.n_edges,
-            ec.max_edge,
-            ec.n_unmeasurable,
-            ec.n_vertices,
-            ec.max_vertex,
-            ec.vertices_ok() ? std::string("all placed")
-                             : fmt::format("{} not placed", ec.n_unplaced),
-            ec.refinable.size(),
-            ec.n_at_floor,
-            m_offset_params.front_conv,
-            ec.tube,
-            m_quality_converged ? "ok" : "OVER",
-            m_quality_max_amips,
-            m_params.stop_energy,
-            floor_fact.empty() ? "" : " || ",
-            floor_fact);
+        if (ec.ring_exit) {
+            // front_measure "vertex_ring": the ring measure is what was tested; the chord and
+            // vertex measures are the diagnostics.
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{}{}: front {} -- tested (every front vertex's {} within the bar, nothing "
+                "unmeasurable): {} rings max {:.4}x the bar, {} rings unmeasurable, {} "
+                "unmeasurable in all | diagnostic, not tested: {} chords max {:.4}x the bar at "
+                "the midpoint, {} chords over the bar; {} front vertices max {:.4}x the bar, {} | "
+                "vertices to resolve {} (at the sizing floor {}) | front_conv {:.4} || final "
+                "quality {}: max AMIPS {:.4} vs stop_energy {}{}{}",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
+                                 : "",
+                front_ok ? "resolved" : "NOT resolved",
+                ec.ring_name(),
+                ec.n_rings,
+                ec.max_ring,
+                ec.n_rings_unmeasurable,
+                ec.n_unmeasurable,
+                ec.n_edges,
+                ec.max_edge,
+                ec.n_edges_over,
+                ec.n_vertices,
+                ec.max_vertex,
+                ec.vertices_ok() ? std::string("all placed")
+                                 : fmt::format("{} not placed", ec.n_unplaced),
+                ec.refinable_vertices.size(),
+                ec.n_rings_at_floor,
+                m_offset_params.front_conv,
+                m_quality_converged ? "ok" : "OVER",
+                m_quality_max_amips,
+                m_params.stop_energy,
+                floor_fact.empty() ? "" : " || ",
+                floor_fact);
+        } else {
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{}{}: front {} -- tested (every chord within the bar, nothing unmeasurable): {} "
+                "chords max {:.4}x the bar at the midpoint, {} unmeasurable | diagnostic, not "
+                "tested: {} front vertices max {:.4}x the bar, {} | chords to resolve {} (at the "
+                "sizing floor {}) | front_conv {:.4}, front_conv {:.4} || final quality {}: max "
+                "AMIPS {:.4} vs stop_energy {}{}{}",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
+                                 : "",
+                front_ok ? "resolved" : "NOT resolved",
+                ec.n_edges,
+                ec.max_edge,
+                ec.n_unmeasurable,
+                ec.n_vertices,
+                ec.max_vertex,
+                ec.vertices_ok() ? std::string("all placed")
+                                 : fmt::format("{} not placed", ec.n_unplaced),
+                ec.refinable.size(),
+                ec.n_at_floor,
+                m_offset_params.front_conv,
+                ec.tube,
+                m_quality_converged ? "ok" : "OVER",
+                m_quality_max_amips,
+                m_params.stop_energy,
+                floor_fact.empty() ? "" : " || ",
+                floor_fact);
+        }
     }
 
     // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
@@ -4470,9 +4680,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
             "Optimization did not converge and throw_on_nonconvergence is set: front {} (every "
-            "chord within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
+            "{} within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
             "stop_energy {}). Ran {} of {} iterations; see the warnings above.{}{}",
             front_ok ? "resolved" : "NOT resolved",
+            m_offset_params.front_measure == "vertex_ring"
+                ? "front vertex's length-weighted ring measure"
+                : "chord",
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy,

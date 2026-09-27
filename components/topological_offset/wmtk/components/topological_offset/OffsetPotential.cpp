@@ -1511,7 +1511,7 @@ double StencilEnergy3D::value(const TVector& xv)
             s += r * r;
             ++n;
         }
-        if (n > 0) E += s / double(n);
+        if (n > 0) E += f.weight * (s / double(n));
     }
     return m_weight * E;
 }
@@ -1534,7 +1534,7 @@ void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
             gf += (2. * sm.a * r) * dr;
             ++n;
         }
-        if (n > 0) g += gf / double(n);
+        if (n > 0) g += f.weight * (gf / double(n));
     }
     gradv = m_weight * g;
 }
@@ -1557,7 +1557,7 @@ void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
             Hf += (2. * sm.a * sm.a) * (dr * dr.transpose());
             ++n;
         }
-        if (n > 0) H += Hf / double(n);
+        if (n > 0) H += f.weight * (Hf / double(n));
     }
     hess = m_weight * H;
 }

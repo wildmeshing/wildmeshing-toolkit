@@ -1044,14 +1044,28 @@ public:
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
     /// THE ops guards' comparison, one implementation for the collapse and the swap guard:
-    /// {before, after}, the largest measure among the elements the operation changes. `before`
-    /// holds the offset faces the operation changes as they are, `after` what replaces them (the
-    /// collapse's relabelled ring, the swap's two new faces); the elements are those faces
-    /// themselves, each measured by face_resolution_or_inf(). See the definition for why the
-    /// guard compares the changed faces and not the vertices around them.
+    /// {before, after}, the largest measure among the elements the operation changes, the
+    /// element being what the exit tests under front_measure. `before` holds the offset faces
+    /// the operation changes as they are, `after` what replaces them (the collapse's relabelled
+    /// ring, the swap's two new faces), `removed` the vertex the operation deletes (-1 none).
+    /// "face": the changed faces themselves, face_resolution_or_inf(). "vertex_ring": every
+    /// corner of a changed face -- the vertices whose rings change -- with vertex_ring_measure()
+    /// over the ring as it is and as it will be. See the definition for why "face" compares the
+    /// changed faces and not the vertices around them.
     std::pair<double, double> ops_guard_measures(
         const std::vector<std::array<size_t, 3>>& before,
-        const std::vector<std::array<size_t, 3>>& after) const;
+        const std::vector<std::array<size_t, 3>>& after,
+        size_t removed) const;
+    /// front_measure "vertex_ring"'s VERTEX measure over a given ring of offset faces --
+    /// energy_criterion()'s ring measure, on faces the caller supplies so the ops guard can
+    /// measure a ring the mesh does not carry yet: over the faces with three front corners,
+    /// sqrt(sum_f A_f r_f^2 / sum_f A_f), r_f = face_conv_ratio(), A_f = ring_face_area(). +inf
+    /// when a face is unmeasurable or the areas sum to zero; -1 when no face has three front
+    /// corners (no ring).
+    double vertex_ring_measure(const std::vector<std::array<size_t, 3>>& ring) const;
+    /// An offset face's area from its current corners: its weight in the ring measure. Read by
+    /// energy_criterion(), vertex_ring_measure() and the debug frames alike.
+    double ring_face_area(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1343,14 +1357,15 @@ public:
     /// The chord twin of face_conv_ratio(): the RMS relative error over the chord's two
     /// endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// THE FACE MEASURE, and the ONE function every reader of it calls: energy_criterion()'s exit
-    /// and refinement, the ops guards through face_resolution_or_inf(), and the debug frames'
-    /// front_err_ratio. As a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
-    /// the face's `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since
-    /// the stencil contains the CORNERS, this one number answers both questions the loop used to
-    /// ask separately -- a face is resolved when it is <= 1, and a vertex is placed when the
-    /// same measure over its own point (front_vertex_conv_ratio(), the order-0 stencil at one
-    /// corner) is <= 1. < 0 when not measurable, i.e. any sample where Phi is not finite.
+    /// THE FACE MEASURE, and the ONE function every reader of it calls: energy_criterion()'s exit,
+    /// refinement and ring measures, the ops guards through face_resolution_or_inf() and
+    /// vertex_ring_measure(), and the debug frames' front_err_ratio and front_ring_ratio. As a
+    /// ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over the face's
+    /// `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since the stencil
+    /// contains the CORNERS, this one number answers both questions the loop used to ask separately
+    /// -- a face is resolved when it is <= 1, and a vertex is placed when the same measure over its
+    /// own point (front_vertex_conv_ratio(), the order-0 stencil at one corner) is <= 1. < 0 when
+    /// not measurable, i.e. any sample where Phi is not finite.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1685,6 +1700,43 @@ public:
             double measure, len;
         };
         std::vector<Refinable> refinable;
+        /// THE RING MEASURE, filled only under front_measure "vertex_ring". At a front vertex v,
+        /// over the offset faces incident to v that the face loop measured (three front corners):
+        ///
+        ///     r_v = sqrt( sum_f A_f face_conv_ratio_f^2 / sum_f A_f )
+        ///
+        /// A_f the face's area from its current corners (ring_face_area()). This is the front
+        /// smoother's own objective at v, normalised by the ring size so that the bar keeps its
+        /// meaning: StencilEnergy3D weights each face's stencil mean by A_f / A_mean
+        /// (StencilEnergy3D::Face::weight), so its value at v over the n_v faces is E_v = w_off
+        /// front_conv_frac()^2 n_v r_v^2. Exact where the face's field (potential_for_edge()) is
+        /// the vertex's (potential_for()), always so with one region, and every stencil sample is
+        /// finite; the smoother's objective also carries the w_amips AMIPS term beside this one.
+        /// Built from the very face_conv_ratio() calls the face loop makes, so both modes judge
+        /// identical face numbers. A vertex with any unmeasurable incident face has no ring
+        /// measure (n_rings_unmeasurable; the face itself is already in n_unmeasurable); a ring of
+        /// zero total area has none either and is counted in n_unmeasurable itself. Why it exists:
+        /// the face exit and refinement are per face, the smoother minimises per vertex ring, and
+        /// the two disagree at the margin -- on the deliverable cube at target_distance_rel 1e-3 /
+        /// front_conv_rel 1e-5 the face exit never fired, turns 12-15 each ending with a handful
+        /// of faces at 1.00x to 1.19x the bar, the smoothing having nudged faces from 0.99x to
+        /// just over the bar while lowering the ring they belong to.
+        bool ring_exit = false; ///< front_measure "vertex_ring"
+        static const char* ring_name() { return "area-weighted ring measure"; }
+        double max_ring = 0., sum_ring = 0.; ///< ratios to the bar (1 = bar)
+        size_t n_rings = 0, n_rings_unmeasurable = 0;
+        size_t worst_ring_vid = static_cast<size_t>(-1);
+        size_t n_rings_over = 0; ///< vertices whose ring measure is over the bar
+        /// The ring-mode refinement: every vertex over the bar whose sizing scalar the halving can
+        /// still lower, handed to refine_front_by_halving() as the vertex alone.
+        std::vector<size_t> refinable_vertices;
+        /// Vertices over the bar whose sizing scalar is already at the floor: nothing can refine
+        /// them, so they block the exit for good. sizing_floor_fact() names them in ring mode.
+        size_t n_rings_at_floor = 0;
+        double max_ring_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_ring_at_floor_pos = Vector3d::Zero();
+        bool rings_ok() const { return max_ring <= bar; }
+        double avg_ring() const { return n_rings ? sum_ring / double(n_rings) : 0.; }
         /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
         /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
         /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
@@ -1706,10 +1758,25 @@ public:
         /// blocks the exit, the loop warning when its corners are at the sizing floor; and a
         /// front vertex over the bar no longer blocks it once every face it is a corner of is
         /// within the bar.
-        bool converged() const { return faces_ok() && n_unmeasurable == 0; }
+        ///
+        /// Under front_measure "vertex_ring" the ring measure takes the face measure's place here:
+        /// every front vertex's ring measure within the bar AND nothing unmeasurable, the face
+        /// measure then reported only. An unmeasurable ring has an unmeasurable face in it or zero
+        /// total area, and n_unmeasurable counts either, so the second half is the same test in
+        /// both modes. In one statement for both: max over front vertices v of the VERTEX measure
+        /// V(v) within the bar, nothing unmeasurable -- under "face" V(v) is the max of the face
+        /// measure over v's offset faces with three front corners, so the max over vertices is
+        /// the max over those faces, faces_ok(); under "vertex_ring" V(v) is the ring measure,
+        /// rings_ok().
+        bool converged() const
+        {
+            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0;
+        }
         /// The n_at_floor faces as one sentence, for the turn's line (a warning when some have
         /// their corners at the sizing floor), the verdict and the throw_on_nonconvergence
-        /// message alike, so all three state the same fact. Empty when n_at_floor is 0.
+        /// message alike, so all three state the same fact. Empty when n_at_floor is 0. Under
+        /// front_measure "vertex_ring" the same three places get the n_rings_at_floor vertices
+        /// instead, empty when there are none.
         std::string sizing_floor_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
         /// Means over the measurable front vertices / offset faces; 0 when there are none.
@@ -1730,7 +1797,9 @@ public:
     /// outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
     /// The same halving at the listed vertices themselves: each lowered once per call, floored,
-    /// then graded. The face form above is this on its faces' corners, in the order given.
+    /// then graded. The face form above is this on its faces' corners, in the order given;
+    /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
+    /// the bar.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way

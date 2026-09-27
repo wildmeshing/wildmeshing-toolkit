@@ -1797,6 +1797,34 @@ public:
             double sag, len;
         };
         std::vector<Refinable> refinable;
+        /// THE RING MEASURE, filled only under front_measure "vertex_ring": the 3D twin's, with
+        /// the front chords in place of the offset faces and length in place of area. At a front
+        /// vertex v, over the front chords incident to v that the chord loop measured (both ends
+        /// front vertices) -- two at a vertex inside the front, one at the end of an open one:
+        ///
+        ///     r_v = sqrt( sum_e L_e edge_conv_ratio_e^2 / sum_e L_e )
+        ///
+        /// L_e the chord's length. A vertex with any unmeasurable incident chord has no ring
+        /// measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable); a ring
+        /// of zero total length has none either and is counted in n_unmeasurable itself. Unlike
+        /// 3D, the front smoother is not weighted to match: its offset term, OffsetEnergy2D, is
+        /// the vertex's own residual and has no per-chord term of the chord measure to weight
+        /// (see phase_b_front_energy()), so the 2D smoother is the same under both values.
+        bool ring_exit = false; ///< front_measure "vertex_ring"
+        static const char* ring_name() { return "length-weighted ring measure"; }
+        double max_ring = 0.; ///< ratio to the bar (1 = bar)
+        size_t n_rings = 0, n_rings_unmeasurable = 0;
+        size_t worst_ring_vid = static_cast<size_t>(-1);
+        size_t n_rings_over = 0; ///< vertices whose ring measure is over the bar
+        /// The ring-mode refinement: every vertex over the bar whose sizing scalar the halving can
+        /// still lower, handed to refine_front_by_halving() as the vertex alone.
+        std::vector<size_t> refinable_vertices;
+        /// Vertices over the bar whose sizing scalar is already at the floor: nothing can refine
+        /// them, so they block the exit for good. sizing_floor_fact() names them in ring mode.
+        size_t n_rings_at_floor = 0;
+        double max_ring_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector2d worst_ring_at_floor_pos = Vector2d::Zero();
+        bool rings_ok() const { return max_ring <= bar; }
         /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
         /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
         /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
@@ -1822,10 +1850,19 @@ public:
         /// implies that nothing is refinable. A chord over the bar that the refinement does not
         /// take (n_at_floor) used to let the run end "converged" and now blocks the exit, the
         /// loop warning when its ends are at the sizing floor.
-        bool converged() const { return edges_ok() && n_unmeasurable == 0; }
+        ///
+        /// Under front_measure "vertex_ring" the ring measure takes the chord measure's place
+        /// here, as in 3D: every front vertex's ring measure within the bar AND nothing
+        /// unmeasurable, the chord measure then reported only.
+        bool converged() const
+        {
+            return (ring_exit ? rings_ok() : edges_ok()) && n_unmeasurable == 0;
+        }
         /// The n_at_floor chords as one sentence, for the turn's line (a warning when some have
         /// their ends at the sizing floor), the verdict and the throw_on_nonconvergence message
-        /// alike, so all three state the same fact. Empty when n_at_floor is 0.
+        /// alike, so all three state the same fact. Empty when n_at_floor is 0. Under
+        /// front_measure "vertex_ring" the same three places get the n_rings_at_floor vertices
+        /// instead, empty when there are none.
         std::string sizing_floor_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
@@ -1844,6 +1881,11 @@ public:
     /// per vertex per call, floored like refine_front_from_sag(), then graded outward. Returns
     /// the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& edges);
+    /// The same halving at the listed vertices themselves: each lowered once per call, floored,
+    /// then graded. The edge form above is this on its edges' ends, in the order given;
+    /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
+    /// the bar. The 3D twin has the same pair.
+    size_t refine_front_by_halving(const std::vector<size_t>& vertices);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

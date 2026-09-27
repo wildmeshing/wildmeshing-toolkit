@@ -504,6 +504,25 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
             if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
             stencil_faces.push_back(std::move(sf));
         }
+        // front_measure "vertex_ring": each face's mean is weighted by A_f / A_mean, the areas
+        // taken at the positions the visit starts from and held fixed for the solve -- weights,
+        // not variables. The error is the surface integral of r^2, so faces vote by area, and the
+        // loop's ring measure weights them the same way: weighting one and not the other would
+        // recreate the mismatch between what the smoother minimises and what the exit tests
+        // (Uday's decision, 2026-09-25). Dividing by the mean keeps the energy's scale at the
+        // vertex that of the unweighted sum. Under "face" every weight stays 1.
+        if (m_offset_params.front_measure == "vertex_ring" && !stencil_faces.empty()) {
+            const Vector3d x = m_vertex_attribute[vid].m_posf;
+            double a_sum = 0.;
+            for (StencilEnergy3D::Face& sf : stencil_faces) {
+                sf.weight = 0.5 * (sf.q1 - x).cross(sf.q2 - x).norm();
+                a_sum += sf.weight;
+            }
+            const double a_mean = a_sum / double(stencil_faces.size());
+            for (StencilEnergy3D::Face& sf : stencil_faces) {
+                sf.weight = a_mean > 0. ? sf.weight / a_mean : 1.;
+            }
+        }
         if (!stencil_faces.empty()) {
             sum->add_energy(
                 std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off));

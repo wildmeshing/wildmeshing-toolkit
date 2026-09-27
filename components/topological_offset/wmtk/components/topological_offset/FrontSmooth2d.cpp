@@ -353,6 +353,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
 {
     const double w_off = 1. - m_params.w_amips;
     auto sum = std::make_shared<optimization::EnergySum>();
+    // The same under both front_measure values. The 3D twin weights its stencil energy by face
+    // area under "vertex_ring", so that the smoother minimises what the ring measure tests; this
+    // offset term is OffsetEnergy2D, the vertex's own residual, with no per-chord term of the
+    // chord measure to weight (the alignment residuals below are per chord, but they measure the
+    // chord's normal, not its sag).
     // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
     sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off, true, true));
     // One alignment residual per incident live front edge. sigma orients the edge's normal

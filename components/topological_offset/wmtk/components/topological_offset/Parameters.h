@@ -125,6 +125,17 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int stencil_order;
+    /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
+    /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
+    /// square of the face measures (face_conv_ratio()) of its incident offset faces weighted by
+    /// area -- in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by
+    /// length. The loop exits when every ring measure is within the bar and nothing is
+    /// unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front
+    /// smoother's stencil energy weights its faces by area the same way
+    /// (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and
+    /// the halving at the corners of every face over it -- the rule of 2026-09-25, kept for
+    /// comparison.
+    std::string front_measure;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -260,6 +271,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
         stencil_order = json_params["stencil_order"];
+        front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
