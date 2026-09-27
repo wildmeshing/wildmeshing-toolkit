@@ -33,6 +33,7 @@
       "sphere_trace_target_rel_tol",
       "EXPERIMENTAL_consistent_construction_split",
       "EXPERIMENTAL_aggresive_refine",
+      "EXPERIMENTAL_nonoverlapping_gates",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -275,6 +276,12 @@
     "default": true,
     "type": "bool",
     "doc": "EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. True (the default) refines EVERY offset face whose RMS relative error is over front_conv, whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test -- when every vertex is placed the gate is vacuous, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_nonoverlapping_gates",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL, default false pending more runs. Separates the two edge-length gates so that a split can never hand the collapse pass its own halves. Both passes measure the same ratio r = L / (l x the mean of the two endpoints' sizing scalars): the split pass fires when r > 4/3 (splitting_l2 = (4/3 l)^2) and the collapse pass offers a candidate when r < 4/5 (collapsing_l2 = (4/5 l)^2). The two windows overlap, so an edge with 4/3 < r < 8/5 is split into two halves of ratio r/2 < 4/5, which the collapse pass in the same turn merges back into the edge that was just split. With this key true, splitting_l2 becomes (8/5 l)^2 -- exactly twice the collapse gate -- and collapsing_l2 is unchanged, so every half a split produces has ratio at or above 4/5 and is never a collapse candidate. Nothing else changes: a split is still never refused on quality, this is a length rule alone. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4 with front_alignment_energy false: 29068 of 35865 split candidates at the end of turn 7 (81%) lay in the 4/3 to 8/5 band, and turns 6, 7 and 8 each performed about 36k splits and 29k collapses while refinement halved the sizing scalar at 0 vertices. With the key on: operations in the last turn 66826 -> 19263, turns 8 -> 7, wall 223 -> 126 s, final max AMIPS 8.69 -> 10.64, front faces 25816 -> 21042, both runs meeting the same convergence test. false, the default, keeps the TetWild gates."
   },
   {
     "pointer": "/check_manifoldness",

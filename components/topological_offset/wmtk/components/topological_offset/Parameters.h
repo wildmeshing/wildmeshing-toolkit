@@ -152,6 +152,20 @@ struct Parameters : public wmtk::OptimizerParameters
     /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
     /// for 40 turns.
     bool experimental_aggresive_refine = true;
+    /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
+    /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
+    /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
+    /// edge with 4/3 < r < 8/5 splits into halves with r/2 < 4/5, which the collapse pass merges
+    /// straight back. With this on, splitting_l2 becomes (8/5 l)^2 -- twice the collapse gate --
+    /// and collapsing_l2 is untouched, so every half a split produces is at or above the collapse
+    /// gate. A split is still never refused on quality; this is a length rule alone. Measured on
+    /// the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, alignment off: 81%
+    /// of the split candidates at the end of turn 7 (29068 of 35865) were inside that band, and
+    /// turns 6-8 each ran ~36k splits and ~29k collapses while refinement touched 0 vertices.
+    /// With it on: last-turn operations 66826 -> 19263, 8 -> 7 turns, 223 -> 126 s, final max
+    /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
+    /// more runs confirm it; false keeps the TetWild gates.
+    bool experimental_nonoverlapping_gates = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -256,6 +270,7 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_consistent_construction_split =
             json_params["EXPERIMENTAL_consistent_construction_split"];
         experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
+        experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
@@ -336,6 +351,14 @@ struct Parameters : public wmtk::OptimizerParameters
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2. It also derives eps from epsr,
         // which the offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
         init_lengths_from_diagonal((max_ - min_).norm());
+
+        // The split gate moved out to twice the collapse gate, so no half a split produces is a
+        // collapse candidate: splitting_l2 = (8/5 l)^2 against collapsing_l2 = (4/5 l)^2, which
+        // is left where it is. The overlapping TetWild gates (4/3 and 4/5), still the default, let
+        // the passes trade the same edges every turn -- see the declaration for the measurement.
+        if (experimental_nonoverlapping_gates) {
+            splitting_l2 = l * l * (64 / 25.);
+        }
 
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
