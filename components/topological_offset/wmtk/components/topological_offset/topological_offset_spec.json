@@ -336,7 +336,7 @@
     "pointer": "/num_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after the ONE combined split+collapse+swap round of the shared optimization loop when interleaved_smoothing is OFF. Not read otherwise: with interleaving on (the default) the count is interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
+    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF, this component's default -- in the 3D single-phase loop since 2026-09-25 (there only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
   },
   {
     "pointer": "/length_rel",
@@ -377,8 +377,8 @@
   {
     "pointer": "/interleaved_smoothing",
     "type": "bool",
-    "default": true,
-    "doc": "Run split, collapse and swap as three separate rounds with smoothing after each, instead of one combined round. TriWild's default."
+    "default": false,
+    "doc": "Run split, collapse and swap as three separate rounds with smoothing after each, instead of one combined round. DEFAULT FALSE in this component (TriWild's and TetWild's default is true), so the default turn is split, collapse, swap back to back, then num_smoothing_passes smoothing passes. Read since 2026-09-25 by the 3D single-phase loop: with it false a turn is one combined split+collapse+swap round followed by ONE smoothing block -- num_smoothing_passes fixed passes, or under adaptive_smoothing passes until the front and the background settle -- instead of three rounds each followed by interleaved_smoothing_passes. Also read by the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike, so the finishing pass takes the same turn shape. Why it exists in the loop: measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing passes per turn only the first after the split moved the front from turn 5 on; the other five never moved a vertex across the bar and cost 63% of the turn. Why false is the default: on the same cube with EXPERIMENTAL_nonoverlapping_gates true and front_alignment_energy false, serial, the combined turn with 2 smoothing passes converged in 7 turns, 85 s, final max AMIPS 8.37, 25358 front faces, against 7 turns, 124 s, max AMIPS 10.64, 21042 front faces with the three interleaved rounds of 2 passes each. 2D's single-phase loop still hard-codes the three interleaved rounds."
   },
   {
     "pointer": "/interleaved_smoothing_passes",
@@ -390,7 +390,7 @@
     "pointer": "/adaptive_smoothing",
     "type": "bool",
     "default": false,
-    "doc": "Single-phase loop only. Run the smoothing after each of the three operation groups (split, collapse, swap) pass by pass until it has converged or stalled, instead of a fixed interleaved_smoothing_passes. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the same Newton-step ratio the turn's criterion tests -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-positive curvature of the objective along the move direction) are counted and left out of the maximum. The offset tube is rebuilt after the group as before, not after each pass."
+    "doc": "Single-phase loop only. Run the smoothing after each operation group pass by pass until it has converged or stalled, instead of a fixed count: in 3D after the one combined group under interleaved_smoothing false (the default) in place of num_smoothing_passes, and after each of the three groups (split, collapse, swap) under true in place of interleaved_smoothing_passes; in 2D always after each of the three. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the same Newton-step ratio the turn's criterion tests -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-positive curvature of the objective along the move direction) are counted and left out of the maximum. The offset tube is rebuilt after the group as before, not after each pass."
   },
   {
     "pointer": "/adaptive_smoothing_max_passes",
@@ -414,7 +414,7 @@
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: in 3D num_smoothing_passes sweeps under interleaved_smoothing false (the default) and interleaved_smoothing_passes under true, in 2D always interleaved_smoothing_passes; or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/flip_sag_margin",

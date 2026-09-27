@@ -4259,10 +4259,39 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // moving front stretches cells by design.
     // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
     // front and the background settle (smooth_group_to_convergence()).
-    const int k = std::max(1, m_params.interleaved_smoothing_passes);
-    const std::array<std::array<int, 4>, 3> groups = {
-        {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
-    static constexpr std::array<const char*, 3> group_names = {{"split", "collapse", "swap"}};
+    // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
+    // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
+    // group -- split, collapse and swap back to back -- followed by one smoothing block of
+    // num_smoothing_passes (or adaptive). Why the switch reaches the loop: measured on the
+    // deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing
+    // passes per turn only the first after the split moved the front from turn 5 on; the other five
+    // never moved a vertex across the bar, moved the background under 2% of its target edge length,
+    // and cost 63% of the turn (43 of 68 s). What the combined group changes, to be measured and
+    // not argued: the plastic rests are stamped once per turn, and the collapse and swap guards
+    // judge a front the split pass has not been placed since.
+    const bool interleaved = m_params.interleaved_smoothing;
+    const int k = std::max(
+        1,
+        interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+    const std::vector<std::array<int, 4>> groups =
+        interleaved
+            ? std::vector<std::array<int, 4>>{{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}
+            : std::vector<std::array<int, 4>>{{{1, 1, 1, k}}};
+    const std::vector<const char*> group_names =
+        interleaved ? std::vector<const char*>{"split", "collapse", "swap"}
+                    : std::vector<const char*>{"ops"};
+    logger().info(
+        "\tTurn shape: {}",
+        interleaved
+            ? fmt::format(
+                  "INTERLEAVED -- split, collapse, swap, each followed by {}",
+                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
+                                                     : fmt::format("{} smoothing pass(es)", k))
+            : fmt::format(
+                  "COMBINED -- split, collapse, swap back to back, then {} (interleaved_smoothing "
+                  "false)",
+                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
+                                                     : fmt::format("{} smoothing pass(es)", k)));
     compute_vertex_partition_morton();
     // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
     // scalars at the end of a turn, and the split pass
@@ -4307,6 +4336,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
+            if (!interleaved) needle_scan("combined ops pass");
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
