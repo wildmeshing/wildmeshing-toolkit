@@ -4298,6 +4298,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         rebuild_offset_envelope();
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
+    m_split_order_waits = 0; // and so are the [split order] lines
+    m_split_off_longest = 0;
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -4388,6 +4390,16 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 op_accounting_report(k));
         }
         op_accounting_reset();
+        // See split_edge_before(): splits that waited for a longer edge, and splits that
+        // committed off the longest edge of an incident tet anyway -- every longer edge was under
+        // the gate, which the order does not forbid. That count is NOT the threads defect: the
+        // halving grades the sizing field, and the serial pass commits the same kind from turn 2
+        // on (cube 1e-2 / 1e-4: 0, 379, 1577, 4573, 10539, 10843, 8298 per turn).
+        logger().info(
+            "\t[split order] turn {}: waited {} | committed off the longest edge {}",
+            it + 1,
+            m_split_order_waits.exchange(0),
+            m_split_off_longest.exchange(0));
         logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
         flip_funnel_reset();
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
@@ -4473,6 +4485,10 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
                 mesh_improvement(a_iters);
+                logger().info(
+                    "\t[split order] final pass: waited {} | committed off the longest edge {}",
+                    m_split_order_waits.exchange(0),
+                    m_split_off_longest.exchange(0));
                 m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 assign_band_regions();

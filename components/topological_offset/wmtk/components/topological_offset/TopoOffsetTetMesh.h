@@ -771,6 +771,22 @@ public:
     /// Splits of an offset-surface edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
+    /// Longest-edge order in the optimization split (see split_edge_before()), counted per turn:
+    /// splits that waited for a strictly longer edge of an incident tet that was over the split
+    /// gate, and committed splits whose edge was not the longest edge of every incident tet.
+    std::atomic<long> m_split_order_waits{0};
+    mutable std::atomic<long> m_split_off_longest{0};
+    /// Whether the split running on this thread is off the longest edge of an incident tet. Set
+    /// by split_edge_before(), counted by op_event() when that split commits.
+    static bool& split_off_longest()
+    {
+        static thread_local bool off = false;
+        return off;
+    }
+    void op_event(OpKind k, OpEvent e) const override;
+    /// The shared split pass's gate: TetOptimizerMesh::split_all_edges's is_weight_up_to_date
+    /// without its staleness test.
+    bool split_edge_is_due(const Tuple& e) const;
 
     /// What the shared split has to carry across for the offset: the region tag of each parent
     /// tet, keyed by the edge opposite the split one, and which surfaces the edge was on.
