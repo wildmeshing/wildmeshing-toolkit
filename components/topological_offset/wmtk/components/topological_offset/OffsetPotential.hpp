@@ -66,7 +66,8 @@ public:
      * and 1/delta-ish for a barrier. The |grad Phi| ~ slope step is local to the level set on a
      * flat stretch, not an identity.
      *
-     * See TopoOffsetTetMesh::offset_gradient_tolerance(), which is the only consumer.
+     * Consumers: OffsetEnergy's distance_residual branch, and offset_residual_tolerance() in
+     * TopoOffsetTetMesh and TopoOffsetTriMesh.
      */
     double level_set_slope() const { return m_grad_ref; }
 
@@ -141,15 +142,22 @@ using OffsetPotential3D = OffsetPotential<3>;
  * What Phi is: the offset geometric contact potential of ipc-toolkit's `high_order_contact`
  * subtree, evaluated at a point q against the input complex,
  *
- *     Phi(q) = sum over active primitives P of  b( dist(q, P), dhat )
+ *     Phi(q) = sum over primitives P of  s_P * b( dist(q, P), dhat )
  *     b(d, dhat) = -(d/dhat - 1)^2 * log(d/dhat)   for d < dhat, 0 otherwise
  *
- * (`ipc::NormalizedClampedLogBarrier`). "Active" is the OGC feasible-region rule: a triangle is
- * active at q when q projects into its interior, an edge when q projects into its interior and
- * lies outside the wedges its incident triangles claim, a vertex when q lies in its Voronoi
- * region. Away from features exactly one primitive contributes and Phi is a monotone function of
- * the Euclidean distance alone; at a reentrant feature several contribute, their barriers add,
- * and the level set bulges outward. So Phi = c is a smoothed offset, not the Euclidean one, and
+ * (`ipc::NormalizedClampedLogBarrier`). Two sums, split by what each is defined on (see build()).
+ * The triangles of the complex in 3D, and its segments in 2D, go to ipc's ArbitraryPointPotential
+ * (ESP), an inclusion-exclusion sum -- faces +1, edges -1, vertices +1 in 3D; segments +1,
+ * vertices -1 in 2D -- which on a closed surface nets exactly one b(d) wherever a single feature
+ * is closest. Segments in no triangle, the rim edges of an open sheet, isolated points and the
+ * open ends of a curve go to the OGC vertex builder, which weights each active primitive +1 by
+ * the OGC feasible-region rule. On a closed convex input Phi is therefore b of the Euclidean
+ * distance (bitwise on the cube) and the level set is the Euclidean offset. Where two walls are
+ * both within dhat of q -- a reentrant edge, a gap narrower than (1 + dhat_factor) delta -- both
+ * terms survive, Phi is larger and the level set moves outward. Measured in 3D at delta 0.1,
+ * dhat_factor 2: a 90-degree reentrant edge rounds to a fillet reaching 1.175 delta; two faces
+ * 2.5 delta apart hold their level sets at 1.041 delta; gaps up to 2.36 delta close, against
+ * 2 delta for the Euclidean offset. So Phi = c is a smoothed offset, not the Euclidean one, and
  * that difference is deliberate; the Euclidean distance is still reported as a diagnostic.
  *
  * Calibration: `c` is not a free parameter. It is Phi at perpendicular distance delta from one
@@ -444,18 +452,8 @@ private:
     double m_weight;
     bool m_gauss_newton;
     bool m_distance_residual;
-    /// The signed distance s from p to the level set along the field's normal n at p (n points
-    /// toward the input; s > 0: the level set lies outward of p). Safeguarded Newton. false
-    /// when no root brackets within 2 dhat, e.g. outside the support.
-    bool root_distance(const VecD& p, double& s, VecD& n) const;
-    /// r and its gradient under either residual (see the constructor). The last point's
-    /// answer is cached: value, gradient and Hessian are asked at the same x in one iteration.
+    /// r and its gradient under either residual (see the constructor).
     void residual(const VecD& p, double& r, VecD& dr) const;
-    mutable double m_last_root = 0.; ///< warm start for root_distance(), see there
-    mutable bool m_cache_valid = false;
-    mutable VecD m_cache_p;
-    mutable double m_cache_r = 0.;
-    mutable VecD m_cache_dr;
 };
 
 using OffsetEnergy2D = OffsetEnergy<2>;
@@ -592,8 +590,7 @@ private:
  * r IS THE PLAIN RELATIVE ERROR (Phi - c)/c, which for the euclidean field is exactly
  * (d - target_distance)/target_distance -- the same residual OffsetEnergy3D uses there. For the
  * SMOOTH field OffsetEnergy3D instead divides by g_ref * delta to get a monotone length; this
- * class does not, so under `offset_field: "smooth"` the two are scaled differently. Euclidean is
- * the default and the only field these runs use.
+ * class does not, so under `offset_field: "smooth"` the two are scaled differently.
  *
  * NOTE THE PER-FACE MEAN, SUMMED OVER FACES, with no area weighting: a vertex with V incident
  * faces contributes its own r(x)^2 with coefficient V/N_s, since it is a stencil point of every
