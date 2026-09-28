@@ -13,5 +13,6 @@ var searchData=
   ['exact_5fenvelope_10',['exact_envelope',['../classwmtk_1_1_sample_envelope.html#a236b0a02e557cd600ee1e26b1f376ca1',1,'wmtk::SampleEnvelope']]],
   ['exact_5fenvelope_5f2d_11',['exact_envelope_2d',['../classwmtk_1_1_sample_envelope.html#a7286c0f3b39e115452de7a5920db1adb',1,'wmtk::SampleEnvelope']]],
   ['experimental_5faggresive_5frefine_12',['experimental_aggresive_refine',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a46065c1c7d95257ca220b85fa52d1328',1,'wmtk::components::topological_offset::Parameters']]],
-  ['experimental_5fconsistent_5fconstruction_5fsplit_13',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]]
+  ['experimental_5fconsistent_5fconstruction_5fsplit_13',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]],
+  ['experimental_5fnonoverlapping_5fgates_14',['experimental_nonoverlapping_gates',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a7c0c3bd35a940e09c3739f62e1c9ac89',1,'wmtk::components::topological_offset::Parameters']]]
 ];

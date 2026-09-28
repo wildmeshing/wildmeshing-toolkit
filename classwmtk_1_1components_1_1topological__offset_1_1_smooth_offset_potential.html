@@ -132,8 +132,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8740e2bc960914bb5e8cd2ada0e02ce5" id="r_a8740e2bc960914bb5e8cd2ada0e02ce5"><td class="memItemLeft" align="right" valign="top">MatD&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a8740e2bc960914bb5e8cd2ada0e02ce5">hessian</a> (const VecD &amp;p) const override</td></tr>
 <tr class="separator:a8740e2bc960914bb5e8cd2ada0e02ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad939170942b99e593b1edc167264c610" id="r_ad939170942b99e593b1edc167264c610"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610">residual_length</a> (const VecD &amp;p) const override</td></tr>
-<tr class="memdesc:ad939170942b99e593b1edc167264c610"><td class="mdescLeft">&#160;</td><td class="mdescRight">First-order distance from <code>p</code> to the level set Phi = c, in length units.  <br /></td></tr>
+<tr class="memdesc:ad939170942b99e593b1edc167264c610"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from <code>p</code> to the level set Phi = c ALONG THE FIELD, in length units.  <br /></td></tr>
 <tr class="separator:ad939170942b99e593b1edc167264c610"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab34550c47091187950ad4ab22b26872b" id="r_ab34550c47091187950ad4ab22b26872b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ab34550c47091187950ad4ab22b26872b">relative_residual</a> (const VecD &amp;p) const override</td></tr>
+<tr class="memdesc:ab34550c47091187950ad4ab22b26872b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same root, signed and over delta: t / delta, &gt; 0 outside the offset region. NaN where <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610" title="The distance from p to the level set Phi = c ALONG THE FIELD, in length units.">residual_length()</a> is infinite.  <br /></td></tr>
+<tr class="separator:ab34550c47091187950ad4ab22b26872b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6253e69174b232ccaeef3791331db329" id="r_a6253e69174b232ccaeef3791331db329"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a6253e69174b232ccaeef3791331db329">within_support</a> (const VecD &amp;p) const override</td></tr>
 <tr class="memdesc:a6253e69174b232ccaeef3791331db329"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <code>p</code> is inside the support at all, i.e. Phi(p) &gt; 0.  <br /></td></tr>
 <tr class="separator:a6253e69174b232ccaeef3791331db329"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,6 +172,12 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a6a8b6d788a1dfda39e0f93314c0151ef" id="r_a6a8b6d788a1dfda39e0f93314c0151ef"><td class="memItemLeft" align="right" valign="top"><a id="a6a8b6d788a1dfda39e0f93314c0151ef" name="a6a8b6d788a1dfda39e0f93314c0151ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>build</b> (const MatrixXd &amp;V, const MatrixXi &amp;E, const MatrixXi &amp;F, const std::vector&lt; int &gt; &amp;P)</td></tr>
 <tr class="separator:a6a8b6d788a1dfda39e0f93314c0151ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4eba6921f83e98290c017be424deceec" id="r_a4eba6921f83e98290c017be424deceec"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a4eba6921f83e98290c017be424deceec">level_set_distance</a> (const VecD &amp;p, double &amp;t) const</td></tr>
+<tr class="separator:a4eba6921f83e98290c017be424deceec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adef4639dbee0502f137fff759f84eb8b" id="r_adef4639dbee0502f137fff759f84eb8b"><td class="memItemLeft" align="right" valign="top"><a id="adef4639dbee0502f137fff759f84eb8b" name="adef4639dbee0502f137fff759f84eb8b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>value_gradient</b> (const VecD &amp;p, double &amp;v, VecD &amp;g) const</td></tr>
+<tr class="memdesc:adef4639dbee0502f137fff759f84eb8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">value() and gradient() at p from one collision build per part; see the definition. <br /></td></tr>
+<tr class="separator:adef4639dbee0502f137fff759f84eb8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -442,6 +451,78 @@ template&lt;int DIM&gt; </div>
 
 </div>
 </div>
+<a id="a4eba6921f83e98290c017be424deceec" name="a4eba6921f83e98290c017be424deceec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4eba6921f83e98290c017be424deceec">&#9670;&#160;</a></span>level_set_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int DIM&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html">wmtk::components::topological_offset::SmoothOffsetPotential</a>&lt; DIM &gt;::level_set_distance </td>
+          <td>(</td>
+          <td class="paramtype">const VecD &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double &amp;&#160;</td>
+          <td class="paramname"><em>t</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The signed distance t from p to the level set along the field (&gt; 0 outside the offset region), or false where there is none to measure. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610" title="The distance from p to the level set Phi = c ALONG THE FIELD, in length units.">residual_length()</a> is |t|, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ab34550c47091187950ad4ab22b26872b" title="The same root, signed and over delta: t / delta, &gt; 0 outside the offset region. NaN where residual_le...">relative_residual()</a> t / delta. </p>
+
+</div>
+</div>
+<a id="ab34550c47091187950ad4ab22b26872b" name="ab34550c47091187950ad4ab22b26872b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab34550c47091187950ad4ab22b26872b">&#9670;&#160;</a></span>relative_residual()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int DIM&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html">wmtk::components::topological_offset::SmoothOffsetPotential</a>&lt; DIM &gt;::relative_residual </td>
+          <td>(</td>
+          <td class="paramtype">const VecD &amp;&#160;</td>
+          <td class="paramname"><em>p</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The same root, signed and over delta: t / delta, &gt; 0 outside the offset region. NaN where <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610" title="The distance from p to the level set Phi = c ALONG THE FIELD, in length units.">residual_length()</a> is infinite. </p>
+<p>NOT the relative field error (Phi - c)/c, which the 3D loop measured before 2026-09-27 and which is a length only for a field linear in the distance. For this one it is the length error times the logarithmic slope delta |dPhi/dd| / c at the level set, which for b(d) = -(d/dhat - 1)^2 ln(d/dhat) is 2/(k - 1) + 1/ln k with k = dhat/delta: 3.4427 at the default k = 2, 6.47 at k = 1.5, 1.91 at k = 3, unbounded as k -&gt; 1. Measured on the cube (target_distance_rel 1e-2, front_conv_rel 1e-4, 10 threads): (Phi - c)/c over the true relative distance error was 3.443 on every flat side, rounded edge and corner at convergence (the regional 3.4 / 3.3 / 3.1 of turns 1 to 4 are the same factor at vertices several bars off the level set, where b is visibly curved), and since the sag goes as h^2 that cost one extra halving: 9 turns and 80054 front faces against the Euclidean field's 7 and 25006 on the same offset surface. </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ab84f3ba86c3161f1635f8728088472e8">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
+
+</div>
+</div>
 <a id="ad939170942b99e593b1edc167264c610" name="ad939170942b99e593b1edc167264c610"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad939170942b99e593b1edc167264c610">&#9670;&#160;</a></span>residual_length()</h2>
 
@@ -468,8 +549,8 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>First-order distance from <code>p</code> to the level set Phi = c, in length units. </p>
-<p>|Phi(p) - c| over the level-set slope, comparable to target_distance while Phi itself is not. Saturates outside the support, where there is no direction to the level set; the runaway guard turns that state into a hard error before this number decides anything. </p>
+<p>The distance from <code>p</code> to the level set Phi = c ALONG THE FIELD, in length units. </p>
+<p>|t| for the root t of Phi(p + t n) = c nearest p along n = grad Phi(p) / |grad Phi(p)|, on p's own side of the complex. No calibration constant and no reference geometry enter: it is a distance in the field's own geometry, and where Phi is a function of the Euclidean distance alone (one active pair) it is exactly |d - delta|. +infinity where it cannot be measured &ndash; outside the support (Phi = 0, no direction), on the complex (Phi infinite), where grad Phi vanishes, or where no root lies along n within dhat. The runaway guard turns the first of those into a hard error before this number decides anything. See the definition for the search and its tolerance. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#a794b135d890c826edf6acc2bb139029c">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
 

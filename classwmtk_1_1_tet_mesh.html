@@ -121,6 +121,41 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:af7017cfb156f28856045b90b6d86e921" id="r_af7017cfb156f28856045b90b6d86e921"><td class="memItemLeft" align="right" valign="top"><a id="af7017cfb156f28856045b90b6d86e921" name="af7017cfb156f28856045b90b6d86e921"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>OpKind</b> : int { <br />
+&#160;&#160;<b>split</b>
+, <b>collapse</b>
+, <b>swap_32</b>
+, <b>swap_44</b>
+, <br />
+&#160;&#160;<b>swap_56</b>
+, <b>swap_face</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:af7017cfb156f28856045b90b6d86e921"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e46b40b2ae938c410e66bceea9a86c7" id="r_a3e46b40b2ae938c410e66bceea9a86c7"><td class="memItemLeft" align="right" valign="top"><a id="a3e46b40b2ae938c410e66bceea9a86c7" name="a3e46b40b2ae938c410e66bceea9a86c7"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>OpEvent</b> : int { <br />
+&#160;&#160;<b>attempt</b>
+, <b>before_hook</b>
+, <b>link_condition</b>
+, <b>no_return_tet</b>
+, <br />
+&#160;&#160;<b>duplicate_tet</b>
+, <b>topology</b>
+, <b>valence</b>
+, <b>boundary</b>
+, <br />
+&#160;&#160;<b>exists</b>
+, <b>no_case_allowed</b>
+, <b>no_better_case</b>
+, <b>out_of_slots</b>
+, <br />
+&#160;&#160;<b>after_hook</b>
+, <b>invariants</b>
+, <b>committed</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:a3e46b40b2ae938c410e66bceea9a86c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1" id="r_a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplParams" colspan="2"><a id="a2800e82bb0cb3288c8cefb78b2f834e1" name="a2800e82bb0cb3288c8cefb78b2f834e1"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
@@ -238,6 +273,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capa
 <tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top"><a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:a2f91416a429a4b8f8d0ece88b460b520"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0058d055bf72ffb80c9d96f5712657e5" id="r_a0058d055bf72ffb80c9d96f5712657e5"><td class="memItemLeft" align="right" valign="top"><a id="a0058d055bf72ffb80c9d96f5712657e5" name="a0058d055bf72ffb80c9d96f5712657e5"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>op_event</b> (OpKind, OpEvent) const</td></tr>
+<tr class="separator:a0058d055bf72ffb80c9d96f5712657e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7be77488a271ea6a30b60528bccc5a62" id="r_a7be77488a271ea6a30b60528bccc5a62"><td class="memItemLeft" align="right" valign="top"><a id="a7be77488a271ea6a30b60528bccc5a62" name="a7be77488a271ea6a30b60528bccc5a62"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>op_refused</b> (const OpKind k, const OpEvent e) const</td></tr>
+<tr class="memdesc:a7be77488a271ea6a30b60528bccc5a62"><td class="mdescLeft">&#160;</td><td class="mdescRight">op_event() for a refusal, returning false so a site reads <code>return op_refused(...)</code>. <br /></td></tr>
+<tr class="separator:a7be77488a271ea6a30b60528bccc5a62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
 <tr class="separator:a994201bc6b9c05cca284e544228bffc3"><td class="memSeparator" colspan="2">&#160;</td></tr>

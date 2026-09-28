@@ -132,6 +132,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a05cc4a881fef1eeb958fc14c9c2155f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f8e10b7bde98550594ce94f587ecf2" id="r_ae7f8e10b7bde98550594ce94f587ecf2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html#ae7f8e10b7bde98550594ce94f587ecf2">residual_length</a> (const VecD &amp;p) const override</td></tr>
 <tr class="separator:ae7f8e10b7bde98550594ce94f587ecf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2622f09aa8eb30137abcee0f075eda35" id="r_a2622f09aa8eb30137abcee0f075eda35"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html#a2622f09aa8eb30137abcee0f075eda35">relative_residual</a> (const VecD &amp;p) const override</td></tr>
+<tr class="separator:a2622f09aa8eb30137abcee0f075eda35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5ab1551ee667dbf154b748f66576e97" id="r_ac5ab1551ee667dbf154b748f66576e97"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html#ac5ab1551ee667dbf154b748f66576e97">within_support</a> (const VecD &amp;p) const override</td></tr>
 <tr class="memdesc:ac5ab1551ee667dbf154b748f66576e97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Everywhere. d has no compact support.  <br /></td></tr>
 <tr class="separator:ac5ab1551ee667dbf154b748f66576e97"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -469,6 +471,37 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 <p>The foot point, feature kind and direction at <code>p</code>, with the degenerate-segment demotion already applied. dim is 2 (face interior), 1 (edge interior) or 0 (vertex). </p>
+
+</div>
+</div>
+<a id="a2622f09aa8eb30137abcee0f075eda35" name="a2622f09aa8eb30137abcee0f075eda35"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2622f09aa8eb30137abcee0f075eda35">&#9670;&#160;</a></span>relative_residual()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int DIM&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html">wmtk::components::topological_offset::EuclideanOffsetPotential</a>&lt; DIM &gt;::relative_residual </td>
+          <td>(</td>
+          <td class="paramtype">const VecD &amp;&#160;</td>
+          <td class="paramname"><em>p</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>(d - delta)/delta: value() is d / delta and the level is 1, so the relative field error is already the relative distance error. Written as the (value - c)/c the 3D loop formed itself before it asked the field, so the Euclidean path computes what it always did, bit for bit. </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ab84f3ba86c3161f1635f8728088472e8">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
 
 </div>
 </div>

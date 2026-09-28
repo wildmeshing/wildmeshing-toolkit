@@ -526,6 +526,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stamp_plastic_rests</
 <tr class="separator:a2aafc5fa40cbf1db6fd044fcf5c3324d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23e5cfd9a644120025db5d5d387a9f33" id="r_a23e5cfd9a644120025db5d5d387a9f33"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a23e5cfd9a644120025db5d5d387a9f33">refine_front_by_halving</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;edges)</td></tr>
 <tr class="separator:a23e5cfd9a644120025db5d5d387a9f33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9115b3b444ff02210650e7012f7840d9" id="r_a9115b3b444ff02210650e7012f7840d9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a9115b3b444ff02210650e7012f7840d9">refine_front_by_halving</a> (const std::vector&lt; size_t &gt; &amp;vertices)</td></tr>
+<tr class="separator:a9115b3b444ff02210650e7012f7840d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae549ef7a2286c785a79440cf3c0650b7" id="r_ae549ef7a2286c785a79440cf3c0650b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae549ef7a2286c785a79440cf3c0650b7">grade_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
 <tr class="separator:ae549ef7a2286c785a79440cf3c0650b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace428e3af19fb32cb4a3fffba1bd28e9" id="r_ace428e3af19fb32cb4a3fffba1bd28e9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ace428e3af19fb32cb4a3fffba1bd28e9">grade_sizing_by_distance</a> (const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
@@ -2838,8 +2840,8 @@ template&lt;typename Visit &gt; </div>
 </div><div class="memdoc">
 
 <p>THE definition of "placed" for a vertex on the offset surface. </p>
-<p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio()</a>: the loop's vertex test (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">EnergyCriterion::vertices_ok()</a>), the endpoint qualification of the chord-sag classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
-<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within the convergence epsilon) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using distance while the rest used stationarity &ndash; not the use of distance. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
+<p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio()</a>: the vertex measure the loop reports (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">EnergyCriterion::vertices_ok()</a>, a diagnostic since 2026-09-25 &ndash; the loop exits on the chord measure), the endpoint qualification of the chord-sag classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
+<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within the convergence epsilon) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to the exit test of the time (converged_single(), removed 2026-09-25). * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using distance while the rest used stationarity &ndash; not the use of distance. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
 <p>The caller has established that vid is a live front vertex (m_is_on_offset &amp;&amp; m_is_rounded); this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed. </p>
 
 </div>
@@ -3818,7 +3820,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </div>
 </div>
 <a id="a23e5cfd9a644120025db5d5d387a9f33" name="a23e5cfd9a644120025db5d5d387a9f33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a23e5cfd9a644120025db5d5d387a9f33">&#9670;&#160;</a></span>refine_front_by_halving()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a23e5cfd9a644120025db5d5d387a9f33">&#9670;&#160;</a></span>refine_front_by_halving() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3833,6 +3835,25 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>THE refinement: halve the sizing scalar at the ends of every refinable edge, once per vertex per call, floored like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2aafc5fa40cbf1db6fd044fcf5c3324d">refine_front_from_sag()</a>, then graded outward. Returns the number of vertices lowered. </p>
+
+</div>
+</div>
+<a id="a9115b3b444ff02210650e7012f7840d9" name="a9115b3b444ff02210650e7012f7840d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9115b3b444ff02210650e7012f7840d9">&#9670;&#160;</a></span>refine_front_by_halving() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTriMesh::refine_front_by_halving </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertices</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The same halving at the listed vertices themselves: each lowered once per call, floored, then graded. The edge form above is this on its edges' ends, in the order given; front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over the bar. The 3D twin has the same pair. </p>
 
 </div>
 </div>
@@ -5234,7 +5255,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The run's verdict: the front placed AND the final quality under stop_energy. Read by the report and by throw_on_nonconvergence. </p>
+<p>The run's verdict: the front resolved (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a28b95e8edfec1e2edaff33bb39dd6e45">EnergyCriterion::converged()</a>: every front chord's measure within the bar, nothing unmeasurable) AND the final quality under stop_energy. Read by the report and by throw_on_nonconvergence. </p>
 
 </div>
 </div>
@@ -5634,7 +5655,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The finishing-pass half of the verdict: max AMIPS &lt; stop_energy once the front is placed, after the final pass when one ran. True when no pass was needed; false when the pass ended still over. m_quality_max_amips is the value it was judged on. </p>
+<p>The finishing-pass half of the verdict: max AMIPS &lt; stop_energy once the front is resolved, after the final pass when one ran. True when no pass was needed; false when the pass ended still over. m_quality_max_amips is the value it was judged on. </p>
 
 </div>
 </div>
