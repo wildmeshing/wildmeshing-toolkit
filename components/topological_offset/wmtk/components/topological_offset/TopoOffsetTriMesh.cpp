@@ -1517,7 +1517,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     //                         offset_field is and whichever region the vertex belongs to, and
     //                         target_distance is what it should equal. For the smooth field it is
     //                         the only Euclidean number on the frame -- residual_length() there is
-    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         the length to the smooth level set, not to the complex. -2 before the
     //                         BVH exists (the construction frames written ahead of it).
     //
     // Together they separate "placed" from "stationary but wrong": on the medial axis of the

@@ -2816,7 +2816,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
         // gn is the vertex's convergence measure over the one bar; rho the
-        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // length residual_length(), its actual distance to the level set. rho is
         // reported and gates measurability, NOT placement: front_vertex_placed() is the one
         // notion, and it reads gn. See the declaration for what qualifying the sag test's corners
         // by rho instead used to cost.
@@ -3076,7 +3076,8 @@ double TopoOffsetTetMesh::phase_b_front_gradient_linf()
 double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
 {
     // THE measure at one point, against THE bar: the vertex's own relative error
-    // |Phi(x) - c| / c over front_conv_frac(). This is face_conv_ratio()'s order-0 stencil
+    // |relative_residual(x)| over front_conv_frac(), i.e. its distance to the level set along the
+    // field over front_conv (see face_conv_ratio()). This is face_conv_ratio()'s order-0 stencil
     // evaluated at a single corner, which is what makes the vertex test and the face test one
     // test rather than two.
     //
@@ -3088,11 +3089,11 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     const OffsetPotential3D& pot = potential_for(vid);
     const double level = pot.target_level();
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
-    const double v = pot.value(m_vertex_attribute[vid].m_posf);
-    if (!std::isfinite(v)) return std::numeric_limits<double>::infinity();
+    const double r = pot.relative_residual(m_vertex_attribute[vid].m_posf);
+    if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
     const double bar = m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
-    return std::abs((v - level) / level) / bar;
+    return std::abs(r) / bar;
 }
 
 bool TopoOffsetTetMesh::front_vertex_placed(const size_t vid) const
@@ -3113,9 +3114,8 @@ double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
     const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
     double sum = 0.;
     for (const Vector3d& q : {pa, pb, Vector3d(0.5 * (pa + pb))}) {
-        const double vq = pot.value(q);
-        if (!std::isfinite(vq)) return -1.;
-        const double r = (vq - level) / level;
+        const double r = pot.relative_residual(q);
+        if (!std::isfinite(r)) return -1.;
         sum += r * r;
     }
     const double bar = m_offset_params.front_conv_frac();
@@ -3130,7 +3130,8 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     //
     // At every stencil point q of for_each_face_sample():
     //
-    //     r(q) = (Phi(q) - c) / c
+    //     r(q) = pot.relative_residual(q) = (signed distance from q to the level set, along the
+    //            field) / target_distance
     //
     // and the face's number is sqrt(mean of r^2) / front_conv_frac(). Equivalently, and this is
     // the form the instruction states, the MEAN SQUARED relative error is compared against
@@ -3149,6 +3150,16 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     // is |d - delta| / front_conv in lengths, which is what the old residual_error criterion
     // measured at a vertex.
     //
+    // WHY THE FIELD IS ASKED, not (Phi(q) - c)/c formed here. That relative FIELD error is the
+    // relative distance error only for a field linear in the distance, as the euclidean one is.
+    // For the smooth field it is the distance error times delta |dPhi/dd| / c = 3.44 at the
+    // default offset_dhat_factor 2, so every face and vertex read 3.44x its real error: on the
+    // cube at target_distance_rel 1e-2 / front_conv_rel 1e-4 that bought an extra halving -- 9
+    // turns, 80054 front faces and 477 s against the euclidean field's 7 turns, 25006 faces and
+    // 75 s on the same offset surface. relative_residual() is the distance to the level set
+    // along the field over target_distance for both fields, and for the euclidean one it is
+    // still (value - c)/c, so that path is unchanged bit for bit.
+    //
     // The face's field is its band cell's, the same selection as its edges'.
     const OffsetPotential3D& pot = potential_for_edge(a, b);
     const double level = pot.target_level();
@@ -3161,12 +3172,11 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     bool unmeasurable = false;
     for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double, double, double) {
         if (unmeasurable) return;
-        const double vq = pot.value(q);
-        if (!std::isfinite(vq)) {
+        const double r = pot.relative_residual(q);
+        if (!std::isfinite(r)) {
             unmeasurable = true;
             return;
         }
-        const double r = (vq - level) / level;
         sum += r * r;
         ++n;
     });

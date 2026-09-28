@@ -61,7 +61,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // cannot decide anything.
     //
     // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
-    // the field's relative error (Phi - c)/c, expressed as a length -- and compares it against
+    // the distance to the level set along the field (OffsetPotential::relative_residual(), which
+    // for the euclidean field is the relative error (Phi - c)/c) -- and compares it against
     // this. A vertex is placed when that same measure at the vertex alone is within it, which is
     // the order-0 stencil, so the vertex measure and the face measure are one measure at two
     // sample counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23. The
@@ -72,7 +73,7 @@ struct Parameters : public wmtk::OptimizerParameters
     double front_conv_rel;
 
     /// The convergence epsilon as a FRACTION of target_distance, which is the form the
-    /// dimensionless relative error (Phi - c)/c is compared against. A mean of squared relative
+    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A mean of squared relative
     /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
     /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
     /// code uses is a matter of where the division sits, not of what is being asked. 2D's
@@ -89,7 +90,8 @@ struct Parameters : public wmtk::OptimizerParameters
     //     once on the band as constructed.
     //   "residual_error": not a stationarity measure at all -- the field's own residual at the
     //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the ENERGY residual for the smooth one), against front_conv.
+    //     the euclidean field and the distance to the level set along the field for the smooth
+    //     one), against front_conv.
     //     No objective is built and n does not enter.
     //
     // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is

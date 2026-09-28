@@ -1798,18 +1798,20 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
-    //                         |Phi - c| / c over the relative bar -- face_conv_ratio()'s measure
-    //                         at the vertex alone; for the euclidean field |d - target_distance|
-    //                         / front_conv. <= 1 reads as "placed". The loop reports it and no
+    //                         |relative_residual()| over the relative bar -- face_conv_ratio()'s
+    //                         measure at the vertex alone, its distance to the level set along
+    //                         the field over front_conv (for the euclidean field |d -
+    //                         target_distance| / front_conv). <= 1 reads as "placed". The loop reports it and no
     //                         longer exits on it: since 2026-09-25 the exit tests the face
     //                         measure alone (EnergyCriterion::converged()).
     //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
     //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
     //                         tested by the loop -- front_conv_ratio is the per-vertex measure it
-    //                         reports -- but under offset_field "euclidean" the two are the same
-    //                         number, since there the residual is exactly |d - target_distance|.
-    //                         They part company under "smooth", where residual_length() is a
-    //                         barrier-value residual and front_conv_ratio is (Phi - c)/c.
+    //                         reports -- and the two are the same number under both fields, up to
+    //                         rounding: the distance to the level set along the field over the
+    //                         bar. Until 2026-09-27 they parted company under "smooth", where
+    //                         front_conv_ratio was the relative FIELD error (Phi - c)/c and read
+    //                         3.44x this one (see SmoothOffsetPotential::relative_residual()).
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
     //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
@@ -1818,7 +1820,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                         offset_field is and whichever region the vertex belongs to, and
     //                         target_distance is what it should equal. For the smooth field it is
     //                         the only Euclidean number on the frame -- residual_length() there is
-    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         the length to the smooth level set, not to the complex. -2 before the
     //                         BVH exists (the construction frames written ahead of it).
     //
     // Together they separate "placed" from "stationary but wrong": where the field gives the
@@ -1980,7 +1982,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         // frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
         //   front_err_ratio  face_conv_ratio(): the RMS over the face's stencil_order stencil of
-        //                    the field's relative error (Phi - c)/c, over the one bar front_conv.
+        //                    relative_residual() -- the distance to the level set along the field
+        //                    over target_distance -- over the one bar as a fraction of it.
         //                    > 1 is what makes a face refinable, and the same number at 1 point
         //                    is what makes a vertex placed. -1 unmeasurable, including a face
         //                    with a corner that is not a front vertex. Measured under the same

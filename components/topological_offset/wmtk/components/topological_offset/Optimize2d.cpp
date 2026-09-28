@@ -2561,7 +2561,7 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
         // gn is the vertex's convergence measure over its bar, per front_conv_criterion; rho the
-        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // length residual_length(), its actual distance to the level set. rho is
         // reported and gates measurability, NOT placement: front_vertex_placed() is the one
         // notion, and it reads gn. See the declaration for what qualifying the sag test's
         // endpoints by rho instead used to cost.

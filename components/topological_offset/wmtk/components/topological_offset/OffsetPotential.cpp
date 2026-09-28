@@ -701,15 +701,222 @@ std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 
 
 template <int DIM>
+void SmoothOffsetPotential<DIM>::value_gradient(const VecD& p, double& v, VecD& g) const
+{
+    // value() and gradient() from ONE collision build per part: the build, not the per-pair
+    // barrier evaluation, dominates an evaluation's cost (ipc's ArbitraryPointPotential::evaluate()
+    // says so; measured on the cube, value 1.07 us, gradient 1.11 us, value+gradient+Hessian
+    // 1.06 us), and level_set_distance() needs both at its start. Same sums in the same order as
+    // value() and gradient().
+    v = 0.;
+    g.setZero();
+    if (m_impl->esp) {
+        const auto [ev, eg, eh] = m_impl->esp->evaluate(m_impl->V_complex, esp_query<DIM>(p));
+        v += ev;
+        g += eg;
+    }
+    auto& s = m_impl->scratch.local();
+    const auto dict = m_impl->collisions(p, s);
+    if (!dict) return;
+    Eigen::VectorXd gg;
+    if constexpr (DIM == 2) {
+        v += ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
+        gg = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
+    } else {
+        v += ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
+        gg =
+            ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_with_cached_collisions(
+                s.V,
+                *dict,
+                m_impl->params,
+                nullptr);
+    }
+    g += gg.template segment<DIM>(DIM * m_impl->local_query_index(*dict));
+}
+
+template <int DIM>
+bool SmoothOffsetPotential<DIM>::level_set_distance(const VecD& p, double& t) const
+{
+    // THE INVARIANT: the residual is the distance from p to the level set Phi = c measured along
+    // the field -- the root of Phi(p + t n) = c, n = grad Phi(p) / |grad Phi(p)| -- with no
+    // calibration constant in it. Where one pair is active Phi = b(d) and n points straight at
+    // the foot point, so Phi(p + t n) = b(d - t) and the root is exactly t = d - delta, in every
+    // region: on the cube (ESP over a closed convex surface, one net pair everywhere) the probe
+    // reads residual / |d - delta| = 1 to 1e-9 on the flat sides, the rounded edges and the
+    // corners alike, from d = 0.5 to 1.9 delta.
+    //
+    // What it replaces, |Phi - c| / g_ref with g_ref the calibration slope, was exact only to
+    // first order (1.0135 one bar of 1e-2 delta inside the level set, 0.9867 one bar outside,
+    // 0.32 at d = 1.9 delta, where it saturates toward c / g_ref), and its one constant came from
+    // a reference geometry. And what the 3D loop measured instead of either, the relative field
+    // error (Phi - c)/c, was not a length at all -- see relative_residual() in the header.
+    //
+    // THE SEARCH. Along u, the direction the level set lies in -- toward the complex from outside
+    // (Phi < c), away from it from inside -- with s >= 0 the distance along u and
+    // h(s) = sigma (Phi(p + s u) - c), sigma = sign(Phi(p) - c), so that h(0) > 0 and the root
+    // sought is h's first zero; h'(s) = -grad Phi . n in both cases.
+    //
+    // FIRST PROPOSAL: the kernel's own answer, s_k = |b^-1(Phi(p)) - delta|, the root if one pair
+    // is active along the ray, checked against the field itself at p + s_k u and accepted when
+    // the residual there is within the tolerance below of the residual at p -- a secant step from
+    // there would move less than 1e-4 of s_k. This is not a model the answer rests on: b is the
+    // barrier object the pairs are evaluated with, the field decides, and where it disagrees (a
+    // blend of several pairs) the search simply continues from the evaluated point. It is what
+    // keeps the cost near two evaluations instead of seven. Measured on the cube: the Newton
+    // search alone cost 6.7 us a call against 1.1 us for the value the loop read before, and the
+    // smooth run (target_distance_rel 1e-2, front_conv_rel 1e-4, 10 threads, frames) took 886 s,
+    // the added time in the swap and collapse passes, whose ops guards evaluate ring measures,
+    // and in the frame writer; with this proposal 2.1 us a call and 98 s. On blends (two cubes
+    // 1.5 delta apart, the notched cube) the proposal is off by up to 30% at 23% and 14% of the
+    // points sampled near the level set, is refused there, and the search then agrees with a
+    // brute-force first crossing along the same ray to 8.2e-5 of the length.
+    //
+    // THEN a safeguarded Newton on a bracket [lo, hi] with h(lo) > 0 >= h(hi): Newton's step
+    // while it stays inside what is known, a bisection of the bracket otherwise.
+    //
+    // THE STEP CAP, while no hi is known: at most delta past lo. Where one pair is active every
+    // point within delta of its feature has Phi >= b(delta) = c, and walking along n toward the
+    // complex the distance falls at unit rate, so that set is a stretch of length delta in front
+    // of the complex: a step of delta cannot jump over it, the first sample past the level set
+    // lies short of the complex, and the search never reaches the mirror level set Phi = c on the
+    // far side of the complex -- the failure that made a root search unusable in the placement
+    // energy (8fb6e6be2d), where it was also warm-started from the previous root; this one never
+    // is. Where several pairs blend (ESP's signed terms at a reentrant feature), n need not point
+    // at the complex and the cap is a safeguard, not a proof. Moving away from the complex from
+    // inside, Newton undershoots on the convex b and the cap never binds. No zero within dhat of
+    // p: there is no level set to measure against there.
+    //
+    // THE TOLERANCE: relative, 1e-4 of the answer. Every consumer divides this length by a bar
+    // and compares the ratio with 1 (or squares and averages it first), so a relative accuracy of
+    // the length is the same relative accuracy of the ratio at every bar; an absolute tolerance
+    // such as 1e-4 delta would exceed the bar itself once front_conv_rel is set below 1e-4 of
+    // target_distance_rel, and the spec gives front_conv_rel no lower bound. A Newton stop leaves
+    // an error far below it (quadratic convergence). A step that no longer moves the query point
+    // ends the search as well: nothing finer is representable.
+    constexpr double kRelTol = 1e-4;
+    double phi0;
+    VecD g0;
+    value_gradient(p, phi0, g0);
+    if (!std::isfinite(phi0) || !(phi0 > 0.))
+        return false; // on the complex, or outside the support
+    const double gn0 = g0.norm();
+    if (!std::isfinite(gn0) || !(gn0 > 0.)) return false; // no direction to the level set
+    const double f0 = phi0 - m_c;
+    if (f0 == 0.) {
+        t = 0.;
+        return true;
+    }
+    const VecD n = g0 / gn0;
+    const double sigma = f0 > 0. ? 1. : -1.;
+    const VecD u = -sigma * n;
+    const double h0 = std::abs(f0);
+    double lo = 0., hi = std::numeric_limits<double>::infinity();
+    double s = 0., h = h0, dh = -gn0;
+    VecD q_s = p;
+
+    {
+        // b^-1(Phi(p)) on (0, dhat), where b falls monotonically from +infinity to 0: a
+        // safeguarded scalar Newton on the barrier alone, no field evaluation.
+        const ipc::Barrier& b = *m_impl->params.barrier;
+        double dlo = 0., dhi = m_dhat, d = m_delta;
+        for (int it = 0; it < 100; ++it) {
+            const double r = b(d, m_dhat) - phi0;
+            if (r == 0.) break;
+            if (r > 0.) {
+                dlo = d;
+            } else {
+                dhi = d;
+            }
+            double dn = d - r / b.first_derivative(d, m_dhat);
+            if (!(dn > dlo && dn < dhi)) dn = 0.5 * (dlo + dhi);
+            if (dn == d) break;
+            d = dn;
+        }
+        const double sk = std::abs(d - m_delta);
+        if (sk > 0. && sk <= m_delta) {
+            const VecD q = p + sk * u;
+            const double phi = value(q);
+            if (std::isnan(phi)) return false;
+            const double hk = sigma * (phi - m_c);
+            if (hk == 0. || std::abs(hk) <= kRelTol * std::abs(h0 - hk)) {
+                t = -sigma * sk;
+                return true;
+            }
+            if (hk > 0.) {
+                lo = sk;
+            } else {
+                hi = sk;
+            }
+            s = sk;
+            h = hk;
+            q_s = q;
+            dh = -gradient(q).dot(n);
+        }
+    }
+
+    for (int it = 0; it < 200; ++it) {
+        const bool bracketed = std::isfinite(hi);
+        if (!bracketed && lo >= m_dhat) return false;
+        double sn = s - h / dh;
+        bool newton = std::isfinite(sn) && dh < 0.;
+        if (bracketed) {
+            if (!(newton && sn > lo && sn < hi)) {
+                sn = 0.5 * (lo + hi);
+                newton = false;
+            }
+        } else {
+            const double cap = lo + m_delta;
+            if (!(newton && sn > lo && sn <= cap)) {
+                sn = cap;
+                newton = false;
+            }
+        }
+        const VecD q = p + sn * u;
+        if (q == q_s) break; // the step no longer moves the query point
+        const double phi = value(q);
+        if (std::isnan(phi)) return false;
+        const double hn = sigma * (phi - m_c);
+        if (hn > 0.) {
+            lo = sn;
+        } else {
+            hi = sn;
+        }
+        const bool done = hn == 0. || (newton && std::abs(sn - s) <= kRelTol * sn) ||
+                          (std::isfinite(hi) && hi - lo <= kRelTol * lo);
+        s = sn;
+        h = hn;
+        q_s = q;
+        if (done) break;
+        dh = -gradient(q).dot(n);
+    }
+    t = -sigma * s;
+    return true;
+}
+
+template <int DIM>
 double SmoothOffsetPotential<DIM>::residual_length(const VecD& p) const
 {
-    // Divide by the reference slope -- the slope of Phi at the level set on a flat stretch -- and
-    // never by the local |grad Phi(p)|: as p approaches the complex, Phi ~ -log(d) and
-    // |grad Phi| ~ 1/d, so the local ratio tends to 0 and a vertex sitting on the complex would
-    // report a residual of zero and be called converged. The fixed slope keeps the quantity
-    // monotone in Phi, hence in distance wherever one pair is active; it saturates outside the
-    // support, which the runaway guard turns into a hard error before this number decides anything.
-    return std::abs(value(p) - m_c) / m_grad_ref;
+    double t;
+    return level_set_distance(p, t) ? std::abs(t) : std::numeric_limits<double>::infinity();
+}
+
+template <int DIM>
+double SmoothOffsetPotential<DIM>::relative_residual(const VecD& p) const
+{
+    double t;
+    return level_set_distance(p, t) ? t / m_delta : std::numeric_limits<double>::quiet_NaN();
 }
 
 

@@ -1361,11 +1361,13 @@ public:
     /// refinement and ring measures, the ops guards through face_resolution_or_inf() and
     /// vertex_ring_measure(), and the debug frames' front_err_ratio and front_ring_ratio. As a
     /// ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over the face's
-    /// `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since the stencil
+    /// `stencil_order` stencil of OffsetPotential::relative_residual(q), the distance to the level
+    /// set along the field over target_distance (for the euclidean field (Phi(q) - c)/c, for the
+    /// smooth field not -- see face_conv_ratio()'s definition). Since the stencil
     /// contains the CORNERS, this one number answers both questions the loop used to ask separately
     /// -- a face is resolved when it is <= 1, and a vertex is placed when the same measure over its
     /// own point (front_vertex_conv_ratio(), the order-0 stencil at one corner) is <= 1. < 0 when
-    /// not measurable, i.e. any sample where Phi is not finite.
+    /// not measurable, i.e. any sample where relative_residual() is not finite.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
