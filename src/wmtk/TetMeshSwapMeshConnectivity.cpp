@@ -137,8 +137,9 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // 3-2 edge to face.
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
+    op_event(OpKind::swap_32, OpEvent::attempt);
     if (!swap_edge_before(t)) {
-        return false;
+        return op_refused(OpKind::swap_32, OpEvent::before_hook);
     }
     const size_t v1_id = t.vid(*this);
     const size_t v2_id = switch_vertex(t).vid(*this);
@@ -148,7 +149,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     assert(!affected.empty());
     if (affected.size() != 3) {
         logger().trace("selected edges need 3 neighbors to swap.");
-        return false;
+        return op_refused(OpKind::swap_32, OpEvent::valence);
     }
     std::unordered_set<size_t> verts;
     for (const size_t ti : affected)
@@ -156,7 +157,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             verts.insert(m_tet_connectivity[ti][j]);
         }
     if (verts.size() != affected.size() + 2) {
-        return false; // boundary
+        return op_refused(OpKind::swap_32, OpEvent::boundary);
     }
 
     // get vids for return
@@ -194,7 +195,8 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
                 m_vertex_connectivity[n0_id].m_conn_tets,
                 m_vertex_connectivity[n1_id].m_conn_tets);
             inter = set_intersection(m_vertex_connectivity[n2_id].m_conn_tets, inter);
-            if (!inter.empty()) return false;
+            // a tet already holds n0, n1, n2: the face the swap would create exists
+            if (!inter.empty()) return op_refused(OpKind::swap_32, OpEvent::exists);
         }
 
         new_tets[0] = tet_conn[t0_id].m_indices;
@@ -207,7 +209,9 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     auto new_tet_id = affected;
     bool conn_ok = true;
     auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
-    if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
+    if (!conn_ok) { // out of preallocated tet slots: abort before committing
+        return op_refused(OpKind::swap_32, OpEvent::out_of_slots);
+    }
     assert(new_tet_id.size() == 2);
 
     // get eid, fid, tid for return
@@ -233,30 +237,36 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         new_tet_tuples.emplace_back(tuple_from_tet(ti));
     }
     start_protect_attributes();
-    if (!swap_edge_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+    // The two tests in the order and with the short-circuit of `!after || !invariants`.
+    const OpEvent refused = !swap_edge_after(newt)        ? OpEvent::after_hook
+                            : !invariants(new_tet_tuples) ? OpEvent::invariants
+                                                          : OpEvent::committed;
+    if (refused != OpEvent::committed) { // rollback post-operation
         assert(affected.size() == old_tets.size());
         operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-        return false;
+        return op_refused(OpKind::swap_32, refused);
     }
     release_protect_attributes();
 
 
+    op_event(OpKind::swap_32, OpEvent::committed);
     return true;
 }
 
 
 bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
+    op_event(OpKind::swap_face, OpEvent::attempt);
     const SmartTuple tt(*this, t);
     auto oppo_tet = tt.switch_tetrahedron();
 
     if (!oppo_tet) {
         // boundary face
-        return false;
+        return op_refused(OpKind::swap_face, OpEvent::boundary);
     }
 
     if (!swap_face_before(t)) {
-        return false;
+        return op_refused(OpKind::swap_face, OpEvent::before_hook);
     }
 
 
@@ -271,7 +281,7 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     { // check if edge already exist: topological un-swappable
         for (const size_t ti : m_vertex_connectivity[v3].m_conn_tets) {
             if (m_tet_connectivity[ti].find(v3_opp) != -1) {
-                return false; // edge already exists
+                return op_refused(OpKind::swap_face, OpEvent::exists); // edge already exists
             }
         }
     }
@@ -297,7 +307,9 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         auto new_tet_id = affected;
         bool conn_ok = true;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
-        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
+        if (!conn_ok) { // out of preallocated tet slots: abort before committing
+            return op_refused(OpKind::swap_face, OpEvent::out_of_slots);
+        }
 
         assert(affected.size() == old_tets.size());
 
@@ -326,16 +338,21 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
 
         start_protect_attributes();
-        if (!swap_face_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+        // The two tests in the order and with the short-circuit of `!after || !invariants`.
+        const OpEvent refused = !swap_face_after(newt)        ? OpEvent::after_hook
+                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+                                                              : OpEvent::committed;
+        if (refused != OpEvent::committed) { // rollback post-operation
 
             logger().trace("rolling back");
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
+            return op_refused(OpKind::swap_face, refused);
         }
         release_protect_attributes();
     }
 
     logger().trace("swapped");
+    op_event(OpKind::swap_face, OpEvent::committed);
     return true;
 }
 
@@ -493,8 +510,9 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // 4-4 edge to face.
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
+    op_event(OpKind::swap_44, OpEvent::attempt);
     if (!swap_edge_44_before(t)) {
-        return false;
+        return op_refused(OpKind::swap_44, OpEvent::before_hook);
     }
     const SmartTuple tt(*this, t);
     const size_t v1_id = tt.vid();
@@ -505,7 +523,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     assert(!affected.empty());
     if (affected.size() != 4) {
         logger().trace("selected edges need 4 neighbors to swap.");
-        return false;
+        return op_refused(OpKind::swap_44, OpEvent::valence);
     }
     std::unordered_set<size_t> verts;
     for (size_t ti : affected) {
@@ -514,7 +532,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
     }
     if (verts.size() != affected.size() + 2) {
-        return false; // boundary
+        return op_refused(OpKind::swap_44, OpEvent::boundary);
     }
 
     const size_t v_A = tt.switch_edge().switch_vertex().vid();
@@ -535,6 +553,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
     // find best 4-4 case
     int op_case = 1;
+    bool any_case_allowed = false; // accounting only: which of the two refusals below it is
     for (const size_t v0 : v0s) {
         std::array<size_t, 2> edge_vids;
         auto tets = swap_4_4(old_tets_conn, v1_id, v2_id, v0, edge_vids);
@@ -546,6 +565,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             ++op_case;
             continue;
         }
+        any_case_allowed = true;
 
         double energy = swap_edge_44_energy(tets, op_case);
         if (energy < min_energy) {
@@ -557,7 +577,11 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     }
 
     if (new_tets.empty()) {
-        return false;
+        // No candidate: either the application vetoed every case, or none it allowed scored
+        // strictly below what swap_edge_*_energy(old cells, 0) reported for the current cells.
+        return op_refused(
+            OpKind::swap_44,
+            any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
 
     std::vector<size_t> new_tet_id = affected;
@@ -565,7 +589,9 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         // update tet and vertex connectivity
         bool conn_ok = true;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
-        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
+        if (!conn_ok) { // out of preallocated tet slots: abort before committing
+            return op_refused(OpKind::swap_44, OpEvent::out_of_slots);
+        }
         assert(new_tet_id.size() == 4);
 
         // build return tuple and gather new tet tuples
@@ -581,7 +607,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             // The swap can create a tet with the same indices as an already existing tet. That case
             // is prohibited here.
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
+            return op_refused(OpKind::swap_44, OpEvent::duplicate_tet);
         }
         const size_t tid = tets0123[0];
         const size_t eid = m_tet_connectivity[tid].find_local_edge(new_edge[0], new_edge[1]);
@@ -596,12 +622,17 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
 
         start_protect_attributes();
-        if (!swap_edge_44_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+        // The two tests in the order and with the short-circuit of `!after || !invariants`.
+        const OpEvent refused = !swap_edge_44_after(newt)     ? OpEvent::after_hook
+                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+                                                              : OpEvent::committed;
+        if (refused != OpEvent::committed) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
+            return op_refused(OpKind::swap_44, refused);
         }
         release_protect_attributes();
+        op_event(OpKind::swap_44, OpEvent::committed);
         return true;
     }
 }
@@ -719,8 +750,9 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 {
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
+    op_event(OpKind::swap_56, OpEvent::attempt);
     if (!swap_edge_56_before(t)) {
-        return false;
+        return op_refused(OpKind::swap_56, OpEvent::before_hook);
     }
     const SmartTuple tt(*this, t);
     const size_t v1_id = tt.vid();
@@ -731,7 +763,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     assert(!affected.empty());
     if (affected.size() != 5) {
         logger().trace("selected edges need 4 neighbors to swap.");
-        return false;
+        return op_refused(OpKind::swap_56, OpEvent::valence);
     }
     std::set<size_t> verts;
     for (auto ti : affected) {
@@ -740,7 +772,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
     }
     if (verts.size() != affected.size() + 2) {
-        return false; // boundary
+        return op_refused(OpKind::swap_56, OpEvent::boundary);
     }
     verts.erase(v1_id);
     verts.erase(v2_id);
@@ -757,6 +789,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
     // find best 5-6 case
     int op_case = 1;
+    bool any_case_allowed = false; // accounting only: which of the two refusals below it is
     for (const size_t v0 : verts) {
         std::array<size_t, 3> edge_vids;
         auto tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, edge_vids);
@@ -768,6 +801,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             ++op_case;
             continue;
         }
+        any_case_allowed = true;
 
         double energy = swap_edge_56_energy(tets, op_case);
         if (energy < min_energy) {
@@ -779,7 +813,11 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     }
 
     if (new_tets.empty()) {
-        return false;
+        // No candidate: either the application vetoed every case, or none it allowed scored
+        // strictly below what swap_edge_*_energy(old cells, 0) reported for the current cells.
+        return op_refused(
+            OpKind::swap_56,
+            any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
 
     std::vector<size_t> new_tet_id = affected;
@@ -788,7 +826,9 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         // update tet and vertex connectivity
         bool conn_ok = true;
         auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
-        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
+        if (!conn_ok) { // out of preallocated tet slots: abort before committing
+            return op_refused(OpKind::swap_56, OpEvent::out_of_slots);
+        }
         assert(new_tet_id.size() == 6);
 
         // build return tuple and gather new tet tuples
@@ -804,7 +844,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             // The swap can create a tet with the same indices as an already existing tet. That case
             // is prohibited here.
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
+            return op_refused(OpKind::swap_56, OpEvent::duplicate_tet);
         }
         const size_t tid = tets0123[0];
         const size_t eid = m_tet_connectivity[tid].find_local_edge(new_face[0], new_face[1]);
@@ -818,12 +858,17 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             new_tet_tuples.emplace_back(tuple_from_tet(ti));
         }
         start_protect_attributes();
-        if (!swap_edge_56_after(newt) || !invariants(new_tet_tuples)) { // rollback post-operation
+        // The two tests in the order and with the short-circuit of `!after || !invariants`.
+        const OpEvent refused = !swap_edge_56_after(newt)     ? OpEvent::after_hook
+                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+                                                              : OpEvent::committed;
+        if (refused != OpEvent::committed) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
-            return false;
+            return op_refused(OpKind::swap_56, refused);
         }
         release_protect_attributes();
+        op_event(OpKind::swap_56, OpEvent::committed);
         return true;
     }
 

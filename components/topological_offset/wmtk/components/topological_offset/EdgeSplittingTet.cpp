@@ -16,6 +16,33 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
+        // Longest-edge order: a split waits while one of the tets incident to its edge has a
+        // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
+        // edge than its longest flattens it; its edges stay over the gate and it is bisected
+        // again, compounding. The serial pass never does this, because its max-heap on length
+        // pops every longer edge first. The parallel pass does: an operation that cannot lock
+        // its ring is deferred, long edges sit in busy neighbourhoods and lose that race, and
+        // shorter edges of the same tets are split first. On the cube at 1e-2 / 1e-4, 10 threads,
+        // 570 of turn 1's first 810 splits were off a parent's longest edge (serial: 0 of 789)
+        // and the split passes' max energy reached 1e8..1e11.
+        //
+        // A waiting split is not lost. When the longer edge is split, the renewal re-queues every
+        // edge of the new tets, this one among them, and run_localized_to_convergence retries a
+        // failure whose endpoints a success touched.
+        const double l2 = get_length2(t);
+        bool off_longest = false;
+        for (const Tuple& tet : get_incident_tets_for_edge(t)) {
+            for (int j = 0; j < 6; ++j) {
+                const Tuple f = tuple_from_edge(tet.tid(*this), j);
+                if (!(get_length2(f) > l2)) continue;
+                if (split_edge_is_due(f)) {
+                    ++m_split_order_waits;
+                    return false;
+                }
+                off_longest = true; // longer, but under the gate
+            }
+        }
+        split_off_longest() = off_longest;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
         // input complex and the domain wall alike, the wall being a region boundary like any
@@ -26,6 +53,33 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         return TetOptimizerMesh::split_edge_before(t);
     }
     return marching_split_edge_before(t);
+}
+
+bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
+{
+    // Must stay the shared pass's own test, or the order above waits on edges the pass will never
+    // split: an edge is due when length^2 >= splitting_l2 * s^2, s the mean of its endpoints'
+    // sizing scalars, and a force-split edge always is. Both the mean and the length are
+    // symmetric in IEEE arithmetic, so the endpoint order of `e` does not matter.
+    const size_t v1 = e.vid(*this);
+    const size_t v2 = e.switch_vertex(*this).vid(*this);
+    if (is_force_split_edge(v1, v2)) return true;
+    const double s =
+        (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
+    return !(get_length2(e) < m_params.splitting_l2 * s * s);
+}
+
+void TopoOffsetTetMesh::op_event(const OpKind k, const OpEvent e) const
+{
+    TetOptimizerMesh::op_event(k, e);
+    if (k != OpKind::split) return;
+    // Counted here because `committed` is the one place a split is known to have survived both
+    // hooks and invariants(); the flag is cleared at `attempt`, so a marching split never counts.
+    if (e == OpEvent::attempt) {
+        split_off_longest() = false;
+    } else if (e == OpEvent::committed && split_off_longest()) {
+        m_split_off_longest.fetch_add(1, std::memory_order_relaxed);
+    }
 }
 
 bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)

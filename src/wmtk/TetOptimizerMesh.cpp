@@ -360,7 +360,13 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = m_params.smooth_quality_veto;
 
-    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
+    return optimization::smooth_vertex_3d(
+        *this,
+        t,
+        opts,
+        m_solver.local(),
+        &m_smooth_rejects,
+        &m_newton);
 }
 
 void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
@@ -376,6 +382,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         igl::Timer timer;
         timer.start();
         m_smooth_rejects.reset();
+        m_newton.reset();
         std::vector<std::pair<std::string, Tuple>> collect_all_ops;
         if (m_params.skip_good_regions) {
             for (const size_t v : active_vertices()) {
@@ -394,6 +401,8 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             "vertex smoothing operation",
             [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+        logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
+        log_smoothing_pass_accounting();
 
         if (m_params.debug_output) {
             write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
@@ -746,6 +755,170 @@ double TetOptimizerMesh::get_length2(const Tuple& l) const
         (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
             .squaredNorm();
     return length;
+}
+
+// ---- OPERATION ACCOUNTING ----
+
+TetOptimizerMesh::SwapRejectRole TetOptimizerMesh::swap_reject_role(const SwapReject r)
+{
+    switch (r) {
+    case SwapReject::prepare_flip:
+    case SwapReject::interior_hook:
+    case SwapReject::flip_app_refused:
+    case SwapReject::after_cells: return SwapRejectRole::wrapper;
+    case SwapReject::flip_wrong_case: return SwapRejectRole::per_case;
+    case SwapReject::base_after:
+    case SwapReject::after_inverted:
+    case SwapReject::after_quality:
+    case SwapReject::app_after_side_conflict:
+    case SwapReject::app_after_no_side:
+    case SwapReject::after_envelope: return SwapRejectRole::after_leaf;
+    default: return SwapRejectRole::before_leaf;
+    }
+}
+
+TetOptimizerMesh::OpHookReasons TetOptimizerMesh::op_hook_reasons(const OpKind k) const
+{
+    OpHookReasons h;
+    const auto add = [](std::string& out, long& sum, const char* name, const long v) {
+        sum += v;
+        if (v != 0) out += fmt::format(" {}={}", name, v);
+    };
+    if (k == OpKind::collapse) {
+        for (int i = 0; i < int(CollapseReject::COUNT); ++i) {
+            const long v = m_collapse_reject[size_t(i)].load(std::memory_order_relaxed);
+            const char* name = collapse_reject_name(CollapseReject(i));
+            if (i < int(CollapseReject::after_base)) {
+                add(h.before, h.before_sum, name, v);
+            } else {
+                add(h.after, h.after_sum, name, v);
+            }
+        }
+    } else if (k == OpKind::split) {
+        h.counted = false;
+    } else {
+        for (int i = 0; i < int(SwapReject::COUNT); ++i) {
+            const long v =
+                m_swap_reject_by_kind[size_t(k)][size_t(i)].load(std::memory_order_relaxed);
+            const char* name = swap_reject_name(SwapReject(i));
+            switch (swap_reject_role(SwapReject(i))) {
+            case SwapRejectRole::before_leaf: add(h.before, h.before_sum, name, v); break;
+            case SwapRejectRole::after_leaf: add(h.after, h.after_sum, name, v); break;
+            default: break;
+            }
+        }
+    }
+    return h;
+}
+
+long TetOptimizerMesh::op_unaccounted(const OpKind k) const
+{
+    long r = op_event_count(k, OpEvent::attempt);
+    for (int e = int(OpEvent::attempt) + 1; e < int(OpEvent::COUNT); ++e) {
+        r -= op_event_count(k, OpEvent(e));
+    }
+    return r;
+}
+
+const char* TetOptimizerMesh::op_kind_name(const OpKind k)
+{
+    switch (k) {
+    case OpKind::split: return "split";
+    case OpKind::collapse: return "collapse";
+    case OpKind::swap_32: return "swap_32";
+    case OpKind::swap_44: return "swap_44";
+    case OpKind::swap_56: return "swap_56";
+    case OpKind::swap_face: return "swap_face";
+    default: return "?";
+    }
+}
+
+const char* TetOptimizerMesh::op_event_name(const OpEvent e)
+{
+    switch (e) {
+    case OpEvent::attempt: return "attempt";
+    case OpEvent::before_hook: return "before_hook";
+    case OpEvent::link_condition: return "link_condition";
+    case OpEvent::no_return_tet: return "no_return_tet";
+    case OpEvent::duplicate_tet: return "duplicate_tet";
+    case OpEvent::topology: return "topology";
+    case OpEvent::valence: return "valence";
+    case OpEvent::boundary: return "boundary";
+    case OpEvent::exists: return "exists";
+    case OpEvent::no_case_allowed: return "no_case_allowed";
+    case OpEvent::no_better_case: return "no_better_case";
+    case OpEvent::out_of_slots: return "out_of_slots";
+    case OpEvent::after_hook: return "after_hook";
+    case OpEvent::invariants: return "invariants";
+    case OpEvent::committed: return "committed";
+    default: return "?";
+    }
+}
+
+bool TetOptimizerMesh::op_accounting_unexplained(const OpKind k) const
+{
+    if (op_unaccounted(k) != 0) return true;
+    const OpHookReasons h = op_hook_reasons(k);
+    if (!h.counted) return false;
+    return op_event_count(k, OpEvent::before_hook) != h.before_sum ||
+           op_event_count(k, OpEvent::after_hook) != h.after_sum;
+}
+
+std::string TetOptimizerMesh::op_accounting_report(const OpKind k) const
+{
+    // attempts = committed + every refusal, each counted once where it was decided:
+    //   before_hook {the hooks' own reasons | unattributed}, TetMesh's refusals between the
+    //   hooks, after_hook {reasons | unattributed}, invariants.
+    // unattributed = hook refusals minus the reasons the hooks counted; unaccounted = attempts
+    // minus every outcome. Both must be 0. Nonzero TetMesh refusals only; the rest always.
+    const OpHookReasons h = op_hook_reasons(k);
+    const long before = op_event_count(k, OpEvent::before_hook);
+    const long after = op_event_count(k, OpEvent::after_hook);
+    std::string between;
+    for (const OpEvent e :
+         {OpEvent::link_condition,
+          OpEvent::no_return_tet,
+          OpEvent::duplicate_tet,
+          OpEvent::topology,
+          OpEvent::valence,
+          OpEvent::boundary,
+          OpEvent::exists,
+          OpEvent::no_case_allowed,
+          OpEvent::no_better_case,
+          OpEvent::out_of_slots}) {
+        const long v = op_event_count(k, e);
+        if (v != 0) between += fmt::format(" {}={}", op_event_name(e), v);
+    }
+    const auto hook = [&h](const long total, const std::string& leaves, const long sum) {
+        if (!h.counted) return fmt::format("{} {{reasons not counted}}", total);
+        return fmt::format("{} {{{} unattributed={} }}", total, leaves, total - sum);
+    };
+    std::string out = fmt::format(
+        "{}: attempts={} committed={} | before_hook={} |{} | after_hook={} | invariants={} | "
+        "unaccounted={}",
+        op_kind_name(k),
+        op_event_count(k, OpEvent::attempt),
+        op_event_count(k, OpEvent::committed),
+        hook(before, h.before, h.before_sum),
+        between.empty() ? std::string(" none") : between,
+        hook(after, h.after, h.after_sum),
+        op_event_count(k, OpEvent::invariants),
+        op_unaccounted(k));
+    if (k == OpKind::swap_44 || k == OpKind::swap_56) {
+        const long w = m_swap_reject_by_kind[size_t(k)][size_t(SwapReject::flip_wrong_case)].load(
+            std::memory_order_relaxed);
+        if (w != 0) out += fmt::format(" | per case: flip_wrong_case={}", w);
+    }
+    return out;
+}
+
+void TetOptimizerMesh::op_accounting_reset()
+{
+    for (auto& row : m_op_events)
+        for (auto& c : row) c.store(0, std::memory_order_relaxed);
+    for (auto& row : m_swap_reject_by_kind)
+        for (auto& c : row) c.store(0, std::memory_order_relaxed);
+    for (auto& c : m_collapse_reject) c.store(0, std::memory_order_relaxed);
 }
 
 } // namespace wmtk

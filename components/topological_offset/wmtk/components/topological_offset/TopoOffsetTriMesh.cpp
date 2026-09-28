@@ -1499,13 +1499,14 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         Ltgt(k, 0) = m_params.l * S(k, 0);
     }
 
-    // Front convergence diagnostics, as point data: what the convergence test measures next to
+    // Front convergence diagnostics, as point data: the vertex measure the loop reports next to
     // what it does not, so the two can be compared at the same vertex.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
-    //                         objective along the move direction, over its bar. This is the ONLY
-    //                         per-vertex quantity converged_single() tests, so <= 1 reads as
-    //                         "placed" and the loop may exit on it.
+    //                         objective along the move direction, over its bar. <= 1 reads as
+    //                         "placed". The loop reports it and no longer exits on it: since
+    //                         2026-09-25 the exit tests the chord measure alone
+    //                         (EnergyCriterion::converged()).
     //   front_residual_length residual_length(): the vertex's actual distance to the level set,
     //                         in length units, comparable with target_distance. Never tested.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
@@ -1516,7 +1517,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     //                         offset_field is and whichever region the vertex belongs to, and
     //                         target_distance is what it should equal. For the smooth field it is
     //                         the only Euclidean number on the frame -- residual_length() there is
-    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         the length to the smooth level set, not to the complex. -2 before the
     //                         BVH exists (the construction frames written ahead of it).
     //
     // Together they separate "placed" from "stationary but wrong": on the medial axis of the
@@ -1615,35 +1616,62 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     //                     re-derived region map as the vertex fields above, which it needs for
     //                     the same reason: potential_for_edge() reads m_vertex_region too.
     //   chord_length      |b - a|, so the sag can be read against the edge that produced it.
+    //   front_ring_ratio  point data, in both front_measure modes: the ring measure at each front
+    //                     vertex, sqrt(sum L_e front_sag_ratio^2 / sum L_e) over its incident
+    //                     chords with both ends front vertices, L_e the chord length -- the exit
+    //                     test under front_measure "vertex_ring" (EnergyCriterion::ring_exit),
+    //                     with energy_criterion()'s rules: a vertex with an unmeasurable incident
+    //                     chord, or whose chords have zero total length, has none. NaN where there
+    //                     is no ring measure.
     {
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
         std::vector<std::array<int, 2>> fe;
         std::vector<double> fe_sag, fe_len;
+        std::vector<char> fe_front;
         for (const Tuple& e : get_edges()) {
             if (!edge_is_offset_surface_live(e)) continue;
             const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
             if (packed[va] < 0 || packed[vb] < 0) continue;
             fe.push_back({packed[va], packed[vb]});
-            fe_sag.push_back(front(va) && front(vb) ? edge_conv_ratio(va, vb) : -1.);
+            fe_front.push_back(front(va) && front(vb) ? 1 : 0);
+            fe_sag.push_back(fe_front.back() ? edge_conv_ratio(va, vb) : -1.);
             fe_len.push_back(
                 (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm());
         }
         if (!fe.empty()) {
             Eigen::MatrixXi FE(fe.size(), 2);
             Eigen::MatrixXd SAG(fe.size(), 1), LEN(fe.size(), 1);
+            std::vector<double> ring_sum(vs.size(), 0.), ring_w(vs.size(), 0.);
+            std::vector<char> ring_bad(vs.size(), 0);
             for (size_t k = 0; k < fe.size(); ++k) {
                 FE(k, 0) = fe[k][0];
                 FE(k, 1) = fe[k][1];
                 SAG(k, 0) = fe_sag[k];
                 LEN(k, 0) = fe_len[k];
+                if (!fe_front[k]) continue;
+                for (const int u : fe[k]) {
+                    if (fe_sag[k] < 0.) {
+                        ring_bad[size_t(u)] = 1;
+                    } else {
+                        ring_sum[size_t(u)] += fe_len[k] * fe_sag[k] * fe_sag[k];
+                        ring_w[size_t(u)] += fe_len[k];
+                    }
+                }
+            }
+            Eigen::MatrixXd RING(vs.size(), 1);
+            for (size_t k = 0; k < vs.size(); ++k) {
+                RING(k, 0) = !ring_bad[k] && ring_w[k] > 0.
+                                 ? std::sqrt(ring_sum[k] / ring_w[k])
+                                 : std::numeric_limits<double>::quiet_NaN();
             }
             const std::string front_path = path + "_front.vtu";
             std::shared_ptr<paraviewo::ParaviewWriter> front_writer =
                 std::make_shared<paraviewo::VTUWriter>();
             front_writer->add_cell_field("front_sag_ratio", SAG);
             front_writer->add_cell_field("chord_length", LEN);
+            front_writer->add_field("front_ring_ratio", RING);
             front_writer->add_field("sizing_scalar", S);
             front_writer->add_field("front_complex_distance", CD);
             front_writer->add_field("offset_foldover", FOLD);

@@ -269,11 +269,10 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 
 bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
 {
-    // An interior swap is never given the absolute bar; clear whatever the last surface flip on
-    // this thread left behind, since the flag outlives one operation.
+    // Clear whatever the last surface flip on this thread left behind: the flags outlive one
+    // operation, and an interior swap is no flip of the offset surface.
     {
         SwapSurfaceSides& sides = m_swap_sides.local();
-        sides.absolute_bar = false;
         sides.sag_measured = false;
         sides.worthwhile = false;
         sides.saw_case = false;
@@ -288,12 +287,10 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const size_t c,
     const size_t d)
 {
-    // Re-decided below, for this flip alone: the absolute quality bar applies exactly where the
-    // sag rule that pays for it applies. Cleared first, so a refusal on any path below leaves
-    // the base's strict-improvement rule in force. swap_before_interior() clears it too.
+    // Re-decided below, for this flip alone. Cleared first, so a refusal on any path below
+    // leaves nothing behind for the funnel. swap_before_interior() clears them too.
     {
         SwapSurfaceSides& sides = m_swap_sides.local();
-        sides.absolute_bar = false;
         sides.sag_measured = false;
         sides.worthwhile = false;
         sides.saw_case = false;
@@ -324,88 +321,59 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
         return swap_reject(SwapReject::app_mask_mismatch);
     }
-    // The ops divergence guard, the sag half of the acceptance rule for a flip OF THE
-    // OFFSET SURFACE. Together with the absolute quality bar -- swap_quality_allowed() and the
-    // swap_edge_44_energy() / swap_edge_56_energy() overrides, all three armed by the assignment
-    // at the end of this block -- it is the whole rule: such a flip is accepted when the cells
-    // it makes are under stop_energy AND it STRICTLY LOWERS the local sag. Both halves are off
-    // by default, so a default run keeps the base's strict-improvement behaviour.
+    // The ops divergence guard, the sag half of the acceptance rule for a flip OF THE OFFSET
+    // SURFACE: the flip may not make the pair's worst face measure worse -- max over (a,c,d),
+    // (b,c,d) after <= max over (a,b,c), (a,b,d) before, a tie passing. That is the rule the
+    // collapse half applies (ops_guard_refuses_collapse()), through the same comparison,
+    // ops_guard_measures(): under front_measure "vertex_ring" the largest ring measure over a, b,
+    // c, d instead. The quality half is the base's own, the same as for an interior swap: the
+    // cells the flip makes must be STRICTLY better than the cells it replaces
+    // (swap_quality_allowed() for a 3-2, the case search of TetMesh::swap_edge_44() /
+    // swap_edge_56() otherwise).
     //
-    // WHY STRICT, AND NOT "does not raise". The base's own rule -- take a case only when its
-    // energy is below the energy of doing nothing -- is what makes a swap pass terminate: every
-    // accepted swap lowers a quantity bounded below. The absolute bar removes that guarantee, so
-    // the sag rule has to supply it, and `after <= before` does not. A flip whose two
-    // triangulations sag the same passes in BOTH directions and the pass flips it back and forth
-    // for ever. Not hypothetical: on the cube ~43% of the offset surface lies over a flat side,
-    // where Phi is affine and both triangulations sag zero to roundoff. A 5e-2 smoke run sat in
-    // one 4-4 pass for five minutes at full CPU, committing flips the whole time, until killed.
+    // The quality half is also what makes the swap pass finish: every accepted swap strictly
+    // lowers the worst energy among the cells it replaces, the base's argument for every swap.
+    // So the sag half needs no margin of its own.
     //
-    // Strict alone is finite but USELESS, which the first attempt at this proved. It does make a
-    // repeat impossible -- the flip takes abc, abd out of the multiset of offset-surface face
-    // sags and puts acd, bcd in, all four below the pair's old maximum, so sorted descending that
-    // multiset drops lexicographically at every accepted flip, and a swap pass adds no vertex so
-    // it has finitely many configurations. But "finite" is not "soon": on a flat side of the cube
-    // Phi is affine and BOTH triangulations sag zero to roundoff, so ~half the flips there pass
-    // `after < before` on a fall of 1e-13, each one re-queues its neighbours, and the pass runs
-    // for ever in any sense that matters. Measured on the 5e-2 cube at turn 2, of 2334 offset
-    // faces 998 (42.8%) sag <= 1e-12 and not one lies between 1e-12 and 1e-2, while only 197
-    // (8.4%) are over the tube at all. A run sat in that pass for 25 minutes, still committing.
-    //
-    // So a flip has to WIN something measurable, and the margin is the whole of it: accepted when
-    // max sag after <= max sag before - flip_sag_margin and the cells it makes are
-    // under stop_energy, refused otherwise. Nothing here asks whether the pair was over the bar,
-    // and nothing falls back on strict improvement in AMIPS.
-    //
-    // The margin is also what makes the pass finite. Every accepted flip drops the pair's max sag
-    // by at least the margin and sag is bounded below by zero, so a face can only be flipped so
-    // many times. Strict monotonicity alone is not enough, which was learned the hard way:
-    // instrumented on the cube at target_distance_rel 1e-3, ONE swap pass accepted 3020000 surface
-    // flips, of which 3019913 (99.997%) won less than 1e-12 of the bar -- every one of them
-    // monotone, the rule held exactly -- and the pass never finished. Two diagonals of a small quad
-    // on a quarter-cylinder sag almost the same, so a flip there changes nothing a criterion can
-    // see.
-    //
-    // The default sits in an empty gap in that distribution. Of the 87 flips that won more than
-    // 1e-12, 47 won at least 1e-4 and NOT ONE landed between 1e-9 and 1e-4, so 1e-4 keeps every
-    // flip that did real work and drops every one that was roundoff.
+    // History (Uday's decision 2026-09-25). Before, such a flip was judged on an ABSOLUTE bar --
+    // its new cells need only be under stop_energy -- because strict improvement blocked the
+    // flips that cut sag: whole runs on the deliverable cube once accepted no surface flip at all
+    // (one pass: 0 of 7636), and at the cube 1e-3, 93.5% of the valence-4 surface edges whose
+    // flip would cut sag raised max AMIPS, and none of those 3740 was taken. The absolute bar
+    // removed the base's termination argument, so the sag half supplied one: a fall of at least
+    // flip_sag_margin, 1e-4 of the bar. Without a margin, ties on the cube's flat sides (42.8% of
+    // the offset faces sag <= 1e-12 at the 5e-2 cube) flipped back and forth: a 5e-2 run sat in
+    // one pass for 25 minutes, and a 1e-3 pass accepted 3020000 flips, 99.997% of them winning
+    // under 1e-12 of the bar. Measured just before the change, on the deliverable cube at
+    // target_distance_rel 1e-2 / front_conv_rel 1e-4: dropping the margin with the absolute bar
+    // kept ended normally -- 7 turns, 25338 front faces against 25358, committed flips per turn
+    // at most 6% more.
     //
     // abc + abd become acd + bcd; no vertex moves, so every corner position is unchanged and
     // both maxima are exact here. The comparison is against the state before this flip, not
     // against the bar: an unresolved patch is guarded exactly as a resolved one is. An
-    // unmeasurable face is +inf, so inf -> inf is now refused where it used to tie.
+    // unmeasurable face is +inf, so inf -> inf is a tie and passes, as in the collapse half.
     //
     // The gate comes before the four sag evaluations: BOTH re-triangulated faces must lie
     // exactly on the offset surface, band on one side and background on the other, asked live of
     // the tags rather than read from the cached m_surface_class -- these operations run between
     // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
-    // It also scopes the quality bar, since only a flip reaching the assignment below is given
-    // it: a flip of the input complex or of a region boundary keeps the base's strict rule.
+    // A flip of the input complex or of a region boundary has no sag half.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
-        const double before =
-            std::max(face_resolution_or_inf(a, b, c), face_resolution_or_inf(a, b, d));
-        const double after =
-            std::max(face_resolution_or_inf(a, c, d), face_resolution_or_inf(b, c, d));
-        // THE WHOLE SAG RULE: the flip must win at least flip_sag_margin of the
-        // bar, whether the pair started over the bar or under it. Written as a negated <= so a
-        // NaN on either side refuses. A flip that misses it is refused outright -- there is no
-        // falling back on AMIPS, because a flip of the offset surface is there to move the
-        // surface, and one that moves it by less than the margin is noise rather than work.
-        if (!(after <= before - m_offset_params.flip_sag_margin)) {
+        const auto [before, after] = ops_guard_measures(
+            {{{a, b, c}}, {{a, b, d}}},
+            {{{a, c, d}}, {{b, c, d}}},
+            static_cast<size_t>(-1));
+        // THE WHOLE SAG RULE: not worse. Written as a negated <= so a NaN on either side refuses.
+        if (!(after <= before)) {
             ++iter_cnt_swap_guard_reject;
-            // Told apart for the funnel: a real fall that missed the margin, against a tie or a
-            // rise. The first is what the margin is for; the second the guard always refused.
-            if (after < before) ++funnel_under_margin;
             return swap_reject(SwapReject::app_sag_raised);
         }
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.sag_measured = true;
         sides.sag_before = before;
         sides.sag_after = after;
-        // Having paid the margin, the flip is judged on the absolute bar rather than on strict
-        // improvement in AMIPS. EVERY flip that reaches here gets it; there is no longer a
-        // second, narrower class that has to beat AMIPS instead. An unmeasurable pair is +inf,
-        // and inf <= inf - margin is false, so it never reaches this line.
-        sides.absolute_bar = true;
+        // Followed through the rest of the swap by [flip funnel].
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
         ++funnel_offered;
@@ -640,10 +608,13 @@ bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
     }
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd x = x0;
+    bool threw = false;
     try {
         solver->minimize(*energy, x);
     } catch (const std::exception&) {
+        threw = true;
     }
+    m_newton_plastic.record(*solver, threw);
     set_vertex_position(vid, Vector3d(x));
     for (const Tuple& loc : ring) {
         if (is_inverted(loc)) {
@@ -715,68 +686,62 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
     const std::vector<std::array<size_t, 4>>& tets,
     const int op_case)
 {
-    // See the declaration. op_case 0 is the base asking what the CURRENT cells score, to seed the
-    // `energy < min_energy` test it then applies to each candidate; reporting the bar instead
-    // turns that same test into the absolute rule, for surface flips under the guard only.
+    // See the declaration: counting only. The energy is the base's, so the base's case search --
+    // take a case only when it scores strictly below the current cells -- is the quality rule.
     const double e = TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
-    if (!swap_surface_flip_absolute_bar()) return e;
-    if (op_case >= 1) {
-        // a case that survived swap_edge_44_accept_case(), i.e. one that really does make the
-        // (c,d) diagonal. Counted once per flip, for the funnel.
-        SwapSurfaceSides& sides = m_swap_sides.local();
-        if (sides.worthwhile) {
-            if (!sides.saw_case) {
-                sides.saw_case = true;
-                ++funnel_cases;
-            }
-            // what the base's own energy says about this case, which is what its
-            // `energy < min_energy` test then acts on.
-            if (!std::isfinite(e))
-                ++funnel_case_inf;
-            else if (e >= m_params.stop_energy)
-                ++funnel_case_over;
-            else
-                ++funnel_case_ok;
-        }
+    SwapSurfaceSides& sides = m_swap_sides.local();
+    if (!sides.worthwhile) return e;
+    if (op_case == 0) {
+        sides.case0_energy = e; // the current cells: the score every case has to beat
+        return e;
     }
-    return op_case == 0 ? m_params.stop_energy : e;
+    // a case that survived swap_edge_44_accept_case(), i.e. one that really does make the (c,d)
+    // diagonal. The flip is counted once, for the funnel; its cases one by one.
+    if (!sides.saw_case) {
+        sides.saw_case = true;
+        ++funnel_cases;
+    }
+    if (e == std::numeric_limits<double>::max())
+        ++funnel_case_inverted;
+    else if (!(e < sides.case0_energy))
+        ++funnel_case_not_better;
+    else
+        ++funnel_case_better;
+    return e;
 }
 
 double TopoOffsetTetMesh::swap_edge_56_energy(
     const std::vector<std::array<size_t, 4>>& tets,
     const int op_case)
 {
+    // As swap_edge_44_energy(): counting only.
     const double e = TetOptimizerMesh::swap_edge_56_energy(tets, op_case);
-    if (!swap_surface_flip_absolute_bar()) return e;
-    if (op_case >= 1) {
-        // a case that survived swap_edge_56_accept_case(), i.e. one that really does make the
-        // (c,d) diagonal. Counted once per flip, for the funnel.
-        SwapSurfaceSides& sides = m_swap_sides.local();
-        if (sides.worthwhile) {
-            if (!sides.saw_case) {
-                sides.saw_case = true;
-                ++funnel_cases;
-            }
-            // what the base's own energy says about this case, which is what its
-            // `energy < min_energy` test then acts on.
-            if (!std::isfinite(e))
-                ++funnel_case_inf;
-            else if (e >= m_params.stop_energy)
-                ++funnel_case_over;
-            else
-                ++funnel_case_ok;
-        }
+    SwapSurfaceSides& sides = m_swap_sides.local();
+    if (!sides.worthwhile) return e;
+    if (op_case == 0) {
+        sides.case0_energy = e;
+        return e;
     }
-    return op_case == 0 ? m_params.stop_energy : e;
+    if (!sides.saw_case) {
+        sides.saw_case = true;
+        ++funnel_cases;
+    }
+    if (e == std::numeric_limits<double>::max())
+        ++funnel_case_inverted;
+    else if (!(e < sides.case0_energy))
+        ++funnel_case_not_better;
+    else
+        ++funnel_case_better;
+    return e;
 }
 
 std::string TopoOffsetTetMesh::flip_funnel_report() const
 {
     // See the declaration for how to read it.
     return fmt::format(
-        "worthwhile offered {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> reached "
-        "the quality gate {} -> passed it {} -> committed {} | cases: inverted {}, finite but "
-        "over stop_energy {}, under it {} | refused for a fall under the margin {}",
+        "passed the sag rule {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> reached "
+        "the quality test {} -> passed it {} -> committed {} | cases: inverted {}, not better "
+        "than the current cells {}, better {}",
         funnel_offered.load(),
         funnel_kind[0].load(),
         funnel_kind[1].load(),
@@ -785,10 +750,9 @@ std::string TopoOffsetTetMesh::flip_funnel_report() const
         funnel_quality.load(),
         funnel_quality_ok.load(),
         funnel_committed.load(),
-        funnel_case_inf.load(),
-        funnel_case_over.load(),
-        funnel_case_ok.load(),
-        funnel_under_margin.load());
+        funnel_case_inverted.load(),
+        funnel_case_not_better.load(),
+        funnel_case_better.load());
 }
 
 void TopoOffsetTetMesh::flip_funnel_reset()
@@ -796,24 +760,23 @@ void TopoOffsetTetMesh::flip_funnel_reset()
     funnel_offered = 0;
     for (auto& k : funnel_kind) k = 0;
     funnel_cases = 0;
-    funnel_case_inf = 0;
-    funnel_case_over = 0;
-    funnel_case_ok = 0;
+    funnel_case_inverted = 0;
+    funnel_case_not_better = 0;
+    funnel_case_better = 0;
     funnel_quality = 0;
     funnel_quality_ok = 0;
     funnel_committed = 0;
-    funnel_under_margin = 0;
 }
 
 void TopoOffsetTetMesh::flip_trace_record(const double before, const double after)
 {
     // See the declaration. The fall is what the flip won on the pair it re-triangulated; the
-    // rule in swap_before_surface() refuses anything that is not strictly positive, so
-    // flip_trace_nonmono staying 0 is the check that the rule is doing what it says. Anything
-    // else there means an accepted flip rested on a measurement that was no longer true -- the
-    // pass runs on 10 threads and the measurement is taken in the before-hook.
+    // rule in swap_before_surface() refuses a rise (a tie passes), so flip_trace_nonmono staying
+    // 0 is the check that the rule is doing what it says. Anything else there means an accepted
+    // flip rested on a measurement that was no longer true -- the pass runs on 10 threads and
+    // the measurement is taken in the before-hook.
     const double fall = before - after;
-    if (!(fall > 0.0)) {
+    if (!(fall >= 0.0)) {
         ++flip_trace_nonmono;
     } else {
         static constexpr double kEdges[7] = {1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-9, 1e-12};
@@ -873,10 +836,12 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         for (const size_t v : oriented_tet_vids(t)) {
             const auto it = sides.by_vertex.find(v);
             if (it == sides.by_vertex.end()) continue;
-            if (side != nullptr && *side != it->second) return false;
+            if (side != nullptr && *side != it->second) {
+                return swap_reject(SwapReject::app_after_side_conflict);
+            }
             side = &it->second;
         }
-        if (side == nullptr) return false;
+        if (side == nullptr) return swap_reject(SwapReject::app_after_no_side);
         m_tet_attribute[t].tag = side->first;
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t);
@@ -930,12 +895,12 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // tracked simplex: the offset region is a thin shell, so a collapse with one endpoint in the
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
-        return false;
+        return collapse_reject(CollapseReject::app_substructure_link);
     }
     // The ops divergence guard; see ops_guard_refuses_collapse().
     if (ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
-        return false;
+        return collapse_reject(CollapseReject::app_ops_guard);
     }
     return true;
 }
@@ -949,7 +914,7 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
 double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b, const size_t c)
     const
 {
-    // The ops divergence guard: one face's sag against the tube. An unmeasurable face
+    // The ops divergence guard: one face's measure against the bar. An unmeasurable face
     // is infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
     // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
     // infinity is not strictly greater than infinity, which is the comparison the guard makes.
@@ -985,6 +950,9 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // THE TEST: the maximum resolution measure over the union of both endpoints' offset faces
     // BEFORE, against the maximum over the faces the survivor is left with AFTER. Strictly
     // greater is refused, so a collapse that leaves the worst face exactly as bad is allowed.
+    // The comparison itself is ops_guard_measures(), shared with the swap guard: under
+    // front_measure "face" exactly this maximum over faces, under "vertex_ring" the largest ring
+    // measure over the vertices whose rings the collapse changes.
     //
     // Exact here, before anything is modified: v2 keeps its position and the base moves no
     // vertex, so the survivor's faces are this ring minus the ones on the collapsed edge, with
@@ -1008,14 +976,6 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // set, where 0 would read as "perfectly resolved".
     if (ring_before.empty()) return false;
 
-    const auto worst = [this](const std::vector<std::array<size_t, 3>>& faces) {
-        double w = 0.;
-        for (const std::array<size_t, 3>& f : faces) {
-            w = std::max(w, face_resolution_or_inf(f[0], f[1], f[2]));
-        }
-        return w;
-    };
-
     std::vector<std::array<size_t, 3>> ring_after;
     ring_after.reserve(ring_before.size());
     for (std::array<size_t, 3> f : ring_before) {
@@ -1030,7 +990,101 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
         }
         ring_after.push_back(f);
     }
-    return worst(ring_after) > worst(ring_before);
+    const auto [before, after] = ops_guard_measures(ring_before, ring_after, v1);
+    return after > before;
+}
+
+std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
+    const std::vector<std::array<size_t, 3>>& before,
+    const std::vector<std::array<size_t, 3>>& after,
+    const size_t removed) const
+{
+    // THE ops guards' comparison, for the collapse (ops_guard_refuses_collapse()) and the swap
+    // (swap_before_surface()) alike: the operation may not raise the largest measure among the
+    // elements it changes, where an element is what the exit tests under front_measure. Every
+    // measure goes through face_conv_ratio(), the one face measure, so the guards judge exactly
+    // what the loop exits on.
+    //
+    // "face": the elements are the changed faces. The exit tests max over faces, which is also
+    // max over front vertices v of V(v) = max over v's faces. The guard does NOT take that vertex
+    // form, because for a guard the two are not the same: over the affected vertices, max_v V(v)
+    // = max(max over the changed faces, max over the UNCHANGED faces of the affected vertices),
+    // and the unchanged part hides a rise -- a changed face going from 0.5 to 0.8 passes the
+    // vertex form next to an unchanged neighbour face at 0.9 and is refused by the face form.
+    if (m_offset_params.front_measure != "vertex_ring") {
+        double b = 0., a = 0.;
+        for (const std::array<size_t, 3>& f : before) {
+            b = std::max(b, face_resolution_or_inf(f[0], f[1], f[2]));
+        }
+        for (const std::array<size_t, 3>& f : after) {
+            a = std::max(a, face_resolution_or_inf(f[0], f[1], f[2]));
+        }
+        return {b, a};
+    }
+    // "vertex_ring": the elements are the front vertices whose rings the operation changes,
+    // every corner of a changed face (for a collapse the endpoints and their neighbours on the
+    // offset surface, for a swap its four vertices), each measured by vertex_ring_measure() over
+    // its ring as it is and as it will be: its live offset faces with the changed ones replaced
+    // by those of `after` it is a corner of. The removed vertex has no ring after. Areas are
+    // taken from the corners' positions, which neither operation moves.
+    const auto key = [](std::array<size_t, 3> f) {
+        std::sort(f.begin(), f.end());
+        return f;
+    };
+    std::set<std::array<size_t, 3>> changed;
+    std::set<size_t> verts;
+    for (const std::array<size_t, 3>& f : before) {
+        changed.insert(key(f));
+        for (const size_t v : f) verts.insert(v);
+    }
+    double b = 0., a = 0.;
+    for (const size_t w : verts) {
+        std::vector<std::array<size_t, 3>> ring_now;
+        for (const Tuple& f : offset_surface_faces_live_at(w)) ring_now.push_back(face_vids(f));
+        const double mb = vertex_ring_measure(ring_now);
+        if (mb >= 0.) b = std::max(b, mb);
+        if (w == removed) continue;
+        std::vector<std::array<size_t, 3>> ring_next;
+        for (const std::array<size_t, 3>& f : ring_now) {
+            if (!changed.count(key(f))) ring_next.push_back(f);
+        }
+        for (const std::array<size_t, 3>& f : after) {
+            if (f[0] == w || f[1] == w || f[2] == w) ring_next.push_back(f);
+        }
+        const double ma = vertex_ring_measure(ring_next);
+        if (ma >= 0.) a = std::max(a, ma);
+    }
+    return {b, a};
+}
+
+double TopoOffsetTetMesh::ring_face_area(const size_t a, const size_t b, const size_t c) const
+{
+    const Vector3d& pa = m_vertex_attribute[a].m_posf;
+    const Vector3d& pb = m_vertex_attribute[b].m_posf;
+    const Vector3d& pc = m_vertex_attribute[c].m_posf;
+    return 0.5 * (pb - pa).cross(pc - pa).norm();
+}
+
+double TopoOffsetTetMesh::vertex_ring_measure(const std::vector<std::array<size_t, 3>>& ring) const
+{
+    // energy_criterion()'s ring measure on the given faces; see the declaration.
+    const auto front = [&](const size_t vid) {
+        return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+    };
+    double sum = 0., wsum = 0.;
+    size_t n = 0;
+    for (const std::array<size_t, 3>& f : ring) {
+        if (!front(f[0]) || !front(f[1]) || !front(f[2])) continue;
+        const double r = face_conv_ratio(f[0], f[1], f[2]);
+        if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
+        const double w = ring_face_area(f[0], f[1], f[2]);
+        sum += w * r * r;
+        wsum += w;
+        ++n;
+    }
+    if (n == 0) return -1.;
+    if (!(wsum > 0.)) return std::numeric_limits<double>::infinity();
+    return std::sqrt(sum / wsum);
 }
 
 
@@ -1077,32 +1131,32 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
         const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
         if (input && offset) {
-            return false;
+            return collapse_reject(CollapseReject::app_both_surfaces);
         }
     }
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
     if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
-        return false;
+        return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not leave
     // the particular surface it belongs to, and each class is checked separately.
     if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_input);
     }
     if (VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_offset);
     }
     if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
-        return false;
+        return collapse_reject(CollapseReject::app_leaves_region);
     }
 
     // open boundary: an order-2 vertex may not merge into a lower-order one.
     if (edge_length > 0 && m_vertex_attribute[v1_id].m_order == 2 &&
         m_vertex_attribute[v2_id].m_order < 2) {
-        return false;
+        return collapse_reject(CollapseReject::app_order2);
     }
 
     return true;
@@ -1777,6 +1831,19 @@ void TopoOffsetTetMesh::log_region_face_mask_health(const std::string& when) con
             n_ends_input,
             worst);
     }
+}
+
+void TopoOffsetTetMesh::log_smoothing_pass_accounting()
+{
+    // Per pass, after the base's own "newton, smooth_after" line (the background). The plastic
+    // line only when the plastic medium solved anything, which it does only under deform_others
+    // with a released region in the scene.
+    logger().info("\tnewton, front: {}", m_newton_front.to_string());
+    if (m_newton_plastic.solves() > 0) {
+        logger().info("\tnewton, plastic: {}", m_newton_plastic.to_string());
+    }
+    m_newton_front.reset();
+    m_newton_plastic.reset();
 }
 
 void TopoOffsetTetMesh::log_smooth_trace() const
@@ -2732,11 +2799,24 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
     std::vector<char> placed(vert_capacity(), 0);
+    // front_measure "vertex_ring": the ring measure is accumulated per corner from the face
+    // loop's own face_conv_ratio() calls below, so it judges exactly the face numbers the face
+    // mode does, each weighted by its area. See EnergyCriterion::ring_exit.
+    s.ring_exit = m_offset_params.front_measure == "vertex_ring";
+    std::vector<double> ring_sum, ring_w;
+    std::vector<size_t> ring_n;
+    std::vector<char> ring_bad;
+    if (s.ring_exit) {
+        ring_sum.assign(vert_capacity(), 0.);
+        ring_w.assign(vert_capacity(), 0.);
+        ring_n.assign(vert_capacity(), 0);
+        ring_bad.assign(vert_capacity(), 0);
+    }
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
         // gn is the vertex's convergence measure over the one bar; rho the
-        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // length residual_length(), its actual distance to the level set. rho is
         // reported and gates measurability, NOT placement: front_vertex_placed() is the one
         // notion, and it reads gn. See the declaration for what qualifying the sag test's corners
         // by rho instead used to cost.
@@ -2764,17 +2844,27 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
         if (!front(va) || !front(vb) || !front(vc)) continue;
-        // ONE call feeds both jobs: this number is the loop's face criterion (max_face /
-        // faces_ok()) AND what decides which faces the refinement is handed.
+        // ONE call feeds both jobs: this number is the loop's exit test (max_face / faces_ok(),
+        // see converged()) AND what decides which faces the refinement is handed. Under
+        // front_measure "vertex_ring" it feeds both through the ring measure instead.
         const double gn = face_conv_ratio(va, vb, vc); // the sag / the tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
+            if (s.ring_exit) ring_bad[va] = ring_bad[vb] = ring_bad[vc] = 1;
             continue;
         }
         const Vector3d& pa = m_vertex_attribute[va].m_posf;
         const Vector3d& pb = m_vertex_attribute[vb].m_posf;
         const Vector3d& pc = m_vertex_attribute[vc].m_posf;
         const Vector3d centroid = (pa + pb + pc) / 3.;
+        if (s.ring_exit) {
+            const double w = ring_face_area(va, vb, vc);
+            for (const size_t u : {va, vb, vc}) {
+                ring_sum[u] += w * gn * gn;
+                ring_w[u] += w;
+                ++ring_n[u];
+            }
+        }
         // The longest edge is the chord the target is derived from.
         const std::array<std::pair<size_t, size_t>, 3> es = {{{va, vb}, {vb, vc}, {vc, va}}};
         size_t la = va, lb = vb;
@@ -2805,7 +2895,9 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             // then refuses to refine, and the loop has no lever left. The flag refines every
             // face over the bar instead. `n_faces_over_placed` and `max_face_placed` keep their
             // meaning either way -- they are the PLACED subset, and reporting is all they do.
-            if (corners_placed || m_offset_params.experimental_aggresive_refine) {
+            // Under the ring measure no face is handed to the refinement: the vertices are,
+            // after this loop.
+            if (!s.ring_exit && (corners_placed || m_offset_params.experimental_aggresive_refine)) {
                 // Refinable only if the rule can still lower a target; judged against the MAX of
                 // the three scalars (the 2D twin uses the max of its chord's two).
                 const double l = std::max(m_params.l, 1e-300);
@@ -2828,7 +2920,28 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 if (sn < have) {
                     s.refinable.push_back({la, lb, lc, gn * s.tube, len});
                 } else {
+                    // Not handed to the refinement, for one of two reasons. Either the corners
+                    // are at the sizing floor (have <= s_floor): nothing can refine the face and
+                    // it blocks the exit for good. Or the chord target, which is at most half
+                    // the longest edge, is not below have x l: that edge is then at least twice
+                    // the largest target length at the corners, long enough for the split
+                    // pass's length gate, which shortens it with no lowering at all.
                     ++s.n_at_floor;
+                    s.floor_scalar = s_floor;
+                    s.floor_from_min_edge_length =
+                        m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
+                    if (gn > s.max_face_at_floor) {
+                        s.max_face_at_floor = gn;
+                        s.worst_at_floor_centroid = centroid;
+                        s.worst_at_floor_scalar = have;
+                    }
+                    if (have <= s_floor) {
+                        ++s.n_corners_at_floor;
+                        if (gn > s.max_face_corners_at_floor) {
+                            s.max_face_corners_at_floor = gn;
+                            s.worst_corners_at_floor_centroid = centroid;
+                        }
+                    }
                 }
                 if (corners_placed && gn > s.max_face_placed) {
                     s.max_face_placed = gn;
@@ -2837,8 +2950,107 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             }
         }
     }
+    if (s.ring_exit) {
+        // The ring measure and its refinement. A vertex over the bar is refinable while the
+        // halving can still lower its own scalar -- the floor rule of refine_front_by_halving(),
+        // nothing else: no chord target, no placement gate. One at the floor blocks the exit.
+        const double l = std::max(m_params.l, 1e-300);
+        const double s_floor =
+            std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (!front(vid)) continue;
+            if (ring_bad[vid]) {
+                ++s.n_rings_unmeasurable;
+                continue;
+            }
+            if (ring_n[vid] == 0) continue; // no measured offset face: no ring to judge
+            if (!(ring_w[vid] > 0.)) {
+                // Every incident face degenerate: undefined, and blocks the exit.
+                ++s.n_rings_unmeasurable;
+                ++s.n_unmeasurable;
+                continue;
+            }
+            const double r = std::sqrt(ring_sum[vid] / ring_w[vid]);
+            ++s.n_rings;
+            s.sum_ring += r;
+            if (r > s.max_ring) {
+                s.max_ring = r;
+                s.worst_ring_vid = vid;
+            }
+            if (!(r > s.bar)) continue;
+            ++s.n_rings_over;
+            const double have = m_vertex_attribute[vid].m_sizing_scalar;
+            if (have > s_floor) {
+                s.refinable_vertices.push_back(vid);
+            } else {
+                ++s.n_rings_at_floor;
+                s.floor_scalar = s_floor;
+                s.floor_from_min_edge_length =
+                    m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
+                if (r > s.max_ring_at_floor) {
+                    s.max_ring_at_floor = r;
+                    s.worst_ring_at_floor_pos = m_vertex_attribute[vid].m_posf;
+                }
+            }
+        }
+    }
     m_phase = saved;
     return s;
+}
+
+std::string TopoOffsetTetMesh::EnergyCriterion::sizing_floor_fact() const
+{
+    if (ring_exit) {
+        if (n_rings_at_floor == 0) return "";
+        const char* origin =
+            floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
+        return fmt::format(
+            "{} front vertex(es) with the {} over the bar have their sizing scalar at the "
+            "sizing floor {:.4g} (from {}), so they cannot be refined and the loop cannot "
+            "converge on them: worst {:.4}x the bar at ({:.4}, {:.4}, {:.4})",
+            n_rings_at_floor,
+            ring_name(),
+            floor_scalar,
+            origin,
+            max_ring_at_floor,
+            worst_ring_at_floor_pos.x(),
+            worst_ring_at_floor_pos.y(),
+            worst_ring_at_floor_pos.z());
+    }
+    if (n_at_floor == 0) return "";
+    const char* origin = floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
+    if (n_corners_at_floor > 0) {
+        return fmt::format(
+            "{} offset face(s) over the bar have every corner at the sizing floor {:.4g} (from "
+            "{}), so they cannot be refined and the loop cannot converge on them: worst {:.4}x "
+            "the bar at centroid ({:.4}, {:.4}, {:.4}). Of the {} face(s) over the bar with no "
+            "chord target below the largest sizing scalar at their corners, the other {} have a "
+            "longest edge at least twice that target length, which the split pass shortens",
+            n_corners_at_floor,
+            floor_scalar,
+            origin,
+            max_face_corners_at_floor,
+            worst_corners_at_floor_centroid.x(),
+            worst_corners_at_floor_centroid.y(),
+            worst_corners_at_floor_centroid.z(),
+            n_at_floor,
+            n_at_floor - n_corners_at_floor);
+    }
+    return fmt::format(
+        "{} offset face(s) over the bar have no chord target below the largest sizing scalar at "
+        "their corners, and none has its corners at the sizing floor {:.4g} (from {}): each has "
+        "a longest edge at least twice the largest target length at its corners, which the "
+        "split pass shortens, so no refinement is needed; worst {:.4}x the bar at centroid "
+        "({:.4}, {:.4}, {:.4}), corner scalar {:.4g}",
+        n_at_floor,
+        floor_scalar,
+        origin,
+        max_face_at_floor,
+        worst_at_floor_centroid.x(),
+        worst_at_floor_centroid.y(),
+        worst_at_floor_centroid.z(),
+        worst_at_floor_scalar);
 }
 
 double TopoOffsetTetMesh::phase_b_front_gradient_linf()
@@ -2864,7 +3076,8 @@ double TopoOffsetTetMesh::phase_b_front_gradient_linf()
 double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
 {
     // THE measure at one point, against THE bar: the vertex's own relative error
-    // |Phi(x) - c| / c over front_conv_frac(). This is face_conv_ratio()'s order-0 stencil
+    // |relative_residual(x)| over front_conv_frac(), i.e. its distance to the level set along the
+    // field over front_conv (see face_conv_ratio()). This is face_conv_ratio()'s order-0 stencil
     // evaluated at a single corner, which is what makes the vertex test and the face test one
     // test rather than two.
     //
@@ -2876,11 +3089,11 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     const OffsetPotential3D& pot = potential_for(vid);
     const double level = pot.target_level();
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
-    const double v = pot.value(m_vertex_attribute[vid].m_posf);
-    if (!std::isfinite(v)) return std::numeric_limits<double>::infinity();
+    const double r = pot.relative_residual(m_vertex_attribute[vid].m_posf);
+    if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
     const double bar = m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
-    return std::abs((v - level) / level) / bar;
+    return std::abs(r) / bar;
 }
 
 bool TopoOffsetTetMesh::front_vertex_placed(const size_t vid) const
@@ -2901,9 +3114,8 @@ double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
     const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
     double sum = 0.;
     for (const Vector3d& q : {pa, pb, Vector3d(0.5 * (pa + pb))}) {
-        const double vq = pot.value(q);
-        if (!std::isfinite(vq)) return -1.;
-        const double r = (vq - level) / level;
+        const double r = pot.relative_residual(q);
+        if (!std::isfinite(r)) return -1.;
         sum += r * r;
     }
     const double bar = m_offset_params.front_conv_frac();
@@ -2918,7 +3130,8 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     //
     // At every stencil point q of for_each_face_sample():
     //
-    //     r(q) = (Phi(q) - c) / c
+    //     r(q) = pot.relative_residual(q) = (signed distance from q to the level set, along the
+    //            field) / target_distance
     //
     // and the face's number is sqrt(mean of r^2) / front_conv_frac(). Equivalently, and this is
     // the form the instruction states, the MEAN SQUARED relative error is compared against
@@ -2937,6 +3150,16 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     // is |d - delta| / front_conv in lengths, which is what the old residual_error criterion
     // measured at a vertex.
     //
+    // WHY THE FIELD IS ASKED, not (Phi(q) - c)/c formed here. That relative FIELD error is the
+    // relative distance error only for a field linear in the distance, as the euclidean one is.
+    // For the smooth field it is the distance error times delta |dPhi/dd| / c = 3.44 at the
+    // default offset_dhat_factor 2, so every face and vertex read 3.44x its real error: on the
+    // cube at target_distance_rel 1e-2 / front_conv_rel 1e-4 that bought an extra halving -- 9
+    // turns, 80054 front faces and 477 s against the euclidean field's 7 turns, 25006 faces and
+    // 75 s on the same offset surface. relative_residual() is the distance to the level set
+    // along the field over target_distance for both fields, and for the euclidean one it is
+    // still (value - c)/c, so that path is unchanged bit for bit.
+    //
     // The face's field is its band cell's, the same selection as its edges'.
     const OffsetPotential3D& pot = potential_for_edge(a, b);
     const double level = pot.target_level();
@@ -2949,12 +3172,11 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     bool unmeasurable = false;
     for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double, double, double) {
         if (unmeasurable) return;
-        const double vq = pot.value(q);
-        if (!std::isfinite(vq)) {
+        const double r = pot.relative_residual(q);
+        if (!std::isfinite(r)) {
             unmeasurable = true;
             return;
         }
-        const double r = (vq - level) / level;
         sum += r * r;
         ++n;
     });
@@ -3141,23 +3363,32 @@ double TopoOffsetTetMesh::front_chord_target(
 size_t TopoOffsetTetMesh::refine_front_by_halving(
     const std::vector<EnergyCriterion::Refinable>& faces)
 {
+    // The corners, face by face in the order given; the vertex form halves each once.
+    std::vector<size_t> corners;
+    corners.reserve(3 * faces.size());
+    for (const EnergyCriterion::Refinable& r : faces) {
+        for (const size_t v : {r.a, r.b, r.c}) corners.push_back(v);
+    }
+    return refine_front_by_halving(corners);
+}
+
+size_t TopoOffsetTetMesh::refine_front_by_halving(const std::vector<size_t>& vertices)
+{
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    // Each corner is halved once per call: the first face that names it does the halving and
+    // Each vertex is halved once per call: the first entry that names it does the halving and
     // marks it, so a vertex shared by several refinable faces is not halved several times.
     std::vector<size_t> changed;
     std::vector<char> done(vert_capacity(), 0);
-    for (const EnergyCriterion::Refinable& r : faces) {
-        for (const size_t v : {r.a, r.b, r.c}) {
-            if (done[v]) continue;
-            done[v] = 1;
-            double& sc = m_vertex_attribute[v].m_sizing_scalar;
-            const double sn = std::max(0.5 * sc, s_floor);
-            if (sn < sc) {
-                sc = sn;
-                changed.push_back(v);
-            }
+    for (const size_t v : vertices) {
+        if (done[v]) continue;
+        done[v] = 1;
+        double& sc = m_vertex_attribute[v].m_sizing_scalar;
+        const double sn = std::max(0.5 * sc, s_floor);
+        if (sn < sc) {
+            sc = sn;
+            changed.push_back(v);
         }
     }
     grade_sizing(m_offset_params.sizing_gradation, changed);
@@ -4259,10 +4490,39 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // moving front stretches cells by design.
     // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
     // front and the background settle (smooth_group_to_convergence()).
-    const int k = std::max(1, m_params.interleaved_smoothing_passes);
-    const std::array<std::array<int, 4>, 3> groups = {
-        {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
-    static constexpr std::array<const char*, 3> group_names = {{"split", "collapse", "swap"}};
+    // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
+    // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
+    // group -- split, collapse and swap back to back -- followed by one smoothing block of
+    // num_smoothing_passes (or adaptive). Why the switch reaches the loop: measured on the
+    // deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing
+    // passes per turn only the first after the split moved the front from turn 5 on; the other five
+    // never moved a vertex across the bar, moved the background under 2% of its target edge length,
+    // and cost 63% of the turn (43 of 68 s). What the combined group changes, to be measured and
+    // not argued: the plastic rests are stamped once per turn, and the collapse and swap guards
+    // judge a front the split pass has not been placed since.
+    const bool interleaved = m_params.interleaved_smoothing;
+    const int k = std::max(
+        1,
+        interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+    const std::vector<std::array<int, 4>> groups =
+        interleaved
+            ? std::vector<std::array<int, 4>>{{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}
+            : std::vector<std::array<int, 4>>{{{1, 1, 1, k}}};
+    const std::vector<const char*> group_names =
+        interleaved ? std::vector<const char*>{"split", "collapse", "swap"}
+                    : std::vector<const char*>{"ops"};
+    logger().info(
+        "\tTurn shape: {}",
+        interleaved
+            ? fmt::format(
+                  "INTERLEAVED -- split, collapse, swap, each followed by {}",
+                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
+                                                     : fmt::format("{} smoothing pass(es)", k))
+            : fmt::format(
+                  "COMBINED -- split, collapse, swap back to back, then {} (interleaved_smoothing "
+                  "false)",
+                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
+                                                     : fmt::format("{} smoothing pass(es)", k)));
     compute_vertex_partition_morton();
     // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
     // scalars at the end of a turn, and the split pass
@@ -4292,6 +4552,9 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         }
         rebuild_offset_envelope();
     }
+    op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
+    m_split_order_waits = 0; // and so are the [split order] lines
+    m_split_off_longest = 0;
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -4307,6 +4570,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
+            if (!interleaved) needle_scan("combined ops pass");
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -4330,39 +4594,132 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         const Vector3d wx = ec.worst_vid != static_cast<size_t>(-1)
                                 ? m_vertex_attribute[ec.worst_vid].m_posf
                                 : Vector3d::Zero();
-        logger().info(
-            "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})), faces max "
-            "{:.4}x (avg {:.4}x) (reported) | {} vertices, {} faces | faces over the bar: {}, "
-            "of which {} with all corners placed (worst {:.4}x, centroid ({:.4}, {:.4}, "
-            "{:.4})) | refinable faces {} (at the sizing floor {}) ========",
-            it + 1,
-            budget,
-            amips,
-            bar,
-            ec.max_vertex,
-            ec.avg_vertex(),
-            ec.worst_vid,
-            wx.x(),
-            wx.y(),
-            wx.z(),
-            ec.max_face,
-            ec.avg_face(),
-            ec.n_vertices,
-            ec.n_faces,
-            ec.n_faces_over,
-            ec.n_faces_over_placed,
-            ec.max_face_placed,
-            ec.worst_placed_centroid.x(),
-            ec.worst_placed_centroid.y(),
-            ec.worst_placed_centroid.z(),
-            ec.refinable.size(),
-            ec.n_at_floor);
+        if (ec.ring_exit) {
+            // front_measure "vertex_ring": the ring measure is the exit test; the face measure
+            // and the vertex measure are the same numbers the face mode prints, as diagnostics.
+            const Vector3d rx = ec.worst_ring_vid != static_cast<size_t>(-1)
+                                    ? m_vertex_attribute[ec.worst_ring_vid].m_posf
+                                    : Vector3d::Zero();
+            logger().info(
+                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
+                "{:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) over {} "
+                "front vertices, {} rings unmeasurable, {} unmeasurable in all (the exit test) | "
+                "diagnostic: faces max {:.4}x (avg {:.4}x), {} faces over the bar of {}; front "
+                "vertices max {:.4}x (avg {:.4}x), {} not placed of {} | vertices over the bar: "
+                "{}, refinable {} (at the sizing floor {}) ========",
+                it + 1,
+                budget,
+                amips,
+                bar,
+                ec.ring_name(),
+                ec.max_ring,
+                ec.avg_ring(),
+                ec.worst_ring_vid,
+                rx.x(),
+                rx.y(),
+                rx.z(),
+                ec.n_rings,
+                ec.n_rings_unmeasurable,
+                ec.n_unmeasurable,
+                ec.max_face,
+                ec.avg_face(),
+                ec.n_faces_over,
+                ec.n_faces,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.n_unplaced,
+                ec.n_vertices,
+                ec.n_rings_over,
+                ec.refinable_vertices.size(),
+                ec.n_rings_at_floor);
+        } else {
+            logger().info(
+                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
+                "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) "
+                "(diagnostic), faces max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | {} "
+                "vertices, {} faces | faces over the bar: {}, of which {} with all corners placed "
+                "(worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | refinable faces {} (at the "
+                "sizing floor {}) ========",
+                it + 1,
+                budget,
+                amips,
+                bar,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.worst_vid,
+                wx.x(),
+                wx.y(),
+                wx.z(),
+                ec.max_face,
+                ec.avg_face(),
+                ec.n_unmeasurable,
+                ec.n_vertices,
+                ec.n_faces,
+                ec.n_faces_over,
+                ec.n_faces_over_placed,
+                ec.max_face_placed,
+                ec.worst_placed_centroid.x(),
+                ec.worst_placed_centroid.y(),
+                ec.worst_placed_centroid.z(),
+                ec.refinable.size(),
+                ec.n_at_floor);
+        }
+        // Faces over the bar with every corner at the sizing floor block the exit (they are over
+        // the bar) and no refinement will ever take them, so a run that keeps them never
+        // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
+        // count also holds faces whose corners are ABOVE the floor and whose longest edge the
+        // split pass will shorten -- on the deliverable cube at target_distance_rel 1e-2 /
+        // front_conv_rel 1e-4, every face it counted in turns 2, 4 and 5 (2, 2 and 16) was of
+        // that kind, with corner scalars down to 0.0625 against a floor of 0.002 -- so the same
+        // line says which, at info when none is at the floor. A turn with neither says nothing
+        // beyond its turn line.
+        //
+        // Under the ring measure the same line names the VERTICES over the bar at the floor,
+        // always a warning: the vertex form of the halving has no chord rule, so every vertex it
+        // cannot take is one nothing will ever take.
+        if (ec.n_at_floor > 0) {
+            logger().log(
+                ec.n_corners_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
+                "\t[sizing floor] turn {}: {}",
+                it + 1,
+                ec.sizing_floor_fact());
+        }
+        if (ec.ring_exit && ec.n_rings_at_floor > 0) {
+            logger().warn("\t[sizing floor] turn {}: {}", it + 1, ec.sizing_floor_fact());
+        }
         // Every place a proposed swap can be turned down, counted for this turn. See
         // TetOptimizerMesh::SwapReject: this is instrumentation for why an offset-surface flip
         // is never accepted, and the counters are reset each turn so the line is per-turn.
         logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
         swap_counters_reset();
+        // Every split, collapse and swap this turn attempted, each ended at exactly one named
+        // place; see TetOptimizerMesh::op_accounting_report(). A line warns when a refusal was
+        // made that no counter named -- that is a silent refusal site, i.e. a defect in the
+        // accounting, and it should not exist.
+        for (const OpKind k :
+             {OpKind::split,
+              OpKind::collapse,
+              OpKind::swap_32,
+              OpKind::swap_44,
+              OpKind::swap_56,
+              OpKind::swap_face}) {
+            logger().log(
+                op_accounting_unexplained(k) ? spdlog::level::warn : spdlog::level::info,
+                "\t[ops accounting] turn {} {}",
+                it + 1,
+                op_accounting_report(k));
+        }
+        op_accounting_reset();
+        // See split_edge_before(): splits that waited for a longer edge, and splits that
+        // committed off the longest edge of an incident tet anyway -- every longer edge was under
+        // the gate, which the order does not forbid. That count is NOT the threads defect: the
+        // halving grades the sizing field, and the serial pass commits the same kind from turn 2
+        // on (cube 1e-2 / 1e-4: 0, 379, 1577, 4573, 10539, 10843, 8298 per turn).
+        logger().info(
+            "\t[split order] turn {}: waited {} | committed off the longest edge {}",
+            it + 1,
+            m_split_order_waits.exchange(0),
+            m_split_off_longest.exchange(0));
         logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
         flip_funnel_reset();
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
@@ -4372,7 +4729,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
         logger().info(
             "\t[ops guard] turn {}: {} collapse(s) refused for leaving the offset surface "
-            "unresolved or worse and {} swap(s) for not lowering the local sag by the margin "
+            "unresolved or worse and {} swap(s) for raising the local sag "
             "({} / {} in the run so far)",
             it + 1,
             iter_cnt_collapse_guard_reject.load() - guard_c0,
@@ -4399,37 +4756,75 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 ec.worst_placed_centroid.z(),
                 n);
         }
+        if (ec.ring_exit && ec.n_rings_over > 0) {
+            // front_measure "vertex_ring": the halving takes each vertex over the bar, that
+            // vertex alone. refinable is empty in this mode, so the face line above is silent.
+            const size_t n = refine_front_by_halving(ec.refinable_vertices);
+            logger().info(
+                "\t[resolution] turn {}: {} front vertex(es) whose {} (the RMS, weighted by face "
+                "area, of the face measures of its incident offset faces) is over the bar, {} of "
+                "them at the sizing floor (worst {:.4}x) -> sizing scalar halved at {} vertices",
+                it + 1,
+                ec.n_rings_over,
+                ec.ring_name(),
+                ec.n_rings_at_floor,
+                ec.max_ring,
+                n);
+        }
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
         }
-        // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
-        // no face left to resolve -- then quality with the front frozen (below).
+        // Termination: every offset face's measure within the bar and nothing unmeasurable
+        // (EnergyCriterion::converged()) -- then quality with the front frozen (below). The face
+        // measure is the one quantity the smoothing minimises and the refinement reads; the
+        // vertex measure is reported on the turn line and in the verdict, and tested nowhere.
+        // Nothing refinable is implied, a refinable face being over the bar. Under front_measure
+        // "vertex_ring" the tested measure is every front vertex's ring measure instead, and the
+        // face measure joins the vertex measure as a diagnostic (EnergyCriterion::ring_exit).
         //
         // The loop exits on the FIRST turn that meets the criterion. It used to additionally
         // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
-        // which given that converged_single() requires an empty refinable set amounted to two
+        // which given that the exit required an empty refinable set amounted to two
         // consecutive turns without a lowering, the second of them converged. That was dropped
         // because it cost many turns waiting for two to line up, and TetWild's loop takes the
         // same choice: it breaks the moment its max energy is under stop_energy, that number
         // being a property of the mesh it is holding, where refinable is a request for work on
         // the next turn.
-        if (ec.converged_single()) {
+        if (ec.converged()) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
             // end of optimize_offset() requires this AND the front's.
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
-            logger().info(
-                "Single phase: the front is placed after {} iteration(s) (phi {:.4}x); max AMIPS "
-                "{:.4} against stop {:.4}",
-                it + 1,
-                ec.max_vertex / ec.bar,
-                amips,
-                bar);
+            if (ec.ring_exit) {
+                logger().info(
+                    "Single phase: the front is resolved after {} iteration(s): every front "
+                    "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; offset "
+                    "faces max {:.4}x with {} over the bar (diagnostic); front vertices max {:.4}x "
+                    "(diagnostic); max AMIPS {:.4} against stop {:.4}",
+                    it + 1,
+                    ec.ring_name(),
+                    ec.max_ring / ec.bar,
+                    ec.max_face / ec.bar,
+                    ec.n_faces_over,
+                    ec.max_vertex / ec.bar,
+                    amips,
+                    bar);
+            } else {
+                logger().info(
+                    "Single phase: the front is resolved after {} iteration(s): every offset face "
+                    "within the bar (faces max {:.4}x), nothing unmeasurable; front vertices max "
+                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
+                    it + 1,
+                    ec.max_face / ec.bar,
+                    ec.max_vertex / ec.bar,
+                    amips,
+                    bar);
+            }
             if (amips >= bar) {
                 logger().info(
                     "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
@@ -4448,6 +4843,10 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
                 mesh_improvement(a_iters);
+                logger().info(
+                    "\t[split order] final pass: waited {} | committed off the longest edge {}",
+                    m_split_order_waits.exchange(0),
+                    m_split_off_longest.exchange(0));
                 m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 assign_band_regions();
@@ -4626,35 +5025,86 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     log_worst_dist_vertex();
 
     bool front_ok = false;
+    std::string floor_fact; // quoted again by throw_on_nonconvergence below
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        // Two criteria, both required: the front placed, and the final quality under
-        // stop_energy (the finishing pass's verdict; see m_quality_converged).
-        front_ok = ec.converged_single();
+        // Two criteria, both required: the front resolved -- the loop's own exit test,
+        // EnergyCriterion::converged() -- and the final quality under stop_energy (the finishing
+        // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
+        // diagnostic and decide nothing.
+        front_ok = ec.converged();
         m_converged = front_ok && m_quality_converged;
-        logger().log(
-            m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- {} front vertices, max {:.4}x the bar (avg {:.4}x), {} faces "
-            "max {:.4}x (avg {:.4}x), {} unmeasurable | "
-            "faces to resolve {} (at the sizing floor {}) | front_conv {:.4} || "
-            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
-            m_converged ? "Converged" : "Optimization did not converge",
-            m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
-            front_ok ? "placed" : "NOT placed",
-            ec.n_vertices,
-            ec.max_vertex,
-            ec.avg_vertex(),
-            ec.n_faces,
-            ec.max_face,
-            ec.avg_face(),
-            ec.n_unmeasurable,
-            ec.refinable.size(),
-            ec.n_at_floor,
-            m_offset_params.front_conv,
-            m_quality_converged ? "ok" : "OVER",
-            m_quality_max_amips,
-            m_params.stop_energy);
+        floor_fact = ec.sizing_floor_fact();
+        if (ec.ring_exit) {
+            // front_measure "vertex_ring": the ring measure is what was tested; the face and
+            // vertex measures are the diagnostics, the face one naming how many faces are still
+            // over the bar at the verdict.
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{}{}: front {} -- tested (every front vertex's {} within the bar, nothing "
+                "unmeasurable): {} rings max {:.4}x the bar (avg {:.4}x), {} rings "
+                "unmeasurable, {} unmeasurable in all | diagnostic, not tested: {} faces max "
+                "{:.4}x the bar (avg {:.4}x), {} faces over the bar; {} front vertices max {:.4}x "
+                "the bar (avg {:.4}x), {} | vertices to resolve {} (at the sizing floor {}) | "
+                "front_conv {:.4} || final quality {}: max AMIPS {:.4} vs stop_energy {}{}{}",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
+                                 : "",
+                front_ok ? "resolved" : "NOT resolved",
+                ec.ring_name(),
+                ec.n_rings,
+                ec.max_ring,
+                ec.avg_ring(),
+                ec.n_rings_unmeasurable,
+                ec.n_unmeasurable,
+                ec.n_faces,
+                ec.max_face,
+                ec.avg_face(),
+                ec.n_faces_over,
+                ec.n_vertices,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.vertices_ok() ? std::string("all placed")
+                                 : fmt::format("{} not placed", ec.n_unplaced),
+                ec.refinable_vertices.size(),
+                ec.n_rings_at_floor,
+                m_offset_params.front_conv,
+                m_quality_converged ? "ok" : "OVER",
+                m_quality_max_amips,
+                m_params.stop_energy,
+                floor_fact.empty() ? "" : " || ",
+                floor_fact);
+        } else {
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{}{}: front {} -- tested (every face within the bar, nothing unmeasurable): {} "
+                "faces max {:.4}x the bar (avg {:.4}x), {} unmeasurable | diagnostic, not "
+                "tested: {} front vertices max {:.4}x the bar (avg {:.4}x), {} | faces to resolve "
+                "{} (at the sizing floor {}) | front_conv {:.4} || final quality {}: max AMIPS "
+                "{:.4} vs stop_energy {}{}{}",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
+                                 : "",
+                front_ok ? "resolved" : "NOT resolved",
+                ec.n_faces,
+                ec.max_face,
+                ec.avg_face(),
+                ec.n_unmeasurable,
+                ec.n_vertices,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.vertices_ok() ? std::string("all placed")
+                                 : fmt::format("{} not placed", ec.n_unplaced),
+                ec.refinable.size(),
+                ec.n_at_floor,
+                m_offset_params.front_conv,
+                m_quality_converged ? "ok" : "OVER",
+                m_quality_max_amips,
+                m_params.stop_energy,
+                floor_fact.empty() ? "" : " || ",
+                floor_fact);
+        }
     }
 
     // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
@@ -4697,15 +5147,20 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
-            "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
-            "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
-            "warnings above.",
-            front_ok ? "placed" : "NOT placed",
+            "Optimization did not converge and throw_on_nonconvergence is set: front {} (every "
+            "{} within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
+            "stop_energy {}). Ran {} of {} iterations; see the warnings above.{}{}",
+            front_ok ? "resolved" : "NOT resolved",
+            m_offset_params.front_measure == "vertex_ring"
+                ? "front vertex's area-weighted ring measure"
+                : "face",
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy,
             optimization_metrics.size(),
-            m_offset_params.max_iterations);
+            m_offset_params.max_iterations,
+            floor_fact.empty() ? "" : " ",
+            floor_fact);
     }
 }
 

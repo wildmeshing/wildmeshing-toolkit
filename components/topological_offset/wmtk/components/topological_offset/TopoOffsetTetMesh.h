@@ -688,10 +688,11 @@ public:
     mutable char m_debug_last_phase = '?';
     /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
     double m_gradient_reference = 0.;
-    /// The run's verdict: the front placed AND the final quality under stop_energy. Read by the
-    /// report and by throw_on_nonconvergence.
+    /// The run's verdict: the front resolved (EnergyCriterion::converged(): every offset face's
+    /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
+    /// Read by the report and by throw_on_nonconvergence.
     bool m_converged = false;
-    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is placed,
+    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is resolved,
     /// after the final pass when one ran. True when no pass was needed; false when the pass ended
     /// still over. m_quality_max_amips is the value it was judged on.
     bool m_quality_converged = true;
@@ -724,7 +725,7 @@ public:
     static constexpr long long kFlipTraceEvery = 20000;
     std::atomic<long long> flip_trace_n{0}; ///< accepted offset-surface flips
     std::atomic<long long> flip_trace_nonmono{
-        0}; ///< fall not > 0: MUST stay 0, the rule forbids it
+        0}; ///< fall < 0 (a rise): MUST stay 0, the rule forbids it
     std::atomic<long long> flip_trace_bar{0}; ///< of those, the ones over the tube (given the bar)
     /// Accepted flips bucketed by the size of the fall, before - after: >=1e-1, >=1e-2, >=1e-3,
     /// >=1e-4, >=1e-6, >=1e-9, >=1e-12, and everything below that.
@@ -732,28 +733,22 @@ public:
     void flip_trace_record(double before, double after);
 
     /**
-     * @brief [flip funnel]: of the surface flips the guard judged worth doing, how many survive
-     * each later stage. Reset per turn and reported next to [swap reject].
+     * @brief [flip funnel]: of the flips of the offset surface that passed the sag rule, how
+     * many survive each later stage. Reset per turn and reported next to [swap reject].
      *
      * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
-     * This follows only the flips that passed the guard -- pair over the bar, fall at least
-     * flip_sag_margin -- so a drop here is work the run wanted and did not get.
+     * This follows only the flips that passed the sag rule of swap_before_surface() -- the
+     * pair's worst face measure not raised -- so a drop here is the quality half at work.
      *
-     * Reading it. `offered` is set in swap_before_surface(), which is the app's first sight of a
-     * candidate; anything the base turned down earlier (valence, bbox, connectivity) never
-     * reaches it and is in [swap reject] instead. offered - quality is lost in the base's case
-     * search, i.e. no retetrahedralization that makes the (c,d) diagonal was found or every one
-     * was inverted. quality - quality_ok is refused on AMIPS against stop_energy. quality_ok -
-     * committed is swap_after_cells() refusing on the side/label capture. What the envelope
-     * check then refuses is past this hook and shows as after_envelope in [swap reject].
-     *
-     * The case that matters most is offered == committed with worthwhile flips still sitting in
-     * the mesh at the end of the pass: then nothing refused them and they were never presented,
-     * which puts the loss in the scheduler rather than in any rule here.
-     *
-     * `under_margin` says what the margin costs: flips REFUSED because the fall, though real,
-     * came in under it. Ties and rises are refused too but are not counted there -- the guard
-     * always refused those.
+     * Reading it. `passed the sag rule` is set in swap_before_surface(), which is the app's first
+     * sight of a candidate; anything the base turned down earlier (valence, bbox, connectivity)
+     * never reaches it and is in [swap reject] instead. For a 4-4 or 5-6, what does not reach
+     * the quality test is lost in the base's case search: no retetrahedralization that makes the
+     * (c,d) diagonal was found, or none scored strictly below the current cells (the `cases`
+     * split). quality - quality_ok is a 3-2 refused for not being strictly better than the cells
+     * it replaces. quality_ok - committed is swap_after_cells() refusing on the side/label
+     * capture. What the envelope check then refuses is past this hook and shows as
+     * after_envelope in [swap reject].
      */
     mutable std::atomic<long long> funnel_offered{0};
     /// offered, split by swap kind: [0] = 3-2, [1] = 4-4, [2] = 5-6.
@@ -761,24 +756,38 @@ public:
     /// of the 4-4 and 5-6 ones, those for which at least one case survived accept_case and was
     /// scored. offered(4-4 + 5-6) - this is exactly what flip_wrong_case threw away.
     mutable std::atomic<long long> funnel_cases{0};
-    /// The scored CASES of those flips, by what the base's own energy said about them. A case
-    /// that is not finite is one whose retetrahedralization inverts a cell -- swap_edge_*_energy
-    /// returns double::max() for that -- which is a geometric refusal, not a quality one. A
-    /// finite case at or above stop_energy is a genuinely bad retetrahedralization. Only a case
-    /// below stop_energy passes the base's `energy < min_energy` test under the absolute bar, so
-    /// case_ok is what can still become a swap.
-    mutable std::atomic<long long> funnel_case_inf{0};
-    mutable std::atomic<long long> funnel_case_over{0};
-    mutable std::atomic<long long> funnel_case_ok{0};
+    /// The scored CASES of those flips, by what the base's own energy said about them against
+    /// the current cells (SwapSurfaceSides::case0_energy). An inverted case is one whose
+    /// retetrahedralization inverts a cell -- swap_edge_*_energy returns double::max() for that
+    /// -- which is a geometric refusal, not a quality one. Only a better case passes the base's
+    /// `energy < min_energy` test, so case_better is what can still become a swap.
+    mutable std::atomic<long long> funnel_case_inverted{0};
+    mutable std::atomic<long long> funnel_case_not_better{0};
+    mutable std::atomic<long long> funnel_case_better{0};
     mutable std::atomic<long long> funnel_quality{0};
     mutable std::atomic<long long> funnel_quality_ok{0};
     mutable std::atomic<long long> funnel_committed{0};
-    mutable std::atomic<long long> funnel_under_margin{0};
     std::string flip_funnel_report() const;
     void flip_funnel_reset();
     /// Splits of an offset-surface edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
+    /// Longest-edge order in the optimization split (see split_edge_before()), counted per turn:
+    /// splits that waited for a strictly longer edge of an incident tet that was over the split
+    /// gate, and committed splits whose edge was not the longest edge of every incident tet.
+    std::atomic<long> m_split_order_waits{0};
+    mutable std::atomic<long> m_split_off_longest{0};
+    /// Whether the split running on this thread is off the longest edge of an incident tet. Set
+    /// by split_edge_before(), counted by op_event() when that split commits.
+    static bool& split_off_longest()
+    {
+        static thread_local bool off = false;
+        return off;
+    }
+    void op_event(OpKind k, OpEvent e) const override;
+    /// The shared split pass's gate: TetOptimizerMesh::split_all_edges's is_weight_up_to_date
+    /// without its staleness test.
+    bool split_edge_is_due(const Tuple& e) const;
 
     /// What the shared split has to carry across for the offset: the region tag of each parent
     /// tet, keyed by the edge opposite the split one, and which surfaces the edge was on.
@@ -968,6 +977,15 @@ public:
     };
     SmoothTrace m_smooth_trace;
 
+    /// How the solves this class makes itself ended, per smoothing pass, beside the base's
+    /// m_newton (the background, through TetOptimizerMesh::smooth_after()). Front: every front
+    /// placement in the phases that place it -- the 1-D solve along the field normal and the 3-D
+    /// solve it falls back to. Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged
+    /// and reset by log_smoothing_pass_accounting().
+    optimization::NewtonCounters m_newton_front;
+    optimization::NewtonCounters m_newton_plastic;
+    void log_smoothing_pass_accounting() override;
+
     /**
      * @brief Why smoothing does not repair a sliver in its one-ring. Same counters as 2D:
      * offered / reached / fixed / stationary. See TopoOffsetTriMesh::m_needle_pre.
@@ -1022,9 +1040,32 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// The ops divergence guard: one face's sag as face_conv_ratio() gives it, with an
+    /// The ops divergence guard: one face's measure as face_conv_ratio() gives it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
+    /// THE ops guards' comparison, one implementation for the collapse and the swap guard:
+    /// {before, after}, the largest measure among the elements the operation changes, the
+    /// element being what the exit tests under front_measure. `before` holds the offset faces
+    /// the operation changes as they are, `after` what replaces them (the collapse's relabelled
+    /// ring, the swap's two new faces), `removed` the vertex the operation deletes (-1 none).
+    /// "face": the changed faces themselves, face_resolution_or_inf(). "vertex_ring": every
+    /// corner of a changed face -- the vertices whose rings change -- with vertex_ring_measure()
+    /// over the ring as it is and as it will be. See the definition for why "face" compares the
+    /// changed faces and not the vertices around them.
+    std::pair<double, double> ops_guard_measures(
+        const std::vector<std::array<size_t, 3>>& before,
+        const std::vector<std::array<size_t, 3>>& after,
+        size_t removed) const;
+    /// front_measure "vertex_ring"'s VERTEX measure over a given ring of offset faces --
+    /// energy_criterion()'s ring measure, on faces the caller supplies so the ops guard can
+    /// measure a ring the mesh does not carry yet: over the faces with three front corners,
+    /// sqrt(sum_f A_f r_f^2 / sum_f A_f), r_f = face_conv_ratio(), A_f = ring_face_area(). +inf
+    /// when a face is unmeasurable or the areas sum to zero; -1 when no face has three front
+    /// corners (no ring).
+    double vertex_ring_measure(const std::vector<std::array<size_t, 3>>& ring) const;
+    /// An offset face's area from its current corners: its weight in the ring measure. Read by
+    /// energy_criterion(), vertex_ring_measure() and the debug frames alike.
+    double ring_face_area(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1169,83 +1210,43 @@ public:
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }
 
-    /// The ops divergence guard, the swap half. A flip OF THE OFFSET SURFACE is accepted on an
-    /// absolute quality bar rather than on strict improvement: the cells it creates need only be
-    /// under stop_energy, which is the bar the run is trying to reach anyway. For every interior
-    /// swap the base's strict rule still stands.
+    /// The quality half of the acceptance rule for every swap, a flip of the offset surface
+    /// included: the cells a swap makes must be STRICTLY better than the cells it replaces -- the
+    /// base's rule, unchanged. The sag half is swap_before_surface(); its comment has the history
+    /// of the absolute bar (new cells under stop_energy) that flips of the offset surface were
+    /// judged on until 2026-09-25. Overridden only to count, for [flip funnel], the flips of the
+    /// offset surface that reach it.
     ///
-    /// Strict improvement made the surface flip unreachable in practice -- it is the only
-    /// operation that can re-triangulate the offset surface without moving a vertex, and across
-    /// whole runs on the deliverable cube not one was ever accepted (cnt_surface_flip 0 for
-    /// 3-2, 4-4 and 5-6 alike, with one pass logging 0 successes against 7636 failures). A rule
-    /// that can only ever accept an improvement cannot get a surface out of a local minimum.
-    ///
-    /// The other half of the acceptance rule is NOT here: the sag test lives in
-    /// swap_before_surface(), where it is exact because a flip moves no vertex, so both faces'
-    /// corners are unchanged and the "after" sag can be measured before anything is modified.
-    /// There is deliberately no PLACEMENT test: front_vertex_conv_ratio() under the default
-    /// residual_error criterion is band_vertex_residual(vid) over the bar, a function of the
-    /// vertex's position alone, and a swap moves no vertex -- so it cannot change. That is not
-    /// true of step_size_rel or the F-based criterion, which build phase_b_front_objective() and
-    /// so read the one-ring a flip re-triangulates; under those a flip can move the ratio and
-    /// this rule does not notice.
+    /// There is deliberately no PLACEMENT test: front_vertex_conv_ratio() is a function of the
+    /// vertex's position alone, and a swap moves no vertex -- so it cannot change.
     bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
         const override
     {
-        if (!is_surface_flip || !swap_surface_flip_absolute_bar()) {
-            return after < before;
-        }
-        const bool ok = after < m_params.stop_energy;
-        if (m_swap_sides.local().worthwhile) {
+        const bool ok = after < before;
+        if (is_surface_flip && m_swap_sides.local().worthwhile) {
             ++funnel_quality;
             if (ok) ++funnel_quality_ok;
         }
         return ok;
     }
     /**
-     * @brief The absolute-bar rule again, one stage EARLIER, where the 4-4 and 5-6 swaps decide.
+     * @brief Counting only: the scored cases of a 4-4 / 5-6 flip of the offset surface, for
+     * [flip funnel]. The energy returned is the base's.
      *
-     * swap_quality_allowed() above is the app's after-hook and is the whole story only for the
-     * 3-2 swap. TetMesh::swap_edge_44() and ::swap_edge_56() pick their retetrahedralization by
-     * seeding `min_energy` with the energy of DOING NOTHING and taking a case only when it is
-     * strictly lower (TetMeshSwapMeshConnectivity.cpp:534 and :756). That test runs BEFORE
-     * swap_edge_44_after(), so a surface flip that raises AMIPS never reaches the hook and the
-     * absolute bar could not fire: measured on the cube at 1e-3, of the valence-4 surface edges
-     * whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken,
-     * against 58.1% of the 260 that happened to lower it.
+     * TetMesh::swap_edge_44() and ::swap_edge_56() pick their retetrahedralization by seeding
+     * `min_energy` with the energy of DOING NOTHING (op_case 0) and taking a case only when it
+     * scores strictly lower, before any after-hook runs. That case search IS the quality half of
+     * the rule for these two swaps. op_case 0 is recorded (SwapSurfaceSides::case0_energy) so
+     * each scored case can be counted as inverted, not better, or better.
      *
-     * So the bar is expressed in the currency that comparison speaks. For a flip that has been
-     * found to be one of the offset surface, the baseline case (op_case 0, the existing cells)
-     * reports stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy`
-     * into exactly "the cells this flip makes are under stop_energy". Nothing in the shared
-     * engine changes: the override is handed out only where swap_before_surface() has just
-     * established both conditions, so TetWild and SimWild never see it and neither does any flip
-     * of the input complex or of a region boundary.
-     *
-     * The sag half lives in swap_before_surface(). It refuses any flip that does not strictly
-     * lower the pair's max sag by flip_sag_margin, and every flip that does gets
-     * THIS override -- so the accepted rule is max sag after <= max sag before - margin AND max
-     * AMIPS after < stop_energy, with nothing asked about whether the pair was over the bar. A
-     * flip that misses the margin is refused by the guard outright rather than judged on AMIPS.
-     * The margin is what makes the pass converge, since each accepted flip spends at least that
-     * much of a quantity bounded below; the runs that proved a looser sag test does not converge
-     * are written out there.
-     *
-     * An inverted candidate is still refused: the base returns double::max() for one, which is
-     * not below stop_energy. A 5-6 surface flip gains a quality bar it never had, its after-hook
-     * having computed a max energy and discarded it since before this branch existed.
+     * Until 2026-09-25 these overrides reported stop_energy for op_case 0, which turned the
+     * base's test into "the new cells are under stop_energy" for flips of the offset surface
+     * (the absolute bar; see swap_before_surface() for why it existed and why it went).
      */
     double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
     double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
-    /// THE single test for "this flip gets the absolute bar", read by swap_quality_allowed() and
-    /// by both energy overrides. It is not recomputed here: swap_before_surface() has already
-    /// decided, and set the flag only after establishing both conditions -- the two
-    /// re-triangulated faces are live offset surface, and the flip lowers their max sag by the
-    /// margin. Asking again from here could check neither, which is how the first version of
-    /// this handed the bar to input-complex and region flips as well.
-    bool swap_surface_flip_absolute_bar() const { return m_swap_sides.local().absolute_bar; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /**
@@ -1319,8 +1320,9 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset surface.
      *
      * Every decision in the component that asks "is the placement of this front vertex done"
-     * goes through here or through front_placed_by_ratio(): the loop's vertex test
-     * (EnergyCriterion::vertices_ok()), the corner qualification of the face-sag classification,
+     * goes through here or through front_placed_by_ratio(): the vertex measure the loop reports
+     * (EnergyCriterion::vertices_ok(), a diagnostic since 2026-09-25 -- the loop exits on the face
+     * measure), the corner qualification of the face-sag classification,
      * the collapse and swap guards' snapshot and the collapse guard's after-half, the
      * adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by
      * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
@@ -1331,9 +1333,10 @@ public:
      * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
      * hair outside the tube disqualified its whole face from ever being refined, with the face
      * then counted in neither `refinable` nor `n_at_floor` and so invisible to
-     * converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging
-     * chords were dropped that way, the worst of them sagging 74 tubes, because one end sat
-     * 1.02 tubes off the level set with a Newton step of 1e-9.     *
+     * the exit test of the time (converged_single(), removed 2026-09-25). Measured in 2D on
+     * top_annots_uday: at turn 1, 50 of the 114 sagging chords were dropped that way, the worst
+     * of them sagging 74 tubes, because one end sat 1.02 tubes off the level set with a Newton
+     * step of 1e-9.     *
      * front_conv_criterion "residual_error" makes that same residual_length() the measure for
      * every one of the callers above. That is not the defect coming back: the defect was the
      * SPLIT -- one test using the residual while the rest used stationarity -- not the use of the
@@ -1354,12 +1357,17 @@ public:
     /// The chord twin of face_conv_ratio(): the RMS relative error over the chord's two
     /// endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// THE measure, as a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
-    /// the face's `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since
-    /// the stencil contains the CORNERS, this one number answers both questions the loop used to
-    /// ask separately -- a face is resolved when it is <= 1, and a vertex is placed when the
-    /// same measure over its own point (front_vertex_conv_ratio(), the order-0 stencil at one
-    /// corner) is <= 1. < 0 when not measurable, i.e. any sample where Phi is not finite.
+    /// THE FACE MEASURE, and the ONE function every reader of it calls: energy_criterion()'s exit,
+    /// refinement and ring measures, the ops guards through face_resolution_or_inf() and
+    /// vertex_ring_measure(), and the debug frames' front_err_ratio and front_ring_ratio. As a
+    /// ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over the face's
+    /// `stencil_order` stencil of OffsetPotential::relative_residual(q), the distance to the level
+    /// set along the field over target_distance (for the euclidean field (Phi(q) - c)/c, for the
+    /// smooth field not -- see face_conv_ratio()'s definition). Since the stencil
+    /// contains the CORNERS, this one number answers both questions the loop used to ask separately
+    /// -- a face is resolved when it is <= 1, and a vertex is placed when the same measure over its
+    /// own point (front_vertex_conv_ratio(), the order-0 stencil at one corner) is <= 1. < 0 when
+    /// not measurable, i.e. any sample where relative_residual() is not finite.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1661,7 +1669,25 @@ public:
         double max_face_placed = 0.;
         Vector3d worst_placed_centroid = Vector3d::Zero();
         double tube = 0.;
+        /// Faces over the bar that the refinement does not take: no chord target below the
+        /// largest sizing scalar at their corners. Like every face over the bar they block the
+        /// exit. Two states share this count (see energy_criterion()): corners at the sizing
+        /// floor, which nothing can refine, and a longest edge still at least twice the target
+        /// length at the corners, which the split pass shortens. The first is n_corners_at_floor.
         size_t n_at_floor = 0;
+        double max_face_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_at_floor_centroid = Vector3d::Zero();
+        double worst_at_floor_scalar = 0.; ///< the largest sizing scalar at the worst one's corners
+        /// Of n_at_floor, the faces whose largest corner scalar IS the floor: they cannot be
+        /// refined, so a run keeping them cannot converge. The loop warns with them every turn
+        /// they exist, and the verdict and the throw_on_nonconvergence message quote the same
+        /// sentence, sizing_floor_fact().
+        size_t n_corners_at_floor = 0;
+        double max_face_corners_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_corners_at_floor_centroid = Vector3d::Zero();
+        /// The floor, max(min_sizing_scalar, min_edge_length / l), and which of the two it is.
+        double floor_scalar = 0.;
+        bool floor_from_min_edge_length = false;
         size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
         /// A face over the bar with all three corners placed: a, b are the ends of its LONGEST
         /// edge (the chord the target is derived from), c the third corner; len the longest
@@ -1676,13 +1702,84 @@ public:
             double measure, len;
         };
         std::vector<Refinable> refinable;
-        /// Every front vertex placed. Counted through front_vertex_placed() rather than
-        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
-        /// drift apart; max_vertex stays for the reporting.
+        /// THE RING MEASURE, filled only under front_measure "vertex_ring". At a front vertex v,
+        /// over the offset faces incident to v that the face loop measured (three front corners):
+        ///
+        ///     r_v = sqrt( sum_f A_f face_conv_ratio_f^2 / sum_f A_f )
+        ///
+        /// A_f the face's area from its current corners (ring_face_area()). This is the front
+        /// smoother's own objective at v, normalised by the ring size so that the bar keeps its
+        /// meaning: StencilEnergy3D weights each face's stencil mean by A_f / A_mean
+        /// (StencilEnergy3D::Face::weight), so its value at v over the n_v faces is E_v = w_off
+        /// front_conv_frac()^2 n_v r_v^2. Exact where the face's field (potential_for_edge()) is
+        /// the vertex's (potential_for()), always so with one region, and every stencil sample is
+        /// finite; the smoother's objective also carries the w_amips AMIPS term beside this one.
+        /// Built from the very face_conv_ratio() calls the face loop makes, so both modes judge
+        /// identical face numbers. A vertex with any unmeasurable incident face has no ring
+        /// measure (n_rings_unmeasurable; the face itself is already in n_unmeasurable); a ring of
+        /// zero total area has none either and is counted in n_unmeasurable itself. Why it exists:
+        /// the face exit and refinement are per face, the smoother minimises per vertex ring, and
+        /// the two disagree at the margin -- on the deliverable cube at target_distance_rel 1e-3 /
+        /// front_conv_rel 1e-5 the face exit never fired, turns 12-15 each ending with a handful
+        /// of faces at 1.00x to 1.19x the bar, the smoothing having nudged faces from 0.99x to
+        /// just over the bar while lowering the ring they belong to.
+        bool ring_exit = false; ///< front_measure "vertex_ring"
+        static const char* ring_name() { return "area-weighted ring measure"; }
+        double max_ring = 0., sum_ring = 0.; ///< ratios to the bar (1 = bar)
+        size_t n_rings = 0, n_rings_unmeasurable = 0;
+        size_t worst_ring_vid = static_cast<size_t>(-1);
+        size_t n_rings_over = 0; ///< vertices whose ring measure is over the bar
+        /// The ring-mode refinement: every vertex over the bar whose sizing scalar the halving can
+        /// still lower, handed to refine_front_by_halving() as the vertex alone.
+        std::vector<size_t> refinable_vertices;
+        /// Vertices over the bar whose sizing scalar is already at the floor: nothing can refine
+        /// them, so they block the exit for good. sizing_floor_fact() names them in ring mode.
+        size_t n_rings_at_floor = 0;
+        double max_ring_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_ring_at_floor_pos = Vector3d::Zero();
+        bool rings_ok() const { return max_ring <= bar; }
+        double avg_ring() const { return n_rings ? sum_ring / double(n_rings) : 0.; }
+        /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
+        /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
+        /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
+        /// it since 2026-09-25; see converged().
         bool vertices_ok() const { return n_unplaced == 0; }
         bool faces_ok() const { return max_face <= bar; }
-        bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
-        bool converged_single() const { return converged() && refinable.empty(); }
+        /// THE exit test, and the front half of the run's verdict: every offset face's measure
+        /// within the bar AND nothing unmeasurable. One quantity, the FACE measure
+        /// (face_conv_ratio()), now decides smoothing (it is the front smoothing energy,
+        /// StencilEnergy3D), refinement (which faces enter `refinable`) and termination -- the
+        /// decision of 2026-09-25. The vertex measure left the exit then and is reported only.
+        /// The stencil contains the corners, so a face within the bar bounds its corners' error
+        /// in the RMS sense over the stencil, not each corner separately.
+        ///
+        /// No refinable.empty() term: a refinable face is over the bar, so faces_ok() already
+        /// implies that nothing is refinable. Against the old exit (every vertex placed, nothing
+        /// unmeasurable, nothing refinable) two things change: a face over the bar that the
+        /// refinement does not take (n_at_floor) used to let the run end "converged" and now
+        /// blocks the exit, the loop warning when its corners are at the sizing floor; and a
+        /// front vertex over the bar no longer blocks it once every face it is a corner of is
+        /// within the bar.
+        ///
+        /// Under front_measure "vertex_ring" the ring measure takes the face measure's place here:
+        /// every front vertex's ring measure within the bar AND nothing unmeasurable, the face
+        /// measure then reported only. An unmeasurable ring has an unmeasurable face in it or zero
+        /// total area, and n_unmeasurable counts either, so the second half is the same test in
+        /// both modes. In one statement for both: max over front vertices v of the VERTEX measure
+        /// V(v) within the bar, nothing unmeasurable -- under "face" V(v) is the max of the face
+        /// measure over v's offset faces with three front corners, so the max over vertices is
+        /// the max over those faces, faces_ok(); under "vertex_ring" V(v) is the ring measure,
+        /// rings_ok().
+        bool converged() const
+        {
+            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0;
+        }
+        /// The n_at_floor faces as one sentence, for the turn's line (a warning when some have
+        /// their corners at the sizing floor), the verdict and the throw_on_nonconvergence
+        /// message alike, so all three state the same fact. Empty when n_at_floor is 0. Under
+        /// front_measure "vertex_ring" the same three places get the n_rings_at_floor vertices
+        /// instead, empty when there are none.
+        std::string sizing_floor_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
         /// Means over the measurable front vertices / offset faces; 0 when there are none.
         double avg_vertex() const { return n_vertices ? sum_vertex / double(n_vertices) : 0.; }
@@ -1701,6 +1798,11 @@ public:
     /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded
     /// outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// The same halving at the listed vertices themselves: each lowered once per call, floored,
+    /// then graded. The face form above is this on its faces' corners, in the order given;
+    /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
+    /// the bar.
+    size_t refine_front_by_halving(const std::vector<size_t>& vertices);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -2033,23 +2135,20 @@ private:
         /// -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d), so these four are exactly the vertices whose
         /// membership it can change, and swap_after_cells() refreshes them.
         std::array<size_t, 4> abcd{};
-        /// Set by swap_before_surface() for THIS flip alone, and read by
-        /// swap_surface_flip_absolute_bar(): true only once the flip has been found to be a flip
-        /// of the offset surface under the ops divergence guard whose sag strictly
-        /// falls. It is what pairs the two halves of the rule -- the quality bar is given out
-        /// only where the sag rule has just been paid. Cleared at the top of
-        /// swap_before_surface() and of swap_before_interior(), so it never outlives its flip.
-        bool absolute_bar = false;
         /// The pair the guard measured for THIS flip, kept so swap_after_cells() can record what
         /// an accepted flip actually won. sag_measured says the guard ran AND the flip passed its
-        /// refusal, so the two numbers mean something; all three are cleared with absolute_bar.
+        /// refusal, so the two numbers mean something. Cleared at the top of
+        /// swap_before_surface() and of swap_before_interior(), so none of these fields outlives
+        /// its flip.
         bool sag_measured = false;
         double sag_before = 0.0;
         double sag_after = 0.0;
-        /// [flip funnel]: this flip is one the guard judged WORTH DOING -- the pair sags over the
-        /// bar and the flip wins at least the margin, so it was handed the absolute quality bar.
-        /// Cleared with absolute_bar; read at each later stage to follow the flip through.
+        /// [flip funnel]: this flip is a flip of the offset surface that passed the sag rule.
+        /// Read at each later stage to follow the flip through.
         bool worthwhile = false;
+        /// [flip funnel]: the base's score of the current cells (op_case 0), which every scored
+        /// case of this flip has to beat. Written by swap_edge_44_energy() / swap_edge_56_energy().
+        double case0_energy = 0.0;
         /// [flip funnel]: set the first time swap_edge_44_energy() / swap_edge_56_energy() is
         /// asked to score a CANDIDATE case (op_case >= 1) for this flip, so the funnel counts
         /// flips for which the base found at least one retetrahedralization that survives
@@ -2064,8 +2163,8 @@ private:
         size_t b,
         size_t c,
         size_t d);
-    /// mutable: swap_quality_allowed() is a const hook and reads absolute_bar through
-    /// swap_surface_flip_absolute_bar(); .local() is not const-callable.
+    /// mutable: swap_quality_allowed() is a const hook and reads worthwhile; .local() is not
+    /// const-callable.
     mutable wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
 
 public:

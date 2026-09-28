@@ -122,20 +122,22 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
     if (m_coarsen_mode && !m_params.coarsen_unbounded) {
         if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
-            return false;
+            return collapse_reject(CollapseReject::coarsen_length);
         }
     }
 
     ///check if on bbox/surface/boundary
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
-        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) return false;
+        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) {
+            return collapse_reject(CollapseReject::bbox);
+        }
         for (int on_bbox : VA[v1_id].on_bbox_faces)
             if (std::find(
                     VA[v2_id].on_bbox_faces.begin(),
                     VA[v2_id].on_bbox_faces.end(),
                     on_bbox) == VA[v2_id].on_bbox_faces.end()) {
-                return false;
+                return collapse_reject(CollapseReject::bbox);
             }
     }
 
@@ -147,10 +149,11 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // that reach here always have one, so the guard never fires for them.
         if (!VA[v2_id].m_is_on_surface &&
             (!m_envelope || m_envelope->is_outside(VA[v2_id].m_posf))) {
-            return false;
+            return collapse_reject(CollapseReject::surface_leaves_envelope);
         }
     }
 
+    // The application counts its own reasons (CollapseReject::app_*).
     if (!collapse_before_vertex(v1_id, v2_id, cache.edge_length)) {
         return false;
     }
@@ -181,7 +184,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         }
 
         if (is_inverted(vs)) {
-            return false;
+            return collapse_reject(CollapseReject::inverted);
         }
         double q = get_quality(vs);
         // The coarsening pass deliberately skips the quality gate and decides on the region
@@ -189,7 +192,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // above still applies: an inverted cell is not something smoothing can repair, since
         // smooth_vertex_3d refuses to start from one.
         if (!m_coarsen_mode && !collapse_quality_allowed(v1_id, q, cache.max_energy)) {
-            return false;
+            return collapse_reject(CollapseReject::quality);
         }
         cache.changed_energies.emplace_back(q);
     }
@@ -307,7 +310,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
         if (!substructure_link_condition(loc)) {
-            return false;
+            return collapse_reject(CollapseReject::substructure_link);
         }
     }
 
@@ -334,11 +337,11 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
         // if (debug_flag) std::cout << "connectivity reject" << std::endl;
 
-        return false;
+        return collapse_reject(CollapseReject::after_base);
     }
 
     if (!collapse_after_connectivity(v1_id, v2_id, cache.boundary_edges)) {
-        return false;
+        return collapse_reject(CollapseReject::after_connectivity);
     }
     // auto& VA = m_vertex_attribute;
     // auto& cache = collapse_cache.local();
@@ -354,7 +357,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         for (auto& vids : cache.surface_faces) {
             // surface envelope
             if (surface_triangle_is_outside(vids[0], vids[1], vids[2])) {
-                return false;
+                return collapse_reject(CollapseReject::after_envelope);
             }
 
             // // open boundary envelope
@@ -414,7 +417,8 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         //
         const auto found = try_tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         if (!found.has_value()) {
-            return false; // the collapse removed the face this attribute was to land on
+            // the collapse removed the face this attribute was to land on
+            return collapse_reject(CollapseReject::after_face_attribute);
         }
         m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
@@ -448,7 +452,34 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // exactly the global one: max energy cannot have risen. Measured relative to each cell's
     // own target -- see quality_rel for why a raw comparison would not hold when an
     // application gives different regions different targets.
-    return region_max_quality_rel(scr.ring) <= cache.region_max_rel_before;
+    if (region_max_quality_rel(scr.ring) <= cache.region_max_rel_before) return true;
+    return collapse_reject(CollapseReject::after_coarsen_region);
+}
+
+const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
+{
+    switch (r) {
+    case CollapseReject::coarsen_length: return "coarsen_length";
+    case CollapseReject::bbox: return "bbox";
+    case CollapseReject::surface_leaves_envelope: return "surface_leaves_envelope";
+    case CollapseReject::inverted: return "inverted";
+    case CollapseReject::quality: return "quality";
+    case CollapseReject::substructure_link: return "substructure_link";
+    case CollapseReject::app_both_surfaces: return "app_both_surfaces";
+    case CollapseReject::app_front_unlimited: return "app_front_unlimited";
+    case CollapseReject::app_leaves_input: return "app_leaves_input";
+    case CollapseReject::app_leaves_offset: return "app_leaves_offset";
+    case CollapseReject::app_leaves_region: return "app_leaves_region";
+    case CollapseReject::app_order2: return "app_order2";
+    case CollapseReject::app_substructure_link: return "app_substructure_link";
+    case CollapseReject::app_ops_guard: return "app_ops_guard";
+    case CollapseReject::after_base: return "after_base";
+    case CollapseReject::after_connectivity: return "after_connectivity";
+    case CollapseReject::after_envelope: return "after_envelope";
+    case CollapseReject::after_face_attribute: return "after_face_attribute";
+    case CollapseReject::after_coarsen_region: return "after_coarsen_region";
+    default: return "?";
+    }
 }
 
 const std::vector<size_t>& TetOptimizerMesh::collect_vertex_ball(
@@ -603,7 +634,8 @@ size_t TetOptimizerMesh::coarsen_mesh()
         //
         // Every collapse above is kept only if the region it disturbed came out no worse
         // (collapse_edge_after, coarsen branch). This smoothing has no such test, and with
-        // smooth_quality_veto off -- which is topological_offset's default -- smooth_vertex_3d
+        // smooth_quality_veto off -- topological_offset's default when this was written; on
+        // today -- smooth_vertex_3d
         // accepts any move that neither inverts a cell nor leaves the envelope, however much it
         // degrades one. So the pass could hand back a mesh worse than it was given, which is the
         // one thing it promises not to do.

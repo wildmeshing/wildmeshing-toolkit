@@ -262,8 +262,9 @@ namespace wmtk {
 
 bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
+    op_event(OpKind::collapse, OpEvent::attempt);
     if (!collapse_edge_before(loc0)) {
-        return false;
+        return op_refused(OpKind::collapse, OpEvent::before_hook);
     }
 
     size_t v1_id;
@@ -273,7 +274,8 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     std::vector<size_t> new_tet_id;
     std::vector<TetrahedronConnectivity> old_tets;
 
-    // collapse edge connectivity change with link condition check
+    // collapse edge connectivity change with link condition check. A refusal in there reports
+    // its own event (link_condition, no_return_tet or duplicate_tet).
     if (!collapse_edge_conn(
             loc0,
             v1_id,
@@ -286,12 +288,18 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
 
     start_protect_attributes();
-    if (!collapse_edge_check_topology(new_tet_id) || !collapse_edge_after(new_loc) ||
-        !invariants(get_one_ring_tets_for_vertex(new_loc))) {
+    // The three tests in the order and with the short-circuit of `!topology || !after ||
+    // !invariants`.
+    const OpEvent refused = !collapse_edge_check_topology(new_tet_id) ? OpEvent::topology
+                            : !collapse_edge_after(new_loc)           ? OpEvent::after_hook
+                            : !invariants(get_one_ring_tets_for_vertex(new_loc))
+                                ? OpEvent::invariants
+                                : OpEvent::committed;
+    if (refused != OpEvent::committed) {
         // m_vertex_connectivity[v1_id].m_is_removed = false;
         // operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
         collapse_edge_rollback(v1_id, rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
-        return false;
+        return op_refused(OpKind::collapse, refused);
     }
 
     release_protect_attributes();
@@ -303,6 +311,7 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     }
     unique_edge_tuples(*this, new_edges);
 
+    op_event(OpKind::collapse, OpEvent::committed);
     return true;
 }
 
@@ -461,7 +470,7 @@ bool TetMesh::collapse_edge_conn(
     logger().trace("{} {}", v1_id, v2_id);
     if (m_collapse_check_link_condition && !link_condition(loc0)) {
         logger().trace("violate link condition");
-        return false;
+        return op_refused(OpKind::collapse, OpEvent::link_condition);
     }
 
     // infomation needed for return tuple
@@ -488,7 +497,7 @@ bool TetMesh::collapse_edge_conn(
             // vertex carries one of those tags. The coarsening pass drops the quality gate,
             // which lets many more candidates reach here, and an untagged boundary -- which a
             // unit test can build and an application generally does not -- hits it.
-            return false;
+            return op_refused(OpKind::collapse, OpEvent::no_return_tet);
         }
     }
     const size_t v_C = v_C_tuple.value().switch_face().switch_edge().switch_vertex().vid();
@@ -542,7 +551,7 @@ bool TetMesh::collapse_edge_conn(
             auto [it, suc] = verify_conns.emplace(tet);
             if (!suc) { // duplicate
                 logger().error("broken topology after collapse");
-                return false;
+                return op_refused(OpKind::collapse, OpEvent::duplicate_tet);
             }
         }
     }

@@ -218,7 +218,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
             opt_logger());
     }
     if (!m_offset_params.front_normal_projection) {
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -231,7 +237,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     const size_t vid = t.vid(*this);
     const Vector3d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) { // no direction here: the 3-D solve is the fallback
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -240,7 +252,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     // where it opposes the placement pull it cancels it and the jog freezes. The trap is the
     // fight, not the perpendicular face -- both conditions in the predicate, as in 2D.
     if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
-        const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            solver,
+            &m_smooth_rejects,
+            &m_newton_front);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
@@ -255,10 +273,13 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
     auto line = std::make_shared<LineProblem3D>(phase_b_front_objective(vid, x0), x0, n);
     Eigen::VectorXd s = Eigen::VectorXd::Zero(1);
+    bool threw = false;
     try {
         solver->minimize(*line, s);
     } catch (const std::exception&) {
+        threw = true;
     }
+    m_newton_front.record(*solver, threw);
     set_vertex_position(vid, Vector3d(x0 + s(0) * n));
     if (hold) { // the boundary's tube, on the region faces the move reshaped -- as the shared
                 // smoother
@@ -482,6 +503,25 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
             StencilEnergy3D::Face sf;
             if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
             stencil_faces.push_back(std::move(sf));
+        }
+        // front_measure "vertex_ring": each face's mean is weighted by A_f / A_mean, the areas
+        // taken at the positions the visit starts from and held fixed for the solve -- weights,
+        // not variables. The error is the surface integral of r^2, so faces vote by area, and the
+        // loop's ring measure weights them the same way: weighting one and not the other would
+        // recreate the mismatch between what the smoother minimises and what the exit tests
+        // (Uday's decision, 2026-09-25). Dividing by the mean keeps the energy's scale at the
+        // vertex that of the unweighted sum. Under "face" every weight stays 1.
+        if (m_offset_params.front_measure == "vertex_ring" && !stencil_faces.empty()) {
+            const Vector3d x = m_vertex_attribute[vid].m_posf;
+            double a_sum = 0.;
+            for (StencilEnergy3D::Face& sf : stencil_faces) {
+                sf.weight = 0.5 * (sf.q1 - x).cross(sf.q2 - x).norm();
+                a_sum += sf.weight;
+            }
+            const double a_mean = a_sum / double(stencil_faces.size());
+            for (StencilEnergy3D::Face& sf : stencil_faces) {
+                sf.weight = a_mean > 0. ? sf.weight / a_mean : 1.;
+            }
         }
         if (!stencil_faces.empty()) {
             sum->add_energy(

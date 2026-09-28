@@ -61,15 +61,19 @@ struct Parameters : public wmtk::OptimizerParameters
     // cannot decide anything.
     //
     // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
-    // the field's relative error (Phi - c)/c, expressed as a length -- and compares it against
+    // the distance to the level set along the field (OffsetPotential::relative_residual(), which
+    // for the euclidean field is the relative error (Phi - c)/c) -- and compares it against
     // this. A vertex is placed when that same measure at the vertex alone is within it, which is
-    // the order-0 stencil, so the vertex test and the face test are one test at two sample
-    // counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23.
+    // the order-0 stencil, so the vertex measure and the face measure are one measure at two
+    // sample counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23. The
+    // loop exits on the face measure alone (every face within the bar, nothing unmeasurable);
+    // the vertex measure is a diagnostic since 2026-09-25. 2D exits on its chord measure, the
+    // midpoint sag, which unlike the 3D stencil does not sample the chord's two ends.
     double front_conv;
     double front_conv_rel;
 
     /// The convergence epsilon as a FRACTION of target_distance, which is the form the
-    /// dimensionless relative error (Phi - c)/c is compared against. A mean of squared relative
+    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A mean of squared relative
     /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
     /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
     /// code uses is a matter of where the division sits, not of what is being asked. 2D's
@@ -86,7 +90,8 @@ struct Parameters : public wmtk::OptimizerParameters
     //     once on the band as constructed.
     //   "residual_error": not a stationarity measure at all -- the field's own residual at the
     //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the ENERGY residual for the smooth one), against front_conv.
+    //     the euclidean field and the distance to the level set along the field for the smooth
+    //     one), against front_conv.
     //     No objective is built and n does not enter.
     //
     // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is
@@ -122,6 +127,17 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int stencil_order;
+    /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
+    /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
+    /// square of the face measures (face_conv_ratio()) of its incident offset faces weighted by
+    /// area -- in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by
+    /// length. The loop exits when every ring measure is within the bar and nothing is
+    /// unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front
+    /// smoother's stencil energy weights its faces by area the same way
+    /// (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and
+    /// the halving at the corners of every face over it -- the rule of 2026-09-25, kept for
+    /// comparison.
+    std::string front_measure;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -152,6 +168,20 @@ struct Parameters : public wmtk::OptimizerParameters
     /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
     /// for 40 turns.
     bool experimental_aggresive_refine = true;
+    /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
+    /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
+    /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
+    /// edge with 4/3 < r < 8/5 splits into halves with r/2 < 4/5, which the collapse pass merges
+    /// straight back. With this on, splitting_l2 becomes (8/5 l)^2 -- twice the collapse gate --
+    /// and collapsing_l2 is untouched, so every half a split produces is at or above the collapse
+    /// gate. A split is still never refused on quality; this is a length rule alone. Measured on
+    /// the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, alignment off: 81%
+    /// of the split candidates at the end of turn 7 (29068 of 35865) were inside that band, and
+    /// turns 6-8 each ran ~36k splits and ~29k collapses while refinement touched 0 vertices.
+    /// With it on: last-turn operations 66826 -> 19263, 8 -> 7 turns, 223 -> 126 s, final max
+    /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
+    /// more runs confirm it; false keeps the TetWild gates.
+    bool experimental_nonoverlapping_gates = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -204,12 +234,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// 3D only (2D has no swap half to the guard). See the spec: how much of the
-    /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
-    /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
-    /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
-    /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
-    double flip_sag_margin;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -249,6 +273,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
         stencil_order = json_params["stencil_order"];
+        front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
@@ -256,6 +281,7 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_consistent_construction_split =
             json_params["EXPERIMENTAL_consistent_construction_split"];
         experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
+        experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
@@ -277,7 +303,6 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
-        flip_sag_margin = json_params["flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
@@ -336,6 +361,14 @@ struct Parameters : public wmtk::OptimizerParameters
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2. It also derives eps from epsr,
         // which the offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
         init_lengths_from_diagonal((max_ - min_).norm());
+
+        // The split gate moved out to twice the collapse gate, so no half a split produces is a
+        // collapse candidate: splitting_l2 = (8/5 l)^2 against collapsing_l2 = (4/5 l)^2, which
+        // is left where it is. The overlapping TetWild gates (4/3 and 4/5), still the default, let
+        // the passes trade the same edges every turn -- see the declaration for the measurement.
+        if (experimental_nonoverlapping_gates) {
+            splitting_l2 = l * l * (64 / 25.);
+        }
 
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
