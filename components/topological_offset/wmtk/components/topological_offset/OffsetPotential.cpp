@@ -1607,30 +1607,55 @@ StencilEnergy3D::StencilEnergy3D(
     , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
 
-bool StencilEnergy3D::residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const
+const std::vector<StencilEnergy3D::Reading>& StencilEnergy3D::readings_at(
+    const Eigen::Vector3d& x,
+    const bool need_dr) const
 {
-    const double v = m_potential->value(p);
-    if (!std::isfinite(v)) return false;
-    r = (v - m_c) / m_c;
-    if (dr) {
-        const Eigen::Vector3d g = m_potential->gradient(p);
-        if (!g.allFinite()) return false;
-        *dr = g / m_c;
+    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
+        return m_readings;
     }
-    return true;
+    m_readings.clear();
+    for (const Face& f : m_faces) {
+        for (const Sample& sm : f.samples) {
+            const Eigen::Vector3d p = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            Reading rd;
+            double v;
+            Eigen::Vector3d g;
+            if (need_dr) {
+                m_potential->value_gradient(p, v, g);
+            } else {
+                v = m_potential->value(p);
+            }
+            if (std::isfinite(v)) {
+                rd.r = (v - m_c) / m_c;
+                rd.r_ok = true;
+                if (need_dr && g.allFinite()) {
+                    rd.dr = g / m_c;
+                    rd.dr_ok = true;
+                }
+            }
+            m_readings.push_back(rd);
+        }
+    }
+    m_readings_x = x;
+    m_readings_valid = true;
+    m_readings_have_dr = need_dr;
+    return m_readings;
 }
 
 double StencilEnergy3D::value(const TVector& xv)
 {
     const Eigen::Vector3d x = xv.head(3);
+    const std::vector<Reading>& rds = readings_at(x, false);
     double E = 0.;
+    size_t k = 0;
     for (const Face& f : m_faces) {
         double s = 0.;
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, nullptr)) continue;
-            s += r * r;
+        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok) continue;
+            s += rd.r * rd.r;
             ++n;
         }
         if (n > 0) E += f.weight * (s / double(n));
@@ -1641,19 +1666,20 @@ double StencilEnergy3D::value(const TVector& xv)
 void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
     const Eigen::Vector3d x = xv.head(3);
+    const std::vector<Reading>& rds = readings_at(x, true);
     gradv = Eigen::VectorXd::Zero(3);
     Eigen::Vector3d g = Eigen::Vector3d::Zero();
+    size_t k = 0;
     for (const Face& f : m_faces) {
         // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
         // barycentric weight is the whole chain rule. A corner sample of another vertex has
         // a_i = 0 and so contributes to the value but not to the gradient.
         Eigen::Vector3d gf = Eigen::Vector3d::Zero();
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            Eigen::Vector3d dr;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
-            gf += (2. * sm.a * r) * dr;
+        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            gf += (2. * f.samples[i].a * rd.r) * rd.dr;
             ++n;
         }
         if (n > 0) g += f.weight * (gf / double(n));
@@ -1664,7 +1690,9 @@ void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
 void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
     const Eigen::Vector3d x = xv.head(3);
+    const std::vector<Reading>& rds = readings_at(x, true);
     Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
+    size_t k = 0;
     for (const Face& f : m_faces) {
         // Gauss-Newton: 2 a_i^2 dr dr^T, dropping the 2 r a_i^2 hess Phi / c term. That term is
         // what makes the exact Hessian indefinite near the level set where r changes sign, and
@@ -1672,11 +1700,11 @@ void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
         // so is PSD by construction, with no eigenvalue projection needed.
         Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            Eigen::Vector3d dr;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
-            Hf += (2. * sm.a * sm.a) * (dr * dr.transpose());
+        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            const double a = f.samples[i].a;
+            Hf += (2. * a * a) * (rd.dr * rd.dr.transpose());
             ++n;
         }
         if (n > 0) H += f.weight * (Hf / double(n));

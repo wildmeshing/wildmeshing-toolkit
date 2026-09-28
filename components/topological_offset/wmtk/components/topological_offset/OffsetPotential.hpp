@@ -77,6 +77,14 @@ public:
     virtual VecD gradient(const VecD& p) const = 0;
     virtual MatD hessian(const VecD& p) const = 0;
 
+    /// value() and gradient() at one point, bit for bit. A field whose two evaluations share work
+    /// overrides it; the default is simply the two calls.
+    virtual void value_gradient(const VecD& p, double& v, VecD& g) const
+    {
+        v = value(p);
+        g = gradient(p);
+    }
+
     /**
      * @brief Distance from `p` to the level set, in length units.
      *
@@ -216,6 +224,8 @@ public:
     double value(const VecD& p) const override;
     VecD gradient(const VecD& p) const override;
     MatD hessian(const VecD& p) const override;
+    /// value() and gradient() at p from one collision build per part; see the definition.
+    void value_gradient(const VecD& p, double& v, VecD& g) const override;
 
     /**
      * @brief The distance from `p` to the level set Phi = c ALONG THE FIELD, in length units.
@@ -276,9 +286,6 @@ private:
     /// region), or false where there is none to measure. residual_length() is |t|,
     /// relative_residual() t / delta.
     bool level_set_distance(const VecD& p, double& t) const;
-
-    /// value() and gradient() at p from one collision build per part; see the definition.
-    void value_gradient(const VecD& p, double& v, VecD& g) const;
 
     /// Everything that mentions ipc-toolkit, kept out of this header so that no other
     /// translation unit in the component has to see it.
@@ -647,14 +654,33 @@ public:
     void solution_changed(const TVector& new_x) override {}
 
 private:
-    /// r and, optionally, dr at p. false when Phi or its gradient is not finite there, in which
-    /// case the sample is dropped exactly as the criterion drops it.
-    bool residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const;
+    /// One stencil point's r = (Phi - c)/c and dr = grad Phi / c. A sample whose Phi is not
+    /// finite is dropped everywhere, and one whose gradient is not finite from the gradient and
+    /// the Hessian, exactly as the criterion drops it.
+    struct Reading
+    {
+        double r = 0.;
+        Eigen::Vector3d dr = Eigen::Vector3d::Zero();
+        bool r_ok = false;
+        bool dr_ok = false;
+    };
+
+    /// Every stencil point's reading at x, faces in order and each face's samples in order,
+    /// computed once per x: polysolve asks value, gradient and Hessian at the same x in one
+    /// Newton iteration (and value once more in its gradient check), and the line search's
+    /// accepted point is the next iteration's x. The field is read without its gradient until
+    /// a gradient or Hessian is asked for, then with it in one value_gradient() call.
+    const std::vector<Reading>& readings_at(const Eigen::Vector3d& x, bool need_dr) const;
 
     std::shared_ptr<const OffsetPotential3D> m_potential;
     std::vector<Face> m_faces;
     double m_weight;
     double m_c = 1.; ///< the potential's target level, cached
+
+    mutable std::vector<Reading> m_readings;
+    mutable Eigen::Vector3d m_readings_x;
+    mutable bool m_readings_valid = false;
+    mutable bool m_readings_have_dr = false;
 };
 
 /**
