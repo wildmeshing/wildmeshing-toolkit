@@ -733,22 +733,23 @@ public:
     void flip_trace_record(double before, double after);
 
     /**
-     * @brief [flip funnel]: of the flips of the offset surface that passed the sag rule, how
-     * many survive each later stage. Reset per turn and reported next to [swap reject].
+     * @brief [flip funnel]: of the flips of the offset surface, how many survive each stage.
+     * Reset per turn and reported next to [swap reject].
      *
      * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
-     * This follows only the flips that passed the sag rule of swap_before_surface() -- the
-     * pair's worst face measure not raised -- so a drop here is the quality half at work.
+     * This follows only the flips the sag rule applies to -- both replaced faces offset surface
+     * -- through the base's case search, the quality test, and then the sag rule itself, which
+     * swap_after_cells() applies last (see there for why last).
      *
-     * Reading it. `passed the sag rule` is set in swap_before_surface(), which is the app's first
-     * sight of a candidate; anything the base turned down earlier (valence, bbox, connectivity)
-     * never reaches it and is in [swap reject] instead. For a 4-4 or 5-6, what does not reach
-     * the quality test is lost in the base's case search: no retetrahedralization that makes the
-     * (c,d) diagonal was found, or none scored strictly below the current cells (the `cases`
-     * split). quality - quality_ok is a 3-2 refused for not being strictly better than the cells
-     * it replaces. quality_ok - committed is swap_after_cells() refusing on the side/label
-     * capture. What the envelope check then refuses is past this hook and shows as
-     * after_envelope in [swap reject].
+     * Reading it. `offset-surface flips` is counted in swap_before_surface(), which is the app's
+     * first sight of a candidate; anything the base turned down earlier (valence, bbox,
+     * connectivity) never reaches it and is in [swap reject] instead. For a 4-4 or 5-6, what does
+     * not reach the quality test is lost in the base's case search: no retetrahedralization that
+     * makes the (c,d) diagonal was found, or none scored strictly below the current cells (the
+     * `cases` split). quality - quality_ok is a 3-2 refused for not being strictly better than
+     * the cells it replaces. quality_ok - sag_ok is the sag rule refusing, and sag_ok -
+     * committed swap_after_cells() refusing on the side/label capture. What the envelope check
+     * then refuses is past this hook and shows as after_envelope in [swap reject].
      */
     mutable std::atomic<long long> funnel_offered{0};
     /// offered, split by swap kind: [0] = 3-2, [1] = 4-4, [2] = 5-6.
@@ -766,6 +767,7 @@ public:
     mutable std::atomic<long long> funnel_case_better{0};
     mutable std::atomic<long long> funnel_quality{0};
     mutable std::atomic<long long> funnel_quality_ok{0};
+    mutable std::atomic<long long> funnel_sag_ok{0};
     mutable std::atomic<long long> funnel_committed{0};
     std::string flip_funnel_report() const;
     void flip_funnel_reset();
@@ -1056,13 +1058,42 @@ public:
         const std::vector<std::array<size_t, 3>>& before,
         const std::vector<std::array<size_t, 3>>& after,
         size_t removed) const;
+    /// The rings ops_guard_measures() compares under "vertex_ring": every corner of a `before`
+    /// face, ascending, each with its live offset faces in the order
+    /// offset_surface_faces_live_at() lists them. Topology only, nothing is measured, so the
+    /// swap guard can record it in its before-hook and measure it in swap_after_cells(), and the
+    /// measurement is the one the before-hook would have taken: a swap moves no vertex. Empty
+    /// under "face", which needs no rings.
+    struct GuardRings
+    {
+        std::vector<size_t> verts;
+        std::vector<std::vector<std::array<size_t, 3>>> ring_now;
+    };
+    GuardRings ops_guard_rings(const std::vector<std::array<size_t, 3>>& before) const;
+    /// ops_guard_measures() on rings recorded earlier by ops_guard_rings().
+    std::pair<double, double> ops_guard_measures(
+        const GuardRings& rings,
+        const std::vector<std::array<size_t, 3>>& before,
+        const std::vector<std::array<size_t, 3>>& after,
+        size_t removed) const;
+    /// One ops-guard call's face measures, keyed by the face's corners IN THE ORDER GIVEN. The
+    /// measure depends on that order in its last bits (the stencil is summed in it), so a lookup
+    /// returns exactly what face_conv_ratio() computes for the same ordered triple. Lives for one
+    /// call: nothing moves inside it, while one call measures an unchanged face in the before and
+    /// the after ring of each of its corners among the affected vertices.
+    struct FaceMeasureMemo
+    {
+        std::vector<std::pair<std::array<size_t, 3>, double>> entries;
+    };
     /// front_measure "vertex_ring"'s VERTEX measure over a given ring of offset faces --
     /// energy_criterion()'s ring measure, on faces the caller supplies so the ops guard can
     /// measure a ring the mesh does not carry yet: over the faces with three front corners,
     /// sqrt(sum_f A_f r_f^2 / sum_f A_f), r_f = face_conv_ratio(), A_f = ring_face_area(). +inf
     /// when a face is unmeasurable or the areas sum to zero; -1 when no face has three front
-    /// corners (no ring).
-    double vertex_ring_measure(const std::vector<std::array<size_t, 3>>& ring) const;
+    /// corners (no ring). `memo`, when given, supplies and records the r_f.
+    double vertex_ring_measure(
+        const std::vector<std::array<size_t, 3>>& ring,
+        FaceMeasureMemo* memo = nullptr) const;
     /// An offset face's area from its current corners: its weight in the ring measure. Read by
     /// energy_criterion(), vertex_ring_measure() and the debug frames alike.
     double ring_face_area(size_t a, size_t b, size_t c) const;
@@ -2139,12 +2170,12 @@ private:
         /// an accepted flip actually won. sag_measured says the guard ran AND the flip passed its
         /// refusal, so the two numbers mean something. Cleared at the top of
         /// swap_before_surface() and of swap_before_interior(), so none of these fields outlives
-        /// its flip.
+        /// its flip (guarded and guard_rings below likewise).
         bool sag_measured = false;
         double sag_before = 0.0;
         double sag_after = 0.0;
-        /// [flip funnel]: this flip is a flip of the offset surface that passed the sag rule.
-        /// Read at each later stage to follow the flip through.
+        /// [flip funnel]: this flip is a flip of the offset surface, the kind the sag rule
+        /// applies to. Read at each later stage to follow the flip through.
         bool worthwhile = false;
         /// [flip funnel]: the base's score of the current cells (op_case 0), which every scored
         /// case of this flip has to beat. Written by swap_edge_44_energy() / swap_edge_56_energy().
@@ -2156,6 +2187,10 @@ private:
         bool saw_case = false;
         /// tids.size() as swap_before_surface() saw it: 3, 4 or 5, i.e. which swap this is.
         int kind = 0;
+        /// The ops guard applies to this flip: both faces it replaces are offset surface.
+        /// swap_before_surface() records the rings here and swap_after_cells() measures them.
+        bool guarded = false;
+        GuardRings guard_rings;
     };
     bool swap_capture_surface_sides(
         const std::vector<size_t>& tids,

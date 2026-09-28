@@ -770,6 +770,7 @@ TetOptimizerMesh::SwapRejectRole TetOptimizerMesh::swap_reject_role(const SwapRe
     case SwapReject::base_after:
     case SwapReject::after_inverted:
     case SwapReject::after_quality:
+    case SwapReject::app_sag_raised:
     case SwapReject::app_after_side_conflict:
     case SwapReject::app_after_no_side:
     case SwapReject::after_envelope: return SwapRejectRole::after_leaf;

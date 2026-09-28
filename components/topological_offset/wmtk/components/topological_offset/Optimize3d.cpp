@@ -276,6 +276,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         sides.sag_measured = false;
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.guarded = false;
     }
     return swap_capture_tag(tids);
 }
@@ -294,6 +295,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
         sides.sag_measured = false;
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.guarded = false;
     }
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
@@ -350,29 +352,29 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // at most 6% more.
     //
     // abc + abd become acd + bcd; no vertex moves, so every corner position is unchanged and
-    // both maxima are exact here. The comparison is against the state before this flip, not
-    // against the bar: an unresolved patch is guarded exactly as a resolved one is. An
-    // unmeasurable face is +inf, so inf -> inf is a tie and passes, as in the collapse half.
+    // both maxima are exact. The comparison is against the state before this flip, not against
+    // the bar: an unresolved patch is guarded exactly as a resolved one is. An unmeasurable face
+    // is +inf, so inf -> inf is a tie and passes, as in the collapse half.
     //
-    // The gate comes before the four sag evaluations: BOTH re-triangulated faces must lie
-    // exactly on the offset surface, band on one side and background on the other, asked live of
-    // the tags rather than read from the cached m_surface_class -- these operations run between
-    // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
-    // A flip of the input complex or of a region boundary has no sag half.
+    // The gate: BOTH re-triangulated faces must lie exactly on the offset surface, band on one
+    // side and background on the other, asked live of the tags rather than read from the cached
+    // m_surface_class -- these operations run between one labelling pass and the next, which is
+    // the reason face_is_offset_surface_live() exists. A flip of the input complex or of a region
+    // boundary has no sag half.
+    //
+    // MEASURED IN swap_after_cells(), NOT HERE. Here the base has not yet searched its cases or
+    // applied the quality half, and almost every flip that passes the sag rule fails there: on
+    // the cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, turn 3 had 5690 flips pass the
+    // sag rule and 53 reach the quality test (the rest inverted a cell or scored no better than
+    // the current cells), and the guard's ring measures were 30% of the whole run. So this hook
+    // only records which faces make up each ring (ops_guard_rings(), topology alone), and
+    // swap_after_cells() measures those same faces, in the same order, before anything in it
+    // changes a flag the measure reads: the numbers are the ones this hook would have computed,
+    // and a flip refused there is rolled back by the base, so every decision is unchanged.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
-        const auto [before, after] = ops_guard_measures(
-            {{{a, b, c}}, {{a, b, d}}},
-            {{{a, c, d}}, {{b, c, d}}},
-            static_cast<size_t>(-1));
-        // THE WHOLE SAG RULE: not worse. Written as a negated <= so a NaN on either side refuses.
-        if (!(after <= before)) {
-            ++iter_cnt_swap_guard_reject;
-            return swap_reject(SwapReject::app_sag_raised);
-        }
         SwapSurfaceSides& sides = m_swap_sides.local();
-        sides.sag_measured = true;
-        sides.sag_before = before;
-        sides.sag_after = after;
+        sides.guarded = true;
+        sides.guard_rings = ops_guard_rings({{{a, b, c}}, {{a, b, d}}});
         // Followed through the rest of the swap by [flip funnel].
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
@@ -739,9 +741,9 @@ std::string TopoOffsetTetMesh::flip_funnel_report() const
 {
     // See the declaration for how to read it.
     return fmt::format(
-        "passed the sag rule {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> reached "
-        "the quality test {} -> passed it {} -> committed {} | cases: inverted {}, not better "
-        "than the current cells {}, better {}",
+        "offset-surface flips {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> "
+        "reached the quality test {} -> passed it {} -> passed the sag rule {} -> committed {} | "
+        "cases: inverted {}, not better than the current cells {}, better {}",
         funnel_offered.load(),
         funnel_kind[0].load(),
         funnel_kind[1].load(),
@@ -749,6 +751,7 @@ std::string TopoOffsetTetMesh::flip_funnel_report() const
         funnel_cases.load(),
         funnel_quality.load(),
         funnel_quality_ok.load(),
+        funnel_sag_ok.load(),
         funnel_committed.load(),
         funnel_case_inverted.load(),
         funnel_case_not_better.load(),
@@ -765,6 +768,7 @@ void TopoOffsetTetMesh::flip_funnel_reset()
     funnel_case_better = 0;
     funnel_quality = 0;
     funnel_quality_ok = 0;
+    funnel_sag_ok = 0;
     funnel_committed = 0;
 }
 
@@ -774,7 +778,7 @@ void TopoOffsetTetMesh::flip_trace_record(const double before, const double afte
     // rule in swap_before_surface() refuses a rise (a tie passes), so flip_trace_nonmono staying
     // 0 is the check that the rule is doing what it says. Anything else there means an accepted
     // flip rested on a measurement that was no longer true -- the pass runs on 10 threads and
-    // the measurement is taken in the before-hook.
+    // the rings are recorded in the before-hook.
     const double fall = before - after;
     if (!(fall >= 0.0)) {
         ++flip_trace_nonmono;
@@ -825,12 +829,38 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         return true;
     }
 
+    SwapSurfaceSides& sides = m_swap_sides.local();
+
+    // The ops divergence guard, the sag half; see swap_before_surface() for the rule and for why
+    // it is measured here. FIRST, before the loop below writes labels and before
+    // refresh_offset_membership(): the measure reads positions, the regions and the front flags
+    // (m_is_on_offset, m_is_rounded), all still as they were before the flip, and the rings
+    // ops_guard_rings() recorded there -- so this is the measurement swap_before_surface() would
+    // have taken. The base has already scored the cases and applied the quality half; a refusal
+    // here is rolled back like any other after-hook refusal.
+    if (sides.guarded) {
+        const auto [a, b, c, d] = sides.abcd;
+        const auto [before, after] = ops_guard_measures(
+            sides.guard_rings,
+            {{{a, b, c}}, {{a, b, d}}},
+            {{{a, c, d}}, {{b, c, d}}},
+            static_cast<size_t>(-1));
+        // THE WHOLE SAG RULE: not worse. Written as a negated <= so a NaN on either side refuses.
+        if (!(after <= before)) {
+            ++iter_cnt_swap_guard_reject;
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+        sides.sag_measured = true;
+        sides.sag_before = before;
+        sides.sag_after = after;
+        ++funnel_sag_ok;
+    }
+
     // Surface flip: the ring is two-sided and the flip keeps both sides, so each new cell takes
     // the side of a ring vertex it contains (swap_capture_surface_sides()). A cell containing no
     // ring vertex cannot be placed on a side and the flip is refused rather than guessed -- the
     // base turns that into a rollback. Two ring vertices disagreeing inside one new cell means
     // the flip would straddle the interface, which is the case this must not let through.
-    const auto& sides = m_swap_sides.local();
     for (const size_t t : tids) {
         const std::pair<CellTag, int>* side = nullptr;
         for (const size_t v : oriented_tet_vids(t)) {
@@ -999,6 +1029,34 @@ std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
     const std::vector<std::array<size_t, 3>>& after,
     const size_t removed) const
 {
+    return ops_guard_measures(ops_guard_rings(before), before, after, removed);
+}
+
+TopoOffsetTetMesh::GuardRings TopoOffsetTetMesh::ops_guard_rings(
+    const std::vector<std::array<size_t, 3>>& before) const
+{
+    // See the declaration. The corners of the changed faces, ascending, and each one's live
+    // offset faces as they are now.
+    GuardRings g;
+    if (m_offset_params.front_measure != "vertex_ring") return g;
+    std::set<size_t> verts;
+    for (const std::array<size_t, 3>& f : before) {
+        for (const size_t v : f) verts.insert(v);
+    }
+    for (const size_t w : verts) {
+        g.verts.push_back(w);
+        std::vector<std::array<size_t, 3>>& ring = g.ring_now.emplace_back();
+        for (const Tuple& f : offset_surface_faces_live_at(w)) ring.push_back(face_vids(f));
+    }
+    return g;
+}
+
+std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
+    const GuardRings& rings,
+    const std::vector<std::array<size_t, 3>>& before,
+    const std::vector<std::array<size_t, 3>>& after,
+    const size_t removed) const
+{
     // THE ops guards' comparison, for the collapse (ops_guard_refuses_collapse()) and the swap
     // (swap_before_surface()) alike: the operation may not raise the largest measure among the
     // elements it changes, where an element is what the exit tests under front_measure. Every
@@ -1026,22 +1084,23 @@ std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
     // offset surface, for a swap its four vertices), each measured by vertex_ring_measure() over
     // its ring as it is and as it will be: its live offset faces with the changed ones replaced
     // by those of `after` it is a corner of. The removed vertex has no ring after. Areas are
-    // taken from the corners' positions, which neither operation moves.
+    // taken from the corners' positions, which neither operation moves. The rings as they are
+    // come from ops_guard_rings(), taken when the operation was proposed.
+    //
+    // One memo for the whole call: an unchanged face is in the ring before and the ring after of
+    // each of its corners among these vertices, and is measured once.
     const auto key = [](std::array<size_t, 3> f) {
         std::sort(f.begin(), f.end());
         return f;
     };
     std::set<std::array<size_t, 3>> changed;
-    std::set<size_t> verts;
-    for (const std::array<size_t, 3>& f : before) {
-        changed.insert(key(f));
-        for (const size_t v : f) verts.insert(v);
-    }
+    for (const std::array<size_t, 3>& f : before) changed.insert(key(f));
+    FaceMeasureMemo memo;
     double b = 0., a = 0.;
-    for (const size_t w : verts) {
-        std::vector<std::array<size_t, 3>> ring_now;
-        for (const Tuple& f : offset_surface_faces_live_at(w)) ring_now.push_back(face_vids(f));
-        const double mb = vertex_ring_measure(ring_now);
+    for (size_t i = 0; i < rings.verts.size(); ++i) {
+        const size_t w = rings.verts[i];
+        const std::vector<std::array<size_t, 3>>& ring_now = rings.ring_now[i];
+        const double mb = vertex_ring_measure(ring_now, &memo);
         if (mb >= 0.) b = std::max(b, mb);
         if (w == removed) continue;
         std::vector<std::array<size_t, 3>> ring_next;
@@ -1051,7 +1110,7 @@ std::pair<double, double> TopoOffsetTetMesh::ops_guard_measures(
         for (const std::array<size_t, 3>& f : after) {
             if (f[0] == w || f[1] == w || f[2] == w) ring_next.push_back(f);
         }
-        const double ma = vertex_ring_measure(ring_next);
+        const double ma = vertex_ring_measure(ring_next, &memo);
         if (ma >= 0.) a = std::max(a, ma);
     }
     return {b, a};
@@ -1065,17 +1124,28 @@ double TopoOffsetTetMesh::ring_face_area(const size_t a, const size_t b, const s
     return 0.5 * (pb - pa).cross(pc - pa).norm();
 }
 
-double TopoOffsetTetMesh::vertex_ring_measure(const std::vector<std::array<size_t, 3>>& ring) const
+double TopoOffsetTetMesh::vertex_ring_measure(
+    const std::vector<std::array<size_t, 3>>& ring,
+    FaceMeasureMemo* memo) const
 {
     // energy_criterion()'s ring measure on the given faces; see the declaration.
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
+    const auto measure = [&](const std::array<size_t, 3>& f) {
+        if (!memo) return face_conv_ratio(f[0], f[1], f[2]);
+        for (const auto& [face, r] : memo->entries) {
+            if (face == f) return r;
+        }
+        const double r = face_conv_ratio(f[0], f[1], f[2]);
+        memo->entries.emplace_back(f, r);
+        return r;
+    };
     double sum = 0., wsum = 0.;
     size_t n = 0;
     for (const std::array<size_t, 3>& f : ring) {
         if (!front(f[0]) || !front(f[1]) || !front(f[2])) continue;
-        const double r = face_conv_ratio(f[0], f[1], f[2]);
+        const double r = measure(f);
         if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
         const double w = ring_face_area(f[0], f[1], f[2]);
         sum += w * r * r;
