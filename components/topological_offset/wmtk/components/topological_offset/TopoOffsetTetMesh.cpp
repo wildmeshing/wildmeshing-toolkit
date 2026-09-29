@@ -1798,7 +1798,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
-    //                         |relative_residual()| over the relative bar -- face_conv_ratio()'s
+    //                         |relative_residual()| over the relative bar -- the face term's
     //                         measure at the vertex alone, its distance to the level set along
     //                         the field over front_conv (for the euclidean field |d -
     //                         target_distance| / front_conv). <= 1 reads as "placed". The loop reports it and no
@@ -1981,9 +1981,10 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         // test rather than the resolution half of it, and which has nowhere to live on the tet
         // frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_err_ratio  face_conv_ratio(): the RMS over the face's stencil_order stencil of
-        //                    relative_residual() -- the distance to the level set along the field
-        //                    over target_distance -- over the one bar as a fraction of it.
+        //   front_err_ratio  the root of face_offset_term(): the RMS over the
+        //                    face's stencil_order stencil of relative_residual() -- the distance
+        //                    to the level set along the field over target_distance -- over the
+        //                    one bar as a fraction of it.
         //                    > 1 is what makes a face refinable, and the same number at 1 point
         //                    is what makes a vertex placed. -1 unmeasurable, including a face
         //                    with a corner that is not a front vertex. Measured under the same
@@ -1995,16 +1996,16 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         //   chord_length     the face's longest edge, so the error can be read against the
         //                    geometry that produced it.
         //   front_ring_ratio point data, in both front_measure modes: the ring measure at each
-        //                    front vertex, sqrt(sum A_f front_err_ratio^2 / sum A_f) over its
-        //                    incident offset faces with three front corners, A_f the face's area
+        //                    front vertex, sqrt(mean of front_err_ratio^2) over its incident
+        //                    offset faces with three front corners, every face weighted equally
         //                    -- the exit test under front_measure "vertex_ring"
         //                    (EnergyCriterion::ring_exit), with energy_criterion()'s rules: a
-        //                    vertex with an unmeasurable incident face, or whose faces have zero
-        //                    total area, has none. NaN where there is no ring measure.
+        //                    vertex with an unmeasurable incident face has none. NaN where there
+        //                    is no ring measure.
         VectorXd f_err(faces_off.size()), f_len(faces_off.size());
-        VectorXd v_ring_sum(vert_capacity()), v_ring_a(vert_capacity());
+        VectorXd v_ring_sum(vert_capacity()), v_ring_n(vert_capacity());
         v_ring_sum.setZero();
-        v_ring_a.setZero();
+        v_ring_n.setZero();
         std::vector<char> ring_bad(vert_capacity(), 0);
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
@@ -2012,18 +2013,18 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
             const bool all_front = front(a) && front(b) && front(c);
-            f_err[i] = all_front ? face_conv_ratio(a, b, c) : -1.;
+            const double term = all_front ? face_offset_term(a, b, c) : -1.;
+            f_err[i] = term < 0. ? -1. : std::sqrt(term);
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
             if (all_front) {
-                const double area = ring_face_area(a, b, c);
                 for (const size_t u : {a, b, c}) {
-                    if (f_err[i] < 0.) {
+                    if (term < 0.) {
                         ring_bad[u] = 1;
                     } else {
-                        v_ring_sum[int(u)] += area * f_err[i] * f_err[i];
-                        v_ring_a[int(u)] += area;
+                        v_ring_sum[int(u)] += term;
+                        v_ring_n[int(u)] += 1.;
                     }
                 }
             }
@@ -2031,8 +2032,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         VectorXd v_ring(vert_capacity());
         v_ring.setConstant(std::numeric_limits<double>::quiet_NaN());
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-            if (ring_bad[vid] || !(v_ring_a[int(vid)] > 0.)) continue;
-            v_ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_a[int(vid)]);
+            if (ring_bad[vid] || !(v_ring_n[int(vid)] > 0.)) continue;
+            v_ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
         }
         paraviewo::VTUWriter off_writer;
         off_writer.add_cell_field("front_err_ratio", f_err);

@@ -105,6 +105,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // two of them meet.
     bool front_normal_projection = true;
     bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
+    /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
+    bool offset_collapse_veto = true, offset_swap_veto = true;
+    /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
+    /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
+    bool offset_front_smooth_veto = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -123,20 +128,20 @@ struct Parameters : public wmtk::OptimizerParameters
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
-    // the ops guard's hot path as well as in energy_criterion() and every smoothing solve.
+    // the operations' energy rules (TopoOffsetTetMesh::tet_energy()) as well as in
+    // energy_criterion() and every smoothing solve.
     // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int stencil_order;
     /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
-    /// square of the face measures (face_conv_ratio()) of its incident offset faces weighted by
-    /// area -- in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by
-    /// length. The loop exits when every ring measure is within the bar and nothing is
-    /// unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front
-    /// smoother's stencil energy weights its faces by area the same way
-    /// (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and
-    /// the halving at the corners of every face over it -- the rule of 2026-09-25, kept for
-    /// comparison.
+    /// square of the face measures (face_conv_ratio()) of its incident offset faces, every face
+    /// weighted equally as in the per-tet energy (3D, since 2026-09-28; by area before) -- in 2D
+    /// of the chord measures (edge_conv_ratio()) of its front chords weighted by length. The loop
+    /// exits when every ring measure is within the bar and nothing is unmeasurable, and the
+    /// halving takes each vertex over the bar alone. "face": every offset face (2D: chord) within
+    /// the bar and the halving at the corners of every face over it -- the rule of 2026-09-25,
+    /// kept for comparison.
     std::string front_measure;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
@@ -335,6 +340,9 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         front_normal_projection = json_params["front_normal_projection"];
         front_alignment_energy = json_params["front_alignment_energy"];
+        offset_collapse_veto = json_params["offset_collapse_veto"];
+        offset_swap_veto = json_params["offset_swap_veto"];
+        offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
         max_rounds = json_params["max_rounds"];
@@ -342,7 +350,8 @@ struct Parameters : public wmtk::OptimizerParameters
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
-        smooth_quality_veto = json_params["smooth_quality_veto"];
+        smooth_quality_veto =
+            json_params["offset_smooth_veto"]; // the engine's field, this component's key
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

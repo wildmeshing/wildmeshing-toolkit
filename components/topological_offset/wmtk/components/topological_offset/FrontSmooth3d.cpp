@@ -9,6 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
@@ -199,68 +200,105 @@ bool align_face_at(
 bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The offset terms arrive
-    // through smoothing_extra_energy(), AMIPS is weighted as in TetOptimizerMesh::smooth_after(),
-    // and a front vertex has no envelope in Phase B, so neither the projected path nor the
-    // containment check applies -- solve, exact inversion test, done.
+    // through smoothing_extra_energy() at offset_term_weight(), AMIPS at weight 1
+    // (smoother_amips_weight()), so the objective is tet_energy()'s two parts at 1:1; a front
+    // vertex an input envelope pins carries no offset term and keeps the engine's w_amips
+    // against its envelope term. A front vertex has no envelope in Phase B, so neither the
+    // projected path nor the containment check applies -- solve, exact inversion test, then the
+    // veto on tet_energy() below.
+    const size_t vid = t.vid(*this);
+    const bool placed = vertex_carries_offset_term(vid);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_params.w_amips;
+    opts.w_amips = placed ? 1. : m_params.w_amips;
     opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
+    opts.s_amips = placed ? 1. : m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
+    // The engine's veto compares AMIPS^3 alone, and a front vertex must be free to worsen its
+    // ring's shape on the way to the level set: off, as it always was here. solve_3d() vetoes on
+    // the energy instead.
     opts.quality_veto = false;
     auto& solver = m_solver.local();
     if (!solver) {
+        // The engine's Newton parameters (DenseNewton, 10 iterations, absolute gradient tolerance
+        // 1e-10) with one change: a RELATIVE gradient tolerance. The front objective is in
+        // tolerance units, 1e4 times the old front objective, and its gradient's round-off floor
+        // sits at 1e-11..1e-9: measured 2026-09-28 on the cube (target 1e-2, tolerance 1e-4), 65%
+        // of front solves ended there after the full 10 iterations, converged to machine precision
+        // (|grad| / |grad_0| at 1e-14..1e-11) and unable to meet the absolute 1e-10, while the
+        // interior solves, whose objective has no such factor, stop on it in 3.8 iterations. The
+        // relative test is scale-free and ends those solves after the 3-4 iterations Newton needs;
+        // the 28% that converge only linearly (ratio 1e-2..1e-5 at the cap) are untouched by it,
+        // and a cap of 20 was measured not to finish them either (24% still at the cap, ratios
+        // 1e-3..1e-6, smoothing 15% slower): the cap stays the engine's 10.
+        nlohmann::json params = optimization::basic_nonlinear_solver_params;
+        params["rel_grad_norm_tol"] = 1e-6;
         solver = polysolve::nonlinear::Solver::create(
-            optimization::basic_nonlinear_solver_params,
+            params,
             optimization::basic_linear_solver_params,
             1,
             opt_logger());
     }
-    if (!m_offset_params.front_normal_projection) {
-        const bool ok = optimization::smooth_vertex_3d(
-            *this,
-            t,
-            opts,
-            solver,
-            &m_smooth_rejects,
-            &m_newton_front);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
-    }
+    // THE FRONT SMOOTHER'S VETO (see tet_energy()), on every 3-D solve: the max of tet_energy()
+    // over the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto, whose
+    // place it takes under the front's own key, offset_front_smooth_veto (the engine's field, key
+    // offset_smooth_veto, stays the interior vertices'). Read before the solve and after it, on the
+    // mesh: a smoothing move changes no label and moves one vertex, so the one-ring holds every
+    // cell whose energy it can change -- the shape of each, and every front face with the vertex as
+    // a corner, which only a cell of the ring can carry. Refused, TetMesh::smooth_vertex() rolls
+    // back the position and the ring's stored qualities. smooth_vertex_3d() has counted the move
+    // accepted by then; it is recounted as a quality refusal, so the counters still partition the
+    // attempts.
+    const auto solve_3d = [&]() {
+        const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
+        const bool veto = m_offset_params.offset_front_smooth_veto;
+        const double before = veto ? max_tet_energy(ring) : 0.;
+        if (!optimization::smooth_vertex_3d(
+                *this,
+                t,
+                opts,
+                solver,
+                &m_smooth_rejects,
+                &m_newton_front)) {
+            return false;
+        }
+        {
+            // Diagnostic: the solve's final gradient norm and its ratio to the first one.
+            const auto& cr = solver->current_criteria();
+            const auto bin = [](double v, int lo) {
+                if (!(v > 0.)) return 0;
+                return std::clamp(int(std::floor(std::log10(v))) - lo + 1, 0, kGradBins - 1);
+            };
+            ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
+            ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
+        }
+        if (veto) ++m_front_veto_asked;
+        if (veto && !(max_tet_energy(ring) <= before)) { // a NaN refuses
+            ++m_front_veto_fired;
+            --m_smooth_rejects.accepted;
+            ++m_smooth_rejects.quality;
+            return false;
+        }
+        m_released_tube_dirty.store(true, std::memory_order_release);
+        return true;
+    };
+    if (!m_offset_params.front_normal_projection) return solve_3d();
 
     // Normal-only placement is a one-dimensional solve: the same objective the 3-D path minimises
     // (phase_b_front_objective), restricted to the line along n = grad Phi / |grad Phi|, with the
     // same solver, the same line search and the same accept test as the shared smoother's
     // no-envelope path (exact inversion of the ring; no envelope, no veto). Nothing is added to
     // the energy, as in 2D.
-    const size_t vid = t.vid(*this);
     const Vector3d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) { // no direction here: the 3-D solve is the fallback
-        const bool ok = optimization::smooth_vertex_3d(
-            *this,
-            t,
-            opts,
-            solver,
-            &m_smooth_rejects,
-            &m_newton_front);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
+        return solve_3d();
     }
     // Widen the motion where the alignment term traps the 1-D solve: at a jog of the surface the
     // alignment residual's fixing motion is tangential, which the radial line projects away, so
     // where it opposes the placement pull it cancels it and the jog freezes. The trap is the
     // fight, not the perpendicular face -- both conditions in the predicate, as in 2D.
     if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
-        const bool ok = optimization::smooth_vertex_3d(
-            *this,
-            t,
-            opts,
-            solver,
-            &m_smooth_rejects,
-            &m_newton_front);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
+        return solve_3d();
     }
     const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
     const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
@@ -420,7 +458,9 @@ bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     if (!past_perpendicular || faces.empty()) return false;
     const Vector3d n_dir = front_vertex_move_direction(vid);
     if (!(n_dir.squaredNorm() > 0.)) return false;
-    const double w_off = 1. - m_params.w_amips;
+    // Only the signs of the two gradients along n_dir are compared, so any common positive
+    // weight gives the same answer; the offset terms' own.
+    const double w_off = offset_term_weight();
     AlignEnergy3D align(pot, std::move(faces), s, w_off);
     OffsetEnergy3D place(pot, w_off, true, true);
     Eigen::VectorXd xv(3), ga(3), gp(3);
@@ -436,8 +476,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     const Vector3d& x) const
 {
     // The one-ring's AMIPS with the vertex first in every cell (what AMIPS_jacobian
-    // differentiates against), weighted as the shared smoother weights it, plus the offset terms
-    // on the vertex's own region's field.
+    // differentiates against), at the weight 1 the shared smoother gives it at a vertex it places
+    // against the offset term, plus the offset terms on the vertex's own region's field.
     std::vector<std::array<double, 12>> cells;
     std::vector<RestAMIPSEnergy3D::Cell> plastic_cells; // deform_others: increments only
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
@@ -476,9 +516,12 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         }
         cells.push_back(T);
     }
-    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    // AMIPS at weight 1 beside the offset term in units of the tolerance: the per-tet energy's
+    // two parts at 1:1, as the 3-D path weights them (smoother_amips_weight()). The rest-shape
+    // term of a plastic cell sits 1:1 with the AMIPS it replaces.
+    const double amips_w = 1.;
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (m_params.w_amips > 0 && !cells.empty())
+    if (!cells.empty())
         sum->add_energy(std::make_shared<optimization::AMIPSEnergy3D>(cells, amips_w));
     if (!plastic_cells.empty())
         sum->add_energy(std::make_shared<RestAMIPSEnergy3D>(std::move(plastic_cells), amips_w));
@@ -490,38 +533,25 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
-    const double w_off = 1. - m_params.w_amips;
+    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
+    // in units of the tolerance, so the term below is sum_f O(f) -- for the euclidean field the
+    // very terms the per-tet energy tet_energy() carries on these faces' band cells, and the
+    // ring measure's n_v r_v^2. It replaced 1 - w_amips, a weight with no unit, on 2026-09-28.
+    const double w_off = offset_term_weight();
     auto sum = std::make_shared<optimization::EnergySum>();
     // THE offset term, and the only one: the mean squared relative error over each incident
     // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
     // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
     // V/N_s times for a vertex of valence V -- and the sag term that used to sit below, whose
-    // interior samples are the stencil's non-corner points. See StencilEnergy3D.
+    // interior samples are the stencil's non-corner points. See StencilEnergy3D. Every face
+    // weighs 1: the area weights front_measure "vertex_ring" used to put here went with the
+    // per-tet energy, which has no area in it, and the ring measure dropped them with it.
     {
         std::vector<StencilEnergy3D::Face> stencil_faces;
         for (const Tuple& f : offset_surface_faces_live_at(vid)) {
             StencilEnergy3D::Face sf;
             if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
             stencil_faces.push_back(std::move(sf));
-        }
-        // front_measure "vertex_ring": each face's mean is weighted by A_f / A_mean, the areas
-        // taken at the positions the visit starts from and held fixed for the solve -- weights,
-        // not variables. The error is the surface integral of r^2, so faces vote by area, and the
-        // loop's ring measure weights them the same way: weighting one and not the other would
-        // recreate the mismatch between what the smoother minimises and what the exit tests
-        // (Uday's decision, 2026-09-25). Dividing by the mean keeps the energy's scale at the
-        // vertex that of the unweighted sum. Under "face" every weight stays 1.
-        if (m_offset_params.front_measure == "vertex_ring" && !stencil_faces.empty()) {
-            const Vector3d x = m_vertex_attribute[vid].m_posf;
-            double a_sum = 0.;
-            for (StencilEnergy3D::Face& sf : stencil_faces) {
-                sf.weight = 0.5 * (sf.q1 - x).cross(sf.q2 - x).norm();
-                a_sum += sf.weight;
-            }
-            const double a_mean = a_sum / double(stencil_faces.size());
-            for (StencilEnergy3D::Face& sf : stencil_faces) {
-                sf.weight = a_mean > 0. ? sf.weight / a_mean : 1.;
-            }
         }
         if (!stencil_faces.empty()) {
             sum->add_energy(
@@ -538,7 +568,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         faces.push_back(af);
     }
     // Kept: without it the seam is rougher, since under front_normal_projection nothing else acts
-    // on the face normals.
+    // on the face normals. At the offset term's weight, which it has always shared (both were
+    // 1 - w_amips until 2026-09-28).
     if (!faces.empty() && m_offset_params.front_alignment_energy) {
         sum->add_energy(std::make_shared<AlignEnergy3D>(pot, std::move(faces), sign, w_off));
     }

@@ -588,6 +588,13 @@ private:
  * being the MOVING vertex's own weight. The face's other two corners q1, q2 are fixed for the
  * visit. The stencil is TopoOffsetTetMesh::for_each_face_sample, sized by stencil_order.
  *
+ * UNITS: the front smoother passes w = 1 / front_conv_frac()^2
+ * (TopoOffsetTetMesh::offset_term_weight()), which puts r in units of the tolerance: each face's
+ * term is then TopoOffsetTetMesh::face_offset_term(), 1 at the bar, the very term the per-tet
+ * energy (TopoOffsetTetMesh::tet_energy()) adds to the face's band cell, and E is the sum of
+ * those terms over the vertex's faces. Exactly so for the euclidean field, where r IS
+ * relative_residual(); see below for the smooth one.
+ *
  * THIS ONE TERM REPLACES BOTH the placement term (OffsetEnergy3D on the vertex alone) and the
  * sag term (SagEnergy3D over the face interiors) that preceded it, because the stencil contains
  * the corners: at order 0 the stencil IS the three corners, so E is exactly the placement
@@ -599,17 +606,13 @@ private:
  * SMOOTH field OffsetEnergy3D instead divides by g_ref * delta to get a monotone length; this
  * class does not, so under `offset_field: "smooth"` the two are scaled differently.
  *
- * NOTE THE PER-FACE MEAN, SUMMED OVER FACES, with no area weighting: a vertex with V incident
- * faces contributes its own r(x)^2 with coefficient V/N_s, since it is a stencil point of every
- * one of them. The energy therefore grows with valence, which the AMIPS term beside it does too.
- *
- * Face::weight multiplies a face's mean, and is 1 unless front_measure is "vertex_ring". There the
- * caller sets it to A_f / A_mean, the face's area over the mean area of the vertex's incident
- * offset faces, both from the positions at the start of the visit and held fixed for the solve:
- * the error being the surface integral of r^2, faces vote by area, and dividing by the mean keeps
- * the energy's scale at the vertex unchanged. The loop's ring measure uses the same weighting, so
- * the smoother and the criterion agree. (On the weighting, not the units: the criterion reads
- * OffsetPotential::relative_residual(), which under "smooth" is the distance to the level set
+ * NOTE THE PER-FACE MEAN, SUMMED OVER FACES, with no area weighting and no other per-face weight:
+ * a vertex with V incident faces contributes its own r(x)^2 with coefficient V/N_s, since it is a
+ * stencil point of every one of them. The energy therefore grows with valence, which the AMIPS
+ * term beside it does too. The per-tet energy has no area in it, so neither has this, nor the
+ * loop's ring measure; the A_f / A_mean face weights front_measure "vertex_ring" put here from
+ * 2026-09-25 went on 2026-09-28. (On the units under "smooth": the criterion and the per-tet
+ * energy read OffsetPotential::relative_residual(), which there is the distance to the level set
  * over delta, while r here stays the field's own relative error -- the same zero set, about
  * 3.44x the criterion's number at the default offset_dhat_factor.)
  *
@@ -630,13 +633,11 @@ public:
     {
         double a, b, c;
     };
-    /// One incident offset face, the moving vertex implicit. `weight` multiplies the face's
-    /// stencil mean; 1 except under front_measure "vertex_ring" (see the class comment).
+    /// One incident offset face, the moving vertex implicit.
     struct Face
     {
         Eigen::Vector3d q1, q2;
         std::vector<Sample> samples;
-        double weight = 1.;
     };
 
     StencilEnergy3D(
