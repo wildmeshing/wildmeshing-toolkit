@@ -15,7 +15,7 @@
 namespace wmtk::components::topological_offset {
 
 /**
- * Phase B's front placement: an offset-surface vertex is moved by a one-dimensional Newton solve
+ * Front placement: an offset-surface vertex is moved by a one-dimensional Newton solve
  * along the offset field's gradient, widened to the shared 3-D smoother where the alignment term
  * traps that line. Everything else is smoothed by Optimize3d.cpp. The 2D twin is FrontSmooth2d.cpp.
  */
@@ -197,14 +197,15 @@ bool align_face_at(
 }
 } // namespace
 
-bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
+bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The offset terms arrive
     // through smoothing_extra_energy() at offset_term_weight(), AMIPS at weight 1
     // (smoother_amips_weight()), so the objective is tet_energy()'s two parts at 1:1; a front
     // vertex an input envelope pins carries no offset term and keeps the engine's w_amips
-    // against its envelope term. A front vertex has no envelope in Phase B, so neither the
-    // projected path nor the containment check applies -- solve, exact inversion test, then the
+    // against its envelope term. The smoother holds a front vertex to no envelope (see
+    // smoothing_containment_envelope()), so neither the projected path nor the containment check
+    // applies -- solve, exact inversion test, then the
     // veto on tet_energy() below.
     const size_t vid = t.vid(*this);
     const bool placed = vertex_carries_offset_term(vid);
@@ -267,7 +268,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     if (!m_offset_params.front_normal_projection) return solve_3d();
 
     // Normal-only placement is a one-dimensional solve: the same objective the 3-D path minimises
-    // (phase_b_front_objective), restricted to the line along n = grad Phi / |grad Phi|, with the
+    // (front_objective), restricted to the line along n = grad Phi / |grad Phi|, with the
     // same solver, the same line search and the same accept test as the shared smoother's
     // no-envelope path (exact inversion of the ring; no envelope, no veto). Nothing is added to
     // the energy, as in 2D.
@@ -291,7 +292,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
         }
     }
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
-    auto line = std::make_shared<LineProblem3D>(phase_b_front_objective(vid, x0), x0, n);
+    auto line = std::make_shared<LineProblem3D>(front_objective(vid, x0), x0, n);
     Eigen::VectorXd s = Eigen::VectorXd::Zero(1);
     bool threw = false;
     try {
@@ -417,7 +418,7 @@ Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
 
 bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
 {
-    // Three conditions, all required -- see the use in smooth_front_vertex_phase_b() and the 2D
+    // Three conditions, all required -- see the use in smooth_front_vertex() and the 2D
     // twin: (1) an incident live front face at or past perpendicular to the field, (2) the
     // alignment term's 1-D gradient opposing the placement term's along the move direction, and
     // (3) stationary off the level set.
@@ -453,7 +454,7 @@ bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     return front_vertex_placed(vid);
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_objective(
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objective(
     const size_t vid,
     const Vector3d& x) const
 {
@@ -507,11 +508,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         sum->add_energy(std::make_shared<optimization::AMIPSEnergy3D>(cells, amips_w));
     if (!plastic_cells.empty())
         sum->add_energy(std::make_shared<RestAMIPSEnergy3D>(std::move(plastic_cells), amips_w));
-    sum->add_energy(phase_b_front_energy(vid, potential_ptr_for(vid)));
+    sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
     return sum;
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_energy(
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {

@@ -40,7 +40,7 @@ namespace wmtk::components::topological_offset {
  * The 3D optimization phase, the twin of Optimize2d.cpp. The operations themselves -- split,
  * collapse, the swaps, and the driver that sequences them -- are wmtk::TetOptimizerMesh's. What is
  * here is only what the offset knows: where its two tracked surfaces are, how a vertex on the
- * offset surface is allowed to move, and the single-phase loop that places the front.
+ * offset surface is allowed to move, and the loop that places the front.
  */
 
 namespace {
@@ -700,10 +700,12 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::containment_for(
     // itself and std::mutex is not recursive.
     const std::shared_ptr<SampleEnvelope> region = envelope_for_mask(region_mask);
 
-    // The offset side, Phase A only: the placing phases have to move the surface, and a tube
-    // around where it currently sits would cap how far it can travel. Null before the first
-    // rebuild.
-    const bool hold_offset = on_offset && m_phase == OptPhase::A && m_offset_envelope != nullptr;
+    // The offset side, for the operations: always in the frozen-front final pass, and in the
+    // loop unless EXPERIMENTAL_offset_ops_envelope is off. The smoother never asks for it (see
+    // smoothing_containment_envelope()): placing the front moves the surface, and a tube around
+    // where it currently sits would cap how far it can travel. Null before the first rebuild.
+    const bool hold_offset = on_offset && m_offset_envelope != nullptr &&
+                             (m_freeze_front || m_offset_params.experimental_offset_ops_envelope);
 
     if (!hold_offset) return region; // may itself be null: nothing contains this simplex
     if (!region) return m_offset_envelope;
@@ -1471,8 +1473,8 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
-    // The final Phase A does not move the front: it is converged by then, its smoothing there
-    // would be AMIPS alone with the front free anywhere inside the offset tube, and no Phase B
+    // The final pass does not move the front: it is converged by then, its smoothing there
+    // would be AMIPS alone with the front free anywhere inside the offset tube, and nothing
     // follows to put it back.
     if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
 
@@ -1576,33 +1578,19 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
         }
     }
 
-    // Phase B: a front vertex goes through the shared smoother -- same solver, line search and
-    // accept tests as every other vertex -- with the offset's options: its objective carries the
-    // offset terms (smoothing_extra_energy), and the veto is on tet_energy() instead of AMIPS,
-    // since a front vertex must be able to worsen its ring's shape on the way to the level set
-    // but not the energy, which charges both (see smooth_front_vertex_phase_b()). Every other
-    // vertex in both phases is TetWild's smooth_after() unchanged.
-    if (phase_places_front() && ve.m_is_on_offset) {
-        const bool ok = smooth_front_vertex_phase_b(t);
+    // A front vertex goes through the shared smoother -- same solver, line search and accept
+    // tests as every other vertex -- with the offset's options: its objective carries the offset
+    // terms (smoothing_extra_energy), and the veto is on tet_energy() instead of AMIPS, since a
+    // front vertex must be able to worsen its ring's shape on the way to the level set but not
+    // the energy, which charges both (see smooth_front_vertex()). A front vertex reaches
+    // here only outside the final pass: smooth_before() refuses it while m_freeze_front is set.
+    // Every other vertex is TetWild's smooth_after() unchanged.
+    if (ve.m_is_on_offset) {
+        const bool ok = smooth_front_vertex(t);
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
-    // Phase A is TetWild: the shared smoother, with the front held by m_offset_envelope and
-    // carrying no offset term of its own.
-    const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
-    const bool ok = TetOptimizerMesh::smooth_after(t);
-    if (!ve.m_is_on_offset) {
-        return ok;
-    }
-    const double after = band_vertex_residual(vid);
-    if (ok) ++m_smooth_trace.offset_accepted;
-
-    const auto nano = [](double x) { return static_cast<long long>(std::min(x, 1e9) * 1e9); };
-    m_smooth_trace.res_before_nano += nano(before);
-    m_smooth_trace.res_after_nano += nano(after);
-    atomic_max(m_smooth_trace.res_max_before_nano, nano(before));
-    atomic_max(m_smooth_trace.res_max_after_nano, nano(after));
-    return ok;
+    return TetOptimizerMesh::smooth_after(t);
 }
 
 Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
@@ -1621,11 +1609,11 @@ Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
 
 double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
 {
-    // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex_phase_b()
+    // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex()
     // minimises, along the move direction under front_normal_projection.
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(3);
-    phase_b_front_objective(vid, x)->gradient(xv, g);
+    front_objective(vid, x)->gradient(xv, g);
     if (!g.allFinite()) return std::numeric_limits<double>::infinity();
     const Vector3d n = front_vertex_move_direction(vid);
     if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector3d(g)));
@@ -1842,7 +1830,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
 
     logger().warn(
         "\t[containment {}] {} of {} tracked faces are OUTSIDE their envelope: {} OFFSET-class "
-        "(the Phase A pin), {} REGION-class (a tag tube / junction intersection), {} neither "
+        "(the offset tube), {} REGION-class (a tag tube / junction intersection), {} neither "
         "| population: {} offset-class, {} region-class, {} neither",
         when,
         bad.size(),
@@ -2088,47 +2076,19 @@ void TopoOffsetTetMesh::log_smooth_trace() const
 {
     const auto& s = m_smooth_trace;
     logger().info(
-        "\tsmooth trace: attempted {} | before: bbox {}, unrounded {}, phase-B wrong class {}, "
-        "phase-B envelope-held background {} / ON-OFFSET {} | reached the smoother: {} on the "
-        "offset surface, {} elsewhere ({} of them on another region boundary) | ({})",
+        "\tsmooth trace: attempted {} | before: bbox {}, unrounded {} | reached the smoother: {} "
+        "on the offset surface, {} elsewhere ({} of them on another region boundary) | ({})",
         s.attempted.load(),
         s.before_bbox.load(),
         s.before_unrounded.load(),
-        s.before_phase_b_not_offset.load(),
-        s.before_phase_b_enveloped_background.load(),
-        s.before_phase_b_enveloped_offset.load(),
         s.offset_attempted.load(),
         s.interior_attempted.load(),
         s.region_attempted.load(),
         m_smooth_rejects.to_string());
-    if (s.before_phase_b_enveloped_offset.load() > 0) {
-        logger().warn(
-            "\t{} Phase B offset visits were SKIPPED AND PINNED: the vertex is on the offset "
-            "surface AND held by an envelope (a tag region boundary, or the domain wall), which "
-            "requires it to be within envelope_size of the input boundary and at target_distance "
-            "from the complex at once. Not satisfiable, so it is left where Phase A put it and "
-            "excluded from max_reachable rather than chased -- read the PINNED half of the band "
-            "measures below for what that is costing.",
-            s.before_phase_b_enveloped_offset.load());
-    }
-    if (m_placement_env_entry_outside.load() > 0) {
-        logger().warn(
-            "\t{} constrained placements found the vertex ALREADY outside its own envelope on "
-            "entry. The invariant is 0 -- this says construction or Phase A is leaving offset "
-            "vertices outside their region tube. The projection pulls them back in, so the "
-            "placement still runs, but the violation upstream is real.",
-            m_placement_env_entry_outside.load());
-    }
-    const int n = std::max(1, s.offset_attempted.load());
     logger().info(
-        "\toffset term: {} attempted -> {} accepted | phi residual over them: avg {:.6} -> "
-        "{:.6}, max {:.6} -> {:.6}",
+        "\toffset term: {} attempted -> {} accepted",
         s.offset_attempted.load(),
-        s.offset_accepted.load(),
-        double(s.res_before_nano.load()) / n * 1e-9,
-        double(s.res_after_nano.load()) / n * 1e-9,
-        double(s.res_max_before_nano.load()) * 1e-9,
-        double(s.res_max_after_nano.load()) * 1e-9);
+        s.offset_accepted.load());
 }
 
 void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const double filter_energy)
@@ -2992,8 +2952,6 @@ double TopoOffsetTetMesh::edge_interpolation_residual(const size_t a, const size
 TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
 {
     EnergyCriterion s;
-    const OptPhase saved = m_phase;
-    m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
     // THE bar, as a length: a face is resolved when its RMS relative error is within it, and a
     // vertex placed when its own relative error is. One key for both since 2026-09-24. See
     // offset_envelope_rel for the leash on the operations, which is not an accuracy and which
@@ -3192,7 +3150,6 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             }
         }
     }
-    m_phase = saved;
     return s;
 }
 
@@ -3250,7 +3207,7 @@ std::string TopoOffsetTetMesh::EnergyCriterion::sizing_floor_fact() const
         worst_at_floor_scalar);
 }
 
-double TopoOffsetTetMesh::phase_b_front_gradient_linf()
+double TopoOffsetTetMesh::front_gradient_linf()
 {
     double worst = 0.;
     for (const Tuple& v : get_vertices()) {
@@ -3410,9 +3367,7 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
     Vector3d g = pot->gradient(x0);
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector3d n = g / g.norm();
-    const OptPhase saved = m_phase;
-    m_phase = OptPhase::B;
-    auto total = phase_b_front_energy(vid, pot);
+    auto total = front_energy(vid, pot);
     OffsetEnergy3D offset_only(pot, offset_term_weight(), true, true);
     const double delta = m_offset_params.target_distance;
     logger().info(
@@ -3436,7 +3391,6 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
         const double Fo = offset_only.value(xv);
         logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
     }
-    m_phase = saved;
 }
 
 double TopoOffsetTetMesh::front_chord_target(
@@ -3512,9 +3466,6 @@ TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
     const std::vector<Vector3d>& before)
 {
     SmoothingProgress s;
-    const OptPhase saved = m_phase;
-    m_phase = OptPhase::B; // the front objective's offset terms exist only in Phase B, as in
-                           // energy_criterion()
     const double l = std::max(m_params.l, 1e-16);
     // A front vertex's STEP against the one bar; the background uses its own sizing target below.
     const double tube = m_offset_params.front_conv;
@@ -3546,7 +3497,6 @@ TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
             s.front_worst_vid = vid;
         }
     }
-    m_phase = saved;
     return s;
 }
 
@@ -3784,28 +3734,6 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::distance_deviation_split() c
     return s;
 }
 
-std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
-{
-    // Phase A is TetWild, so its metric is TetWild's: element quality alone, in absolute AMIPS
-    // against optimization_stop_metric() = stop_energy. Delegated rather than reimplemented, and
-    // the units are the reason. Single runs TetWild's loop, so it takes the same.
-    if (m_phase != OptPhase::B) {
-        return wmtk::TetOptimizerMesh::optimization_quality_stats();
-    }
-
-    const DistanceSplit r = residual_split();
-    report_outside_support("Optimization iteration", r);
-
-    const double tol = offset_residual_tolerance();
-    double amips = 0.;
-    for (const Tuple& t : get_tets()) {
-        amips = std::max(amips, cell_quality_rel(t.tid(*this)));
-    }
-    const double phi = r.max_reachable / tol;
-    logger().info("\t[criteria] amips {:.4}x | phi {:.4}x", amips, phi);
-    return {std::max(amips, phi), std::max(amips, r.avg_reachable / tol)};
-}
-
 double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
 {
     // cell_quality stores AMIPS^3 and stop_energy is a bar on AMIPS, so the cube root is not
@@ -3824,8 +3752,8 @@ double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
 
 double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 {
-    // The per-face form of optimization_quality_stats()'s Phase B max, restricted to what this
-    // face carries. >= 1 means the face fails at least one criterion.
+    // The max of the face's AMIPS and Phi residual, each over its own target, restricted to what
+    // this face carries. >= 1 means the face fails at least one criterion.
     const double tol = offset_residual_tolerance();
     double score = amips_rel_at_face(f);
     if (!face_is_offset_surface_live(f)) return score;
@@ -3840,9 +3768,9 @@ double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
 {
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
-    // same way, seeding the same force-split edges. Phase A only, by construction:
-    // mesh_improvement() is this function's one caller, and the driver only ever runs that as
-    // Phase A (today only the frozen-front finishing pass).
+    // same way, seeding the same force-split edges. Final pass only, by construction:
+    // mesh_improvement() is this function's one caller, and the driver only ever runs that for
+    // the frozen-front finishing pass.
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
 
@@ -3969,14 +3897,13 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
         potential_for(vid).target_level(),
         potential_for(vid).residual_length(p),
         smoothing_containment_envelope(vid) ? "yes" : "none");
-    const char* fate =
-        "Phase A: the shared smoother, AMIPS -- the offset term is NOT what moves it";
+    const char* fate = "TetWild's smooth_after(): AMIPS, no offset term";
     if (!m_vertex_attribute[vid].m_is_rounded) {
         fate = "REFUSED by smooth_before: not rounded";
-    } else if (phase_places_front() && ve.m_is_on_offset) {
-        fate = "Phase B / single: the local root find on (Phi - c)^2";
-    } else if (phase_places_front()) {
-        fate = "Phase B: interior AMIPS, or refused if it carries a surface";
+    } else if (m_freeze_front && ve.m_is_on_offset) {
+        fate = "REFUSED by smooth_before: front frozen in the final pass";
+    } else if (ve.m_is_on_offset) {
+        fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
     }
     logger().info("\t  smoothing fate: {}", fate);
 
@@ -4297,7 +4224,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
 {
     // A vertex on both surfaces is unsatisfiable: at distance 0 from the input complex and
     // required to sit at target_distance from it. The geometry decides, not the flags, which are
-    // over-broad. Checked after every phase, not only at construction. As in 2D.
+    // over-broad. As in 2D.
     std::vector<size_t> both;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
@@ -4569,24 +4496,23 @@ void TopoOffsetTetMesh::write_debug_pvd() const
     }
 }
 
-void TopoOffsetTetMesh::optimize_offset_single_phase()
+void TopoOffsetTetMesh::optimize_offset_loop()
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
-    // with the front placed by the offset objective inside the smoothing passes
-    // (OptPhase::Single) and never caged by the offset tube while it moves. The tube still holds
-    // the front for the OPERATIONS (surface_envelope_for_face does not read the phase) and is
-    // rebuilt after every group, so it follows the front rather than capping it. As in 2D.
+    // with the front placed by the offset objective inside the smoothing passes and never caged
+    // by the offset tube while it moves (smoothing_containment_envelope() leaves it out). The
+    // tube holds the front for the OPERATIONS (surface_envelope_for_face() -> containment_for())
+    // and is rebuilt after every group, so it follows the front rather than capping it.
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
     log_region_face_mask_health("construction");
     audit_surface_containment("construction");
-    needle_scan("after construction, before the single-phase loop");
+    needle_scan("after construction, before the loop");
     assign_band_regions();
-    m_phase = OptPhase::B; // the reference is measured with the offset terms present
-    m_front_gradient_reference = phase_b_front_gradient_linf();
+    m_front_gradient_reference = front_gradient_linf();
     logger().info(
-        "\tSINGLE PHASE: TetWild's loop with the front placed inside its "
+        "\tLOOP: TetWild's operation groups with the front placed inside their "
         "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
         "relative error over a stencil_order {} stencil ({} points per face) against front_conv "
         "{:.6g} ({:.6g} x the bbox diagonal)",
@@ -4595,6 +4521,12 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         stencil_points_per_face(),
         m_offset_params.front_conv,
         m_offset_params.front_conv_rel);
+    logger().info(
+        "\t[offset envelope] EXPERIMENTAL_offset_ops_envelope {}: split / collapse / swap in the "
+        "loop {} the offset surface to its envelope (eps {:.6g}); the final pass always does",
+        m_offset_params.experimental_offset_ops_envelope,
+        m_offset_params.experimental_offset_ops_envelope ? "hold" : "do NOT hold",
+        m_offset_params.offset_envelope);
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so
@@ -4644,8 +4576,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
         // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
-        m_ab_round = 0;
-        m_phase = OptPhase::Single;
+        m_round = 0;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
             m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
@@ -4671,9 +4602,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     m_swap_scoring_checked = 0; // and the [swap scoring] lines
     m_swap_scoring_mismatch = 0;
     for (int it = 0; it < budget; ++it) {
-        m_ab_round = it + 1;
+        m_round = it + 1;
         m_iterations_used = it + 1;
-        m_phase = OptPhase::Single;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
             m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
@@ -4716,7 +4646,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                                     ? m_vertex_attribute[ec.worst_ring_vid].m_posf
                                     : Vector3d::Zero();
             logger().info(
-                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
+                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
                 "{:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) over {} "
                 "front vertices, {} rings unmeasurable, {} unmeasurable in all (the exit test) | "
                 "diagnostic: faces max {:.4}x (avg {:.4}x), {} faces over the bar of {}; front "
@@ -4749,7 +4679,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 ec.n_rings_at_floor);
         } else {
             logger().info(
-                "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
+                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
                 "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) "
                 "(diagnostic), faces max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | {} "
                 "vertices, {} faces | faces over the bar: {}, of which {} with all corners placed "
@@ -4906,7 +4836,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
         if (m_offset_params.debug_output) {
-            write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
+            write_optimization_debug_output(fmt::format("end_{}S", it + 1));
         }
         // Termination: every offset face's measure within the bar and nothing unmeasurable
         // (EnergyCriterion::converged()) -- then quality with the front frozen (below). The face
@@ -4933,7 +4863,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             m_quality_converged = amips < bar;
             if (ec.ring_exit) {
                 logger().info(
-                    "Single phase: the front is resolved after {} iteration(s): every front "
+                    "The front is resolved after {} iteration(s): every front "
                     "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; offset "
                     "faces max {:.4}x with {} over the bar (diagnostic); front vertices max {:.4}x "
                     "(diagnostic); max AMIPS {:.4} against stop {:.4}",
@@ -4947,7 +4877,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                     bar);
             } else {
                 logger().info(
-                    "Single phase: the front is resolved after {} iteration(s): every offset face "
+                    "The front is resolved after {} iteration(s): every offset face "
                     "within the bar (faces max {:.4}x), nothing unmeasurable; front vertices max "
                     "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
                     it + 1,
@@ -4962,8 +4892,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                     "========",
                     amips,
                     m_params.stop_energy);
-                m_ab_round = it + 2;
-                m_phase = OptPhase::A;
+                m_round = it + 2;
                 // The whole envelope setup rebuilt fresh from the mesh as placement left it --
                 // the front's tube, and the region-class tubes per envelope_setup() -- and held
                 // for the entire pass; regular-tet AMIPS alone: the plastic vertex path and the
@@ -4991,14 +4920,14 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                     optimization_stop_metric(),
                     m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
                 if (m_offset_params.debug_output) {
-                    write_optimization_debug_output(fmt::format("phase_{}A", it + 2));
+                    write_optimization_debug_output(fmt::format("end_{}F", it + 2));
                 }
             }
             rebuild_offset_envelope();
             return;
         }
     }
-    logger().warn("Single phase did not converge in {} turns (max_rounds)", budget);
+    logger().warn("The loop did not converge in {} turns (max_rounds)", budget);
     log_front_profile(energy_criterion().worst_vid);
 }
 
@@ -5087,7 +5016,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    optimize_offset_single_phase();
+    optimize_offset_loop();
 
     log_smooth_trace();
     logger().info(

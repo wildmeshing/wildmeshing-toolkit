@@ -1908,8 +1908,6 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         assign_band_regions(/*log=*/false);
     }
     {
-        const OptPhase saved_phase = m_phase;
-        m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
         const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
         for (const Tuple& v : vs) {
             const size_t vid = v.vid(*this);
@@ -1929,7 +1927,6 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             v_cdist[vid] =
                 m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
-        m_phase = saved_phase;
     }
 
     for (size_t k = 0; k < tets.size(); ++k) {

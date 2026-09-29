@@ -133,7 +133,7 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int stencil_order;
-    /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
+    /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
     /// square of the face measures (face_conv_ratio()) of its incident offset faces, every face
     /// weighted equally as in the per-tet energy (3D, since 2026-09-28; by area before) -- in 2D
@@ -187,6 +187,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
+    /// EXPERIMENTAL, 3D only, default true. Whether split, collapse and swap in the loop hold the
+    /// offset surface to its envelope (offset_envelope). False leaves the offset surface free of
+    /// its envelope in those operations during the loop; the region tubes still apply, and the
+    /// frozen-front final pass holds the offset surface to its envelope either way. See
+    /// TopoOffsetTetMesh::containment_for().
+    bool experimental_offset_ops_envelope = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -237,7 +243,7 @@ struct Parameters : public wmtk::OptimizerParameters
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
-    /// smoothing) before the first turn of the single-phase loop.
+    /// smoothing) before the first turn of the loop.
     bool pre_smooth;
 
     VectorXd box_min;
@@ -287,6 +293,7 @@ struct Parameters : public wmtk::OptimizerParameters
             json_params["EXPERIMENTAL_consistent_construction_split"];
         experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
+        experimental_offset_ops_envelope = json_params["EXPERIMENTAL_offset_ops_envelope"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

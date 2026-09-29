@@ -1195,9 +1195,9 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     const VecD r = p - foot;
     const double d = r.norm();
     // On the complex the gradient of d does not exist, since every direction increases it equally.
-    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. Phase
-    // B excludes input-complex vertices from the offset term and the criterion books them as
-    // pinned, so this case is a backstop.
+    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. The
+    // front smoother excludes input-complex vertices from the offset term and the criterion books
+    // them as pinned, so this case is a backstop.
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }

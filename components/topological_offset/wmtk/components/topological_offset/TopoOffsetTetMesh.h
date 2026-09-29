@@ -262,7 +262,7 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief One containment envelope per input tag, ambient included. Both phases.
+     * @brief One containment envelope per input tag, ambient included.
      *
      * E_t is a tube of half-width m_envelope_eps around region t's boundary faces as the input
      * mesh carried them, built in init_surfaces_and_boundaries() before offset construction: the
@@ -298,9 +298,11 @@ public:
      * satisfy -- the intersection of everything that holds it, or null if nothing does.
      *
      * The single place the two containment families are composed. `region_mask` dispatches
-     * through envelope_for_mask(); `on_offset` adds m_offset_envelope, but only in Phase A --
-     * the phases that place the front are what move the offset surface, so there the result is
-     * the region tubes alone.
+     * through envelope_for_mask(); `on_offset` adds m_offset_envelope once it exists. Every
+     * operation's containment check reaches this through surface_envelope_for_face(), so split,
+     * collapse and swap all hold the offset surface to its tube. The smoother asks with
+     * `on_offset` false (smoothing_containment_envelope()): placing the front is what moves the
+     * offset surface, and a tube around where it currently sits would cap how far it can travel.
      */
     std::shared_ptr<SampleEnvelope> containment_for(uint64_t region_mask, bool on_offset) const;
 
@@ -311,27 +313,7 @@ public:
      */
     bool project_into_containment(size_t vid, Vector3d& x) const;
 
-    /**
-     * @brief Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.
-     *
-     * A: TetWild's loop and nothing else -- today only the frozen-front final pass -- with
-     * m_offset_envelope holding the front. B: the front objective's offset terms
-     * are live; set only around measurements (the criterion, the gradient reference) so they
-     * see the objective the placement uses. Single: the run's loop, TetWild's operation groups
-     * with the front placed by B's objective inside the smoothing passes -- B wherever the
-     * smoother is concerned (objective, no offset tube while the front moves), A wherever the
-     * loop is (quality stats, stop metric).
-     */
-    enum class OptPhase { A, B, Single };
-
-    /// Whether the smoother places front vertices against the offset objective: Phase B, and
-    /// the single-phase mode that does the same thing inside TetWild's passes.
-    bool phase_places_front() const { return m_phase != OptPhase::A; }
-
-    /// Which phase is running. Read by every hook that differs between them; see OptPhase.
-    OptPhase m_phase = OptPhase::A;
-
-    /// The final Phase A: front vertices are not smoothed (see smooth_before()).
+    /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
     /**
@@ -375,7 +357,7 @@ public:
      * @brief The tube the offset surface may not leave during the operation passes, of
      * half-width offset_envelope. Rebuilt after every smoothing pass from
      * the surface as that pass left it, which is what lets the surface travel across turns.
-     * Non-null once the offset exists; whether it constrains is containment_for()'s phase test.
+     * Non-null once the offset exists; containment_for() holds every operation to it.
      * Unlike m_tag_envelopes, which must never be rebuilt.
      */
     std::shared_ptr<SampleEnvelope> m_offset_envelope;
@@ -385,15 +367,15 @@ public:
     void rebuild_offset_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
-    /// no placement satisfies. Called at construction and after every phase.
+    /// no placement satisfies. Called at construction.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
     /// TetWild's loop, the front placed inside its smoothing passes.
-    void optimize_offset_single_phase();
+    void optimize_offset_loop();
 
     /// Max over the front vertices of the vertex convergence measure (a ratio to its bar); under
     /// gradient_norm_rel and before the reference exists, the raw |n . grad F|. The pass stop.
-    double phase_b_front_gradient_linf();
+    double front_gradient_linf();
     /// Its value on the band as constructed, measured once before turn 1: the reference the
     /// gradient_norm_rel criterion is a fraction of.
     double m_front_gradient_reference = 0.;
@@ -504,7 +486,7 @@ public:
      * WHERE IT IS COMPARED: in the application's after-hooks, on the real mesh, each against the
      * max over the same cells as its before-hook cached them -- the collapse in
      * collapse_after_connectivity(), the swaps in swap_after_cells(), the front smoother in
-     * smooth_front_vertex_phase_b() -- and, for the swaps, also where the engine picks and gates
+     * smooth_front_vertex() -- and, for the swaps, also where the engine picks and gates
      * the cells a swap would make (CANDIDATE CELLS below). Not in the engine's own quality rules:
      * the engine scores collapse and swap candidates BEFORE they exist, by vertex ids
      * (TetOptimizerMesh::collapse_edge_before(), TetMesh's 4-4 / 5-6 case search, the face swap),
@@ -748,7 +730,7 @@ public:
     std::vector<std::array<int, 3>> op_counts;
     /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
     /// write_optimization_debug_output(), to tag each frame with the turn it belongs to.
-    int m_ab_round = 0;
+    int m_round = 0;
     /// Monotonic frame counter for the debug timeline.
     mutable size_t m_debug_seq = 0;
     /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
@@ -761,12 +743,12 @@ public:
     /// index is immediately before the extension, which is false for every companion
     /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens.
     void write_debug_pvd() const;
-    /// Pass index within the current phase, and the (round, phase) it belongs to -- when those
-    /// change the index restarts. All three exist only to name frames.
+    /// Pass index within the current turn, and the (turn, loop-or-final-pass tag) it belongs to --
+    /// when those change the index restarts. All three exist only to name frames.
     mutable int m_debug_pass = 0;
     mutable int m_debug_last_round = -1;
-    mutable char m_debug_last_phase = '?';
-    /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
+    mutable char m_debug_last_tag = '?';
+    /// See offset_gradient_tolerance(). Nothing sets it in the loop; it stays 0.
     double m_gradient_reference = 0.;
     /// The run's verdict: the front resolved (EnergyCriterion::converged(): every offset face's
     /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
@@ -1012,20 +994,10 @@ public:
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> before_phase_b_not_offset{
-            0}; ///< Phase B: on an input surface, neither placed nor relaxed
-        std::atomic<int> before_phase_b_enveloped_background{0}; ///< Phase B: envelope-held
-        std::atomic<int> before_phase_b_enveloped_offset{0}; ///< Phase B: on-offset AND held
         std::atomic<int> offset_attempted{0}; ///< reached the smoother with the offset term
         std::atomic<int> offset_accepted{0}; ///< ... and the smoother kept the new position
         std::atomic<int> interior_attempted{0}; ///< reached it without one
         std::atomic<int> region_attempted{0}; ///< ... of which sat on another region's boundary
-        /// Phi residual over the offset vertices this pass actually touched, before and after,
-        /// in units of 1e-9 so an integer atomic can accumulate a sum and a max.
-        std::atomic<long long> res_before_nano{0};
-        std::atomic<long long> res_after_nano{0};
-        std::atomic<long long> res_max_before_nano{0};
-        std::atomic<long long> res_max_after_nano{0};
 
         void reset()
         {
@@ -1033,17 +1005,10 @@ public:
                  {&attempted,
                   &before_bbox,
                   &before_unrounded,
-                  &before_phase_b_not_offset,
-                  &before_phase_b_enveloped_background,
-                  &before_phase_b_enveloped_offset,
                   &offset_attempted,
                   &offset_accepted,
                   &interior_attempted,
                   &region_attempted}) {
-                c->store(0);
-            }
-            for (std::atomic<long long>* c :
-                 {&res_before_nano, &res_after_nano, &res_max_before_nano, &res_max_after_nano}) {
                 c->store(0);
             }
         }
@@ -1052,7 +1017,7 @@ public:
 
     /// How the solves this class makes itself ended, per smoothing pass, beside the base's
     /// m_newton (the background, through TetOptimizerMesh::smooth_after()). Front: every front
-    /// placement in the phases that place it -- the 1-D solve along the field normal and the 3-D
+    /// placement -- the 1-D solve along the field normal and the 3-D
     /// solve it falls back to. Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged
     /// and reset by log_smoothing_pass_accounting().
     optimization::NewtonCounters m_newton_front;
@@ -1074,7 +1039,7 @@ public:
     /// The thread's shared solver, created with the engine's parameters if needed, with
     /// kSmoothRelGradNormTol applied. Every smoothing path of this component takes it from here.
     polysolve::nonlinear::Solver& smoothing_solver();
-    /// The front veto (smooth_front_vertex_phase_b(), solve_3d): moves whose Newton solve
+    /// The front veto (smooth_front_vertex(), solve_3d): moves whose Newton solve
     /// succeeded and reached the veto, and how many it refused for raising the ring's max
     /// tet_energy. Reported and reset per pass beside the Newton counters. Kept apart from
     /// m_smooth_rejects.quality, which the engine's own veto on interior vertices also counts.
@@ -1159,9 +1124,6 @@ public:
     /// Diagnostic only; the 3D twin of the 2D function of the same name.
     void audit_surface_containment(const std::string& when) const;
 
-    /// How many front placements found the vertex already outside its own envelope on entry.
-    /// The invariant is 0. A run total.
-    mutable std::atomic<int> m_placement_env_entry_outside{0};
     /// How many front placements had their accepted step projected back into the vertex's
     /// region tubes. A run total.
     mutable std::atomic<int> m_placement_projected{0};
@@ -1234,8 +1196,8 @@ public:
 
     /**
      * @brief Class-0 faces -- every region boundary, the input complex and the domain wall
-     * included -- carry a containment requirement; the offset surface does not, except in Phase
-     * A where m_offset_envelope holds it where the last smoothing pass left it.
+     * included -- carry a containment requirement, and so does the offset surface:
+     * m_offset_envelope holds it where the last smoothing pass left it (see containment_for()).
      *
      * The 3D twin of surface_envelope_for_edge(), keyed on the vertices because every caller is
      * an operation asking about a triangle it is about to create. Null means "no containment
@@ -1381,21 +1343,22 @@ public:
         return best;
     }
 
-    /// ... and it is not contained by one either, except in Phase A. Both families composed --
-    /// not a choice between them; see containment_for().
+    /// ... and it is not contained by the offset tube either: placing the front is what moves
+    /// the offset surface, so the smoother asks for the region tubes alone. The operations hold
+    /// the offset surface to its tube through surface_envelope_for_face(); see containment_for().
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
     {
-        return containment_for(vertex_boundary_mask(vid), m_vertex_extra[vid].m_is_on_offset);
+        return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
     }
 
     /**
-     * @brief Phase B placement of a front vertex: the shared smoother with the offset's options,
+     * @brief Placement of a front vertex: the shared smoother with the offset's options,
      * or the 1-D solve along the vertex's move direction under front_normal_projection. See
      * FrontSmooth3d.cpp.
      */
-    bool smooth_front_vertex_phase_b(const Tuple& t);
+    bool smooth_front_vertex(const Tuple& t);
     /// ||grad F|| at front vertex vid along its move direction, F the objective
-    /// smooth_front_vertex_phase_b() minimises. +inf if unmeasurable.
+    /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
     /// The line a front vertex is placed along: the field normal, or that normal projected into
     /// the boundary surface (onto its crease) where an input envelope holds it.
@@ -1472,20 +1435,19 @@ public:
         const Vector3d& pb,
         const Vector3d& pc) const;
     mutable size_t m_front_gradient_worst_vid =
-        static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
+        static_cast<size_t>(-1); ///< argmax of front_gradient_linf()
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
-    /// The Phase B objective of front vertex vid with the vertex at x: AMIPS of its one-ring at
-    /// weight 1 (rest-shape AMIPS for its plastic cells, also at 1) + phase_b_front_energy(). What
+    /// The objective of front vertex vid with the vertex at x: AMIPS of its one-ring at
+    /// weight 1 (rest-shape AMIPS for its plastic cells, also at 1) + front_energy(). What
     /// the measure above differentiates, and what the 1-D placement minimises.
-    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_objective(
-        size_t vid,
-        const Vector3d& x) const;
-    /// Whether the smoother places vid against the offset term: a front vertex, in the phases
-    /// that place the front, that no input envelope also pins.
+    std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid, const Vector3d& x)
+        const;
+    /// Whether the smoother places vid against the offset term: a front vertex, outside the
+    /// frozen-front final pass, that no input envelope also pins.
     bool vertex_carries_offset_term(const size_t vid) const
     {
-        return phase_places_front() && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
+        return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                vertex_boundary_mask(vid) == 0;
     }
     /// The AMIPS weight the shared smoother uses at vid, amips_w in smooth_vertex_3d(): 1 for a
@@ -1497,15 +1459,16 @@ public:
         if (vertex_carries_offset_term(vid)) return 1.;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
-    /// Phase B's offset terms, handed to the shared smoother for a front vertex it is placing
-    /// (null in Phase A and for a front vertex an input envelope also pins) -- plus, under
-    /// deform_others, the rest-shape AMIPS of the deformable cells in the vertex's ring.
+    /// The front objective's offset terms, handed to the shared smoother for a front vertex it
+    /// is placing (null in the final pass and for a front vertex an input envelope also pins) --
+    /// plus, under deform_others, the rest-shape AMIPS of the deformable cells in the vertex's
+    /// ring.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
         std::shared_ptr<polysolve::nonlinear::Problem> front;
         if (vertex_carries_offset_term(vid)) {
-            front = phase_b_front_energy(vid, potential_ptr_for(vid));
+            front = front_energy(vid, potential_ptr_for(vid));
         }
         const std::shared_ptr<polysolve::nonlinear::Problem> rest = rest_energy_for_vertex(vid);
         if (!front) return rest;
@@ -1571,21 +1534,10 @@ public:
     /// incident live front faces, whose value is sum_f O(f), the terms the per-tet energy carries;
     /// and, under front_alignment_energy, AlignEnergy3D (one residual per incident live front
     /// face). Defined in FrontSmooth3d.cpp.
-    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_energy(
+    std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential3D>& pot) const;
 
-    /**
-     * @brief The loop's quality metric: TetWild's own outside Phase B, the max of AMIPS and the
-     * Phi residual (each over its own target) in Phase B. See the 2D twin.
-     */
-    std::tuple<double, double> optimization_quality_stats() override;
-
-    /// stop_energy outside Phase B, 1.0 in it -- in the same units as the line above.
-    double optimization_stop_metric() const override
-    {
-        return m_phase != OptPhase::B ? wmtk::TetOptimizerMesh::optimization_stop_metric() : 1.;
-    }
 
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
@@ -1610,15 +1562,15 @@ public:
     }
 
     /// The gradient_norm_rel bar: front_conv_frac() x a measured reference
-    /// (m_gradient_reference, never measured on the single-phase path, so this sits at the floor
-    /// there; the single-phase bar uses m_front_gradient_reference instead). The fraction rather
+    /// (m_gradient_reference, never measured in the loop, so this sits at the floor there; the
+    /// loop's bar uses m_front_gradient_reference instead). The fraction rather
     /// than the length, because the reference is a gradient, not a distance. Same as 2D.
     double offset_gradient_tolerance() const
     {
         return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
     }
 
-    /// The scale offset_gradient_tolerance() is a fraction of; 0 on the single-phase path.
+    /// The scale offset_gradient_tolerance() is a fraction of; 0 in the loop.
     double gradient_reference() const { return m_gradient_reference; }
 
     /// Stop the run if any reachable band vertex has left the potential's support. Called once
@@ -1962,7 +1914,7 @@ public:
     /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
     /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
     void smooth_group_to_convergence(const char* group_name);
-    /// The energy criterion as measured when the loop converged; the final Phase A runs after
+    /// The energy criterion as measured when the loop converged; the final pass runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
     /// The interpolation residual of front edge (a, b), see EnergyCriterion. -1 unmeasurable.
@@ -1982,11 +1934,11 @@ public:
         return !vertex_is_on_domain_boundary(vid);
     }
 
-    /// TetWild's stall-driven sizing refinement, verbatim; Phase A only. See the 2D twin.
+    /// TetWild's stall-driven sizing refinement, verbatim; final pass only. See the 2D twin.
     size_t refine_sizing_around_worst(double max_metric) override;
 
-    /// Why Phase A is stuck: a census of the tets stuck-refine is about to chase. The 3D twin of
-    /// log_stuck_refine_census().
+    /// Why the final pass is stuck: a census of the tets stuck-refine is about to chase. The 3D
+    /// twin of log_stuck_refine_census().
     void log_stuck_refine_census(double max_metric, double filter_energy);
 
     /// For every element above `filter_energy`, why its edges cannot be split: short / valence /
@@ -2049,27 +2001,27 @@ public:
 
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
-     * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
-     * Same scheme as 2D.
+     * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
+     * the loop and F in the final pass.
      */
     void write_optimization_debug_output(const std::string& path) override
     {
-        const char ph = (m_phase == OptPhase::A) ? 'A' : (m_phase == OptPhase::B ? 'B' : 'S');
-        if (m_ab_round != m_debug_last_round || ph != m_debug_last_phase) {
-            m_debug_last_round = m_ab_round;
-            m_debug_last_phase = ph;
+        const char ph = m_freeze_front ? 'F' : 'S'; // the final pass, or the loop
+        if (m_round != m_debug_last_round || ph != m_debug_last_tag) {
+            m_debug_last_round = m_round;
+            m_debug_last_tag = ph;
             m_debug_pass = 0;
         }
         std::string label = path;
         if (path.rfind("debug_", 0) == 0) {
             label = fmt::format(
                 "r{}{}{}{}",
-                m_ab_round,
+                m_round,
                 ph,
                 ++m_debug_pass,
                 m_debug_pass_name.empty() ? std::string() : "_" + m_debug_pass_name);
-        } else if (path.rfind("phase_", 0) == 0) {
-            label = fmt::format("r{}{}_end", m_ab_round, ph);
+        } else if (path.rfind("end_", 0) == 0) {
+            label = fmt::format("r{}{}_end", m_round, ph);
         }
         write_debug_frame(label);
     }
