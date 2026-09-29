@@ -830,14 +830,9 @@ bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
     }
     if (cells.empty()) return false;
     auto energy = std::make_shared<RestAMIPSEnergy3D>(std::move(cells), 1.0);
-    auto& solver = m_solver.local();
-    if (!solver) {
-        solver = polysolve::nonlinear::Solver::create(
-            optimization::basic_nonlinear_solver_params,
-            optimization::basic_linear_solver_params,
-            1,
-            opt_logger());
-    }
+    auto& solver =
+        m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
+    smoothing_solver();
     const Vector3d x0 = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd x = x0;
     bool threw = false;
@@ -1502,8 +1497,26 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     return true;
 }
 
+polysolve::nonlinear::Solver& TopoOffsetTetMesh::smoothing_solver()
+{
+    // See the declaration. Created here with the engine's own parameters when the thread has
+    // none yet -- exactly what the engine's smoother would create -- and the one criterion this
+    // component adds is set on every visit, so it holds whichever path created the solver.
+    auto& solver = m_solver.local();
+    if (!solver) {
+        solver = polysolve::nonlinear::Solver::create(
+            optimization::basic_nonlinear_solver_params,
+            optimization::basic_linear_solver_params,
+            1,
+            opt_logger());
+    }
+    solver->stop_criteria().relGradNorm = kSmoothRelGradNormTol;
+    return *solver;
+}
+
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
 {
+    smoothing_solver(); // the thread's solver carries this component's stopping rule, every path
     const size_t vid = t.vid(*this);
     const auto& ve = m_vertex_extra[vid];
 

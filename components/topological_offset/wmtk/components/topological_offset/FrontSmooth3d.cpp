@@ -218,27 +218,9 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     // ring's shape on the way to the level set: off, as it always was here. solve_3d() vetoes on
     // the energy instead.
     opts.quality_veto = false;
-    auto& solver = m_solver.local();
-    if (!solver) {
-        // The engine's Newton parameters (DenseNewton, 10 iterations, absolute gradient tolerance
-        // 1e-10) with one change: a RELATIVE gradient tolerance. The front objective is in
-        // tolerance units, 1e4 times the old front objective, and its gradient's round-off floor
-        // sits at 1e-11..1e-9: measured 2026-09-28 on the cube (target 1e-2, tolerance 1e-4), 65%
-        // of front solves ended there after the full 10 iterations, converged to machine precision
-        // (|grad| / |grad_0| at 1e-14..1e-11) and unable to meet the absolute 1e-10, while the
-        // interior solves, whose objective has no such factor, stop on it in 3.8 iterations. The
-        // relative test is scale-free and ends those solves after the 3-4 iterations Newton needs;
-        // the 28% that converge only linearly (ratio 1e-2..1e-5 at the cap) are untouched by it,
-        // and a cap of 20 was measured not to finish them either (24% still at the cap, ratios
-        // 1e-3..1e-6, smoothing 15% slower): the cap stays the engine's 10.
-        nlohmann::json params = optimization::basic_nonlinear_solver_params;
-        params["rel_grad_norm_tol"] = 1e-6;
-        solver = polysolve::nonlinear::Solver::create(
-            params,
-            optimization::basic_linear_solver_params,
-            1,
-            opt_logger());
-    }
+    auto& solver =
+        m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
+    smoothing_solver();
     // THE FRONT SMOOTHER'S VETO (see tet_energy()), on every 3-D solve: the max of tet_energy()
     // over the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto, whose
     // place it takes under the front's own key, offset_front_smooth_veto (the engine's field, key

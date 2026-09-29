@@ -1056,6 +1056,24 @@ public:
     /// solve it falls back to. Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged
     /// and reset by log_smoothing_pass_accounting().
     optimization::NewtonCounters m_newton_front;
+    /**
+     * @brief The Newton stopping rule every smoother of this component runs with, set on the
+     * thread's shared solver (the engine's m_solver slot) by smoothing_solver() at the start of
+     * every visit -- front, plastic-medium and interior alike, so the settings do not depend on
+     * which path first ran on a thread.
+     *
+     * Relative gradient tolerance 1e-6, beside the engine's absolute 1e-10 (which stays). The
+     * front objective is in tolerance units, 1e4 times the old front objective, and its
+     * gradient's round-off floor sits at 1e-11..1e-9: measured 2026-09-28 on the cube (target
+     * 1e-2, tolerance 1e-4), 65% of front solves ran to the 10-iteration cap converged to
+     * machine precision (|grad|/|grad_0| at 1e-14..1e-11), unable to meet the absolute 1e-10.
+     * With the relative rule: mean 2.8 iterations (exact Hessian) instead of 9.7, 98% stopped on
+     * it. Interior solves, which met the absolute rule in 3.8 iterations, stop a little earlier.
+     */
+    static constexpr double kSmoothRelGradNormTol = 1e-6;
+    /// The thread's shared solver, created with the engine's parameters if needed, with
+    /// kSmoothRelGradNormTol applied. Every smoothing path of this component takes it from here.
+    polysolve::nonlinear::Solver& smoothing_solver();
     /// The front veto (smooth_front_vertex_phase_b(), solve_3d): moves whose Newton solve
     /// succeeded and reached the veto, and how many it refused for raising the ring's max
     /// tet_energy. Reported and reset per pass beside the Newton counters. Kept apart from
