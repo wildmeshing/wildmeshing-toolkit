@@ -210,7 +210,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     const size_t vid = t.vid(*this);
     const bool placed = vertex_carries_offset_term(vid);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = placed ? 1. : m_params.w_amips;
+    opts.w_amips = placed ? m_offset_params.offset_amips_weight : m_params.w_amips;
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = placed ? 1. : m_s_amips;
     opts.s_envelope = m_s_envelope;
@@ -236,6 +236,18 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
         const bool veto = m_offset_params.offset_front_smooth_veto;
         const double before = veto ? max_tet_energy(ring) : 0.;
+        // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
+        // every vertex that shares a front face with it -- before the solve.
+        std::vector<size_t> nb;
+        std::vector<double> nb_before;
+        if (m_offset_params.debug_crossings) {
+            nb.push_back(vid);
+            for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
+                for (const size_t u : get_face_vids(ft)) nb.push_back(u);
+            }
+            wmtk::vector_unique(nb);
+            for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
+        }
         if (!optimization::smooth_vertex_3d(
                 *this,
                 t,
@@ -263,6 +275,17 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             return false;
         }
         m_released_tube_dirty.store(true, std::memory_order_release);
+        if (m_offset_params.debug_crossings) {
+            for (size_t k = 0; k < nb.size(); ++k) {
+                const double after = ring_measure_at(nb[k]);
+                if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
+                if (nb[k] == vid) {
+                    ++m_cross_own;
+                } else {
+                    ++m_cross_neighbour;
+                }
+            }
+        }
         return true;
     };
     if (!m_offset_params.front_normal_projection) return solve_3d();

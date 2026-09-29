@@ -519,6 +519,14 @@ public:
      * AMIPS (see swap_after_cells()).
      */
     double tet_energy(size_t tid) const;
+    /// The AMIPS part of the energy: offset_amips_weight times AMIPS^3, the MAX_ENERGY sentinel
+    /// (unscoreable) passed through unscaled so that it stays the largest value anywhere. Every
+    /// place that turns AMIPS^3 into energy reads it through here -- tet_energy(),
+    /// candidate_energy(), and the energy rules' early halves on the engine's AMIPS^3 bound.
+    double weighted_amips(const double amips3) const
+    {
+        return amips3 >= MAX_ENERGY ? amips3 : m_offset_params.offset_amips_weight * amips3;
+    }
     /// Max of tet_energy() over `tids` (0 for none): the number every rule above compares.
     double max_tet_energy(const std::vector<size_t>& tids) const;
     /// tet_energy() of a cell the swap in flight may create, which does not exist yet: AMIPS^3
@@ -1056,6 +1064,30 @@ public:
     optimization::NewtonCounters m_newton_plastic;
     void log_smoothing_pass_accounting() override;
 
+    /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
+    /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current
+    /// (consolidation renumbers vertices, so the loop clears it). A pass's line counts the front
+    /// vertices whose ring measure went from <= 1 to > 1 (up), back (down), new vertices already
+    /// over (a split's, or an old id at a new position after a storage retry), and vertices over
+    /// the bar that the pass removed.
+    std::vector<double> m_cross_ring;
+    std::vector<Vector3d> m_cross_pos;
+    bool m_cross_valid = false;
+    /// Per smoothing pass: accepted front moves that took the moved vertex itself (own), or one of
+    /// its front neighbours (neighbour), from a ring measure <= 1 to > 1.
+    std::atomic<size_t> m_cross_own{0}, m_cross_neighbour{0};
+    /// The exit test's ring measure of every vertex (energy_criterion()), face for face.
+    std::vector<double> front_ring_measures() const;
+    /// One vertex's ring measure, from its own live offset faces (NaN if it has none).
+    double ring_measure_at(size_t vid) const;
+    /// Take the snapshot; with `compare`, log the crossings against the previous one first.
+    /// `match_positions`: an id counts as the same vertex only at the same position (operation
+    /// passes, which move no vertex; a storage retry inside one renumbers).
+    void crossing_snapshot(const std::string& pass, bool compare, bool match_positions);
+    /// The engine calls this at the start of local_operations() and after each operation pass
+    /// that ran; DEBUG_crossings hooks the operation passes here. Log-only.
+    void update_attributes() override;
+
     /**
      * @brief Why smoothing does not repair a sliver in its one-ring. Same counters as 2D:
      * offered / reached / fixed / stationary. See TopoOffsetTriMesh::m_needle_pre.
@@ -1100,6 +1132,18 @@ public:
     /// The collapse energy rule's before-half: the max of tet_energy() over the one-rings of v1
     /// and v2, cached by collapse_edge_before() and compared by collapse_after_connectivity().
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_energy_before;
+    /// offset_collapse_changed_cells: the collapse in flight's before-energies, for the rule over
+    /// the changed cells only (collapse_after_connectivity()). ring1_max is the max of
+    /// tet_energy() over v1's ring, every cell of which the collapse reshapes or removes;
+    /// v2_only holds (tid, tet_energy) of the cells of v2's ring outside v1's ring, sorted by tid:
+    /// the collapse leaves their slots and vertices alone, so one of them changes energy only
+    /// through a front face relabelled across it, and an unchanged one is in neither max.
+    struct CollapseCells
+    {
+        double ring1_max = 0.;
+        std::vector<std::pair<size_t, double>> v2_only;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<CollapseCells> m_collapse_cells;
     /**
      * @brief The link of the collapsed edge, captured in collapse_before_vertex().
      *
@@ -1263,7 +1307,7 @@ public:
     bool swap_quality_allowed(double after, double /*before*/, bool) const override
     {
         if (!m_offset_params.offset_swap_veto) return true;
-        if (after < m_swap_energy_before.local().max) return true;
+        if (weighted_amips(after) < m_swap_energy_before.local().max) return true;
         ++iter_cnt_swap_energy_reject;
         return false;
     }
@@ -1456,7 +1500,7 @@ public:
     /// the engine's own balance against the input-surface envelope term.
     double smoother_amips_weight(const size_t vid) const
     {
-        if (vertex_carries_offset_term(vid)) return 1.;
+        if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
     /// The front objective's offset terms, handed to the shared smoother for a front vertex it
@@ -1963,7 +2007,7 @@ public:
         if (!m_offset_params.offset_collapse_veto || !m_vertex_attribute.at(v1).m_is_rounded) {
             return true;
         }
-        if (q <= m_collapse_energy_before.local()) return true;
+        if (weighted_amips(q) <= m_collapse_energy_before.local()) return true;
         ++iter_cnt_collapse_energy_reject;
         return false;
     }

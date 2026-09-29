@@ -89,6 +89,9 @@
       "project_line_search_nested_steps",
       "offset_smooth_veto",
       "offset_front_smooth_veto",
+      "offset_amips_weight",
+      "offset_collapse_changed_cells",
+      "DEBUG_crossings",
       "offset_collapse_veto",
       "offset_swap_veto",
       "perform_sanity_checks",
@@ -613,6 +616,25 @@
     "type": "bool",
     "default": false,
     "doc": "Whether a FRONT vertex's smoothing move is refused when the largest per-tet energy over its ring rises (TopoOffsetTetMesh::tet_energy(): AMIPS^3 plus the offset term of the front face a band cell carries); the front's twin of offset_smooth_veto, applied by the component after the 3-D solve. DEFAULT FALSE, measured on the cube at target_distance_rel 1e-2 / front_conv_rel 1e-4 (2026-09-28): on, the front cannot reach the level set -- a vertex 0.3 of the offset distance off has to move by about its tets' size, which raises some cell's AMIPS^3 more than it lowers the face term -- so the ring error stayed at 20-40x the bar while refinement doubled the faces every turn (159382 faces at turn 7, no convergence); off, the front converged in 6 turns serial. The smoother minimises the SUM of the ring's energy and the veto bounds its MAX, so a refusal is not a defect in itself; the per-pass line 'front veto: fired X of Y' reports it. In 2D the front is placed by its own solver, which this key does not reach."
+  },
+  {
+    "pointer": "/offset_amips_weight",
+    "type": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "doc": "The weight w of AMIPS in the per-tet energy, tet_energy = w AMIPS^3 + the offset terms of the front faces a band cell carries (each term 1 at the bar), and in the front smoother's objective (w times the ring's AMIPS^3 plus the offset terms of the vertex's front faces). The collapse and swap energy rules, the swap case search, their early halves on the AMIPS^3 lower bound, and the front smoothing veto all compare this one energy. 1 (the default) is the 1:1 energy of 2026-09-28. A small w (1e-4: an AMIPS^3 of 1e4 weighs as much as one bar) makes the offset terms decide the maxima the rules compare, so an operation or a front move cannot push a face over the bar for a shape gain; AMIPS still keeps the solve's tangential directions determined and still acts as a barrier at degenerate cells. Interior vertices and the interior smoothing veto compare AMIPS alone and are unaffected by the scale. 3D only."
+  },
+  {
+    "pointer": "/offset_collapse_changed_cells",
+    "type": "bool",
+    "default": false,
+    "doc": "The collapse energy rule over the cells whose energy the collapse changes, instead of the whole rings. false (the default): the max of tet_energy over the survivor's ring after may not exceed the max over the rings of v1 and v2 before -- so a cell of v2's ring that the collapse does not change can set the cap, and a changed face may rise up to it. true: after = the max over the survivor's ring without the cells of v2's ring whose energy is unchanged (a collapse moves no vertex, so an untouched cell changes only through a front face relabelled across it); before = the max over v1's ring and over those same changed cells of v2's ring. Strictly stronger than false: it refuses every collapse false refuses, and more. The early half keeps the whole-ring max, which bounds both. 3D only."
+  },
+  {
+    "pointer": "/DEBUG_crossings",
+    "type": "bool",
+    "default": false,
+    "doc": "Log-only: after every operation pass and every smoothing pass, count the front vertices whose ring measure crossed the bar (from <= 1 to > 1, and back), plus new vertices already over it; inside the front smoother, classify each accepted move whose ring-measure crossing it caused as the moved vertex's own or a front neighbour's. Changes no result; costs an exit-measure evaluation per pass and a local one per front move. 3D only."
   },
   {
     "pointer": "/offset_collapse_veto",
