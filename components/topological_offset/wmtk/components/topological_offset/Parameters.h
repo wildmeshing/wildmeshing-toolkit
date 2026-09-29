@@ -98,13 +98,13 @@ struct Parameters : public wmtk::OptimizerParameters
     // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
     /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
     std::string front_conv_criterion;
-    // The front is placed by a one-dimensional solve along its field normal
+    // When true, the front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
     // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
     // information, and in the free solve that tangential motion made fronts slide and fold where
-    // two of them meet.
-    bool front_normal_projection = true;
-    bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
+    // two of them meet. Default false since 2026-09-29: the free solve.
+    bool front_normal_projection = false;
+    bool front_alignment_energy = false; ///< see the spec: helps pressed seams, biased elsewhere
     /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
     bool offset_collapse_veto = true, offset_swap_veto = true;
     /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
@@ -187,12 +187,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
-    /// EXPERIMENTAL, 3D only, default true. Whether split, collapse and swap in the loop hold the
+    /// EXPERIMENTAL, 3D only, default false. Whether split, collapse and swap in the loop hold the
     /// offset surface to its envelope (offset_envelope). False leaves the offset surface free of
     /// its envelope in those operations during the loop; the region tubes still apply, and the
     /// frozen-front final pass holds the offset surface to its envelope either way. See
     /// TopoOffsetTetMesh::containment_for().
-    bool experimental_offset_ops_envelope = true;
+    bool experimental_offset_ops_envelope = false;
     std::string output_path; // no extension
     bool save_vtu;
 

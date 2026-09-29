@@ -294,8 +294,8 @@
   {
     "pointer": "/EXPERIMENTAL_offset_ops_envelope",
     "type": "bool",
-    "default": true,
-    "doc": "EXPERIMENTAL, 3D only, default true. true: split, collapse and swap in the loop hold every offset-surface face they create or keep to the offset envelope, the tube of half-width offset_envelope around the offset surface as the last smoothing pass left it, so an operation that would move the offset surface outside it is refused. false: in the loop those operations do not check the offset surface against its envelope (the region-boundary tubes still apply). The smoother never holds the front to the offset envelope, since placing the front is what moves it, and the frozen-front final pass (the TetWild pass after the loop) holds the offset surface to its envelope in every operation whatever this says. 2D does not read it."
+    "default": false,
+    "doc": "EXPERIMENTAL, 3D only, default false. true: split, collapse and swap in the loop hold every offset-surface face they create or keep to the offset envelope, the tube of half-width offset_envelope around the offset surface as the last smoothing pass left it, so an operation that would move the offset surface outside it is refused. false: in the loop those operations do not check the offset surface against its envelope (the region-boundary tubes still apply). The smoother never holds the front to the offset envelope, since placing the front is what moves it, and the frozen-front final pass (the TetWild pass after the loop) holds the offset surface to its envelope in every operation whatever this says. 2D does not read it."
   },
   {
     "pointer": "/EXPERIMENTAL_nonoverlapping_gates",
@@ -522,15 +522,15 @@
   },
   {
     "pointer": "/front_normal_projection",
-    "default": true,
+    "default": false,
     "type": "bool",
-    "doc": "The front is placed by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to the operation passes' smoother. A front vertex an input envelope also holds moves along that boundary instead: the field normal projected into the boundary (or onto its crease)."
+    "doc": "Default false since 2026-09-29 (it was true): the front is placed by the free solve, the full 2-D / 3-D smoother. true: the front is placed by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to the operation passes' smoother. A front vertex an input envelope also holds moves along that boundary instead: the field normal projected into the boundary (or onto its crease)."
   },
   {
     "pointer": "/front_alignment_energy",
-    "default": true,
+    "default": false,
     "type": "bool",
-    "doc": "Whether the front objective carries the alignment term: the sum over the vertex's live front simplices of (1 - n_e . ghat(m_e))^2, with n_e the simplex normal and ghat the field's unit gradient at its midpoint / centroid, weighted like the offset term. It is what acts on the front's normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. On by default, with a known cost: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each term is weighted by the gradient agreement at its corners, max(0, ghat_a . ghat_b) (the minimum over the corner pairs), frozen per visit, so a simplex spanning a concave corner's bisector gets no direction target instead of an impossible one."
+    "doc": "Whether the front objective carries the alignment term: the sum over the vertex's live front simplices of (1 - n_e . ghat(m_e))^2, with n_e the simplex normal and ghat the field's unit gradient at its midpoint / centroid, weighted like the offset term. It is what acts on the front's normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. Off by default since 2026-09-29 (it was on), with a known cost when on: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each term is weighted by the gradient agreement at its corners, max(0, ghat_a . ghat_b) (the minimum over the corner pairs), frozen per visit, so a simplex spanning a concave corner's bisector gets no direction target instead of an impossible one."
   },
   {
     "pointer": "/sizing_collapse_min",
