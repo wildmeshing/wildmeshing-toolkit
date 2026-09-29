@@ -349,7 +349,7 @@
     "pointer": "/num_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF, this component's default -- in the 3D single-phase loop since 2026-09-25 (there only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
+    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the 3D single-phase loop since 2026-09-25 (there only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
   },
   {
     "pointer": "/length_rel",
@@ -390,8 +390,8 @@
   {
     "pointer": "/interleaved_smoothing",
     "type": "bool",
-    "default": false,
-    "doc": "Run split, collapse and swap as three separate rounds with smoothing after each, instead of one combined round. DEFAULT FALSE in this component (TriWild's and TetWild's default is true), so the default turn is split, collapse, swap back to back, then num_smoothing_passes smoothing passes. Read since 2026-09-25 by the 3D single-phase loop: with it false a turn is one combined split+collapse+swap round followed by ONE smoothing block -- num_smoothing_passes fixed passes, or under adaptive_smoothing passes until the front and the background settle -- instead of three rounds each followed by interleaved_smoothing_passes. Also read by the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike, so the finishing pass takes the same turn shape. Why it exists in the loop: measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing passes per turn only the first after the split moved the front from turn 5 on; the other five never moved a vertex across the bar and cost 63% of the turn. Why false is the default: on the same cube with EXPERIMENTAL_nonoverlapping_gates true and front_alignment_energy false, serial, the combined turn with 2 smoothing passes converged in 7 turns, 85 s, final max AMIPS 8.37, 25358 front faces, against 7 turns, 124 s, max AMIPS 10.64, 21042 front faces with the three interleaved rounds of 2 passes each. 2D's single-phase loop still hard-codes the three interleaved rounds."
+    "default": true,
+    "doc": "Run split, collapse and swap as three separate rounds with `interleaved_smoothing_passes` smoothing passes after each, instead of one combined round followed by `num_smoothing_passes`. DEFAULT TRUE since 2026-09-28 (it was false from 2026-09-25, when the smoothing was 63% of a turn and 5 of its 6 passes near no-ops; the single energy, the exact Hessian and the relative gradient tolerance made a front solve 2-3 Newton iterations instead of 10). Measured on the cube with the single energy, mix vetos: serial target 1e-2 / tolerance 1e-4, combined 7 turns / 22396 faces / 215 s, interleaved 6 / 20102 / 203 s; 10 threads, combined 7-9 turns / 22260-25416 faces / 55-98 s, interleaved 6-7 / 19870-21186 / 60-75 s; 10 threads 1e-3 / 5e-5 (neither resolved in 10 turns), combined 95040 faces / 330 s, interleaved 75826 / 390 s. The gain is in the late turns: the front the exit test judges has been re-placed after every operation, so fewer vertices are over the bar and halved."
   },
   {
     "pointer": "/interleaved_smoothing_passes",
