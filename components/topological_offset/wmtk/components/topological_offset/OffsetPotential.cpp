@@ -1600,10 +1600,12 @@ bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 StencilEnergy3D::StencilEnergy3D(
     const std::shared_ptr<const OffsetPotential3D>& potential,
     std::vector<Face> faces,
-    const double weight)
+    const double weight,
+    const bool gauss_newton)
     : m_potential(potential)
     , m_faces(std::move(faces))
     , m_weight(weight)
+    , m_gauss_newton(gauss_newton)
     , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
 
@@ -1694,8 +1696,9 @@ void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
     Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
     size_t k = 0;
     for (const Face& f : m_faces) {
-        // EXACT Hessian of r^2: 2 a_i^2 (dr dr^T + r hess Phi / c). Until 2026-09-28 the second
-        // term was dropped (Gauss-Newton, PSD by construction) and 28-30% of the front solves on
+        // EXACT Hessian of r^2 unless gauss_newton: 2 a_i^2 (dr dr^T + r hess Phi / c). Until
+        // 2026-09-28 the second term was dropped (Gauss-Newton, PSD by construction; kept as
+        // gauss_newton = true, which the tests check) and 28-30% of the front solves on
         // the cube (target 1e-2, tolerance 1e-4) converged only linearly -- |grad|/|grad_0| at
         // 1e-2..1e-5 after the 10-iteration cap -- near its rounded edges, where r is still large
         // and hess Phi is the offset surface's curvature. With the term: 2% at the cap, mean 2.8
@@ -1710,9 +1713,11 @@ void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
             const Sample& sm = f.samples[i];
             const double a = sm.a;
             Hf += (2. * a * a) * (rd.dr * rd.dr.transpose());
-            const Eigen::Vector3d p = a * x + sm.b * f.q1 + sm.c * f.q2;
-            const Eigen::Matrix3d Hphi = m_potential->hessian(p);
-            if (Hphi.allFinite()) Hf += (2. * a * a * rd.r / m_c) * Hphi;
+            if (!m_gauss_newton) {
+                const Eigen::Vector3d p = a * x + sm.b * f.q1 + sm.c * f.q2;
+                const Eigen::Matrix3d Hphi = m_potential->hessian(p);
+                if (Hphi.allFinite()) Hf += (2. * a * a * rd.r / m_c) * Hphi;
+            }
             ++n;
         }
         if (n > 0) H += Hf / double(n);

@@ -616,10 +616,11 @@ private:
  * over delta, while r here stays the field's own relative error -- the same zero set, about
  * 3.44x the criterion's number at the default offset_dhat_factor.)
  *
- * The derivatives are exact and the Hessian is Gauss-Newton, which here is also PSD by
- * construction (a sum of a_i^2 dr dr^T outer products), so no eigenvalue projection is needed --
- * unlike the L1 sag term this replaces, whose Hessian was indefinite. LineProblem3D takes
- * n^T H n, so the 1-D normal solve inherits that.
+ * The derivatives are exact, and so is the Hessian by default: per stencil point
+ * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
+ * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
+ * PSD by construction -- the form used until 2026-09-28; hessian() says why the default changed.
+ * LineProblem3D takes n^T H n, so the 1-D normal solve inherits whichever form is chosen.
  */
 class StencilEnergy3D : public polysolve::nonlinear::Problem
 {
@@ -643,7 +644,8 @@ public:
     StencilEnergy3D(
         const std::shared_ptr<const OffsetPotential3D>& potential,
         std::vector<Face> faces,
-        double weight);
+        double weight,
+        bool gauss_newton = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -676,6 +678,7 @@ private:
     std::shared_ptr<const OffsetPotential3D> m_potential;
     std::vector<Face> m_faces;
     double m_weight;
+    bool m_gauss_newton;
     double m_c = 1.; ///< the potential's target level, cached
 
     mutable std::vector<Reading> m_readings;
