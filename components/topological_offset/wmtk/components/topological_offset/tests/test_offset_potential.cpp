@@ -145,9 +145,8 @@ double level_set_radius(
 // ---------------------------------------------------------------------------------------------
 
 /// A triangle soup as OffsetPotential<3> takes it. `E` is not optional: ipc derives
-/// faces_to_edges from it and throws if a face's edge is missing, and the OGC feasible-region
-/// test for a vertex reads that vertex's edge neighbours, so an incomplete edge list would
-/// silently widen every Voronoi region.
+/// faces_to_edges from it and throws if a face's edge is missing, and an edge's ESP weight counts
+/// the triangles on it.
 struct TriSoup
 {
     MatrixXd V;
@@ -718,11 +717,11 @@ TEST_CASE("offset-potential-3d-hessian-fd", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential]")
 {
-    // The broad-phase test (see the section note above). Outside a convex cube every point is
-    // claimed by exactly one primitive: above a face interior -> that triangle (needs vf_set);
-    // beside an edge -> that edge (needs ve_set); beyond a corner -> that vertex (needs vv_set).
-    // So the exact Euclidean offset of the cube is also the level set, to machine precision, and
-    // an unseeded candidate set shows up as a CHECK that cannot even bracket the level set.
+    // The broad-phase test (see the section note above). Outside a convex cube every point has
+    // exactly one closest feature: above a face interior -> that triangle; beside an edge -> that
+    // edge; beyond a corner -> that vertex. So the exact Euclidean offset of the cube is also the
+    // level set, to machine precision, and a feature the broad phase misses shows up as a CHECK
+    // that cannot even bracket the level set.
     const double h = 1.0;
     const double delta = 0.1;
     const TriSoup s = cube(h);
@@ -842,10 +841,9 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 {
-    // A 1-dimensional input in 3D: one segment, no triangles, which exercises the edge tree and
-    // the isolated-edge branch directly. The exact offset is a capsule, and both halves are
-    // single-primitive regions here: with no incident triangle the edge's feasible-region test
-    // degenerates to "the projection is interior", and the endpoints claim everything beyond.
+    // A 1-dimensional input in 3D: one segment, no triangles, so ESP weighs the segment +1 and
+    // its two ends 0. The exact offset is a capsule, and both halves are single-feature regions
+    // here: beside the segment its interior is closest, beyond it an endpoint.
     const double delta = 0.1;
     MatrixXd V(2, 3);
     V << -1., 0., 0., 1., 0., 0.;

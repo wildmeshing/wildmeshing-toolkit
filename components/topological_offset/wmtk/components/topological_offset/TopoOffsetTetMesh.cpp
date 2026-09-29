@@ -936,8 +936,7 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     }
 
     // The edge list must be complete: ipc derives faces_to_edges from it and throws if a
-    // triangle edge is missing, and the OGC feasible-region test for a vertex reads that
-    // vertex's edge neighbours.
+    // triangle edge is missing, and an edge's ESP weight counts the triangles on it.
     std::set<std::pair<int, int>> phi_edge_set;
     const auto add_edge = [&](const int a, const int b) {
         phi_edge_set.emplace(std::min(a, b), std::max(a, b));

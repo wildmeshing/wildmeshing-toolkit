@@ -147,26 +147,27 @@ using OffsetPotential3D = OffsetPotential<3>;
  * ordinary term in the smoothing objective and the front is smoothed by the same code path as
  * every other vertex.
  *
- * What Phi is: the offset geometric contact potential of ipc-toolkit's `high_order_contact`
- * subtree, evaluated at a point q against the input complex,
+ * What Phi is: the Extremum-Sum Potential (ESP) of ipc-toolkit's `esp` subtree
+ * (ipc::ArbitraryPointESP), evaluated at a point q against the input complex,
  *
- *     Phi(q) = sum over primitives P of  s_P * b( dist(q, P), dhat )
+ *     Phi(q) = sum over elements s of  w_s * b( dist(q, s), dhat )
  *     b(d, dhat) = -(d/dhat - 1)^2 * log(d/dhat)   for d < dhat, 0 otherwise
  *
- * (`ipc::NormalizedClampedLogBarrier`). Two sums, split by what each is defined on (see build()).
- * The triangles of the complex in 3D, and its segments in 2D, go to ipc's ArbitraryPointPotential
- * (ESP), an inclusion-exclusion sum -- faces +1, edges -1, vertices +1 in 3D; segments +1,
- * vertices -1 in 2D -- which on a closed surface nets exactly one b(d) wherever a single feature
- * is closest. Segments in no triangle, the rim edges of an open sheet, isolated points and the
- * open ends of a curve go to the OGC vertex builder, which weights each active primitive +1 by
- * the OGC feasible-region rule. On a closed convex input Phi is therefore b of the Euclidean
- * distance (bitwise on the cube) and the level set is the Euclidean offset. Where two walls are
- * both within dhat of q -- a reentrant edge, a gap narrower than (1 + dhat_factor) delta -- both
- * terms survive, Phi is larger and the level set moves outward. Measured in 3D at delta 0.1,
- * dhat_factor 2: a 90-degree reentrant edge rounds to a fillet reaching 1.175 delta; two faces
- * 2.5 delta apart hold their level sets at 1.041 delta; gaps up to 2.36 delta close, against
- * 2 delta for the Euclidean offset. So Phi = c is a smoothed offset, not the Euclidean one, and
- * that difference is deliberate; the Euclidean distance is still reported as a diagnostic.
+ * (`ipc::NormalizedClampedLogBarrier`), dist being to the closed element. The integer weights make
+ * every point of the complex count once (ESP supplemental, S2): a triangle weighs 1, an edge
+ * 1 - (triangles on it), a vertex 1 - (edges at it) + (triangles at it). A closed surface gets
+ * +1/-1/+1 (a closed curve +1/-1), the boundary of an open sheet and the ends of an open curve
+ * weigh 0, segments in no triangle and isolated points 1. Phi is b of the Euclidean distance
+ * wherever the complex within every radius r < dhat of q is one piece without holes: bitwise
+ * outside the cube, on any flat stretch. Where it is several pieces -- two walls within dhat: a
+ * reentrant edge, a gap narrower than (1 + dhat_factor) delta -- each adds its own term, Phi is
+ * larger and the level set moves outward. Measured in 3D at delta 0.1, dhat_factor 2: a
+ * 90-degree reentrant edge rounds to a fillet reaching 1.175 delta; two faces 2.5 delta apart
+ * hold their level sets at 1.041 delta; gaps up to 2.36 delta close, against 2 delta for the
+ * Euclidean offset. Near a sharp convex vertex the ball can also wrap around the vertex before
+ * reaching it (measured: Phi about 0.3% off b just outside an octahedron's apex). So Phi = c is
+ * a smoothed offset, not the Euclidean one, and that difference is deliberate; the Euclidean
+ * distance is still reported as a diagnostic.
  *
  * Calibration: `c` is not a free parameter. It is Phi at perpendicular distance delta from one
  * large flat primitive -- one active pair, no feature interaction -- computed at construction
@@ -180,9 +181,9 @@ using OffsetPotential3D = OffsetPotential<3>;
  * must not be so wide that distant parts of the complex reach the level set. A vertex beyond dhat
  * is a hard error -- see TopoOffsetTriMesh::check_offset_within_support() and its 3D twin.
  *
- * Threading: an evaluation writes the query point into a scratch vertex matrix and builds a
- * collision set around it, so it holds per-thread state; `value`, `gradient` and `hessian` are
- * const and safe to call concurrently from the smoothing pass.
+ * Threading: ipc builds the collision set around each query point in per-thread scratch, so
+ * `value`, `gradient` and `hessian` are const and safe to call concurrently from the smoothing
+ * pass.
  */
 template <int DIM>
 class SmoothOffsetPotential : public OffsetPotential<DIM>
@@ -204,8 +205,8 @@ public:
      * @param V         #V x DIM complex vertices.
      * @param E         #E x 2 segments. In 3D this must contain every edge of every triangle in
      *                  `F` as well as the complex's own isolated edges: ipc derives
-     *                  faces_to_edges from it and throws if an edge of a face is missing, and
-     *                  the OGC feasible-region test for a vertex reads its edge neighbours.
+     *                  faces_to_edges from it and throws if an edge of a face is missing, and an
+     *                  edge's weight counts the triangles on it.
      * @param F         #F x 3 triangles. Must be empty when DIM == 2.
      * @param P         indices into V of the isolated complex vertices (in no segment/triangle).
      * @param delta     the offset distance the level set is calibrated to.
@@ -224,7 +225,7 @@ public:
     double value(const VecD& p) const override;
     VecD gradient(const VecD& p) const override;
     MatD hessian(const VecD& p) const override;
-    /// value() and gradient() at p from one collision build per part; see the definition.
+    /// value() and gradient() at p from one collision build; see the definition.
     void value_gradient(const VecD& p, double& v, VecD& g) const override;
 
     /**
@@ -265,8 +266,7 @@ public:
     /// Phi decreases with distance, so the offset region is where it is still above the level.
     bool is_inside_offset(const VecD& p) const override { return value(p) >= m_c; }
 
-    /// Diagnostic: the active pairs at `p`, one per line, with each one's contribution -- the only
-    /// way to see why Phi has the value it has.
+    /// Diagnostic: Phi, |grad Phi| and the trace of the Hessian at `p`.
     std::string describe_active(const VecD& p) const override;
 
 private:
