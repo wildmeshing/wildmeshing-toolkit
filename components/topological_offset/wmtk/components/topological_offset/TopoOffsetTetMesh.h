@@ -1420,8 +1420,7 @@ public:
     }
 
     /**
-     * @brief Placement of a front vertex: the shared smoother with the offset's options,
-     * or the 1-D solve along the vertex's move direction under front_normal_projection. See
+     * @brief Placement of a front vertex: the shared smoother with the offset's options. See
      * FrontSmooth3d.cpp.
      */
     bool smooth_front_vertex(const Tuple& t);
@@ -1435,10 +1434,6 @@ public:
     /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
     /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
     double front_move_alignment(size_t vid) const;
-    /// Whether the 1-D placement at vid is trapped by the alignment term: a live front face at
-    /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
-    /// placement term's along the move direction, at a vertex stationary off its level set.
-    bool front_vertex_alignment_traps_1d_solve(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the four measures -- three of stationarity, plus residual_error,
     /// which measures the residual length instead. Infinite when unmeasurable.
@@ -1508,7 +1503,7 @@ public:
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid with the vertex at x: AMIPS of its one-ring at
     /// weight 1 (rest-shape AMIPS for its plastic cells, also at 1) + front_energy(). What
-    /// the measure above differentiates, and what the 1-D placement minimises.
+    /// the measure above differentiates.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid, const Vector3d& x)
         const;
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
@@ -1598,10 +1593,9 @@ public:
     /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the ring
     /// has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
-    /// The offset terms for a front vertex, both at offset_term_weight(): StencilEnergy3D over its
-    /// incident live front faces, whose value is sum_f O(f), the terms the per-tet energy carries;
-    /// and, under front_alignment_energy, AlignEnergy3D (one residual per incident live front
-    /// face). Defined in FrontSmooth3d.cpp.
+    /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy3D over its
+    /// incident live front faces, whose value is sum_f O(f), the terms the per-tet energy carries.
+    /// Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential3D>& pot) const;

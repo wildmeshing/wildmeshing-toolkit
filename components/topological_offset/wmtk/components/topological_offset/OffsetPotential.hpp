@@ -464,116 +464,7 @@ private:
 };
 
 using OffsetEnergy2D = OffsetEnergy<2>;
-
-/**
- * @brief First-order offset term: each front edge at the vertex against the field.
- *
- *     E(x) = w * sum over the vertex's incident front edges e of (1 - n_e(x) . g(m_e(x)))^2
- *
- * n_e(x) = sigma_e R90 (q_e - x) / |q_e - x| is the edge's outward unit normal (q_e the other
- * endpoint, fixed; sigma_e = +-1 chosen at construction so the normal points away from the band),
- * g(m) = s grad Phi(m) / |grad Phi(m)| the field's outward unit direction at the edge midpoint
- * m_e = (x + q_e) / 2 (s = -1 for the smooth potential, larger inside; +1 for the Euclidean
- * distance). It is the orientation criterion's quantity as an energy: zero when the edge lies
- * along the level set, 4 w per edge when it points the wrong way.
- *
- * Both dependences on x are differentiated: the edge's rotation (d n_e / dx, exact) and the
- * field's turning (d g / dx through the potential's Hessian). Do not re-add a vertex normal frozen
- * for the visit; measured worse -- see git history of this file. The term's own Hessian would need
- * the third derivative of Phi, so its block is the Gauss-Newton 2 w sum J_e J_e^T, the same choice
- * OffsetEnergy makes.
- */
-class AlignEnergy2D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    struct Edge
-    {
-        Eigen::Vector2d q; ///< the other endpoint
-        double sigma; ///< +-1: sigma * R90 (q - x) points away from the band
-        /// Gradient agreement at the edge's two endpoints, max(0, ghat(x) . ghat(q)), frozen for
-        /// the visit: the term's target direction is only meaningful where the field's gradient is
-        /// consistent along the edge. At a concave corner the gradient flips across the corner's
-        /// bisector, and an edge spanning the flip must not be charged for a target it cannot meet.
-        /// ~1 on smooth stretches, 0 at a right-angle flip. A frozen scalar, not a frozen
-        /// direction -- the residual below keeps both dependences on x.
-        double agree = 1.;
-    };
-    AlignEnergy2D(
-        const std::shared_ptr<const OffsetPotential2D>& potential,
-        std::vector<Edge> edges,
-        double outward_sign,
-        double weight);
-    /// r_e and its derivative for one edge; r = 0 with J = 0 where grad Phi vanishes.
-    void residual(const Eigen::Vector2d& x, const Edge& e, double& r, Eigen::Vector2d& J) const;
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-
-private:
-    std::shared_ptr<const OffsetPotential2D> m_potential;
-    std::vector<Edge> m_edges;
-    double m_sign, m_weight;
-};
 using OffsetEnergy3D = OffsetEnergy<3>;
-
-/**
- * @brief The 3D twin of AlignEnergy2D: each incident front FACE at the vertex against the field.
- *
- *     E(x) = w * sum over the vertex's incident front faces f of agree_f (1 - n_f(x) . g(c_f(x)))^2
- *
- * n_f(x) = sigma_f (q1 - x) x (q2 - x) / |...| is the face's outward unit normal (q1, q2 the two
- * fixed corners; sigma_f = +-1 chosen at construction so the normal points away from the band
- * tet), g(c) = s grad Phi(c) / |grad Phi(c)| the field's outward unit direction at the face
- * centroid c_f = (x + q1 + q2) / 3. Zero when the face lies along the level set, 4 w per face
- * when it points the wrong way. Both dependences on x are differentiated, as in 2D: the normal's
- * rotation (exact) and the field's turning (through the potential's Hessian); the Hessian block is
- * the Gauss-Newton 2 w sum J_f J_f^T.
- */
-class AlignEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    struct Face
-    {
-        Eigen::Vector3d q1, q2; ///< the two other corners, in the band tet's orientation
-        double sigma; ///< +-1: sigma * (q1 - x) x (q2 - x) points away from the band
-        /// Gradient agreement across the face, min over its three corner pairs of
-        /// max(0, ghat_a . ghat_b), frozen for the visit -- the 3D reading of the 2D endpoint
-        /// agreement: the target direction only means something where the field's gradient is
-        /// consistent over the face.
-        double agree = 1.;
-    };
-    AlignEnergy3D(
-        const std::shared_ptr<const OffsetPotential3D>& potential,
-        std::vector<Face> faces,
-        double outward_sign,
-        double weight);
-    /// r_f and its derivative for one face; r = 0 with J = 0 where grad Phi or the face vanishes.
-    void residual(const Eigen::Vector3d& x, const Face& f, double& r, Eigen::Vector3d& J) const;
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-
-private:
-    std::shared_ptr<const OffsetPotential3D> m_potential;
-    std::vector<Face> m_faces;
-    double m_sign, m_weight;
-};
 
 /**
  * @brief THE offset term of a front vertex's smoothing objective: the mean squared relative
@@ -620,7 +511,6 @@ private:
  * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
  * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
  * PSD by construction -- the form used until 2026-09-28; hessian() says why the default changed.
- * LineProblem3D takes n^T H n, so the 1-D normal solve inherits whichever form is chosen.
  */
 class StencilEnergy3D : public polysolve::nonlinear::Problem
 {

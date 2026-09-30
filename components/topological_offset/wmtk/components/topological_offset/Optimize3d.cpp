@@ -1654,7 +1654,7 @@ Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
 double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
 {
     // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex()
-    // minimises, along the move direction under front_normal_projection.
+    // minimises, taken along the move direction where there is one.
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(3);
     front_objective(vid, x)->gradient(xv, g);

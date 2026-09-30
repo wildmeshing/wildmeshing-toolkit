@@ -98,13 +98,6 @@ struct Parameters : public wmtk::OptimizerParameters
     // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
     /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
     std::string front_conv_criterion;
-    // When true, the front is placed by a one-dimensional solve along its field normal
-    // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
-    // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
-    // information, and in the free solve that tangential motion made fronts slide and fold where
-    // two of them meet. Default false since 2026-09-29: the free solve.
-    bool front_normal_projection = false;
-    bool front_alignment_energy = false; ///< see the spec: helps pressed seams, biased elsewhere
     /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
     bool offset_collapse_veto = true, offset_swap_veto = true;
     /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
@@ -325,8 +318,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        front_normal_projection = json_params["front_normal_projection"];
-        front_alignment_energy = json_params["front_alignment_energy"];
         offset_collapse_veto = json_params["offset_collapse_veto"];
         offset_swap_veto = json_params["offset_swap_veto"];
         offset_front_smooth_veto = json_params["offset_front_smooth_veto"];

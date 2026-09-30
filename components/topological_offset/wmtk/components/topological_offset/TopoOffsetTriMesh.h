@@ -1360,10 +1360,6 @@ public:
     /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
     /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
     double front_move_alignment(size_t vid) const;
-    /// Whether the 1-D placement at vid is trapped by the alignment term: a live front edge at
-    /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
-    /// placement term's along the move direction. See the definition.
-    bool front_vertex_alignment_traps_1d_solve(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the four measures -- three of stationarity, plus residual_error,
     /// which measures the residual length instead. Infinite when unmeasurable.
@@ -1493,10 +1489,8 @@ public:
     /// The rest-shape AMIPS over the deformable faces of vid's one-ring, weighted like the
     /// shared smoother weights its AMIPS term; null when the ring has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
-    /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the
-    /// zeroth-order OffsetEnergy2D and the first-order AlignEnergy2D (one residual per incident
-    /// live front edge). Defined in FrontSmooth2d.cpp, next to the criterion measuring the same
-    /// quantities.
+    /// The offset term for a front vertex, see smooth_front_vertex_phase_b(): OffsetEnergy2D,
+    /// the vertex's own residual. Defined in FrontSmooth2d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential2D>& pot) const;

@@ -979,49 +979,6 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
 }
 
 
-TEST_CASE("align-energy-3d-derivatives", "[offset][potential]")
-{
-    // The 3D alignment term against finite differences: one residual per incident front face,
-    // both dependences on x (the face normal's rotation and the field's turning) differentiated.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-
-    // Two faces around x on the sphere of radius ~delta, oriented outward by sigma.
-    const Vector3d x0(0.31, 0.02, -0.05);
-    std::vector<AlignEnergy3D::Face> faces;
-    faces.push_back({Vector3d(0.2, 0.25, 0.1), Vector3d(0.22, -0.1, 0.24), 1., 0.9});
-    faces.push_back({Vector3d(0.22, -0.1, 0.24), Vector3d(0.18, -0.2, -0.15), -1., 1.});
-    AlignEnergy3D energy(phi, faces, -1., 0.7);
-
-    const double h = 1e-6;
-    for (const Vector3d& x : {x0, Vector3d(0.27, 0.05, 0.03), Vector3d(0.35, -0.04, -0.02)}) {
-        VectorXd xv = x;
-        VectorXd g;
-        energy.gradient(xv, g);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
-            CHECK(std::abs(fd - g[k]) <= 1e-4 * std::max(1., std::abs(g[k])));
-        }
-        MatrixXd H;
-        energy.hessian(xv, H);
-        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
-        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
-    }
-}
-
-
 TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
 {
     // The one offset term against finite differences. x enters only through the sample points
