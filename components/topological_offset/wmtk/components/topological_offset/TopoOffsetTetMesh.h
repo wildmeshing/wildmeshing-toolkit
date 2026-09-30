@@ -380,7 +380,8 @@ public:
         const std::string& label = std::string());
 
     /// EXPERIMENTAL_initial_smoothing_norefine: optimize_offset() opens with a stencil_order loop
-    /// without refinement. Set by marching_tets().
+    /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
+    /// marchable distance.
     bool m_initial_smoothing = false;
     /// Leads every debug frame label: i during the initial smoothing, empty otherwise.
     std::string m_frame_prefix;

@@ -1465,11 +1465,11 @@ void TopoOffsetTetMesh::marching_tets()
         sort_edges_by_length(e_to_split);
     }
 
-    // EXPERIMENTAL_initial_smoothing_norefine: optimize_offset() opens with a loop without
-    // refinement. The march is made at the midpoints when the target is beyond the maximum
-    // marchable distance, the smallest d(outer end) over the marched edges: an edge's inner end
-    // is on the complex (d = 0), so by continuity the level set d = D crosses it for every
-    // D <= d(outer end).
+    // EXPERIMENTAL_initial_smoothing_norefine, only when the target is beyond the maximum
+    // marchable distance, the smallest d(outer end) over the marched edges (an edge's inner end
+    // is on the complex, d = 0, so by continuity the level set d = D crosses it for every
+    // D <= d(outer end)): the march is made at the midpoints and optimize_offset() opens with a
+    // loop without refinement. A target within it is marched to and the run is the ordinary one.
     if (m_offset_params.experimental_initial_smoothing_norefine && !e_to_split.empty()) {
         double d_max = std::numeric_limits<double>::infinity();
         for (const simplex::Edge& e : e_to_split) {
@@ -1489,17 +1489,20 @@ void TopoOffsetTetMesh::marching_tets()
             e_to_split.size(),
             target,
             beyond ? "BEYOND" : "within");
-        m_initial_smoothing = true;
-        logger().info(
-            "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: the loop opens with a "
-            "stencil_order {} loop without refinement, then the same stencil with refinement",
-            m_offset_params.stencil_order);
         if (beyond) {
+            m_initial_smoothing = true;
             m_edge_split_mode = EdgeSplitMode::Midpoint;
             logger().info(
-                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: "
-                "target_distance is beyond the maximum marchable distance, so every marched edge "
-                "is split at its midpoint");
+                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: target_distance "
+                "is beyond the maximum marchable distance, so every marched edge is split at its "
+                "midpoint and the loop opens with a stencil_order {} loop without refinement, "
+                "then the same stencil with refinement",
+                m_offset_params.stencil_order);
+        } else {
+            logger().info(
+                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: initial smoothing "
+                "is not done, target_distance is within the maximum marchable distance; the "
+                "offset is marched to the target and the loop runs with refinement as usual");
         }
     }
 
