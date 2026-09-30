@@ -298,8 +298,8 @@
   {
     "pointer": "/EXPERIMENTAL_initial_smoothing_norefine",
     "type": "bool",
-    "default": false,
-    "doc": "EXPERIMENTAL, 3D only, default false. The loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to); if target_distance is beyond it, every marched edge is split at its midpoint. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
+    "default": true,
+    "doc": "EXPERIMENTAL, 3D only, default true. The loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to); if target_distance is beyond it, every marched edge is split at its midpoint. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
   },
   {
     "pointer": "/EXPERIMENTAL_offset_ops_envelope",
