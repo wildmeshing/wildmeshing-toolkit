@@ -102,7 +102,7 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_collapse_veto = true, offset_swap_veto = true;
     /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
     /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
-    bool offset_front_smooth_veto = true;
+    bool offset_front_smooth_veto = false;
     /// The weight w of AMIPS in the per-tet energy and in the front smoother's objective:
     /// tet_energy = w AMIPS^3 + the offset terms (see the spec). 1 is the 1:1 energy of 2026-09-28.
     double offset_amips_weight = 1e-4;
