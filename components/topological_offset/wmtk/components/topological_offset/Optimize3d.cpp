@@ -3212,16 +3212,13 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             ++s.n_faces_over;
             const bool corners_placed = placed[va] && placed[vb] && placed[vc];
             if (corners_placed) ++s.n_faces_over_placed;
-            // The placement gate on refinement, and EXPERIMENTAL_aggresive_refine's removal of
-            // it. Refining a face whose corners are still moving chases the front rather than
-            // resolving it, which is why the gate is the default; but under one unified measure
-            // the corners can be held off the level set BY the sag of the very faces the gate
-            // then refuses to refine, and the loop has no lever left. The flag refines every
-            // face over the bar instead. `n_faces_over_placed` and `max_face_placed` keep their
-            // meaning either way -- they are the PLACED subset, and reporting is all they do.
-            // Under the ring measure no face is handed to the refinement: the vertices are,
-            // after this loop.
-            if (!s.ring_exit && (corners_placed || m_offset_params.experimental_aggresive_refine)) {
+            // Every face over the bar is refinable, placed or not. There is no placement gate:
+            // under one unified measure the corners can be held off the level set BY the sag of
+            // the very faces such a gate would refuse to refine, leaving the loop no lever.
+            // `n_faces_over_placed` and `max_face_placed` are the PLACED subset, for reporting
+            // only. Under the ring measure no face is handed to the refinement: the vertices
+            // are, after this loop.
+            if (!s.ring_exit) {
                 // Refinable only if the rule can still lower a target; judged against the MAX of
                 // the three scalars (the 2D twin uses the max of its chord's two).
                 const double l = std::max(m_params.l, 1e-300);
@@ -5004,9 +5001,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
                 "centroid ({:.4}, {:.4}, {:.4})) -> sizing scalar halved at {} vertices",
                 it + 1,
                 ec.refinable.size(),
-                m_offset_params.experimental_aggresive_refine
-                    ? "(EXPERIMENTAL_aggresive_refine: placed or not)"
-                    : "with all corners placed",
+                "(placed or not)",
                 stencil_points_per_face(),
                 ec.max_face_placed,
                 ec.worst_placed_centroid.x(),

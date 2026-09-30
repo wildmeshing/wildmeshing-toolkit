@@ -158,24 +158,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. See marching_tris() / marching_tets().
     std::string construction_mode = "max_marchable_fallback";
     double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
-    /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
-    /// refinement. With it FALSE a face over the bar is handed to the halving only when all
-    /// THREE of its corners are already placed -- the safeguard that stops refinement from
-    /// chasing a moving front. True (the default) refines EVERY face over the bar, placed or not,
-    /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
-    /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
-    /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
-    /// `max_face_placed` still report the PLACED subset alone.
-    ///
-    /// Why it exists: under one unified measure the two halves can deadlock. A face chording a
-    /// feature of radius delta puts its centroid far inside the level set, and that sample's
-    /// pull cancels the corners' own placement pull almost exactly, so the corners never place;
-    /// refinement, which is the only thing that would shorten the chord and remove the sag, is
-    /// gated on exactly those corners being placed. Measured on the deliverable cube at
-    /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
-    /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
-    /// for 40 turns.
-    bool experimental_aggresive_refine = true;
     /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
     /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
     /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
@@ -296,7 +278,6 @@ struct Parameters : public wmtk::OptimizerParameters
         sorted_marching = json_params["sorted_marching"];
         construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
-        experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         experimental_offset_ops_envelope = json_params["EXPERIMENTAL_offset_ops_envelope"];
         experimental_initial_smoothing_norefine =
