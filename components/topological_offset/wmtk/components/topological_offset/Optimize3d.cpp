@@ -4216,28 +4216,51 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
 
 bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
 {
-    // No `seen` set: a face reached twice is simply tested twice, and the first live one ends the
-    // walk. The set exists in offset_surface_faces_live_at() to avoid duplicate entries in the
-    // list it returns, which is not a concern here.
+    // Reads vid's own tet list and the tets in it, nothing else. Every face through vid is shared
+    // by at most two tets, and both contain vid, so both are in vid's list: pairing the faces
+    // within the list finds the tet across each one without looking up any other vertex's list.
+    // A face with one tet in the list is on the domain boundary. The verdict per face is
+    // face_is_offset_surface_live()'s: live when exactly one side is band and the other is not
+    // the input complex, or when a band tet's face is on the domain boundary.
     //
-    // try_ rather than the asserting tuple_from_face: refresh_offset_membership() calls this from
-    // the after-half of a collapse and of a swap, which is exactly the caller TetMesh.h's
-    // try_tuple_from_face doc names as one for which a missing face is an answer rather than a
-    // bug. Under NDEBUG -- which is every Release build -- the asserting form's assert is gone
-    // and it returns a default Tuple whose m_global_tid is size_t(-1); face_is_offset_surface_live
-    // then indexed m_tet_connectivity with it. See m_offset_face_lookup_misses.
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+    // Why not try_tuple_from_face(): it reads the tet lists of the face's other two corners,
+    // which for a vertex of a collapsed edge's link lie two steps from the edge. The collapse
+    // pass claims only about 2-ring(v1) u N(v2), by design (TetMesh.h, "Ring lockers -- NOT
+    // balls"), so those lists could belong to another thread's collapse: ThreadSanitizer,
+    // 2026-09-30, 26 of 36 races on the cube at AMIPS weight 1e-4 and 22 of 47 at w = 1, and a
+    // segfault in about 1 run in 30 at 10 threads. vid's own list is always claimed.
+    const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
+    struct Side
+    {
+        std::array<size_t, 3> face;
+        size_t tid;
+    };
+    std::vector<Side> sides;
+    sides.reserve(3 * ring.size());
+    for (const size_t tid : ring) {
         const auto tv = oriented_tet_vids(tid);
         for (int skip = 0; skip < 4; ++skip) {
-            if (tv[size_t(skip)] == vid) continue;
-            const auto found = try_tuple_from_face(face_corners_from(tv, skip));
-            if (!found) {
-                // The connectivity does not have this face, so it is not a live offset face.
-                ++m_offset_face_lookup_misses;
-                continue;
-            }
-            if (face_is_offset_surface_live(std::get<0>(*found))) return true;
+            if (tv[size_t(skip)] == vid) continue; // the face opposite vid does not contain it
+            std::array<size_t, 3> f = face_corners_from(tv, skip);
+            std::sort(f.begin(), f.end());
+            sides.push_back({f, tid});
         }
+    }
+    std::sort(sides.begin(), sides.end(), [](const Side& a, const Side& b) {
+        return a.face != b.face ? a.face < b.face : a.tid < b.tid;
+    });
+    for (size_t i = 0; i < sides.size();) {
+        size_t j = i + 1;
+        while (j < sides.size() && sides[j].face == sides[i].face) ++j;
+        const size_t ta = sides[i].tid;
+        if (j - i == 1) {
+            if (cell_is_offset_band(ta)) return true; // band face on the domain boundary
+        } else {
+            const size_t tb = sides[i + 1].tid;
+            const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
+            if (a != b && !cell_is_input_complex(a ? tb : ta)) return true;
+        }
+        i = j;
     }
     return false;
 }
@@ -4287,11 +4310,10 @@ void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
     const long long invalid = m_offset_face_invalid_tuple.load();
     if (misses == 0 && invalid == 0) return;
     logger().warn(
-        "\t[offset face lookup] {}: {} face(s) asked for by the offset-membership walks were not "
-        "in the connectivity, {} invalid tuple(s) refused by face_is_offset_surface_live (run "
-        "totals). Both walks read past what the pass locks, so at num_threads > 0 this is a stale "
-        "read and the m_is_on_offset written from it may be wrong. See "
-        "m_offset_face_lookup_misses.",
+        "\t[offset face lookup] {}: {} face(s) asked for by offset_surface_faces_live_at() were "
+        "not in the connectivity, {} invalid tuple(s) refused by face_is_offset_surface_live (run "
+        "totals). That walk reads past what the pass locks, so at num_threads > 0 this is a stale "
+        "read. See m_offset_face_lookup_misses.",
         when,
         misses,
         invalid);

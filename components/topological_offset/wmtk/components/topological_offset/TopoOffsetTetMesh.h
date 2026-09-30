@@ -677,11 +677,13 @@ public:
     void check_offset_membership(const char* when) const;
 
     /**
-     * @brief Faces that vertex_has_live_offset_face() / offset_surface_faces_live_at() asked for
-     * and the connectivity did not have.
+     * @brief Faces that offset_surface_faces_live_at() asked for and the connectivity did not
+     * have.
      *
-     * Both walk a vertex's one-ring of tets and then step across each face to the tet on the
-     * other side, so they read two and three hops out from the seed. The collapse and swap passes
+     * It walks a vertex's one-ring of tets and then steps across each face to the tet on the
+     * other side, so it reads two and three hops out from the seed. (vertex_has_live_offset_face()
+     * walked the same way until 2026-09-30; it now pairs the faces within the vertex's own tets
+     * and reads nothing the lock does not hold.) The collapse and swap passes
      * guarantee only `{v1, v2} u N(v1) u N(v2)` -- see "Ring lockers -- NOT balls" in TetMesh.h --
      * so at num_threads > 0 a neighbouring thread can be shrinking a vertex fan these walks are
      * reading, and the face lookup misses. A miss is taken as "not a live offset face", which is
