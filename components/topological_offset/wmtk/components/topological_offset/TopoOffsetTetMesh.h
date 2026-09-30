@@ -370,8 +370,20 @@ public:
     /// no placement satisfies. Called at construction.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
-    /// TetWild's loop, the front placed inside its smoothing passes.
-    void optimize_offset_loop();
+    /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
+    /// EXPERIMENTAL_initial_smoothing_norefine loop: it returns on convergence without the
+    /// frozen-front final pass and without deciding the verdict. `refine` false skips the
+    /// halving. `label` names the loop in its log.
+    void optimize_offset_loop(
+        bool final_stage = true,
+        bool refine = true,
+        const std::string& label = std::string());
+
+    /// EXPERIMENTAL_initial_smoothing_norefine: optimize_offset() opens with a stencil_order loop
+    /// without refinement. Set by marching_tets().
+    bool m_initial_smoothing = false;
+    /// Leads every debug frame label: i during the initial smoothing, empty otherwise.
+    std::string m_frame_prefix;
 
     /// Max over the front vertices of the vertex convergence measure (a ratio to its bar); under
     /// gradient_norm_rel and before the reference exists, the raw |n . grad F|. The pass stop.
@@ -758,6 +770,7 @@ public:
     mutable int m_debug_pass = 0;
     mutable int m_debug_last_round = -1;
     mutable char m_debug_last_tag = '?';
+    mutable std::string m_debug_last_prefix = "?";
     /// See offset_gradient_tolerance(). Nothing sets it in the loop; it stays 0.
     double m_gradient_reference = 0.;
     /// The run's verdict: the front resolved (EnergyCriterion::converged(): every offset face's
@@ -2048,26 +2061,32 @@ public:
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
-     * the loop and F in the final pass.
+     * the loop and F in the final pass; led by m_frame_prefix (i during
+     * EXPERIMENTAL_initial_smoothing_norefine).
      */
     void write_optimization_debug_output(const std::string& path) override
     {
         const char ph = m_freeze_front ? 'F' : 'S'; // the final pass, or the loop
-        if (m_round != m_debug_last_round || ph != m_debug_last_tag) {
+        if (m_round != m_debug_last_round || ph != m_debug_last_tag ||
+            m_frame_prefix != m_debug_last_prefix) {
             m_debug_last_round = m_round;
             m_debug_last_tag = ph;
+            m_debug_last_prefix = m_frame_prefix;
             m_debug_pass = 0;
         }
         std::string label = path;
+        // The prefix leads, since the loop after the initial smoothing restarts at turn 1.
+        const std::string& g = m_frame_prefix;
         if (path.rfind("debug_", 0) == 0) {
             label = fmt::format(
-                "r{}{}{}{}",
+                "{}r{}{}{}{}",
+                g,
                 m_round,
                 ph,
                 ++m_debug_pass,
                 m_debug_pass_name.empty() ? std::string() : "_" + m_debug_pass_name);
         } else if (path.rfind("end_", 0) == 0) {
-            label = fmt::format("r{}{}_end", m_round, ph);
+            label = fmt::format("{}r{}{}_end", g, m_round, ph);
         }
         write_debug_frame(label);
     }

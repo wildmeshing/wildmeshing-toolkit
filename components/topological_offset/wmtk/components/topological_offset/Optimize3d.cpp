@@ -4681,7 +4681,10 @@ void TopoOffsetTetMesh::write_debug_pvd() const
     }
 }
 
-void TopoOffsetTetMesh::optimize_offset_loop()
+void TopoOffsetTetMesh::optimize_offset_loop(
+    const bool final_stage,
+    const bool refine,
+    const std::string& label)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes and never caged
@@ -4982,7 +4985,16 @@ void TopoOffsetTetMesh::optimize_offset_loop()
                 checked,
                 bad > 8 ? fmt::format(" ({} not listed)", bad - 8) : std::string());
         }
-        if (!ec.refinable.empty()) {
+        if (!refine && (!ec.refinable.empty() || (ec.ring_exit && ec.n_rings_over > 0))) {
+            logger().info(
+                "\t[resolution] turn {}: {} -- no refinement ({} front vertex(es) / {} face(s) "
+                "over the bar left as they are)",
+                it + 1,
+                label,
+                ec.n_rings_over,
+                ec.refinable.size());
+        }
+        if (refine && !ec.refinable.empty()) {
             // Refinement is the halving, and only the halving: every refinable face has the
             // sizing scalar at its corners halved.
             const size_t n = refine_front_by_halving(ec.refinable);
@@ -5002,7 +5014,7 @@ void TopoOffsetTetMesh::optimize_offset_loop()
                 ec.worst_placed_centroid.z(),
                 n);
         }
-        if (ec.ring_exit && ec.n_rings_over > 0) {
+        if (refine && ec.ring_exit && ec.n_rings_over > 0) {
             // front_measure "vertex_ring": the halving takes each vertex over the bar, that
             // vertex alone. refinable is empty in this mode, so the face line above is silent.
             const size_t n = refine_front_by_halving(ec.refinable_vertices);
@@ -5040,6 +5052,22 @@ void TopoOffsetTetMesh::optimize_offset_loop()
         // same choice: it breaks the moment its max energy is under stop_energy, that number
         // being a property of the mesh it is holding, where refinable is a request for work on
         // the next turn.
+        if (ec.converged() && !final_stage) {
+            // The initial smoothing ends here; the final pass and the verdict belong to the
+            // ordinary loop that follows it.
+            logger().info(
+                "[{}] converged at target_distance {:.6g} after {} turn(s): {} max {:.4}x the bar "
+                "over {} front vertices, max AMIPS {:.4}",
+                label,
+                m_offset_params.target_distance,
+                it + 1,
+                ec.ring_exit ? std::string(ec.ring_name()) : std::string("faces"),
+                (ec.ring_exit ? ec.max_ring : ec.max_face) / ec.bar,
+                ec.n_vertices,
+                amips);
+            rebuild_offset_envelope();
+            return;
+        }
         if (ec.converged()) {
             m_energy_verdict = ec;
             m_converged = true;
@@ -5113,7 +5141,14 @@ void TopoOffsetTetMesh::optimize_offset_loop()
             return;
         }
     }
-    logger().warn("The loop did not converge in {} turns (max_rounds)", budget);
+    logger().warn(
+        "The loop did not converge in {} turns (max_rounds){}",
+        budget,
+        final_stage ? std::string()
+                    : fmt::format(
+                          " -- {} at target_distance {:.6g}; the run moves on",
+                          label,
+                          m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
 }
 
@@ -5202,6 +5237,27 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
+    if (m_initial_smoothing) {
+        // EXPERIMENTAL_initial_smoothing_norefine (see marching_tets()): the loop first runs to
+        // convergence under stencil_order without refinement, the sizing field left as it is, and
+        // without the final pass or the verdict; then the ordinary loop below, with its
+        // refinement. target_distance is not touched.
+        m_frame_prefix = "i";
+        logger().info(
+            "======== [initial smoothing] target_distance {:.6g}, stencil_order {}, no "
+            "refinement ========",
+            m_offset_params.target_distance,
+            m_offset_params.stencil_order);
+        optimize_offset_loop(/*final_stage=*/false, /*refine=*/false, "initial smoothing");
+        m_frame_prefix.clear();
+        m_converged = false;
+        m_energy_verdict.reset();
+        logger().info(
+            "======== [initial smoothing] done; the loop at target_distance {:.6g}, "
+            "stencil_order {}, with refinement ========",
+            m_offset_params.target_distance,
+            m_offset_params.stencil_order);
+    }
     optimize_offset_loop();
 
     log_smooth_trace();

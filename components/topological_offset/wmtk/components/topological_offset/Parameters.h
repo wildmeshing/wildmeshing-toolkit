@@ -201,6 +201,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// frozen-front final pass holds the offset surface to its envelope either way. See
     /// TopoOffsetTetMesh::containment_for().
     bool experimental_offset_ops_envelope = false;
+    /// EXPERIMENTAL, 3D only, default false. The loop first converges under stencil_order without
+    /// refinement, then under stencil_order with refinement. With the target beyond the maximum
+    /// marchable distance the march is made at the midpoints. See the spec doc.
+    bool experimental_initial_smoothing_norefine = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -302,6 +306,8 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         experimental_offset_ops_envelope = json_params["EXPERIMENTAL_offset_ops_envelope"];
+        experimental_initial_smoothing_norefine =
+            json_params["EXPERIMENTAL_initial_smoothing_norefine"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

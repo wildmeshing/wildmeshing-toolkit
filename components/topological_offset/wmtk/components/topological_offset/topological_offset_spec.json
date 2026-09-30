@@ -36,6 +36,7 @@
       "EXPERIMENTAL_aggresive_refine",
       "EXPERIMENTAL_nonoverlapping_gates",
       "EXPERIMENTAL_offset_ops_envelope",
+      "EXPERIMENTAL_initial_smoothing_norefine",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -293,6 +294,12 @@
     "default": true,
     "type": "bool",
     "doc": "EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. True (the default) refines EVERY offset face whose RMS relative error is over front_conv, whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test, which reads the face measure alone and not which faces are refinable, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_initial_smoothing_norefine",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL, 3D only, default false. The loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to); if target_distance is beyond it, every marched edge is split at its midpoint. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
   },
   {
     "pointer": "/EXPERIMENTAL_offset_ops_envelope",

@@ -1465,6 +1465,44 @@ void TopoOffsetTetMesh::marching_tets()
         sort_edges_by_length(e_to_split);
     }
 
+    // EXPERIMENTAL_initial_smoothing_norefine: optimize_offset() opens with a loop without
+    // refinement. The march is made at the midpoints when the target is beyond the maximum
+    // marchable distance, the smallest d(outer end) over the marched edges: an edge's inner end
+    // is on the complex (d = 0), so by continuity the level set d = D crosses it for every
+    // D <= d(outer end).
+    if (m_offset_params.experimental_initial_smoothing_norefine && !e_to_split.empty()) {
+        double d_max = std::numeric_limits<double>::infinity();
+        for (const simplex::Edge& e : e_to_split) {
+            const size_t va = e.vertices()[0];
+            const size_t vb = e.vertices()[1];
+            const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
+            d_max = std::min(
+                d_max,
+                m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[v_out].m_posf)));
+        }
+        const double target = m_offset_params.target_distance;
+        const bool beyond = target > d_max;
+        logger().info(
+            "\t[construction] maximum marchable distance {:.6g} over {} marched edges; "
+            "target_distance {:.6g} is {} it",
+            d_max,
+            e_to_split.size(),
+            target,
+            beyond ? "BEYOND" : "within");
+        m_initial_smoothing = true;
+        logger().info(
+            "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: the loop opens with a "
+            "stencil_order {} loop without refinement, then the same stencil with refinement",
+            m_offset_params.stencil_order);
+        if (beyond) {
+            m_edge_split_mode = EdgeSplitMode::Midpoint;
+            logger().info(
+                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: "
+                "target_distance is beyond the maximum marchable distance, so every marched edge "
+                "is split at its midpoint");
+        }
+    }
+
     // EXPERIMENTAL_consistent_construction_split: the march becomes all-or-nothing. Normally a
     // trace that leaves its edge falls back to the midpoint for THAT edge alone, so one
     // construction can mix vertices on the level set with vertices at edge midpoints. Here the
