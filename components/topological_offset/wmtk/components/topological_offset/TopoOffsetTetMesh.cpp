@@ -1262,13 +1262,8 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 
     // initialize offset
     logger().info("Initializing offset...");
-    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
-    // the placement at all, and carrying the surface out to target_distance is the optimization
-    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
-    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
-    // end), to the midpoint on an edge the trace leaves.
-    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
-                                                                    : EdgeSplitMode::Midpoint;
+    // marching_tets() chooses the placement itself (construction_mode) and leaves the split mode
+    // at Midpoint.
     marching_tets();
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
@@ -1465,90 +1460,85 @@ void TopoOffsetTetMesh::marching_tets()
         sort_edges_by_length(e_to_split);
     }
 
-    // EXPERIMENTAL_initial_smoothing_norefine, only when the target is beyond the maximum
-    // marchable distance, the smallest d(outer end) over the marched edges (an edge's inner end
-    // is on the complex, d = 0, so by continuity the level set d = D crosses it for every
-    // D <= d(outer end)): the march is made at the midpoints and optimize_offset() opens with a
-    // loop without refinement. A target within it is marched to and the run is the ordinary one.
-    if (m_offset_params.experimental_initial_smoothing_norefine && !e_to_split.empty()) {
-        double d_max = std::numeric_limits<double>::infinity();
-        for (const simplex::Edge& e : e_to_split) {
-            const size_t va = e.vertices()[0];
-            const size_t vb = e.vertices()[1];
-            const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
-            d_max = std::min(
-                d_max,
-                m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[v_out].m_posf)));
-        }
-        const double target = m_offset_params.target_distance;
-        const bool beyond = target > d_max;
+    // Construction (construction_mode). The maximum marchable distance is the smallest
+    // d(outer end) over the marched edges: an edge's inner end is on the complex (d = 0), so by
+    // continuity the level set d = D crosses every marched edge for every D up to it, and the
+    // sphere trace (edge_split_sphere_trace()) finds it. A target below it is traced to.
+    // Otherwise "max_marchable_fallback" traces to half of it, where every edge holds the level
+    // set with room to spare, and "midpoint_fallback" splits every marched edge at its midpoint.
+    // target_distance itself is untouched: the optimization carries the surface out to it.
+    const double target = m_offset_params.target_distance;
+    double d_max = std::numeric_limits<double>::infinity();
+    for (const simplex::Edge& e : e_to_split) {
+        const size_t va = e.vertices()[0];
+        const size_t vb = e.vertices()[1];
+        // Exactly one end carries a zero label: that is how e_to_split was built.
+        const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
+        d_max = std::min(d_max, m_input_complex_bvh->dist(m_vertex_attribute[v_out].m_posf));
+    }
+    const bool reachable = target < d_max;
+    const std::string& mode = m_offset_params.construction_mode;
+    m_construction_distance = target;
+    m_edge_split_mode = EdgeSplitMode::SphereTrace;
+    if (e_to_split.empty()) {
+        logger().info("\t[construction] construction_mode {}: no edge to march", mode);
+    } else if (reachable) {
         logger().info(
-            "\t[construction] maximum marchable distance {:.6g} over {} marched edges; "
-            "target_distance {:.6g} is {} it",
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is below it, so the march traces to the target",
+            mode,
+            d_max,
+            e_to_split.size(),
+            target);
+    } else if (mode == "max_marchable_fallback" && d_max > 0.) {
+        m_construction_distance = 0.5 * d_max;
+        logger().info(
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is not below it, so the march traces to half "
+            "of it, {:.6g} ({:.4g}x target_distance)",
+            mode,
             d_max,
             e_to_split.size(),
             target,
-            beyond ? "BEYOND" : "within");
-        if (beyond) {
+            m_construction_distance,
+            m_construction_distance / target);
+    } else {
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (mode == "max_marchable_fallback") {
+            logger().warn(
+                "\t[construction] construction_mode {}: maximum marchable distance {} -- a "
+                "marched edge ends on the complex -- so there is nothing to trace to and every "
+                "marched edge is split at its midpoint",
+                mode,
+                d_max);
+        } else {
+            logger().info(
+                "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over "
+                "{} marched edges; target_distance {:.6g} is not below it, so every marched edge "
+                "is split at its midpoint",
+                mode,
+                d_max,
+                e_to_split.size(),
+                target);
+        }
+    }
+
+    // EXPERIMENTAL_initial_smoothing_norefine, only when the target is not below the maximum
+    // marchable distance: optimize_offset() opens with a loop without refinement. A target below
+    // it is marched to and the run is the ordinary one.
+    if (m_offset_params.experimental_initial_smoothing_norefine && !e_to_split.empty()) {
+        if (!reachable) {
             m_initial_smoothing = true;
-            m_edge_split_mode = EdgeSplitMode::Midpoint;
             logger().info(
                 "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: target_distance "
-                "is beyond the maximum marchable distance, so every marched edge is split at its "
-                "midpoint and the loop opens with a stencil_order {} loop without refinement, "
-                "then the same stencil with refinement",
+                "is not below the maximum marchable distance, so the loop opens with a "
+                "stencil_order {} loop without refinement, then the same stencil with refinement",
                 m_offset_params.stencil_order);
         } else {
             logger().info(
                 "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: initial smoothing "
-                "is not done, target_distance is within the maximum marchable distance; the "
-                "offset is marched to the target and the loop runs with refinement as usual");
-        }
-    }
-
-    // EXPERIMENTAL_consistent_construction_split: the march becomes all-or-nothing. Normally a
-    // trace that leaves its edge falls back to the midpoint for THAT edge alone, so one
-    // construction can mix vertices on the level set with vertices at edge midpoints. Here the
-    // march is probed first and a single untraceable edge sends every edge to its midpoint.
-    //
-    // The probe is exact, not an estimate: edge_split_sphere_trace() is const and reads only the
-    // two endpoint positions and the input-complex BVH; a split inserts a vertex without moving
-    // any existing one, and the labels this loop reads are only rewritten after it. So the answers
-    // here are the answers the split hook would get. The cost is that a march which does trace
-    // everywhere traces twice. Only SphereTrace can mix, so the flag is a no-op otherwise.
-    const EdgeSplitMode entry_split_mode = m_edge_split_mode;
-    if (m_offset_params.experimental_consistent_construction_split &&
-        m_edge_split_mode == EdgeSplitMode::SphereTrace) {
-        size_t untraceable = 0;
-        for (const simplex::Edge& e : e_to_split) {
-            const size_t va = e.vertices()[0];
-            const size_t vb = e.vertices()[1];
-            // Exactly one end carries a non-zero label: that is how e_to_split was built.
-            const size_t v_in = m_vertex_extra[va].label != 0 ? va : vb;
-            const size_t v_out = (v_in == va) ? vb : va;
-            Vector3d p_probe;
-            size_t steps = 0;
-            if (!edge_split_sphere_trace(
-                    m_vertex_attribute[v_in].m_posf,
-                    m_vertex_attribute[v_out].m_posf,
-                    p_probe,
-                    steps)) {
-                ++untraceable;
-            }
-        }
-        if (untraceable > 0) {
-            m_edge_split_mode = EdgeSplitMode::Midpoint;
-            logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: {} of {} marched "
-                "edges cannot be traced to the level set, so the WHOLE march falls back to "
-                "midpoint splits",
-                untraceable,
-                e_to_split.size());
-        } else {
-            logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: all {} marched "
-                "edges can be traced, so the march traces everywhere",
-                e_to_split.size());
+                "is not done, target_distance is below the maximum marchable distance; the offset "
+                "is marched to the target and the loop runs with refinement as usual");
         }
     }
 
@@ -1573,12 +1563,13 @@ void TopoOffsetTetMesh::marching_tets()
     }
     if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         logger().info(
-            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
-            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
-            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
+            "\t[construction] sphere trace: {} of {} marched edges placed where |d(x) - D| <= {} "
+            "x D (D = {:.6g}), {} at the midpoint (the trace left the edge) | trace steps: {} "
+            "total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
             m_offset_params.sphere_trace_target_rel_tol,
+            m_construction_distance,
             m_marching_midpoint_splits,
             m_marching_trace_steps,
             m_marching_trace_steps_max,
@@ -1586,9 +1577,9 @@ void TopoOffsetTetMesh::marching_tets()
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
-    // Leave the mode as it was found: the consistency flag may have forced it to Midpoint above,
-    // and that decision belongs to this march alone.
-    m_edge_split_mode = entry_split_mode;
+    // The march's placement decision is its own; every later split is a midpoint one until the
+    // optimization sets its own mode.
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // mark all offset tets and children
     for (const size_t& v_id : frontier_verts) {

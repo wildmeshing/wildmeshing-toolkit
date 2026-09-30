@@ -30,9 +30,8 @@
       "stencil_order",
       "front_measure",
       "sorted_marching",
-      "sphere_trace_initialization",
+      "construction_mode",
       "sphere_trace_target_rel_tol",
-      "EXPERIMENTAL_consistent_construction_split",
       "EXPERIMENTAL_aggresive_refine",
       "EXPERIMENTAL_nonoverlapping_gates",
       "EXPERIMENTAL_offset_ops_envelope",
@@ -272,22 +271,20 @@
     "doc": "Execute the marching in decreasing order of edge length. Increases run time, may increase output mesh quality."
   },
   {
-    "pointer": "/sphere_trace_initialization",
-    "type": "bool",
-    "default": true,
-    "doc": "How the marching places the vertex it inserts on each edge it splits (an edge with one endpoint in the input complex and the other in the background). false: the plain edge midpoint; target_distance does not enter construction, and the optimization carries the front to the level set. true (the default): sphere tracing along the edge from the complex endpoint for the point where d(x) = target_distance, d(x) the distance from the point to the input complex through its BVH: evaluate d at the current point, step forward along the edge by target_distance - d (the largest step that cannot cross the level set), repeat until |d - target_distance| <= sphere_trace_target_rel_tol x target_distance. If the current point reaches or passes the background endpoint the level set is not on the edge and the vertex goes to the midpoint. No snapping away from the endpoints. The simplicial embedding's splits always use the midpoint."
-  },
-  {
     "pointer": "/sphere_trace_target_rel_tol",
     "type": "float",
     "default": 0.01,
-    "doc": "In (0, 1). The trace under sphere_trace_initialization stops at the first point where |d(x) - target_distance| <= this x target_distance; the placed vertex is that close to the target level set along the edge. Smaller is tighter and takes more steps (each step is longer than the tolerance, so at most edge length / (tol x target_distance) of them). Only read when sphere_trace_initialization is true."
+    "doc": "In (0, 1). The marching's sphere trace stops at the first point where |d(x) - D| <= this x D, D being the distance the march traces to (target_distance, or half the maximum marchable distance under construction_mode max_marchable_fallback); the placed vertex is that close to that level set along the edge. Smaller is tighter and takes more steps (each step is longer than the tolerance, so at most edge length / (this x D) per edge)."
   },
   {
-    "pointer": "/EXPERIMENTAL_consistent_construction_split",
-    "type": "bool",
-    "default": true,
-    "doc": "EXPERIMENTAL, and a no-op unless sphere_trace_initialization is true. Makes the marching construction all or nothing. Normally each marched edge is placed independently: the trace runs from the complex end and, on an edge the trace leaves (the level set is not on that edge), that ONE edge falls back to its midpoint -- so a single construction can mix vertices sitting on the level set with vertices sitting at edge midpoints, which is the inconsistency this flag exists to remove. With it on, the whole march is probed before any edge is split: if every marched edge can be traced, every edge is traced as usual; if even one cannot, EVERY edge is split at its midpoint instead and the construction is uniformly a midpoint march. The probe repeats the trace the split would do -- it reads only the endpoint positions and the input-complex BVH, neither of which a split changes -- so a construction that does trace everywhere pays for two full trace passes. The construction log says which way it went and how many edges could not be traced."
+    "pointer": "/construction_mode",
+    "type": "string",
+    "default": "max_marchable_fallback",
+    "options": [
+      "max_marchable_fallback",
+      "midpoint_fallback"
+    ],
+    "doc": "How the marching constructs the offset. Construction first measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (an edge with one end in the input complex and the other in the background). Every marched edge's inner end is on the complex, so the level set d = D crosses every marched edge for every D up to that distance. If target_distance is below it, every marched edge is split where d(x) = target_distance, found by sphere tracing from the complex end (to within sphere_trace_target_rel_tol). Otherwise: 'max_marchable_fallback' (the default) traces every marched edge to half the maximum marchable distance instead; 'midpoint_fallback' splits every marched edge at its midpoint. Either way target_distance itself is not changed: the optimization carries the offset surface out to it. Both dimensions."
   },
   {
     "pointer": "/EXPERIMENTAL_aggresive_refine",

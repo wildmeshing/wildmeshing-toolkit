@@ -152,17 +152,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// kept for comparison.
     std::string front_measure;
     bool sorted_marching;
-    /// See the spec: the marching places each new vertex where d(x) reaches target_distance
-    /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
-    bool sphere_trace_initialization;
-    double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
-    /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
-    /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
-    /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
-    /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
-    /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
-    /// See the spec doc, and marching_tris() / marching_tets().
-    bool experimental_consistent_construction_split = true;
+    /// How the marching places the offset (see the spec). A target_distance below the maximum
+    /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
+    /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
+    /// midpoint. See marching_tris() / marching_tets().
+    std::string construction_mode = "max_marchable_fallback";
+    double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
     /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
     /// refinement. With it FALSE a face over the bar is handed to the halving only when all
     /// THREE of its corners are already placed -- the safeguard that stops refinement from
@@ -299,10 +294,8 @@ struct Parameters : public wmtk::OptimizerParameters
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
-        sphere_trace_initialization = json_params["sphere_trace_initialization"];
+        construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
-        experimental_consistent_construction_split =
-            json_params["EXPERIMENTAL_consistent_construction_split"];
         experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         experimental_offset_ops_envelope = json_params["EXPERIMENTAL_offset_ops_envelope"];
