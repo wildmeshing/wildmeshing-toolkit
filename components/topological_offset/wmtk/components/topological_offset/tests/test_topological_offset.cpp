@@ -1250,7 +1250,7 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
     // front faces are the ones with background or nothing across: cell 0's two faces on the
     // domain boundary (cell 3 across (a,b,c0) is the complex, cell 1 across (a,b,c1) is band),
     // and cell 1's two boundary faces plus (a,b,c2) against the background. Every cell off the
-    // band is its AMIPS^3 alone.
+    // band is its weighted AMIPS^3 alone. Checked at w = 1 and at the default w.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1259,27 +1259,30 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
         -0.4, 0., 0.45, // c2
         0., -0.4, 0.5; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-    Parameters param;
-    const auto pot = plane_field();
-    auto mesh = energy_mesh(
-        param,
-        V,
-        {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
-        {2, 2, 0, 1},
-        pot);
-    const auto P = [&](int i) { return Vector3d(V.row(i)); };
-    const auto O = [&](int i, int j, int k) {
-        return face_term_by_hand(*mesh, *pot, P(i), P(j), P(k));
-    };
-    const std::array<double, 4> extra = {
-        {O(a, c0, c1) + O(b, c0, c1), O(a, c1, c2) + O(b, c1, c2) + O(a, b, c2), 0., 0.}};
-    for (size_t tid = 0; tid < 4; ++tid) {
-        // The engine's cell quality, AMIPS^3 from the positions.
-        const double base = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
-        REQUIRE(base < TetOptimizerMesh::MAX_ENERGY);
-        INFO("tet " << tid);
-        CHECK(mesh->tet_energy(tid) == Catch::Approx(base + extra[tid]).epsilon(1e-12));
-        if (tid < 2) CHECK(extra[tid] > 1.); // the front faces really are off the level set
+    for (const double w : {1., Parameters().offset_amips_weight}) {
+        Parameters param;
+        param.offset_amips_weight = w;
+        const auto pot = plane_field();
+        auto mesh = energy_mesh(
+            param,
+            V,
+            {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
+            {2, 2, 0, 1},
+            pot);
+        const auto P = [&](int i) { return Vector3d(V.row(i)); };
+        const auto O = [&](int i, int j, int k) {
+            return face_term_by_hand(*mesh, *pot, P(i), P(j), P(k));
+        };
+        const std::array<double, 4> extra = {
+            {O(a, c0, c1) + O(b, c0, c1), O(a, c1, c2) + O(b, c1, c2) + O(a, b, c2), 0., 0.}};
+        for (size_t tid = 0; tid < 4; ++tid) {
+            // The engine's cell quality, AMIPS^3 from the positions.
+            const double base = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
+            REQUIRE(base < TetOptimizerMesh::MAX_ENERGY);
+            INFO("w " << w << ", tet " << tid);
+            CHECK(mesh->tet_energy(tid) == Catch::Approx(w * base + extra[tid]).epsilon(1e-12));
+            if (tid < 2) CHECK(extra[tid] > 1.); // the front faces really are off the level set
+        }
     }
 }
 

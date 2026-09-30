@@ -109,13 +109,13 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_collapse_veto = true, offset_swap_veto = true;
     /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
     /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
-    bool offset_front_smooth_veto = false;
+    bool offset_front_smooth_veto = true;
     /// The weight w of AMIPS in the per-tet energy and in the front smoother's objective:
     /// tet_energy = w AMIPS^3 + the offset terms (see the spec). 1 is the 1:1 energy of 2026-09-28.
-    double offset_amips_weight = 1.;
+    double offset_amips_weight = 1e-4;
     /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
     /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
-    bool offset_collapse_changed_cells = false;
+    bool offset_collapse_changed_cells = true;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
