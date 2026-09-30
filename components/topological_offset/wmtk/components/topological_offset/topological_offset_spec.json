@@ -33,8 +33,7 @@
       "construction_mode",
       "sphere_trace_target_rel_tol",
       "EXPERIMENTAL_nonoverlapping_gates",
-      "EXPERIMENTAL_offset_ops_envelope",
-      "EXPERIMENTAL_initial_smoothing_norefine",
+      "init_optimize",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -286,16 +285,10 @@
     "doc": "How the marching constructs the offset. Construction first measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (an edge with one end in the input complex and the other in the background). Every marched edge's inner end is on the complex, so the level set d = D crosses every marched edge for every D up to that distance. If target_distance is below it, every marched edge is split where d(x) = target_distance, found by sphere tracing from the complex end (to within sphere_trace_target_rel_tol). Otherwise: 'max_marchable_fallback' (the default) traces every marched edge to half the maximum marchable distance instead; 'midpoint_fallback' splits every marched edge at its midpoint. Either way target_distance itself is not changed: the optimization carries the offset surface out to it. Both dimensions."
   },
   {
-    "pointer": "/EXPERIMENTAL_initial_smoothing_norefine",
+    "pointer": "/init_optimize",
     "type": "bool",
     "default": true,
-    "doc": "EXPERIMENTAL, 3D only, default true. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to). If target_distance is within it, initial smoothing is not done: the offset is marched to the target and the loop runs with refinement as usual, and the log says so. If target_distance is beyond it, every marched edge is split at its midpoint, the loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_offset_ops_envelope",
-    "type": "bool",
-    "default": false,
-    "doc": "EXPERIMENTAL, 3D only, default false. true: split, collapse and swap in the loop hold every offset-surface face they create or keep to the offset envelope, the tube of half-width offset_envelope around the offset surface as the last smoothing pass left it, so an operation that would move the offset surface outside it is refused. false: in the loop those operations do not check the offset surface against its envelope (the region-boundary tubes still apply). The smoother never holds the front to the offset envelope, since placing the front is what moves it, and the frozen-front final pass (the TetWild pass after the loop) holds the offset surface to its envelope in every operation whatever this says. 2D does not read it."
+    "doc": "3D only, default true. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to). If target_distance is within it, the init_optimize loop is not done: the offset is marched to the target and the loop runs with refinement as usual, and the log says so. If target_distance is beyond it, every marched edge is split at its midpoint, the loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
   },
   {
     "pointer": "/EXPERIMENTAL_nonoverlapping_gates",

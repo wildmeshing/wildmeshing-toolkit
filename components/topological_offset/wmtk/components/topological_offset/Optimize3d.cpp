@@ -701,12 +701,11 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::containment_for(
     // itself and std::mutex is not recursive.
     const std::shared_ptr<SampleEnvelope> region = envelope_for_mask(region_mask);
 
-    // The offset side, for the operations: always in the frozen-front final pass, and in the
-    // loop unless EXPERIMENTAL_offset_ops_envelope is off. The smoother never asks for it (see
-    // smoothing_containment_envelope()): placing the front moves the surface, and a tube around
-    // where it currently sits would cap how far it can travel. Null before the first rebuild.
-    const bool hold_offset = on_offset && m_offset_envelope != nullptr &&
-                             (m_freeze_front || m_offset_params.experimental_offset_ops_envelope);
+    // The offset side, for the operations of the frozen-front final pass only: in the loop the
+    // offset surface is held to no envelope, by the operations or the smoother (see
+    // smoothing_containment_envelope()), since placing the front is what moves it. Null until
+    // the final pass builds it.
+    const bool hold_offset = on_offset && m_offset_envelope != nullptr && m_freeze_front;
 
     if (!hold_offset) return region; // may itself be null: nothing contains this simplex
     if (!region) return m_offset_envelope;
@@ -1747,8 +1746,6 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
                         measure(env);
                     }
                 }
-            } else if (is_offset) {
-                measure(m_offset_envelope);
             }
             if (frac >= 0.) {
                 ++n_measured;
@@ -1809,8 +1806,6 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
                 const auto it = m_tag_bit.find(tag);
                 if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) probe(env, tag);
             }
-        } else if (r.offset_class) {
-            probe(m_offset_envelope, -1);
         }
         bad.push_back(r);
     }
@@ -4502,11 +4497,17 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::released_envelope() const
     return m_released_envelope;
 }
 
-void TopoOffsetTetMesh::rebuild_offset_envelope()
+void TopoOffsetTetMesh::refresh_released_envelope()
 {
-    // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment.
+    // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment,
+    // between passes -- released_envelope() never rebuilds mid-operation.
     m_released_tube_dirty.store(true, std::memory_order_release);
     released_envelope();
+}
+
+void TopoOffsetTetMesh::rebuild_offset_envelope()
+{
+    refresh_released_envelope();
     // First, and on every path out of here including the empty one: each entry is an
     // IntersectionEnvelope holding the tube this call is about to replace.
     {
@@ -4684,10 +4685,9 @@ void TopoOffsetTetMesh::optimize_offset_loop(
     const std::string& label)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
-    // with the front placed by the offset objective inside the smoothing passes and never caged
-    // by the offset tube while it moves (smoothing_containment_envelope() leaves it out). The
-    // tube holds the front for the OPERATIONS (surface_envelope_for_face() -> containment_for())
-    // and is rebuilt after every group, so it follows the front rather than capping it.
+    // with the front placed by the offset objective inside the smoothing passes. No offset tube
+    // holds the front in the loop, neither the operations nor the smoothing; only the frozen-front
+    // final pass is held to one (containment_for()).
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
@@ -4707,17 +4707,15 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         m_offset_params.front_conv,
         m_offset_params.front_conv_rel);
     logger().info(
-        "\t[offset envelope] EXPERIMENTAL_offset_ops_envelope {}: split / collapse / swap in the "
-        "loop {} the offset surface to its envelope (eps {:.6g}); the final pass always does",
-        m_offset_params.experimental_offset_ops_envelope,
-        m_offset_params.experimental_offset_ops_envelope ? "hold" : "do NOT hold",
+        "\t[offset envelope] the loop's operations and smoothing do not hold the offset surface "
+        "to an envelope; the final pass does (eps {:.6g})",
         m_offset_params.offset_envelope);
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so
-    // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. What mesh_improvement() adds and is
-    // left out here on purpose is its stall response, which refines around the worst elements: a
-    // moving front stretches cells by design.
+    // the released-boundary tube can be refreshed after every group. What mesh_improvement()
+    // adds and is left out here on purpose is its stall response, which refines around the
+    // worst elements: a moving front stretches cells by design.
     // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
     // front and the background settle (smooth_group_to_convergence()).
     // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
@@ -4760,14 +4758,14 @@ void TopoOffsetTetMesh::optimize_offset_loop(
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
-        // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
+        // (plastic rests stamped before, the released tube refreshed after). Frames are r0S*.
         m_round = 0;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
             m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
             m_vertex_extra[vid].m_turn_start_valid = true;
         }
-        rebuild_offset_envelope();
+        refresh_released_envelope();
         stamp_plastic_rests();
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {}",
@@ -4779,7 +4777,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         } else {
             local_operations({{0, 0, 0, k}});
         }
-        rebuild_offset_envelope();
+        refresh_released_envelope();
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
@@ -4794,7 +4792,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
             m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
             m_vertex_extra[vid].m_turn_start_valid = true;
         }
-        rebuild_offset_envelope();
+        refresh_released_envelope();
         const int energy_c0 = iter_cnt_collapse_energy_reject.load();
         const int energy_s0 = iter_cnt_swap_energy_reject.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
@@ -4809,7 +4807,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
             } else {
                 local_operations(groups[gi]);
             }
-            rebuild_offset_envelope(); // the smoothing in this group moved the front
+            refresh_released_envelope(); // the smoothing in this group moved the boundaries
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
             if (m_params.perform_sanity_checks) {
@@ -5048,7 +5046,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         // being a property of the mesh it is holding, where refinable is a request for work on
         // the next turn.
         if (ec.converged() && !final_stage) {
-            // The initial smoothing ends here; the final pass and the verdict belong to the
+            // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
             logger().info(
                 "[{}] converged at target_distance {:.6g} after {} turn(s): {} max {:.4}x the bar "
@@ -5060,7 +5058,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
                 (ec.ring_exit ? ec.max_ring : ec.max_face) / ec.bar,
                 ec.n_vertices,
                 amips);
-            rebuild_offset_envelope();
+            refresh_released_envelope();
             return;
         }
         if (ec.converged()) {
@@ -5132,7 +5130,7 @@ void TopoOffsetTetMesh::optimize_offset_loop(
                     write_optimization_debug_output(fmt::format("end_{}F", it + 2));
                 }
             }
-            rebuild_offset_envelope();
+            refresh_released_envelope();
             return;
         }
     }
@@ -5175,8 +5173,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    // The offset envelope is born here, with the offset itself, and always exists from then on.
-    rebuild_offset_envelope();
+    // The released-boundary tube, from the boundaries as released. The offset envelope is only
+    // built for the final pass.
+    refresh_released_envelope();
 
     // The front as constructed must already be inside the potential's support.
     check_offset_within_support("Offset as constructed");
@@ -5232,23 +5231,23 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    if (m_initial_smoothing) {
-        // EXPERIMENTAL_initial_smoothing_norefine (see marching_tets()): the loop first runs to
+    if (m_init_optimize) {
+        // init_optimize (see marching_tets()): the loop first runs to
         // convergence under stencil_order without refinement, the sizing field left as it is, and
         // without the final pass or the verdict; then the ordinary loop below, with its
         // refinement. target_distance is not touched.
         m_frame_prefix = "i";
         logger().info(
-            "======== [initial smoothing] target_distance {:.6g}, stencil_order {}, no "
+            "======== [init_optimize] target_distance {:.6g}, stencil_order {}, no "
             "refinement ========",
             m_offset_params.target_distance,
             m_offset_params.stencil_order);
-        optimize_offset_loop(/*final_stage=*/false, /*refine=*/false, "initial smoothing");
+        optimize_offset_loop(/*final_stage=*/false, /*refine=*/false, "init_optimize");
         m_frame_prefix.clear();
         m_converged = false;
         m_energy_verdict.reset();
         logger().info(
-            "======== [initial smoothing] done; the loop at target_distance {:.6g}, "
+            "======== [init_optimize] done; the loop at target_distance {:.6g}, "
             "stencil_order {}, with refinement ========",
             m_offset_params.target_distance,
             m_offset_params.stencil_order);

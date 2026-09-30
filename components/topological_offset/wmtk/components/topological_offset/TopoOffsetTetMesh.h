@@ -288,7 +288,7 @@ public:
      * @brief Memoized "region tubes AND the offset envelope", keyed by the region mask.
      *
      * Separate from m_isect_cache because the members differ in lifetime: the tag envelopes live
-     * for the whole run, m_offset_envelope is rebuilt after every smoothing pass.
+     * for the whole run, m_offset_envelope is built for the final pass.
      * rebuild_offset_envelope() clears this and must keep doing so. Guarded by m_isect_mutex.
      */
     mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_offset_isect_cache;
@@ -298,9 +298,10 @@ public:
      * satisfy -- the intersection of everything that holds it, or null if nothing does.
      *
      * The single place the two containment families are composed. `region_mask` dispatches
-     * through envelope_for_mask(); `on_offset` adds m_offset_envelope once it exists. Every
-     * operation's containment check reaches this through surface_envelope_for_face(), so split,
-     * collapse and swap all hold the offset surface to its tube. The smoother asks with
+     * through envelope_for_mask(); `on_offset` adds m_offset_envelope, in the frozen-front final
+     * pass only. Every operation's containment check reaches this through
+     * surface_envelope_for_face(), so in the final pass split, collapse and swap hold the offset
+     * surface to its tube; in the loop they do not. The smoother asks with
      * `on_offset` false (smoothing_containment_envelope()): placing the front is what moves the
      * offset surface, and a tube around where it currently sits would cap how far it can travel.
      */
@@ -354,24 +355,27 @@ public:
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     /**
-     * @brief The tube the offset surface may not leave during the operation passes, of
-     * half-width offset_envelope. Rebuilt after every smoothing pass from
-     * the surface as that pass left it, which is what lets the surface travel across turns.
-     * Non-null once the offset exists; containment_for() holds every operation to it.
-     * Unlike m_tag_envelopes, which must never be rebuilt.
+     * @brief The tube the offset surface may not leave during the frozen-front final pass, of
+     * half-width offset_envelope, built from the surface as the loop left it just before that
+     * pass (containment_for() holds the final pass's operations to it). Null until then: the
+     * loop holds the offset surface to no envelope. Unlike m_tag_envelopes, which must never be
+     * rebuilt.
      */
     std::shared_ptr<SampleEnvelope> m_offset_envelope;
 
     /// Rebuild m_offset_envelope from the current offset-surface faces, and drop the
-    /// intersections memoized against the old one.
+    /// intersections memoized against the old one; also refresh_released_envelope().
     void rebuild_offset_envelope();
+    /// Rebuild deform_others' released-boundary tube now, between passes (see
+    /// released_envelope(), which never rebuilds mid-operation).
+    void refresh_released_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
     /// no placement satisfies. Called at construction.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// EXPERIMENTAL_initial_smoothing_norefine loop: it returns on convergence without the
+    /// init_optimize loop: it returns on convergence without the
     /// frozen-front final pass and without deciding the verdict. `refine` false skips the
     /// halving. `label` names the loop in its log.
     void optimize_offset_loop(
@@ -379,11 +383,11 @@ public:
         bool refine = true,
         const std::string& label = std::string());
 
-    /// EXPERIMENTAL_initial_smoothing_norefine: optimize_offset() opens with a stencil_order loop
+    /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
     /// marchable distance.
-    bool m_initial_smoothing = false;
-    /// Leads every debug frame label: i during the initial smoothing, empty otherwise.
+    bool m_init_optimize = false;
+    /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
     std::string m_frame_prefix;
 
     /// Max over the front vertices of the vertex convergence measure (a ratio to its bar); under
@@ -1259,8 +1263,9 @@ public:
 
     /**
      * @brief Class-0 faces -- every region boundary, the input complex and the domain wall
-     * included -- carry a containment requirement, and so does the offset surface:
-     * m_offset_envelope holds it where the last smoothing pass left it (see containment_for()).
+     * included -- carry a containment requirement, and so does the offset surface in the
+     * frozen-front final pass: m_offset_envelope holds it where the loop left it (see
+     * containment_for()).
      *
      * The 3D twin of surface_envelope_for_edge(), keyed on the vertices because every caller is
      * an operation asking about a triangle it is about to create. Null means "no containment
@@ -2066,7 +2071,7 @@ public:
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
      * the loop and F in the final pass; led by m_frame_prefix (i during
-     * EXPERIMENTAL_initial_smoothing_norefine).
+     * init_optimize).
      */
     void write_optimization_debug_output(const std::string& path) override
     {
@@ -2079,7 +2084,7 @@ public:
             m_debug_pass = 0;
         }
         std::string label = path;
-        // The prefix leads, since the loop after the initial smoothing restarts at turn 1.
+        // The prefix leads, since the loop after the init_optimize loop restarts at turn 1.
         const std::string& g = m_frame_prefix;
         if (path.rfind("debug_", 0) == 0) {
             label = fmt::format(

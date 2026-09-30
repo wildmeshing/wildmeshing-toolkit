@@ -172,16 +172,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
-    /// EXPERIMENTAL, 3D only, default false. Whether split, collapse and swap in the loop hold the
-    /// offset surface to its envelope (offset_envelope). False leaves the offset surface free of
-    /// its envelope in those operations during the loop; the region tubes still apply, and the
-    /// frozen-front final pass holds the offset surface to its envelope either way. See
-    /// TopoOffsetTetMesh::containment_for().
-    bool experimental_offset_ops_envelope = false;
-    /// EXPERIMENTAL, 3D only, default true. Only when the target is beyond the maximum marchable
+    /// 3D only, default true. Only when the target is beyond the maximum marchable
     /// distance: march at the midpoints, and the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
-    bool experimental_initial_smoothing_norefine = true;
+    bool init_optimize = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -279,9 +273,7 @@ struct Parameters : public wmtk::OptimizerParameters
         construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
-        experimental_offset_ops_envelope = json_params["EXPERIMENTAL_offset_ops_envelope"];
-        experimental_initial_smoothing_norefine =
-            json_params["EXPERIMENTAL_initial_smoothing_norefine"];
+        init_optimize = json_params["init_optimize"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

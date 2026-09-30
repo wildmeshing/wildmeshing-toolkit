@@ -1523,22 +1523,22 @@ void TopoOffsetTetMesh::marching_tets()
         }
     }
 
-    // EXPERIMENTAL_initial_smoothing_norefine, only when the target is not below the maximum
+    // init_optimize, only when the target is not below the maximum
     // marchable distance: optimize_offset() opens with a loop without refinement. A target below
     // it is marched to and the run is the ordinary one.
-    if (m_offset_params.experimental_initial_smoothing_norefine && !e_to_split.empty()) {
+    if (m_offset_params.init_optimize && !e_to_split.empty()) {
         if (!reachable) {
-            m_initial_smoothing = true;
+            m_init_optimize = true;
             logger().info(
-                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: target_distance "
-                "is not below the maximum marchable distance, so the loop opens with a "
-                "stencil_order {} loop without refinement, then the same stencil with refinement",
+                "\t[init_optimize] target_distance is not below the maximum marchable distance, so "
+                "the loop opens with a stencil_order {} loop without refinement, then the same "
+                "stencil with refinement",
                 m_offset_params.stencil_order);
         } else {
             logger().info(
-                "\t[initial smoothing] EXPERIMENTAL_initial_smoothing_norefine: initial smoothing "
-                "is not done, target_distance is below the maximum marchable distance; the offset "
-                "is marched to the target and the loop runs with refinement as usual");
+                "\t[init_optimize] not done: target_distance is below the maximum marchable "
+                "distance; the offset is marched to the target and the loop runs with refinement "
+                "as usual");
         }
     }
 
