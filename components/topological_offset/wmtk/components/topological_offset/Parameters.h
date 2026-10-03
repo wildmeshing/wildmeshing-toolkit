@@ -169,6 +169,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (marched as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = true;
+    /// 3D only, EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1
+    /// (the default) uses stencil_order there too. See the spec doc.
+    int init_optimize_stencil_order = -1;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -267,6 +270,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         init_optimize = json_params["init_optimize"];
+        init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

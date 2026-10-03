@@ -34,6 +34,7 @@
       "sphere_trace_target_rel_tol",
       "EXPERIMENTAL_nonoverlapping_gates",
       "init_optimize",
+      "EXPERIMENTAL_init_optimize_stencil_order",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -287,6 +288,13 @@
     "type": "bool",
     "default": true,
     "doc": "3D only, default true. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to). If target_distance is below it, the init_optimize loop is not done: the offset is marched to the target and the loop runs with refinement as usual, and the log says so. If target_distance is not below it, every marched edge is split as construction_mode says (the default traces it to half the maximum marchable distance; midpoint_fallback splits it at its midpoint), the loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. target_distance is never changed. The no-refinement loop's debug frames are led by i. 2D does not read it."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_init_optimize_stencil_order",
+    "type": "int",
+    "default": -1,
+    "min": -1,
+    "doc": "3D only, EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone -- its front smoothing energy, its operations' energy rules and its exit test; the loop with refinement after it uses stencil_order. -1 (the default) uses stencil_order in both loops, as before. Why: without refinement the faces keep the base edge length, so a measure that samples inside the faces (order >= 1) cannot be met where the level set curves, and the loop runs to max_rounds -- on the one-slot model (offset-runs/slot_repro/slot_small.msh) at the default, every front vertex was over the bar at the end of all 7 init turns. Order 0 samples the corners alone, each front vertex's own placement error, which does not depend on the face size."
   },
   {
     "pointer": "/EXPERIMENTAL_nonoverlapping_gates",

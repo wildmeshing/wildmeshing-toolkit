@@ -5238,12 +5238,20 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // without the final pass or the verdict; then the ordinary loop below, with its
         // refinement. target_distance is not touched.
         m_frame_prefix = "i";
+        // EXPERIMENTAL_init_optimize_stencil_order >= 0: this loop alone runs at that order
+        // (smoothing energy, energy rules, exit test), restored for the loop below. Switched
+        // here, between the loops, where no pass is running.
+        const int stencil_order = m_offset_params.stencil_order;
+        if (m_offset_params.init_optimize_stencil_order >= 0) {
+            m_offset_params.stencil_order = m_offset_params.init_optimize_stencil_order;
+        }
         logger().info(
             "======== [init_optimize] target_distance {:.6g}, stencil_order {}, no "
             "refinement ========",
             m_offset_params.target_distance,
             m_offset_params.stencil_order);
         optimize_offset_loop(/*final_stage=*/false, /*refine=*/false, "init_optimize");
+        m_offset_params.stencil_order = stencil_order;
         m_frame_prefix.clear();
         m_converged = false;
         m_energy_verdict.reset();
