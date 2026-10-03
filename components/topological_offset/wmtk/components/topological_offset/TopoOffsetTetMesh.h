@@ -1053,6 +1053,28 @@ public:
     /// and reset by log_smoothing_pass_accounting().
     optimization::NewtonCounters m_newton_front;
     /**
+     * @brief DEBUG_output only: every front solve since the last debug frame, so the frames
+     * show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and
+     * front_newton_status, see write_vtu()).
+     *
+     * Appended by smooth_front_vertex(), emptied by write_debug_frame() once the frame is
+     * written. The engine writes a frame after every pass and smooths a vertex at most once per
+     * pass, so a smoothing pass's frame shows each front vertex's solve of that pass and an
+     * operation pass's frame shows none. Not in m_vertex_extra: a refused move rolls the vertex
+     * attributes back (TetMesh::smooth_vertex()), and the refused solves are the ones to see.
+     * Added 2026-10-01 for Thingi10K 100026 at target_distance_rel 5e-3, where front solves end
+     * at the 10-iteration cap ever more often inside the model's two slots and the per-pass
+     * counts cannot say where.
+     */
+    struct FrontSolveRecord
+    {
+        size_t vid;
+        int iterations;
+        int status; ///< polysolve's stop status + 1: NewtonCounters::status_name()'s numbering
+    };
+    std::vector<FrontSolveRecord> m_front_solve_log;
+    std::mutex m_front_solve_log_mutex;
+    /**
      * @brief The Newton stopping rule every smoother of this component runs with, set on the
      * thread's shared solver (the engine's m_solver slot) by smoothing_solver() at the start of
      * every visit -- front, plastic-medium and interior alike, so the settings do not depend on

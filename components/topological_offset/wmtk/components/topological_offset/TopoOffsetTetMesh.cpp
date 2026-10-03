@@ -1882,6 +1882,22 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         }
     }
 
+    // The front solves since the last frame (m_front_solve_log), as point data:
+    //   front_newton_iters   the Newton iterations the vertex's solve took; 10 is the cap.
+    //   front_newton_status  polysolve's stop status + 1, NewtonCounters::status_name()'s
+    //                        numbering: 2 IterationLimit, 6 GradNormTolerance,
+    //                        7 RelGradNormTolerance, 12 LineSearchFailed.
+    // -1 where the vertex was not solved since the last frame: not on the front, refused before
+    // its solve, or the frame closes an operation pass. DEBUG ONLY, as the log is.
+    VectorXd v_newton_it(vert_capacity()), v_newton_st(vert_capacity());
+    v_newton_it.setConstant(-1.);
+    v_newton_st.setConstant(-1.);
+    for (const FrontSolveRecord& r : m_front_solve_log) {
+        if (r.vid >= vert_capacity()) continue;
+        v_newton_it[int(r.vid)] = r.iterations;
+        v_newton_st[int(r.vid)] = r.status;
+    }
+
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
@@ -1989,6 +2005,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("front_move_align", v_align);
     writer.add_field("front_complex_distance", v_cdist);
     writer.add_field("offset_foldover", v_fold);
+    writer.add_field("front_newton_iters", v_newton_it);
+    writer.add_field("front_newton_status", v_newton_st);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -2076,6 +2094,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         off_writer.add_field("front_move_align", v_align);
         off_writer.add_field("front_complex_distance", v_cdist);
         off_writer.add_field("offset_foldover", v_fold);
+        off_writer.add_field("front_newton_iters", v_newton_it);
+        off_writer.add_field("front_newton_status", v_newton_st);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
     }

@@ -129,13 +129,23 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             wmtk::vector_unique(nb);
             for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
         }
-        if (!optimization::smooth_vertex_3d(
-                *this,
-                t,
-                opts,
-                solver,
-                &m_smooth_rejects,
-                &m_newton_front)) {
+        // The solve's own counter, so DEBUG_output can pin its outcome to vid
+        // (m_front_solve_log), folded into the pass's m_newton_front, which therefore counts
+        // exactly what passing it in counted. At most one solve (two_stage is off), none when
+        // smooth_vertex_3d() refuses an already-inverted ring before solving; nothing after the
+        // solve touches the solver, so it still holds that solve's state here.
+        optimization::NewtonCounters one;
+        const bool ok =
+            optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects, &one);
+        if (one.solves() > 0) {
+            m_newton_front.record(*solver, one.threw.load() > 0);
+            if (m_offset_params.debug_output) {
+                std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
+                m_front_solve_log.push_back(
+                    {vid, int(solver->current_criteria().iterations), int(solver->status()) + 1});
+            }
+        }
+        if (!ok) {
             return false;
         }
         {

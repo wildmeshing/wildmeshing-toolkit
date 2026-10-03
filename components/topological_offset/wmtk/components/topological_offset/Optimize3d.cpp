@@ -4623,6 +4623,7 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
     append_frame_label(idx, label);
     const std::string base = m_offset_params.output_path + fmt::format("_{:05d}", idx);
     write_vtu(base);
+    m_front_solve_log.clear(); // written; the next frame shows the solves after this one
     // Record what this frame actually wrote, then refresh the ParaView collections. Which
     // companions exist is dimension-specific and some are conditional, so they are discovered
     // from disk rather than hard-coded here.
