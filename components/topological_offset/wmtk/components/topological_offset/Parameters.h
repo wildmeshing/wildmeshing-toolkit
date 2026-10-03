@@ -165,8 +165,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
-    /// 3D only, default true. Only when the target is beyond the maximum marchable
-    /// distance: march at the midpoints, and the loop first converges under stencil_order without
+    /// 3D only, default true. Only when the target is not below the maximum marchable distance
+    /// (marched as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = true;
     std::string output_path; // no extension

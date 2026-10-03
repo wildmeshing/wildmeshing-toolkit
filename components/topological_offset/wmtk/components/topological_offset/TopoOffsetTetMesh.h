@@ -1667,7 +1667,8 @@ public:
     /// How far vid is from the level set Phi = c, as a length.
     double band_vertex_residual(const size_t vid) const;
 
-    /// A quantity sampled at points INSIDE an offset-surface face.
+    /// A quantity sampled at the stencil points of an offset-surface face, corners included
+    /// (for_each_face_sample()).
     struct FaceSamples
     {
         double max = 0.;
@@ -1676,15 +1677,17 @@ public:
     };
 
     /**
-     * @brief The interior lattice a triangle is sampled on, handed to `visit` one point at a
-     * time as (point, wa, wb, wc) with the barycentric weights that built it: every (i, j, l)
-     * with i + j + l = k + 2 and each >= 1, so k = 1 is the centroid alone and the counts are
-     * 1, 3, 6, 10 for k = 1..4. Strictly interior -- no sample ever lands on an edge or a
-     * corner, where the interpolant is exact by construction and the sag is identically zero.
+     * @brief The stencil_order stencil a triangle is sampled on, handed to `visit` one point at
+     * a time as (point, wa, wb, wc) with the barycentric weights that built it. Order 0 is the
+     * three corners alone; order k >= 1 is the vertices of the triangle subdivided k-1 times by
+     * 4-way midpoint refinement plus the centroid of each of its 4^(k-1) sub-triangles, so the
+     * counts are 3, 4, 10, 31, 109 for k = 0..4 (stencil_points_per_face()). The corners are in
+     * it on purpose: the quantity sampled is a distance to the level set, which at a corner is
+     * that vertex's own placement error (see face_offset_term()).
      *
-     * The weights are handed out because the sag at a sample is measured against the LINEAR
-     * INTERPOLANT there, wa*Va + wb*Vb + wc*Vc, which is only the plain mean of the corners at
-     * the centroid. See face_offset_term().
+     * The weights are handed out for the front smoother: with the moving vertex x as p0, a
+     * sample is wa*x + wb*p1 + wc*p2, so it moves by wa per unit of x; StencilEnergy3D keeps the
+     * weights fixed while the points slide with x (stencil_face_at() in FrontSmooth3d.cpp).
      *
      * Takes positions rather than a Tuple: face_offset_term() reads a face's corners in sorted
      * order (see tet_energy()). The 2D twin is for_each_offset_edge_sample().
