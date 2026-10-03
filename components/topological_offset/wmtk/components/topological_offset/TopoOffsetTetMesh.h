@@ -536,6 +536,15 @@ public:
      * AMIPS (see swap_after_cells()).
      */
     double tet_energy(size_t tid) const;
+    /// tet_energy() with the cell's AMIPS^3 given, as the shared smoother has just computed it.
+    double tet_energy(size_t tid, double amips3) const;
+    /// The shared smoother's per-cell comparison -- its projected step for a vertex held on a
+    /// surface, and its quality veto -- is the per-tet energy, so every smoothing test judges a
+    /// move by the energy the smoother minimises (smoothing_extra_energy()).
+    double smoothing_cell_energy(const size_t tid, const double quality) const override
+    {
+        return tet_energy(tid, quality);
+    }
     /// The AMIPS part of the energy: offset_amips_weight times AMIPS^3, the MAX_ENERGY sentinel
     /// (unscoreable) passed through unscaled so that it stays the largest value anywhere. Every
     /// place that turns AMIPS^3 into energy reads it through here -- tet_energy(),

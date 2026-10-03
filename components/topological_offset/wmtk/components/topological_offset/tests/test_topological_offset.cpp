@@ -1294,7 +1294,8 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // terms that do not move with the vertex -- the ring's front faces that do not have it as a
     // corner. Checked on the per-tet-energy fixture by moving each vertex (front vertices a, b,
     // c0, c1, c2; c3 is on no front face) to three nearby positions: objective minus ring sum must
-    // not change. The w AMIPS^3 part's gradient and Hessian against central differences too. At
+    // not change, and the shared smoother's own per-cell comparison (smoothing_cell_energy()) is
+    // tet_energy(). The w AMIPS^3 part's gradient and Hessian against central differences too. At
     // w = 1 and at the default w.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
@@ -1345,6 +1346,11 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 CHECK(
                     e - ring_energy() ==
                     Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
+                // The shared smoother's own per-cell comparison is the same energy.
+                for (const size_t tid : ring) {
+                    const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
+                    CHECK(mesh->smoothing_cell_energy(tid, q) == mesh->tet_energy(tid));
+                }
             }
             mesh->set_vertex_position(v, x0);
 

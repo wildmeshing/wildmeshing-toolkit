@@ -284,8 +284,12 @@ double TopoOffsetTetMesh::face_offset_term(const size_t a, const size_t b, const
 
 double TopoOffsetTetMesh::tet_energy(const size_t tid) const
 {
+    return tet_energy(tid, get_quality(tuple_from_tet(tid))); // the base's: AMIPS^3 or MAX_ENERGY
+}
+
+double TopoOffsetTetMesh::tet_energy(const size_t tid, const double amips3) const
+{
     // See the declaration for the definition and why it is read here, on the mesh.
-    const double amips3 = get_quality(tuple_from_tet(tid)); // the base's: AMIPS^3 or MAX_ENERGY
     const double a = weighted_amips(amips3);
     if (amips3 >= MAX_ENERGY || !m_offset_potential || !cell_is_offset_band(tid)) return a;
     double e = a;
