@@ -1151,8 +1151,7 @@ Vector2d TopoOffsetTriMesh::offset_vertex_normal(const size_t vid) const
 double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
 {
     // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex_phase_b()
-    // minimises: stationarity of the 2-D solve. Under front_normal_projection the unknown is the
-    // position along the normal, so the derivative along it, |grad F . n|.
+    // minimises, taken along the move direction n: |grad F . n| (see below).
     const Vector2d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(2);
     phase_b_front_objective(vid, x)->gradient(xv, g);
@@ -2816,7 +2815,7 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
         // Where the vertex IS, not how far it still wants to move: the field's own residual as a
         // LENGTH (band_vertex_residual(), exactly |d - target_distance| for a euclidean field),
         // over the same bar the chord test uses. No objective is built -- the measure does not
-        // depend on the move direction, so front_normal_projection does not enter -- and a
+        // depend on the move direction -- and a
         // non-finite residual reads as unmeasurable, as it does under the other criteria.
         const double bar = m_offset_params.front_conv;
         if (!(bar > 0.)) return std::numeric_limits<double>::infinity();

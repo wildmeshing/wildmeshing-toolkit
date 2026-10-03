@@ -112,9 +112,9 @@ class TopoOffsetTriMesh : public wmtk::TriOptimizerMesh
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // construction: simplicial embedding AND marching_tris
-        SphereTrace = 1, // marching_tris under sphere_trace_initialization: sphere tracing
-                         // along the edge to d(x) = target_distance, midpoint when the trace
-                         // leaves the edge
+        SphereTrace = 1, // marching_tris (construction_mode): sphere tracing along the edge to
+                         // d(x) = m_construction_distance, midpoint when the trace leaves the
+                         // edge
         Optimization = 2 // the optimization phase; the shared engine places the vertex
     };
 
@@ -753,17 +753,17 @@ public:
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
     /**
-     * @brief Construction placement under sphere_trace_initialization: sphere tracing along the
-     * edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the
-     * background endpoint) for the point where d(x) = target_distance, d(x) the distance to the
-     * input complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
-     * point and steps forward by target_distance - d, the largest step that cannot cross the
-     * level set (d is 1-Lipschitz); it stops when |d - target_distance| <=
-     * sphere_trace_target_rel_tol x target_distance and returns true with p_new there. It returns
+     * @brief Construction placement in the marching: sphere tracing along the edge from p_in (the
+     * endpoint in the input complex, label != 0) towards p_out (the background endpoint) for the
+     * point where d(x) = D, D = m_construction_distance and d(x) the distance to the input
+     * complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
+     * point and steps forward by D - d, the largest step that cannot cross the level set (d is
+     * 1-Lipschitz); it stops when |d - D| <= sphere_trace_target_rel_tol x D and returns true
+     * with p_new there. It returns
      * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
      * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
      * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
-     * the trace ends within L / (tol x target_distance) steps; `steps` returns how many it took.
+     * the trace ends within L / (tol x D) steps; `steps` returns how many it took.
      * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
      * Same as 3D.
      */
@@ -777,6 +777,9 @@ public:
     /// start of marching_tris().
     size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
     size_t m_marching_trace_steps = 0, m_marching_trace_steps_max = 0;
+    /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
+    /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
+    double m_construction_distance = 0.;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition.
@@ -1357,10 +1360,6 @@ public:
     /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
     /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
     double front_move_alignment(size_t vid) const;
-    /// Whether the 1-D placement at vid is trapped by the alignment term: a live front edge at
-    /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
-    /// placement term's along the move direction. See the definition.
-    bool front_vertex_alignment_traps_1d_solve(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the four measures -- three of stationarity, plus residual_error,
     /// which measures the residual length instead. Infinite when unmeasurable.
@@ -1490,10 +1489,8 @@ public:
     /// The rest-shape AMIPS over the deformable faces of vid's one-ring, weighted like the
     /// shared smoother weights its AMIPS term; null when the ring has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
-    /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the
-    /// zeroth-order OffsetEnergy2D and the first-order AlignEnergy2D (one residual per incident
-    /// live front edge). Defined in FrontSmooth2d.cpp, next to the criterion measuring the same
-    /// quantities.
+    /// The offset term for a front vertex, see smooth_front_vertex_phase_b(): OffsetEnergy2D,
+    /// the vertex's own residual. Defined in FrontSmooth2d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential2D>& pot) const;
@@ -2262,10 +2259,11 @@ public:
     void execute_offset(const std::filesystem::path& output_file);
 
     /// Marching triangles: every edge with one endpoint in the input complex (label 1/2) and the
-    /// other in the background (label 0) is split -- at the midpoint, or under
-    /// sphere_trace_initialization where d(x) = target_distance along the edge (see
-    /// edge_split_sphere_trace()) -- and afterwards every background triangle still touching a
-    /// complex frontier vertex (the split-off halves) becomes the band (label 2).
+    /// other in the background (label 0) is split -- where d(x) = target_distance along the edge,
+    /// or under construction_mode's fallback at half the maximum marchable distance or at the
+    /// midpoint (see edge_split_sphere_trace()) -- and afterwards every background triangle
+    /// still touching a complex frontier vertex (the split-off halves) becomes the band
+    /// (label 2).
     void marching_tris();
 
 

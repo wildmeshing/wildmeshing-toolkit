@@ -109,10 +109,9 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
-    // Midpoint: no target_distance enters construction at all, and carrying the offset surface
-    // out to the level set is the optimization phase's job. SphereTrace (marching_tets under
-    // sphere_trace_initialization): the vertex goes to the point of the edge where d(x) reaches
-    // target_distance within the tolerance, and to the midpoint when the trace leaves the edge.
+    // Midpoint: the plain edge midpoint. SphereTrace (marching_tets(), see construction_mode):
+    // the vertex goes to the point of the edge where d(x) reaches m_construction_distance within
+    // the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
@@ -207,12 +206,13 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     Vector3d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
-    // d = target_distance is at least target_distance - d away in every direction, and stepping
-    // exactly that far along the edge can never cross it. The step is positive while the trace
-    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
-    // the loop ends within L / tol steps, one way or the other.
-    const double D = m_offset_params.target_distance;
+    // Sphere tracing to D = m_construction_distance (target_distance, or the construction_mode
+    // fallback; see the marching): d is 1-Lipschitz, so from a point at distance d the level set
+    // d = D is at least D - d away in every direction, and stepping exactly that far along the
+    // edge can never cross it. The step is positive while the trace has not converged
+    // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
+    // steps, one way or the other.
+    const double D = m_construction_distance;
     const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();

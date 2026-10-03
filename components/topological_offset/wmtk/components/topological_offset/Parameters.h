@@ -98,13 +98,19 @@ struct Parameters : public wmtk::OptimizerParameters
     // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
     /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
     std::string front_conv_criterion;
-    // The front is placed by a one-dimensional solve along its field normal
-    // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
-    // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
-    // information, and in the free solve that tangential motion made fronts slide and fold where
-    // two of them meet.
-    bool front_normal_projection = true;
-    bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
+    /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
+    bool offset_collapse_veto = true, offset_swap_veto = true;
+    /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
+    /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
+    bool offset_front_smooth_veto = false;
+    /// The weight w of AMIPS in the per-tet energy and in the front smoother's objective:
+    /// tet_energy = w AMIPS^3 + the offset terms (see the spec). 1 is the 1:1 energy of 2026-09-28.
+    double offset_amips_weight = 1e-4;
+    /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
+    /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
+    bool offset_collapse_changed_cells = true;
+    /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
+    bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -123,51 +129,28 @@ struct Parameters : public wmtk::OptimizerParameters
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
-    // the ops guard's hot path as well as in energy_criterion() and every smoothing solve.
+    // the operations' energy rules (TopoOffsetTetMesh::tet_energy()) as well as in
+    // energy_criterion() and every smoothing solve.
     // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int stencil_order;
-    /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
+    /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
-    /// square of the face measures (face_conv_ratio()) of its incident offset faces weighted by
-    /// area -- in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by
-    /// length. The loop exits when every ring measure is within the bar and nothing is
-    /// unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front
-    /// smoother's stencil energy weights its faces by area the same way
-    /// (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and
-    /// the halving at the corners of every face over it -- the rule of 2026-09-25, kept for
-    /// comparison.
+    /// square of the face measures (face_conv_ratio()) of its incident offset faces, every face
+    /// weighted equally as in the per-tet energy (3D, since 2026-09-28; by area before) -- in 2D
+    /// of the chord measures (edge_conv_ratio()) of its front chords weighted by length. The loop
+    /// exits when every ring measure is within the bar and nothing is unmeasurable, and the
+    /// halving takes each vertex over the bar alone. "face": every offset face (2D: chord) within
+    /// the bar and the halving at the corners of every face over it -- the rule of 2026-09-25,
+    /// kept for comparison.
     std::string front_measure;
     bool sorted_marching;
-    /// See the spec: the marching places each new vertex where d(x) reaches target_distance
-    /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
-    bool sphere_trace_initialization;
-    double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
-    /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
-    /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
-    /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
-    /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
-    /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
-    /// See the spec doc, and marching_tris() / marching_tets().
-    bool experimental_consistent_construction_split = true;
-    /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
-    /// refinement. With it FALSE a face over the bar is handed to the halving only when all
-    /// THREE of its corners are already placed -- the safeguard that stops refinement from
-    /// chasing a moving front. True (the default) refines EVERY face over the bar, placed or not,
-    /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
-    /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
-    /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
-    /// `max_face_placed` still report the PLACED subset alone.
-    ///
-    /// Why it exists: under one unified measure the two halves can deadlock. A face chording a
-    /// feature of radius delta puts its centroid far inside the level set, and that sample's
-    /// pull cancels the corners' own placement pull almost exactly, so the corners never place;
-    /// refinement, which is the only thing that would shorten the chord and remove the sag, is
-    /// gated on exactly those corners being placed. Measured on the deliverable cube at
-    /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
-    /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
-    /// for 40 turns.
-    bool experimental_aggresive_refine = true;
+    /// How the marching places the offset (see the spec). A target_distance below the maximum
+    /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
+    /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
+    /// midpoint. See marching_tris() / marching_tets().
+    std::string construction_mode = "max_marchable_fallback";
+    double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
     /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
     /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
     /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
@@ -182,6 +165,18 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
+    /// 3D only, default true. Only when the target is not below the maximum marchable distance
+    /// (marched as construction_mode says): the loop first converges under stencil_order without
+    /// refinement, then under stencil_order with refinement. See the spec doc.
+    bool init_optimize = true;
+    /// 3D only, EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1
+    /// (the default) uses stencil_order there too. See the spec doc.
+    int init_optimize_stencil_order = -1;
+    /// 3D only. Smoothing passes before the march that push the outer ends of the marched edges
+    /// out to 2 x target_distance; they stop early once every outer end is beyond
+    /// target_distance + front_conv. 0 (the default) = off. See the spec doc and
+    /// TopoOffsetTetMesh::repulsion_smoothing().
+    int repulsion_smoothing_passes = 0;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -232,7 +227,7 @@ struct Parameters : public wmtk::OptimizerParameters
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
-    /// smoothing) before the first turn of the single-phase loop.
+    /// smoothing) before the first turn of the loop.
     bool pre_smooth;
 
     VectorXd box_min;
@@ -276,12 +271,12 @@ struct Parameters : public wmtk::OptimizerParameters
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
-        sphere_trace_initialization = json_params["sphere_trace_initialization"];
+        construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
-        experimental_consistent_construction_split =
-            json_params["EXPERIMENTAL_consistent_construction_split"];
-        experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
+        init_optimize = json_params["init_optimize"];
+        init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
+        repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
@@ -333,8 +328,12 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        front_normal_projection = json_params["front_normal_projection"];
-        front_alignment_energy = json_params["front_alignment_energy"];
+        offset_collapse_veto = json_params["offset_collapse_veto"];
+        offset_swap_veto = json_params["offset_swap_veto"];
+        offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
+        offset_amips_weight = json_params["offset_amips_weight"];
+        offset_collapse_changed_cells = json_params["offset_collapse_changed_cells"];
+        debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
         max_rounds = json_params["max_rounds"];
@@ -342,7 +341,8 @@ struct Parameters : public wmtk::OptimizerParameters
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
-        smooth_quality_veto = json_params["smooth_quality_veto"];
+        smooth_quality_veto =
+            json_params["offset_smooth_veto"]; // the engine's field, this component's key
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }
