@@ -8,6 +8,7 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 
+#include <array>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -672,6 +673,40 @@ private:
     /// F and d = det F at x for one cell; false when d <= 0.
     bool cell_F(const Eigen::Vector3d& x, const Cell& c, Eigen::Matrix3d& F, double& d) const;
     std::vector<Cell> m_cells;
+    double m_weight;
+};
+
+/**
+ * @brief The per-tet energy's AMIPS part as the smoother minimises it: w * sum over cells of
+ * AMIPS^3.
+ *
+ * tet_energy() charges every cell w * AMIPS^3, so the smoother minimises that same power at that
+ * same weight; the engine's AMIPSEnergy3D is AMIPS to the first power. Cells in the shared
+ * smoother's convention: 12 doubles with the moving vertex first, its three entries replaced by
+ * x. Derivatives by the chain rule from the engine's first-power ones:
+ * grad A^3 = 3 A^2 grad A, hess A^3 = 3 A^2 hess A + 6 A grad A grad A^T. A step that inverts a
+ * cell is invalid, as for the engine's AMIPSEnergy3D.
+ */
+class CubedAMIPSEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    CubedAMIPSEnergy3D(std::vector<std::array<double, 12>> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    std::vector<std::array<double, 12>> m_cells;
     double m_weight;
 };
 

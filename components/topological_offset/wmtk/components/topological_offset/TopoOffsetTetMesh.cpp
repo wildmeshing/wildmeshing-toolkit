@@ -1443,7 +1443,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first. Each one that no envelope holds is smoothed against w AMIPS of its ring
+    // ends out first. Each one that no envelope holds is smoothed against w AMIPS^3 of its ring
     // plus O(v) = (max(0, 2 delta - d(v)) / front_conv)^2 (repulsion_energy()): one-sided, so
     // an outer end already beyond 2 delta is left to AMIPS, and 2 delta so that the march at
     // delta splits each edge with room to spare -- the fallback's "half the maximum marchable

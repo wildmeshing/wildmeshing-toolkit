@@ -1,6 +1,8 @@
 #include "OffsetPotential.hpp"
 
+#include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include <Eigen/Eigenvalues>
 
@@ -959,6 +961,83 @@ bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
     double d;
     for (const Cell& c : m_cells) {
         if (!cell_F(x1.head(3), c, F, d)) return false;
+    }
+    return true;
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// CubedAMIPSEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+CubedAMIPSEnergy3D::CubedAMIPSEnergy3D(
+    std::vector<std::array<double, 12>> cells,
+    const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+namespace {
+/// A cell of CubedAMIPSEnergy3D with the moving vertex placed at x.
+std::array<double, 12> cubed_amips_cell_at(std::array<double, 12> c, const Eigen::VectorXd& x)
+{
+    c[0] = x[0];
+    c[1] = x[1];
+    c[2] = x[2];
+    return c;
+}
+} // namespace
+
+double CubedAMIPSEnergy3D::value(const TVector& x)
+{
+    double res = 0.;
+    for (const auto& c0 : m_cells) {
+        const double a = wmtk::AMIPS_energy(cubed_amips_cell_at(c0, x));
+        res += a * a * a;
+    }
+    return m_weight * res;
+}
+
+void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    gradv.setZero(3);
+    Eigen::Vector3d g;
+    for (const auto& c0 : m_cells) {
+        const auto c = cubed_amips_cell_at(c0, x);
+        const double a = wmtk::AMIPS_energy(c);
+        wmtk::AMIPS_jacobian(c, g);
+        gradv += 3. * a * a * g;
+    }
+    gradv *= m_weight;
+}
+
+void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    hessian.setZero(3, 3);
+    Eigen::Vector3d g;
+    Eigen::Matrix3d h;
+    for (const auto& c0 : m_cells) {
+        const auto c = cubed_amips_cell_at(c0, x);
+        const double a = wmtk::AMIPS_energy(c);
+        wmtk::AMIPS_jacobian(c, g);
+        wmtk::AMIPS_hessian(c, h);
+        hessian += 3. * a * a * h + 6. * a * g * g.transpose();
+    }
+    hessian *= m_weight;
+}
+
+bool CubedAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    // The engine's AMIPSEnergy3D::is_step_valid: the moved vertex may not invert a cell.
+    const Eigen::Vector3d p0 = x1.head(3);
+    for (const auto& c : m_cells) {
+        if (!wmtk::utils::orient3d(
+                p0,
+                Eigen::Vector3d(c[3], c[4], c[5]),
+                Eigen::Vector3d(c[6], c[7], c[8]),
+                Eigen::Vector3d(c[9], c[10], c[11]))) {
+            return false;
+        }
     }
     return true;
 }

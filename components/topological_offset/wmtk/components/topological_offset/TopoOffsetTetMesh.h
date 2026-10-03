@@ -1473,11 +1473,23 @@ public:
     bool smooth_front_vertex(const Tuple& t);
     /**
      * @brief A repulsion vertex in the passes before the march (repulsion_smoothing()): the
-     * shared smoother at the front's options, against w AMIPS of its ring plus its own term
+     * shared smoother at the front's options, against w AMIPS^3 of its ring plus its own term
      * repulsion_energy(); under offset_front_smooth_veto, the max over its ring of w AMIPS^3 +
      * that term may not rise. See FrontSmooth3d.cpp.
      */
     bool smooth_repulsion_vertex(const Tuple& t);
+    /**
+     * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
+     * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises the per-tet
+     * energy -- smoothing_extra_energy(), w AMIPS^3 over the ring, the smoother adding no AMIPS
+     * term of its own -- and the veto compares the max of tet_energy() over the ring, under the
+     * same key (offset_smooth_veto) and on the same vertices as the engine's AMIPS^3 veto it
+     * replaces. See Optimize3d.cpp.
+     */
+    bool smooth_nonfront_vertex(const Tuple& t);
+    /// w AMIPS^3 over vid's one-ring, the per-tet energy's AMIPS part in the smoother's form
+    /// (CubedAMIPSEnergy3D), w = offset_amips_weight.
+    std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
@@ -1576,25 +1588,29 @@ public:
         if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
-    /// The front objective's offset terms, handed to the shared smoother for a front vertex it
-    /// is placing (null in the final pass and for a front vertex an input envelope also pins) --
-    /// plus, under deform_others, the rest-shape AMIPS of the deformable cells in the vertex's
-    /// ring.
+    /// THE smoothing objective at vid, for every vertex the shared smoother places: the per-tet
+    /// energy tet_energy() = w AMIPS^3 + O summed over vid's ring, up to the terms that do not
+    /// move with vid. w AMIPS^3 over the ring (amips3_energy()) for every vertex -- the smoother
+    /// adds no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms
+    /// of the front faces at vid when it is a front vertex the loop places (front_energy(); null
+    /// in the final pass and for a front vertex an input envelope also pins), or, in the passes
+    /// before the march, a repulsion vertex's own term (repulsion_energy()). The ring's other
+    /// front faces do not have vid as a corner, so their terms are constants here. Under
+    /// deform_others the rest-shape AMIPS of the deformable cells in the ring is added, as before.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
-        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
-        if (is_repulsion_vertex(vid)) return repulsion_energy();
-        std::shared_ptr<polysolve::nonlinear::Problem> front;
-        if (vertex_carries_offset_term(vid)) {
-            front = front_energy(vid, potential_ptr_for(vid));
-        }
-        const std::shared_ptr<polysolve::nonlinear::Problem> rest = rest_energy_for_vertex(vid);
-        if (!front) return rest;
-        if (!rest) return front;
         auto sum = std::make_shared<optimization::EnergySum>();
-        sum->add_energy(front);
-        sum->add_energy(rest);
+        sum->add_energy(amips3_energy(vid));
+        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
+        if (is_repulsion_vertex(vid)) {
+            sum->add_energy(repulsion_energy());
+            return sum;
+        }
+        if (vertex_carries_offset_term(vid)) {
+            sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
+        }
+        if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
         return sum;
     }
 

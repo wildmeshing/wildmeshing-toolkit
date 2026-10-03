@@ -1286,6 +1286,94 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
     }
 }
 
+TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
+{
+    // One energy for the smoother and the rules: at every vertex, the objective the shared
+    // smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother
+    // adds no AMIPS term of its own) is the sum of tet_energy() over the vertex's ring, up to the
+    // terms that do not move with the vertex -- the ring's front faces that do not have it as a
+    // corner. Checked on the per-tet-energy fixture by moving each vertex (front vertices a, b,
+    // c0, c1, c2; c3 is on no front face) to three nearby positions: objective minus ring sum must
+    // not change. The w AMIPS^3 part's gradient and Hessian against central differences too. At
+    // w = 1 and at the default w.
+    Eigen::MatrixXd V(6, 3);
+    V << 0., 0., 0.12, // a
+        0., 0., 0.88, // b
+        0.4, 0., 0.5, // c0
+        0., 0.4, 0.55, // c1
+        -0.4, 0., 0.45, // c2
+        0., -0.4, 0.5; // c3
+    const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
+    for (const double w : {1., Parameters().offset_amips_weight}) {
+        Parameters param;
+        param.offset_amips_weight = w;
+        const auto pot = plane_field();
+        auto mesh = energy_mesh(
+            param,
+            V,
+            {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
+            {2, 2, 0, 1},
+            pot);
+        // What label_offset_boundary() sets in a run: a corner of a live front face.
+        for (size_t v = 0; v < 6; ++v) {
+            mesh->m_vertex_extra[v].m_is_on_offset = !mesh->offset_surface_faces_live_at(v).empty();
+        }
+        REQUIRE(!mesh->m_vertex_extra[size_t(c3)].m_is_on_offset);
+        for (size_t v = 0; v < 6; ++v) {
+            const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
+            const auto ring_energy = [&]() {
+                double s = 0.;
+                for (const size_t tid : ring) s += mesh->tet_energy(tid);
+                return s;
+            };
+            const bool front = mesh->vertex_carries_offset_term(v);
+            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
+            REQUIRE(front == (v != size_t(c3)));
+            const auto energy = mesh->smoothing_extra_energy(v);
+            const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
+            Eigen::VectorXd xv = x0;
+            const double d0 = energy->value(xv) - ring_energy();
+            for (const Vector3d& dx :
+                 {Vector3d(0.01, 0., 0.),
+                  Vector3d(0., -0.008, 0.005),
+                  Vector3d(-0.004, 0.006, -0.007)}) {
+                mesh->set_vertex_position(v, x0 + dx);
+                for (const size_t tid : ring)
+                    REQUIRE(!mesh->is_inverted(mesh->tuple_from_tet(tid)));
+                xv = x0 + dx;
+                const double e = energy->value(xv);
+                CHECK(
+                    e - ring_energy() ==
+                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
+            }
+            mesh->set_vertex_position(v, x0);
+
+            // The w AMIPS^3 part's derivatives against central differences.
+            const auto amips3 = mesh->amips3_energy(v);
+            const double h = 1e-6;
+            Eigen::VectorXd g(3);
+            Eigen::MatrixXd H(3, 3);
+            xv = x0;
+            amips3->gradient(xv, g);
+            amips3->hessian(xv, H);
+            for (int i = 0; i < 3; ++i) {
+                Eigen::VectorXd xp = xv, xm = xv;
+                xp[i] += h;
+                xm[i] -= h;
+                const double fd = (amips3->value(xp) - amips3->value(xm)) / (2. * h);
+                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
+                Eigen::VectorXd gp(3), gm(3);
+                amips3->gradient(xp, gp);
+                amips3->gradient(xm, gm);
+                for (int j = 0; j < 3; ++j) {
+                    const double fdh = (gp[j] - gm[j]) / (2. * h);
+                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("swap-candidate-record", "[offset][3d]")
 {
     // The swap's record (TopoOffsetTetMesh::SwapRecord) against the swapped mesh itself: mesh A

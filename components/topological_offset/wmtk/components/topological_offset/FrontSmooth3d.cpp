@@ -80,20 +80,19 @@ bool stencil_face_at(
 
 bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 {
-    // See the header: the shared smoother with the offset's options. The offset terms arrive
-    // through smoothing_extra_energy() at offset_term_weight(), AMIPS at weight 1
-    // (smoother_amips_weight()), so the objective is tet_energy()'s two parts at 1:1; a front
-    // vertex an input envelope pins carries no offset term and keeps the engine's w_amips
-    // against its envelope term. The smoother holds a front vertex to no envelope (see
+    // See the header: the shared smoother with the offset's options. The whole objective arrives
+    // through smoothing_extra_energy() -- w AMIPS^3 over the ring and the offset terms at
+    // offset_term_weight(), tet_energy()'s two parts -- and w_amips 0 keeps the smoother from
+    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
+    // term. The smoother holds a front vertex to no envelope (see
     // smoothing_containment_envelope()), so neither the projected path nor the containment check
     // applies -- solve, exact inversion test, then the
     // veto on tet_energy() below.
     const size_t vid = t.vid(*this);
-    const bool placed = vertex_carries_offset_term(vid);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = placed ? m_offset_params.offset_amips_weight : m_params.w_amips;
+    opts.w_amips = 0.;
     opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = placed ? 1. : m_s_amips;
+    opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
     // The engine's veto compares AMIPS^3 alone, and a front vertex must be free to worsen its
@@ -184,15 +183,16 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 
 bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
 {
-    // The front's path with the repulsion term in place of the face terms: the term arrives
-    // through smoothing_extra_energy() (repulsion_energy()), AMIPS at offset_amips_weight, no
-    // engine veto. A repulsion vertex is never envelope-held (repulsion_smoothing() leaves those
-    // to TetWild's rule), so the solve has no envelope term and no containment check.
+    // The front's path with the repulsion term in place of the face terms: the whole objective
+    // arrives through smoothing_extra_energy() -- w AMIPS^3 over the ring and repulsion_energy()
+    // -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own; no engine veto.
+    // A repulsion vertex is never envelope-held (repulsion_smoothing() leaves those to TetWild's
+    // rule), so the solve has no envelope term and no containment check.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_offset_params.offset_amips_weight;
+    opts.w_amips = 0.;
     opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = 1.;
+    opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
     opts.quality_veto = false;

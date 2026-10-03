@@ -858,6 +858,64 @@ bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
     return true;
 }
 
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
+    const size_t vid) const
+{
+    // See the declaration. The cells exactly as the shared smoother assembles them for its own
+    // AMIPS term (smooth_vertex_3d()): the moving vertex first, orientation preserved.
+    std::vector<std::array<double, 12>> cells;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        const auto vs = wmtk::orient_preserve_tet_reorder(oriented_tet_vids(tid), vid);
+        std::array<double, 12> c;
+        for (int k = 0; k < 4; ++k) {
+            for (int j = 0; j < 3; ++j) c[size_t(k * 3 + j)] = m_vertex_attribute[vs[k]].m_posf[j];
+        }
+        cells.push_back(c);
+    }
+    return std::make_shared<CubedAMIPSEnergy3D>(
+        std::move(cells),
+        m_offset_params.offset_amips_weight);
+}
+
+bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
+{
+    // See the declaration. TetOptimizerMesh::smooth_after()'s options, two changes: the AMIPS
+    // part comes from smoothing_extra_energy() (w_amips 0: the smoother adds none of its own), and
+    // the engine's AMIPS^3 veto is replaced by the same veto on tet_energy() -- same key, and the
+    // engine's scope, which includes vertices on a surface (quality_veto_on_surface is true).
+    const size_t vid = t.vid(*this);
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = 0.;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = false;
+    opts.smoothing_mode = m_params.smoothing_mode == "exact"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+                              : optimization::SmoothVertexOptions::SmoothingMode::Projected;
+    opts.project_line_search_steps = m_params.project_line_search_steps;
+    opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    opts.quality_veto = false;
+    const bool veto = m_params.smooth_quality_veto;
+    const std::vector<size_t> ring = get_one_ring_tids_for_vertex(vid);
+    const double before = veto ? max_tet_energy(ring) : 0.;
+    if (!optimization::smooth_vertex_3d(
+            *this,
+            t,
+            opts,
+            m_solver.local(),
+            &m_smooth_rejects,
+            &m_newton)) {
+        return false;
+    }
+    if (veto && !(max_tet_energy(ring) <= before)) { // a NaN refuses; a tie passes
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return false;
+    }
+    return true;
+}
+
 void TopoOffsetTetMesh::release_deformable_regions()
 {
     // deform_others: from here on the only region-class envelopes are the domain wall and the
@@ -1631,13 +1689,13 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // front vertex must be able to worsen its ring's shape on the way to the level set but not
     // the energy, which charges both (see smooth_front_vertex()). A front vertex reaches
     // here only outside the final pass: smooth_before() refuses it while m_freeze_front is set.
-    // Every other vertex is TetWild's smooth_after() unchanged.
+    // Every other vertex minimises the same energy, with O 0 (smooth_nonfront_vertex()).
     if (ve.m_is_on_offset) {
         const bool ok = smooth_front_vertex(t);
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
-    return TetOptimizerMesh::smooth_after(t);
+    return smooth_nonfront_vertex(t);
 }
 
 Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
