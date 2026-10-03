@@ -458,17 +458,25 @@ OffsetEnergy<DIM>::OffsetEnergy(
     const std::shared_ptr<const OffsetPotential<DIM>>& potential,
     const double weight,
     const bool gauss_newton,
-    const bool distance_residual)
+    const bool distance_residual,
+    const bool one_sided)
     : m_potential(potential)
     , m_weight(weight)
     , m_gauss_newton(gauss_newton)
     , m_distance_residual(distance_residual)
+    , m_one_sided(one_sided)
 {}
 
 
 template <int DIM>
 void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
 {
+    // one_sided: nothing beyond the level set (see the constructor).
+    if (m_one_sided && !m_potential->is_inside_offset(p)) {
+        r = 0.;
+        dr.setZero();
+        return;
+    }
     const double c = std::max(m_potential->target_level(), 1e-300);
     if (m_distance_residual && !m_potential->is_euclidean()) {
         // The monotone length (Phi - c)/grad_ref in units of delta: exact at the level set,

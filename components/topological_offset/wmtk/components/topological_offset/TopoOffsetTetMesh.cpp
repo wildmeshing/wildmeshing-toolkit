@@ -1260,6 +1260,9 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("simplicial_embedding");
     }
 
+    // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
+    repulsion_smoothing();
+
     // initialize offset
     logger().info("Initializing offset...");
     // marching_tets() chooses the placement itself (construction_mode) and leaves the split mode
@@ -1433,6 +1436,137 @@ void TopoOffsetTetMesh::simplicial_embedding()
         }
     }
     logger().info("\tEdges split: {}", edges_to_split.size());
+}
+
+void TopoOffsetTetMesh::repulsion_smoothing()
+{
+    // The march traces every marched edge to target_distance only if every outer end is farther
+    // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
+    // half that distance and the loop has to carry the front out. These passes push the outer
+    // ends out first. Each one that no envelope holds is smoothed against w AMIPS of its ring
+    // plus O(v) = (max(0, 2 delta - d(v)) / front_conv)^2 (repulsion_energy()): one-sided, so
+    // an outer end already beyond 2 delta is left to AMIPS, and 2 delta so that the march at
+    // delta splits each edge with room to spare -- the fallback's "half the maximum marchable
+    // distance" run backwards. Every other vertex is smoothed as in the loop. The passes stop
+    // once every outer end is beyond delta + front_conv, outside the tolerance band.
+    const int n_passes = m_offset_params.repulsion_smoothing_passes;
+    if (n_passes <= 0) return;
+    const double delta = m_offset_params.target_distance;
+    const double stop = delta + m_offset_params.front_conv;
+
+    // The outer ends exactly as marching_tets() picks its edges: the two ends differ in "label
+    // 0". A smoothing pass changes no label and no adjacency, so the set holds for every pass.
+    std::vector<size_t> outer;
+    {
+        std::vector<char> seen(vert_capacity(), 0);
+        for (const Tuple& e : get_edges()) {
+            const size_t v1 = e.vid(*this);
+            const size_t v2 = e.switch_vertex(*this).vid(*this);
+            if ((m_vertex_extra[v1].label == 0) == (m_vertex_extra[v2].label == 0)) continue;
+            const size_t v_out = m_vertex_extra[v1].label == 0 ? v1 : v2;
+            if (!seen[v_out]) {
+                seen[v_out] = 1;
+                outer.push_back(v_out);
+            }
+        }
+    }
+    if (outer.empty()) {
+        logger().info("\t[repulsion] no edge to march, no pass");
+        return;
+    }
+    // An outer end an envelope holds (a region boundary, the domain wall) keeps TetWild's rule,
+    // as a front vertex an envelope holds carries no offset term.
+    m_is_repulsion_vertex.assign(vert_capacity(), 0);
+    size_t n_held = 0;
+    for (const size_t v : outer) {
+        if (vertex_boundary_mask(v) != 0) {
+            ++n_held;
+            continue;
+        }
+        m_is_repulsion_vertex[v] = 1;
+    }
+    // The march's own distance (the same input-complex arrays as m_input_complex_bvh), at level
+    // 2 delta.
+    m_repulsion_potential = std::make_shared<EuclideanOffsetPotential3D>(
+        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, 2. * delta),
+        2. * delta);
+
+    // Logs the state and says whether every outer end is beyond delta + front_conv. AMIPS is
+    // the cube root of the stored AMIPS^3.
+    const auto report = [&](const std::string& when) {
+        double d_min = std::numeric_limits<double>::infinity();
+        size_t n_stop = 0, n_delta = 0, n_2delta = 0;
+        double ring_max = 0.;
+        for (const size_t v : outer) {
+            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
+            d_min = std::min(d_min, d);
+            if (d <= stop) ++n_stop;
+            if (d <= delta) ++n_delta;
+            if (d < 2. * delta) ++n_2delta;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
+                ring_max = std::max(ring_max, get_quality(tuple_from_tet(tid)));
+            }
+        }
+        double mesh_max = 0.;
+        for (const Tuple& t : get_tets()) mesh_max = std::max(mesh_max, get_quality(t));
+        logger().info(
+            "\t[repulsion] {}: maximum marchable distance {:.6g} ({:.4g}x target_distance) | "
+            "outer ends {} ({} held by an envelope): within delta + front_conv {}, within delta "
+            "{}, below 2 delta {} | max AMIPS around them {:.6g}, whole mesh {:.6g}",
+            when,
+            d_min,
+            d_min / delta,
+            outer.size(),
+            n_held,
+            n_stop,
+            n_delta,
+            n_2delta,
+            std::cbrt(ring_max),
+            std::cbrt(mesh_max));
+        return n_stop == 0;
+    };
+
+    logger().info(
+        "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
+        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
+        "most {} pass(es)",
+        outer.size() - n_held,
+        2. * delta,
+        stop,
+        n_passes);
+    bool done = report("before");
+    // The engine's per-pass frames are the loop's numbered series; these passes write their own.
+    // m_params and m_offset_params are one object, so the flag is read before it is switched off.
+    const bool frames = m_params.debug_output;
+    m_params.debug_output = false;
+    int k = 0;
+    while (!done && k < n_passes) {
+        ++k;
+        smooth_all_vertices(1);
+        logger().info(
+            "\t[repulsion] pass {}: newton, repulsion: {} | veto: fired {} of {}",
+            k,
+            m_newton_repulsion.to_string(),
+            m_repulsion_veto_fired.exchange(0),
+            m_repulsion_veto_asked.exchange(0));
+        m_newton_repulsion.reset();
+        done = report(fmt::format("after pass {}", k));
+        if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
+    }
+    m_params.debug_output = frames;
+    if (done) {
+        logger().info(
+            "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+            "pass(es)",
+            k);
+    } else {
+        logger().info(
+            "\t[repulsion] {} pass(es), the cap: some outer end is still within target_distance "
+            "+ front_conv",
+            k);
+    }
+    m_repulsion_potential.reset();
+    m_is_repulsion_vertex.clear();
 }
 
 void TopoOffsetTetMesh::marching_tets()

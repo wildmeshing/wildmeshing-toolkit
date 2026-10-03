@@ -182,6 +182,47 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     return solve_3d();
 }
 
+bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
+{
+    // The front's path with the repulsion term in place of the face terms: the term arrives
+    // through smoothing_extra_energy() (repulsion_energy()), AMIPS at offset_amips_weight, no
+    // engine veto. A repulsion vertex is never envelope-held (repulsion_smoothing() leaves those
+    // to TetWild's rule), so the solve has no envelope term and no containment check.
+    const size_t vid = t.vid(*this);
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_offset_params.offset_amips_weight;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = 1.;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = false;
+    opts.quality_veto = false;
+    auto& solver = m_solver.local();
+    smoothing_solver();
+    // The front veto's rule with the vertex's own term: every ring cell contains vid, so each
+    // carries O(v), as a band cell carries its front face's term; the max over the ring of
+    // w AMIPS^3 + O(v) may not rise (a tie passes). Read before the solve and after it; refused,
+    // TetMesh::smooth_vertex() rolls the move back.
+    const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
+    const bool veto = m_offset_params.offset_front_smooth_veto;
+    const auto own_term = [&]() {
+        Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
+        return repulsion_energy()->value(x);
+    };
+    const double before = veto ? max_tet_energy(ring) + own_term() : 0.;
+    optimization::NewtonCounters one;
+    const bool ok = optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects, &one);
+    if (one.solves() > 0) m_newton_repulsion.record(*solver, one.threw.load() > 0);
+    if (!ok) return false;
+    if (veto) ++m_repulsion_veto_asked;
+    if (veto && !(max_tet_energy(ring) + own_term() <= before)) { // a NaN refuses
+        ++m_repulsion_veto_fired;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return false;
+    }
+    return true;
+}
+
 double TopoOffsetTetMesh::front_move_alignment(const size_t vid) const
 {
     // |cos| between the direction the placement is allowed to move the vertex in and the field

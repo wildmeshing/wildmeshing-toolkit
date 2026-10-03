@@ -438,11 +438,18 @@ public:
     /// of the value ratio (Phi - c)/c, which for the smooth field is a barrier value and not a
     /// length, and pulls far harder where two fronts are pressed together. Same level set and same
     /// root either way; only the charge changes. Both dimensions' front placement passes true.
+    ///
+    /// one_sided charges only points on the input's side of the level set
+    /// (is_inside_offset()): beyond it the term and its derivatives are zero, so the term pushes a
+    /// vertex out to the level set and never pulls one in. C^1 at the level set, where the
+    /// residual is zero from both sides. The repulsion passes before the march use it
+    /// (TopoOffsetTetMesh::repulsion_smoothing()).
     OffsetEnergy(
         const std::shared_ptr<const OffsetPotential<DIM>>& potential,
         double weight = 1.,
         bool gauss_newton = true,
-        bool distance_residual = false);
+        bool distance_residual = false,
+        bool one_sided = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -459,6 +466,7 @@ private:
     double m_weight;
     bool m_gauss_newton;
     bool m_distance_residual;
+    bool m_one_sided;
     /// r and its gradient under either residual (see the constructor).
     void residual(const VecD& p, double& r, VecD& dr) const;
 };

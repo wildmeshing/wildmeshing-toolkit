@@ -1099,6 +1099,31 @@ public:
     /// A refusal here is expected, not a defect: the solve lowers the SUM of the ring's energy
     /// and the veto bounds its MAX, and a step can lower the sum while raising the worst cell.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
+    /// The repulsion passes (repulsion_smoothing()), set only while they run: the Euclidean
+    /// field at level 2 x target_distance, and which vertices carry the repulsion term (indexed by
+    /// vid; smoothing adds no vertex). Null / empty otherwise, so every other path is untouched.
+    std::shared_ptr<const OffsetPotential3D> m_repulsion_potential;
+    std::vector<char> m_is_repulsion_vertex;
+    /// Per repulsion pass, as m_newton_front and the front veto counters are per loop pass.
+    optimization::NewtonCounters m_newton_repulsion;
+    std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
+    bool is_repulsion_vertex(const size_t vid) const
+    {
+        return m_repulsion_potential && vid < m_is_repulsion_vertex.size() &&
+               m_is_repulsion_vertex[vid] != 0;
+    }
+    /// O(v) = (max(0, 2 delta - d(v)) / front_conv)^2: the Euclidean residual against level
+    /// 2 delta is (d - 2 delta) / (2 delta), so the weight (2 delta / front_conv)^2 =
+    /// 4 offset_term_weight() puts it in units of the tolerance, as the front's terms are.
+    std::shared_ptr<OffsetEnergy3D> repulsion_energy() const
+    {
+        return std::make_shared<OffsetEnergy3D>(
+            m_repulsion_potential,
+            4. * offset_term_weight(),
+            true,
+            true,
+            /*one_sided=*/true);
+    }
     /// Diagnostic (2026-09-28, Uday): where the front solves stop. Per pass, histograms of the
     /// final gradient norm of each front solve (log10 bins, -14..+7) and of its ratio to the
     /// solve's first gradient norm (log10 bins, -14..+1), read from polysolve's Criteria after
@@ -1446,6 +1471,13 @@ public:
      * FrontSmooth3d.cpp.
      */
     bool smooth_front_vertex(const Tuple& t);
+    /**
+     * @brief A repulsion vertex in the passes before the march (repulsion_smoothing()): the
+     * shared smoother at the front's options, against w AMIPS of its ring plus its own term
+     * repulsion_energy(); under offset_front_smooth_veto, the max over its ring of w AMIPS^3 +
+     * that term may not rise. See FrontSmooth3d.cpp.
+     */
+    bool smooth_repulsion_vertex(const Tuple& t);
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
@@ -1551,6 +1583,8 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
+        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
+        if (is_repulsion_vertex(vid)) return repulsion_energy();
         std::shared_ptr<polysolve::nonlinear::Problem> front;
         if (vertex_carries_offset_term(vid)) {
             front = front_energy(vid, potential_ptr_for(vid));
@@ -2203,6 +2237,11 @@ public:
     /// still touching a complex frontier vertex (the split-off halves) becomes the band
     /// (label 2).
     void marching_tets();
+
+    /// repulsion_smoothing_passes (see the spec): between the simplicial embedding and
+    /// marching_tets(), smoothing passes that push the outer ends of the marched edges out to
+    /// 2 x target_distance, stopping once every outer end is beyond target_distance + front_conv.
+    void repulsion_smoothing();
 
     //// simplicial embedding stuff
     bool is_simplicially_embedded() const;

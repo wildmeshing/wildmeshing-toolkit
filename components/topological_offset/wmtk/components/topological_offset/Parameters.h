@@ -172,6 +172,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// 3D only, EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1
     /// (the default) uses stencil_order there too. See the spec doc.
     int init_optimize_stencil_order = -1;
+    /// 3D only. Smoothing passes before the march that push the outer ends of the marched edges
+    /// out to 2 x target_distance; they stop early once every outer end is beyond
+    /// target_distance + front_conv. 0 (the default) = off. See the spec doc and
+    /// TopoOffsetTetMesh::repulsion_smoothing().
+    int repulsion_smoothing_passes = 0;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -271,6 +276,7 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         init_optimize = json_params["init_optimize"];
         init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
+        repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

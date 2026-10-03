@@ -1605,6 +1605,9 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
         ++m_smooth_trace.interior_attempted;
     }
 
+    // The repulsion passes before the march (repulsion_smoothing()); false at every other time.
+    if (is_repulsion_vertex(vid)) return smooth_repulsion_vertex(t);
+
     // The plastic medium: a vertex whose whole ring is plastic and which no envelope holds flows
     // under rest-shape AMIPS alone (see smooth_plastic_vertex). As in 2D.
     if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
