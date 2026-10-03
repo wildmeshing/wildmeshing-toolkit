@@ -55,26 +55,46 @@ void TetOptimizerMesh::split_all_edges()
                 auto [weight, op, tup] = ele;
                 auto length = m.get_length2(tup);
                 if (length != weight) return false;
-                //
-                size_t v1_id = tup.vid(*this);
-                size_t v2_id = tup.switch_vertex(*this).vid(*this);
-                // Force-split: a worst tet's longest edge (queued by
-                // refine_sizing_around_worst when the max energy stalls) is split once
-                // regardless of the length gate, to unstick a sliver without changing the
-                // sizing field. The new midpoint is not in m_force_split_edges, so the
-                // two halves are NOT force-split again -- exactly one split per edge.
-                if (is_force_split_edge(v1_id, v2_id)) {
-                    return true;
+                return split_edge_is_due(tup);
+            };
+            // Longest-edge order. The serial pass pops the longest edge first, so by the time it
+            // reaches an edge, every longer due edge of the same tets has been tried: split, or
+            // refused. The parallel pass loses that order: an edge that cannot lock its ring is
+            // set aside, and the thread goes on to shorter edges, among them edges of the same
+            // tets, which are then bisected off their longest edge. So a split waits while a
+            // longer due edge of one of its tets is still queued -- not yet tried, and not
+            // dropped. A refused edge is no longer queued, so nothing waits on it, exactly as in
+            // the serial pass; a serial run never waits at all (see ExecutePass::must_wait).
+            //
+            // Measured on the 14 TetWild challenging models at 10 threads, one run each: without
+            // the wait, 1,061 to 6,935 splits per model were committed while a longer due edge of
+            // the same tets was still queued (0 in every serial pass), and one split pass raised
+            // the max energy up to 23x (101955; serially at most 1.8x). With it: no such split,
+            // at most 1.8x. Serial output is byte-identical with and without the wait on all 30
+            // challenging models.
+            const auto edge_key = [&](const Tuple& e) {
+                return wmtk::edge_queue_key(e.vid(*this), e.switch_vertex(*this).vid(*this));
+            };
+            executor.queue_key = [&](const auto&, const auto&, const Tuple& e) -> uint64_t {
+                return split_edge_is_due(e) ? edge_key(e) : 0;
+            };
+            executor.must_wait = [&](const auto&, const auto&, const Tuple& e) {
+                const double l2 = get_length2(e);
+                for (const Tuple& t : get_incident_tets_for_edge(e)) {
+                    const size_t tid = t.tid(*this);
+                    for (int j = 0; j < 6; ++j) {
+                        const Tuple f = tuple_from_edge(tid, j);
+                        if (get_length2(f) > l2 && split_edge_is_due(f) &&
+                            executor.is_queued(edge_key(f))) {
+                            return true;
+                        }
+                    }
                 }
-                double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                       m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                      2;
-                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                    return false;
-                }
-                return true;
+                return false;
             };
             wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            m_split_order_waits = executor.waits();
+            m_split_order_wait_defects = executor.wait_defects();
         });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
@@ -87,8 +107,35 @@ void TetOptimizerMesh::split_all_edges()
             n,
             m_params.split_high_valence_threshold);
     }
+    if (m_split_order_waits > 0) {
+        wmtk::logger().info(
+            "[longest-edge order] {} splits set aside to wait for a longer queued edge",
+            m_split_order_waits);
+    }
+    if (m_split_order_wait_defects > 0) {
+        wmtk::logger().warn(
+            "[longest-edge order] {} splits still had a longer queued edge in a serial run, and "
+            "were refused",
+            m_split_order_wait_defects);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
+}
+
+bool TetOptimizerMesh::split_edge_is_due(const Tuple& e) const
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+    // Force-split: a worst tet's longest edge (queued by refine_sizing_around_worst when the max
+    // energy stalls) is split once regardless of the length gate, to unstick a sliver without
+    // changing the sizing field. The new midpoint is not in m_force_split_edges, so the two
+    // halves are NOT force-split again -- exactly one split per edge.
+    if (is_force_split_edge(v1_id, v2_id)) {
+        return true;
+    }
+    const double sizing_ratio =
+        (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
+    return !(get_length2(e) < m_params.splitting_l2 * sizing_ratio * sizing_ratio);
 }
 
 bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
