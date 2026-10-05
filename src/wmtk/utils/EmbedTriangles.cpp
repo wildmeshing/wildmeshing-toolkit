@@ -9,7 +9,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <VolumeRemesher/embed.h>
+#include <wmtk/utils/VolumeRemesher.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

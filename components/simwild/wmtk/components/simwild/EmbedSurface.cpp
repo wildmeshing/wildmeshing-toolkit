@@ -10,7 +10,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/winding_number.h>
 // igl must be included BEFORE VolumeRemesher
-#include <VolumeRemesher/embed.h>
+#include <wmtk/utils/VolumeRemesher.hpp>
 // clang-format on
 
 #include <wmtk/utils/VectorUtils.h>

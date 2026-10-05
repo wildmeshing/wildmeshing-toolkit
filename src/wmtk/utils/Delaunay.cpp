@@ -1,7 +1,7 @@
 #include "Delaunay.hpp"
 
 // clang-format off
-#include <VolumeRemesher/delaunay3d_wrapper.h>
+#include <wmtk/utils/VolumeRemesher.hpp>
 #include <VolumeRemesher/2d/delaunay2d.h>
 // clang-format on
 
