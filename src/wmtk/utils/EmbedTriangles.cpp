@@ -36,7 +36,7 @@ void embed_triangles_in_tets(
     // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
     // tet), cells_with_faces_on_input (per-cell flag) and final_tets_parent_faces
     // (the parent faces bounding each tet). embedded_cells is not decoded.
-    std::vector<vol_rem::bigrational> embedded_vertices;
+    std::vector<NFG::bigrational> embedded_vertices;
     std::vector<uint32_t> embedded_facets;
     std::vector<uint32_t> embedded_cells;
     std::vector<uint32_t> embedded_facets_on_input;

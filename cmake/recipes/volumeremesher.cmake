@@ -8,23 +8,40 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 
 # wildmeshing/VolumeRemesher main. Carries the 2D pipeline
 # (vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to
-# insert its input segments) plus, since PR #19, an externalized exact-arithmetic
-# kernel: numerics.h and the predicate headers are now thin shims over NFG and
-# Indirect_Predicates, fetched and pinned by VolumeRemesher itself. Those upstream
-# headers live in the global namespace; the shims re-export the public types into
-# `vol_rem` with using-declarations, so the include paths and the API this project
-# depends on are unchanged. Note the build now fetches two more repositories.
+# insert its input segments) and fetches and pins its exact-arithmetic and Delaunay
+# dependencies itself: NFG (number types), Indirect_Predicates (predicates) and, since
+# PR #26, Delaunay3D (the 3D tetrahedrization, which used to be built in).
+#
+# All three define everything inside their own namespaces -- NFG, IPs and Del3D -- and
+# VolumeRemesher includes them unwrapped, so the number type its API returns is
+# `NFG::bigrational` and its Delaunay mesh is `vol_rem::TetMesh`, a typedef for
+# `Del3D::TetMesh_t<basicVec3d>` (VolumeRemesher/delaunay3d_wrapper.h). fast-envelope
+# fetches NFG and Indirect_Predicates under the same names; FetchContent keeps the first
+# declaration, which is VolumeRemesher's, so the two pins must stay identical (see
+# fenvelope.cmake).
 #
 # Exact-arithmetic backend: VOLUMEREMESHER_WITH_GMP defaults to OFF, so
-# `vol_rem::bigrational` is upstream's built-in bignum rather than mpq_class and
+# `NFG::bigrational` is upstream's built-in bignum rather than mpq_class and
 # USE_GNU_GMP_CLASSES is not defined. That selects the `init_from_bin(get_str())`
 # branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
 # init_from_bin parses.
 #
-# Pinned at main. The previous pin (64c52aa5) is this one's first parent; the only change
-# between them is VolumeRemesher PR #25, which stores cached orient3D results in a
-# `signed char` rather than a `char`. That is a correctness fix for Linux on arm64, where
+# Pinned at main, 75a70dc. Since the previous pin (609e32c4):
+#
+#   - PR #26 replaced the built-in 3D Delaunay with Delaunay3D. It produces a different,
+#     equally valid tetrahedrization, so every 3D output moves -- tetwild and simwild here,
+#     and all 28 of VolumeRemesher's own 3D reference hashes. The 2D pipeline has its own
+#     kernel and is unaffected. `vertex_t::original_index` is gone: Delaunay3D does not
+#     permute the vertices it is given (src/wmtk/utils/Delaunay.cpp).
+#   - NFG, Indirect_Predicates and Delaunay3D moved into namespaces, and
+#     include/VolumeRemesher/{numerics,implicit_point,indirect_predicates}.h -- the shims
+#     that wrapped them in vol_rem -- were deleted.
+#   - Indirect_Predicates is back on MarcoAttene upstream: the fix the wildmeshing fork
+#     carried is upstream #15, merged.
+#
+# Before that (64c52aa5 -> 609e32c4) came VolumeRemesher PR #25, which stores cached
+# orient3D results in a `signed char` rather than a `char`. That is a correctness fix for Linux on arm64, where
 # `char` is unsigned (AAPCS64) and a cached -1 read back as 255: every constraint was then
 # judged not to split its cell and the input surface was silently never embedded. It has no
 # effect on x86-64 or on macOS, where `char` is already signed.
@@ -38,7 +55,7 @@ include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 609e32c43a52336f087c608ce5f1bd73b41e5845
+    GIT_TAG 75a70dc79a13a5de41369ce899134974665cd4b5
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

@@ -11,7 +11,6 @@
 #include <igl/winding_number.h>
 // igl must be included BEFORE VolumeRemesher
 #include <VolumeRemesher/embed.h>
-#include <VolumeRemesher/numerics.h>
 // clang-format on
 
 #include <wmtk/utils/VectorUtils.h>
