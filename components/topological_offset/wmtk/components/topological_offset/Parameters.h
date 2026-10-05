@@ -36,7 +36,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
-    // Half-width of the envelope that contains every tag-region boundary during optimization.
+    // Half-width of the envelope that holds the held surfaces (3D: the input complex boundary and
+    // the domain wall, plus every region boundary when deform_others is false; see the spec doc).
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
@@ -92,8 +93,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// Other input regions (no input-complex simplex, no wall contact) deform under smoothing
-    /// against their rest shape instead of being envelope-held. See the spec doc.
+    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
+    /// complex boundary and the domain wall are envelope-held. See the spec doc.
     bool deform_others = true;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
@@ -172,9 +173,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
     /// frozen-front finishing pass.
     int max_iterations;
-    // The operation passes' offset envelope half-width: the leash the front is kept inside while
-    // the operation passes run, the same tube every turn, rebuilt after every smoothing pass; see
-    // rebuild_offset_envelope(). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
+    // final pass, built once before it (3D: build_offset_envelope(); 2D:
+    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
     // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
     // tying it to target_distance made every change of the offset distance a silent change of the
     // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).

@@ -22,7 +22,6 @@
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
-#include "TagEnvelopes.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -57,16 +56,6 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
-
-    /**
-     * @brief Which tag boundaries this vertex lies on -- one bit per input tag, ambient included.
-     * See TopoOffsetTetMesh::m_tag_envelopes for what the bits dispatch to.
-     *
-     * Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the
-     * operations: a split's new vertex takes the AND of its endpoints (it lies on a boundary only
-     * if the whole edge did), a collapse's survivor the OR (it carries both vertices' geometry).
-     */
-    uint64_t m_boundary_mask = 0;
 
     /// Which split pass created this vertex, from wmtk::TetOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
@@ -104,7 +93,7 @@ public:
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
     /**
      * Rest shape (deform_others): the tet's corners when it last changed topologically, in the
-     * oriented order. Stamped for every deformable cell at release and re-stamped by the
+     * oriented order. Stamped for every plastic cell at optimize_offset() and re-stamped by the
      * operation after-hooks for every cell an accepted split / collapse / swap changed, never by
      * smoothing -- a child left on its parent's rest reads det F ~ 1/2 and fights to regrow.
      */
@@ -167,8 +156,7 @@ public:
      * representing the complex are later remeshed. Rebuilding from the live mesh would redefine
      * the offset distance in terms of a surface the optimizer had just moved.
      *
-     * Containment is not its job -- the per-tag region envelopes (m_tag_envelopes) hold the
-     * complex in place.
+     * Containment is not its job -- m_envelope holds the complex's boundary in place.
      */
     std::shared_ptr<SimplicialComplexBVH> m_input_complex_bvh;
 
@@ -256,106 +244,48 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief One containment envelope per input tag, ambient included.
+     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): a SampleEnvelope of half-width
+     * envelope_size around every HELD face (face_is_held()), built once by build_envelopes()
+     * before anything moves -- after the simplicial embedding, before the repulsion and the
+     * march -- and never rebuilt: what it holds does not move. The offset surface is held by
+     * nothing in the loop; only the frozen-front final pass holds it, to m_offset_envelope.
      *
-     * E_t is a tube of half-width m_envelope_eps around region t's boundary faces as the input
-     * mesh carried them, built in init_surfaces_and_boundaries() before offset construction: the
-     * band's tags replace a tet's own, so an envelope built later would be a tube around a
-     * surface truncated at the band. A simplex on several boundaries is held by the intersection
-     * of its tags' tubes (envelope_for_mask()), which pins junction curves and points.
-     *
-     * m_envelope (the base's pointer) survives as a UnionEnvelope over these members, purely so
-     * the shared engine's direct uses of it keep union semantics.
+     * Which faces are held, asked live of the mesh (the operations carry the cell tags and
+     * labels it reads), never stored:
+     * - a domain-wall face (no opposite tet), always;
+     * - deform_others false: every other tracked face that is not the offset surface, i.e.
+     *   every region boundary, the input complex's included;
+     * - deform_others true: the input complex's boundary only (face_is_complex_boundary()).
+     *   The other regions' boundaries stay tracked faces -- the operations preserve their
+     *   topology -- but no envelope holds them: they deform with the plastic medium.
+     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is
+     * kept within eps of their union, not pinned to the junction curve.
      */
-    std::map<int64_t, std::shared_ptr<SampleEnvelope>> m_tag_envelopes;
-
-    /// Input tag id -> bit position in VertexExtra::m_boundary_mask. Assigned in
-    /// init_from_image() once the tag maps are complete; at most 64 input tags.
-    std::map<int64_t, int> m_tag_bit;
-
-    /// Memoized IntersectionEnvelope per multi-bit mask. Lazily built under the mutex because
-    /// the queries that need them run concurrently under kPartition.
-    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_isect_cache;
-    mutable std::mutex m_isect_mutex;
-
-    /**
-     * @brief Memoized "region tubes AND the offset envelope", keyed by the region mask.
-     *
-     * Separate from m_isect_cache because the members differ in lifetime: the tag envelopes live
-     * for the whole run, m_offset_envelope is built for the final pass.
-     * rebuild_offset_envelope() clears this and must keep doing so. Guarded by m_isect_mutex.
-     */
-    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_offset_isect_cache;
-
-    /**
-     * @brief The containment a simplex with this region mask, on/off the offset surface, must
-     * satisfy -- the intersection of everything that holds it, or null if nothing does.
-     *
-     * The single place the two containment families are composed. `region_mask` dispatches
-     * through envelope_for_mask(); `on_offset` adds m_offset_envelope, in the frozen-front final
-     * pass only. Every operation's containment check reaches this through
-     * surface_envelope_for_face(), so in the final pass split, collapse and swap hold the offset
-     * surface to its tube; in the loop they do not. The smoother asks with
-     * `on_offset` false (smoothing_containment_envelope()): placing the front is what moves the
-     * offset surface, and a tube around where it currently sits would cap how far it can travel.
-     */
-    std::shared_ptr<SampleEnvelope> containment_for(uint64_t region_mask, bool on_offset) const;
+    bool face_is_held(const Tuple& f) const;
+    /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
+    /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
+    bool vertex_is_held(size_t vid) const;
+    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
+    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
+    bool face_is_complex_boundary(const Tuple& f) const;
+    /// Build m_envelope from the held faces. Called once, from construct_offset(), after the
+    /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
+    /// precede the march, whose band replaces the tags of the cells it covers.
+    void build_envelopes();
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
     /**
-     * @brief Which boundaries the region-class envelopes hold, and how they are built.
-     *
-     * PerTag (deform_others false): one exact tube per input tag around that tag's boundary
-     * triangles, the domain wall in the tags of its wall tets. A vertex carries the bit of every
-     * tube it lies on and is contained in their intersection, so every region boundary -- the
-     * input complex and the wall included -- is held.
-     *
-     * WallComplex (deform_others true): exactly two tubes, the domain wall and the boundary of
-     * the input complex (any dimension, any manifoldness: it is a set of triangles), under the
-     * pseudo-tags m_wall_tag / m_complex_tag. Every other region boundary carries no bit and is
-     * held by nothing; the medium around it is plastic, see cell_is_plastic().
-     *
-     * Either way build_boundary_envelopes() derives the masks and tubes from the mesh as it
-     * stands when called: at load (PerTag, before the complex is labelled), when deform_others
-     * switches the setup at construction, and fresh at the start of the final pass. The offset
-     * tube is separate and unchanged.
-     */
-    enum class EnvelopeSetup { PerTag, WallComplex };
-    EnvelopeSetup envelope_setup() const
-    {
-        return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
-    }
-    static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
-    static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary
-    /// The name a tag or pseudo-tag prints under.
-    std::string envelope_key_name(int64_t tag) const;
-    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
-    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
-    bool face_is_complex_boundary(const Tuple& f) const;
-    /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
-    /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
-    /// deform_others switches it at
-    /// construction, envelope_setup() fresh at the final pass. The tracked-face flags are left
-    /// alone: they are the topology the operations maintain. `when` labels the log line.
-    void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
-
-    /**
      * @brief The tube the offset surface may not leave during the frozen-front final pass, of
-     * half-width offset_envelope, built from the surface as the loop left it just before that
-     * pass (containment_for() holds the final pass's operations to it). Null until then: the
-     * loop holds the offset surface to no envelope. Unlike m_tag_envelopes, which must never be
-     * rebuilt.
+     * half-width offset_envelope, built by build_offset_envelope() from the surface as the loop
+     * left it, just before that pass. Null until then: the loop holds the offset surface to no
+     * envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
+     * check), so it is one triangle set with no junctions: a face is either on it or not, and
+     * surface_envelope_for_face() answers an offset face with this envelope alone.
      */
     std::shared_ptr<SampleEnvelope> m_offset_envelope;
-
-    /// Rebuild m_offset_envelope from the current offset-surface faces, and drop the
-    /// intersections memoized against the old one; also refresh_released_envelope().
-    void rebuild_offset_envelope();
-    /// Rebuild deform_others' released-boundary tube now, between passes (see
-    /// released_envelope(), which never rebuilds mid-operation).
-    void refresh_released_envelope();
+    void build_offset_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
     /// no placement satisfies. Called at construction.
@@ -408,8 +338,8 @@ public:
      *
      * OFFSET is the surface the optimization places at target_distance. Everything else -- the
      * input complex, another body's boundary, the domain wall -- keeps the primary class 0 and
-     * is envelope-checked by the shared operations exactly as in tetwild and simwild. Class 0 is
-     * not split further -- the boundary mask says which tubes hold a simplex, per tag.
+     * is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is
+     * held (face_is_held()).
      */
     static constexpr int INPUT_SURFACE_CLASS = 0;
     static constexpr int OFFSET_SURFACE_CLASS = 1;
@@ -923,7 +853,7 @@ public:
 
     /**
      * @brief Which tag the tets a swap creates should carry, and the topology half of the
-     * surface-flip refusal (class match, mask match). The geometric half is the shared swap's
+     * surface-flip refusal (class match, same boundary). The geometric half is the shared swap's
      * containment check. Both also cache the energy rule's before-half (SwapEnergyBefore) and
      * fill the record candidate cells are scored from (SwapRecord). See Optimize3d.cpp.
      */
@@ -957,9 +887,9 @@ public:
      * @brief Identification only -- no operation refuses the domain wall through these.
      *
      * The wall is a tracked region boundary like every other one: init_surfaces_and_boundaries()
-     * tags its faces m_is_surface_fs, masks its vertices with ambient's bit and puts its faces in
-     * ambient's envelope, so refinement, coarsening, flips and smoothing are governed by the
-     * same containment, merge rules and link conditions that govern the input complex. As in 2D.
+     * tags its faces m_is_surface_fs and face_is_held() always holds them, so refinement,
+     * coarsening, flips and smoothing are governed by the same containment, merge rules and link
+     * conditions that govern the input complex.
      */
     bool vertex_is_on_domain_boundary(const size_t vid) const
     {
@@ -967,13 +897,11 @@ public:
     }
 
     /**
-     * @brief Classify every region boundary, build the per-tag containment envelopes, and tag the
-     * domain wall -- once, from the input mesh, before offset construction runs.
-     *
-     * A region boundary is a face whose two incident tets carry different tag sets; it enters
-     * the bucket of every tag on exactly one side (the symmetric difference). A face with only
-     * one incident tet is the domain wall and enters its single tet's tags' buckets, which is
-     * how ambient's envelope comes to hold the box.
+     * @brief Classify every region boundary and tag the domain wall -- once, from the input mesh,
+     * before offset construction runs. A region boundary is a face whose two incident tets carry
+     * different tag sets, a sheet-group face, or a face with one incident tet (the domain wall);
+     * each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is
+     * face_is_held()'s, and the envelope is build_envelopes()'s.
      */
     void init_surfaces_and_boundaries();
 
@@ -1095,8 +1023,7 @@ public:
     /// repulsion rounds' operations.
     bool is_repulsion_vertex(const size_t vid) const
     {
-        if (!m_repulsion_potential || m_vertex_extra[vid].label != 0 ||
-            vertex_boundary_mask(vid) != 0) {
+        if (!m_repulsion_potential || m_vertex_extra[vid].label != 0 || vertex_is_held(vid)) {
             return false;
         }
         for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
@@ -1129,7 +1056,7 @@ public:
         if (!has_complex) return 0.;
         double e = 0.;
         for (const size_t v : vids) {
-            if (m_vertex_extra[v].label == 0 && vertex_boundary_mask(v) == 0) {
+            if (m_vertex_extra[v].label == 0 && !vertex_is_held(v)) {
                 e += repulsion_term_at(v);
             }
         }
@@ -1276,13 +1203,7 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
     void log_smooth_trace() const;
 
-    /// Are the tracked region boundaries actually contained by anything? The 3D twin of
-    /// log_region_edge_mask_health(): a class-0 face whose corners' masks AND to zero is held by
-    /// nothing. Called at construction and at each turn so the two can be compared.
-    void log_region_face_mask_health(const std::string& when) const;
-
-    /// Which tracked faces are outside their envelope, and by how much, per real member tube.
-    /// Diagnostic only; the 3D twin of the 2D function of the same name.
+    /// Which held faces are outside m_envelope, and by how much. Diagnostic only.
     void audit_surface_containment(const std::string& when) const;
 
     ////// wmtk::TetOptimizerMesh hooks
@@ -1294,107 +1215,22 @@ public:
         return m_vertex_extra[vid].m_is_on_region || !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
-    /// The three helpers of the per-tag envelope dispatch.
-    uint64_t tag_bits(const CellTag& tags) const
-    {
-        uint64_t bits = 0;
-        for (const int64_t t : tags) {
-            const auto it = m_tag_bit.find(t);
-            if (it != m_tag_bit.end()) bits |= (uint64_t(1) << it->second);
-        }
-        return bits;
-    }
-
-    /// The tag boundaries this vertex lies on -- the raw mask gated on the vertex still being
-    /// region geometry at all. The gate keeps the mask honest: the split's endpoint AND
-    /// over-claims on chords through the interior, and the front is built by splitting exactly
-    /// such edges.
-    uint64_t vertex_boundary_mask(const size_t vid) const
-    {
-        return vertex_is_on_region(vid) ? m_vertex_extra[vid].m_boundary_mask : uint64_t(0);
-    }
-
-    /// A face lies on a boundary only if all of it does: the AND of its corners' masks. The 3D
-    /// twin of edge_mask(), which ANDs two.
-    uint64_t face_mask(const std::array<size_t, 3>& vids) const
-    {
-        return vertex_boundary_mask(vids[0]) & vertex_boundary_mask(vids[1]) &
-               vertex_boundary_mask(vids[2]);
-    }
-
-    /// Diagnostic only: which tag boundaries the incident tets say this face lies on right now
-    /// -- the same symmetric difference init_surfaces_and_boundaries() classified by. Only
-    /// trustworthy while the tet tags are still the input's own.
-    uint64_t face_boundary_bits(const Tuple& f) const
-    {
-        const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-        if (!opp) {
-            return tag_bits(m_tet_attribute[f.tid(*this)].tag); // domain wall
-        }
-        const auto& t0 = m_tet_attribute[f.tid(*this)].tag;
-        const auto& t1 = m_tet_attribute[opp->tid(*this)].tag;
-        CellTag diff;
-        std::set_symmetric_difference(
-            t0.begin(),
-            t0.end(),
-            t1.begin(),
-            t1.end(),
-            std::inserter(diff, diff.begin()));
-        return tag_bits(diff);
-    }
-
-    /// The envelope a simplex with this boundary mask is contained in, or null. Zero bits: no
-    /// container. One bit: that tag's envelope. Several: a memoized IntersectionEnvelope, which
-    /// is containment-only and must never be returned from smoothing_energy_envelope().
-    std::shared_ptr<SampleEnvelope> envelope_for_mask(uint64_t mask) const;
-
     /**
-     * @brief Class-0 faces -- every region boundary, the input complex and the domain wall
-     * included -- carry a containment requirement, and so does the offset surface in the
-     * frozen-front final pass: m_offset_envelope holds it where the loop left it (see
-     * containment_for()).
-     *
-     * The 3D twin of surface_envelope_for_edge(), keyed on the vertices because every caller is
-     * an operation asking about a triangle it is about to create. Null means "no containment
-     * requirement", which the base handles by skipping the check.
+     * @brief The containment of a tracked face an operation has just made (the base asks only
+     * after the fact). A wall face: m_envelope, band or not -- nothing leaves the domain box.
+     * The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other
+     * tracked face: m_envelope when it is held (face_is_held()), else nothing.
      */
     std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
-        uint64_t mask = face_mask(vids);
-        bool all_offset = true;
-        for (const size_t v : vids) {
-            all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
+        const auto found = try_tuple_from_face(vids);
+        if (!found) return m_envelope; // not reached: every caller asks about an existing face
+        const Tuple& f = std::get<0>(*found);
+        if (f.switch_tetrahedron(*this) && face_is_offset_surface_live(f)) {
+            return m_freeze_front ? m_offset_envelope : nullptr;
         }
-        // The ambiguous case: all corners can be on region boundaries and on the offset surface
-        // at once. The corner-mask AND is then necessary but not sufficient for the face lying
-        // on a shared boundary; ask the face's own class, the only record that distinguishes a
-        // chord from a boundary. Reading the slot is safe here: a split child never reaches
-        // this branch, and the m_is_surface_fs guard leaves both constraints standing when a
-        // slot is illegible.
-        if (mask != 0 && all_offset) {
-            if (const auto found = try_tuple_from_face(vids)) {
-                const size_t fid = std::get<1>(*found);
-                if (m_face_attribute[fid].m_is_surface_fs) {
-                    if (face_is_offset(fid)) {
-                        mask = 0; // an offset face lies on no region boundary
-                    } else {
-                        all_offset = false; // a region face is not the offset surface
-                    }
-                }
-            }
-        }
-        const std::shared_ptr<SampleEnvelope> base = containment_for(mask, all_offset);
-        if (base || m_deform_tags.empty()) return base;
-        // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
-        // were freed so smoothing can carry the object -- which would leave the operations free
-        // to decimate and reposition it. A face the masks and the offset class do not claim, but
-        // which lies on a released boundary by its incident tets' current tags, is held to the
-        // tube around the boundary's current shape.
-        if (const auto found = try_tuple_from_face(vids)) {
-            if (face_borders_released_boundary(std::get<0>(*found))) return released_envelope();
-        }
-        return nullptr;
+        return face_is_held(f) ? m_envelope : nullptr;
     }
 
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
@@ -1462,48 +1298,15 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /**
-     * @brief The offset surface is the one tracked surface with no envelope, in either role.
-     *
-     * The pull must be a real envelope, never a composite; so a junction vertex is pulled toward
-     * its most-violated member tube instead, one real envelope per attempt, while the
-     * containment intersection below enforces the full constraint. As in 2D.
-     */
+    /// A held vertex is pulled to and contained in m_envelope -- a real SampleEnvelope, as the
+    /// pull requires. Any other vertex, the front's included, is held by nothing.
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
-            return nullptr;
-        }
-        const uint64_t mask = vertex_boundary_mask(vid);
-        if (mask == 0) {
-            return nullptr;
-        }
-        std::shared_ptr<SampleEnvelope> best;
-        double worst_d2 = -1.;
-        for (const auto& [tag, env] : m_tag_envelopes) {
-            const auto it = m_tag_bit.find(tag);
-            if (it == m_tag_bit.end() || !(mask & (uint64_t(1) << it->second))) continue;
-            if (!best) {
-                best = env;
-                if ((mask & (mask - 1)) == 0) break; // single bit: no violation contest to run
-                worst_d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
-                continue;
-            }
-            const double d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
-            if (d2 > worst_d2) {
-                worst_d2 = d2;
-                best = env;
-            }
-        }
-        return best;
+        return vertex_is_held(vid) ? m_envelope : nullptr;
     }
-
-    /// ... and it is not contained by the offset tube either: placing the front is what moves
-    /// the offset surface, so the smoother asks for the region tubes alone. The operations hold
-    /// the offset surface to its tube through surface_envelope_for_face(); see containment_for().
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
     {
-        return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
+        return vertex_is_held(vid) ? m_envelope : nullptr;
     }
 
     /**
@@ -1584,11 +1387,11 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid, const Vector3d& x)
         const;
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
-    /// frozen-front final pass, that no input envelope also pins.
+    /// frozen-front final pass, that no envelope also holds (vertex_is_held()).
     bool vertex_carries_offset_term(const size_t vid) const
     {
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
-               vertex_boundary_mask(vid) == 0;
+               !vertex_is_held(vid);
     }
     /// The AMIPS weight the shared smoother uses at vid, amips_w in smooth_vertex_3d(): 1 for a
     /// vertex it places against the offset term, whose objective is the per-tet energy's two
@@ -1608,7 +1411,7 @@ public:
     /// before the march, a repulsion vertex's term once per ring cell that carries it
     /// (repulsion_energy(), repulsion_cell_term()). The ring's other
     /// front faces do not have vid as a corner, so their terms are constants here. Under
-    /// deform_others the rest-shape AMIPS of the deformable cells in the ring is added, as before.
+    /// deform_others the rest-shape AMIPS of the plastic cells in the ring is added, as before.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
@@ -1626,34 +1429,14 @@ public:
         return sum;
     }
 
-    // ------- deform_others: other input regions deform instead of being envelope-held -------
+    // ------- deform_others: the medium outside the band deforms -------
 
-    /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
-    std::set<int64_t> m_deform_tags;
-    /// The source tags (offset_selection's tags_involved), stored at release so the ops-only
-    /// tube's face classification applies the same never-freed rule the release did.
-    std::set<int64_t> m_source_tags;
-    /// The released boundaries' ops-only tube: a SampleEnvelope around the current deformed
-    /// boundaries, consulted only by surface_envelope_for_face(). Rebuilt lazily by
-    /// released_envelope() when m_released_tube_dirty says a smoothing accept may have moved
-    /// the boundary.
-    mutable std::shared_ptr<SampleEnvelope> m_released_envelope;
-    mutable std::atomic<bool> m_released_tube_dirty{false};
-    mutable std::mutex m_released_mutex;
-    /// The current released-boundary tube, rebuilt first if dirty. Null when nothing is
-    /// released or no released-boundary face exists.
-    std::shared_ptr<SampleEnvelope> released_envelope() const;
-    /// Whether this face lies on a released region's boundary, by the incident tets' current
-    /// tag symmetric difference -- the same test the release freed vertices by.
-    bool face_borders_released_boundary(const Tuple& f) const;
-    /// Under deform_others the same set as cell_is_plastic(): every cell outside the band.
-    bool cell_is_deformable(size_t tid) const;
     /// Plastic medium: under deform_others every background cell -- ambient and the other objects
     /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
     /// resists only the increment since the group started and the medium flows instead of behaving
     /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
     /// not plastic; element quality in the medium is the operation passes' job.
-    bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
+    bool m_plastic_active = false; ///< deform_others, outside the final pass
     bool cell_is_plastic(size_t tid) const
     {
         // Everything outside the band: ambient, the other objects and the input complex's
@@ -1664,16 +1447,10 @@ public:
     void stamp_plastic_rests();
     /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else.
     bool smooth_plastic_vertex(const Tuple& t);
-    /// A band cell that is a released object's material: every non-output tag released, at
-    /// least one present.
-    bool cell_is_released_band(size_t tid) const;
     /// Stamp rest := the cell's current corner positions (oriented order). No-op for
-    /// non-deformable cells.
+    /// non-plastic cells.
     void stamp_rest_cell(size_t tid);
-    /// Drop the released tags' envelopes and stamp every deformable cell's rest. Called once
-    /// from optimize_offset() when deform_others is set.
-    void release_deformable_regions();
-    /// The rest-shape AMIPS over the deformable cells of vid's one-ring, weighted like the
+    /// The rest-shape AMIPS over the plastic cells of vid's one-ring, weighted like the
     /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the ring
     /// has none.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
@@ -2068,7 +1845,7 @@ public:
     /// envelope-held offset vertex is pinned, as is one on the domain boundary. Same rule as 2D.
     bool band_vertex_is_reachable(const size_t vid) const
     {
-        if (m_vertex_extra[vid].m_is_on_offset && vertex_boundary_mask(vid) != 0) return false;
+        if (m_vertex_extra[vid].m_is_on_offset && vertex_is_held(vid)) return false;
         return !vertex_is_on_domain_boundary(vid);
     }
 

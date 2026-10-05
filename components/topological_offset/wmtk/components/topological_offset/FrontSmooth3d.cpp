@@ -152,7 +152,6 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_smooth_rejects.quality;
             return false;
         }
-        m_released_tube_dirty.store(true, std::memory_order_release);
         if (m_offset_params.debug_crossings) {
             for (size_t k = 0; k < nb.size(); ++k) {
                 const double after = ring_measure_at(nb[k]);
@@ -308,10 +307,9 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objectiv
         }
         // A plastic ring cell brakes the front only by its increment since the group started
         // (rest-shape AMIPS on the group-start rest); judged regular it becomes a permanent
-        // brake that parks the front at an elastic equilibrium. Band cells stay regular, except
-        // a band cell that is a released object's material. As in 2D.
+        // brake that parks the front at an elastic equilibrium. Band cells stay regular.
         const TetAttributes& ta = m_tet_attribute[tid];
-        if ((cell_is_plastic(tid) || cell_is_released_band(tid)) && ta.rest_valid) {
+        if (cell_is_plastic(tid) && ta.rest_valid) {
             Eigen::Matrix3d R;
             for (int k = 1; k < 4; ++k) {
                 R.col(k - 1) = ta.rest_pos[size_t(from[k])] - ta.rest_pos[size_t(from[0])];

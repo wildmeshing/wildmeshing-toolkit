@@ -145,9 +145,6 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra();
     cache.new_v_extra.label = m_edge_attribute[e_id].label;
-    // On both boundaries only if the whole edge was: the midpoint's mask is the AND.
-    cache.new_v_extra.m_boundary_mask =
-        m_vertex_extra[cache.v1_id].m_boundary_mask & m_vertex_extra[cache.v2_id].m_boundary_mask;
 
     // split edge
     cache.split_e = m_edge_attribute[e_id];
@@ -443,13 +440,6 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
-    // Interior to the split face, so on exactly the boundaries the whole face is on: the AND of
-    // its corners. Assigned, not OR'd -- the slot may be recycled. No surface flags are derived
-    // here and none need to be: split_face() runs only from simplicial_embedding(), during
-    // construction, so the surfaces this vertex could be on do not exist yet.
-    m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
-                                           m_vertex_extra[v2_id].m_boundary_mask &
-                                           m_vertex_extra[v3_id].m_boundary_mask;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -564,10 +554,6 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
-    // Strictly interior to a tet: on no boundary at all. Assigned -- the slot may be recycled.
-    // As in split_face_after(), split_tet() runs only during construction, so there are no
-    // surface flags to derive; nothing in the optimization creates a tet-interior vertex.
-    m_vertex_extra[v_id].m_boundary_mask = 0;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
@@ -666,12 +652,6 @@ bool TopoOffsetTetMesh::split_after_cells(
     // Read by the needle diagnostics. Assigned, never OR'd: v_id may be a recycled slot whose
     // previous occupant was born long ago. See m_born_epoch.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
-    // The boundary mask follows the same AND rule: the midpoint is on a tag boundary only if the
-    // whole edge was. Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's
-    // bits. Runs before the shared split's containment check, which reads the mask through
-    // face_mask() on the two child triangles.
-    m_vertex_extra[v_id].m_boundary_mask =
-        m_vertex_extra[v1_id].m_boundary_mask & m_vertex_extra[v2_id].m_boundary_mask;
     // repulsion_rounds, before the march: the construction label, which says which vertices are
     // in the input complex and so which edges the march will split (is_marched_edge()). The AND
     // never misses a midpoint in the complex -- an edge in it has both ends in it -- and only

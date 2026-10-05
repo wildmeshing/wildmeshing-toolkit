@@ -2,7 +2,6 @@
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
-#include "TagEnvelopes.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -146,24 +145,6 @@ void TopoOffsetTetMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
-    // One mask bit per input tag, ambient included, in id order. Must be assigned here: once the
-    // maps are complete, and before init_surfaces_and_boundaries() seeds the vertex masks from
-    // the boundary faces. Tags introduced later (the band's offset tag) get no bit.
-    if (m_tag_id_to_name.size() > 62) {
-        log_and_throw_error(
-            "Per-tag boundary envelopes support at most 62 input tags (two mask bits are "
-            "reserved for the domain wall and the input complex boundary), got {}",
-            m_tag_id_to_name.size());
-    }
-    m_tag_bit.clear();
-    for (const auto& [tag_id, name] : m_tag_id_to_name) {
-        const int bit = int(m_tag_bit.size());
-        m_tag_bit[tag_id] = bit;
-    }
-    // The two reserved bits of the WallComplex setup, see EnvelopeSetup.
-    m_tag_bit[m_wall_tag] = int(m_tag_bit.size());
-    m_tag_bit[m_complex_tag] = int(m_tag_bit.size());
-
     // propagate labels to tets
     const auto& tets = get_tets();
     for (const Tuple& t : tets) {
@@ -187,9 +168,8 @@ void TopoOffsetTetMesh::init_from_image(
         set_vertex_position(v_id, V.row(v_id));
     }
 
-    // Once at load too, before the masks are seeded: init_surfaces_and_boundaries() reads
-    // on_sheet to put the sheet group's faces in its tube, and a sheet that bounds no region is
-    // held by nothing otherwise. label_input_complex() re-derives it afterwards.
+    // Once at load too: init_surfaces_and_boundaries() reads on_sheet to track the sheet group's
+    // faces. label_input_complex() re-derives it afterwards.
     classify_sheet_faces();
     init_surfaces_and_boundaries();
 }
@@ -201,8 +181,8 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
 
     // Which faces are tracked region boundaries: an interior face whose two tets carry different
     // tag sets, a face on the sheet group, or a wall face (no opposite tet: the ambient region
-    // against the unmeshed outside). These flags are topology the operations maintain. Which
-    // tube holds a face, and the vertex masks, are build_boundary_envelopes()'s.
+    // against the unmeshed outside). These flags are topology the operations maintain. Which of
+    // them an envelope holds is face_is_held()'s, and the envelope is build_envelopes()'s.
     size_t n_faces_tracked = 0;
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
@@ -226,7 +206,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
         m_vertex_attribute[v3].m_is_on_surface = true;
     }
-    if (n_faces_tracked > 0) build_boundary_envelopes("load", EnvelopeSetup::PerTag);
+    logger().info("\tTracked faces (region boundaries, sheet, domain wall): {}", n_faces_tracked);
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which plenty of
     // unit tests never call -- skip rather than index out of bounds.
@@ -267,14 +247,6 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
-std::string TopoOffsetTetMesh::envelope_key_name(const int64_t tag) const
-{
-    if (tag == m_wall_tag) return "wall";
-    if (tag == m_complex_tag) return "input_complex";
-    const auto it = m_tag_id_to_name.find(tag);
-    return it == m_tag_id_to_name.end() ? fmt::format("tag#{}", tag) : it->second;
-}
-
 bool TopoOffsetTetMesh::face_is_complex_boundary(const Tuple& f) const
 {
     const bool a = m_tet_attribute[f.tid(*this)].label == 1;
@@ -287,101 +259,67 @@ bool TopoOffsetTetMesh::face_is_complex_boundary(const Tuple& f) const
     return m_face_extra[f.fid(*this)].label == 1;
 }
 
-void TopoOffsetTetMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
+bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 {
-    m_envelope_eps = m_offset_params.envelope_size;
+    // See the declaration. The caller has a tracked face (m_is_surface_fs); the offset surface
+    // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
+    if (!f.switch_tetrahedron(*this)) return true; // the domain wall
+    if (face_is_offset_surface_live(f)) return false;
+    return !m_offset_params.deform_others || face_is_complex_boundary(f);
+}
 
-    // Fresh: every mask from the tracked faces as they stand, nothing carried over.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
-
-    std::map<int64_t, std::vector<Eigen::Vector3i>> buckets;
-    size_t n_tracked = 0, n_wall = 0, n_complex = 0, n_free = 0;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        // Region-class tracked faces only: the front has its own tube.
-        if (!m_face_attribute[fid].m_is_surface_fs || face_is_offset(fid)) continue;
-        ++n_tracked;
-        const std::optional<Tuple> t_opp = f.switch_tetrahedron(*this);
-        CellTag keys;
-        if (setup == EnvelopeSetup::WallComplex) {
-            if (!t_opp) {
-                keys.insert(m_wall_tag);
-                ++n_wall;
-            }
-            if (face_is_complex_boundary(f)) {
-                keys.insert(m_complex_tag);
-                ++n_complex;
-            }
-            if (keys.empty()) ++n_free;
-        } else {
-            // Whose boundary this face is. Interior face: every tag on exactly one side (the
-            // symmetric difference; a tag present on both sides has no boundary here). Wall
-            // face: every tag of its one tet, which is how ambient's tube comes to hold the
-            // box. The sheet group's faces are in its tube too.
-            if (m_face_extra[fid].on_sheet) keys.insert(m_sheet_tag);
-            if (t_opp) {
-                const auto& tag0 = m_tet_attribute[f.tid(*this)].tag;
-                const auto& tag1 = m_tet_attribute[t_opp->tid(*this)].tag;
-                std::set_symmetric_difference(
-                    tag0.begin(),
-                    tag0.end(),
-                    tag1.begin(),
-                    tag1.end(),
-                    std::inserter(keys, keys.begin()));
-            } else {
-                keys = m_tet_attribute[f.tid(*this)].tag;
-                ++n_wall;
-            }
-            // The band's output tags are not region boundaries: the front is the offset tube's.
-            for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
+{
+    // Most vertices are on no tracked face at all; the flag is a superset (it is never cleared),
+    // so it only short-cuts the walk.
+    if (!m_vertex_attribute[vid].m_is_on_surface) return false;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const size_t fid = f.fid(*this);
+            if (!m_face_attribute[fid].m_is_surface_fs) continue;
+            const auto vs = get_face_vids(f);
+            if (vs[0] != vid && vs[1] != vid && vs[2] != vid) continue;
+            if (face_is_held(f)) return true;
         }
-        const auto vs = get_face_vids(f);
-        const uint64_t bits = tag_bits(keys);
-        for (const size_t v : vs) m_vertex_extra[v].m_boundary_mask |= bits;
-        for (const int64_t t : keys) buckets[t].emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
+    return false;
+}
 
-    std::vector<Eigen::Vector3d> tempV(vert_capacity());
-    for (size_t i = 0; i < vert_capacity(); ++i) tempV[i] = m_vertex_attribute[i].m_posf;
-
-    m_tag_envelopes.clear();
-    {
-        std::lock_guard<std::mutex> lock(m_isect_mutex);
-        m_isect_cache.clear();
-        m_offset_isect_cache.clear();
+void TopoOffsetTetMesh::build_envelopes()
+{
+    // See m_envelope's declaration: one envelope, around every held face, built once.
+    m_envelope_eps = m_offset_params.envelope_size;
+    std::vector<Eigen::Vector3i> tris;
+    size_t n_tracked = 0, n_wall = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        ++n_tracked;
+        if (!face_is_held(f)) continue;
+        if (!f.switch_tetrahedron(*this)) ++n_wall;
+        const auto vs = get_face_vids(f);
+        tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
     const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
-    std::string per_tag_log;
-    for (const auto& [tag, bucket] : buckets) {
-        if (bucket.empty()) continue;
-        auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
-        env->init(tempV, bucket, m_envelope_eps);
-        m_tag_envelopes[tag] = env;
-        members.push_back(env);
-        per_tag_log += fmt::format(" {}:{}", envelope_key_name(tag), bucket.size());
+    if (tris.empty()) {
+        m_envelope = nullptr;
+    } else {
+        std::vector<Eigen::Vector3d> verts(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) verts[i] = m_vertex_attribute[i].m_posf;
+        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_envelope->init(verts, tris, m_envelope_eps);
     }
-    // The base's pointer survives as the union of the members -- inside any tube -- because
-    // the shared engine's direct uses of it ask exactly that question. Everything else
-    // dispatches per simplex through envelope_for_mask().
-    m_envelope = members.empty() ? nullptr : std::make_shared<UnionEnvelope>(std::move(members));
-
     logger().info(
-        "\t[envelopes @ {}] {}: {} region-boundary faces tracked ({} on the wall), eps {:.6g}, "
-        "{} |{}{}",
-        when,
-        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
+        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; deform_others {}: {}), "
+        "eps {:.6g}, {}",
+        tris.size(),
         n_tracked,
         n_wall,
+        m_offset_params.deform_others,
+        m_offset_params.deform_others ? "the input complex boundary and the wall"
+                                      : "every region boundary and the wall",
         m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)",
-        per_tag_log,
-        setup == EnvelopeSetup::WallComplex
-            ? fmt::format(
-                  " | {} on the input complex boundary, {} held by nothing (plastic)",
-                  n_complex,
-                  n_free)
-            : std::string());
+        exact_ok ? "EXACT" : "sampled (no valid eps)");
 }
 
 void TopoOffsetTetMesh::mark_input_complex_vertices()
@@ -1234,6 +1172,9 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
         write_debug_frame("simplicial_embedding");
     }
 
+    // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
+    build_envelopes();
+
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
 
@@ -1448,7 +1389,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             if (!seen[v_out]) {
                 seen[v_out] = 1;
                 outer.push_back(v_out);
-                if (vertex_boundary_mask(v_out) != 0) ++n_held;
+                if (vertex_is_held(v_out)) ++n_held;
             }
         }
     };

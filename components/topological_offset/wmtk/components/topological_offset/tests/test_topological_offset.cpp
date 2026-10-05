@@ -99,11 +99,6 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
     REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
     REQUIRE(mesh.m_vertex_extra[4].label == E1_LABEL);
-    // the split vertex's boundary mask is the AND of its edge's endpoints
-    REQUIRE(
-        mesh.m_vertex_extra[4].m_boundary_mask ==
-        (mesh.m_vertex_extra[1].m_boundary_mask & mesh.m_vertex_extra[2].m_boundary_mask));
-    REQUIRE(mesh.m_vertex_extra[4].m_boundary_mask != 0); // all faces here are wall faces
 
     // edges
     std::array<std::array<size_t, 3>, 9> edges = {
@@ -158,12 +153,12 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 }
 
 
-TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
+TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face is a wall face of its tet's tag. Asserts the per-tag init
-    // contract -- one envelope per tag with boundary faces, junction vertices carrying both
-    // bits, and multi-bit dispatch answering with an intersection composite.
+    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
+    // are HELD depends on deform_others and on the input complex, read live off the cells, and
+    // one envelope holds them all.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -175,63 +170,48 @@ TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
     std::vector<std::string> tag_names = {"a", "b"};
 
     Parameters param;
-    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the builds a real eps
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     TopoOffsetTetMesh mesh(param, 0);
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
-    const int64_t id_a = mesh.m_tag_name_to_id.at("a");
-    const int64_t id_b = mesh.m_tag_name_to_id.at("b");
-
-    // every input tag has a bit, ambient included; only tags with boundary faces get envelopes
-    REQUIRE(mesh.m_tag_bit.count(0) == 1);
-    REQUIRE(mesh.m_tag_bit.count(id_a) == 1);
-    REQUIRE(mesh.m_tag_bit.count(id_b) == 1);
-    REQUIRE(mesh.m_tag_envelopes.count(id_a) == 1);
-    REQUIRE(mesh.m_tag_envelopes.count(id_b) == 1);
-    REQUIRE(mesh.m_tag_envelopes.count(0) == 0); // no ambient tets in this mesh
-
-    const uint64_t bit_a = uint64_t(1) << mesh.m_tag_bit.at(id_a);
-    const uint64_t bit_b = uint64_t(1) << mesh.m_tag_bit.at(id_b);
-
-    // apex vertices see only their own tet's boundary; shared-face vertices see both
-    REQUIRE(mesh.m_vertex_extra[0].m_boundary_mask == bit_a);
-    REQUIRE(mesh.m_vertex_extra[4].m_boundary_mask == bit_b);
-    for (const size_t v : {size_t(1), size_t(2), size_t(3)}) {
-        REQUIRE(mesh.m_vertex_extra[v].m_boundary_mask == (bit_a | bit_b));
+    const auto face = [&](size_t a, size_t b, size_t c) {
+        return std::get<0>(mesh.tuple_from_face({{a, b, c}}));
+    };
+    for (const auto& f : mesh.get_faces()) {
+        REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // The gate: vertex_boundary_mask() is the raw mask AND'd with "is this vertex region geometry
-    // at all". Only the shared face is two-sided here, so only its vertices are m_is_on_region --
-    // the apexes must gate to 0 even though their raw mask is nonzero, or a stale mask would
-    // route geometry that has drifted off the boundary into the wrong tube.
-    REQUIRE(mesh.vertex_boundary_mask(0) == 0);
-    REQUIRE(mesh.vertex_boundary_mask(4) == 0);
-    for (const size_t v : {size_t(1), size_t(2), size_t(3)}) {
-        REQUIRE(mesh.vertex_boundary_mask(v) == (bit_a | bit_b));
-    }
-    REQUIRE(mesh.face_mask({{1, 2, 3}}) == (bit_a | bit_b));
-    REQUIRE(mesh.face_mask({{0, 1, 2}}) == 0); // an apex corner gates the whole face out
+    // deform_others false: every tracked face is held, the a/b boundary and the wall alike.
+    param.deform_others = false;
+    mesh.build_envelopes();
+    REQUIRE(mesh.m_envelope != nullptr);
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
+    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
+    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
+    // One envelope around all of them: a point on any held face is inside, a point off all of
+    // them is outside.
+    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
+    REQUIRE(!mesh.m_envelope->is_outside(on_shared));
+    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
 
-    // dispatch: single bit answers the member itself, multi-bit an intersection composite
-    REQUIRE(mesh.envelope_for_mask(0) == nullptr);
-    REQUIRE(mesh.envelope_for_mask(bit_a) == mesh.m_tag_envelopes.at(id_a));
-    REQUIRE(mesh.envelope_for_mask(bit_b) == mesh.m_tag_envelopes.at(id_b));
-    const auto isect = mesh.envelope_for_mask(bit_a | bit_b);
-    REQUIRE(isect != nullptr);
-    REQUIRE(isect != mesh.m_tag_envelopes.at(id_a));
-    REQUIRE(isect != mesh.m_tag_envelopes.at(id_b));
-    REQUIRE(mesh.envelope_for_mask(bit_a | bit_b) == isect); // memoized
+    // deform_others true, no input complex: the a/b boundary stays a tracked face but nothing
+    // holds it; the wall is held either way.
+    param.deform_others = true;
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
+    mesh.build_envelopes();
+    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
+    REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
+    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
 
-    // intersection semantics: a point on the shared face is inside both tubes; the a-apex is
-    // inside E_a only, so the intersection rejects it
-    const Eigen::Vector3d on_junction = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
-    REQUIRE(!isect->is_outside(on_junction));
-    const Eigen::Vector3d apex_a = V.row(0).transpose();
-    REQUIRE(!mesh.m_tag_envelopes.at(id_a)->is_outside(apex_a));
-    REQUIRE(mesh.m_tag_envelopes.at(id_b)->is_outside(apex_a));
-    REQUIRE(isect->is_outside(apex_a));
+    // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
+    mesh.m_tet_attribute[0].label = 1;
+    REQUIRE(mesh.face_is_complex_boundary(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
 }
 
 
@@ -1178,6 +1158,14 @@ std::unique_ptr<TopoOffsetTetMesh> energy_mesh(
     MatrixXd V_env_dummy;
     MatrixXi F_env_dummy;
     mesh->init_from_image(V, Tm, Tags, V_env_dummy, F_env_dummy, {"a"});
+    // A piece cut out of a domain: its outer faces stand for interior faces, not the domain wall,
+    // which a run holds to the envelope (face_is_held()). Untracked, so no vertex is held.
+    for (const auto& f : mesh->get_faces()) {
+        mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs = false;
+    }
+    for (size_t v = 0; v < size_t(V.rows()); ++v) {
+        mesh->m_vertex_attribute[v].m_is_on_surface = false;
+    }
     for (size_t i = 0; i < T.size(); ++i) {
         std::array<size_t, 4> want{
             {size_t(Tm(int(i), 0)),

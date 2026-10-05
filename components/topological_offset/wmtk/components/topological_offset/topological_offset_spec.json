@@ -190,13 +190,13 @@
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
-    "doc": "Half-width, relative to the bounding box diagonal, of the envelope containing every tag-region boundary during optimization. Any operation that would push a region boundary outside it is rejected. Ignored if envelope_size >= 0."
+    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built once after the simplicial embedding, before the repulsion and the march: the domain wall, and the input complex's boundary when deform_others is true, or every region boundary when it is false (see deform_others). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
   },
   {
     "pointer": "/envelope_size",
     "type": "float",
     "default": -1.0,
-    "doc": "Absolute half-width of the tag-region boundary envelope. If < 0, computed from envelope_size_rel."
+    "doc": "Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If < 0, computed from envelope_size_rel."
   },
   {
     "pointer": "/offset_field",
@@ -429,7 +429,7 @@
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike; or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped before it and the released-boundary tube refreshed after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike; or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped before it (2D: and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/coarsen_pass",
@@ -654,6 +654,6 @@
     "pointer": "/deform_others",
     "default": true,
     "type": "bool",
-    "doc": "Whether the other objects in the scene -- tagged regions with no input-complex simplex and no domain-wall contact -- deform when the optimization pushes them, instead of being held by their per-tag envelopes. true (the default): their envelopes are dropped at the top of optimize_offset(), every cell of theirs is stamped with its rest shape, and smoothing carries a rest-shape AMIPS term for those cells weighted like the smoother's own. A cell keeps that rest shape until an operation touches it; an accepted split, collapse or swap re-stamps the cells it changed, which is what makes the scheme indifferent to remeshing. protected_tags opts a region out, and the offset's own complex, the domain wall and the envelope curve / surface group are always held."
+    "doc": "Whether everything outside the offset band deforms when the optimization pushes it. 3D: true (the default): no envelope holds a region boundary other than the input complex's -- the held surfaces are the input complex boundary and the domain wall -- and every cell outside the band is plastic: stamped with its rest shape at the top of optimize_offset() and before every operation group, with smoothing carrying a rest-shape AMIPS term for those cells weighted like the smoother's own. The other regions' boundaries stay tracked faces, so the operations preserve their topology (no collapse across them, no surface flip across a junction), but nothing holds them in place. false: every region boundary is held as well, in the same single envelope. Either way the offset surface is held by nothing during the loop; only the frozen-front final pass holds it, to offset_envelope. A cell keeps its rest shape until an operation touches it; an accepted split, collapse or swap re-stamps the cells it changed. 2D: true drops the other regions' per-tag envelopes at the top of optimize_offset() and releases them, as before."
   }
 ]
