@@ -51,13 +51,32 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # group, i.e. to its index into out_triangle_provenance. Nothing existing changed behaviour,
 # but the signature grew, so every caller of that function had to be updated in the same
 # commit.
+#
+# On MSVC, VolumeRemesher is built WITHOUT /arch:AVX2. NFG picks the storage of
+# `NFG::interval_number` by preprocessor: `__m128d interval` (high, then min_low) when
+# __SSE2__ or __AVX2__ is defined, `double min_low, high` otherwise -- the same two bounds
+# in the opposite order. GCC and Clang define __SSE2__ on every x86-64 target, so all
+# translation units agree there. MSVC never defines __SSE2__, only __AVX2__ under
+# /arch:AVX2, which VolumeRemesher sets and this file strips from its consumers (below). So
+# VolumeRemesher's translation units got the SIMD layout while fast-envelope's and the
+# toolkit's got the scalar one, under one mangled name now that NFG is a namespace of its
+# own rather than wrapped in vol_rem. The linker keeps one copy of each inline member, so
+# intervals built by one side are read with their bounds swapped by the other: the
+# interval filters report wrong signs as certain. Symptom on Windows Release only: tetwild's
+# splits rejected as "produced a surface segment outside the envelope" in an endless retry
+# loop, and split max energy around 1e102. Without /arch:AVX2 every copy is scalar.
+# VolumeRemesher documents its scalar path as byte-identical to the AVX2 one.
+set(WMTK_VOLREM_OPTIONS "VOLUMEREMESHER_BUILD_TESTS OFF")
+if(MSVC)
+    list(APPEND WMTK_VOLREM_OPTIONS "VOLREM_ENABLE_AVX2 OFF")
+endif()
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
     GIT_TAG 75a70dc79a13a5de41369ce899134974665cd4b5
     OPTIONS
-    "VOLUMEREMESHER_BUILD_TESTS OFF"
+    ${WMTK_VOLREM_OPTIONS}
 )
 
 set_target_properties(mesh_generator_lib PROPERTIES FOLDER third-party)
