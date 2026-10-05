@@ -663,10 +663,9 @@ bool TopoOffsetTetMesh::split_after_cells(
     // surface produces a midpoint on neither, which is what it geometrically is.
     m_vertex_extra[v_id].m_is_on_input =
         m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
-    // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
-    // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
+    // Read by the needle diagnostics. Assigned, never OR'd: v_id may be a recycled slot whose
+    // previous occupant was born long ago. See m_born_epoch.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
-    if (m_op_epoch != 0) ++iter_cnt_split_born;
     // The boundary mask follows the same AND rule: the midpoint is on a tag boundary only if the
     // whole edge was. Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's
     // bits. Runs before the shared split's containment check, which reads the mask through

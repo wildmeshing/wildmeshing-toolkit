@@ -158,7 +158,10 @@ void topological_offset(nlohmann::json json_params)
         }
         tris_before.clear();
 
-        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // initial number of connected components
+        size_t initial_num_comps = mesh.flood_fill();
+
+        // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
         // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
@@ -176,14 +179,14 @@ void topological_offset(nlohmann::json json_params)
         }
 
         // The per-tag containment envelopes must be captured in init_from_image(), while the
-        // region tags are still the input's own: execute_offset() replaces the tags of every face
+        // region tags are still the input's own: construct_offset() replaces the tags of every face
         // the band grows through, and a tube built afterwards would pin the junction where a
         // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
 
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
@@ -220,6 +223,21 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
+        // connected components check, as in 3D
+        {
+            size_t final_num_comps = mesh.flood_fill();
+            if (final_num_comps != initial_num_comps) {
+                log_and_throw_error(
+                    "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
+                    initial_num_comps,
+                    final_num_comps);
+            } else {
+                logger().info(
+                    "connected components check passed. (# components={})",
+                    initial_num_comps);
+            }
+        }
+
         // optimize_offset (json, default true). Construction leaves the band boundary on
         // background-cell boundaries, so skipping the optimization does not yield a coarser
         // offset but one whose defining property is unmet at an error set by the input mesh's
@@ -240,6 +258,22 @@ void topological_offset(nlohmann::json json_params)
             logger().info(
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
+        }
+
+        // inversion check, after the optimization as well. As in 3D.
+        {
+            auto tris_after = mesh.get_faces();
+            if (!mesh.invariants(tris_after)) {
+                std::string bad_tris_str = "";
+                for (const TriMesh::Tuple& t : tris_after) {
+                    std::vector<TriMesh::Tuple> tvec;
+                    tvec.push_back(t);
+                    if (!mesh.invariants(tvec)) {
+                        bad_tris_str += (" " + std::to_string(t.fid(mesh)));
+                    }
+                }
+                log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
+            }
         }
 
         double time = timer.getElapsedTime();
@@ -285,25 +319,6 @@ void topological_offset(nlohmann::json json_params)
                 report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
                 report["optimization_metrics"]["max_grad_in_edge"] = max_grad_in_edge;
 
-                std::vector<int> splits, collapses, swaps;
-                for (const auto& c : mesh.op_counts) {
-                    splits.push_back(c[0]);
-                    collapses.push_back(c[1]);
-                    swaps.push_back(c[2]);
-                }
-                report["op_counts"]["splits"] = splits;
-                report["op_counts"]["collapses"] = collapses;
-                report["op_counts"]["swaps"] = swaps;
-
-                std::vector<int> born, recollapsed, recollapsed_same_pass;
-                for (const auto& c : mesh.churn_counts) {
-                    born.push_back(c[0]);
-                    recollapsed.push_back(c[1]);
-                    recollapsed_same_pass.push_back(c[2]);
-                }
-                report["churn"]["split_born"] = born;
-                report["churn"]["recollapsed"] = recollapsed;
-                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
 
                 // Read from the run, never recomputed from the arrays: optimize_offset() breaks
                 // out of the loop the moment it converges, so its own verdict cannot drift from
@@ -374,9 +389,8 @@ void topological_offset(nlohmann::json json_params)
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
-        mesh.reset_connected_components();
 
-        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
         // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
@@ -397,7 +411,7 @@ void topological_offset(nlohmann::json json_params)
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
@@ -439,7 +453,6 @@ void topological_offset(nlohmann::json json_params)
 
             // connected components check
             size_t final_num_comps = mesh.flood_fill();
-            mesh.reset_connected_components();
             if (final_num_comps != initial_num_comps) {
                 log_and_throw_error(
                     "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
@@ -536,25 +549,6 @@ void topological_offset(nlohmann::json json_params)
                 report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
                 report["optimization_metrics"]["max_grad_in_face"] = max_grad_in_face;
 
-                std::vector<int> splits, collapses, swaps;
-                for (const auto& c : mesh.op_counts) {
-                    splits.push_back(c[0]);
-                    collapses.push_back(c[1]);
-                    swaps.push_back(c[2]);
-                }
-                report["op_counts"]["splits"] = splits;
-                report["op_counts"]["collapses"] = collapses;
-                report["op_counts"]["swaps"] = swaps;
-
-                std::vector<int> born, recollapsed, recollapsed_same_pass;
-                for (const auto& c : mesh.churn_counts) {
-                    born.push_back(c[0]);
-                    recollapsed.push_back(c[1]);
-                    recollapsed_same_pass.push_back(c[2]);
-                }
-                report["churn"]["split_born"] = born;
-                report["churn"]["recollapsed"] = recollapsed;
-                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
 
                 // Read from the run, never recomputed from the arrays: optimize_offset() breaks
                 // out of the loop the moment it converges, so its own verdict cannot drift from

@@ -21,18 +21,6 @@ namespace wmtk::components::topological_offset {
  */
 
 namespace {
-/// The cells of vid's one-ring as AMIPSEnergy3D wants them: the moving vertex first, winding
-/// preserved. Returns the reordered vids per tet as well, so a rest shape can follow the same
-/// permutation.
-struct RingCell
-{
-    size_t tid;
-    std::array<size_t, 4> vs; ///< vid first
-    std::array<int, 4> from; ///< vs[k] == oriented_tet_vids(tid)[from[k]]
-};
-} // namespace
-
-namespace {
 /// One live offset face at x, as the offset term wants it: the two other corners, and the
 /// barycentric weights of the face's stencil_order stencil. Only the weights are frozen -- the
 /// sample points themselves slide with x and the field is read live -- see StencilEnergy3D.

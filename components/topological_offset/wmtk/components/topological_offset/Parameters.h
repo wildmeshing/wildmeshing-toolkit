@@ -46,11 +46,6 @@ struct Parameters : public wmtk::OptimizerParameters
     // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
-    /// [2D ONLY] Debugging override for the potential's support radius: >= 0 uses this dhat as an
-    /// ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the
-    /// constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only
-    /// the 2D construction reads it; the 3D twin ignores it until the port.
-    double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // ---- the two convergence epsilons (was the single front_conv_rel) ----
     // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
@@ -60,51 +55,33 @@ struct Parameters : public wmtk::OptimizerParameters
     // refuses either one above target_distance: an epsilon coarser than the offset it measures
     // cannot decide anything.
     //
-    // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
-    // the distance to the level set along the field (OffsetPotential::relative_residual(), which
-    // for the euclidean field is the relative error (Phi - c)/c) -- and compares it against
-    // this. A vertex is placed when that same measure at the vertex alone is within it, which is
-    // the order-0 stencil, so the vertex measure and the face measure are one measure at two
-    // sample counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23. The
-    // loop exits on the face measure alone (every face within the bar, nothing unmeasurable);
-    // the vertex measure is a diagnostic since 2026-09-25. 2D exits on its chord measure, the
-    // midpoint sag, which unlike the 3D stencil does not sample the chord's two ends.
+    // THE ONE BAR, in 2D and in 3D. One quantity is measured everywhere -- over a simplex's
+    // stencil (a face's in 3D, a front chord's in 2D), the RMS of the distance to the level set
+    // along the field (OffsetPotential::relative_residual(), which for the euclidean field is the
+    // relative error (Phi - c)/c) -- and compared against this. A vertex is placed when that same
+    // measure at the vertex alone is within it, which is the order-0 stencil, so the vertex
+    // measure and the face (chord) measure are one measure at two sample counts. Replaces
+    // vertex_conv / sag_conv, which split the two apart 2026-09-23. What the loop exits on is
+    // front_measure's choice; the vertex measure is a diagnostic since 2026-09-25.
     double front_conv;
     double front_conv_rel;
 
     /// The convergence epsilon as a FRACTION of target_distance, which is the form the
-    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A mean of squared relative
-    /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
-    /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
-    /// code uses is a matter of where the division sits, not of what is being asked. 2D's
-    /// fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason.
+    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A
+    /// mean of squared relative errors is below front_conv_frac()^2 exactly when the same mean
+    /// taken in lengths is below front_conv^2 -- the two differ by target_distance^2 on both
+    /// sides -- so which form the code uses is a matter of where the division sits, not of what
+    /// is being asked.
     double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
-    // 2D ONLY since the 3D criteria were unified. Which convergence test gates a 2D run's vertex
-    // placement. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian,
-    // n its move direction; all four compare against front_conv. See front_vertex_conv_ratio().
-    //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
-    //     front_conv.
-    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against
-    //     front_conv_frac() x F.
-    //   "gradient_norm_rel": |n.g| against front_conv_frac() x the reference gradient, measured
-    //     once on the band as constructed.
-    //   "residual_error": not a stationarity measure at all -- the field's own residual at the
-    //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the distance to the level set along the field for the smooth
-    //     one), against front_conv.
-    //     No objective is built and n does not enter.
-    //
-    // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is
-    // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
-    /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
-    std::string front_conv_criterion;
     /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
     bool offset_collapse_veto = true, offset_swap_veto = true;
-    /// The front vertices' smoothing veto on tet_energy (see the spec); the engine's
+    /// The front vertices' smoothing veto on the per-cell energy (see the spec); the engine's
     /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
     bool offset_front_smooth_veto = false;
-    /// The weight w of AMIPS in the per-tet energy and in the front smoother's objective:
-    /// tet_energy = w AMIPS^3 + the offset terms (see the spec). 1 is the 1:1 energy of 2026-09-28.
+    /// The weight w of AMIPS in the per-cell energy and in the front smoother's objective:
+    /// tet_energy = w AMIPS^3 + the offset terms in 3D, tri_energy = w AMIPS + the offset terms in
+    /// 2D -- the engine's own cell quality in each (see the spec). 1 is the 1:1 energy of
+    /// 2026-09-28.
     double offset_amips_weight = 1e-4;
     /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
     /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
@@ -121,28 +98,31 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
-    // Sampling density of THE measure -- in 3D both the criterion's and the energy's -- and of
-    // the residual diagnostics that share the lattice. Order k puts these points on a face:
+    // Sampling density of THE measure -- both the criterion's and the energy's, in 2D and 3D --
+    // and of the residual diagnostics that share the lattice. Order k puts these points on a
+    // face (3D):
     //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
     //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
     //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
+    // and on a front chord (2D), the same rule one dimension down:
+    //   0 -> 2, the ENDS alone;
+    //   k >= 1 -> the vertices of the chord cut into 2^(k-1) pieces plus the midpoint of each
+    //   piece, i.e. 3, 5, 9, 17, ...
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
-    // the operations' energy rules (TopoOffsetTetMesh::tet_energy()) as well as in
-    // energy_criterion() and every smoothing solve.
-    // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
-    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
+    // the operations' energy rules (TopoOffsetTetMesh::tet_energy(),
+    // TopoOffsetTriMesh::tri_energy()) as well as in energy_criterion() and every smoothing solve.
+    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     int stencil_order;
     /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
-    /// square of the face measures (face_conv_ratio()) of its incident offset faces, every face
-    /// weighted equally as in the per-tet energy (3D, since 2026-09-28; by area before) -- in 2D
-    /// of the chord measures (edge_conv_ratio()) of its front chords weighted by length. The loop
-    /// exits when every ring measure is within the bar and nothing is unmeasurable, and the
-    /// halving takes each vertex over the bar alone. "face": every offset face (2D: chord) within
-    /// the bar and the halving at the corners of every face over it -- the rule of 2026-09-25,
-    /// kept for comparison.
+    /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D
+    /// of the chord measures (edge_offset_term()) of its front chords -- every simplex weighted
+    /// equally as in the per-cell energy. The loop exits when every ring measure is within the
+    /// bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone.
+    /// "face": every offset face (2D: chord) within the bar and the halving at the corners of
+    /// every face over it -- the rule of 2026-09-25, kept for comparison.
     std::string front_measure;
     bool sorted_marching;
     /// How the marching places the offset (see the spec). A target_distance below the maximum
@@ -165,19 +145,19 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
-    /// 3D only, default true. Only when the target is not below the maximum marchable distance
-    /// (marched as construction_mode says): the loop first converges under stencil_order without
+    /// Default true. Only when the target is not below the maximum marchable distance (marched
+    /// as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = true;
-    /// 3D only, EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1
-    /// (the default) uses stencil_order there too. See the spec doc.
+    /// EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1 (the
+    /// default) uses stencil_order there too. See the spec doc.
     int init_optimize_stencil_order = -1;
-    /// 3D only. Smoothing passes before the march that push the outer ends of the marched edges
-    /// out to 2 x target_distance; they stop early once every outer end is beyond
-    /// target_distance + front_conv. 0 (the default) = off. See the spec doc and
-    /// TopoOffsetTetMesh::repulsion_smoothing().
+    /// Smoothing passes before the march that push the outer ends of the marched edges out to
+    /// 2 x target_distance; they stop early once every outer end is beyond target_distance +
+    /// front_conv. 0 (the default) = off. See the spec doc and
+    /// TopoOffsetTetMesh::repulsion_smoothing() / TopoOffsetTriMesh::repulsion_smoothing().
     int repulsion_smoothing_passes = 0;
-    /// 3D only. After those passes, at most this many rounds of the loop's operations (split,
+    /// 2D and 3D. After those passes, at most this many rounds of the loop's operations (split,
     /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
     /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
     int repulsion_rounds = 0;
@@ -266,11 +246,9 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
-        debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];
         front_conv_rel = json_params["front_conv_rel"];
-        front_conv_criterion = json_params["front_conv_criterion"];
         stencil_order = json_params["stencil_order"];
         front_measure = json_params["front_measure"];
 

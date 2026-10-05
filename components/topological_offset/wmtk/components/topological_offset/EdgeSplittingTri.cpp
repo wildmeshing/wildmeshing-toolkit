@@ -20,6 +20,12 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // repulsion_rounds, before the march: a marched edge is never split -- its midpoint would
+        // be a new outer end nearer the input than the one the rounds push out. As in 3D.
+        if (m_repulsion_potential &&
+            is_marched_edge(t.vid(*this), t.switch_vertex(*this).vid(*this))) {
+            return false;
+        }
         // No edge class is refused here, the domain wall included: a wall edge is a tracked
         // region boundary like any other, so the envelopes hold it. Do not re-add a wall
         // refusal; measured worse -- see git history of this file.
@@ -32,7 +38,7 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         c.v1_id = t.vid(*this);
         c.v2_id = t.switch_vertex(*this).vid(*this);
         // Captured here, while both endpoints are in hand, and propagated as the endpoints' AND
-        // -- never recomputed from the incident faces, whose tags execute_offset() replaces as
+        // -- never recomputed from the incident faces, whose tags construct_offset() replaces as
         // the band grows. Boundary membership is a property of the input partition, not of the
         // current tags. split_after_vertex() gates these bits on the edge's own persistent
         // class, so a chord's midpoint never picks them up.
@@ -100,7 +106,7 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     // The flag is the edge's own class, not an AND of the endpoints: two vertices sharing a
     // region can be joined by a chord through the interior, and marching splits exactly such
     // chords. Behind that gate the bits are the endpoints' AND, propagated, never recomputed from
-    // the incident faces, whose tags execute_offset() replaces as the band grows.
+    // the incident faces, whose tags construct_offset() replaces as the band grows.
     cache.new_v_extra.m_is_on_region = edge_is_region(e_id);
     cache.new_v_extra.m_boundary_mask = cache.new_v_extra.m_is_on_region
                                             ? (m_vertex_extra[cache.v1_id].m_boundary_mask &

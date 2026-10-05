@@ -54,14 +54,9 @@ class VertexExtra
 {
 public:
     int label = 0;
-    size_t component_id = 0;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
-    /// Where this vertex stood at the start of the turn. Written every turn (and before the
-    /// pre_smooth block); read by nothing since the per-vertex convergence states were removed.
-    Vector3d m_turn_start = Vector3d::Zero();
-    bool m_turn_start_valid = false;
 
     /**
      * @brief Which tag boundaries this vertex lies on -- one bit per input tag, ambient included.
@@ -73,10 +68,9 @@ public:
      */
     uint64_t m_boundary_mask = 0;
 
-    /// Churn instrumentation: which split pass created this vertex, from
-    /// wmtk::TetOptimizerMesh::m_op_epoch; 0 means not created by an optimization split. Read
-    /// only by collapse_after_vertex(). Assigned at each split, never OR'd -- a recycled slot
-    /// carries a dead vertex's epoch.
+    /// Which split pass created this vertex, from wmtk::TetOptimizerMesh::m_op_epoch; 0 means not
+    /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
+    /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
     uint32_t m_born_epoch = 0;
 };
 
@@ -169,7 +163,7 @@ public:
      *
      * It answers the Euclidean distance to the input, a diagnostic rather than the definition of
      * the offset -- see m_offset_potential. init_input_complex_bvh() has one call site, before
-     * execute_offset() runs, so this holds the original geometry however the elements
+     * construct_offset() runs, so this holds the original geometry however the elements
      * representing the complex are later remeshed. Rebuilding from the live mesh would redefine
      * the offset distance in terms of a surface the optimizer had just moved.
      *
@@ -307,13 +301,6 @@ public:
      */
     std::shared_ptr<SampleEnvelope> containment_for(uint64_t region_mask, bool on_offset) const;
 
-    /**
-     * @brief Move `x` back inside every region tube this vertex lies on. True if it ended up
-     * inside all of them. Alternating projection onto the worst-violated real member; never asks
-     * a composite (see TagEnvelopes.hpp).
-     */
-    bool project_into_containment(size_t vid, Vector3d& x) const;
-
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
@@ -390,11 +377,10 @@ public:
     /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
     std::string m_frame_prefix;
 
-    /// Max over the front vertices of the vertex convergence measure (a ratio to its bar); under
-    /// gradient_norm_rel and before the reference exists, the raw |n . grad F|. The pass stop.
+    /// Max over the front vertices of ||grad F . n||, F the vertex's front objective
+    /// (front_objective()). Logged as the loop's gradient reference.
     double front_gradient_linf();
-    /// Its value on the band as constructed, measured once before turn 1: the reference the
-    /// gradient_norm_rel criterion is a fraction of.
+    /// Its value on the band as constructed, measured once before turn 1.
     double m_front_gradient_reference = 0.;
 
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
@@ -667,9 +653,6 @@ public:
     bool face_is_offset_surface_live(const Tuple& f) const;
     /// Whether edge (a, b) lies on the band's outer surface: some incident face does.
     bool edge_is_offset_surface_live(size_t a, size_t b) const;
-    /// Every edge of the live offset surface, once. What the chord test and the alignment
-    /// term enumerate; the 2D twin walks get_edges() and asks edge_is_offset_surface_live().
-    std::vector<std::array<size_t, 2>> offset_surface_edges() const;
     /// Every live offset-surface face as a sorted vertex triple.
     std::vector<std::array<size_t, 3>> offset_surface_faces() const;
     /// The live offset-surface faces incident to vid.
@@ -759,11 +742,6 @@ public:
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
     std::vector<std::array<double, 8>> optimization_metrics;
-    /// {split-born vertices, recollapsed, recollapsed in the immediately following collapse
-    /// pass} per turn, in step with op_counts. See VertexExtra::m_born_epoch.
-    std::vector<std::array<int, 3>> churn_counts;
-    /// {splits, collapses, swaps} per turn, as deltas rather than running totals.
-    std::vector<std::array<int, 3>> op_counts;
     /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
     /// write_optimization_debug_output(), to tag each frame with the turn it belongs to.
     int m_round = 0;
@@ -797,11 +775,6 @@ public:
     bool m_quality_converged = true;
     double m_quality_max_amips = 0.;
 
-    /// Churn: split-born vertices that a collapse later removed, and the subset removed in the
-    /// same pass-pair that created them.
-    std::atomic<int> iter_cnt_split_born{0};
-    std::atomic<int> iter_cnt_recollapsed{0};
-    std::atomic<int> iter_cnt_recollapsed_same_pass{0};
     std::atomic<int> iter_cnt_split = 0, iter_cnt_collapse = 0, iter_cnt_swap = 0;
     std::atomic<int> iter_cnt_collapse_offset_removed{0};
     /// Operations refused because they would have left an offset-surface face over tolerance.
@@ -991,10 +964,6 @@ public:
     bool vertex_is_on_domain_boundary(const size_t vid) const
     {
         return !m_vertex_attribute[vid].on_bbox_faces.empty();
-    }
-    bool face_is_on_domain_boundary(const size_t fid) const
-    {
-        return m_face_attribute[fid].m_is_bbox_fs >= 0;
     }
 
     /**
@@ -1316,13 +1285,6 @@ public:
     /// Diagnostic only; the 3D twin of the 2D function of the same name.
     void audit_surface_containment(const std::string& when) const;
 
-    /// How many front placements had their accepted step projected back into the vertex's
-    /// region tubes. A run total.
-    mutable std::atomic<int> m_placement_projected{0};
-    /// How many front placements were solved tangentially -- along the vertex's own region
-    /// boundary rather than along the field normal. A run total.
-    mutable std::atomic<int> m_placement_tangential{0};
-
     ////// wmtk::TetOptimizerMesh hooks
 
     /// Is this vertex on a region boundary -- a tag boundary, or the domain wall. Derived, not
@@ -1579,44 +1541,16 @@ public:
     /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
     /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
     double front_move_alignment(size_t vid) const;
-    /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
-    /// bar. See the spec entry for the four measures -- three of stationarity, plus residual_error,
-    /// which measures the residual length instead. Infinite when unmeasurable.
+    /// The vertex measure over the one bar: |relative_residual(x)| / front_conv_frac(), the
+    /// face term's order-0 stencil at one corner. Infinite when unmeasurable. As in 2D.
     double front_vertex_conv_ratio(size_t vid) const;
     /**
-     * @brief THE definition of "placed" for a vertex on the offset surface.
-     *
-     * Every decision in the component that asks "is the placement of this front vertex done"
-     * goes through here or through front_placed_by_ratio(): the vertex measure the loop reports
-     * (EnergyCriterion::vertices_ok(), a diagnostic since 2026-09-25 -- the loop exits on the face
-     * measure), the corner qualification of the face-sag classification,
-     * the collapse and swap guards' snapshot and the collapse guard's after-half, the
-     * adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by
-     * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
-     *
-     * It was not always one notion: the sag classification used to qualify its corners with the
-     * DISTANCE to the level set (residual_length() within front_conv) while
-     * everything else used the criterion's stationarity measure. The two disagree exactly where
-     * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
-     * hair outside the tube disqualified its whole face from ever being refined, with the face
-     * then counted in neither `refinable` nor `n_at_floor` and so invisible to
-     * the exit test of the time (converged_single(), removed 2026-09-25). Measured in 2D on
-     * top_annots_uday: at turn 1, 50 of the 114 sagging chords were dropped that way, the worst
-     * of them sagging 74 tubes, because one end sat 1.02 tubes off the level set with a Newton
-     * step of 1e-9.     *
-     * front_conv_criterion "residual_error" makes that same residual_length() the measure for
-     * every one of the callers above. That is not the defect coming back: the defect was the
-     * SPLIT -- one test using the residual while the rest used stationarity -- not the use of the
-     * residual. Under residual_error both halves of the criterion, the vertex test and the
-     * chord/face sag, are lengths against rel x target_distance.
-     *
-     * The caller has established that vid is a live front vertex (m_is_on_offset && m_is_rounded);
-     * this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed.
+     * @brief THE definition of "placed" for a vertex on the offset surface, applied to its
+     * already-measured front_vertex_conv_ratio(): finite and within the one bar. Every caller that
+     * asks "is the placement of this front vertex done" -- energy_criterion()'s vertex count and
+     * the placed split of the faces over the bar, and the adaptive-smoothing stop -- goes through
+     * here. Unmeasurable (a non-finite ratio) is NOT placed.
      */
-    bool front_vertex_placed(size_t vid) const;
-    /// front_vertex_placed()'s decision on an already-measured ratio, for the callers that have
-    /// one in hand (energy_criterion(), the guards' snapshot, SmoothingProgress): the one place
-    /// the bar is applied. Keep this and front_vertex_placed() in step.
     bool front_placed_by_ratio(const double ratio) const
     {
         return std::isfinite(ratio) && ratio <= 1.;
@@ -1642,8 +1576,6 @@ public:
         const Vector3d& pa,
         const Vector3d& pb,
         const Vector3d& pc) const;
-    mutable size_t m_front_gradient_worst_vid =
-        static_cast<size_t>(-1); ///< argmax of front_gradient_linf()
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid with the vertex at x: AMIPS of its one-ring at
@@ -1914,8 +1846,8 @@ public:
 
     /**
      * @brief The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus
-     * the face-interior chord diagnostic and the normal-aligned reference quantity. Same fields
-     * as the 2D GradientSplit, face samples in place of edge samples.
+     * the face-interior chord diagnostic. Same fields as the 2D GradientSplit, face samples in
+     * place of edge samples.
      */
     struct GradientSplit
     {
@@ -1923,11 +1855,8 @@ public:
         double max_pinned = 0.;
         size_t n_reachable = 0, n_pinned = 0;
         double max_at_vertex = 0., max_in_face = 0.;
-        double max_in_face_pinned = 0.;
-        double max_normal_aligned = 0.;
         size_t n_face_samples = 0;
         size_t n_skipped_inverted = 0, n_skipped_unrounded = 0;
-        size_t worst_vid = static_cast<size_t>(-1);
     };
     /// @param include_face_samples false skips the face-interior half (the expensive one).
     GradientSplit gradient_split(bool include_face_samples = true) const;
@@ -1946,10 +1875,8 @@ public:
         double bar = 1.;
         size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
         size_t worst_vid = static_cast<size_t>(-1);
-        Vector3d worst_face_centroid = Vector3d::Zero();
-        double worst_face_len = 0.; ///< the worst face's longest edge
         /// Reported only: the faces over the bar, split by whether all three corners are PLACED
-        /// (front_vertex_placed(), the one notion). A face whose corners are placed and whose
+        /// (front_placed_by_ratio(), the one notion). A face whose corners are placed and whose
         /// centroid still misses the level set is under-resolved -- the state the vertex test
         /// cannot see, and the only one the sag rule may act on: refining a face whose corners
         /// are still moving would chase the front rather than resolve it.
@@ -1976,7 +1903,7 @@ public:
         /// The floor, max(min_sizing_scalar, min_edge_length / l), and which of the two it is.
         double floor_scalar = 0.;
         bool floor_from_min_edge_length = false;
-        size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
+        size_t n_unplaced = 0; ///< measurable front vertices that front_placed_by_ratio() refuses
         /// A face over the bar with all three corners placed: a, b are the ends of its LONGEST
         /// edge (the chord the target is derived from), c the third corner; len the longest
         /// edge's length.
@@ -2030,7 +1957,7 @@ public:
         bool rings_ok() const { return max_ring <= bar; }
         double avg_ring() const { return n_rings ? sum_ring / double(n_rings) : 0.; }
         /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
-        /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
+        /// front_placed_by_ratio() rather than re-derived from max_vertex, so the reported count
         /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
         /// it since 2026-09-25; see converged().
         bool vertices_ok() const { return n_unplaced == 0; }
@@ -2134,12 +2061,6 @@ public:
     /// The energy criterion as measured when the loop converged; the final pass runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
-    /// The interpolation residual of front edge (a, b), see EnergyCriterion. -1 unmeasurable.
-    double edge_interpolation_residual(size_t a, size_t b) const;
-
-    /// The normal at an offset vertex: the unit vector from the nearest point on the input
-    /// complex to the vertex. Zero where undefined. Same definition as 2D.
-    Vector3d offset_vertex_normal(const size_t vid) const;
 
     /// Turn a residual_split()'s outside-support tally into the hard error.
     void report_outside_support(const char* when, const DistanceSplit& s) const;
@@ -2324,7 +2245,7 @@ public:
     /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
     /// marching_tets(), the re-embedding and the offset tagging. The optimization is
     /// optimize_offset(), which the driver calls afterwards.
-    void execute_offset(const std::filesystem::path& output_file);
+    void construct_offset(const std::filesystem::path& output_file);
 
     /// Marching tets: every edge with one endpoint in the input complex (label 1/2) and the
     /// other in the background (label 0) is split -- where d(x) = target_distance along the edge,
@@ -2577,27 +2498,6 @@ public:
     void init_vertex_order();
 
 private: // helpers
-    /**
-     * @brief determine if any tag from tag1 is also present in tag2.
-     * @note if tag2 is empty (ambient), return true if tag1 is empty, otherwise false
-     */
-    bool any_tag_present(const CellTag& tag1, const CellTag& tag2)
-    {
-        if (tag2.empty()) {
-            return tag1.empty();
-        }
-        if (tag1.empty()) { // tag1 is ambient, tag2 is not
-            return false;
-        }
-
-        for (const int64_t& i : tag1) {
-            if (tag2.find(i) != tag2.end()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /// sort edge simplices in place by decreasing edge length
     void sort_edges_by_length(std::vector<simplex::Edge>& edges)
     {
@@ -2616,14 +2516,6 @@ private: // helpers
     }
 
 public: // helpers
-    /// assign each vertex a partition id (by spatial Morton order). A no-op if NUM_THREADS == 0.
-    void compute_vertex_partition();
-
-    size_t get_partition_id(const Tuple& loc) const
-    {
-        return m_vertex_attribute[loc.vid(*this)].partition_id;
-    }
-
     /// all one-ring vertices through input simplices (labelled 1 or 2)
     std::vector<size_t> connected_components_helper(const size_t& v_id)
     {
@@ -2636,16 +2528,6 @@ public: // helpers
             }
         }
         return ret_v_ids;
-    }
-
-    /// reset connected component assignments.
-    void reset_connected_components()
-    {
-        auto verts = get_vertices();
-        for (const Tuple& v : verts) {
-            size_t v_id = v.vid(*this);
-            m_vertex_extra[v_id].component_id = 0;
-        }
     }
 };
 

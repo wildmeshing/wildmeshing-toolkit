@@ -44,13 +44,6 @@ namespace wmtk::components::topological_offset {
  */
 
 namespace {
-/// Diagnostic-only running maximum over a smoothing pass, which is run in parallel.
-void atomic_max(std::atomic<long long>& target, long long value)
-{
-    long long cur = target.load();
-    while (value > cur && !target.compare_exchange_weak(cur, value)) {
-    }
-}
 
 /// The three corners of face `fid` in `tid` as (vid, other, other) for a given vid.
 inline std::array<size_t, 3> face_corners_from(
@@ -731,46 +724,6 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::containment_for(
         std::vector<std::shared_ptr<SampleEnvelope>>{region, m_offset_envelope});
     std::lock_guard<std::mutex> lock(m_isect_mutex);
     return m_offset_isect_cache.emplace(region_mask, std::move(isect)).first->second;
-}
-
-bool TopoOffsetTetMesh::project_into_containment(const size_t vid, Vector3d& x) const
-{
-    const uint64_t mask = vertex_boundary_mask(vid);
-    if (mask == 0) return true; // nothing holds this vertex; any position is valid
-
-    // The real members, never envelope_for_mask()'s composite -- see TagEnvelopes.hpp.
-    std::vector<const SampleEnvelope*> members;
-    for (const auto& [tag, env] : m_tag_envelopes) {
-        const auto it = m_tag_bit.find(tag);
-        if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) {
-            members.push_back(env.get());
-        }
-    }
-    if (members.empty()) return true; // every bit dangled: no tube was ever built for them
-
-    // Alternating projection, worst violation first.
-    constexpr int kMaxRounds = 8;
-    for (int round = 0; round < kMaxRounds; ++round) {
-        const SampleEnvelope* worst = nullptr;
-        double worst_d2 = -1.;
-        for (const SampleEnvelope* e : members) {
-            if (!e->is_outside(x)) continue;
-            const double d2 = e->squared_distance(x);
-            if (d2 > worst_d2) {
-                worst_d2 = d2;
-                worst = e;
-            }
-        }
-        if (!worst) return true; // inside every tube it lies on
-        Vector3d proj = x;
-        worst->nearest_point(x, proj);
-        if (!proj.allFinite()) return false;
-        x = proj;
-    }
-    for (const SampleEnvelope* e : members) {
-        if (e->is_outside(x)) return false;
-    }
-    return true;
 }
 
 bool TopoOffsetTetMesh::cell_is_deformable(const size_t tid) const
@@ -1516,16 +1469,6 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     }
 
     if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
-    // Churn: v1 is the vertex being removed, so if a split created it this collapse undoes that
-    // split. Same epoch means the collapse pass immediately following its own split pass took it
-    // straight back out.
-    {
-        const uint32_t born = m_vertex_extra.at(v1_id).m_born_epoch;
-        if (born != 0) {
-            ++iter_cnt_recollapsed;
-            if (born == m_op_epoch) ++iter_cnt_recollapsed_same_pass;
-        }
-    }
 
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
     m_vertex_extra[v2_id].m_is_on_input =
@@ -1720,20 +1663,6 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
         return ok;
     }
     return smooth_nonfront_vertex(t);
-}
-
-Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
-{
-    // See the declaration: the direction the offset grew along, taken from the geometry rather
-    // than the mesh. Flips discontinuously across the medial axis.
-    if (m_input_complex_bvh) {
-        const Vector3d x = m_vertex_attribute[vid].m_posf;
-        const Vector3d foot = m_input_complex_bvh->nearest_point(x);
-        const Vector3d d = x - foot;
-        const double len = d.norm();
-        if (len > 0.) return d / len;
-    }
-    return Vector3d::Zero();
 }
 
 double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
@@ -3100,9 +3029,6 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
         return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)]
                                                                  : union_energy;
     };
-    const auto project = [](const Eigen::VectorXd& g, const Vector3d& n) -> double {
-        return (n.squaredNorm() > 0.) ? std::abs(g.head<3>().dot(n)) : g.norm();
-    };
 
     GradientSplit s;
     double sum_reachable = 0.;
@@ -3133,8 +3059,6 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
         const Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
         energy_for(vertex_region(vid)).gradient(x, g);
         const double gn = g.norm();
-        s.max_normal_aligned =
-            std::max(s.max_normal_aligned, project(g, offset_vertex_normal(vid)));
 
         if (!band_vertex_is_reachable(vid)) {
             s.max_pinned = std::max(s.max_pinned, gn);
@@ -3142,10 +3066,7 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
             continue;
         }
 
-        if (gn > s.max_reachable) {
-            s.max_reachable = gn;
-            s.worst_vid = vid;
-        }
+        s.max_reachable = std::max(s.max_reachable, gn);
         s.max_at_vertex = std::max(s.max_at_vertex, gn);
         sum_reachable += gn;
         ++s.n_reachable;
@@ -3162,34 +3083,17 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
             if (!cell_is_offset_band(band) && opp) band = opp->tid(*this);
             const int region = band < m_cell_region.size() ? m_cell_region[band] : -1;
             for_each_offset_face_sample(f, [&](const Vector3d& q, double, double, double) {
+                ++s.n_face_samples;
+                if (!gating) return;
                 Eigen::VectorXd g(3);
                 energy_for(region).gradient(Eigen::VectorXd(q), g);
-                const double q_full = g.norm();
-                if (gating) {
-                    s.max_in_face = std::max(s.max_in_face, q_full);
-                } else {
-                    s.max_in_face_pinned = std::max(s.max_in_face_pinned, q_full);
-                }
-                ++s.n_face_samples;
+                s.max_in_face = std::max(s.max_in_face, g.norm());
             });
         }
     }
 
     s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
     return s;
-}
-
-double TopoOffsetTetMesh::edge_interpolation_residual(const size_t a, const size_t b) const
-{
-    const OffsetPotential3D& pot = potential_for_edge(a, b);
-    const double c = pot.target_level();
-    if (!(c > 0.)) return -1.;
-    const auto r_at = [&](const Vector3d& p) { return (pot.value(p) - c) / c; };
-    const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
-    const double ra = r_at(pa), rb = r_at(pb), rm = r_at(0.5 * (pa + pb));
-    if (!std::isfinite(ra) || !std::isfinite(rb) || !std::isfinite(rm)) return -1.;
-    // The offset term's weight, which was 1 - w_amips until 2026-09-28. No 3D caller reads this.
-    return 2. * offset_term_weight() / c * std::abs(rm - 0.5 * (ra + rb));
 }
 
 TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
@@ -3221,7 +3125,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         if (!front(vid)) continue;
         // gn is the vertex's convergence measure over the one bar; rho the
         // length residual_length(), its actual distance to the level set. rho is
-        // reported and gates measurability, NOT placement: front_vertex_placed() is the one
+        // reported and gates measurability, NOT placement: front_placed_by_ratio() is the one
         // notion, and it reads gn. See the declaration for what qualifying the sag test's corners
         // by rho instead used to cost.
         const Vector3d p = m_vertex_attribute[vid].m_posf;
@@ -3285,8 +3189,6 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         s.sum_face += gn;
         if (gn > s.max_face) {
             s.max_face = gn;
-            s.worst_face_centroid = centroid;
-            s.worst_face_len = len;
         }
         if (gn > s.bar) {
             ++s.n_faces_over;
@@ -3453,16 +3355,10 @@ double TopoOffsetTetMesh::front_gradient_linf()
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        // The objective's normal gradient, always. This used to defer to
-        // front_vertex_conv_ratio() except while bootstrapping the gradient_norm_rel reference,
-        // but 3D's ratio is no longer a stationarity measure -- it is the vertex's relative
-        // error -- so routing through it would make a function named ..._gradient_linf, feeding
-        // a value the log calls a "gradient reference", report something that is not a gradient.
-        const double gn = front_vertex_normal_gradient(vid);
-        if (gn > worst) {
-            worst = gn;
-            m_front_gradient_worst_vid = vid;
-        }
+        // The objective's normal gradient, always: the vertex's convergence ratio is its relative
+        // error, not a stationarity measure, so it would not be the "gradient reference" the log
+        // calls this. As in 2D.
+        worst = std::max(worst, front_vertex_normal_gradient(vid));
     }
     return worst;
 }
@@ -3474,12 +3370,6 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     // field over front_conv (see face_offset_term()). This is the face term's order-0 stencil
     // evaluated at a single corner, which is what makes the vertex test and the face test one
     // test rather than two.
-    //
-    // 3D NO LONGER READS front_conv_criterion. Its four options are stationarity measures of the
-    // front objective -- how far the vertex still wants to move -- and the question the loop now
-    // asks is where the vertex IS. The old "residual_error" option is the closest of the four
-    // and this is numerically that option, |d - delta| / bar for a euclidean field, with the one
-    // bar in place of the vertex bar. 2D still dispatches on the key.
     const OffsetPotential3D& pot = potential_for(vid);
     const double level = pot.target_level();
     if (!(level > 0.)) return std::numeric_limits<double>::infinity();
@@ -3488,13 +3378,6 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     const double bar = m_offset_params.front_conv_frac();
     if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
     return std::abs(r) / bar;
-}
-
-bool TopoOffsetTetMesh::front_vertex_placed(const size_t vid) const
-{
-    // THE definition; see the declaration. One measure, one bar -- there is nothing left to
-    // dispatch on in 3D.
-    return front_placed_by_ratio(front_vertex_conv_ratio(vid));
 }
 
 
@@ -4239,21 +4122,6 @@ bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t
     return false;
 }
 
-std::vector<std::array<size_t, 2>> TopoOffsetTetMesh::offset_surface_edges() const
-{
-    std::set<std::array<size_t, 2>> edges;
-    for (const Tuple& f : get_faces()) {
-        if (!face_is_offset_surface_live(f)) continue;
-        const auto vs = get_face_vids(f);
-        for (int i = 0; i < 3; ++i) {
-            std::array<size_t, 2> e{{vs[i], vs[(i + 1) % 3]}};
-            if (e[0] > e[1]) std::swap(e[0], e[1]);
-            edges.insert(e);
-        }
-    }
-    return std::vector<std::array<size_t, 2>>(edges.begin(), edges.end());
-}
-
 std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::offset_surface_faces() const
 {
     std::set<std::array<size_t, 3>> faces;
@@ -4846,11 +4714,6 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         // block every operation group is followed by, with the same bookkeeping around it
         // (plastic rests stamped before, the released tube refreshed after). Frames are r0S*.
         m_round = 0;
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
-            m_vertex_extra[vid].m_turn_start_valid = true;
-        }
         refresh_released_envelope();
         stamp_plastic_rests();
         logger().info(
@@ -4873,11 +4736,6 @@ void TopoOffsetTetMesh::optimize_offset_loop(
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
-            m_vertex_extra[vid].m_turn_start_valid = true;
-        }
         refresh_released_envelope();
         const int energy_c0 = iter_cnt_collapse_energy_reject.load();
         const int energy_s0 = iter_cnt_swap_energy_reject.load();
@@ -5298,9 +5156,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     consolidate_mesh();
 
     iter_cnt_split = 0;
-    iter_cnt_split_born = 0;
-    iter_cnt_recollapsed = 0;
-    iter_cnt_recollapsed_same_pass = 0;
     iter_cnt_collapse = 0;
     iter_cnt_collapse_offset_removed = 0;
     iter_cnt_swap = 0;
@@ -5308,8 +5163,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_swap_energy_reject = 0;
     m_smooth_trace.reset();
     optimization_metrics.clear();
-    op_counts.clear();
-    churn_counts.clear();
 
     // Frame 0 is the mesh as constructed, before the optimization touches it.
     if (m_params.debug_output) {

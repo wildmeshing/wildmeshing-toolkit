@@ -587,6 +587,83 @@ private:
 };
 
 /**
+ * @brief The 2D twin of StencilEnergy3D: THE offset term of a front vertex's smoothing
+ * objective, the mean squared relative error of the field over the stencil of each incident
+ * front chord.
+ *
+ *     E(x) = w * sum over the vertex's incident front chords e of
+ *                (1/N_s) * sum over e's N_s stencil points i of  r(q_i(x))^2
+ *
+ *     r(p) = (Phi(p) - c) / c,      q_i(x) = a_i x + b_i q1
+ *
+ * with (a_i, b_i) the barycentric weights of stencil point i on the chord, a_i the MOVING vertex's
+ * own weight, and q1 the chord's other end, fixed for the visit. The stencil is
+ * TopoOffsetTriMesh::for_each_edge_sample, sized by stencil_order. Everything else -- the units
+ * (w = 1 / front_conv_frac()^2 makes each chord's term TopoOffsetTriMesh::edge_offset_term(), the
+ * term the per-cell energy tri_energy() adds to the chord's band face), the per-chord mean summed
+ * over chords with no length weight, the exact Hessian by default and `gauss_newton` -- is
+ * StencilEnergy3D's, one dimension down; see there.
+ */
+class StencilEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    /// One stencil point's barycentric weights. `a` is the moving vertex's, so dq_i/dx = a_i I.
+    struct Sample
+    {
+        double a, b;
+    };
+    /// One incident front chord, the moving vertex implicit.
+    struct Edge
+    {
+        Eigen::Vector2d q1;
+        std::vector<Sample> samples;
+    };
+
+    StencilEnergy2D(
+        const std::shared_ptr<const OffsetPotential2D>& potential,
+        std::vector<Edge> edges,
+        double weight,
+        bool gauss_newton = false);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    /// As StencilEnergy3D::Reading.
+    struct Reading
+    {
+        double r = 0.;
+        Eigen::Vector2d dr = Eigen::Vector2d::Zero();
+        bool r_ok = false;
+        bool dr_ok = false;
+    };
+
+    /// As StencilEnergy3D::readings_at().
+    const std::vector<Reading>& readings_at(const Eigen::Vector2d& x, bool need_dr) const;
+
+    std::shared_ptr<const OffsetPotential2D> m_potential;
+    std::vector<Edge> m_edges;
+    double m_weight;
+    bool m_gauss_newton;
+    double m_c = 1.; ///< the potential's target level, cached
+
+    mutable std::vector<Reading> m_readings;
+    mutable Eigen::Vector2d m_readings_x;
+    mutable bool m_readings_valid = false;
+    mutable bool m_readings_have_dr = false;
+};
+
+/**
  * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
  * region's faces.
  *

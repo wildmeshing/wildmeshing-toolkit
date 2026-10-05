@@ -2,7 +2,6 @@
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
-#include <wmtk/utils/partition_utils.hpp>
 #include "TagEnvelopes.hpp"
 
 // clang-format off
@@ -1124,7 +1123,6 @@ size_t TopoOffsetTetMesh::flood_fill()
         if (visited_verts.find(v_id) != visited_verts.end()) continue; // vertex already visited
 
         visited_verts[v_id] = true;
-        m_vertex_extra[v_id].component_id = current_id;
         std::queue<size_t> bfs_queue;
 
         // initial propagation
@@ -1140,7 +1138,6 @@ size_t TopoOffsetTetMesh::flood_fill()
             bfs_queue.pop();
             if (visited_verts.find(curr_vid) != visited_verts.end()) continue; // already visited
             visited_verts[curr_vid] = true;
-            m_vertex_extra[curr_vid].component_id = current_id;
 
             // propagate
             auto onering_verts_tmp = connected_components_helper(curr_vid);
@@ -1187,24 +1184,6 @@ void TopoOffsetTetMesh::init_vertex_order()
     logger().info("Vertex order count (0,1,2,3): {}", count);
 }
 
-void TopoOffsetTetMesh::compute_vertex_partition()
-{
-    if (NUM_THREADS == 0) {
-        return;
-    }
-
-    std::vector<size_t> partition_id;
-    wmtk::partition_vertex_morton(
-        vert_capacity(),
-        [this](size_t i) { return m_vertex_attribute[i].m_posf; },
-        NUM_THREADS,
-        partition_id);
-
-    for (size_t i = 0; i < partition_id.size(); ++i) {
-        m_vertex_attribute[i].partition_id = partition_id[i];
-    }
-}
-
 std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond) const
 {
@@ -1241,13 +1220,8 @@ double TopoOffsetTetMesh::max_band_vertex_distance() const
     return worst;
 }
 
-void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
+void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_file)
 {
-    // The construction runs on the input mesh AS GIVEN. There is no pre-optimization pass any
-    // more (removed 2026-09-24 with its key): the marching puts the offset on this
-    // tetrahedralization's own cell boundaries, so the input's quality and resolution decide the
-    // constructed offset directly, and supplying a mesh good enough for that is the caller's job.
-
     // make embedding simplicial (split components per Alg 1)
     logger().info("Creating simplicial embedding...");
     m_edge_split_mode = EdgeSplitMode::Midpoint;
@@ -1274,22 +1248,9 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("marching");
     }
 
-    // No growth pass: the band is exactly the one layer of background tets marching_tets()
-    // labelled from the frontier one-rings. Closing that gap is the optimization phase's job.
-
-    // simplicially embed again, if needed
-    m_edge_split_mode = EdgeSplitMode::Midpoint;
-    if (!is_simplicially_embedded()) {
-        simplicial_embedding();
-        bool dummy = is_simplicially_embedded();
-    }
     // Must stay outside the branch above and unconditional: consolidating renumbers, which
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
-        write_debug_frame("re_embedded");
-    }
-
     set_offset_tet_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output

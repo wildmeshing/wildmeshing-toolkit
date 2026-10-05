@@ -13,6 +13,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
+#include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -1372,6 +1373,297 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 amips3->gradient(xp, gp);
                 amips3->gradient(xm, gm);
                 for (int j = 0; j < 3; ++j) {
+                    const double fdh = (gp[j] - gm[j]) / (2. * h);
+                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("stencil-order-point-counts-2d", "[offset][2d]")
+{
+    // The 2D twin of stencil-order-point-counts: the chord stencil the 2D criterion and energy
+    // sample, against the counts the design states -- 2 at order 0 (the ends alone), then the
+    // vertices of the chord cut into 2^(k-1) pieces plus one midpoint per piece: 3, 5, 9, 17, 33.
+    // Also pins stencil_points_per_edge() to for_each_edge_sample().
+    Parameters param;
+    TopoOffsetTriMesh mesh(param, 0);
+    const Vector2d p0(0., 0.), p1(1., 0.5);
+    const std::array<int, 6> expected = {{2, 3, 5, 9, 17, 33}};
+    for (int k = 0; k < int(expected.size()); ++k) {
+        mesh.m_offset_params.stencil_order = k;
+        std::vector<std::array<double, 2>> w;
+        mesh.for_each_edge_sample(p0, p1, [&](const Vector2d& q, const double wa, const double wb) {
+            CHECK((q - (wa * p0 + wb * p1)).norm() <= 1e-15);
+            w.push_back({{wa, wb}});
+        });
+        INFO("stencil_order " << k);
+        CHECK(int(w.size()) == expected[size_t(k)]);
+        CHECK(mesh.stencil_points_per_edge() == expected[size_t(k)]);
+        std::set<long long> seen;
+        for (const auto& b : w) {
+            CHECK(std::abs(b[0] + b[1] - 1.) <= 1e-14);
+            CHECK(b[0] >= -1e-15);
+            CHECK(b[1] >= -1e-15);
+            seen.insert(llround(b[0] * 1e9));
+        }
+        CHECK(seen.size() == w.size()); // no repeated sample
+    }
+    // Order 0 is exactly the two ends.
+    mesh.m_offset_params.stencil_order = 0;
+    std::vector<Vector2d> pts;
+    mesh.for_each_edge_sample(p0, p1, [&](const Vector2d& q, double, double) { pts.push_back(q); });
+    REQUIRE(pts.size() == 2);
+    CHECK((pts[0] - p0).norm() <= 1e-15);
+    CHECK((pts[1] - p1).norm() <= 1e-15);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The 2D per-cell energy (TopoOffsetTriMesh::tri_energy()) and the 2D front smoother's offset
+// term, on the 2D twin of the 3D fixtures: the euclidean distance to a long segment on the x axis,
+// at level delta = 0.5, so relative_residual(q) = (|y| - 0.5) / 0.5 above the segment's interior;
+// front_conv = 0.01 (front_conv_frac() 0.02).
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+
+std::shared_ptr<EuclideanOffsetPotential2D> line_field()
+{
+    auto bvh = std::make_shared<SimplicialComplexBVH>();
+    MatrixXd SV(2, 2);
+    SV << -10., 0., 10., 0.;
+    MatrixXi SE(1, 2);
+    SE << 0, 1;
+    bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
+    return std::make_shared<EuclideanOffsetPotential2D>(bvh, kEnergyDelta);
+}
+
+/// The chord term O(e) the energy definition states, from the stencil for_each_edge_sample()
+/// visits and nothing else: mean over the points of (relative_residual(q) / front_conv_frac())^2.
+double edge_term_by_hand(
+    const TopoOffsetTriMesh& m,
+    const OffsetPotential2D& pot,
+    const Vector2d& p0,
+    const Vector2d& p1)
+{
+    double s = 0.;
+    int n = 0;
+    m.for_each_edge_sample(p0, p1, [&](const Vector2d&, double wa, double wb) {
+        const double r = pot.relative_residual(Vector2d(wa * p0 + wb * p1)) / kEnergyFrac;
+        s += r * r;
+        ++n;
+    });
+    return s / double(n);
+}
+
+/// The 2D fan fixture: four faces around o, labelled band, band, background, input complex.
+/// Face i is row i of F, which the caller relies on to look up faces.
+std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
+    Parameters& param,
+    const Eigen::MatrixXd& V,
+    const std::vector<std::array<int, 3>>& F,
+    const std::vector<int>& labels,
+    const std::shared_ptr<EuclideanOffsetPotential2D>& pot)
+{
+    param.target_distance = kEnergyDelta;
+    param.front_conv = kEnergyConv;
+    param.stencil_order = 1;
+    auto mesh = std::make_unique<TopoOffsetTriMesh>(param, 0);
+    Eigen::MatrixXi Fm(F.size(), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        std::array<int, 3> f = F[i];
+        const Vector2d a = V.row(f[0]), b = V.row(f[1]), c = V.row(f[2]);
+        const double cross = (b - a).x() * (c - a).y() - (b - a).y() * (c - a).x();
+        if (cross < 0.) std::swap(f[1], f[2]); // counter-clockwise
+        for (int j = 0; j < 3; ++j) Fm(int(i), j) = f[size_t(j)];
+    }
+    MatrixSi Tags(int(F.size()), 1);
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    mesh->init_from_image(V, Fm, Tags, V_env_dummy, F_env_dummy, {"a"});
+    for (size_t i = 0; i < F.size(); ++i) {
+        std::array<size_t, 3> want{
+            {size_t(Fm(int(i), 0)), size_t(Fm(int(i), 1)), size_t(Fm(int(i), 2))}};
+        auto got = mesh->oriented_tri_vids(i);
+        std::sort(want.begin(), want.end());
+        std::sort(got.begin(), got.end());
+        REQUIRE(got == want);
+        REQUIRE(!mesh->is_inverted(i));
+        mesh->m_face_extra[i].label = labels[i];
+    }
+    mesh->m_offset_potential = pot;
+    return mesh;
+}
+
+/// o, r0, r1, r2, r3: a fan of four faces around o; rows of V.
+Eigen::MatrixXd fan_vertices()
+{
+    Eigen::MatrixXd V(5, 2);
+    V << 0., 0.5, // o
+        0.4, 0.45, // r0
+        0.05, 0.9, // r1
+        -0.4, 0.55, // r2
+        0.02, 0.12; // r3
+    return V;
+}
+
+} // namespace
+
+TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
+{
+    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the per-cell
+    // energy's O(e): checked against the definition computed by hand from the same stencil, and
+    // against edge_offset_term(), at stencil orders 0 (ends only), 1 and 2, with three chords
+    // around the moving vertex placed above and below the level set.
+    Parameters param;
+    param.target_distance = kEnergyDelta;
+    param.front_conv = kEnergyConv;
+    TopoOffsetTriMesh mesh(param, 0);
+    const auto pot = line_field();
+    REQUIRE(std::abs(mesh.m_offset_params.front_conv_frac() - kEnergyFrac) <= 1e-15);
+    REQUIRE(mesh.offset_term_weight() == Catch::Approx(1. / (kEnergyFrac * kEnergyFrac)));
+
+    const Vector2d x(0.1, 0.53);
+    const std::vector<Vector2d> others = {{0.4, 0.61}, {-0.25, 0.44}, {0.05, 0.37}};
+    for (const int k : {0, 1, 2}) {
+        mesh.m_offset_params.stencil_order = k;
+        std::vector<StencilEnergy2D::Edge> edges;
+        double by_hand = 0., by_term = 0.;
+        for (const Vector2d& q1 : others) {
+            StencilEnergy2D::Edge e;
+            e.q1 = q1;
+            mesh.for_each_edge_sample(x, q1, [&](const Vector2d&, double a, double b) {
+                e.samples.push_back({a, b});
+            });
+            edges.push_back(e);
+            by_hand += edge_term_by_hand(mesh, *pot, x, q1);
+            by_term += mesh.edge_offset_term(*pot, x, q1);
+        }
+        StencilEnergy2D energy(pot, edges, mesh.offset_term_weight());
+        Eigen::VectorXd xv = x;
+        INFO("stencil_order " << k);
+        CHECK(by_hand > 10.); // the fixture really is off the level set
+        CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
+        CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
+    }
+}
+
+TEST_CASE("per-tri-energy", "[offset][2d]")
+{
+    // The 2D twin of per-tet-energy. Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2)
+    // band, f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. The band's front chords
+    // are the ones with background or nothing across: f0's (r0, r1) on the domain boundary ((o, r0)
+    // has the complex across, (o, r1) the band), and f1's (r1, r2) on the boundary plus (o, r2)
+    // against the background. Every face off the band is its weighted AMIPS alone. At w = 1 and at
+    // the default w.
+    const Eigen::MatrixXd V = fan_vertices();
+    const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
+    for (const double w : {1., Parameters().offset_amips_weight}) {
+        Parameters param;
+        param.offset_amips_weight = w;
+        const auto pot = line_field();
+        auto mesh = energy_mesh_2d(
+            param,
+            V,
+            {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
+            {2, 2, 0, 1},
+            pot);
+        const auto P = [&](int i) { return Vector2d(V.row(i)); };
+        const auto O = [&](int i, int j) { return edge_term_by_hand(*mesh, *pot, P(i), P(j)); };
+        const std::array<double, 4> extra = {{O(r0, r1), O(r1, r2) + O(o, r2), 0., 0.}};
+        for (size_t fid = 0; fid < 4; ++fid) {
+            // The engine's face quality, AMIPS2D from the positions.
+            const double base = mesh->TriOptimizerMesh::get_quality(fid);
+            REQUIRE(base < TriOptimizerMesh::MAX_ENERGY);
+            INFO("w " << w << ", face " << fid);
+            CHECK(mesh->tri_energy(fid) == Catch::Approx(w * base + extra[fid]).epsilon(1e-12));
+            if (fid < 2) CHECK(extra[fid] > 1.); // the front chords really are off the level set
+        }
+    }
+}
+
+TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
+{
+    // The 2D twin of smoothing-objective-is-the-ring-energy: at every vertex, the objective the
+    // shared smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0) is the
+    // sum of tri_energy() over the vertex's ring, up to the terms that do not move with the vertex
+    // -- the ring's front chords that do not have it as an end. Checked on the per-tri-energy
+    // fixture by moving each vertex that carries the offset term (or is on no front chord) to three
+    // nearby positions: objective minus ring sum must not change, and the shared smoother's
+    // per-cell comparison (smoothing_cell_energy()) is tri_energy(). The w AMIPS part's gradient
+    // and Hessian against central differences too. At w = 1 and at the default w.
+    const Eigen::MatrixXd V = fan_vertices();
+    const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
+    for (const double w : {1., Parameters().offset_amips_weight}) {
+        Parameters param;
+        param.offset_amips_weight = w;
+        const auto pot = line_field();
+        auto mesh = energy_mesh_2d(
+            param,
+            V,
+            {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
+            {2, 2, 0, 1},
+            pot);
+        // What label_offset_boundary() and the operations maintain in a run: an end of a live
+        // front chord.
+        for (size_t v = 0; v < 5; ++v) mesh->refresh_offset_membership(v);
+        REQUIRE(mesh->m_vertex_extra[size_t(o)].m_is_on_offset);
+        REQUIRE(!mesh->m_vertex_extra[size_t(r3)].m_is_on_offset);
+        for (size_t v = 0; v < 5; ++v) {
+            const bool front = mesh->vertex_carries_offset_term(v);
+            // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
+            // tube) carries no offset term, so its chords' terms do move with it and are not in
+            // its objective; the identity is the carrying vertices' and the off-front ones'.
+            if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
+            const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
+            const auto ring_energy = [&]() {
+                double s = 0.;
+                for (const size_t fid : ring) s += mesh->tri_energy(fid);
+                return s;
+            };
+            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
+            const auto energy = mesh->smoothing_extra_energy(v);
+            const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
+            Eigen::VectorXd xv = x0;
+            const double d0 = energy->value(xv) - ring_energy();
+            for (const Vector2d& dx :
+                 {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
+                mesh->set_vertex_position(v, x0 + dx);
+                for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
+                xv = x0 + dx;
+                const double e = energy->value(xv);
+                CHECK(
+                    e - ring_energy() ==
+                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
+                for (const size_t fid : ring) {
+                    const double q = mesh->get_quality(fid);
+                    CHECK(mesh->smoothing_cell_energy(fid, q) == mesh->tri_energy(fid));
+                }
+            }
+            mesh->set_vertex_position(v, x0);
+
+            // The w AMIPS part's derivatives against central differences.
+            const auto amips = mesh->amips_energy(v);
+            const double h = 1e-6;
+            Eigen::VectorXd g(2);
+            Eigen::MatrixXd H(2, 2);
+            xv = x0;
+            amips->gradient(xv, g);
+            amips->hessian(xv, H);
+            for (int i = 0; i < 2; ++i) {
+                Eigen::VectorXd xp = xv, xm = xv;
+                xp[i] += h;
+                xm[i] -= h;
+                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
+                // An absolute floor besides the relative one: at r1 the ring's AMIPS is stationary
+                // (|g| ~ 1e-14, the difference ~ 1e-10 of round-off), where a margin relative to
+                // |g| alone is zero.
+                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * std::max(g.norm(), w)));
+                Eigen::VectorXd gp(2), gm(2);
+                amips->gradient(xp, gp);
+                amips->gradient(xm, gm);
+                for (int j = 0; j < 2; ++j) {
                     const double fdh = (gp[j] - gm[j]) / (2. * h);
                     CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
                 }

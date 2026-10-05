@@ -1175,4 +1175,124 @@ void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
     hess = m_weight * H;
 }
 
+// ---------------------------------------------------------------------------------------------
+// StencilEnergy2D -- StencilEnergy3D one dimension down; see there for every choice made here.
+// ---------------------------------------------------------------------------------------------
+
+StencilEnergy2D::StencilEnergy2D(
+    const std::shared_ptr<const OffsetPotential2D>& potential,
+    std::vector<Edge> edges,
+    const double weight,
+    const bool gauss_newton)
+    : m_potential(potential)
+    , m_edges(std::move(edges))
+    , m_weight(weight)
+    , m_gauss_newton(gauss_newton)
+    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
+{}
+
+const std::vector<StencilEnergy2D::Reading>& StencilEnergy2D::readings_at(
+    const Eigen::Vector2d& x,
+    const bool need_dr) const
+{
+    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
+        return m_readings;
+    }
+    m_readings.clear();
+    for (const Edge& e : m_edges) {
+        for (const Sample& sm : e.samples) {
+            const Eigen::Vector2d p = sm.a * x + sm.b * e.q1;
+            Reading rd;
+            double v;
+            Eigen::Vector2d g;
+            if (need_dr) {
+                m_potential->value_gradient(p, v, g);
+            } else {
+                v = m_potential->value(p);
+            }
+            if (std::isfinite(v)) {
+                rd.r = (v - m_c) / m_c;
+                rd.r_ok = true;
+                if (need_dr && g.allFinite()) {
+                    rd.dr = g / m_c;
+                    rd.dr_ok = true;
+                }
+            }
+            m_readings.push_back(rd);
+        }
+    }
+    m_readings_x = x;
+    m_readings_valid = true;
+    m_readings_have_dr = need_dr;
+    return m_readings;
+}
+
+double StencilEnergy2D::value(const TVector& xv)
+{
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, false);
+    double E = 0.;
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
+        double s = 0.;
+        size_t n = 0;
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok) continue;
+            s += rd.r * rd.r;
+            ++n;
+        }
+        if (n > 0) E += s / double(n);
+    }
+    return m_weight * E;
+}
+
+void StencilEnergy2D::gradient(const TVector& xv, TVector& gradv)
+{
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, true);
+    gradv = Eigen::VectorXd::Zero(2);
+    Eigen::Vector2d g = Eigen::Vector2d::Zero();
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
+        Eigen::Vector2d ge = Eigen::Vector2d::Zero();
+        size_t n = 0;
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            ge += (2. * e.samples[i].a * rd.r) * rd.dr;
+            ++n;
+        }
+        if (n > 0) g += ge / double(n);
+    }
+    gradv = m_weight * g;
+}
+
+void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, true);
+    Eigen::Matrix2d H = Eigen::Matrix2d::Zero();
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
+        Eigen::Matrix2d He = Eigen::Matrix2d::Zero();
+        size_t n = 0;
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            const Sample& sm = e.samples[i];
+            const double a = sm.a;
+            He += (2. * a * a) * (rd.dr * rd.dr.transpose());
+            if (!m_gauss_newton) {
+                const Eigen::Vector2d p = a * x + sm.b * e.q1;
+                const Eigen::Matrix2d Hphi = m_potential->hessian(p);
+                if (Hphi.allFinite()) He += (2. * a * a * rd.r / m_c) * Hphi;
+            }
+            ++n;
+        }
+        if (n > 0) H += He / double(n);
+    }
+    hess = m_weight * H;
+}
+
 } // namespace wmtk::components::topological_offset

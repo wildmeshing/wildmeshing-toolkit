@@ -1,4 +1,5 @@
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
+#include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -1042,6 +1043,99 @@ TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
     CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
     const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
     CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
+}
+
+TEST_CASE("stencil-energy-2d-derivatives", "[offset][potential]")
+{
+    // StencilEnergy2D, the 2D front smoother's offset term, against finite differences: the
+    // gradient of the value and both Hessian forms of the gradient. As in 3D, x enters only
+    // through the samples sliding with it, q_i = a_i x + b_i q1, so the chain rule is the moving
+    // vertex's own weight a_i; the stencils carry a_i = 1, a_i = 0 and 0 < a_i < 1. The exact
+    // Hessian (the default) must match the difference directly; the Gauss-Newton form must be
+    // symmetric PSD and, with the dropped 2 a_i^2 r hess Phi / c term added back from the
+    // potential's own hessian(), must recover the exact one. On the smooth field around a point and
+    // on the Euclidean field of a segment (via the BVH, as TopoOffsetTriMesh builds it).
+    const double delta = 0.25;
+    MatrixXd V(1, 2);
+    V << 0., 0.;
+    const auto smooth = std::make_shared<const SmoothOffsetPotential2D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+    auto bvh = std::make_shared<SimplicialComplexBVH>();
+    {
+        MatrixXd SV(2, 2);
+        SV << -1., 0., 1., 0.;
+        MatrixXi SE(1, 2);
+        SE << 0, 1;
+        bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
+    }
+    const auto euclid = std::make_shared<const EuclideanOffsetPotential2D>(bvh, delta);
+
+    struct Case
+    {
+        const char* name;
+        std::shared_ptr<const OffsetPotential2D> pot;
+        Eigen::Vector2d x, q1, q2; // chords (x, q1) and (x, q2)
+    };
+    const std::vector<Case> cases = {
+        {"smooth, around a point", smooth, {0.21, 0.13}, {0.31, -0.05}, {0.09, 0.33}},
+        {"euclid, above a segment", euclid, {0.1, 0.31}, {0.35, 0.22}, {-0.2, 0.28}}};
+    for (const Case& cs : cases) {
+        std::vector<StencilEnergy2D::Edge> edges(2);
+        edges[0].q1 = cs.q1;
+        edges[0].samples = {{1., 0.}, {0., 1.}, {0.5, 0.5}};
+        edges[1].q1 = cs.q2;
+        edges[1].samples = {{1., 0.}, {0., 1.}, {0.75, 0.25}, {0.25, 0.75}, {0.5, 0.5}};
+        const double w = 0.9;
+        StencilEnergy2D energy(cs.pot, edges, w);
+        VectorXd xv = cs.x;
+        INFO(cs.name);
+
+        const double h = 1e-6;
+        VectorXd g(2);
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 2; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp(2), gm(2);
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 2; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
+            }
+        }
+
+        StencilEnergy2D energy_gn(cs.pot, edges, w, true);
+        MatrixXd Hgn;
+        energy_gn.hessian(xv, Hgn);
+        CHECK((Hgn - Hgn.transpose()).norm() <= 1e-12 * std::max(1., Hgn.norm()));
+        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(Hgn);
+        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., Hgn.norm()));
+        // The dropped term, added back independently: per chord, the mean over its samples of
+        // 2 a^2 r hess Phi / c, times the weight.
+        const double c = cs.pot->target_level();
+        Eigen::Matrix2d dropped = Eigen::Matrix2d::Zero();
+        for (const StencilEnergy2D::Edge& e : edges) {
+            Eigen::Matrix2d sum = Eigen::Matrix2d::Zero();
+            for (const StencilEnergy2D::Sample& sm : e.samples) {
+                const Eigen::Vector2d q = sm.a * cs.x + sm.b * e.q1;
+                const double r = (cs.pot->value(q) - c) / c;
+                sum += (2. * sm.a * sm.a * r / c) * cs.pot->hessian(q);
+            }
+            dropped += sum / double(e.samples.size());
+        }
+        CHECK((Hgn + w * dropped - H).norm() <= 1e-9 * std::max(1., H.norm()));
+    }
 }
 
 TEST_CASE("stencil-energy-3d-hessian-fd", "[offset][potential]")
