@@ -454,8 +454,11 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
 
     // Around a convex corner: the exact offset is the arc of radius delta about the corner.
     double corner_err = 0.;
+    // Strictly between +x and +y about the (h,h) corner. The end rays themselves lie on the
+    // boundary of a side's feasible region (projection ratio exactly 0 or 1), where ipc's ESP
+    // builder and its debug assert classify the point differently and Debug builds abort.
     for (int i = 0; i <= 8; ++i) {
-        const double a = 0.5 * M_PI * i / 8; // from +x to +y about the (h,h) corner
+        const double a = 0.5 * M_PI * (i + 0.5) / 9;
         const double r = level_set_radius(
             phi,
             Vector2d(h, h),
