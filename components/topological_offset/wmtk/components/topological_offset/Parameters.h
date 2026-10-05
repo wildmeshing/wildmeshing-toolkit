@@ -177,6 +177,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// target_distance + front_conv. 0 (the default) = off. See the spec doc and
     /// TopoOffsetTetMesh::repulsion_smoothing().
     int repulsion_smoothing_passes = 0;
+    /// 3D only. After those passes, at most this many rounds of the loop's operations (split,
+    /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
+    /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
+    int repulsion_rounds = 0;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -277,6 +281,7 @@ struct Parameters : public wmtk::OptimizerParameters
         init_optimize = json_params["init_optimize"];
         init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
         repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
+        repulsion_rounds = json_params["repulsion_rounds"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

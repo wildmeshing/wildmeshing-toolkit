@@ -15,6 +15,11 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // repulsion_rounds, before the march: a marched edge is never split -- its midpoint would
+        // be a new outer end nearer the input than the one the rounds push out.
+        if (m_repulsion_potential && is_marched_edge(t.vid(*this), switch_vertex(t).vid(*this))) {
+            return false;
+        }
         if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
         // Longest-edge order: a split waits while one of the tets incident to its edge has a
         // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
@@ -63,6 +68,9 @@ bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
     // symmetric in IEEE arithmetic, so the endpoint order of `e` does not matter.
     const size_t v1 = e.vid(*this);
     const size_t v2 = e.switch_vertex(*this).vid(*this);
+    // repulsion_rounds: split_edge_before() refuses a marched edge, so it is never due, and no
+    // shorter edge waits on it.
+    if (m_repulsion_potential && is_marched_edge(v1, v2)) return false;
     if (is_force_split_edge(v1, v2)) return true;
     const double s =
         (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
@@ -665,6 +673,16 @@ bool TopoOffsetTetMesh::split_after_cells(
     // face_mask() on the two child triangles.
     m_vertex_extra[v_id].m_boundary_mask =
         m_vertex_extra[v1_id].m_boundary_mask & m_vertex_extra[v2_id].m_boundary_mask;
+    // repulsion_rounds, before the march: the construction label, which says which vertices are
+    // in the input complex and so which edges the march will split (is_marched_edge()). The AND
+    // never misses a midpoint in the complex -- an edge in it has both ends in it -- and only
+    // over-marks the midpoint of an edge that joins two complex vertices off the complex, which
+    // makes the split pass refuse more, never less. repulsion_smoothing() recomputes every label
+    // from the tags after the pass (relabel_input_complex()).
+    if (m_repulsion_potential) {
+        m_vertex_extra[v_id].label =
+            (m_vertex_extra[v1_id].label != 0 && m_vertex_extra[v2_id].label != 0) ? 1 : 0;
+    }
 
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {

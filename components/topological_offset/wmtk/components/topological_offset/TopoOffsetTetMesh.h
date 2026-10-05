@@ -1108,31 +1108,100 @@ public:
     /// A refusal here is expected, not a defect: the solve lowers the SUM of the ring's energy
     /// and the veto bounds its MAX, and a step can lower the sum while raising the worst cell.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
-    /// The repulsion passes (repulsion_smoothing()), set only while they run: the Euclidean
-    /// field at level 2 x target_distance, and which vertices carry the repulsion term (indexed by
-    /// vid; smoothing adds no vertex). Null / empty otherwise, so every other path is untouched.
+    /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
+    /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
+    /// untouched.
     std::shared_ptr<const OffsetPotential3D> m_repulsion_potential;
-    std::vector<char> m_is_repulsion_vertex;
-    /// Per repulsion pass, as m_newton_front and the front veto counters are per loop pass.
+    /// Per repulsion pass or round, as m_newton_front and the front veto counters are per loop
+    /// pass.
     optimization::NewtonCounters m_newton_repulsion;
     std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
+    /// The edges marching_tets() splits: exactly one end in the input complex (label != 0).
+    bool is_marched_edge(const size_t a, const size_t b) const
+    {
+        return (m_vertex_extra[a].label == 0) != (m_vertex_extra[b].label == 0);
+    }
+    /// While the repulsion runs: an outer end of a marched edge -- off the complex, with a
+    /// neighbour on it -- that no envelope holds. Asked of the mesh every time, so it follows the
+    /// repulsion rounds' operations.
     bool is_repulsion_vertex(const size_t vid) const
     {
-        return m_repulsion_potential && vid < m_is_repulsion_vertex.size() &&
-               m_is_repulsion_vertex[vid] != 0;
+        if (!m_repulsion_potential || m_vertex_extra[vid].label != 0 ||
+            vertex_boundary_mask(vid) != 0) {
+            return false;
+        }
+        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+            if (m_vertex_extra[u].label != 0) return true;
+        }
+        return false;
     }
     /// O(v) = (max(0, 2 delta - d(v)) / front_conv)^2: the Euclidean residual against level
     /// 2 delta is (d - 2 delta) / (2 delta), so the weight (2 delta / front_conv)^2 =
-    /// 4 offset_term_weight() puts it in units of the tolerance, as the front's terms are.
-    std::shared_ptr<OffsetEnergy3D> repulsion_energy() const
+    /// 4 offset_term_weight() puts it in units of the tolerance, as the front's terms are. One
+    /// object for the whole repulsion (value() changes nothing in it, so threads share it); set
+    /// with m_repulsion_potential.
+    std::shared_ptr<OffsetEnergy3D> m_repulsion_term;
+    double repulsion_term_at(const size_t vid) const
+    {
+        Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
+        return m_repulsion_term->value(x);
+    }
+    /// THE REPULSION PART OF THE PER-TET ENERGY, before the march (tet_energy(), candidate_energy()):
+    /// a cell carries O(v) of each of its corners v that is an outer end within it -- off the
+    /// complex, held by no envelope, in a cell that has a complex vertex, i.e. joined to the
+    /// complex by a marched edge of this cell. These cells are the band the march will make, so
+    /// this is the counterpart of a band cell carrying its front face's term. Reads the cell's
+    /// own four vertices only. 0 while the repulsion does not run.
+    double repulsion_cell_term(const std::array<size_t, 4>& vids) const
+    {
+        if (!m_repulsion_potential) return 0.;
+        bool has_complex = false;
+        for (const size_t v : vids) has_complex = has_complex || m_vertex_extra[v].label != 0;
+        if (!has_complex) return 0.;
+        double e = 0.;
+        for (const size_t v : vids) {
+            if (m_vertex_extra[v].label == 0 && vertex_boundary_mask(v) == 0) {
+                e += repulsion_term_at(v);
+            }
+        }
+        return e;
+    }
+    /// How many cells of vid's ring carry its term (repulsion_cell_term()): the smoother's
+    /// objective is the ring's sum of the per-tet energy, so it charges O(v) that many times.
+    size_t repulsion_cells_at(const size_t vid) const
+    {
+        size_t n = 0;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            for (const size_t u : oriented_tet_vids(tid)) {
+                if (m_vertex_extra[u].label != 0) {
+                    ++n;
+                    break;
+                }
+            }
+        }
+        return n;
+    }
+    /// O(v) for vid's smoothing objective, charged once per carrying cell.
+    std::shared_ptr<OffsetEnergy3D> repulsion_energy(const size_t vid) const
     {
         return std::make_shared<OffsetEnergy3D>(
             m_repulsion_potential,
-            4. * offset_term_weight(),
+            double(repulsion_cells_at(vid)) * 4. * offset_term_weight(),
             true,
             true,
             /*one_sided=*/true);
     }
+    /// repulsion_rounds: whether the complex is still simplicially embedded around the cells
+    /// `tids` an operation just made -- no cell off the complex has complex vertices spanning a
+    /// simplex off the complex (tet_is_simp_emb()'s test, decided from the cells' labels, which
+    /// the operations carry, instead of the edge and face labels, which they do not). A collapse
+    /// or a swap that breaks it is refused. Defined in TopoOffsetTetMesh.cpp.
+    bool repulsion_embedding_kept(const std::vector<size_t>& tids) const;
+    /// Whether the simplex on the vertices `c` (2 or 3 of them) is in the input complex, from the
+    /// cells' labels: in a cell of the complex, or, for offset_in, on a domain-boundary face of a
+    /// body cell. Single-body offset_in or offset_out only, which repulsion_smoothing() checks.
+    bool simplex_in_input_complex(const std::vector<size_t>& c) const;
+    std::atomic<size_t> m_repulsion_embed_refused{0};
     /// Diagnostic (2026-09-28, Uday): where the front solves stop. Per pass, histograms of the
     /// final gradient norm of each front solve (log10 bins, -14..+7) and of its ratio to the
     /// solve's first gradient norm (log10 bins, -14..+1), read from polysolve's Criteria after
@@ -1481,10 +1550,11 @@ public:
      */
     bool smooth_front_vertex(const Tuple& t);
     /**
-     * @brief A repulsion vertex in the passes before the march (repulsion_smoothing()): the
-     * shared smoother at the front's options, against w AMIPS^3 of its ring plus its own term
-     * repulsion_energy(); under offset_front_smooth_veto, the max over its ring of w AMIPS^3 +
-     * that term may not rise. See FrontSmooth3d.cpp.
+     * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
+     * the shared smoother at the front's options, against the sum of the per-tet energy over its
+     * ring -- w AMIPS^3, and O(v) once for every ring cell that carries it (repulsion_energy(),
+     * repulsion_cell_term()); under offset_front_smooth_veto, the max of the per-tet energy over
+     * its ring may not rise. See FrontSmooth3d.cpp.
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
@@ -1603,7 +1673,8 @@ public:
     /// adds no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms
     /// of the front faces at vid when it is a front vertex the loop places (front_energy(); null
     /// in the final pass and for a front vertex an input envelope also pins), or, in the passes
-    /// before the march, a repulsion vertex's own term (repulsion_energy()). The ring's other
+    /// before the march, a repulsion vertex's term once per ring cell that carries it
+    /// (repulsion_energy(), repulsion_cell_term()). The ring's other
     /// front faces do not have vid as a corner, so their terms are constants here. Under
     /// deform_others the rest-shape AMIPS of the deformable cells in the ring is added, as before.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
@@ -1613,7 +1684,7 @@ public:
         sum->add_energy(amips3_energy(vid));
         // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
         if (is_repulsion_vertex(vid)) {
-            sum->add_energy(repulsion_energy());
+            sum->add_energy(repulsion_energy(vid));
             return sum;
         }
         if (vertex_carries_offset_term(vid)) {
@@ -2263,10 +2334,14 @@ public:
     /// (label 2).
     void marching_tets();
 
-    /// repulsion_smoothing_passes (see the spec): between the simplicial embedding and
-    /// marching_tets(), smoothing passes that push the outer ends of the marched edges out to
-    /// 2 x target_distance, stopping once every outer end is beyond target_distance + front_conv.
+    /// repulsion_smoothing_passes and repulsion_rounds (see the spec): between the simplicial
+    /// embedding and marching_tets(), smoothing passes and then rounds of the loop's operations
+    /// that push the outer ends of the marched edges out to 2 x target_distance, stopping once
+    /// every outer end is beyond target_distance + front_conv.
     void repulsion_smoothing();
+    /// Every construction label (vertex, edge, face, tet) back to 0, then label_input_complex():
+    /// the input complex from the region tags, which the operations carry.
+    void relabel_input_complex();
 
     //// simplicial embedding stuff
     bool is_simplicially_embedded() const;

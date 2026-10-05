@@ -1438,62 +1438,80 @@ void TopoOffsetTetMesh::simplicial_embedding()
     logger().info("\tEdges split: {}", edges_to_split.size());
 }
 
+void TopoOffsetTetMesh::relabel_input_complex()
+{
+    // label_input_complex() only ever sets labels to 1; every label goes back to 0 first, so a
+    // simplex an operation moved out of the complex is not left marked.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
+    for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
+    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
+    for (const Tuple& t : get_tets()) m_tet_attribute[t.tid(*this)].label = 0;
+    label_input_complex();
+}
+
 void TopoOffsetTetMesh::repulsion_smoothing()
 {
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first. Each one that no envelope holds is smoothed against w AMIPS^3 of its ring
-    // plus O(v) = (max(0, 2 delta - d(v)) / front_conv)^2 (repulsion_energy()): one-sided, so
-    // an outer end already beyond 2 delta is left to AMIPS, and 2 delta so that the march at
-    // delta splits each edge with room to spare -- the fallback's "half the maximum marchable
-    // distance" run backwards. Every other vertex is smoothed as in the loop. The passes stop
-    // once every outer end is beyond delta + front_conv, outside the tolerance band.
+    // ends out first, under one per-tet energy: w AMIPS^3 plus, for each corner v of the cell that
+    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
+    // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
+    // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
+    // the maximum marchable distance" run backwards). The smoother minimises its sum over a
+    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
+    // loop. An outer end that an envelope holds carries no term. First up to
+    // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
+    // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
+    // outside the tolerance band.
     const int n_passes = m_offset_params.repulsion_smoothing_passes;
-    if (n_passes <= 0) return;
+    const int n_rounds = m_offset_params.repulsion_rounds;
+    if (n_passes <= 0 && n_rounds <= 0) return;
     const double delta = m_offset_params.target_distance;
     const double stop = delta + m_offset_params.front_conv;
 
     // The outer ends exactly as marching_tets() picks its edges: the two ends differ in "label
-    // 0". A smoothing pass changes no label and no adjacency, so the set holds for every pass.
+    // 0". Recomputed at every report: the rounds' operations change the set. n_held: those an
+    // envelope holds, which is_repulsion_vertex() leaves to TetWild's rule.
     std::vector<size_t> outer;
-    {
+    size_t n_held = 0;
+    const auto collect_outer = [&]() {
+        outer.clear();
+        n_held = 0;
         std::vector<char> seen(vert_capacity(), 0);
         for (const Tuple& e : get_edges()) {
             const size_t v1 = e.vid(*this);
             const size_t v2 = e.switch_vertex(*this).vid(*this);
-            if ((m_vertex_extra[v1].label == 0) == (m_vertex_extra[v2].label == 0)) continue;
+            if (!is_marched_edge(v1, v2)) continue;
             const size_t v_out = m_vertex_extra[v1].label == 0 ? v1 : v2;
             if (!seen[v_out]) {
                 seen[v_out] = 1;
                 outer.push_back(v_out);
+                if (vertex_boundary_mask(v_out) != 0) ++n_held;
             }
         }
-    }
+    };
+    collect_outer();
     if (outer.empty()) {
         logger().info("\t[repulsion] no edge to march, no pass");
         return;
     }
-    // An outer end an envelope holds (a region boundary, the domain wall) keeps TetWild's rule,
-    // as a front vertex an envelope holds carries no offset term.
-    m_is_repulsion_vertex.assign(vert_capacity(), 0);
-    size_t n_held = 0;
-    for (const size_t v : outer) {
-        if (vertex_boundary_mask(v) != 0) {
-            ++n_held;
-            continue;
-        }
-        m_is_repulsion_vertex[v] = 1;
-    }
     // The march's own distance (the same input-complex arrays as m_input_complex_bvh), at level
-    // 2 delta.
+    // 2 delta. Non-null switches the repulsion on (is_repulsion_vertex()).
     m_repulsion_potential = std::make_shared<EuclideanOffsetPotential3D>(
         euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, 2. * delta),
         2. * delta);
+    m_repulsion_term = std::make_shared<OffsetEnergy3D>(
+        m_repulsion_potential,
+        4. * offset_term_weight(),
+        true,
+        true,
+        /*one_sided=*/true);
 
     // Logs the state and says whether every outer end is beyond delta + front_conv. AMIPS is
     // the cube root of the stored AMIPS^3.
     const auto report = [&](const std::string& when) {
+        collect_outer();
         double d_min = std::numeric_limits<double>::infinity();
         size_t n_stop = 0, n_delta = 0, n_2delta = 0;
         double ring_max = 0.;
@@ -1525,6 +1543,19 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             std::cbrt(mesh_max));
         return n_stop == 0;
     };
+    const auto log_newton = [&](const std::string& what) {
+        const size_t refused = m_repulsion_embed_refused.exchange(0);
+        logger().info(
+            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
+            what,
+            m_newton_repulsion.to_string(),
+            m_repulsion_veto_fired.exchange(0),
+            m_repulsion_veto_asked.exchange(0),
+            n_rounds > 0
+                ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
+                : std::string());
+        m_newton_repulsion.reset();
+    };
 
     logger().info(
         "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
@@ -1543,30 +1574,187 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     while (!done && k < n_passes) {
         ++k;
         smooth_all_vertices(1);
-        logger().info(
-            "\t[repulsion] pass {}: newton, repulsion: {} | veto: fired {} of {}",
-            k,
-            m_newton_repulsion.to_string(),
-            m_repulsion_veto_fired.exchange(0),
-            m_repulsion_veto_asked.exchange(0));
-        m_newton_repulsion.reset();
+        log_newton(fmt::format("pass {}", k));
         done = report(fmt::format("after pass {}", k));
         if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
     }
-    m_params.debug_output = frames;
-    if (done) {
-        logger().info(
-            "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
-            "pass(es)",
-            k);
-    } else {
-        logger().info(
-            "\t[repulsion] {} pass(es), the cap: some outer end is still within target_distance "
-            "+ front_conv",
-            k);
+    if (n_passes > 0) {
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "pass(es)",
+                k);
+        } else {
+            logger().info(
+                "\t[repulsion] {} pass(es), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                k);
+        }
     }
+
+    // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
+    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
+    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
+    // every operation aims at the base edge length) and no split of a marched edge
+    // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
+    // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
+    int r = 0;
+    if (!done && n_rounds > 0) {
+        // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
+        // when the complex is a body's cells (offset_out) or the cells outside a body (offset_in).
+        if (!m_singlebody || m_single_tag == m_sheet_tag ||
+            m_offset_params.offset_in == m_offset_params.offset_out) {
+            log_and_throw_error(
+                "repulsion_rounds: supported for a single body offset inward or outward only "
+                "(not a surface group, an expression, or both directions)");
+        }
+        m_edge_split_mode = EdgeSplitMode::Optimization;
+        init_vertex_order(); // the collapse rules read it; optimize_offset() recomputes it
+        compute_vertex_partition_morton();
+        const bool interleaved = m_params.interleaved_smoothing;
+        const int ks = std::max(
+            1,
+            interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+        const std::vector<std::array<int, 4>> groups =
+            interleaved
+                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
+                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
+        logger().info(
+            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
+            "marched-edge split",
+            n_rounds,
+            interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
+                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
+        op_accounting_reset(); // the [ops accounting] lines below are per round
+        swap_counters_reset();
+        while (!done && r < n_rounds) {
+            ++r;
+            for (const auto& g : groups) {
+                // The operations, then the labels from the tags, then the smoothing: the loop's
+                // operations carry the tets' tags and labels but not the construction labels of
+                // vertices, edges and faces, which say what the input complex is and so which
+                // vertices the smoothing pushes.
+                local_operations({{g[0], g[1], g[2], 0}});
+                relabel_input_complex();
+                // A collapse or a swap may have joined two complex vertices by an edge off the
+                // complex. The march needs the complex simplicially embedded, so it is embedded
+                // here, before the smoothing: the embedding's midpoints are new outer ends, and
+                // the smoothing and the stop test must see the mesh the march will get. (Measured
+                // without this, on the cylinder inward at 1e-1: one round left a single outer end
+                // at 1.37 delta, the embedding after the rounds then split 249 tets' chords and
+                // the march fell back to 0.027 delta.)
+                if (!is_simplicially_embedded()) {
+                    m_edge_split_mode = EdgeSplitMode::Midpoint;
+                    simplicial_embedding();
+                    bool dummy = is_simplicially_embedded();
+                    m_edge_split_mode = EdgeSplitMode::Optimization;
+                    init_vertex_order();
+                    compute_vertex_partition_morton();
+                }
+                local_operations({{0, 0, 0, g[3]}});
+            }
+            // How every split, collapse and swap of the round ended, as the loop logs it per turn.
+            // The embedding guard's refusals (repulsion_embedding_kept()) have no reason name in
+            // the engine's counters, so these lines count them as unexplained; the guard's own
+            // count is in the newton line below. Logged at info for that reason.
+            logger().info("\t[repulsion] round {} [swap reject]: {}", r, swap_reject_report());
+            swap_counters_reset();
+            for (const OpKind k :
+                 {OpKind::split,
+                  OpKind::collapse,
+                  OpKind::swap_32,
+                  OpKind::swap_44,
+                  OpKind::swap_56,
+                  OpKind::swap_face}) {
+                logger().info(
+                    "\t[repulsion] round {} [ops accounting] {}",
+                    r,
+                    op_accounting_report(k));
+            }
+            op_accounting_reset();
+            log_newton(fmt::format("round {}", r));
+            done = report(fmt::format("after round {}", r));
+            if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
+        }
+        // Every group above leaves the complex embedded and smoothing changes no topology, so
+        // this finds nothing; it stays as the guard the march relies on.
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (!is_simplicially_embedded()) {
+            logger().warn(
+                "\t[repulsion] the complex is not simplicially embedded after the rounds; "
+                "embedding it before the march");
+            simplicial_embedding();
+            bool dummy = is_simplicially_embedded();
+        }
+        consolidate_mesh();
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "round(s)",
+                r);
+        } else {
+            logger().info(
+                "\t[repulsion] {} round(s), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                r);
+        }
+    }
+    m_params.debug_output = frames;
     m_repulsion_potential.reset();
-    m_is_repulsion_vertex.clear();
+    m_repulsion_term.reset();
+}
+
+bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) const
+{
+    // In a cell of the complex (label 1: a body cell for offset_out, a cell outside the body for
+    // offset_in), as label_input_complex() labels them; for offset_in also on a domain-boundary
+    // face of a body cell, which label_input_complex() adds to the complex.
+    std::vector<Tuple> cells;
+    if (c.size() == 2) {
+        cells = get_incident_tets_for_edge(c[0], c[1]);
+    } else if (c.size() == 3) {
+        const auto [ft, fid] = tuple_from_face({{c[0], c[1], c[2]}});
+        cells.push_back(ft);
+        if (const auto o = ft.switch_tetrahedron(*this)) cells.push_back(*o);
+    } else {
+        return false;
+    }
+    for (const Tuple& t : cells) {
+        if (m_tet_attribute[t.tid(*this)].label != 0) return true;
+    }
+    if (!m_offset_params.offset_in) return false;
+    for (const Tuple& t : cells) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].tag.count(m_single_tag) == 0) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            if (f.switch_tetrahedron(*this)) continue; // not on the domain boundary
+            const auto fv = get_face_vids(f);
+            bool contains = true;
+            for (const size_t v : c) {
+                contains = contains && std::find(fv.begin(), fv.end(), v) != fv.end();
+            }
+            if (contains) return true;
+        }
+    }
+    return false;
+}
+
+bool TopoOffsetTetMesh::repulsion_embedding_kept(const std::vector<size_t>& tids) const
+{
+    // tet_is_simp_emb() on each cell, with the spanned simplex judged by
+    // simplex_in_input_complex(): vertex and cell labels are exact during an operation pass, the
+    // edge and face labels of new simplices are not.
+    for (const size_t tid : tids) {
+        if (m_tet_attribute[tid].label != 0) continue;
+        std::vector<size_t> in;
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (m_vertex_extra[v].label != 0) in.push_back(v);
+        }
+        if (in.size() <= 1) continue;
+        if (in.size() == 4 || !simplex_in_input_complex(in)) return false;
+    }
+    return true;
 }
 
 void TopoOffsetTetMesh::marching_tets()

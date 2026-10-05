@@ -291,6 +291,11 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const double amips3) cons
 {
     // See the declaration for the definition and why it is read here, on the mesh.
     const double a = weighted_amips(amips3);
+    // Before the march, while the repulsion runs: the cell's repulsion terms
+    // (repulsion_cell_term()). There is no front then, so nothing else is added.
+    if (m_repulsion_potential && amips3 < MAX_ENERGY) {
+        return std::min(a + repulsion_cell_term(oriented_tet_vids(tid)), MAX_ENERGY);
+    }
     if (amips3 >= MAX_ENERGY || !m_offset_potential || !cell_is_offset_band(tid)) return a;
     double e = a;
     for (int j = 0; j < 4; ++j) {
@@ -340,7 +345,8 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids) co
     if (amips3 >= MAX_ENERGY) return amips3;
     std::array<size_t, 4> s = vids;
     std::sort(s.begin(), s.end());
-    double e = weighted_amips(amips3);
+    // + the repulsion terms before the march, as tet_energy() adds them (no front faces then).
+    double e = weighted_amips(amips3) + repulsion_cell_term(vids);
     for (int k = 0; k < 4; ++k) {
         const std::array<size_t, 3> f = face_corners_from(s, k); // sorted, as s is
         const size_t apex = s[size_t(k)];
@@ -1225,6 +1231,10 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             // deform_others: a swap rewires exactly these cells; their rest is stale.
             stamp_rest_cell(t);
         }
+        if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
+            ++m_repulsion_embed_refused;
+            return false;
+        }
         if (!energy_lowered()) return false;
         ++iter_cnt_swap;
         return true;
@@ -1254,6 +1264,10 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t);
     }
     if (sides.worthwhile) ++funnel_energy;
+    if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
+        ++m_repulsion_embed_refused;
+        return false;
+    }
     if (!energy_lowered()) return false;
     // Only now, with every new cell's label written: the refresh reads labels, so it has to run
     // after the loop that sets them. The flip's net surface change is -(a,b,c) -(a,b,d) +(a,c,d)
@@ -1273,6 +1287,12 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
+    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept());
+    // every cell the collapse made is in the survivor's ring.
+    if (m_repulsion_potential && !repulsion_embedding_kept(get_one_ring_tids_for_vertex(v2_id))) {
+        ++m_repulsion_embed_refused;
+        return false;
+    }
     // The energy rule has run by now, inside the base's call above (collapse_after_connectivity(),
     // which says why there); a collapse that reaches this line has passed it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
