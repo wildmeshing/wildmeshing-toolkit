@@ -1553,7 +1553,7 @@ double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
     // minimises, taken along the move direction where there is one.
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(3);
-    front_objective(vid, x)->gradient(xv, g);
+    front_objective(vid)->gradient(xv, g);
     if (!g.allFinite()) return std::numeric_limits<double>::infinity();
     const Vector3d n = front_vertex_move_direction(vid);
     if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector3d(g)));
@@ -3064,13 +3064,15 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
     Vector3d g = pot->gradient(x0);
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector3d n = g / g.norm();
-    auto total = front_energy(vid, pot);
-    OffsetEnergy3D offset_only(pot, offset_term_weight(), true, true);
+    auto stencil = front_energy(vid, pot);
+    OffsetEnergy3D own_point(pot, offset_term_weight(), true, true);
     const double delta = m_offset_params.target_distance;
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}, {:.5}), region {}, along the field "
-        "direction n = ({:.4}, {:.4}, {:.4}); columns: s/delta | offset term | rest (alignment + "
-        "w AMIPS) | total",
+        "direction n = ({:.4}, {:.4}, {:.4}); columns: s/delta | own-point term (the vertex's "
+        "squared residual at its own position, in units of the bar) | stencil minus own point "
+        "| stencil offset term (front_energy(): the incident front faces' stencil terms, no "
+        "AMIPS)",
         vid,
         x0.x(),
         x0.y(),
@@ -3084,8 +3086,8 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
         const Vector3d x = x0 + sd * delta * n;
         Eigen::VectorXd xv(3);
         xv << x.x(), x.y(), x.z();
-        const double F = total->value(xv);
-        const double Fo = offset_only.value(xv);
+        const double F = stencil->value(xv);
+        const double Fo = own_point.value(xv);
         logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
     }
 }
@@ -3449,17 +3451,16 @@ double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
 
 double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 {
-    // The max of the face's AMIPS and Phi residual, each over its own target, restricted to what
-    // this face carries. >= 1 means the face fails at least one criterion.
-    const double tol = offset_residual_tolerance();
-    double score = amips_rel_at_face(f);
+    // The max of the face's AMIPS over stop_energy and, on a live offset face, the root of its
+    // face_offset_term() -- the loop's own face measure, in units of the bar. Sorted corners, as
+    // tet_energy() reads the term. An unmeasurable face fails.
+    const double score = amips_rel_at_face(f);
     if (!face_is_offset_surface_live(f)) return score;
-    for (const size_t vid : get_face_vids(f)) {
-        if (!band_vertex_is_reachable(vid)) continue;
-        score = std::max(score, band_vertex_residual(vid) / tol);
-    }
-    score = std::max(score, offset_face_samples(f).max / tol);
-    return score;
+    std::array<size_t, 3> v = get_face_vids(f);
+    std::sort(v.begin(), v.end());
+    const double term = face_offset_term(v[0], v[1], v[2]);
+    if (!(term >= 0.)) return std::numeric_limits<double>::infinity();
+    return std::max(score, std::sqrt(term));
 }
 
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
@@ -4715,16 +4716,11 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
     const GradientSplit g = gradient_split();
-    const double tol = offset_residual_tolerance();
-    const double gtol = offset_gradient_tolerance();
     logger().info(
-        "placement gradient (at band vertices): max {} (avg {}) vs tolerance {} "
-        "[front_conv / target_distance {}] | in-face diagnostic {} ({} face samples) | {} "
-        "reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
+        "placement gradient (at band vertices): max {} (avg {}) | in-face diagnostic {} ({} face "
+        "samples) | {} reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
         g.max_reachable,
         g.avg_reachable,
-        gtol,
-        m_offset_params.front_conv_frac(),
         g.max_in_face,
         g.n_face_samples,
         g.n_reachable,
@@ -4734,12 +4730,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         g.n_skipped_unrounded,
         g.n_skipped_inverted);
     logger().info(
-        "phi residual (diagnostic, absolute model units): max {} (avg {}) vs bar {} | at "
+        "phi residual (diagnostic, absolute model units): max {} (avg {}) vs front_conv {} | at "
         "vertices {}, inside faces {} | {} samples, {} pinned vertices || euclid dist err: max {} "
         "| avg {}",
         r.max_reachable,
         r.avg_reachable,
-        tol,
+        m_offset_params.front_conv,
         r.max_at_vertex,
         r.max_in_face,
         r.n_reachable,

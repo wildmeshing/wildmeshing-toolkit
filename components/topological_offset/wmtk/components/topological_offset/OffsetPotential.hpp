@@ -67,8 +67,7 @@ public:
      * and 1/delta-ish for a barrier. The |grad Phi| ~ slope step is local to the level set on a
      * flat stretch, not an identity.
      *
-     * Consumers: OffsetEnergy's distance_residual branch, and offset_residual_tolerance() in
-     * TopoOffsetTetMesh and TopoOffsetTriMesh.
+     * Consumer: OffsetEnergy's distance_residual branch.
      */
     double level_set_slope() const { return m_grad_ref; }
 

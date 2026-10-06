@@ -324,11 +324,6 @@ void topological_offset(nlohmann::json json_params)
                 // out of the loop the moment it converges, so its own verdict cannot drift from
                 // the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
-                // The measured scale that tolerance is a fraction of; without it the tolerance is
-                // an unreadable absolute number.
-                report["gradient_reference"] = mesh.gradient_reference();
-                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
@@ -554,10 +549,6 @@ void topological_offset(nlohmann::json json_params)
                 // out of the loop the moment it converges, so its own verdict cannot drift from
                 // the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
-                // The measured scale that tolerance is a fraction of, as in 2D.
-                report["gradient_reference"] = mesh.gradient_reference();
-                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }

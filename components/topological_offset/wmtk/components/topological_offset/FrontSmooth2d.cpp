@@ -233,49 +233,15 @@ Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_objective(
-    const size_t vid,
-    const Vector2d& x) const
+    const size_t vid) const
 {
-    // The one-ring's AMIPS with the vertex first in every cell (what AMIPS2D_jacobian
-    // differentiates against), at weight 1, plus the offset terms on the vertex's own region's
-    // field. Diagnostic: front_vertex_normal_gradient() differentiates it. As in 3D.
-    std::vector<std::array<double, 6>> cells;
-    std::vector<RestAMIPSEnergy2D::Cell> plastic_cells; // deform_others: increments only
-    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
-        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
-        int k = 0;
-        while (k < 3 && vs[k] != vid) ++k;
-        if (k == 3) continue;
-        const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
-        const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
-        // A plastic ring face brakes the front only by its increment since the group started
-        // (rest-shape AMIPS on the group-start rest); judged equilateral it becomes a permanent
-        // brake that parks the front at an elastic equilibrium. Band faces stay equilateral,
-        // except a band face that is a released object's material.
-        const FaceExtra2d& fx = m_face_extra[fid];
-        if ((face_is_plastic(fid) || face_is_released_band(fid)) && fx.rest_valid) {
-            Eigen::Matrix2d R;
-            R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
-            R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
-            if (R.determinant() > 0.) {
-                RestAMIPSEnergy2D::Cell c;
-                c.q1 = a;
-                c.q2 = b;
-                c.rest_inv = R.inverse();
-                plastic_cells.push_back(c);
-                continue;
-            }
-        }
-        cells.push_back({{x.x(), x.y(), a.x(), a.y(), b.x(), b.y()}});
-    }
-    // AMIPS at weight 1 beside the offset term in units of the tolerance, the rest-shape term of
-    // a plastic face 1:1 with the AMIPS it replaces. As in 3D.
-    const double amips_w = 1.;
+    // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
+    // term included unconditionally: w AMIPS over the one-ring, the plastic faces' rest-shape
+    // AMIPS, and the offset terms on the vertex's own region's field. As in 3D, where the AMIPS
+    // part is cubed.
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (!cells.empty())
-        sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
-    if (!plastic_cells.empty())
-        sum->add_energy(std::make_shared<RestAMIPSEnergy2D>(std::move(plastic_cells), amips_w));
+    sum->add_energy(amips_energy(vid));
+    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
     sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
     return sum;
 }

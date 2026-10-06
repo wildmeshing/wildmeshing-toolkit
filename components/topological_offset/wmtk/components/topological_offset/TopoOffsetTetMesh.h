@@ -693,8 +693,6 @@ public:
     mutable int m_debug_last_round = -1;
     mutable char m_debug_last_tag = '?';
     mutable std::string m_debug_last_prefix = "?";
-    /// See offset_gradient_tolerance(). Nothing sets it in the loop; it stays 0.
-    double m_gradient_reference = 0.;
     /// The run's verdict: the front resolved (EnergyCriterion::converged(): every offset face's
     /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
     /// Read by the report and by throw_on_nonconvergence.
@@ -1381,11 +1379,12 @@ public:
         const Vector3d& pc) const;
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
-    /// The objective of front vertex vid with the vertex at x: AMIPS of its one-ring at
-    /// weight 1 (rest-shape AMIPS for its plastic cells, also at 1) + front_energy(). What
-    /// the measure above differentiates.
-    std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid, const Vector3d& x)
-        const;
+    /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
+    /// places against the offset term (smoothing_extra_energy()): w AMIPS^3 over the one-ring
+    /// (amips3_energy()), the rest-shape AMIPS of its plastic cells (rest_energy_for_vertex(),
+    /// null without the plastic medium), and front_energy(). What the measure above
+    /// differentiates.
+    std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
     /// frozen-front final pass, that no envelope also holds (vertex_is_held()).
     bool vertex_carries_offset_term(const size_t vid) const
@@ -1475,26 +1474,6 @@ public:
         const int n = 1 << (k - 1);
         return (n + 1) * (n + 2) / 2 + n * n;
     }
-
-    /// The residual scale, derived from the criterion: half the gradient tolerance over the
-    /// level-set slope squared, in length units. Same expression as 2D.
-    double offset_residual_tolerance() const
-    {
-        const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
-        return std::max(0.5 * offset_gradient_tolerance() / (s * s), 1e-16);
-    }
-
-    /// The gradient_norm_rel bar: front_conv_frac() x a measured reference
-    /// (m_gradient_reference, never measured in the loop, so this sits at the floor there; the
-    /// loop's bar uses m_front_gradient_reference instead). The fraction rather
-    /// than the length, because the reference is a gradient, not a distance. Same as 2D.
-    double offset_gradient_tolerance() const
-    {
-        return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
-    }
-
-    /// The scale offset_gradient_tolerance() is a fraction of; 0 in the loop.
-    double gradient_reference() const { return m_gradient_reference; }
 
     /// Stop the run if any reachable band vertex has left the potential's support. Called once
     /// per turn and once on the band as constructed.
@@ -1906,8 +1885,10 @@ public:
     /// refuse a collapse.
     bool optimization_bare_coarsen_passes() const override { return false; }
 
-    /// Max of the two normalized criteria (AMIPS over stop, residual over tolerance) on this
-    /// face; >= 1 means it fails at least one. The coarsen-mode collapse accept reads it.
+    /// Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it
+    /// separates, and on a live offset face the root of face_offset_term() (the face's RMS
+    /// relative error over its stencil in units of the bar; +inf if unmeasurable). > 1 means it
+    /// fails at least one. The coarsen-mode collapse accept reads it.
     double face_criterion_rel(const Tuple& f) const;
     /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel().
     double cell_quality_rel(const size_t tid) const;

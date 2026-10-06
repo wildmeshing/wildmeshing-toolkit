@@ -288,58 +288,14 @@ Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objective(
-    const size_t vid,
-    const Vector3d& x) const
+    const size_t vid) const
 {
-    // The one-ring's AMIPS with the vertex first in every cell (what AMIPS_jacobian
-    // differentiates against), at the weight 1 the shared smoother gives it at a vertex it places
-    // against the offset term, plus the offset terms on the vertex's own region's field.
-    std::vector<std::array<double, 12>> cells;
-    std::vector<RestAMIPSEnergy3D::Cell> plastic_cells; // deform_others: increments only
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-        const std::array<size_t, 4> orig = oriented_tet_vids(tid);
-        const std::array<size_t, 4> vs = wmtk::orient_preserve_tet_reorder(orig, vid);
-        std::array<int, 4> from{};
-        for (int k = 0; k < 4; ++k) {
-            for (int j = 0; j < 4; ++j) {
-                if (orig[j] == vs[k]) from[k] = j;
-            }
-        }
-        // A plastic ring cell brakes the front only by its increment since the group started
-        // (rest-shape AMIPS on the group-start rest); judged regular it becomes a permanent
-        // brake that parks the front at an elastic equilibrium. Band cells stay regular.
-        const TetAttributes& ta = m_tet_attribute[tid];
-        if (cell_is_plastic(tid) && ta.rest_valid) {
-            Eigen::Matrix3d R;
-            for (int k = 1; k < 4; ++k) {
-                R.col(k - 1) = ta.rest_pos[size_t(from[k])] - ta.rest_pos[size_t(from[0])];
-            }
-            if (R.determinant() > 0.) {
-                RestAMIPSEnergy3D::Cell c;
-                c.q1 = m_vertex_attribute[vs[1]].m_posf;
-                c.q2 = m_vertex_attribute[vs[2]].m_posf;
-                c.q3 = m_vertex_attribute[vs[3]].m_posf;
-                c.rest_inv = R.inverse();
-                plastic_cells.push_back(c);
-                continue;
-            }
-        }
-        std::array<double, 12> T;
-        for (int k = 0; k < 4; ++k) {
-            const Vector3d p = (k == 0) ? x : m_vertex_attribute[vs[k]].m_posf;
-            for (int j = 0; j < 3; ++j) T[k * 3 + j] = p[j];
-        }
-        cells.push_back(T);
-    }
-    // AMIPS at weight 1 beside the offset term in units of the tolerance: the per-tet energy's
-    // two parts at 1:1, as the 3-D path weights them (smoother_amips_weight()). The rest-shape
-    // term of a plastic cell sits 1:1 with the AMIPS it replaces.
-    const double amips_w = 1.;
+    // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
+    // term included unconditionally: w AMIPS^3 over the one-ring, the plastic cells' rest-shape
+    // AMIPS, and the offset terms on the vertex's own region's field.
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (!cells.empty())
-        sum->add_energy(std::make_shared<optimization::AMIPSEnergy3D>(cells, amips_w));
-    if (!plastic_cells.empty())
-        sum->add_energy(std::make_shared<RestAMIPSEnergy3D>(std::move(plastic_cells), amips_w));
+    sum->add_energy(amips3_energy(vid));
+    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
     sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
     return sum;
 }

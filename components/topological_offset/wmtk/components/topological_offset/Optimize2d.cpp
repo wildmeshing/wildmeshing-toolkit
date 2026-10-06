@@ -540,8 +540,7 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     }
     // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
     // elements for nothing but the promise that the result is still good. As in 3D.
-    // face_criterion_rel() is the max of AMIPS and the offset residual, each over its own
-    // tolerance.
+    // face_criterion_rel() is the max of AMIPS over stop_energy and the chord measure.
     if (m_coarsen_mode && m_offset_potential) {
         double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(v2_id)) {
@@ -1051,7 +1050,7 @@ double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
     // minimises, taken along the move direction n: |grad F . n| (see below).
     const Vector2d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(2);
-    front_objective(vid, x)->gradient(xv, g);
+    front_objective(vid)->gradient(xv, g);
     if (!g.allFinite()) return std::numeric_limits<double>::infinity();
     // Along the field normal whatever the placement mode: the test asks whether the front is where
     // the field wants it. Tangential motion is the flat direction of the energy -- only w x AMIPS
@@ -2928,9 +2927,9 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
 
 void TopoOffsetTriMesh::log_front_profile(const size_t vid)
 {
-    // Diagnostic: the front energy of one vertex along its normal, its own offset term alone
-    // against the total, at 21 points across +-delta/2. Logged once, on non-convergence, for the
-    // worst vertex. As in 3D.
+    // Diagnostic: the stencil offset term of one vertex along its normal, against its own-point
+    // term alone, at 21 points across +-delta/2. Logged once, on non-convergence, for the worst
+    // vertex. As in 3D.
     if (vid == static_cast<size_t>(-1) || vid >= m_vertex_attribute.size() || !m_offset_potential)
         return;
     const int region = vertex_region(vid);
@@ -2939,12 +2938,14 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
     Vector2d g = pot->gradient(x0);
     if (!(g.norm() > 0.) || !g.allFinite()) return;
     const Vector2d n = g / g.norm(); // toward the input for the smooth field, away for Euclidean
-    auto total = front_energy(vid, pot);
-    OffsetEnergy2D offset_only(pot, offset_term_weight(), true, true);
+    auto stencil = front_energy(vid, pot);
+    OffsetEnergy2D own_point(pot, offset_term_weight(), true, true);
     const double delta = m_offset_params.target_distance;
     logger().info(
         "[front profile] worst vertex {} at ({:.5}, {:.5}), region {}, along the field direction "
-        "n = ({:.4}, {:.4}); columns: s/delta | offset term | rest (alignment + w AMIPS) | total",
+        "n = ({:.4}, {:.4}); columns: s/delta | own-point term (the vertex's squared residual at "
+        "its own position, in units of the bar) | stencil minus own point | stencil offset term "
+        "(front_energy(): the incident front chords' stencil terms, no AMIPS)",
         vid,
         x0.x(),
         x0.y(),
@@ -2956,8 +2957,8 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
         const Vector2d x = x0 + sd * delta * n;
         Eigen::VectorXd xv(2);
         xv << x.x(), x.y();
-        const double F = total->value(xv);
-        const double Fo = offset_only.value(xv);
+        const double F = stencil->value(xv);
+        const double Fo = own_point.value(xv);
         logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
     }
 }
@@ -3312,22 +3313,18 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::distance_deviation_split() c
 
 double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
 {
-    // The per-face form of optimization_quality_stats()'s max: the same two criteria, each over
-    // its own target, restricted to what this face carries. >= 1 means the face fails at least
-    // one of them, which is what makes it a candidate for refinement.
+    // The max of the face's AMIPS over stop_energy and, on each live chord it carries, the root of
+    // the chord's edge_offset_term() -- the loop's own chord measure, in units of the bar. Sorted
+    // ends, as tri_energy() reads the term. An unmeasurable chord fails. As in 3D.
     double score = quality_rel(fid);
-
-    const double tol = offset_residual_tolerance();
     for (int j = 0; j < 3; ++j) {
         const Tuple e = tuple_from_edge(fid, j);
         if (!edge_is_offset_surface_live(e)) continue;
-        for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
-            if (!band_vertex_is_reachable(vid)) continue;
-            score = std::max(score, band_vertex_residual(vid) / tol);
-        }
-        // Along the edge as well, so a face carrying a stretch of band too coarse to represent
-        // the offset is refined -- the mechanism that keeps the band resolved at all.
-        score = std::max(score, offset_edge_samples(e).max / tol);
+        std::array<size_t, 2> v = get_edge_vids(e);
+        if (v[0] > v[1]) std::swap(v[0], v[1]);
+        const double term = edge_offset_term(v[0], v[1]);
+        if (!(term >= 0.)) return std::numeric_limits<double>::infinity();
+        score = std::max(score, std::sqrt(term));
     }
     return score;
 }
@@ -4511,16 +4508,11 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
     const GradientSplit g = gradient_split();
-    const double tol = offset_residual_tolerance();
-    const double gtol = offset_gradient_tolerance();
     logger().info(
-        "placement gradient (at band vertices): max {} (avg {}) vs tolerance {} "
-        "[front_conv / target_distance {}] | in-edge diagnostic {} ({} edge samples) | {} "
-        "reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
+        "placement gradient (at band vertices): max {} (avg {}) | in-edge diagnostic {} ({} edge "
+        "samples) | {} reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
         g.max_reachable,
         g.avg_reachable,
-        gtol,
-        m_offset_params.front_conv_frac(),
         g.max_in_edge,
         g.n_edge_samples,
         g.n_reachable,
@@ -4530,12 +4522,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         g.n_skipped_unrounded,
         g.n_skipped_inverted);
     logger().info(
-        "phi residual (diagnostic, absolute model units): max {} (avg {}) vs bar {} | at "
+        "phi residual (diagnostic, absolute model units): max {} (avg {}) vs front_conv {} | at "
         "vertices {}, inside edges {} | {} samples, {} pinned vertices || euclid dist err: max {} "
         "| avg {}",
         r.max_reachable,
         r.avg_reachable,
-        tol,
+        m_offset_params.front_conv,
         r.max_at_vertex,
         r.max_in_edge,
         r.n_reachable,
