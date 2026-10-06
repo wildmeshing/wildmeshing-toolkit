@@ -109,6 +109,7 @@ void embed_triangles_in_tets(
 
     // Step 4a: copy the arrangement vertices to exact rational Vector3r. No
     // compaction yet -- unused vertices are pruned near the end.
+    v_rational.reserve(v_rational.size() + embedded_vertices.size() / 3);
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
 #ifdef USE_GNU_GMP_CLASSES
@@ -362,6 +363,12 @@ void embed_triangles_in_tets(
     std::vector<int64_t> v_map(v_rational.size(), -1);
     std::vector<Vector3r> v_coords_final;
     std::vector<bool> is_v_on_input_buffer;
+    // Sized up front and moved, not copied, into place: a Rational copy allocates fresh limbs,
+    // so growing v_coords_final by doubling and then copy-assigning it back held up to three
+    // copies of every exact coordinate at once.
+    const size_t n_used = std::count(v_is_used_in_tet.begin(), v_is_used_in_tet.end(), true);
+    v_coords_final.reserve(n_used);
+    is_v_on_input_buffer.reserve(n_used);
 
     for (size_t i = 0; i < v_rational.size(); ++i) {
         if (v_is_used_in_tet[i]) {
@@ -371,8 +378,8 @@ void embed_triangles_in_tets(
         }
     }
     // update vertices
-    v_rational = v_coords_final;
-    is_v_on_input = is_v_on_input_buffer;
+    v_rational = std::move(v_coords_final);
+    is_v_on_input = std::move(is_v_on_input_buffer);
     // update tets (in place, into the compacted numbering)
     for (auto& t : out_tets) {
         for (int i = 0; i < 4; ++i) {

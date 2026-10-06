@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <set>
 #include <wmtk/Types.hpp>
@@ -134,8 +135,14 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is
     // stable.
-    // check for consistent orientation between tets
-    std::set<std::array<size_t, 3>> face_set; // each face must be unique
+    // check for consistent orientation between tets: every oriented face must be unique.
+    //
+    // A sorted array rather than a std::set: 12 bytes per face instead of a 64-byte tree node.
+    // This runs over the whole arrangement while the insertion's output is still held, and on
+    // the largest inputs the set alone was over half a gigabyte. Vertex ids come from the
+    // remesher as uint32, so narrowing them is lossless.
+    std::vector<std::array<uint32_t, 3>> oriented_faces;
+    oriented_faces.reserve(4 * tets_after.size());
     for (int i = 0; i < tets_after.size(); ++i) {
         const auto& t = tets_after[i];
         std::array<std::array<size_t, 3>, 4> faces = {{
@@ -149,14 +156,13 @@ void TetWildMesh::insertion_by_volumeremesher(
         // which they appear in the tet.
         for (auto& f : faces) {
             std::rotate(f.begin(), std::min_element(f.begin(), f.end()), f.end());
+            oriented_faces.push_back({{uint32_t(f[0]), uint32_t(f[1]), uint32_t(f[2])}});
         }
-
-        for (const auto& f : faces) {
-            if (face_set.count(f) > 0) {
-                log_and_throw_error("Face {} appears more than once in the tet list", f);
-            }
-            face_set.insert(f);
-        }
+    }
+    std::sort(oriented_faces.begin(), oriented_faces.end());
+    const auto dup = std::adjacent_find(oriented_faces.begin(), oriented_faces.end());
+    if (dup != oriented_faces.end()) {
+        log_and_throw_error("Face {} appears more than once in the tet list", *dup);
     }
 }
 
