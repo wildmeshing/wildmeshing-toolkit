@@ -232,10 +232,10 @@ public:
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
 
-    /// Serial passes grow the storage between operations (see TriMesh::reserve_free_slots), so
-    /// a serial optimizer only keeps a small slack. run_pass picks the serial policy exactly
-    /// when NUM_THREADS <= 0, and this has to agree with it.
-    bool storage_grows_on_demand() const override { return NUM_THREADS <= 0; }
+    /// Every pass grows the storage at its serial points -- between operations when serial,
+    /// between rounds when parallel (see ExecutePass) -- so the optimizer only keeps a small
+    /// slack instead of the preallocation factor.
+    bool storage_grows_on_demand() const override { return true; }
 
 protected:
     /// The high-valence claims are indexed by vertex id and sized to the storage at the start

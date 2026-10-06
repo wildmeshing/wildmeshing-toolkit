@@ -383,6 +383,7 @@ public:
     static constexpr int EDGES_PER_CELL = 6;
     static constexpr int FACES_PER_CELL = 4;
     size_t cell_capacity() const { return tet_capacity(); }
+    size_t cell_storage_capacity() const { return m_tet_connectivity.capacity(); }
     Tuple tuple_from_cell(size_t cid) const { return tuple_from_tet(cid); }
     /** @} */
 
@@ -742,6 +743,20 @@ public:
     /// Whether this mesh's passes run serially and so grow the storage on demand; if so,
     /// init/consolidate reserve a small slack instead of the preallocation factor.
     virtual bool storage_grows_on_demand() const { return false; }
+
+    /// Cell and vertex slots this thread has taken from meshes of this type, ever; see
+    /// SlotPool::taken_by_this_thread. Differences measure what an operation consumed.
+    struct SlotUsage
+    {
+        size_t cells = 0;
+        size_t verts = 0;
+    };
+    static SlotUsage slot_usage_of_this_thread()
+    {
+        return {
+            SlotPool<TetrahedronConnectivity>::taken_by_this_thread(),
+            SlotPool<VertexConnectivity>::taken_by_this_thread()};
+    }
     /** @} */
 
 protected:

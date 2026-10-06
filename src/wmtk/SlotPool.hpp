@@ -78,6 +78,15 @@ public:
     void clear_refused() { m_refused.store(false, std::memory_order_relaxed); }
     /** @} */
 
+    /**
+     * @brief Slots this thread has been handed by pools of this type, over its lifetime.
+     *
+     * Only differences are meaningful. The scheduler reads it before and after an operation to
+     * learn exactly what the operation took -- which is how a parallel pass charges operations
+     * against per-thread budgets without a shared counter.
+     */
+    static size_t taken_by_this_thread() { return t_taken; }
+
     T& operator[](size_t i) { return m_data[i]; }
     const T& operator[](size_t i) const { return m_data[i]; }
 
@@ -130,12 +139,14 @@ public:
         for (size_t i = first; i < first + n; ++i) {
             m_data[i] = T{};
         }
+        t_taken += n;
         return first;
     }
 
 private:
     std::vector<T> m_data;
     std::atomic<size_t> m_live{0};
+    static inline thread_local size_t t_taken = 0;
     std::atomic<bool> m_refused{false};
 };
 

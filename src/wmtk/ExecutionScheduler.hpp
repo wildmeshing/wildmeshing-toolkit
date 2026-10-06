@@ -404,6 +404,14 @@ private:
         // is the one the std::tuple had -- (priority, op, tuple, retry, key), lexicographic -- so
         // the pop order is unchanged. The key compares last, after the tuple, and two elements
         // with the same tuple have the same key.
+        // What a parallel task may still take from the storage this round.
+        struct SlotBudget
+        {
+            size_t cells = 0;
+            size_t verts = 0;
+            bool stopped = false; // ended its round for want of slots, queue not drained
+            bool progressed = false; // ran at least one operation this round
+        };
         struct Elem
         {
             double weight = 0;
@@ -539,7 +547,10 @@ private:
         // parallel pass. The storage may then grow between operations (see
         // TetMesh::reserve_free_slots), never inside a parallel task; and a must_wait that says
         // true is a defect there.
-        auto run_single_queue = [&](auto& Q, int task_id, const bool serial) {
+        //
+        // `budget`: the slots a parallel task may still take this round (see the round loop
+        // below); null when the task may grow the storage instead.
+        auto run_single_queue = [&](auto& Q, int task_id, const bool serial, SlotBudget* budget) {
             CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
@@ -639,9 +650,27 @@ private:
                         }
                         if (serial) {
                             m.reserve_free_slots(m.cell_slot_bound(tup), 1);
+                        } else if (budget != nullptr) {
+                            // The ring is locked, so the stars the bound reads are stable.
+                            if (m.cell_slot_bound(tup) > budget->cells || budget->verts < 1) {
+                                // Out of this round's slots: hand the operation back untouched,
+                                // with everything deferred, and end the task's round.
+                                operation_cleanup(m);
+                                Q.emplace(ele_in_queue);
+                                refill();
+                                budget->stopped = true;
+                                return;
+                            }
                         }
+                        const auto usage_before = AppMesh::slot_usage_of_this_thread();
                         auto newtup = (*op_fn[op])(m, tup);
                         done(key);
+                        if (budget != nullptr) {
+                            const auto usage = AppMesh::slot_usage_of_this_thread();
+                            budget->cells -= usage.cells - usage_before.cells;
+                            budget->verts -= usage.verts - usage_before.verts;
+                            budget->progressed = true;
+                        }
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
@@ -695,7 +724,7 @@ private:
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
             release_operation_list(release_after_seeding);
-            run_single_queue(final_queue, 0, /*serial=*/true);
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
         } else {
             for (const auto& [op, e] : operation_tuples) {
                 if (!e.is_valid(m)) {
@@ -709,17 +738,60 @@ private:
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
             const auto t_parallel = clock::now();
+            // Rounds. The storage cannot grow while the tasks run, so each round starts at a
+            // serial point that grows it by a headroom split into per-task budgets; a task runs
+            // an operation only if its budget covers the operation's slot bound, and is charged
+            // what the operation actually took. A task that cannot afford its next operation
+            // hands it back and ends its round. No operation is ever refused for want of slots,
+            // and the storage only ever needs to be a quarter larger than the mesh.
+            //
+            // A task that ends a round without having run anything had a single operation
+            // larger than its share; its share doubles until it fits, so every round but the
+            // last makes progress and the loop terminates.
+            const size_t n_tasks = queues.size();
+            std::vector<SlotBudget> budgets(n_tasks);
+            std::vector<unsigned> boost(n_tasks, 0);
             wmtk::threading::task_group tg;
-            for (int task_id = 0; task_id < queues.size(); task_id++) {
-                tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
-                    const auto t0 = clock::now();
-                    run_single_queue(queues[task_id], task_id, /*serial=*/false);
-                    // Each task writes only its own slot.
-                    task_seconds[task_id] =
-                        std::chrono::duration<double>(clock::now() - t0).count();
-                });
+            for (size_t round = 0;; ++round) {
+                // A quarter of the mesh per round, or whatever the storage already has free if
+                // that is more -- a mesh that still preallocates never runs more rounds than
+                // its headroom forces.
+                const size_t cell_room =
+                    std::max(m.cell_capacity() / 4, m.cell_storage_capacity() - m.cell_capacity());
+                const size_t vert_room =
+                    std::max(m.vert_capacity() / 4, m.vert_storage_capacity() - m.vert_capacity());
+                const size_t cell_share = std::max<size_t>(4096, cell_room / n_tasks);
+                const size_t vert_share = std::max<size_t>(1024, vert_room / n_tasks);
+                size_t cells = 0, verts = 0;
+                for (size_t t = 0; t < n_tasks; ++t) {
+                    budgets[t] = SlotBudget{cell_share << boost[t], vert_share << boost[t]};
+                    cells += budgets[t].cells;
+                    verts += budgets[t].verts;
+                }
+                m.reserve_free_slots(cells, verts);
+                for (int task_id = 0; task_id < n_tasks; task_id++) {
+                    tg.run([&run_single_queue, &queues, &task_seconds, &budgets, task_id] {
+                        const auto t0 = clock::now();
+                        run_single_queue(
+                            queues[task_id],
+                            task_id,
+                            /*serial=*/false,
+                            &budgets[task_id]);
+                        // Each task writes only its own slot.
+                        task_seconds[task_id] +=
+                            std::chrono::duration<double>(clock::now() - t0).count();
+                    });
+                }
+                tg.wait();
+                bool again = false;
+                for (size_t t = 0; t < n_tasks; ++t) {
+                    if (!budgets[t].stopped) continue;
+                    again = true;
+                    if (!budgets[t].progressed) boost[t] = std::min(boost[t] + 1, 24u);
+                }
+                if (!again) break;
+                m_stats.rounds = round + 2;
             }
-            tg.wait();
             m_stats.parallel_seconds =
                 std::chrono::duration<double>(clock::now() - t_parallel).count();
             m_stats.final_queue_size = final_queue.size();
@@ -727,7 +799,7 @@ private:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
-            run_single_queue(final_queue, 0, /*serial=*/true);
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
             m_stats.serial_tail_seconds =
                 std::chrono::duration<double>(clock::now() - t_tail).count();
         }
@@ -745,6 +817,11 @@ private:
             (int)cnt_success + (int)cnt_fail,
             (int)cnt_success,
             (int)cnt_fail);
+        if (m_stats.rounds > 1) {
+            logger().info(
+                "  parallel region ran in {} rounds (storage grown between them)",
+                m_stats.rounds);
+        }
         log_contention();
         // Every tracked element queued in this call was tried or dropped, unless the stopping
         // criterion ended the call early. Anything else is a bookkeeping defect, and is_queued()
@@ -800,6 +877,9 @@ public:
         /// split the work unevenly, and since tasks never steal, the tail is one thread.
         double busiest_task_seconds = 0.;
         double idlest_task_seconds = 0.;
+        /// Rounds the parallel region took: more than one when the tasks ran through their
+        /// slot budgets and the storage had to grow between rounds.
+        size_t rounds = 1;
     };
     const PassStats& stats() const { return m_stats; }
 
