@@ -56,9 +56,8 @@ CPMAddPackage(
     # and fast-envelope did not compile against them -- which it gets here regardless of its
     # own pin, because VolumeRemesher's declaration comes first.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    # PR #9's head, until it merges. A commit rather than the branch name, so the build stays
-    # reproducible.
-    GIT_TAG ada2bd09af7b994fb525f8378551e353fc157155
+    # main. A commit rather than the branch name, so the build stays reproducible.
+    GIT_TAG c803c65a4338796fffa9e30545ff04ea0c456930
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )
