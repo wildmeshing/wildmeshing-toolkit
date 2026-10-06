@@ -40,9 +40,10 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # reducing bigrational products, so at 75a70dc those functions returned x = lx / d
 # unreduced (3/6, not 1/2), and Rational's operator== -- mpq_equal, which compares
 # numerator and denominator directly -- said false for equal values. That changed tetwild's
-# output on tetwild_thingi_1344050, tetwild_thingi_229953 and challenging_tetwild_101954;
-# with #27 those match what canonicalizing every coordinate gives, and every other
-# registered integration config is byte-identical.
+# output on some inputs: 2 of the 11 registered tetwild configs (thingi_1344050,
+# thingi_229953) and several of the challenging ones. Wherever the output moved with #27, it
+# is byte-identical to what canonicalizing every coordinate on this side gives, and every
+# other output we measured is unchanged.
 #
 # Before that (609e32c4 -> 75a70dc):
 #
