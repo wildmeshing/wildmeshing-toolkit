@@ -8,23 +8,58 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 
 # wildmeshing/VolumeRemesher main. Carries the 2D pipeline
 # (vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to
-# insert its input segments) plus, since PR #19, an externalized exact-arithmetic
-# kernel: numerics.h and the predicate headers are now thin shims over NFG and
-# Indirect_Predicates, fetched and pinned by VolumeRemesher itself. Those upstream
-# headers live in the global namespace; the shims re-export the public types into
-# `vol_rem` with using-declarations, so the include paths and the API this project
-# depends on are unchanged. Note the build now fetches two more repositories.
+# insert its input segments) and fetches and pins its exact-arithmetic and Delaunay
+# dependencies itself: NFG (number types), Indirect_Predicates (predicates) and, since
+# PR #26, Delaunay3D (the 3D tetrahedrization, which used to be built in).
+#
+# All three define everything inside their own namespaces -- NFG, IPs and Del3D -- and
+# VolumeRemesher includes them unwrapped, so the number type its API returns is
+# `NFG::bigrational` and its Delaunay mesh is `vol_rem::TetMesh`, a typedef for
+# `Del3D::TetMesh_t<basicVec3d>` (VolumeRemesher/delaunay3d_wrapper.h). fast-envelope
+# fetches NFG and Indirect_Predicates under the same names; FetchContent keeps the first
+# declaration, which is VolumeRemesher's, so the two pins must stay identical (see
+# fenvelope.cmake).
 #
 # Exact-arithmetic backend: VOLUMEREMESHER_WITH_GMP defaults to OFF, so
-# `vol_rem::bigrational` is upstream's built-in bignum rather than mpq_class and
+# `NFG::bigrational` is upstream's built-in bignum rather than mpq_class and
 # USE_GNU_GMP_CLASSES is not defined. That selects the `init_from_bin(get_str())`
 # branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
-# init_from_bin parses.
+# init_from_bin parses. init_from_bin is mpq_set_str with no mpq_canonicalize, so it relies
+# on VolumeRemesher returning every coordinate in lowest terms (GMP requires canonical
+# operands; see PR #27 below).
 #
-# Pinned at main. The previous pin (64c52aa5) is this one's first parent; the only change
-# between them is VolumeRemesher PR #25, which stores cached orient3D results in a
-# `signed char` rather than a `char`. That is a correctness fix for Linux on arm64, where
+# Pinned at main, fc72cc0. Since the previous pin (48b200f) came PR #28, which pins NFG to
+# upstream 9b7635a -- MarcoAttene/NFG#4 merged, see below -- so NFG and Indirect_Predicates
+# are upstream's latest, and VolumeRemesher and fast-envelope declare identical commits of
+# both. Nothing changes on GCC or Clang.
+#
+# Before that (75a70dc -> 48b200f) came PR #27: the exact
+# coordinates returned by embed_tri_in_poly_mesh and embed_seg_in_tri_mesh are in lowest
+# terms again, and are computed in parallel. NFG ecd60a8 (pinned since 75a70dc) stopped
+# reducing bigrational products, so at 75a70dc those functions returned x = lx / d
+# unreduced (3/6, not 1/2), and Rational's operator== -- mpq_equal, which compares
+# numerator and denominator directly -- said false for equal values. That changed tetwild's
+# output on some inputs: 2 of the 11 registered tetwild configs (thingi_1344050,
+# thingi_229953) and several of the challenging ones. Wherever the output moved with #27, it
+# is byte-identical to what canonicalizing every coordinate on this side gives, and every
+# other output we measured is unchanged.
+#
+# Before that (609e32c4 -> 75a70dc):
+#
+#   - PR #26 replaced the built-in 3D Delaunay with Delaunay3D. It produces a different,
+#     equally valid tetrahedrization, so every 3D output moves -- tetwild and simwild here,
+#     and all 28 of VolumeRemesher's own 3D reference hashes. The 2D pipeline has its own
+#     kernel and is unaffected. `vertex_t::original_index` is gone: Delaunay3D does not
+#     permute the vertices it is given (src/wmtk/utils/Delaunay.cpp).
+#   - NFG, Indirect_Predicates and Delaunay3D moved into namespaces, and
+#     include/VolumeRemesher/{numerics,implicit_point,indirect_predicates}.h -- the shims
+#     that wrapped them in vol_rem -- were deleted.
+#   - Indirect_Predicates is back on MarcoAttene upstream: the fix the wildmeshing fork
+#     carried is upstream #15, merged.
+#
+# Before that (64c52aa5 -> 609e32c4) came VolumeRemesher PR #25, which stores cached
+# orient3D results in a `signed char` rather than a `char`. That is a correctness fix for Linux on arm64, where
 # `char` is unsigned (AAPCS64) and a cached -1 read back as 255: every constraint was then
 # judged not to split its cell and the input surface was silently never embedded. It has no
 # effect on x86-64 or on macOS, where `char` is already signed.
@@ -34,11 +69,25 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # group, i.e. to its index into out_triangle_provenance. Nothing existing changed behaviour,
 # but the signature grew, so every caller of that function had to be updated in the same
 # commit.
+#
+# NFG#4 is why the NFG pin matters on Windows. NFG picks how `NFG::interval_number` stores
+# its bounds by preprocessor: as `__m128d interval` (high, then min_low) when it detects SSE2
+# or AVX2, as `double min_low, high` otherwise -- the same two values in the opposite order.
+# Before #4 it detected SSE2 with __SSE2__ alone, which MSVC never defines, so on Windows
+# VolumeRemesher's translation units (built with /arch:AVX2, which defines __AVX2__) got the
+# SIMD layout while fast-envelope's and the toolkit's (built without it, since this file
+# strips it from consumers) got the scalar one, and since all three share NFG:: the linker
+# kept one copy of each inline member: intervals built on one side were read with swapped
+# bounds on the other. Symptom, Windows Release only: tetwild splits rejected as "produced a
+# surface segment outside the envelope" in an endless retry loop, split max energy around
+# 1e102. #4 also accepts _M_X64 as SSE2, so every MSVC x64 translation unit gets the SIMD
+# layout. Until it merged, this file declared `nfg` from a wildmeshing fork carrying it, ahead
+# of VolumeRemesher, to override VolumeRemesher's and fast-envelope's pins.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 609e32c43a52336f087c608ce5f1bd73b41e5845
+    GIT_TAG fc72cc03fb3076528cc0c2c3c3702a1b9e524b27
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
