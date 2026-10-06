@@ -874,8 +874,11 @@ TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 
     // The spherical cap beyond an end.
     double cap_err = 0.;
+    // Strictly between +x and +y about the (1,0,0) end. The +y ray itself starts on the
+    // boundary of the segment's feasible region (projection ratio exactly 1), where ipc's ESP
+    // builder and its debug assert classify the point differently and Debug builds abort.
     for (int i = 0; i <= 6; ++i) {
-        const double a = 0.5 * M_PI * i / 6; // from +x round to +y about the (1,0,0) end
+        const double a = 0.5 * M_PI * (i + 0.5) / 7;
         const double r = level_set_radius<3>(
             phi,
             Vector3d(1., 0., 0.),
