@@ -62,7 +62,7 @@ bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tu
 
     for (int i = 0; i < 20; ++i) {
         p = 0.5 * (p0 + p1);
-        m_vertex_attribute[v_new].m_pos = to_rational(p);
+        m_vertex_attribute[v_new].set_pos_to_posf(); // p aliases m_posf
 
         bool inverted = false;
         for (const Tuple& child : children) {
@@ -84,7 +84,7 @@ bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tu
         if (!is_inverted(child)) continue;
         logger().warn("Voronoi split inverted a cell; reverting to the TetWild midpoint");
         p = 0.5 * (m_vertex_attribute[v1].m_posf + m_vertex_attribute[v2].m_posf);
-        m_vertex_attribute[v_new].m_pos = to_rational(p);
+        m_vertex_attribute[v_new].set_pos_to_posf(); // p aliases m_posf
         break;
     }
     return true;

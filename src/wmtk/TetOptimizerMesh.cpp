@@ -264,8 +264,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
 
 TetOptimizerMesh::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
-    m_pos = p;
-    m_posf = to_double(m_pos);
+    set_pos(p);
+    m_posf = to_double(p);
 }
 
 void TetOptimizerMesh::compute_vertex_partition()
@@ -555,10 +555,10 @@ bool TetOptimizerMesh::is_inverted(const std::array<size_t, 4>& vs) const
             return false;
         return true;
     } else {
+        const Vector3r p0 = m_vertex_attribute[vs[0]].pos();
         Vector3r n =
-            ((m_vertex_attribute[vs[1]].m_pos) - m_vertex_attribute[vs[0]].m_pos)
-                .cross((m_vertex_attribute[vs[2]].m_pos) - m_vertex_attribute[vs[0]].m_pos);
-        Vector3r d = (m_vertex_attribute[vs[3]].m_pos) - m_vertex_attribute[vs[0]].m_pos;
+            (m_vertex_attribute[vs[1]].pos() - p0).cross(m_vertex_attribute[vs[2]].pos() - p0);
+        Vector3r d = m_vertex_attribute[vs[3]].pos() - p0;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
             return false;
@@ -578,15 +578,14 @@ bool TetOptimizerMesh::round(const Tuple& v)
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
 
-    auto old_pos = m_vertex_attribute[i].m_pos;
-    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
-        m_vertex_attribute[i].m_posf[2];
+    const auto old_exact = m_vertex_attribute[i].m_exact;
+    m_vertex_attribute[i].set_pos_to_posf();
     auto conn_tets = get_one_ring_tets_for_vertex(v);
     m_vertex_attribute[i].m_is_rounded = true;
     for (auto& tet : conn_tets) {
         if (is_inverted(tet)) {
             m_vertex_attribute[i].m_is_rounded = false;
-            m_vertex_attribute[i].m_pos = old_pos;
+            m_vertex_attribute[i].m_exact = old_exact;
             return false;
         }
     }
@@ -614,8 +613,10 @@ double TetOptimizerMesh::get_quality(const std::array<size_t, 4>& its) const
         energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
     } else {
         std::array<wmtk::Rational, 12> T;
-        for (auto k = 0; k < 4; k++)
-            for (auto j = 0; j < 3; j++) T[k * 3 + j] = m_vertex_attribute[its[k]].m_pos[j];
+        for (auto k = 0; k < 4; k++) {
+            const Vector3r p = m_vertex_attribute[its[k]].pos();
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = p[j];
+        }
         energy = wmtk::AMIPS_energy_rational_p3<wmtk::Rational>(T);
     }
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;

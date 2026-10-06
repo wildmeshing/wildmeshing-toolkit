@@ -281,7 +281,7 @@ struct SmoothVertexOptions
  * which test whole incident faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
- *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
+ *   - m_vertex_attribute[vid].{m_posf, set_pos_to_posf(), m_is_on_surface}
  *   - cell_quality(tid) / set_cell_quality(tid, quality)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
@@ -382,7 +382,7 @@ bool smooth_vertex_3d(
         // inverts. is_inverted is exact, so the rational position tracks every candidate.
         const auto worst_at = [&](const Vector3d& p) {
             VA[vid].m_posf = p;
-            VA[vid].m_pos = to_rational(p);
+            VA[vid].set_pos_to_posf();
             double mq = 0.;
             for (const Tuple& loc : locs) {
                 if (m.is_inverted(loc)) {
@@ -442,7 +442,7 @@ bool smooth_vertex_3d(
         }
         if (!accepted) {
             VA[vid].m_posf = x_orig;
-            VA[vid].m_pos = to_rational(x_orig);
+            VA[vid].set_pos_to_posf();
             if (counters) ++counters->quality;
             return false;
         }
@@ -488,7 +488,7 @@ bool smooth_vertex_3d(
     }
 
     // The rational position must be current before the exact inversion test.
-    VA[vid].m_pos = to_rational(VA[vid].m_posf);
+    VA[vid].set_pos_to_posf();
 
     double max_after_quality = 0.;
     for (const Tuple& loc : locs) {

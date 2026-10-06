@@ -44,7 +44,7 @@ void build_ring(TetWildMesh& mesh)
     va[E].m_posf = Vector3d(-0.5, -0.8660254037844386, 0);
     for (int i = 0; i < 5; ++i) {
         va[i].m_is_rounded = true;
-        va[i].m_pos = to_rational(va[i].m_posf);
+        va[i].set_pos_to_posf();
     }
     for (size_t i : {A, B, C, D}) {
         va[i].m_is_on_surface = true;
@@ -302,7 +302,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         va[F].m_posf = Vector3d(0, 0, 3);
         for (int i = 0; i < 6; ++i) {
             va[i].m_is_rounded = true;
-            va[i].m_pos = to_rational(va[i].m_posf);
+            va[i].set_pos_to_posf();
             va[i].m_is_on_surface = true;
             va[i].m_order = 1;
         }
@@ -383,7 +383,7 @@ void build_ring_n(TetWildMesh& mesh, int N, double half, double radius)
     }
     for (int i = 0; i < N + 2; ++i) {
         va[i].m_is_rounded = true;
-        va[i].m_pos = to_rational(va[i].m_posf);
+        va[i].set_pos_to_posf();
         va[i].m_is_on_surface = false;
         va[i].m_order = 0;
     }

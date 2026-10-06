@@ -48,7 +48,7 @@ void build_ring_n(SimWildMesh& mesh, int N, double half, double radius)
     }
     for (int i = 0; i < N + 2; ++i) {
         va[i].m_is_rounded = true;
-        va[i].m_pos = to_rational(va[i].m_posf);
+        va[i].set_pos_to_posf();
         va[i].m_is_on_surface = false;
         va[i].m_order = 0;
     }

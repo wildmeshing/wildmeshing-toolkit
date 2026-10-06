@@ -74,15 +74,20 @@ void TriWildMesh::init_mesh(
         auto& va = m_vertex_attribute[i];
         if (V_rational.empty()) {
             // No exact input available (a caller that only has doubles, e.g. a unit test).
-            va.m_pos = to_rational(Vector2d(V.row(i)));
             va.m_posf = V.row(i);
+            va.set_pos_to_posf();
             va.m_is_rounded = true;
             continue;
         }
-        va.m_pos = V_rational[i];
         va.m_posf = Vector2d(V_rational[i][0].to_double(), V_rational[i][1].to_double());
-        va.m_is_rounded =
-            (Rational(va.m_posf[0]) == va.m_pos[0]) && (Rational(va.m_posf[1]) == va.m_pos[1]);
+        va.m_is_rounded = (Rational(va.m_posf[0]) == V_rational[i][0]) &&
+                          (Rational(va.m_posf[1]) == V_rational[i][1]);
+        // A representable position needs no exact copy; see ExactPosition.
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(V_rational[i]);
+        }
         if (!va.m_is_rounded) {
             ++n_indirect;
             m_all_rounded.store(false, std::memory_order_relaxed);
@@ -116,12 +121,12 @@ void TriWildMesh::init_mesh(
     size_t n_degenerate = 0, n_negative = 0, n_total = 0;
     size_t first_bad_fid = std::numeric_limits<size_t>::max();
     std::array<size_t, 3> first_bad_vids = {{0, 0, 0}};
-    for (const Tuple& t : get_faces()) {
-        const size_t fid = t.fid(*this);
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
         const auto vs = oriented_tri_vids(fid);
-        const Vector2r& p0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2r& p1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2r& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r p0 = m_vertex_attribute[vs[0]].pos();
+        const Vector2r p1 = m_vertex_attribute[vs[1]].pos();
+        const Vector2r p2 = m_vertex_attribute[vs[2]].pos();
         const Rational d = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]);
         if (!(d > 0)) {
             if (d == 0) {
@@ -135,7 +140,7 @@ void TriWildMesh::init_mesh(
             }
         }
         ++n_total;
-        m_face_attribute[fid].m_quality = get_quality(t);
+        m_face_attribute[fid].m_quality = get_quality(fid);
     }
 
     if (n_degenerate + n_negative > 0) {
@@ -281,13 +286,13 @@ void TriWildMesh::init_mesh(
         const auto vids = get_edge_vids(edge);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_min[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_min[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_min[k])) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_max[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_max[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_max[k])) {
                 on_bbox = k * 2 + 1;
                 break;
             }

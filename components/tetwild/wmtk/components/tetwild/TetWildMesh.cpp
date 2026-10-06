@@ -183,7 +183,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             const auto& VA = m_vertex_attribute[i];
             const auto& VX = m_vertex_extra[i];
             orig::TetVertex& v = legacy_tetwild.tet_vertices[i];
-            v.pos = VA.m_pos;
+            v.pos = VA.pos();
             v.posf = VA.m_posf;
             v.is_on_bbox = !VA.on_bbox_faces.empty();
             if (v.is_on_bbox) {
@@ -252,10 +252,10 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             const orig::TetVertex& v = verts[i];
             VA.m_is_rounded = v.is_rounded;
             if (v.is_rounded) {
-                VA.m_pos = to_rational(v.posf);
                 VA.m_posf = v.posf;
+                VA.set_pos_to_posf();
             } else {
-                VA.m_pos = v.pos;
+                VA.set_pos(v.pos);
                 VA.m_posf = to_double(v.pos);
             }
             VA.m_sizing_scalar = v.adaptive_scale;

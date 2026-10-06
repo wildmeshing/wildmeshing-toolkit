@@ -57,7 +57,7 @@ Vector2d TriOptimizerMesh::smoothing_position(const size_t vid) const
 void TriOptimizerMesh::set_smoothing_position(const size_t vid, const Vector2d& p)
 {
     m_vertex_attribute[vid].m_posf = p;
-    m_vertex_attribute[vid].m_pos = to_rational(p);
+    m_vertex_attribute[vid].set_pos_to_posf();
 }
 
 void TriOptimizerMesh::smooth_all_vertices(const size_t n_iters)

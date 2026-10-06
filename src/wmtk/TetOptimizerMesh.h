@@ -4,6 +4,7 @@
 #include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -47,7 +48,6 @@ class TetOptimizerMesh : public wmtk::TetMesh, public wmtk::RationalPositions
 public:
     struct VertexAttributes
     {
-        Vector3r m_pos; // exact position in rational
         Vector3d m_posf; // position as double
         /**
          * If a vertex cannot be rounded without inverting a tet, the exact position must be
@@ -71,6 +71,25 @@ public:
 
         /// Required for multi-threading.
         size_t partition_id = 0;
+
+        /**
+         * @name Exact position
+         *
+         * Stored only while it differs from m_posf; see ExactPosition. Read it with pos() (or
+         * pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely
+         * exact value, or set_pos_to_posf() when it is m_posf -- a rounded vertex, or one
+         * placed at a double position.
+         * @{
+         */
+        Vector3r pos() const { return m_exact.value(m_posf); }
+        bool pos_coord_equals(int k, const Rational& r) const
+        {
+            return m_exact.coord_equals(k, m_posf, r);
+        }
+        void set_pos(const Vector3r& p) { m_exact.store(p); }
+        void set_pos_to_posf() { m_exact.clear(); }
+        ExactPosition<Vector3r, Vector3d> m_exact;
+        /** @} */
 
         VertexAttributes() {}
         VertexAttributes(const Vector3r& p);

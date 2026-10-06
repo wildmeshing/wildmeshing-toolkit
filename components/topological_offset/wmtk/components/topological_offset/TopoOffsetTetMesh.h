@@ -476,14 +476,14 @@ public:
     /**
      * @brief Place a vertex, keeping its exact and rounded coordinates in step.
      *
-     * The offset works in doubles throughout, so every vertex it places is rounded, but m_pos
-     * must still be filled: the shared split's exact-midpoint fallback reads it, and every
-     * quality and orientation test around an unrounded vertex reads its neighbours' m_pos.
+     * The offset works in doubles throughout, so every vertex it places is rounded: its exact
+     * position is its double one (set_pos_to_posf). The shared split's exact-midpoint fallback
+     * and the exact tests around an unrounded neighbour read it through pos().
      */
     void set_vertex_position(const size_t vid, const Vector3d& p)
     {
         m_vertex_attribute[vid].m_posf = p;
-        m_vertex_attribute[vid].m_pos = to_rational(p);
+        m_vertex_attribute[vid].set_pos_to_posf();
         m_vertex_attribute[vid].m_is_rounded = true;
     }
 

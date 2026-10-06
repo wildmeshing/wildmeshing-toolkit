@@ -78,7 +78,7 @@ void build_cube_grid(TetWildMesh& mesh, const size_t w, const size_t h, const si
             for (size_t i = 0; i <= w; ++i) {
                 auto& a = va[vid(i, j, k)];
                 a.m_posf = pos(i, j, k);
-                a.m_pos = to_rational(a.m_posf);
+                a.set_pos_to_posf();
                 a.m_is_rounded = true;
                 a.m_is_on_surface = false;
                 a.m_sizing_scalar = 1.0;

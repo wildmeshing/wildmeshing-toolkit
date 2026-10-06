@@ -237,7 +237,7 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(p);
+    m_vertex_attribute[v_id].set_pos_to_posf();
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
@@ -253,7 +253,8 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // at the EXACT rational midpoint of the two endpoints instead. That midpoint lies on
         // the shared edge, so it can never invert a previously-valid incident triangle: the
         // split always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
+        // it.
         //
         // This used to apply only when an endpoint was already rational, to stop a split
         // between two rounded endpoints from reintroducing exact coordinates into a
@@ -269,12 +270,12 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // smoothing never do), the post-optimization pass is collapse-only, and
         // mesh_improvement does not stop until every vertex is rounded as well as the energy
         // target being met.
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].set_pos(
+            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
         // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
         // itself un-rounded, the rounded midpoint of the two *approximations* is a worse
         // approximation of the exact midpoint than rounding the exact midpoint once.
-        p = to_double(m_vertex_attribute[v_id].m_pos);
+        p = to_double(m_vertex_attribute[v_id].pos());
         // Guard against a pre-existing inverted incident triangle: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path). This check
         // was missing, so a split could leave an inverted triangle behind.

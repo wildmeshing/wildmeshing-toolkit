@@ -538,13 +538,13 @@ public:
     /**
      * @brief Place a vertex, keeping its exact and rounded coordinates in step.
      *
-     * As in 3D: the offset works in doubles, so every vertex it places is rounded, but m_pos must
-     * still be filled because the shared split's exact-midpoint fallback reads it.
+     * As in 3D: the offset works in doubles, so every vertex it places is rounded and its exact
+     * position is its double one (set_pos_to_posf).
      */
     void set_vertex_position(const size_t vid, const Vector2d& p)
     {
         m_vertex_attribute[vid].m_posf = p;
-        m_vertex_attribute[vid].m_pos = to_rational(p);
+        m_vertex_attribute[vid].set_pos_to_posf();
         m_vertex_attribute[vid].m_is_rounded = true;
     }
 

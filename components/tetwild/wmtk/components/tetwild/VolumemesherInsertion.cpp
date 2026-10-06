@@ -197,15 +197,20 @@ void TetWildMesh::init_from_Volumeremesher(
             threading::range(0, vert_capacity()),
             [&](const threading::range& range) {
                 for (size_t i = range.begin(); i < range.end(); ++i) {
-                    m_vertex_attribute[i].m_pos = v_rational[i];
                     m_vertex_attribute[i].m_posf = to_double(v_rational[i]);
-                    const Vector3r& rp = m_vertex_attribute[i].m_pos;
+                    const Vector3r& rp = v_rational[i];
                     const Vector3d& d = m_vertex_attribute[i].m_posf;
                     const bool direct = (wmtk::Rational(d[0]) == rp[0]) &&
                                         (wmtk::Rational(d[1]) == rp[1]) &&
                                         (wmtk::Rational(d[2]) == rp[2]);
                     is_direct_point[i] = direct ? 1 : 0;
                     m_vertex_attribute[i].m_is_rounded = direct;
+                    // A direct point's exact position is its double one: store nothing.
+                    if (direct) {
+                        m_vertex_attribute[i].set_pos_to_posf();
+                    } else {
+                        m_vertex_attribute[i].set_pos(rp);
+                    }
                 }
             },
             NUM_THREADS);
@@ -268,15 +273,27 @@ void TetWildMesh::init_from_Volumeremesher(
                         {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
                     int on_bbox = -1;
                     for (int k = 0; k < 3; k++) {
-                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_min[k] &&
-                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_min[k] &&
-                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_min[k]) {
+                        if (m_vertex_attribute[vids[0]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_min[k]) &&
+                            m_vertex_attribute[vids[1]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_min[k]) &&
+                            m_vertex_attribute[vids[2]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_min[k])) {
                             on_bbox = k * 2;
                             break;
                         }
-                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_max[k] &&
-                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_max[k] &&
-                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_max[k]) {
+                        if (m_vertex_attribute[vids[0]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_max[k]) &&
+                            m_vertex_attribute[vids[1]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_max[k]) &&
+                            m_vertex_attribute[vids[2]].pos_coord_equals(
+                                k,
+                                m_tet_params.box_max[k])) {
                             on_bbox = k * 2 + 1;
                             break;
                         }
@@ -327,7 +344,7 @@ void TetWildMesh::init_from_Volumeremesher(
     for_each_vertex([&](const Tuple& v) {
         const size_t i = v.vid(*this);
         if (!VA[i].m_is_rounded) {
-            VA[i].m_pos = to_rational(VA[i].m_posf);
+            VA[i].set_pos_to_posf();
             VA[i].m_is_rounded = true;
         }
     });
@@ -362,7 +379,7 @@ void TetWildMesh::init_from_Volumeremesher(
                 continue;
             }
             if (m_vertex_attribute[vid].m_is_rounded) {
-                m_vertex_attribute[vid].m_pos = v_rational[vid];
+                m_vertex_attribute[vid].set_pos(v_rational[vid]);
                 m_vertex_attribute[vid].m_is_rounded = false;
                 m_all_rounded.store(false, std::memory_order_relaxed);
             }
