@@ -215,75 +215,84 @@ void TetWildMesh::init_from_Volumeremesher(
         m_face_attribute[i].m_is_surface_fs = tet_face_on_input_surface[i];
     }
 
-    // Scoped: the list of every face is only needed by the two loops below, and leaving it
-    // alive through find_open_boundary() stacked it on top of that function's own work at the
-    // point where the mesh is largest.
-    {
-        const auto faces = get_faces();
-        logger().info("#faces = {}", faces.size());
+    // Faces are visited in place, each at its canonical tet (the one whose fid() is 4 * tid +
+    // j), rather than through get_faces(): this runs when the mesh is at its largest, and the
+    // list of every face -- reserved at 2 * #tets, which an open mesh always overflows, so it
+    // doubled while full -- was the peak of the run on the larger tetwild inputs.
+    const auto for_each_face_in = [this](const threading::range& r, const auto& body) {
+        for (size_t t = r.begin(); t < r.end(); t++) {
+            if (!tuple_from_tet(t).is_valid(*this)) continue;
+            for (int j = 0; j < 4; j++) {
+                const Tuple f = tuple_from_face(t, j);
+                if (f.fid(*this) == 4 * t + j) body(f);
+            }
+        }
+    };
 
-        // mark surface vertices (parallel). Different faces write `true` to the shared
-        // m_is_on_surface of a common vertex; atomic_ref makes those same-value writes
-        // well-defined instead of a data race.
+    // mark surface vertices (parallel). Different faces write `true` to the shared
+    // m_is_on_surface of a common vertex; atomic_ref makes those same-value writes
+    // well-defined instead of a data race.
+    std::atomic<size_t> n_faces = 0;
+    threading::parallel_for(
+        threading::range(0, tet_capacity()),
+        [&](const threading::range& r) {
+            size_t local_faces = 0;
+            for_each_face_in(r, [&](const Tuple& f) {
+                ++local_faces;
+                if (m_face_attribute[f.fid(*this)].m_is_surface_fs != 1) return;
+                const size_t v1 = f.vid(*this);
+                const size_t v2 = f.switch_vertex(*this).vid(*this);
+                const size_t v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+                std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_surface).store(true);
+                std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_surface).store(true);
+                std::atomic_ref<bool>(m_vertex_attribute[v3].m_is_on_surface).store(true);
+            });
+            n_faces.fetch_add(local_faces, std::memory_order_relaxed);
+        },
+        NUM_THREADS);
+    logger().info("#faces = {}", n_faces.load());
+
+    // track bounding box (parallel). The per-face exact-rational corner test is the
+    // cost; on-bbox faces are rare, so each chunk collects (vertex, bbox-side) pairs
+    // locally and merges once, and the per-vertex vectors are appended serially.
+    {
+        std::vector<std::pair<size_t, int>> bbox_vert_faces;
+        std::mutex bbox_mutex;
         threading::parallel_for(
-            threading::range(0, faces.size()),
+            threading::range(0, tet_capacity()),
             [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    const Tuple& f = faces[i];
-                    if (m_face_attribute[f.fid(*this)].m_is_surface_fs != 1) continue;
-                    const size_t v1 = f.vid(*this);
-                    const size_t v2 = f.switch_vertex(*this).vid(*this);
-                    const size_t v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-                    std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_surface).store(true);
-                    std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_surface).store(true);
-                    std::atomic_ref<bool>(m_vertex_attribute[v3].m_is_on_surface).store(true);
-                }
+                std::vector<std::pair<size_t, int>> local;
+                for_each_face_in(r, [&](const Tuple& f) {
+                    auto vs = get_face_vertices(f);
+                    std::array<size_t, 3> vids = {
+                        {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+                    int on_bbox = -1;
+                    for (int k = 0; k < 3; k++) {
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_min[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_min[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_min[k]) {
+                            on_bbox = k * 2;
+                            break;
+                        }
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_max[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_max[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_max[k]) {
+                            on_bbox = k * 2 + 1;
+                            break;
+                        }
+                    }
+                    if (on_bbox < 0) return;
+                    m_face_attribute[f.fid(*this)].m_is_bbox_fs = on_bbox;
+                    for (size_t vid : vids) local.emplace_back(vid, on_bbox);
+                });
+                if (local.empty()) return;
+                std::lock_guard<std::mutex> lk(bbox_mutex);
+                bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
             },
             NUM_THREADS);
-
-        // track bounding box (parallel). The per-face exact-rational corner test is the
-        // cost; on-bbox faces are rare, so each chunk collects (vertex, bbox-side) pairs
-        // locally and merges once, and the per-vertex vectors are appended serially.
-        {
-            std::vector<std::pair<size_t, int>> bbox_vert_faces;
-            std::mutex bbox_mutex;
-            threading::parallel_for(
-                threading::range(0, faces.size()),
-                [&](const threading::range& r) {
-                    std::vector<std::pair<size_t, int>> local;
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        auto vs = get_face_vertices(faces[i]);
-                        std::array<size_t, 3> vids = {
-                            {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-                        int on_bbox = -1;
-                        for (int k = 0; k < 3; k++) {
-                            if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_min[k] &&
-                                m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_min[k] &&
-                                m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_min[k]) {
-                                on_bbox = k * 2;
-                                break;
-                            }
-                            if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_max[k] &&
-                                m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_max[k] &&
-                                m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_max[k]) {
-                                on_bbox = k * 2 + 1;
-                                break;
-                            }
-                        }
-                        if (on_bbox < 0) continue;
-                        m_face_attribute[faces[i].fid(*this)].m_is_bbox_fs = on_bbox;
-                        for (size_t vid : vids) local.emplace_back(vid, on_bbox);
-                    }
-                    if (local.empty()) return;
-                    std::lock_guard<std::mutex> lk(bbox_mutex);
-                    bbox_vert_faces.insert(bbox_vert_faces.end(), local.begin(), local.end());
-                },
-                NUM_THREADS);
-            for (const auto& [vid, on_bbox] : bbox_vert_faces)
-                m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
-        }
-
-    } // faces
+        for (const auto& [vid, on_bbox] : bbox_vert_faces)
+            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+    }
 
     for_each_vertex([&](const Tuple& v) { vector_unique(VA[v.vid(*this)].on_bbox_faces); });
 

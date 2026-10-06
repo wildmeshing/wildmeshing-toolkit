@@ -274,9 +274,11 @@ void TriWildMesh::init_mesh(
     const Vector2d domain_min = V.colwise().minCoeff();
     const Vector2d domain_max = V.colwise().maxCoeff();
 
-    const auto edges = get_edges();
-    for (size_t i = 0; i < edges.size(); i++) {
-        const auto vids = get_edge_vids(edges[i]);
+    // Edges are visited in place, in get_edges() order and with the same tuples, rather than
+    // through a list of every edge built while the arrangement -- the largest mesh of the run --
+    // is being set up.
+    const auto bbox_edge = [&](const Tuple& edge) {
+        const auto vids = get_edge_vids(edge);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
             if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
@@ -291,17 +293,25 @@ void TriWildMesh::init_mesh(
             }
         }
         if (on_bbox < 0) {
-            continue;
+            return;
         }
-        if (edges[i].switch_face(*this)) {
+        if (edge.switch_face(*this)) {
             log_and_throw_error("Boundary edge {} is not on the boundary!", vids);
         }
 
-        const size_t eid = edges[i].eid(*this);
+        const size_t eid = edge.eid(*this);
         m_edge_attribute[eid].m_is_bbox_fs = on_bbox;
 
         for (const size_t vid : vids) {
             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    };
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        for (size_t j = 0; j < 3; j++) {
+            const size_t loc_eid = (j + 2) % 3;
+            const Tuple edge = tuple_from_edge(fid, loc_eid);
+            if (edge.eid(*this) == 3 * fid + loc_eid) bbox_edge(edge);
         }
     }
 
