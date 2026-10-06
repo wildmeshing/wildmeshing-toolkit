@@ -9,6 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
+#include <deque>
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -34,6 +35,71 @@ namespace wmtk {
 enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
 
 using Op = std::string;
+
+/**
+ * @brief A pass's candidate operations, compact and consumed as they are queued.
+ *
+ * A pass lists every candidate before it runs -- two per edge for a collapse, three for the
+ * combined edge swap -- and on the first pass after construction that list is the size of the
+ * whole mesh. As `std::vector<std::pair<Op, Tuple>>` each entry carried a std::string (72 bytes
+ * an entry on a tet mesh), and the list sat next to the priority queue built from it until the
+ * queue was complete.
+ *
+ * Here an entry is the Tuple and a 32-bit index into the handful of operation names the list
+ * has seen, and the entries live in a deque that ExecutePass pops as it seeds its queues, so
+ * the list shrinks while the queue grows instead of the two coexisting. The interface the passes
+ * use to build it -- `emplace_back(name, tuple)` -- is unchanged.
+ */
+template <class Tuple>
+class OpList
+{
+public:
+    void emplace_back(const Op& op, const Tuple& t) { m_items.emplace_back(intern(op), t); }
+    size_t size() const { return m_items.size(); }
+    bool empty() const { return m_items.empty(); }
+    void clear() { m_items.clear(); }
+
+    /// Hand every entry to `f(name, tuple)`, front to back, releasing them as it goes.
+    template <class F>
+    void consume(F&& f)
+    {
+        while (!m_items.empty()) {
+            const auto& [id, t] = m_items.front();
+            f(m_names[id], t);
+            m_items.pop_front();
+        }
+        m_items.shrink_to_fit();
+    }
+
+    /// Move `other`'s entries to the end of this list, releasing them from `other` as it goes.
+    void append(OpList&& other)
+    {
+        if (m_items.empty() && m_names.empty()) {
+            *this = std::move(other);
+            return;
+        }
+        std::vector<uint32_t> remap(other.m_names.size());
+        for (size_t i = 0; i < remap.size(); ++i) remap[i] = intern(other.m_names[i]);
+        while (!other.m_items.empty()) {
+            m_items.emplace_back(remap[other.m_items.front().first], other.m_items.front().second);
+            other.m_items.pop_front();
+        }
+    }
+
+private:
+    uint32_t intern(const Op& op)
+    {
+        // A list sees one to three distinct names; a scan is cheaper than any map.
+        for (size_t i = 0; i < m_names.size(); ++i) {
+            if (m_names[i] == op) return static_cast<uint32_t>(i);
+        }
+        m_names.push_back(op);
+        return static_cast<uint32_t>(m_names.size() - 1);
+    }
+
+    std::vector<Op> m_names;
+    std::deque<std::pair<uint32_t, Tuple>> m_items;
+};
 
 /// An edge's ExecutePass::queue_key: its two vertex ids, smaller first, packed into 64 bits.
 /// Never 0, the "not tracked" key: the ids of an edge differ, so the larger one is at least 1.
@@ -366,7 +432,9 @@ public:
      */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
-        return execute(m, operation_tuples, nullptr);
+        return execute(m, [&](const Push& push) {
+            for (const auto& [op, e] : operation_tuples) push(op, e);
+        });
     }
 
     /**
@@ -380,14 +448,27 @@ public:
      */
     bool operator()(AppMesh& m, std::vector<std::pair<Op, Tuple>>&& operation_tuples)
     {
-        return execute(m, operation_tuples, &operation_tuples);
+        return execute(m, [&](const Push& push) {
+            for (const auto& [op, e] : operation_tuples) push(op, e);
+            // Swapping with an empty vector, not clear(), so the storage is returned.
+            std::vector<std::pair<Op, Tuple>>().swap(operation_tuples);
+        });
+    }
+
+    /**
+     * @brief As above for an OpList, which is released entry by entry while the queues are
+     * seeded, so the list and the queue never both hold every candidate.
+     */
+    bool operator()(AppMesh& m, OpList<Tuple>&& operation_tuples)
+    {
+        return execute(m, [&](const Push& push) { operation_tuples.consume(push); });
     }
 
 private:
-    bool execute(
-        AppMesh& m,
-        const std::vector<std::pair<Op, Tuple>>& operation_tuples,
-        std::vector<std::pair<Op, Tuple>>* release_after_seeding)
+    /// Queues one candidate; what a seeder calls for each entry of its list.
+    using Push = std::function<void(const Op&, const Tuple&)>;
+
+    bool execute(AppMesh& m, const std::function<void(const Push&)>& seed)
     {
         // The queue holds an operation's INDEX rather than its name. edit_operation_maps is a
         // std::map, so iterating it yields the names in lexicographic order and an index is
@@ -715,26 +796,24 @@ private:
         };
 
         if (policy == ExecutionPolicy::kSeq) {
-            for (const auto& [op, e] : operation_tuples) {
+            seed([&](const Op& op, const Tuple& e) {
                 if (!e.is_valid(m)) {
-                    continue;
+                    return;
                 }
                 const uint64_t k = key_of(op, e);
                 track(k);
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
-            }
-            release_operation_list(release_after_seeding);
+            });
             run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
         } else {
-            for (const auto& [op, e] : operation_tuples) {
+            seed([&](const Op& op, const Tuple& e) {
                 if (!e.is_valid(m)) {
-                    continue;
+                    return;
                 }
                 const uint64_t k = key_of(op, e);
                 track(k);
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
-            }
-            release_operation_list(release_after_seeding);
+            });
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
             const auto t_parallel = clock::now();
@@ -839,15 +918,6 @@ private:
         }
         m_queued.clear();
         return true;
-    }
-
-    /// Frees the caller's operation list once its contents are in the queues (see the rvalue
-    /// operator()). Swapping with an empty vector, not clear(), so the storage is returned.
-    static void release_operation_list(std::vector<std::pair<Op, Tuple>>* list)
-    {
-        if (list != nullptr) {
-            std::vector<std::pair<Op, Tuple>>().swap(*list);
-        }
     }
 
 public:

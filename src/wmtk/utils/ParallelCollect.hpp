@@ -4,6 +4,7 @@
 #include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -23,17 +24,17 @@ namespace wmtk {
 // `emit(mesh, simplex_tuple, local_out)` appends the desired op(s) for one simplex.
 
 template <class Mesh, class Emit>
-std::vector<std::pair<Op, typename Mesh::Tuple>>
-parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
+OpList<typename Mesh::Tuple> parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
 {
     using Tuple = typename Mesh::Tuple;
     constexpr size_t n_edges = Mesh::EDGES_PER_CELL;
-    threading::collector<std::pair<Op, Tuple>> collect;
+    OpList<Tuple> collect;
+    std::mutex collect_mutex;
 
     threading::parallel_for(
         threading::range(0, m.cell_capacity()),
         [&](const threading::range& r) {
-            std::vector<std::pair<Op, Tuple>> local;
+            OpList<Tuple> local;
             for (size_t i = r.begin(); i < r.end(); i++) {
                 if (!m.tuple_from_cell(i).is_valid(m)) {
                     continue;
@@ -48,28 +49,29 @@ parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
             if (local.empty()) {
                 return;
             }
+            std::lock_guard<std::mutex> lock(collect_mutex);
             collect.append(std::move(local));
         },
         num_threads);
 
-    return collect.take();
+    return collect;
 }
 
 template <class Mesh, class Emit>
-std::vector<std::pair<Op, typename Mesh::Tuple>>
-parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
+OpList<typename Mesh::Tuple> parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
 {
     using Tuple = typename Mesh::Tuple;
     constexpr size_t n_faces = Mesh::FACES_PER_CELL;
     static_assert(
         n_faces > 0,
         "parallel_collect_face_ops requires a mesh with faces below its cells");
-    threading::collector<std::pair<Op, Tuple>> collect;
+    OpList<Tuple> collect;
+    std::mutex collect_mutex;
 
     threading::parallel_for(
         threading::range(0, m.cell_capacity()),
         [&](const threading::range& r) {
-            std::vector<std::pair<Op, Tuple>> local;
+            OpList<Tuple> local;
             for (size_t i = r.begin(); i < r.end(); i++) {
                 if (!m.tuple_from_cell(i).is_valid(m)) {
                     continue;
@@ -84,11 +86,12 @@ parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
             if (local.empty()) {
                 return;
             }
+            std::lock_guard<std::mutex> lock(collect_mutex);
             collect.append(std::move(local));
         },
         num_threads);
 
-    return collect.take();
+    return collect;
 }
 
 } // namespace wmtk

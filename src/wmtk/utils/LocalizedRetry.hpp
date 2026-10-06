@@ -50,7 +50,7 @@ template <class Mesh>
 size_t run_localized_to_convergence(
     Mesh& m,
     ExecutePass<Mesh>& executor,
-    std::vector<std::pair<Op, typename Mesh::Tuple>> ops,
+    OpList<typename Mesh::Tuple> ops,
     size_t max_passes = 0)
 {
     using Tuple = typename Mesh::Tuple;
