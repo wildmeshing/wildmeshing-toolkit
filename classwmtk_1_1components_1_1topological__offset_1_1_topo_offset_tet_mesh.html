@@ -829,6 +829,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>reset_connected_compo
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a895405765b9ba04f157b5eead4c68768 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a895405765b9ba04f157b5eead4c68768"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a895405765b9ba04f157b5eead4c68768">split_edge_is_due</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
+<tr class="separator:a895405765b9ba04f157b5eead4c68768 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac7bd1bcc48753f4a9d4ab0e851e3c3d inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aac7bd1bcc48753f4a9d4ab0e851e3c3d"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>TetOptimizerMesh</b> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; env)</td></tr>
 <tr class="separator:aac7bd1bcc48753f4a9d4ab0e851e3c3d inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1771,6 +1773,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_clai
 <tr class="memitem:a22fa92527b2481788e43c7a59f9af926 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a22fa92527b2481788e43c7a59f9af926"><td class="memItemLeft" align="right" valign="top">
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_rejects</b> = 0</td></tr>
 <tr class="separator:a22fa92527b2481788e43c7a59f9af926 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4b654945a8c6d3f85aebd0e63f00e5b inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ab4b654945a8c6d3f85aebd0e63f00e5b"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_waits</b> = 0</td></tr>
+<tr class="memdesc:ab4b654945a8c6d3f85aebd0e63f00e5b inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current split pass's <a class="el" href="structwmtk_1_1_execute_pass.html#a1613efe4bc560cc8b142337f38d1d2af">ExecutePass::waits()</a> and wait_defects(). <br /></td></tr>
+<tr class="separator:ab4b654945a8c6d3f85aebd0e63f00e5b inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f8953645ed37ab2aaebeefa854872f1 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a5f8953645ed37ab2aaebeefa854872f1"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_defects</b> = 0</td></tr>
+<tr class="separator:a5f8953645ed37ab2aaebeefa854872f1 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a767e64b2672251bb3fe7482ff98c34ac inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a767e64b2672251bb3fe7482ff98c34ac"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_iterations_used</b> = 0</td></tr>
 <tr class="memdesc:a767e64b2672251bb3fe7482ff98c34ac inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared TetWild/SimWild outer optimization schedule. <br /></td></tr>

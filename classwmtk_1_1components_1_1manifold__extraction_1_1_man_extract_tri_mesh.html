@@ -661,6 +661,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_improvement</b> 
 <tr class="memitem:ac866c5264e7363d69b885a6c82aaf31b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ac866c5264e7363d69b885a6c82aaf31b"><td class="memItemLeft" align="right" valign="top">
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
 <tr class="separator:ac866c5264e7363d69b885a6c82aaf31b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea0f8a2799fe02fad97d650147b48026 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aea0f8a2799fe02fad97d650147b48026"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aea0f8a2799fe02fad97d650147b48026">split_edge_is_due</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
+<tr class="separator:aea0f8a2799fe02fad97d650147b48026 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99ed96f208a9bfe3ee14f9dfc17c8ecc inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a99ed96f208a9bfe3ee14f9dfc17c8ecc"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a99ed96f208a9bfe3ee14f9dfc17c8ecc inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1452,6 +1454,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_clai
 <tr class="memitem:a43f86d4e3dbc426ea1ed23779a4fd12f inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a43f86d4e3dbc426ea1ed23779a4fd12f"><td class="memItemLeft" align="right" valign="top">
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_rejects</b> = 0</td></tr>
 <tr class="separator:a43f86d4e3dbc426ea1ed23779a4fd12f inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e7c5fea90b88656e10528dd491b4f08 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a7e7c5fea90b88656e10528dd491b4f08"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_waits</b> = 0</td></tr>
+<tr class="memdesc:a7e7c5fea90b88656e10528dd491b4f08 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current split pass's <a class="el" href="structwmtk_1_1_execute_pass.html#a1613efe4bc560cc8b142337f38d1d2af">ExecutePass::waits()</a> and wait_defects(). <br /></td></tr>
+<tr class="separator:a7e7c5fea90b88656e10528dd491b4f08 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63851a3c0a51c8a46398cea9961deea1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a63851a3c0a51c8a46398cea9961deea1"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_order_wait_defects</b> = 0</td></tr>
+<tr class="separator:a63851a3c0a51c8a46398cea9961deea1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac5d8099e7a1a246f56f55dade72bc3b inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aac5d8099e7a1a246f56f55dade72bc3b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_coarsen_stats.html">CoarsenStats</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_stats</b></td></tr>
 <tr class="separator:aac5d8099e7a1a246f56f55dade72bc3b inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>

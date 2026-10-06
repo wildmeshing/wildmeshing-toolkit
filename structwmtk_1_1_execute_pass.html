@@ -90,6 +90,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">What the last pass cost in contention, as opposed to in work.  <a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_execute_pass_1_1_queued_count.html">QueuedCount</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -99,6 +101,14 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>Tuple</b> = typename
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a071502f3e642d9201cbe18c6ca81d3e3" id="r_a071502f3e642d9201cbe18c6ca81d3e3"><td class="memItemLeft" align="right" valign="top"><a id="a071502f3e642d9201cbe18c6ca81d3e3" name="a071502f3e642d9201cbe18c6ca81d3e3"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_queued</b> (uint64_t key) const</td></tr>
+<tr class="separator:a071502f3e642d9201cbe18c6ca81d3e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1613efe4bc560cc8b142337f38d1d2af" id="r_a1613efe4bc560cc8b142337f38d1d2af"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a1613efe4bc560cc8b142337f38d1d2af">waits</a> () const</td></tr>
+<tr class="separator:a1613efe4bc560cc8b142337f38d1d2af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28dff3e1eded22279650cf83afa31d18" id="r_a28dff3e1eded22279650cf83afa31d18"><td class="memItemLeft" align="right" valign="top"><a id="a28dff3e1eded22279650cf83afa31d18" name="a28dff3e1eded22279650cf83afa31d18"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>wait_defects</b> () const</td></tr>
+<tr class="separator:a28dff3e1eded22279650cf83afa31d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a922fdd528b06468eafe56f70d0b8d2aa" id="r_a922fdd528b06468eafe56f70d0b8d2aa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa">ExecutePass</a> (const ExecutionPolicy &amp;policy_=ExecutionPolicy::kSeq)</td></tr>
 <tr class="memdesc:a922fdd528b06468eafe56f70d0b8d2aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new Execute Pass object. It contains the name-to-operation map and the functions that define the rules for operations.  <br /></td></tr>
 <tr class="separator:a922fdd528b06468eafe56f70d0b8d2aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,6 +159,12 @@ std::function&lt; bool(double)&gt;&#160;</td><td class="memItemRight" valign="bo
 <tr class="memitem:a3f597bfe79378fcf121e2298fa1aa937" id="r_a3f597bfe79378fcf121e2298fa1aa937"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(const AppMesh &amp;, Op, const Tuple &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937">on_fail</a></td></tr>
 <tr class="memdesc:a3f597bfe79378fcf121e2298fa1aa937"><td class="mdescLeft">&#160;</td><td class="mdescRight">used to collect operations that are not finished and used for later re-execution  <br /></td></tr>
 <tr class="separator:a3f597bfe79378fcf121e2298fa1aa937"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b035627a61838c26a69e2bf4536c8e1" id="r_a5b035627a61838c26a69e2bf4536c8e1"><td class="memItemLeft" align="right" valign="top">std::function&lt; uint64_t(const AppMesh &amp;, const Op &amp;, const Tuple &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a5b035627a61838c26a69e2bf4536c8e1">queue_key</a></td></tr>
+<tr class="memdesc:a5b035627a61838c26a69e2bf4536c8e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional order between queued operations, used by the split passes.  <br /></td></tr>
+<tr class="separator:a5b035627a61838c26a69e2bf4536c8e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a123302ce55484e4b35db95210122cbd2" id="r_a123302ce55484e4b35db95210122cbd2"><td class="memItemLeft" align="right" valign="top"><a id="a123302ce55484e4b35db95210122cbd2" name="a123302ce55484e4b35db95210122cbd2"></a>
+std::function&lt; bool(const AppMesh &amp;, const Op &amp;, const Tuple &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>must_wait</b></td></tr>
+<tr class="separator:a123302ce55484e4b35db95210122cbd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6dff0c288d32933805ff6fcc0884b05" id="r_ae6dff0c288d32933805ff6fcc0884b05"><td class="memItemLeft" align="right" valign="top"><a id="ae6dff0c288d32933805ff6fcc0884b05" name="ae6dff0c288d32933805ff6fcc0884b05"></a>
 ExecutionPolicy&#160;</td><td class="memItemRight" valign="bottom"><b>policy</b></td></tr>
 <tr class="separator:ae6dff0c288d32933805ff6fcc0884b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,6 +200,15 @@ std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_fail</
 <tr class="memitem:ad9f7e57668d34822c8d7f96337ea0b29" id="r_ad9f7e57668d34822c8d7f96337ea0b29"><td class="memItemLeft" align="right" valign="top"><a id="ad9f7e57668d34822c8d7f96337ea0b29" name="ad9f7e57668d34822c8d7f96337ea0b29"></a>
 <a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_stats</b></td></tr>
 <tr class="separator:ad9f7e57668d34822c8d7f96337ea0b29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac775d236f1889d7484fd06ee1eec0558" id="r_ac775d236f1889d7484fd06ee1eec0558"><td class="memItemLeft" align="right" valign="top"><a id="ac775d236f1889d7484fd06ee1eec0558" name="ac775d236f1889d7484fd06ee1eec0558"></a>
+<a class="el" href="classwmtk_1_1_execute_pass_1_1_queued_count.html">QueuedCount</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_queued</b></td></tr>
+<tr class="separator:ac775d236f1889d7484fd06ee1eec0558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae4cbaf468aceb2c8931e32cb480a970" id="r_aae4cbaf468aceb2c8931e32cb480a970"><td class="memItemLeft" align="right" valign="top"><a id="aae4cbaf468aceb2c8931e32cb480a970" name="aae4cbaf468aceb2c8931e32cb480a970"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_waits</b> = 0</td></tr>
+<tr class="separator:aae4cbaf468aceb2c8931e32cb480a970"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb8e9e7ecf087bc180716a78c69f72c2" id="r_adb8e9e7ecf087bc180716a78c69f72c2"><td class="memItemLeft" align="right" valign="top"><a id="adb8e9e7ecf087bc180716a78c69f72c2" name="adb8e9e7ecf087bc180716a78c69f72c2"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_wait_defects</b> = 0</td></tr>
+<tr class="separator:adb8e9e7ecf087bc180716a78c69f72c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a922fdd528b06468eafe56f70d0b8d2aa" name="a922fdd528b06468eafe56f70d0b8d2aa"></a>
@@ -291,6 +316,34 @@ template&lt;class AppMesh &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if finished successfully </dd></dl>
+
+</div>
+</div>
+<a id="a1613efe4bc560cc8b142337f38d1d2af" name="a1613efe4bc560cc8b142337f38d1d2af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1613efe4bc560cc8b142337f38d1d2af">&#9670;&#160;</a></span>waits()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::waits </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Over every call on this executor: operations set aside by must_wait, and must_wait refusals in a serial run (defects, see above). </p>
 
 </div>
 </div>
@@ -422,6 +475,27 @@ template&lt;class AppMesh &gt; </div>
 <div class="line">        [](<span class="keyword">const</span> AppMesh&amp;, Op, <span class="keyword">const</span> Tuple&amp;) { <span class="keywordflow">return</span> 0.; }</div>
 </div><!-- fragment -->
 <p>Priority function (default to edge length) </p>
+
+</div>
+</div>
+<a id="a5b035627a61838c26a69e2bf4536c8e1" name="a5b035627a61838c26a69e2bf4536c8e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b035627a61838c26a69e2bf4536c8e1">&#9670;&#160;</a></span>queue_key</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::function&lt;uint64_t(const AppMesh&amp;, const Op&amp;, const Tuple&amp;)&gt; <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::queue_key</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Optional order between queued operations, used by the split passes. </p>
+<p><code>queue_key</code> names what an operation is about &ndash; for a split, its edge (edge_queue_key) &ndash; or returns 0 for "not tracked". A tracked operation is counted from the moment it is queued until it is tried, or dropped as invalid or out of date. Being set aside after a lost lock race does not end it. is_queued() reads that count, for any thread.</p>
+<p><code>must_wait</code> is asked after is_weight_up_to_date, with the operation's ring locked. True sets the operation aside exactly like a lost lock race: it is retried later in the pass and, after max_retry_limit attempts, handed to the serial queue drained after the barrier. A serial run &ndash; kSeq, or that serial queue &ndash; pops in priority order, so whatever an operation could wait on has been tried before it. There a <code>must_wait</code> that still says true is a defect: the operation fails (on_fail) and is counted in wait_defects() rather than being set aside forever.</p>
+<p>Both empty, the default: nothing is counted and nothing waits. </p>
 
 </div>
 </div>
