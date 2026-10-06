@@ -534,8 +534,11 @@ private:
             }
         };
 
-        // `serial`: Q is popped by this task alone and in priority order (kSeq, or the queue
-        // drained after the barrier), so a must_wait that says true is a defect there.
+        // `serial`: no other thread is running operations on the mesh, and Q is popped by this
+        // task alone and in priority order -- the serial policy, and the serial drain after a
+        // parallel pass. The storage may then grow between operations (see
+        // TetMesh::reserve_free_slots), never inside a parallel task; and a must_wait that says
+        // true is a defect there.
         auto run_single_queue = [&](auto& Q, int task_id, const bool serial) {
             CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
@@ -634,6 +637,9 @@ private:
                             }
                             continue;
                         }
+                        if (serial) {
+                            m.reserve_free_slots(m.cell_slot_bound(tup), 1);
+                        }
                         auto newtup = (*op_fn[op])(m, tup);
                         done(key);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
@@ -689,7 +695,7 @@ private:
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
             release_operation_list(release_after_seeding);
-            run_single_queue(final_queue, 0, true);
+            run_single_queue(final_queue, 0, /*serial=*/true);
         } else {
             for (const auto& [op, e] : operation_tuples) {
                 if (!e.is_valid(m)) {
@@ -707,7 +713,7 @@ private:
             for (int task_id = 0; task_id < queues.size(); task_id++) {
                 tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
                     const auto t0 = clock::now();
-                    run_single_queue(queues[task_id], task_id, false);
+                    run_single_queue(queues[task_id], task_id, /*serial=*/false);
                     // Each task writes only its own slot.
                     task_seconds[task_id] =
                         std::chrono::duration<double>(clock::now() - t0).count();
@@ -721,7 +727,7 @@ private:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
-            run_single_queue(final_queue, 0, true);
+            run_single_queue(final_queue, 0, /*serial=*/true);
             m_stats.serial_tail_seconds =
                 std::chrono::duration<double>(clock::now() - t_tail).count();
         }

@@ -410,11 +410,48 @@ public:
     size_t request_tri_slots(size_t n);
     size_t request_vert_slots(size_t n);
 
+    /**
+     * @name Growing the storage at serial points
+     *
+     * The storage cannot grow while operations run in parallel -- growing reallocates it out
+     * from under concurrent readers -- which is why it is preallocated. A serial pass has no
+     * concurrent readers, and between two of its operations nothing holds a reference into the
+     * storage either: so it can grow there, and only there, with no synchronisation at all.
+     *
+     * The scheduler does exactly that: before each operation of a serial pass it reserves
+     * cell_slot_bound() cells and one vertex. Every local operation creates its cells inside
+     * the stars of the vertices of its tuple's cell and adds at most one vertex, so the
+     * reservation covers whatever the operation requests, and a serial pass never refuses
+     * an operation for want of slots. The ids handed out are unchanged -- the same counter, in
+     * the same order -- so the result is the one an unbounded preallocation would give.
+     *
+     * With that in place a serial mesh only needs a small slack at init/consolidate, instead
+     * of the preallocation factor (see storage_grows_on_demand()).
+     * @{
+     */
+    /// Upper bound on the fresh cell slots one local operation on `t` can take: the sum of the
+    /// star sizes of the vertices of t's cell. `t` must be valid.
+    size_t cell_slot_bound(const Tuple& t) const;
+    /// Serial points only: make `cells` fresh cell slots and `verts` fresh vertex slots
+    /// available, growing the storage (connectivity and attributes) by at least half if not.
+    void reserve_free_slots(size_t cells, size_t verts);
+    /// Whether this mesh's passes run serially and so grow the storage on demand; if so,
+    /// init/consolidate reserve a small slack instead of the preallocation factor.
+    virtual bool storage_grows_on_demand() const { return false; }
+    /** @} */
+
+protected:
+    /// Called after reserve_free_slots() grew the storage, for derived classes that keep
+    /// per-slot side arrays.
+    virtual void on_slot_storage_grown() {}
+
 private:
     size_t reserved_capacity(size_t live_count) const
     {
         const size_t floor = 64;
-        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        // A mesh that grows on demand only needs room for the passes not to grow at once.
+        const double factor = storage_grows_on_demand() ? 1.25 : m_preallocation_factor;
+        double c = std::ceil(factor * static_cast<double>(live_count));
         size_t capacity = static_cast<size_t>(c);
         if (capacity < live_count) capacity = live_count;
         return capacity < floor ? floor : capacity;

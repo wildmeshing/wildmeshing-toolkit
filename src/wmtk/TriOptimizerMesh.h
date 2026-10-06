@@ -232,6 +232,29 @@ public:
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
 
+    /// Serial passes grow the storage between operations (see TriMesh::reserve_free_slots), so
+    /// a serial optimizer only keeps a small slack. run_pass picks the serial policy exactly
+    /// when NUM_THREADS <= 0, and this has to agree with it.
+    bool storage_grows_on_demand() const override { return NUM_THREADS <= 0; }
+
+protected:
+    /// The high-valence claims are indexed by vertex id and sized to the storage at the start
+    /// of a split pass; a split pass that grows the storage has to grow them with it, or the
+    /// vertices it creates would fall outside the gate. Existing claims are kept.
+    void on_slot_storage_grown() override
+    {
+        if (!m_high_valence_claim) return;
+        const size_t n = std::max(vert_capacity(), m_vertex_attribute.size());
+        if (n <= m_high_valence_claim_size) return;
+        auto grown = std::make_unique<std::atomic<int>[]>(n);
+        for (size_t i = 0; i < m_high_valence_claim_size; ++i) {
+            grown[i].store(m_high_valence_claim[i].load(std::memory_order_relaxed));
+        }
+        m_high_valence_claim = std::move(grown);
+        m_high_valence_claim_size = n;
+    }
+
+public:
     /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
     /// sizing scalars, or a force-split edge.
     bool split_edge_is_due(const Tuple& e) const;
