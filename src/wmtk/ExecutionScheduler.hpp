@@ -111,9 +111,20 @@ struct ExecutePass
         };
     /**
      * @brief used to collect operations that are not finished and used for later re-execution
+     *
+     * @p task_id is the id of the task that ran the operation: 0 .. num_threads - 1 in a parallel
+     * pass (the serial drain after the barrier runs as task 0), and always 0 in a serial one. Two
+     * operations running at the same time never share it, so a callback can record into a
+     * per-task buffer without a lock.
+     *
+     * Passing it is not a nicety. A failure is ~98% of everything a tetwild pass executes, and
+     * the one caller, run_localized_to_convergence, used to record each into a single
+     * mutex-guarded collector: at 16 threads on Thingi10K 103197 that mutex was 27% of all
+     * thread time (__psynch_mutexwait + __psynch_mutexdrop under collector::emplace_back), and
+     * it is most of why the swap passes scaled 1.7x on 16 threads.
      */
-    std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail =
-        [](const AppMesh&, Op, const Tuple& t) {};
+    std::function<void(const AppMesh&, Op, const Tuple& t, int task_id)> on_fail =
+        [](const AppMesh&, Op, const Tuple&, int) {};
 
     ExecutionPolicy policy;
 
@@ -506,7 +517,7 @@ public:
                                 live_success.fetch_add(1, std::memory_order_relaxed);
                             }
                         } else {
-                            on_fail(m, op_str, tup);
+                            on_fail(m, op_str, tup, task_id);
                             counts.fail++;
                         }
                         for (const auto& [o, e] : renewed_tuples) {

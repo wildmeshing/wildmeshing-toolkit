@@ -410,7 +410,7 @@ void InteriorTetOpt::collapse_all_edges(bool is_limit_length)
             return true;
         };
 
-        executor.on_fail = [&](auto& m, auto op, auto& t) {
+        executor.on_fail = [&](auto& m, auto op, auto& t, int /*task_id*/) {
             collect_failure_ops.emplace_back(op, t);
         };
         // Execute!!

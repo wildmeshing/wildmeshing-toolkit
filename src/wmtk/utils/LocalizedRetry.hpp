@@ -1,8 +1,8 @@
 #pragma once
 
 #include <wmtk/ExecutionScheduler.hpp>
-#include <wmtk/threading/collector.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -27,7 +27,10 @@ namespace wmtk {
  * failure) are invoked by the scheduler while the operation still holds its two-ring /
  * one-ring lock, so concurrent operations write disjoint vertices; every stamp in a
  * given round writes the same value (`round`), so overlapping-value races are impossible.
- * The between-pass filter reads the epochs single-threaded, after the parallel barrier.
+ * Each failure goes into the list of the task that ran it, which no other task touches, so
+ * recording one takes no lock -- see ExecutePass::on_fail for why that matters. The
+ * between-pass filter reads the epochs and the lists single-threaded, after the parallel
+ * barrier.
  *
  * The set of modified vertices is taken from the tuples returned by the driver's own
  * `renew_neighbor_tuples` -- i.e. exactly the region the driver already considers
@@ -56,7 +59,11 @@ size_t run_localized_to_convergence(
     // any vertex created during the phase (splits) has an id below this capacity.
     std::vector<uint64_t> vertex_epoch(m.vert_capacity(), 0);
     uint64_t round = 0;
-    threading::collector<std::pair<Op, Tuple>> failures;
+    // failures[task] = the operations task `task` failed this round, in the order it failed
+    // them. A serial pass is one task, so its retry list keeps exactly the order a single
+    // shared list had.
+    std::vector<std::vector<std::pair<Op, Tuple>>> failures(
+        size_t(std::max(1, executor.num_threads)));
 
     auto edge_epoch = [&vertex_epoch](const Mesh& m_, const Tuple& t) -> uint64_t {
         const size_t a = t.vid(m_);
@@ -87,25 +94,29 @@ size_t run_localized_to_convergence(
             }
             return tups;
         };
-    executor.on_fail = [&failures](const Mesh&, Op op, const Tuple& t) {
-        failures.emplace_back(op, t);
+    executor.on_fail = [&failures](const Mesh&, Op op, const Tuple& t, int task_id) {
+        failures[size_t(task_id)].emplace_back(std::move(op), t);
     };
 
     size_t total_success = 0;
     do {
         ++round;
-        failures.clear();
+        for (auto& f : failures) {
+            f.clear();
+        }
         executor(m, ops);
         total_success += static_cast<size_t>(executor.get_cnt_success());
         ops.clear();
-        for (const auto& pr : failures) {
-            const Tuple& t = pr.second;
-            if (!t.is_valid(m)) {
-                continue;
-            }
-            // retry only if this failure's neighborhood was modified during this round
-            if (edge_epoch(m, t) == round) {
-                ops.emplace_back(pr);
+        for (const auto& task_failures : failures) {
+            for (const auto& pr : task_failures) {
+                const Tuple& t = pr.second;
+                if (!t.is_valid(m)) {
+                    continue;
+                }
+                // retry only if this failure's neighborhood was modified during this round
+                if (edge_epoch(m, t) == round) {
+                    ops.emplace_back(pr);
+                }
             }
         }
     } while (executor.get_cnt_success() > 0 && !ops.empty() &&
