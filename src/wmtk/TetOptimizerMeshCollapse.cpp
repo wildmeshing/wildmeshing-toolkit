@@ -88,8 +88,11 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(
             };
             // Retry a failed collapse only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            accepted =
-                wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops, max_passes);
+            accepted = wmtk::run_localized_to_convergence(
+                mesh,
+                executor,
+                std::move(collect_all_ops),
+                max_passes);
         });
     return accepted;
 }

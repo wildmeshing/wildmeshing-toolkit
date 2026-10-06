@@ -301,7 +301,7 @@ size_t TriOptimizerMesh::swap_all_edges()
             const double w = m.swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
-        total_success = run_localized_to_convergence(mesh, executor, collect_all_ops);
+        total_success = run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
     });
 
     return total_success;

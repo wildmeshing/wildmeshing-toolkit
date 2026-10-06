@@ -399,7 +399,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             *this,
             PassLock::VertexRing,
             "vertex smoothing operation",
-            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
+            [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
         log_smoothing_pass_accounting();

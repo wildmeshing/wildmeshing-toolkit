@@ -92,7 +92,7 @@ void TetOptimizerMesh::split_all_edges()
                 }
                 return false;
             };
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
             m_split_order_waits = executor.waits();
             m_split_order_wait_defects = executor.wait_defects();
         });

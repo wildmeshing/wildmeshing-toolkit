@@ -87,7 +87,7 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
             // list from get_edges() after every pass and re-ran the expensive geometric
             // pre-checks on every failure, even where nothing could have changed.
             const size_t total_success =
-                wmtk::run_localized_to_convergence(mesh, executor, all_ops, max_passes);
+                wmtk::run_localized_to_convergence(mesh, executor, std::move(all_ops), max_passes);
             logger().info("collapse success: {}", total_success);
             collapse_pass_end(total_success);
             accepted = total_success;

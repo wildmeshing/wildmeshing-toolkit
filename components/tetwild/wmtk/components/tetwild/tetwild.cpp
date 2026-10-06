@@ -196,10 +196,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
-    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(
+    // Held by pointer so it can be dropped once vsimp/fsimp are extracted below: it is a full
+    // TriMesh over the input, with its own envelope and preallocated slots, and nothing reads it
+    // after the extraction -- but as a plain local it would outlive the whole optimization.
+    auto surf_mesh_owner = std::make_unique<shortest_edge_collapse::ShortestEdgeCollapse>(
         verts,
         NUM_THREADS,
         !use_sample_envelope);
+    auto& surf_mesh = *surf_mesh_owner;
     surf_mesh.set_use_link_condition(simplify_use_link_condition);
     // The simplification and the tetrahedralisation used to share one envelope object at
     // the same eps, which leaves the optimizer no room: a simplification free to place a
@@ -305,6 +309,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
     }
+    surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
     t_simplify = phase_timer.getElapsedTime(); // surface simplification done
 
 
@@ -406,7 +411,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tet_envelope->disabled = true;
     }
 
-    tetwild::TetWildMesh mesh(params, tet_envelope, NUM_THREADS);
+    // The background mesh exists only to be cut by the insertion; held by pointer so it can be
+    // dropped as soon as the insertion has produced its output (see below).
+    auto background_owner =
+        std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
+    auto& mesh = *background_owner;
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
@@ -449,6 +458,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tet_face_on_input_surface);
 
     logger().info("=== finished insertion");
+    background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
@@ -461,6 +471,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         is_v_on_input,
         tets,
         tet_face_on_input_surface);
+
+    // The insertion's output now lives in mesh_new. These are function locals, so without this
+    // they -- the rational coordinates above all -- would be held through the optimization,
+    // which is where the run peaks.
+    std::vector<Vector3r>().swap(v_rational);
+    std::vector<std::array<size_t, 3>>().swap(facets);
+    std::vector<bool>().swap(is_v_on_input);
+    std::vector<std::array<size_t, 4>>().swap(tets);
+    std::vector<bool>().swap(tet_face_on_input_surface);
+    std::vector<Eigen::Vector3d>().swap(vsimp);
+    std::vector<std::array<size_t, 3>>().swap(fsimp);
 
     double insertion_time = insertion_timer.getElapsedTime();
 

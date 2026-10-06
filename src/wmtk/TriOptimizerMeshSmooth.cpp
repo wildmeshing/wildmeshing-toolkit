@@ -82,7 +82,7 @@ void TriOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
         logger().info("#V = {}", collect_all_ops.size());
         run_pass(*this, PassLock::VertexRing, "vertex smoothing", [&](auto& executor, auto& mesh) {
-            executor(mesh, collect_all_ops);
+            executor(mesh, std::move(collect_all_ops));
         });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
 

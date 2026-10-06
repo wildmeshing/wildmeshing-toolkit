@@ -26,6 +26,7 @@
 #include <queue>
 #include <stdexcept>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 
@@ -365,6 +366,29 @@ public:
      */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
+        return execute(m, operation_tuples, nullptr);
+    }
+
+    /**
+     * @brief As above, but takes the operation list over and frees it as soon as the queues are
+     * seeded.
+     *
+     * The queues hold their own copy of every operation, so the list is dead weight from then
+     * on -- and it is at its longest on the first pass after construction, which is also when
+     * the mesh is at its largest. Releasing it there is what keeps a pass from holding every
+     * candidate twice at the run's peak.
+     */
+    bool operator()(AppMesh& m, std::vector<std::pair<Op, Tuple>>&& operation_tuples)
+    {
+        return execute(m, operation_tuples, &operation_tuples);
+    }
+
+private:
+    bool execute(
+        AppMesh& m,
+        const std::vector<std::pair<Op, Tuple>>& operation_tuples,
+        std::vector<std::pair<Op, Tuple>>* release_after_seeding)
+    {
         // The queue holds an operation's INDEX rather than its name. edit_operation_maps is a
         // std::map, so iterating it yields the names in lexicographic order and an index is
         // exactly a name's rank among them -- comparing indices is therefore identical to
@@ -374,9 +398,36 @@ public:
         // priority is an integer compare instead of a string compare. It also turns the
         // per-operation dispatch from a string-keyed std::map lookup into an index.
         using OpId = uint32_t;
-        // priority, op index, tuple, #retries, queue_key. The key compares last, after the tuple,
-        // and two elements with the same tuple have the same key, so the pop order is unchanged.
-        using Elem = std::tuple<double, OpId, Tuple, size_t, uint64_t>;
+        // priority, op index, #retries, tuple, queue_key. A struct rather than a std::tuple so the
+        // two 32-bit fields share a word: std::tuple lays its members out in reverse and pads each
+        // one to the Tuple's alignment, which costs 8 bytes per queued operation. The ordering
+        // is the one the std::tuple had -- (priority, op, tuple, retry, key), lexicographic -- so
+        // the pop order is unchanged. The key compares last, after the tuple, and two elements
+        // with the same tuple have the same key.
+        struct Elem
+        {
+            double weight = 0;
+            OpId op = 0;
+            uint32_t retry = 0;
+            Tuple tup;
+            uint64_t key = 0; // queue_key, 0 when untracked
+
+            Elem() = default;
+            Elem(double w, OpId o, const Tuple& t, uint32_t r, uint64_t k)
+                : weight(w)
+                , op(o)
+                , retry(r)
+                , tup(t)
+                , key(k)
+            {}
+
+            // A member, not a hidden friend: a local class cannot define friend functions.
+            bool operator<(const Elem& b) const
+            {
+                return std::tie(weight, op, tup, retry, key) <
+                       std::tie(b.weight, b.op, b.tup, b.retry, b.key);
+            }
+        };
         // Each task owns its queue outright -- it is seeded before any thread starts, and the
         // task both pops from it and pushes its renewed operations back into it -- so those need
         // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
@@ -528,7 +579,7 @@ public:
                     continue;
                 }
                 ++since_refill;
-                auto& [weight, op, tup, retry, key] = ele_in_queue;
+                auto& [weight, op, retry, tup, key] = ele_in_queue;
                 if (!tup.is_valid(m)) {
                     done(key);
                     continue;
@@ -637,6 +688,7 @@ public:
                 track(k);
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
+            release_operation_list(release_after_seeding);
             run_single_queue(final_queue, 0, true);
         } else {
             for (const auto& [op, e] : operation_tuples) {
@@ -647,6 +699,7 @@ public:
                 track(k);
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
+            release_operation_list(release_after_seeding);
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
             const auto t_parallel = clock::now();
@@ -705,6 +758,16 @@ public:
         return true;
     }
 
+    /// Frees the caller's operation list once its contents are in the queues (see the rvalue
+    /// operator()). Swapping with an empty vector, not clear(), so the storage is returned.
+    static void release_operation_list(std::vector<std::pair<Op, Tuple>>* list)
+    {
+        if (list != nullptr) {
+            std::vector<std::pair<Op, Tuple>>().swap(*list);
+        }
+    }
+
+public:
     int get_cnt_success() const { return cnt_success; }
     int get_cnt_fail() const { return cnt_fail; }
 

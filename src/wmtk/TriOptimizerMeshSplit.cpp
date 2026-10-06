@@ -100,7 +100,7 @@ void TriOptimizerMesh::split_all_edges()
             };
             // Retry a failed split only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
             m_split_order_waits = executor.waits();
             m_split_order_wait_defects = executor.wait_defects();
         });
