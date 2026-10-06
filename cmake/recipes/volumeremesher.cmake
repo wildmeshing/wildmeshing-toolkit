@@ -29,7 +29,12 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # on VolumeRemesher returning every coordinate in lowest terms (GMP requires canonical
 # operands; see PR #27 below).
 #
-# Pinned at main, 48b200f. Since the previous pin (75a70dc) came PR #27: the exact
+# Pinned at main, fc72cc0. Since the previous pin (48b200f) came PR #28, which pins NFG to
+# upstream 9b7635a -- MarcoAttene/NFG#4 merged, see below -- so NFG and Indirect_Predicates
+# are upstream's latest, and VolumeRemesher and fast-envelope declare identical commits of
+# both. Nothing changes on GCC or Clang.
+#
+# Before that (75a70dc -> 48b200f) came PR #27: the exact
 # coordinates returned by embed_tri_in_poly_mesh and embed_seg_in_tri_mesh are in lowest
 # terms again, and are computed in parallel. NFG ecd60a8 (pinned since 75a70dc) stopped
 # reducing bigrational products, so at 75a70dc those functions returned x = lx / d
@@ -64,36 +69,24 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # but the signature grew, so every caller of that function had to be updated in the same
 # commit.
 #
-# NFG comes from the wildmeshing fork, not VolumeRemesher's pin, until MarcoAttene/NFG#4
-# merges. NFG picks how `NFG::interval_number` stores its bounds by preprocessor: as
-# `__m128d interval` (high, then min_low) when it detects SSE2 or AVX2, as
-# `double min_low, high` otherwise -- the same two values in the opposite order. Upstream
-# detects SSE2 with __SSE2__ alone, which MSVC never defines, so on Windows
+# NFG#4 is why the NFG pin matters on Windows. NFG picks how `NFG::interval_number` stores
+# its bounds by preprocessor: as `__m128d interval` (high, then min_low) when it detects SSE2
+# or AVX2, as `double min_low, high` otherwise -- the same two values in the opposite order.
+# Before #4 it detected SSE2 with __SSE2__ alone, which MSVC never defines, so on Windows
 # VolumeRemesher's translation units (built with /arch:AVX2, which defines __AVX2__) got the
 # SIMD layout while fast-envelope's and the toolkit's (built without it, since this file
-# strips it from consumers) got the scalar one. That was harmless while VolumeRemesher
-# wrapped NFG in vol_rem; now that all three share NFG::, the linker keeps one copy of each
-# inline member and intervals built on one side are read with swapped bounds on the other.
-# Symptom, Windows Release only: tetwild splits rejected as "produced a surface segment
-# outside the envelope" in an endless retry loop, split max energy around 1e102.
-#
-# The fork's one commit on top of VolumeRemesher's pin (ecd60a8) also accepts _M_X64 as
-# SSE2, so every MSVC x64 translation unit gets the SIMD layout and VolumeRemesher keeps
-# /arch:AVX2. Nothing changes for GCC or Clang, which define __SSE2__ on every x86-64
-# target. FetchContent keeps the first declaration of a name, and this one comes before
-# VolumeRemesher's (and fast-envelope's), so it decides NFG for both. Drop it once
-# VolumeRemesher pins an NFG that includes #4.
-include(FetchContent)
-FetchContent_Declare(nfg
-    GIT_REPOSITORY https://github.com/wildmeshing/NFG.git
-    GIT_TAG 77f53bb340a641714a7388b46bace05389420c0f
-    SOURCE_SUBDIR do-not-configure
-)
+# strips it from consumers) got the scalar one, and since all three share NFG:: the linker
+# kept one copy of each inline member: intervals built on one side were read with swapped
+# bounds on the other. Symptom, Windows Release only: tetwild splits rejected as "produced a
+# surface segment outside the envelope" in an endless retry loop, split max energy around
+# 1e102. #4 also accepts _M_X64 as SSE2, so every MSVC x64 translation unit gets the SIMD
+# layout. Until it merged, this file declared `nfg` from a wildmeshing fork carrying it, ahead
+# of VolumeRemesher, to override VolumeRemesher's and fast-envelope's pins.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 48b200f4744cfe24fc60413086b602e92eea710e
+    GIT_TAG fc72cc03fb3076528cc0c2c3c3702a1b9e524b27
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

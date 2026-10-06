@@ -55,9 +55,13 @@ CPMAddPackage(
     # Indirect_Predicates a5cb2c4. Both now define everything inside namespaces (NFG, IPs),
     # and fast-envelope did not compile against them -- which it gets here regardless of its
     # own pin, because VolumeRemesher's declaration comes first.
+    #
+    # And PR #10, which follows VolumeRemesher #28 onto NFG 9b7635a (MarcoAttene/NFG#4: MSVC
+    # x64 counts as SSE2, see volumeremesher.cmake). VolumeRemesher, fast-envelope and this
+    # repository now all name the same upstream NFG and Indirect_Predicates commits.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
     # main. A commit rather than the branch name, so the build stays reproducible.
-    GIT_TAG c803c65a4338796fffa9e30545ff04ea0c456930
+    GIT_TAG 1a6478e1b5aa7754e407b7e7d86a672badebd755
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )
