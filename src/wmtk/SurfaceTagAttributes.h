@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace wmtk {
 
 /**
@@ -13,11 +15,15 @@ namespace wmtk {
  */
 class SurfaceTagAttributes
 {
+    // One byte per field. The values are tiny -- a flag, a bbox side in [-1, 5], a class in
+    // {0, 1} -- but as int the struct was 12 bytes, and the 3D meshes carry four of these per
+    // tet slot (the 2D ones three per triangle slot) in storage preallocated several times
+    // over: on the largest tetwild inputs that alone was most of a gigabyte.
 public:
     /// Is this simplex part of the tracked surface.
     bool m_is_surface_fs = false;
     /// Which bbox side this simplex is on; -1 for none.
-    int m_is_bbox_fs = -1;
+    int8_t m_is_bbox_fs = -1;
 
     /**
      * @brief Which tracked surface this simplex belongs to, for applications that track more
@@ -34,7 +40,7 @@ public:
      * field here is carried by all of that for free; a parallel container would be silently
      * dropped by every one of those operations.
      */
-    int m_surface_class = 0;
+    int8_t m_surface_class = 0;
 
     void reset()
     {
@@ -50,5 +56,7 @@ public:
         if (attr.m_surface_class != 0) m_surface_class = attr.m_surface_class;
     }
 };
+
+static_assert(sizeof(SurfaceTagAttributes) == 3, "keep the surface tags byte-sized");
 
 } // namespace wmtk

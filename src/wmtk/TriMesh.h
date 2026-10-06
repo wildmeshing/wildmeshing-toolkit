@@ -248,8 +248,10 @@ public:
          * @brief the hash is changed every time there is an operation that influences the
          * triangle
          *
+         * 32 bits, packed next to m_is_removed (32 bytes instead of 40); see
+         * TetMesh::TetrahedronConnectivity::hash.
          */
-        size_t hash = 0;
+        uint32_t hash = 0;
 
         inline size_t& operator[](size_t index)
         {

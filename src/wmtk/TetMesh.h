@@ -286,8 +286,12 @@ public:
          * that it is stale. Only ever compared for equality against a Tuple's cached copy --
          * no code reads the value itself, and the rollback path decrements it, which is why it
          * is unsigned: the wrap at 0 is defined, where signed underflow would not be.
+         *
+         * 32 bits, packed next to m_is_removed: the struct is 40 bytes instead of 48, and there
+         * are six of them per live tet in the preallocated storage. A slot would have to be
+         * modified 2^32 times between a Tuple being minted and checked for that to alias.
          */
-        size_t hash = 0;
+        uint32_t hash = 0;
 
         size_t& operator[](size_t index)
         {
