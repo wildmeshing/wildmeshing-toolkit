@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <deque>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -67,7 +69,10 @@ size_t run_localized_to_convergence(
     for (const auto& kv : executor.edit_operation_maps) {
         op_names.push_back(kv.first);
     }
-    threading::collector<std::pair<uint32_t, Tuple>> failures;
+    // A deque rather than a vector-backed collector: most candidates of a pass can fail, and a
+    // vector growing by doubling to that size holds its old and new buffer at once.
+    std::mutex failures_mutex;
+    std::deque<std::pair<uint32_t, Tuple>> failures;
 
     auto edge_epoch = [&vertex_epoch](const Mesh& m_, const Tuple& t) -> uint64_t {
         const size_t a = t.vid(m_);
@@ -98,9 +103,10 @@ size_t run_localized_to_convergence(
             }
             return tups;
         };
-    executor.on_fail = [&failures, &op_names](const Mesh&, Op op, const Tuple& t) {
+    executor.on_fail = [&failures, &failures_mutex, &op_names](const Mesh&, Op op, const Tuple& t) {
         const auto it = std::lower_bound(op_names.begin(), op_names.end(), op);
         assert(it != op_names.end() && *it == op);
+        std::lock_guard<std::mutex> lock(failures_mutex);
         failures.emplace_back(static_cast<uint32_t>(it - op_names.begin()), t);
     };
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <mutex>
 #include <queue>
 
@@ -13,7 +14,13 @@ template <typename T, typename Compare = std::less<T>>
 class concurrent_priority_queue
 {
     mutable std::mutex m_mutex;
-    std::priority_queue<T, std::vector<T>, Compare> m_queue;
+    // A deque underneath, not a vector. std::priority_queue runs the same push_heap /
+    // pop_heap index arithmetic on either, so the heap layout -- and the pop order -- is
+    // identical; what changes is that a deque grows in fixed blocks instead of doubling.
+    // The queues are at their largest on the first pass after construction, when the mesh is
+    // too, and a vector there both carried up to 2x unused capacity and, at each doubling,
+    // held the old and the new buffer at once.
+    std::priority_queue<T, std::deque<T>, Compare> m_queue;
 
 public:
     concurrent_priority_queue() = default;

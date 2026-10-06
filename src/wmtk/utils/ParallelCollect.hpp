@@ -48,11 +48,11 @@ parallel_collect_edge_ops(Mesh& m, int num_threads, Emit&& emit)
             if (local.empty()) {
                 return;
             }
-            collect.append(local);
+            collect.append(std::move(local));
         },
         num_threads);
 
-    return collect.data();
+    return collect.take();
 }
 
 template <class Mesh, class Emit>
@@ -84,11 +84,11 @@ parallel_collect_face_ops(Mesh& m, int num_threads, Emit&& emit)
             if (local.empty()) {
                 return;
             }
-            collect.append(local);
+            collect.append(std::move(local));
         },
         num_threads);
 
-    return collect.data();
+    return collect.take();
 }
 
 } // namespace wmtk
