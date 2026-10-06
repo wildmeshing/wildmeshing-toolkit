@@ -25,9 +25,21 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # USE_GNU_GMP_CLASSES is not defined. That selects the `init_from_bin(get_str())`
 # branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
-# init_from_bin parses.
+# init_from_bin parses. init_from_bin is mpq_set_str with no mpq_canonicalize, so it relies
+# on VolumeRemesher returning every coordinate in lowest terms (GMP requires canonical
+# operands; see PR #27 below).
 #
-# Pinned at main, 75a70dc. Since the previous pin (609e32c4):
+# Pinned at main, 48b200f. Since the previous pin (75a70dc) came PR #27: the exact
+# coordinates returned by embed_tri_in_poly_mesh and embed_seg_in_tri_mesh are in lowest
+# terms again, and are computed in parallel. NFG ecd60a8 (pinned since 75a70dc) stopped
+# reducing bigrational products, so at 75a70dc those functions returned x = lx / d
+# unreduced (3/6, not 1/2), and Rational's operator== -- mpq_equal, which compares
+# numerator and denominator directly -- said false for equal values. That changed tetwild's
+# output on tetwild_thingi_1344050, tetwild_thingi_229953 and challenging_tetwild_101954;
+# with #27 those match what canonicalizing every coordinate gives, and every other
+# registered integration config is byte-identical.
+#
+# Before that (609e32c4 -> 75a70dc):
 #
 #   - PR #26 replaced the built-in 3D Delaunay with Delaunay3D. It produces a different,
 #     equally valid tetrahedrization, so every 3D output moves -- tetwild and simwild here,
@@ -81,7 +93,7 @@ include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 75a70dc79a13a5de41369ce899134974665cd4b5
+    GIT_TAG 48b200f4744cfe24fc60413086b602e92eea710e
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
