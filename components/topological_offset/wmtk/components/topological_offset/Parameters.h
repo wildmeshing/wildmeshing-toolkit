@@ -79,11 +79,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The front vertices' smoothing veto on the per-cell energy (see the spec); the engine's
     /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
     bool offset_front_smooth_veto = false;
-    /// The weight w of AMIPS in the per-cell energy and in the front smoother's objective:
-    /// tet_energy = w AMIPS^3 + the offset terms in 3D, tri_energy = w AMIPS + the offset terms in
-    /// 2D -- the engine's own cell quality in each (see the spec). 1 is the 1:1 energy of
-    /// 2026-09-28.
-    double offset_amips_weight = 1e-4;
     /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
     /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
     bool offset_collapse_changed_cells = true;
@@ -320,13 +315,15 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_collapse_veto = json_params["offset_collapse_veto"];
         offset_swap_veto = json_params["offset_swap_veto"];
         offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
-        offset_amips_weight = json_params["offset_amips_weight"];
         offset_collapse_changed_cells = json_params["offset_collapse_changed_cells"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
         area_weight_front = json_params["area_weight_front"];
         max_rounds = json_params["max_rounds"];
+        // THE weight w of AMIPS (OptimizerParameters' field): the per-cell energy (tet_energy =
+        // w AMIPS^3 + the offset terms in 3D, tri_energy = w AMIPS + the offset terms in 2D), the
+        // smoothing objectives, and 1 - w for the envelope term of envelope-held vertices.
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];

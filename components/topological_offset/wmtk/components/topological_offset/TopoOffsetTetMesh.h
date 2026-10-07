@@ -405,7 +405,7 @@ public:
      *     E(t) = w A(t)^3 + [t is band] * sum over the live front faces f of t of O(f)
      *     O(f) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
      *
-     * w is offset_amips_weight and A(t)^3 is the base's TetOptimizerMesh::get_quality(), the
+     * w is w_amips and A(t)^3 is the base's TetOptimizerMesh::get_quality(), the
      * AMIPS^3 the engine stores as the cell quality (weighted_amips()); its MAX_ENERGY
      * (unscoreable) passes through unchanged. q_i are the N
      * points of f's stencil_order stencil (for_each_face_sample()) on the field of f's band cell
@@ -476,13 +476,13 @@ public:
     {
         return tet_energy(tid, quality);
     }
-    /// The AMIPS part of the energy: offset_amips_weight times AMIPS^3, the MAX_ENERGY sentinel
+    /// The AMIPS part of the energy: w_amips times AMIPS^3, the MAX_ENERGY sentinel
     /// (unscoreable) passed through unscaled so that it stays the largest value anywhere. Every
     /// place that turns AMIPS^3 into energy reads it through here -- tet_energy(),
     /// candidate_energy(), and the energy rules' early halves on the engine's AMIPS^3 bound.
     double weighted_amips(const double amips3) const
     {
-        return amips3 >= MAX_ENERGY ? amips3 : m_offset_params.offset_amips_weight * amips3;
+        return amips3 >= MAX_ENERGY ? amips3 : m_offset_params.w_amips * amips3;
     }
     /// Max of tet_energy() over `tids` (0 for none): the number every rule above compares.
     double max_tet_energy(const std::vector<size_t>& tids) const;
@@ -727,9 +727,8 @@ public:
     /// the survivor's ring, swaps for not strictly lowering it over the cells they make.
     mutable std::atomic<int> iter_cnt_collapse_energy_reject{0}; // both halves count here
     mutable std::atomic<int> iter_cnt_swap_energy_reject{0};
-    /// The main iterations' rules (main_iteration_rules()): collapses and swaps refused for not
-    /// being on the offset front, and refused by the front measure (vertex_ms()).
-    std::atomic<int> iter_cnt_collapse_offfront_reject{0};
+    /// The main iterations' rules (main_iteration_rules()): swaps refused for not being a flip of
+    /// the offset front, and collapses and swaps refused by the front measure (vertex_ms()).
     std::atomic<int> iter_cnt_swap_offfront_reject{0};
     std::atomic<int> iter_cnt_collapse_ms_reject{0};
     std::atomic<int> iter_cnt_swap_ms_reject{0};
@@ -1354,7 +1353,7 @@ public:
      */
     bool smooth_nonfront_vertex(const Tuple& t);
     /// weight x AMIPS^3 over vid's one-ring, equilateral (CubedAMIPSEnergy3D); weight < 0 means
-    /// offset_amips_weight, the per-tet energy's AMIPS part.
+    /// w_amips, the per-tet energy's AMIPS part.
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid, double weight = -1.)
         const;
     /// THE shape term of every smoothing objective, all-or-nothing on the plastic medium: under
@@ -1362,12 +1361,12 @@ public:
     /// (rest_energy_for_vertex()); without it, w sum_t AMIPS(t)^3 (amips3_energy()). w is
     /// shape_weight(vid).
     std::shared_ptr<polysolve::nonlinear::Problem> shape_energy(size_t vid) const;
-    /// The shape term's weight at vid: offset_amips_weight, except for a vertex off the front in
+    /// The shape term's weight at vid: w_amips, except for a vertex off the front in
     /// the main iterations, whose energy is the plain sum (weight 1).
     double shape_weight(const size_t vid) const
     {
         if (main_iteration_rules() && !m_vertex_extra[vid].m_is_on_offset) return 1.;
-        return m_offset_params.offset_amips_weight;
+        return m_offset_params.w_amips;
     }
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
@@ -1479,8 +1478,9 @@ public:
     bool m_main_iterations = false;
     /// Whether the main iterations' rules apply: inside optimize_offset_loop()'s turns, not in
     /// its final pass (m_freeze_front), not coarsening, not before the march. Under them:
-    /// - a collapse is admitted only for an edge of the offset front surface, and only if the
-    ///   front measure of the faces it reshapes does not rise (collapse_before_vertex());
+    /// - a collapse of an edge of the offset front surface only if the front measure of the
+    ///   faces it reshapes does not rise (collapse_before_vertex()); any other edge by length
+    ///   alone;
     /// - a swap only as a flip of the offset front surface, and only if the measure of the flipped
     ///   pair strictly falls (swap_before_surface()); every other swap is refused;
     /// - no AMIPS or energy test on either (collapse_quality_allowed(), swap_quality_allowed(),

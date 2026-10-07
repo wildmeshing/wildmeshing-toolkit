@@ -444,7 +444,7 @@ public:
      *
      * A(t) is the base's TriOptimizerMesh::get_quality(), the AMIPS2D the engine stores as the
      * face quality (3D stores AMIPS^3 there, which is why its energy reads AMIPS^3); its
-     * MAX_ENERGY (unscoreable) passes through unchanged, and w is offset_amips_weight
+     * MAX_ENERGY (unscoreable) passes through unchanged, and w is w_amips
      * (weighted_amips()). q_i are the N points of e's stencil_order stencil
      * (for_each_edge_sample()) on the field of e's band face (potential_for_face()), e's ends
      * sorted so that a chord's term does not depend on which face or which operation reads it. O is
@@ -472,11 +472,11 @@ public:
     {
         return tri_energy(fid, quality);
     }
-    /// The AMIPS part of the energy: offset_amips_weight times AMIPS, the MAX_ENERGY sentinel
+    /// The AMIPS part of the energy: w_amips times AMIPS, the MAX_ENERGY sentinel
     /// (unscoreable) passed through unscaled so that it stays the largest value anywhere.
     double weighted_amips(const double amips) const
     {
-        return amips >= MAX_ENERGY ? amips : m_offset_params.offset_amips_weight * amips;
+        return amips >= MAX_ENERGY ? amips : m_offset_params.w_amips * amips;
     }
     /// Max of tri_energy() over `fids` (0 for none): the number every rule above compares.
     double max_tri_energy(const std::vector<size_t>& fids) const;
@@ -1475,7 +1475,7 @@ public:
      */
     bool smooth_nonfront_vertex(const Tuple& t);
     /// w AMIPS over vid's one-ring, the per-cell energy's AMIPS part in the smoother's form
-    /// (optimization::AMIPSEnergy2D, the engine's own quality), w = offset_amips_weight. The 3D
+    /// (optimization::AMIPSEnergy2D, the engine's own quality), w = w_amips. The 3D
     /// twin is amips3_energy(), AMIPS^3 being the 3D engine's quality.
     std::shared_ptr<polysolve::nonlinear::Problem> amips_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
@@ -1535,11 +1535,11 @@ public:
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                vertex_boundary_mask(vid) == 0;
     }
-    /// The AMIPS weight the rest-shape term uses at vid: offset_amips_weight for a vertex placed
+    /// The AMIPS weight the rest-shape term uses at vid: w_amips for a vertex placed
     /// against the offset term, the engine's w_amips factor otherwise. As in 3D.
     double smoother_amips_weight(const size_t vid) const
     {
-        if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
+        if (vertex_carries_offset_term(vid)) return m_offset_params.w_amips;
         return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     }
     /// THE smoothing objective at vid, for every vertex the shared smoother places: the per-cell

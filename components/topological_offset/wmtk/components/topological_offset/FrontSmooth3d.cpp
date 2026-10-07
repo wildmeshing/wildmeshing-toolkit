@@ -312,12 +312,12 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
-    // ENERGIES.md: (1 - w) vertex_ms(v, O_f), w = offset_amips_weight and vertex_ms the MEAN of
+    // ENERGIES.md: (1 - w) vertex_ms(v, O_f), w = w_amips and vertex_ms the MEAN of
     // the face measures over the vertex's offset faces -- weighted by area under
     // area_weight_front (StencilEnergy3D's area mode), plainly otherwise (1/|O_f| here). The face
     // measure is the mean over the stencil of the squared error in units of the tolerance, the
     // 1 / front_conv_frac()^2 of offset_term_weight() -- face_offset_term(), 1 at the bar.
-    const double w_off = (1. - m_offset_params.offset_amips_weight) * offset_term_weight();
+    const double w_off = (1. - m_offset_params.w_amips) * offset_term_weight();
     // THE offset term, and the only one: the mean squared relative error over each incident
     // face's stencil, averaged over the ring. The stencil contains the face's corners, so the
     // moving vertex's own residual is in it. See StencilEnergy3D. The same average as the ring

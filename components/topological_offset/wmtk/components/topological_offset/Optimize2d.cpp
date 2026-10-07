@@ -924,9 +924,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::amips_energy(
         }
         cells.push_back(c);
     }
-    return std::make_shared<optimization::AMIPSEnergy2D>(
-        std::move(cells),
-        m_offset_params.offset_amips_weight);
+    return std::make_shared<optimization::AMIPSEnergy2D>(std::move(cells), m_offset_params.w_amips);
 }
 
 bool TopoOffsetTriMesh::smooth_nonfront_vertex(const Tuple& t)

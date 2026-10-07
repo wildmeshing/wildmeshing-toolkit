@@ -865,7 +865,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
     }
     return std::make_shared<CubedAMIPSEnergy3D>(
         std::move(cells),
-        weight < 0. ? m_offset_params.offset_amips_weight : weight);
+        weight < 0. ? m_offset_params.w_amips : weight);
 }
 
 bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
@@ -1283,12 +1283,6 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     const size_t v2_id,
     const double edge_length)
 {
-    // The main iterations (main_iteration_rules()): only an edge of the offset front surface is
-    // eligible. Checked first, before anything is measured.
-    if (main_iteration_rules() && !edge_is_offset_surface_live(v1_id, v2_id)) {
-        ++iter_cnt_collapse_offfront_reject;
-        return collapse_reject(CollapseReject::app_ops_guard);
-    }
     // The energy rule's before-half: the largest tet_energy() over both endpoints' rings, the
     // number collapse_after_connectivity() compares the survivor's ring against. Taken HERE, in
     // the hook the engine calls before its scoring loop, so that collapse_quality_allowed() can
@@ -1389,12 +1383,14 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         return collapse_reject(CollapseReject::app_order2);
     }
 
-    // The main iterations' collapse rule (ENERGIES.md): the faces whose geometry the collapse
-    // changes are v1's offset faces that do not hold v2 -- the two that hold the edge vanish, and
-    // v2's own faces keep their corners, the survivor keeping its position. The rule compares
-    // their vertex measure with v1 at its place (before) and at v2's (after), and refuses a
-    // rise; a tie passes. Exact before anything is modified: the collapse moves no vertex.
-    if (main_iteration_rules()) {
+    // The main iterations' collapse rule (ENERGIES.md), for an edge OF THE OFFSET FRONT SURFACE
+    // only; any other edge is gated by length alone (and the topology rules above). The faces
+    // whose geometry the collapse changes are v1's offset faces that do not hold v2 -- the two
+    // that hold the edge vanish, and v2's own faces keep their corners, the survivor keeping its
+    // position. The rule compares their vertex measure with v1 at its place (before) and at v2's
+    // (after), and refuses a rise; a tie passes. Exact before anything is modified: the collapse
+    // moves no vertex.
+    if (main_iteration_rules() && edge_is_offset_surface_live(v1_id, v2_id)) {
         std::vector<MsFace> before, after;
         const auto face = [&](const OffsetPotential3D& pot, std::array<size_t, 3> f) {
             std::sort(f.begin(), f.end());
@@ -4338,12 +4334,13 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         ~MainIterations() { flag = false; }
     } main_iterations(m_main_iterations);
     logger().info(
-        "\t[main iterations] collapses: offset-front edges only, refused when the vertex measure "
-        "of the faces they reshape rises | swaps: offset-front flips only, refused unless the "
+        "\t[main iterations] collapses: an offset-front edge is refused when the vertex measure of "
+        "the faces it reshapes rises, any other edge is gated by length alone | swaps: "
+        "offset-front flips only, refused unless the "
         "measure of the flipped pair strictly falls | no AMIPS test on either | smoothing: front "
         "vertices w sum AMIPS^3 + (1 - w) vertex measure, then every other vertex sum AMIPS^3 "
-        "(w = offset_amips_weight {:.6g}) | vertex measure: {} mean of the face measures",
-        m_offset_params.offset_amips_weight,
+        "(w = w_amips {:.6g}) | vertex measure: {} mean of the face measures",
+        m_offset_params.w_amips,
         m_offset_params.area_weight_front ? "area-weighted" : "plain");
     check_no_vertex_on_both_surfaces("construction");
     audit_surface_containment("construction");
@@ -4434,7 +4431,6 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         m_iterations_used = it + 1;
         const int energy_c0 = iter_cnt_collapse_energy_reject.load();
         const int energy_s0 = iter_cnt_swap_energy_reject.load();
-        const int offfront_c0 = iter_cnt_collapse_offfront_reject.load();
         const int offfront_s0 = iter_cnt_swap_offfront_reject.load();
         const int ms_c0 = iter_cnt_collapse_ms_reject.load();
         const int ms_s0 = iter_cnt_swap_ms_reject.load();
@@ -4600,12 +4596,11 @@ void TopoOffsetTetMesh::optimize_offset_loop(
         // Not gated on the key: silent unless a face lookup actually missed this run.
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
         logger().info(
-            "\t[main iterations] turn {}: collapses refused off the front {}, for raising the "
-            "vertex measure {} | swaps refused off the front {}, for not strictly lowering the "
+            "\t[main iterations] turn {}: front collapses refused for raising the vertex measure "
+            "{} | swaps refused off the front {}, for not strictly lowering the "
             "vertex measure {} | energy rule (outside the main iterations): {} collapse(s), {} "
             "swap(s)",
             it + 1,
-            iter_cnt_collapse_offfront_reject.load() - offfront_c0,
             iter_cnt_collapse_ms_reject.load() - ms_c0,
             iter_cnt_swap_offfront_reject.load() - offfront_s0,
             iter_cnt_swap_ms_reject.load() - ms_s0,

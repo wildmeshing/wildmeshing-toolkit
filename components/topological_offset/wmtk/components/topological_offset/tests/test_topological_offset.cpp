@@ -1251,9 +1251,9 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
         -0.4, 0., 0.45, // c2
         0., -0.4, 0.5; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
-        param.offset_amips_weight = w;
+        param.w_amips = w;
         const auto pot = plane_field();
         auto mesh = energy_mesh(
             param,
@@ -1300,9 +1300,9 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         -0.4, 0., 0.45, // c2
         0., -0.4, 0.5; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
-        param.offset_amips_weight = w;
+        param.w_amips = w;
         const auto pot = plane_field();
         auto mesh = energy_mesh(
             param,
@@ -1675,9 +1675,9 @@ TEST_CASE("per-tri-energy", "[offset][2d]")
     // the default w.
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
-        param.offset_amips_weight = w;
+        param.w_amips = w;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
@@ -1711,9 +1711,9 @@ TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
     // and Hessian against central differences too. At w = 1 and at the default w.
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().offset_amips_weight}) {
+    for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
-        param.offset_amips_weight = w;
+        param.w_amips = w;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
