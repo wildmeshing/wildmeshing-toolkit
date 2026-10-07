@@ -29,8 +29,7 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # on VolumeRemesher returning every coordinate in lowest terms (GMP requires canonical
 # operands; see PR #27 below).
 #
-# Pinned at 72745a5, the head of PR #30, which is stacked on PR #29; neither is on main yet.
-# VolumeRemesher merges with merge commits, so the commit stays reachable once they land.
+# Pinned at main, 846eaa0. Since the previous pin (fc72cc0) came PRs #29 and #30:
 #
 #   - PR #29: embed_tri_in_poly_mesh frees the BSPcomplex it builds. It used to leak it, so
 #     the whole arrangement stayed allocated for the rest of the run: about 1 GB of tetwild's
@@ -101,7 +100,7 @@ include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 72745a505622b47a6c5a8a0f3790aea3a910aa1b
+    GIT_TAG 846eaa0212c65386533b2b2c8ecaf6a03511dec0
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
