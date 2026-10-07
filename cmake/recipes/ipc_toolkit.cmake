@@ -2,9 +2,9 @@
 # License: MIT
 #
 # Public mirror of fsichetti/ipc-toolkit@upstream-merge, published in the wildmeshing
-# organisation with the author's permission. What wmtk uses from it is the `high_order_contact`
-# subtree: the smooth (offset geometric contact) potential and its analytic gradient and
-# Hessian, which the topological_offset component evaluates as its offset field.
+# organisation with the author's permission. What wmtk uses from it is the `esp` subtree: the
+# Extremum-Sum Potential evaluated at arbitrary points (ArbitraryPointESP) and its analytic
+# gradient and Hessian, which the topological_offset component evaluates as its offset field.
 #
 # Only the topological_offset component links this. Core wmtk::toolkit does not, so nothing
 # here reaches tetwild, triwild or simwild.
@@ -36,7 +36,7 @@ include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
     GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 3a76d751aa3d6b38f6328edaa0b1a438f08c703b
+    GIT_TAG 626e27e11ac64c68f1e00859fec86c4688fde51c
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
@@ -48,9 +48,9 @@ CPMAddPackage(
 # target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
 #
 # -- PUBLIC, with a comment saying the author does not know why making it private crashes. It
-# is not optional for us either: high_order_contact, the subtree wmtk actually uses, carries a
+# is not optional for us either: esp, the subtree wmtk actually uses, carries a
 # static_assert(packet_traits<double>::size == 1, "Eigen vectorization is NOT disabled!") in
-# HighOrderCollisionTemplate's constructor, so building it with vectorization on does not
+# ESPCollisionTemplate's constructor, so building it with vectorization on does not
 # compile. IPC_TOOLKIT_WITH_SIMD must therefore stay at its default ON.
 #
 # On its own that definition splits the build's Eigen ABI in half, because it reaches only the
@@ -102,7 +102,7 @@ endforeach()
 #   if (SIMD_CXX_FLAGS) ... else() set(IPC_TOOLKIT_WITH_SIMD OFF CACHE BOOL "Enable SIMD" FORCE)
 #
 # so an empty value turns SIMD off, and with it the EIGEN_DONT_VECTORIZE definition that
-# high_order_contact's static_assert demands (see the block above).
+# esp's static_assert demands (see the block above).
 get_target_property(_ipc_opts ipc_toolkit COMPILE_OPTIONS)
 if(_ipc_opts)
     list(FILTER _ipc_opts EXCLUDE REGEX "^(-m(arch|tune)=|-mavx|-mfma|-msse|/arch:)")

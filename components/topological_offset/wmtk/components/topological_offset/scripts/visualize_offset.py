@@ -243,7 +243,8 @@ def point_scalar(m, name):
 # before that carry it on every vertex of an intra-turn frame and are masked out the same way.)
 # Absent from frames written before the fields existed, in which case the layers are not offered.
 FRONT_DIAGS = ("front_conv_ratio", "front_residual_rel", "front_grad_norm",
-               "front_move_align", "front_complex_distance")
+               "front_move_align", "front_complex_distance",
+               "front_newton_iters", "front_newton_status")
 
 
 def front_diags(m):
@@ -1070,6 +1071,17 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
             # that cannot reduce the distance, so the vertex reads as placed wherever it sits.
             add_front_scalar(m, "front: move dir . field normal (1 = useful)", ma[rows],
                              cmap="viridis", vminmax=(0.0, 1.0), enabled=False)
+        # The vertex's front solve in the pass this frame closes (3D); no value on a frame that
+        # closes an operation pass. Stop status is polysolve's + 1: 2 IterationLimit,
+        # 6 GradNormTolerance, 7 RelGradNormTolerance, 12 LineSearchFailed.
+        ni = diags.get("front_newton_iters")
+        if ni is not None:
+            add_front_scalar(m, "front: Newton iterations (10 = cap)", ni[rows],
+                             cmap="reds", vminmax=(0.0, 10.0), enabled=False)
+        ns = diags.get("front_newton_status")
+        if ns is not None:
+            add_front_scalar(m, "front: Newton stop (2 = cap, 6/7 = converged)", ns[rows],
+                             cmap="viridis", vminmax=(0.0, 13.0), enabled=False)
         # The sag, on the EDGES (2D) / FACES (3D) themselves, not on their corners: the other
         # half of the convergence test. A chord whose corners are both on the level set and whose
         # sag is over 1 is refinable; over 1 with the sizing already at the floor is the "at the

@@ -286,8 +286,6 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
     for (size_t i = 0; i < vert_capacity(); ++i) tempV[i] = m_vertex_attribute[i].m_posf;
 
     m_tag_envelopes.clear();
-    m_tag_polyline.clear();
-    m_env_polyline_V = tempV;
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
         m_isect_cache.clear();
@@ -303,15 +301,6 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         m_tag_envelopes[tag] = env;
         members.push_back(env);
         per_tag_log += fmt::format(" {}:{}", envelope_key_name(tag), bucket.size());
-
-        TagPolyline2d pl;
-        pl.E = bucket;
-        pl.at_vertex.assign(tempV.size(), {});
-        for (int i = 0; i < int(bucket.size()); ++i) {
-            pl.at_vertex[bucket[i][0]].push_back(i);
-            pl.at_vertex[bucket[i][1]].push_back(i);
-        }
-        m_tag_polyline[tag] = std::move(pl);
     }
     // The base's pointer survives as the union of the members -- inside any tube -- because
     // the shared engine's direct uses of it ask exactly that question. Everything else
@@ -852,24 +841,9 @@ void TopoOffsetTriMesh::init_offset_potential()
     // same geometry a different offset depending on how the input was meshed. Same rule as 3D.
     const double delta = m_offset_params.target_distance;
     const double reach = max_band_vertex_distance();
-    // DEBUG_manual_dhat, when set, replaces BOTH halves of the rule above -- the configured
-    // factor and the constructed-offset floor -- with one absolute length, so a run can be asked
-    // what it does under a support it would never have chosen. [2D ONLY], see Parameters.h.
-    const bool manual = m_offset_params.debug_manual_dhat >= 0.;
-    const double dhat = manual ? m_offset_params.debug_manual_dhat
-                               : std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
+    const double dhat = std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
     const double effective_factor = dhat / delta;
-    if (manual) {
-        logger().warn(
-            "\tDEBUG_manual_dhat {}: dhat forced to {:.6g} = {:.4g}x delta, overriding the "
-            "automatic max({}x delta, 2x the furthest offset vertex {:.6g}) = {:.6g}",
-            m_offset_params.debug_manual_dhat,
-            dhat,
-            effective_factor,
-            m_offset_params.offset_dhat_factor,
-            reach,
-            std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach));
-    } else if (reach > 0.) {
+    if (reach > 0.) {
         logger().info(
             "\tdhat sized from the constructed offset: furthest offset vertex {:.6g} = {:.4g}x "
             "delta, so dhat = max({}x delta, 2x that) = {:.6g} = {:.4g}x delta",
@@ -973,16 +947,11 @@ double TopoOffsetTriMesh::max_band_vertex_distance() const
 }
 
 
-void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
+void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_file)
 {
-    // The construction runs on the input mesh AS GIVEN. There is no pre-optimization pass any
-    // more (removed 2026-09-24 with its key): the marching puts the offset on this
-    // triangulation's own cell boundaries, so the input's quality and resolution decide the
-    // constructed offset directly, and supplying a mesh good enough for that is the caller's job.
-
     // make embedding simplicial
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     logger().info("Creating simplicial embedding...");
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     if (!is_simplicially_embedded()) {
         simplicial_embedding();
         bool dummy = is_simplicially_embedded();
@@ -992,15 +961,13 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("simplicial_embedding");
     }
 
+    // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
+    repulsion_smoothing();
+
     // initialize offset
     logger().info("Initializing offset...");
-    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
-    // the placement at all, and carrying the boundary out to target_distance is the optimization
-    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
-    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
-    // end), to the midpoint on an edge the trace leaves.
-    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
-                                                                    : EdgeSplitMode::Midpoint;
+    // marching_tris() chooses the placement itself (construction_mode) and leaves the split mode
+    // at Midpoint.
     marching_tris();
     m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     consolidate_mesh();
@@ -1008,24 +975,9 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("marching");
     }
 
-    // No growth pass: the band is exactly the one layer of background triangles marching_tris()
-    // labelled from the frontier one-rings, so the offset boundary sits on the input
-    // triangulation's own cell boundaries. Closing that gap is the optimization phase's job.
-
-    // simplicially embed again, if needed
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
-    if (!is_simplicially_embedded()) {
-        simplicial_embedding();
-        bool dummy = is_simplicially_embedded();
-    }
-    // Unconditional, outside the branch above. write_vtu() consolidates, so inside the `if` the
-    // only consolidate on an already-embedded mesh would be the debug one -- and consolidating
-    // renumbers, which changes the order later passes enumerate operations in, i.e. the run.
+    // Must stay outside the branch above and unconditional: consolidating renumbers, which
+    // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
-    if (m_offset_params.debug_output) {
-        write_debug_frame("re_embedded");
-    }
-
     set_offset_tri_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) {
@@ -1033,6 +985,304 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     }
 
     assert(ambient_assert());
+}
+
+size_t TopoOffsetTriMesh::flood_fill()
+{
+    size_t current_id = 0;
+    std::vector<char> visited(vert_capacity(), 0);
+    for (const Tuple& v : get_vertices()) {
+        const size_t v_id = v.vid(*this);
+        if (m_vertex_extra[v_id].label == 0) continue; // vertex not in complex
+        if (visited[v_id]) continue; // vertex already visited
+
+        visited[v_id] = 1;
+        std::queue<size_t> bfs_queue;
+        for (const size_t other_v_id : connected_components_helper(v_id)) {
+            if (!visited[other_v_id]) bfs_queue.push(other_v_id);
+        }
+        while (!bfs_queue.empty()) {
+            const size_t curr_vid = bfs_queue.front();
+            bfs_queue.pop();
+            if (visited[curr_vid]) continue;
+            visited[curr_vid] = 1;
+            for (const size_t other_v_id : connected_components_helper(curr_vid)) {
+                if (!visited[other_v_id]) bfs_queue.push(other_v_id);
+            }
+        }
+        current_id++;
+    }
+    return current_id;
+}
+
+void TopoOffsetTriMesh::relabel_input_complex()
+{
+    // label_input_complex() only ever sets labels to 1; every label goes back to 0 first, so a
+    // simplex an operation moved out of the complex is not left marked. As in 3D.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
+    for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
+    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
+    label_input_complex();
+}
+
+void TopoOffsetTriMesh::repulsion_smoothing()
+{
+    // The march traces every marched edge to target_distance only if every outer end is farther
+    // than it (the maximum marchable distance, see marching_tris()); otherwise it falls back to
+    // half that distance and the loop has to carry the front out. These passes push the outer
+    // ends out first, under one per-tri energy: w AMIPS plus, for each corner v of the face that
+    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
+    // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
+    // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
+    // the maximum marchable distance" run backwards). The smoother minimises its sum over a
+    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
+    // loop. An outer end that an envelope holds carries no term. First up to
+    // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
+    // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
+    // outside the tolerance band. As in 3D.
+    const int n_passes = m_offset_params.repulsion_smoothing_passes;
+    const int n_rounds = m_offset_params.repulsion_rounds;
+    if (n_passes <= 0 && n_rounds <= 0) return;
+    const double delta = m_offset_params.target_distance;
+    const double stop = delta + m_offset_params.front_conv;
+
+    // The outer ends exactly as marching_tris() picks its edges: the two ends differ in "label
+    // 0". Recomputed at every report: the rounds' operations change the set. n_held: those an
+    // envelope holds, which is_repulsion_vertex() leaves to TriWild's rule.
+    std::vector<size_t> outer;
+    size_t n_held = 0;
+    const auto collect_outer = [&]() {
+        outer.clear();
+        n_held = 0;
+        std::vector<char> seen(vert_capacity(), 0);
+        for (const Tuple& e : get_edges()) {
+            const size_t v1 = e.vid(*this);
+            const size_t v2 = e.switch_vertex(*this).vid(*this);
+            if (!is_marched_edge(v1, v2)) continue;
+            const size_t v_out = m_vertex_extra[v1].label == 0 ? v1 : v2;
+            if (!seen[v_out]) {
+                seen[v_out] = 1;
+                outer.push_back(v_out);
+                if (vertex_boundary_mask(v_out) != 0) ++n_held;
+            }
+        }
+    };
+    collect_outer();
+    if (outer.empty()) {
+        logger().info("\t[repulsion] no edge to march, no pass");
+        return;
+    }
+    // The march's own distance (the input-complex BVH it traces with), at level 2 delta.
+    // Non-null switches the repulsion on (is_repulsion_vertex()).
+    m_repulsion_potential =
+        std::make_shared<EuclideanOffsetPotential2D>(m_input_complex_bvh, 2. * delta);
+    m_repulsion_term = std::make_shared<OffsetEnergy2D>(
+        m_repulsion_potential,
+        4. * offset_term_weight(),
+        true,
+        true,
+        /*one_sided=*/true);
+
+    // Logs the state and says whether every outer end is beyond delta + front_conv.
+    const auto report = [&](const std::string& when) {
+        collect_outer();
+        double d_min = std::numeric_limits<double>::infinity();
+        size_t n_stop = 0, n_delta = 0, n_2delta = 0;
+        double ring_max = 0.;
+        for (const size_t v : outer) {
+            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
+            d_min = std::min(d_min, d);
+            if (d <= stop) ++n_stop;
+            if (d <= delta) ++n_delta;
+            if (d < 2. * delta) ++n_2delta;
+            for (const size_t fid : get_one_ring_fids_for_vertex(v)) {
+                ring_max = std::max(ring_max, get_quality(fid));
+            }
+        }
+        double mesh_max = 0.;
+        for (const Tuple& f : get_faces()) mesh_max = std::max(mesh_max, get_quality(f));
+        logger().info(
+            "\t[repulsion] {}: maximum marchable distance {:.6g} ({:.4g}x target_distance) | "
+            "outer ends {} ({} held by an envelope): within delta + front_conv {}, within delta "
+            "{}, below 2 delta {} | max AMIPS around them {:.6g}, whole mesh {:.6g}",
+            when,
+            d_min,
+            d_min / delta,
+            outer.size(),
+            n_held,
+            n_stop,
+            n_delta,
+            n_2delta,
+            ring_max,
+            mesh_max);
+        return n_stop == 0;
+    };
+    const auto log_newton = [&](const std::string& what) {
+        const size_t refused = m_repulsion_embed_refused.exchange(0);
+        logger().info(
+            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
+            what,
+            m_newton_repulsion.to_string(),
+            m_repulsion_veto_fired.exchange(0),
+            m_repulsion_veto_asked.exchange(0),
+            n_rounds > 0
+                ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
+                : std::string());
+        m_newton_repulsion.reset();
+    };
+
+    logger().info(
+        "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
+        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
+        "most {} pass(es)",
+        outer.size() - n_held,
+        2. * delta,
+        stop,
+        n_passes);
+    bool done = report("before");
+    // The engine's per-pass frames are the loop's numbered series; these passes write their own.
+    // m_params and m_offset_params are one object, so the flag is read before it is switched off.
+    const bool frames = m_params.debug_output;
+    m_params.debug_output = false;
+    int k = 0;
+    while (!done && k < n_passes) {
+        ++k;
+        smooth_all_vertices(1);
+        log_newton(fmt::format("pass {}", k));
+        done = report(fmt::format("after pass {}", k));
+        if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
+    }
+    if (n_passes > 0) {
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "pass(es)",
+                k);
+        } else {
+            logger().info(
+                "\t[repulsion] {} pass(es), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                k);
+        }
+    }
+
+    // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
+    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
+    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
+    // every operation aims at the base edge length) and no split of a marched edge
+    // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
+    // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
+    int r = 0;
+    if (!done && n_rounds > 0) {
+        // simplex_in_input_complex() reads the complex off the faces' labels, which is exact
+        // when the complex is a body's faces (offset_out) or the faces outside a body (offset_in).
+        // The curve group is 2D's surface group: the complex is edges, not faces.
+        if (!m_singlebody || m_single_tag == m_curve_tag ||
+            m_offset_params.offset_in == m_offset_params.offset_out) {
+            log_and_throw_error(
+                "repulsion_rounds: supported for a single body offset inward or outward only "
+                "(not a curve group, an expression, or both directions)");
+        }
+        m_edge_split_mode = EdgeSplitMode::Optimization;
+        partition_mesh_morton(); // optimize_offset() recomputes it
+        const bool interleaved = m_params.interleaved_smoothing;
+        const int ks = std::max(
+            1,
+            interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+        const std::vector<std::array<int, 4>> groups =
+            interleaved
+                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
+                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
+        logger().info(
+            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
+            "marched-edge split",
+            n_rounds,
+            interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
+                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
+        while (!done && r < n_rounds) {
+            ++r;
+            for (const auto& g : groups) {
+                // The operations, then the labels from the tags, then the smoothing: the loop's
+                // operations carry the faces' tags and labels but not the construction labels of
+                // vertices and edges, which say what the input complex is and so which vertices
+                // the smoothing pushes.
+                local_operations({{g[0], g[1], g[2], 0}});
+                relabel_input_complex();
+                // A collapse or a swap may have joined two complex vertices by an edge off the
+                // complex. The march needs the complex simplicially embedded, so it is embedded
+                // here, before the smoothing: the embedding's midpoints are new outer ends, and
+                // the smoothing and the stop test must see the mesh the march will get.
+                if (!is_simplicially_embedded()) {
+                    m_edge_split_mode = EdgeSplitMode::Midpoint;
+                    simplicial_embedding();
+                    bool dummy = is_simplicially_embedded();
+                    m_edge_split_mode = EdgeSplitMode::Optimization;
+                    partition_mesh_morton();
+                }
+                local_operations({{0, 0, 0, g[3]}});
+            }
+            // The 2D engine has no [ops accounting] / [swap reject] counters; the embedding
+            // guard's refusals are on the newton line.
+            log_newton(fmt::format("round {}", r));
+            done = report(fmt::format("after round {}", r));
+            if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
+        }
+        // Every group above leaves the complex embedded and smoothing changes no topology, so
+        // this finds nothing; it stays as the guard the march relies on.
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (!is_simplicially_embedded()) {
+            logger().warn(
+                "\t[repulsion] the complex is not simplicially embedded after the rounds; "
+                "embedding it before the march");
+            simplicial_embedding();
+            bool dummy = is_simplicially_embedded();
+        }
+        consolidate_mesh();
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "round(s)",
+                r);
+        } else {
+            logger().info(
+                "\t[repulsion] {} round(s), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                r);
+        }
+    }
+    m_params.debug_output = frames;
+    m_repulsion_potential.reset();
+    m_repulsion_term.reset();
+}
+
+bool TopoOffsetTriMesh::simplex_in_input_complex(const size_t a, const size_t b) const
+{
+    // An edge of a face of the complex (label 1: a body face for offset_out, a face outside the
+    // body for offset_in), as label_input_complex() labels them; for offset_in also a
+    // domain-boundary edge of a body face, which label_input_complex() adds to the complex.
+    const std::vector<size_t> faces = get_incident_fids_for_edge(a, b);
+    for (const size_t fid : faces) {
+        if (m_face_extra[fid].label != 0) return true;
+    }
+    if (!m_offset_params.offset_in || faces.size() != 1) return false;
+    return m_face_attribute[faces[0]].tags.count(m_single_tag) != 0;
+}
+
+bool TopoOffsetTriMesh::repulsion_embedding_kept(const std::vector<size_t>& fids) const
+{
+    // tri_is_simp_emb() on each face, with the spanned edge judged by
+    // simplex_in_input_complex(): vertex and face labels are exact during an operation pass, the
+    // edge labels of new edges are not. As in 3D.
+    for (const size_t fid : fids) {
+        if (m_face_extra[fid].label != 0) continue;
+        std::vector<size_t> in;
+        for (const size_t v : oriented_tri_vids(fid)) {
+            if (m_vertex_extra[v].label != 0) in.push_back(v);
+        }
+        if (in.size() <= 1) continue;
+        if (in.size() == 3 || !simplex_in_input_complex(in[0], in[1])) return false;
+    }
+    return true;
 }
 
 
@@ -1169,50 +1419,86 @@ void TopoOffsetTriMesh::marching_tris()
         sort_edges_by_length(e_to_split);
     }
 
-    // EXPERIMENTAL_consistent_construction_split: the march becomes all-or-nothing. Normally a
-    // trace that leaves its edge falls back to the midpoint for THAT edge alone, so one
-    // construction can mix vertices on the level set with vertices at edge midpoints. Here the
-    // march is probed first and a single untraceable edge sends every edge to its midpoint.
-    //
-    // The probe is exact, not an estimate: edge_split_sphere_trace() is const and reads only the
-    // two endpoint positions and the input-complex BVH; a split inserts a vertex without moving
-    // any existing one, and the labels this loop reads are only rewritten after it. So the answers
-    // here are the answers the split hook would get. The cost is that a march which does trace
-    // everywhere traces twice. Only SphereTrace can mix, so the flag is a no-op otherwise.
+    // Construction (construction_mode). The maximum marchable distance is the smallest
+    // d(outer end) over the marched edges: an edge's inner end is on the complex (d = 0), so by
+    // continuity the level set d = D crosses every marched edge for every D up to it, and the
+    // sphere trace (edge_split_sphere_trace()) finds it. A target below it is traced to.
+    // Otherwise "max_marchable_fallback" traces to half of it, where every edge holds the level
+    // set with room to spare, and "midpoint_fallback" splits every marched edge at its midpoint.
+    // target_distance itself is untouched: the optimization carries the surface out to it.
     // Identical to TopoOffsetTetMesh::marching_tets().
-    const EdgeSplitMode entry_split_mode = m_edge_split_mode;
-    if (m_offset_params.experimental_consistent_construction_split &&
-        m_edge_split_mode == EdgeSplitMode::SphereTrace) {
-        size_t untraceable = 0;
-        for (const simplex::Edge& e : e_to_split) {
-            const size_t va = e.vertices()[0];
-            const size_t vb = e.vertices()[1];
-            // Exactly one end carries a non-zero label: that is how e_to_split was built.
-            const size_t v_in = m_vertex_extra[va].label != 0 ? va : vb;
-            const size_t v_out = (v_in == va) ? vb : va;
-            Vector2d p_probe;
-            size_t steps = 0;
-            if (!edge_split_sphere_trace(
-                    m_vertex_attribute[v_in].m_posf,
-                    m_vertex_attribute[v_out].m_posf,
-                    p_probe,
-                    steps)) {
-                ++untraceable;
-            }
-        }
-        if (untraceable > 0) {
-            m_edge_split_mode = EdgeSplitMode::Midpoint;
-            logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: {} of {} marched "
-                "edges cannot be traced to the level set, so the WHOLE march falls back to "
-                "midpoint splits",
-                untraceable,
-                e_to_split.size());
+    const double target = m_offset_params.target_distance;
+    double d_max = std::numeric_limits<double>::infinity();
+    for (const simplex::Edge& e : e_to_split) {
+        const size_t va = e.vertices()[0];
+        const size_t vb = e.vertices()[1];
+        // Exactly one end carries a zero label: that is how e_to_split was built.
+        const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
+        d_max = std::min(d_max, m_input_complex_bvh->dist(m_vertex_attribute[v_out].m_posf));
+    }
+    const bool reachable = target < d_max;
+    const std::string& mode = m_offset_params.construction_mode;
+    m_construction_distance = target;
+    m_edge_split_mode = EdgeSplitMode::SphereTrace;
+    if (e_to_split.empty()) {
+        logger().info("\t[construction] construction_mode {}: no edge to march", mode);
+    } else if (reachable) {
+        logger().info(
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is below it, so the march traces to the target",
+            mode,
+            d_max,
+            e_to_split.size(),
+            target);
+    } else if (mode == "max_marchable_fallback" && d_max > 0.) {
+        m_construction_distance = 0.5 * d_max;
+        logger().info(
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is not below it, so the march traces to half "
+            "of it, {:.6g} ({:.4g}x target_distance)",
+            mode,
+            d_max,
+            e_to_split.size(),
+            target,
+            m_construction_distance,
+            m_construction_distance / target);
+    } else {
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (mode == "max_marchable_fallback") {
+            logger().warn(
+                "\t[construction] construction_mode {}: maximum marchable distance {} -- a "
+                "marched edge ends on the complex -- so there is nothing to trace to and every "
+                "marched edge is split at its midpoint",
+                mode,
+                d_max);
         } else {
             logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: all {} marched "
-                "edges can be traced, so the march traces everywhere",
-                e_to_split.size());
+                "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over "
+                "{} marched edges; target_distance {:.6g} is not below it, so every marched edge "
+                "is split at its midpoint",
+                mode,
+                d_max,
+                e_to_split.size(),
+                target);
+        }
+    }
+
+    // init_optimize, only when the target is not below the maximum marchable distance:
+    // optimize_offset() opens with a loop without refinement. A target below it is marched to and
+    // the run is the ordinary one. As in 3D.
+    if (m_offset_params.init_optimize && !e_to_split.empty()) {
+        if (!reachable) {
+            m_init_optimize = true;
+            logger().info(
+                "\t[init_optimize] target_distance is not below the maximum marchable distance, so "
+                "the loop opens with a stencil_order {} loop without refinement, then the same "
+                "stencil with refinement",
+                m_offset_params.stencil_order);
+        } else {
+            logger().info(
+                "\t[init_optimize] not done: target_distance is below the maximum marchable "
+                "distance; the offset is marched to the target and the loop runs with refinement "
+                "as usual");
         }
     }
 
@@ -1237,12 +1523,13 @@ void TopoOffsetTriMesh::marching_tris()
     }
     if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         logger().info(
-            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
-            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
-            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
+            "\t[construction] sphere trace: {} of {} marched edges placed where |d(x) - D| <= {} "
+            "x D (D = {:.6g}), {} at the midpoint (the trace left the edge) | trace steps: {} "
+            "total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
             m_offset_params.sphere_trace_target_rel_tol,
+            m_construction_distance,
             m_marching_midpoint_splits,
             m_marching_trace_steps,
             m_marching_trace_steps_max,
@@ -1250,9 +1537,9 @@ void TopoOffsetTriMesh::marching_tris()
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
-    // Leave the mode as it was found: the consistency flag may have forced it to Midpoint above,
-    // and that decision belongs to this march alone.
-    m_edge_split_mode = entry_split_mode;
+    // The march's placement decision is its own; every later split is a midpoint one until the
+    // optimization sets its own mode.
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // mark all offset tris (incident to any vert with label 1 or 2)
     for (const size_t v_id : frontier_verts) {
@@ -1492,23 +1779,27 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // The sizing field, as point data: it drives every split and collapse gate, and a
     // discontinuity in it is invisible in the geometry until the elements it produces are already
     // degenerate. Two forms: the raw scalar, and the target edge length l * scalar it means.
-    Eigen::MatrixXd S(vs.size(), 1), Ltgt(vs.size(), 1);
+    Eigen::MatrixXd S(vs.size(), 1), Ltgt(vs.size(), 1), LAB(vs.size(), 1), VID(vs.size(), 1);
     for (size_t k = 0; k < vs.size(); ++k) {
-        V.row(k) = m_vertex_attribute[vs[k].vid(*this)].m_posf;
-        S(k, 0) = m_vertex_attribute[vs[k].vid(*this)].m_sizing_scalar;
+        const size_t vid = vs[k].vid(*this);
+        V.row(k) = m_vertex_attribute[vid].m_posf;
+        S(k, 0) = m_vertex_attribute[vid].m_sizing_scalar;
         Ltgt(k, 0) = m_params.l * S(k, 0);
+        LAB(k, 0) = m_vertex_extra[vid].label;
+        VID(k, 0) = double(vid);
     }
 
     // Front convergence diagnostics, as point data: the vertex measure the loop reports next to
     // what it does not, so the two can be compared at the same vertex.
     //
-    //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
-    //                         objective along the move direction, over its bar. <= 1 reads as
-    //                         "placed". The loop reports it and no longer exits on it: since
-    //                         2026-09-25 the exit tests the chord measure alone
-    //                         (EnergyCriterion::converged()).
-    //   front_residual_length residual_length(): the vertex's actual distance to the level set,
-    //                         in length units, comparable with target_distance. Never tested.
+    //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
+    //                         |relative_residual()| over the relative bar -- the chord term's
+    //                         measure at the vertex alone, its distance to the level set along
+    //                         the field over front_conv. <= 1 reads as "placed". The loop
+    //                         reports it and does not exit on it (EnergyCriterion::converged()).
+    //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
+    //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
+    //                         tested; the same number as front_conv_ratio up to rounding.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
     //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
@@ -1520,11 +1811,11 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     //                         the length to the smooth level set, not to the complex. -2 before the
     //                         BVH exists (the construction frames written ahead of it).
     //
-    // Together they separate "placed" from "stationary but wrong": on the medial axis of the
-    // field there is no gradient to move along, so the ratio goes to zero while the residual
-    // stays at whatever the geometry left. -1 marks a vertex that is not on the front, -2 a
-    // value that is not finite. Costs one objective build per front vertex per frame, which is
-    // the same work energy_criterion() does once a turn; debug output only.
+    // Together they separate "placed" from "stationary but wrong": where the field gives the
+    // objective no gradient to move along (front_grad_norm near zero, as on the medial axis of
+    // the smooth field), the vertex stops while front_conv_ratio stays at whatever error the
+    // geometry left. -1 marks a vertex that is not on the front, -2 a value that is not finite.
+    // Debug output only. Same fields as 3D.
     // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP. Every one of these reads the vertex's
     // own region's field through potential_for(vid) -> m_vertex_region, and that member is
     // rebuilt only once a turn. Between rebuilds it is stale two different ways: a split appends
@@ -1550,8 +1841,6 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         assign_band_regions(/*log=*/false);
     }
     {
-        const OptPhase saved_phase = m_phase;
-        m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
         const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
         for (size_t k = 0; k < vs.size(); ++k) {
             CR(k, 0) = RL(k, 0) = GN(k, 0) = MA(k, 0) = CD(k, 0) = -1.;
@@ -1562,13 +1851,30 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             const Vector2d p = m_vertex_attribute[vid].m_posf;
             const auto& pot = potential_for(vid);
             CR(k, 0) = finite_or(front_vertex_conv_ratio(vid));
-            RL(k, 0) = finite_or(pot.residual_length(p));
+            // RELATIVE to the one bar, so < 1 reads as placed at a glance. As in 3D.
+            RL(k, 0) =
+                finite_or(pot.residual_length(p) / std::max(m_offset_params.front_conv, 1e-300));
             GN(k, 0) = finite_or(pot.gradient(p).norm());
             MA(k, 0) = finite_or(front_move_alignment(vid));
             CD(k, 0) =
                 m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
-        m_phase = saved_phase;
+    }
+
+    // The front solves since the last frame (m_front_solve_log), as point data:
+    //   front_newton_iters   the Newton iterations the vertex's solve took; 10 is the cap.
+    //   front_newton_status  polysolve's stop status + 1, NewtonCounters::status_name()'s
+    //                        numbering: 2 IterationLimit, 6 GradNormTolerance,
+    //                        7 RelGradNormTolerance, 12 LineSearchFailed.
+    // -1 where the vertex was not solved since the last frame: not on the front, refused before
+    // its solve, or the frame closes an operation pass. DEBUG ONLY, as the log is. As in 3D.
+    Eigen::MatrixXd NIT(vs.size(), 1), NST(vs.size(), 1);
+    NIT.setConstant(-1.);
+    NST.setConstant(-1.);
+    for (const FrontSolveRecord& r : m_front_solve_log) {
+        if (r.vid >= packed.size() || packed[r.vid] < 0) continue;
+        NIT(packed[r.vid], 0) = r.iterations;
+        NST(packed[r.vid], 0) = r.status;
     }
 
     // Collapsed-foldover flag, as point data: 1 where the offset curve has folded back on
@@ -1593,42 +1899,48 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
     writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
+    writer->add_field("labels", LAB);
+    writer->add_field("vid", VID);
     writer->add_field("sizing_scalar", S);
     writer->add_field("target_edge_length", Ltgt);
     writer->add_field("front_conv_ratio", CR);
-    writer->add_field("front_residual_length", RL);
+    writer->add_field("front_residual_rel", RL);
     writer->add_field("front_grad_norm", GN);
     writer->add_field("front_move_align", MA);
     writer->add_field("front_complex_distance", CD);
     writer->add_field("offset_foldover", FOLD);
+    writer->add_field("front_newton_iters", NIT);
+    writer->add_field("front_newton_status", NST);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
-    // The front's per-EDGE sag, as a companion line mesh `<path>_front.vtu`. The resolution half
-    // of the convergence test is per edge -- energy_criterion() samples every live offset edge at
-    // its midpoint -- and a triangle .vtu has nowhere to put an edge quantity. Same packed vertex
-    // indexing as the frame above, so a viewer can key the field onto the offset curve it derives
-    // from the triangles, by vertex pair.
+    // The front's per-CHORD convergence measure, as a companion line mesh `<path>_front.vtu`: a
+    // triangle .vtu has nowhere to put an edge quantity. Same packed vertex indexing as the
+    // frame above, so a viewer can key the field onto the offset curve it derives from the
+    // triangles, by vertex pair. The 3D twin writes the same fields on its `_off.vtu`.
     //
-    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (front_conv, an
-    //                     absolute length). > 1 with both ends on the level set is what makes an
-    //                     edge refinable. -1 unmeasurable, including where an end is not a front
-    //                     vertex, so the curve is complete either way. Measured under the same
-    //                     re-derived region map as the vertex fields above, which it needs for
-    //                     the same reason: potential_for_edge() reads m_vertex_region too.
-    //   chord_length      |b - a|, so the sag can be read against the edge that produced it.
+    //   front_err_ratio   the root of edge_offset_term(): the RMS over the chord's
+    //                     stencil_order stencil of relative_residual() -- the distance to the
+    //                     level set along the field over target_distance -- over the one bar as
+    //                     a fraction of it. > 1 is what makes a chord refinable, and the same
+    //                     number at 1 point is what makes a vertex placed. -1 unmeasurable,
+    //                     including a chord with an end that is not a front vertex. Measured
+    //                     under the same re-derived region map as the vertex fields above.
+    //                     REPLACES front_sag_ratio, the midpoint sag against a separate bar; a
+    //                     series mixing the two compares two quantities under one name, so the
+    //                     field was renamed rather than redefined in place.
+    //   chord_length      |b - a|, so the error can be read against the chord that produced it.
     //   front_ring_ratio  point data, in both front_measure modes: the ring measure at each front
-    //                     vertex, sqrt(sum L_e front_sag_ratio^2 / sum L_e) over its incident
-    //                     chords with both ends front vertices, L_e the chord length -- the exit
-    //                     test under front_measure "vertex_ring" (EnergyCriterion::ring_exit),
-    //                     with energy_criterion()'s rules: a vertex with an unmeasurable incident
-    //                     chord, or whose chords have zero total length, has none. NaN where there
-    //                     is no ring measure.
+    //                     vertex, sqrt(mean of front_err_ratio^2) over its incident chords with
+    //                     both ends front vertices, every chord weighted equally -- the exit test
+    //                     under front_measure "vertex_ring" (EnergyCriterion::ring_exit), with
+    //                     energy_criterion()'s rules: a vertex with an unmeasurable incident
+    //                     chord has none. NaN where there is no ring measure.
     {
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
         std::vector<std::array<int, 2>> fe;
-        std::vector<double> fe_sag, fe_len;
+        std::vector<double> fe_term, fe_len;
         std::vector<char> fe_front;
         for (const Tuple& e : get_edges()) {
             if (!edge_is_offset_surface_live(e)) continue;
@@ -1636,45 +1948,52 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             if (packed[va] < 0 || packed[vb] < 0) continue;
             fe.push_back({packed[va], packed[vb]});
             fe_front.push_back(front(va) && front(vb) ? 1 : 0);
-            fe_sag.push_back(fe_front.back() ? edge_conv_ratio(va, vb) : -1.);
+            fe_term.push_back(fe_front.back() ? edge_offset_term(va, vb) : -1.);
             fe_len.push_back(
                 (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm());
         }
         if (!fe.empty()) {
             Eigen::MatrixXi FE(fe.size(), 2);
-            Eigen::MatrixXd SAG(fe.size(), 1), LEN(fe.size(), 1);
-            std::vector<double> ring_sum(vs.size(), 0.), ring_w(vs.size(), 0.);
+            Eigen::MatrixXd ERR(fe.size(), 1), LEN(fe.size(), 1);
+            std::vector<double> ring_sum(vs.size(), 0.), ring_n(vs.size(), 0.);
             std::vector<char> ring_bad(vs.size(), 0);
             for (size_t k = 0; k < fe.size(); ++k) {
                 FE(k, 0) = fe[k][0];
                 FE(k, 1) = fe[k][1];
-                SAG(k, 0) = fe_sag[k];
+                ERR(k, 0) = fe_term[k] < 0. ? -1. : std::sqrt(fe_term[k]);
                 LEN(k, 0) = fe_len[k];
                 if (!fe_front[k]) continue;
                 for (const int u : fe[k]) {
-                    if (fe_sag[k] < 0.) {
+                    if (fe_term[k] < 0.) {
                         ring_bad[size_t(u)] = 1;
                     } else {
-                        ring_sum[size_t(u)] += fe_len[k] * fe_sag[k] * fe_sag[k];
-                        ring_w[size_t(u)] += fe_len[k];
+                        ring_sum[size_t(u)] += fe_term[k];
+                        ring_n[size_t(u)] += 1.;
                     }
                 }
             }
             Eigen::MatrixXd RING(vs.size(), 1);
             for (size_t k = 0; k < vs.size(); ++k) {
-                RING(k, 0) = !ring_bad[k] && ring_w[k] > 0.
-                                 ? std::sqrt(ring_sum[k] / ring_w[k])
+                RING(k, 0) = !ring_bad[k] && ring_n[k] > 0.
+                                 ? std::sqrt(ring_sum[k] / ring_n[k])
                                  : std::numeric_limits<double>::quiet_NaN();
             }
             const std::string front_path = path + "_front.vtu";
             std::shared_ptr<paraviewo::ParaviewWriter> front_writer =
                 std::make_shared<paraviewo::VTUWriter>();
-            front_writer->add_cell_field("front_sag_ratio", SAG);
+            front_writer->add_cell_field("front_err_ratio", ERR);
             front_writer->add_cell_field("chord_length", LEN);
-            front_writer->add_field("front_ring_ratio", RING);
+            front_writer->add_field("vid", VID);
             front_writer->add_field("sizing_scalar", S);
+            front_writer->add_field("front_conv_ratio", CR);
+            front_writer->add_field("front_ring_ratio", RING);
+            front_writer->add_field("front_residual_rel", RL);
+            front_writer->add_field("front_grad_norm", GN);
+            front_writer->add_field("front_move_align", MA);
             front_writer->add_field("front_complex_distance", CD);
             front_writer->add_field("offset_foldover", FOLD);
+            front_writer->add_field("front_newton_iters", NIT);
+            front_writer->add_field("front_newton_status", NST);
             front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
         }
     }

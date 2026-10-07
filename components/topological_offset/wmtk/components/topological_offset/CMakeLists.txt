@@ -37,7 +37,7 @@ set(SRC_FILES
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
 # PYTHON BINDINGS FOR THE 2D POTENTIALS. scripts/visualize_error_field.py draws E = (Phi - c)^2,
-# and the `smooth` field is the ipc-toolkit OGC potential -- not something a script can
+# and the `smooth` field is the ipc-toolkit ESP potential -- not something a script can
 # reimplement, so the script calls this and gets the same field the run uses. Optional: the
 # component builds and the app runs whether or not this target exists.
 if(WMTK_PYBIND AND TARGET pybind11::module)

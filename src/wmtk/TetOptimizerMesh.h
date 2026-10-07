@@ -474,6 +474,22 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The number the shared smoother compares for one cell, given the cell's quality
+     * (AMIPS^3) at the position being tested. Its projected step keeps the first projected
+     * candidate whose max of this over the ring is below the ring's max before the move, and its
+     * quality veto compares the same two maxima.
+     *
+     * The quality itself by default, so TetWild and SimWild compare exactly what they compared
+     * before. An application whose smoother minimises another per-cell energy (through
+     * smoothing_extra_energy()) overrides it, so that the smoother's tests judge a move by that
+     * same energy. The 2D twin is TriOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*tid*/, const double quality) const
+    {
+        return quality;
+    }
+
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);

@@ -283,6 +283,8 @@ struct SmoothVertexOptions
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
  *   - cell_quality(tid) / set_cell_quality(tid, quality)
+ *   - smoothing_cell_energy(tid, quality): what the projected step and the quality veto
+ *     compare per cell (TetOptimizerMesh: the quality itself unless an application overrides)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
  *     and smoothing_containment_envelope(size_t vid) const
@@ -310,7 +312,8 @@ bool smooth_vertex_3d(
 
     double max_quality = 0.;
     for (const Tuple& tet : locs) {
-        max_quality = std::max(max_quality, m.cell_quality(tet.tid(m)));
+        max_quality =
+            std::max(max_quality, m.smoothing_cell_energy(tet.tid(m), m.cell_quality(tet.tid(m))));
         if (m.is_inverted_f(tet)) {
             // A neighbour that is not rounded can leave a tet inverted in floats even
             // though it is fine in exact arithmetic; there is nothing to optimize from.
@@ -388,7 +391,7 @@ bool smooth_vertex_3d(
                 if (m.is_inverted(loc)) {
                     return std::numeric_limits<double>::infinity();
                 }
-                mq = std::max(mq, m.get_quality(loc));
+                mq = std::max(mq, m.smoothing_cell_energy(loc.tid(m), m.get_quality(loc)));
             }
             return mq;
         };
@@ -499,7 +502,7 @@ bool smooth_vertex_3d(
         const size_t tid = loc.tid(m);
         const double quality = m.get_quality(loc);
         m.set_cell_quality(tid, quality);
-        max_after_quality = std::max(max_after_quality, quality);
+        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(tid, quality));
     }
 
     if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
@@ -526,6 +529,8 @@ bool smooth_vertex_3d(
  * `Mesh` must provide, on top of what wmtk::TriMesh already gives:
  *   - m_vertex_attribute[vid].m_is_on_surface, m_face_attribute[fid].m_quality
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
+ *   - smoothing_cell_energy(fid, quality): what the projected step and the quality veto
+ *     compare per face (TriOptimizerMesh: the quality itself unless an application overrides)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
  *       writes the working position and its exact/rational copy together
@@ -548,7 +553,7 @@ bool smooth_vertex_2d(
 
     double max_quality = 0.;
     for (const size_t fid : locs) {
-        max_quality = std::max(max_quality, FA[fid].m_quality);
+        max_quality = std::max(max_quality, m.smoothing_cell_energy(fid, FA[fid].m_quality));
         if (m.is_inverted_f(fid)) {
             // Nothing to optimize from: a neighbour that is not rounded can leave a face
             // inverted in floats even when it is fine exactly.
@@ -650,7 +655,7 @@ bool smooth_vertex_2d(
                 if (m.is_inverted(fid)) {
                     return std::numeric_limits<double>::infinity();
                 }
-                mq = std::max(mq, m.get_quality(fid));
+                mq = std::max(mq, m.smoothing_cell_energy(fid, m.get_quality(fid)));
             }
             return mq;
         };
@@ -760,7 +765,7 @@ bool smooth_vertex_2d(
         }
         const double q = m.get_quality(fid);
         FA[fid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
+        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(fid, q));
     }
 
     if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {

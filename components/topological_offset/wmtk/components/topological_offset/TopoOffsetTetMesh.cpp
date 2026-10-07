@@ -2,8 +2,6 @@
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
-#include <wmtk/utils/partition_utils.hpp>
-#include "TagEnvelopes.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -147,24 +145,6 @@ void TopoOffsetTetMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
-    // One mask bit per input tag, ambient included, in id order. Must be assigned here: once the
-    // maps are complete, and before init_surfaces_and_boundaries() seeds the vertex masks from
-    // the boundary faces. Tags introduced later (the band's offset tag) get no bit.
-    if (m_tag_id_to_name.size() > 62) {
-        log_and_throw_error(
-            "Per-tag boundary envelopes support at most 62 input tags (two mask bits are "
-            "reserved for the domain wall and the input complex boundary), got {}",
-            m_tag_id_to_name.size());
-    }
-    m_tag_bit.clear();
-    for (const auto& [tag_id, name] : m_tag_id_to_name) {
-        const int bit = int(m_tag_bit.size());
-        m_tag_bit[tag_id] = bit;
-    }
-    // The two reserved bits of the WallComplex setup, see EnvelopeSetup.
-    m_tag_bit[m_wall_tag] = int(m_tag_bit.size());
-    m_tag_bit[m_complex_tag] = int(m_tag_bit.size());
-
     // propagate labels to tets
     const auto& tets = get_tets();
     for (const Tuple& t : tets) {
@@ -188,9 +168,8 @@ void TopoOffsetTetMesh::init_from_image(
         set_vertex_position(v_id, V.row(v_id));
     }
 
-    // Once at load too, before the masks are seeded: init_surfaces_and_boundaries() reads
-    // on_sheet to put the sheet group's faces in its tube, and a sheet that bounds no region is
-    // held by nothing otherwise. label_input_complex() re-derives it afterwards.
+    // Once at load too: init_surfaces_and_boundaries() reads on_sheet to track the sheet group's
+    // faces. label_input_complex() re-derives it afterwards.
     classify_sheet_faces();
     init_surfaces_and_boundaries();
 }
@@ -202,8 +181,8 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
 
     // Which faces are tracked region boundaries: an interior face whose two tets carry different
     // tag sets, a face on the sheet group, or a wall face (no opposite tet: the ambient region
-    // against the unmeshed outside). These flags are topology the operations maintain. Which
-    // tube holds a face, and the vertex masks, are build_boundary_envelopes()'s.
+    // against the unmeshed outside). These flags are topology the operations maintain. Which of
+    // them an envelope holds is face_is_held()'s, and the envelope is build_envelopes()'s.
     size_t n_faces_tracked = 0;
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
@@ -227,7 +206,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
         m_vertex_attribute[v3].m_is_on_surface = true;
     }
-    if (n_faces_tracked > 0) build_boundary_envelopes("load", EnvelopeSetup::PerTag);
+    logger().info("\tTracked faces (region boundaries, sheet, domain wall): {}", n_faces_tracked);
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which plenty of
     // unit tests never call -- skip rather than index out of bounds.
@@ -268,14 +247,6 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
-std::string TopoOffsetTetMesh::envelope_key_name(const int64_t tag) const
-{
-    if (tag == m_wall_tag) return "wall";
-    if (tag == m_complex_tag) return "input_complex";
-    const auto it = m_tag_id_to_name.find(tag);
-    return it == m_tag_id_to_name.end() ? fmt::format("tag#{}", tag) : it->second;
-}
-
 bool TopoOffsetTetMesh::face_is_complex_boundary(const Tuple& f) const
 {
     const bool a = m_tet_attribute[f.tid(*this)].label == 1;
@@ -288,101 +259,67 @@ bool TopoOffsetTetMesh::face_is_complex_boundary(const Tuple& f) const
     return m_face_extra[f.fid(*this)].label == 1;
 }
 
-void TopoOffsetTetMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
+bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 {
-    m_envelope_eps = m_offset_params.envelope_size;
+    // See the declaration. The caller has a tracked face (m_is_surface_fs); the offset surface
+    // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
+    if (!f.switch_tetrahedron(*this)) return true; // the domain wall
+    if (face_is_offset_surface_live(f)) return false;
+    return !m_offset_params.deform_others || face_is_complex_boundary(f);
+}
 
-    // Fresh: every mask from the tracked faces as they stand, nothing carried over.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
-
-    std::map<int64_t, std::vector<Eigen::Vector3i>> buckets;
-    size_t n_tracked = 0, n_wall = 0, n_complex = 0, n_free = 0;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        // Region-class tracked faces only: the front has its own tube.
-        if (!m_face_attribute[fid].m_is_surface_fs || face_is_offset(fid)) continue;
-        ++n_tracked;
-        const std::optional<Tuple> t_opp = f.switch_tetrahedron(*this);
-        CellTag keys;
-        if (setup == EnvelopeSetup::WallComplex) {
-            if (!t_opp) {
-                keys.insert(m_wall_tag);
-                ++n_wall;
-            }
-            if (face_is_complex_boundary(f)) {
-                keys.insert(m_complex_tag);
-                ++n_complex;
-            }
-            if (keys.empty()) ++n_free;
-        } else {
-            // Whose boundary this face is. Interior face: every tag on exactly one side (the
-            // symmetric difference; a tag present on both sides has no boundary here). Wall
-            // face: every tag of its one tet, which is how ambient's tube comes to hold the
-            // box. The sheet group's faces are in its tube too.
-            if (m_face_extra[fid].on_sheet) keys.insert(m_sheet_tag);
-            if (t_opp) {
-                const auto& tag0 = m_tet_attribute[f.tid(*this)].tag;
-                const auto& tag1 = m_tet_attribute[t_opp->tid(*this)].tag;
-                std::set_symmetric_difference(
-                    tag0.begin(),
-                    tag0.end(),
-                    tag1.begin(),
-                    tag1.end(),
-                    std::inserter(keys, keys.begin()));
-            } else {
-                keys = m_tet_attribute[f.tid(*this)].tag;
-                ++n_wall;
-            }
-            // The band's output tags are not region boundaries: the front is the offset tube's.
-            for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
+{
+    // Most vertices are on no tracked face at all; the flag is a superset (it is never cleared),
+    // so it only short-cuts the walk.
+    if (!m_vertex_attribute[vid].m_is_on_surface) return false;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const size_t fid = f.fid(*this);
+            if (!m_face_attribute[fid].m_is_surface_fs) continue;
+            const auto vs = get_face_vids(f);
+            if (vs[0] != vid && vs[1] != vid && vs[2] != vid) continue;
+            if (face_is_held(f)) return true;
         }
-        const auto vs = get_face_vids(f);
-        const uint64_t bits = tag_bits(keys);
-        for (const size_t v : vs) m_vertex_extra[v].m_boundary_mask |= bits;
-        for (const int64_t t : keys) buckets[t].emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
+    return false;
+}
 
-    std::vector<Eigen::Vector3d> tempV(vert_capacity());
-    for (size_t i = 0; i < vert_capacity(); ++i) tempV[i] = m_vertex_attribute[i].m_posf;
-
-    m_tag_envelopes.clear();
-    {
-        std::lock_guard<std::mutex> lock(m_isect_mutex);
-        m_isect_cache.clear();
-        m_offset_isect_cache.clear();
+void TopoOffsetTetMesh::build_envelopes()
+{
+    // See m_envelope's declaration: one envelope, around every held face, built once.
+    m_envelope_eps = m_offset_params.envelope_size;
+    std::vector<Eigen::Vector3i> tris;
+    size_t n_tracked = 0, n_wall = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        ++n_tracked;
+        if (!face_is_held(f)) continue;
+        if (!f.switch_tetrahedron(*this)) ++n_wall;
+        const auto vs = get_face_vids(f);
+        tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
     const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
-    std::string per_tag_log;
-    for (const auto& [tag, bucket] : buckets) {
-        if (bucket.empty()) continue;
-        auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
-        env->init(tempV, bucket, m_envelope_eps);
-        m_tag_envelopes[tag] = env;
-        members.push_back(env);
-        per_tag_log += fmt::format(" {}:{}", envelope_key_name(tag), bucket.size());
+    if (tris.empty()) {
+        m_envelope = nullptr;
+    } else {
+        std::vector<Eigen::Vector3d> verts(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) verts[i] = m_vertex_attribute[i].m_posf;
+        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_envelope->init(verts, tris, m_envelope_eps);
     }
-    // The base's pointer survives as the union of the members -- inside any tube -- because
-    // the shared engine's direct uses of it ask exactly that question. Everything else
-    // dispatches per simplex through envelope_for_mask().
-    m_envelope = members.empty() ? nullptr : std::make_shared<UnionEnvelope>(std::move(members));
-
     logger().info(
-        "\t[envelopes @ {}] {}: {} region-boundary faces tracked ({} on the wall), eps {:.6g}, "
-        "{} |{}{}",
-        when,
-        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
+        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; deform_others {}: {}), "
+        "eps {:.6g}, {}",
+        tris.size(),
         n_tracked,
         n_wall,
+        m_offset_params.deform_others,
+        m_offset_params.deform_others ? "the input complex boundary and the wall"
+                                      : "every region boundary and the wall",
         m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)",
-        per_tag_log,
-        setup == EnvelopeSetup::WallComplex
-            ? fmt::format(
-                  " | {} on the input complex boundary, {} held by nothing (plastic)",
-                  n_complex,
-                  n_free)
-            : std::string());
+        exact_ok ? "EXACT" : "sampled (no valid eps)");
 }
 
 void TopoOffsetTetMesh::mark_input_complex_vertices()
@@ -936,8 +873,7 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     }
 
     // The edge list must be complete: ipc derives faces_to_edges from it and throws if a
-    // triangle edge is missing, and the OGC feasible-region test for a vertex reads that
-    // vertex's edge neighbours.
+    // triangle edge is missing, and an edge's ESP weight counts the triangles on it.
     std::set<std::pair<int, int>> phi_edge_set;
     const auto add_edge = [&](const int a, const int b) {
         phi_edge_set.emplace(std::min(a, b), std::max(a, b));
@@ -1125,7 +1061,6 @@ size_t TopoOffsetTetMesh::flood_fill()
         if (visited_verts.find(v_id) != visited_verts.end()) continue; // vertex already visited
 
         visited_verts[v_id] = true;
-        m_vertex_extra[v_id].component_id = current_id;
         std::queue<size_t> bfs_queue;
 
         // initial propagation
@@ -1141,7 +1076,6 @@ size_t TopoOffsetTetMesh::flood_fill()
             bfs_queue.pop();
             if (visited_verts.find(curr_vid) != visited_verts.end()) continue; // already visited
             visited_verts[curr_vid] = true;
-            m_vertex_extra[curr_vid].component_id = current_id;
 
             // propagate
             auto onering_verts_tmp = connected_components_helper(curr_vid);
@@ -1188,24 +1122,6 @@ void TopoOffsetTetMesh::init_vertex_order()
     logger().info("Vertex order count (0,1,2,3): {}", count);
 }
 
-void TopoOffsetTetMesh::compute_vertex_partition()
-{
-    if (NUM_THREADS == 0) {
-        return;
-    }
-
-    std::vector<size_t> partition_id;
-    wmtk::partition_vertex_morton(
-        vert_capacity(),
-        [this](size_t i) { return m_vertex_attribute[i].m_posf; },
-        NUM_THREADS,
-        partition_id);
-
-    for (size_t i = 0; i < partition_id.size(); ++i) {
-        m_vertex_attribute[i].partition_id = partition_id[i];
-    }
-}
-
 std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond) const
 {
@@ -1242,13 +1158,8 @@ double TopoOffsetTetMesh::max_band_vertex_distance() const
     return worst;
 }
 
-void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
+void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_file)
 {
-    // The construction runs on the input mesh AS GIVEN. There is no pre-optimization pass any
-    // more (removed 2026-09-24 with its key): the marching puts the offset on this
-    // tetrahedralization's own cell boundaries, so the input's quality and resolution decide the
-    // constructed offset directly, and supplying a mesh good enough for that is the caller's job.
-
     // make embedding simplicial (split components per Alg 1)
     logger().info("Creating simplicial embedding...");
     m_edge_split_mode = EdgeSplitMode::Midpoint;
@@ -1261,15 +1172,16 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("simplicial_embedding");
     }
 
+    // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
+    build_envelopes();
+
+    // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
+    repulsion_smoothing();
+
     // initialize offset
     logger().info("Initializing offset...");
-    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
-    // the placement at all, and carrying the surface out to target_distance is the optimization
-    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
-    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
-    // end), to the midpoint on an edge the trace leaves.
-    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
-                                                                    : EdgeSplitMode::Midpoint;
+    // marching_tets() chooses the placement itself (construction_mode) and leaves the split mode
+    // at Midpoint.
     marching_tets();
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
@@ -1277,22 +1189,9 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
         write_debug_frame("marching");
     }
 
-    // No growth pass: the band is exactly the one layer of background tets marching_tets()
-    // labelled from the frontier one-rings. Closing that gap is the optimization phase's job.
-
-    // simplicially embed again, if needed
-    m_edge_split_mode = EdgeSplitMode::Midpoint;
-    if (!is_simplicially_embedded()) {
-        simplicial_embedding();
-        bool dummy = is_simplicially_embedded();
-    }
     // Must stay outside the branch above and unconditional: consolidating renumbers, which
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
-        write_debug_frame("re_embedded");
-    }
-
     set_offset_tet_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
@@ -1441,6 +1340,325 @@ void TopoOffsetTetMesh::simplicial_embedding()
     logger().info("\tEdges split: {}", edges_to_split.size());
 }
 
+void TopoOffsetTetMesh::relabel_input_complex()
+{
+    // label_input_complex() only ever sets labels to 1; every label goes back to 0 first, so a
+    // simplex an operation moved out of the complex is not left marked.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
+    for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
+    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
+    for (const Tuple& t : get_tets()) m_tet_attribute[t.tid(*this)].label = 0;
+    label_input_complex();
+}
+
+void TopoOffsetTetMesh::repulsion_smoothing()
+{
+    // The march traces every marched edge to target_distance only if every outer end is farther
+    // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
+    // half that distance and the loop has to carry the front out. These passes push the outer
+    // ends out first, under one per-tet energy: w AMIPS^3 plus, for each corner v of the cell that
+    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
+    // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
+    // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
+    // the maximum marchable distance" run backwards). The smoother minimises its sum over a
+    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
+    // loop. An outer end that an envelope holds carries no term. First up to
+    // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
+    // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
+    // outside the tolerance band.
+    const int n_passes = m_offset_params.repulsion_smoothing_passes;
+    const int n_rounds = m_offset_params.repulsion_rounds;
+    if (n_passes <= 0 && n_rounds <= 0) return;
+    const double delta = m_offset_params.target_distance;
+    const double stop = delta + m_offset_params.front_conv;
+
+    // The outer ends exactly as marching_tets() picks its edges: the two ends differ in "label
+    // 0". Recomputed at every report: the rounds' operations change the set. n_held: those an
+    // envelope holds, which is_repulsion_vertex() leaves to TetWild's rule.
+    std::vector<size_t> outer;
+    size_t n_held = 0;
+    const auto collect_outer = [&]() {
+        outer.clear();
+        n_held = 0;
+        std::vector<char> seen(vert_capacity(), 0);
+        for (const Tuple& e : get_edges()) {
+            const size_t v1 = e.vid(*this);
+            const size_t v2 = e.switch_vertex(*this).vid(*this);
+            if (!is_marched_edge(v1, v2)) continue;
+            const size_t v_out = m_vertex_extra[v1].label == 0 ? v1 : v2;
+            if (!seen[v_out]) {
+                seen[v_out] = 1;
+                outer.push_back(v_out);
+                if (vertex_is_held(v_out)) ++n_held;
+            }
+        }
+    };
+    collect_outer();
+    if (outer.empty()) {
+        logger().info("\t[repulsion] no edge to march, no pass");
+        return;
+    }
+    // The march's own distance (the same input-complex arrays as m_input_complex_bvh), at level
+    // 2 delta. Non-null switches the repulsion on (is_repulsion_vertex()).
+    m_repulsion_potential = std::make_shared<EuclideanOffsetPotential3D>(
+        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, 2. * delta),
+        2. * delta);
+    m_repulsion_term = std::make_shared<OffsetEnergy3D>(
+        m_repulsion_potential,
+        4. * offset_term_weight(),
+        true,
+        true,
+        /*one_sided=*/true);
+
+    // Logs the state and says whether every outer end is beyond delta + front_conv. AMIPS is
+    // the cube root of the stored AMIPS^3.
+    const auto report = [&](const std::string& when) {
+        collect_outer();
+        double d_min = std::numeric_limits<double>::infinity();
+        size_t n_stop = 0, n_delta = 0, n_2delta = 0;
+        double ring_max = 0.;
+        for (const size_t v : outer) {
+            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
+            d_min = std::min(d_min, d);
+            if (d <= stop) ++n_stop;
+            if (d <= delta) ++n_delta;
+            if (d < 2. * delta) ++n_2delta;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
+                ring_max = std::max(ring_max, get_quality(tuple_from_tet(tid)));
+            }
+        }
+        double mesh_max = 0.;
+        for (const Tuple& t : get_tets()) mesh_max = std::max(mesh_max, get_quality(t));
+        logger().info(
+            "\t[repulsion] {}: maximum marchable distance {:.6g} ({:.4g}x target_distance) | "
+            "outer ends {} ({} held by an envelope): within delta + front_conv {}, within delta "
+            "{}, below 2 delta {} | max AMIPS around them {:.6g}, whole mesh {:.6g}",
+            when,
+            d_min,
+            d_min / delta,
+            outer.size(),
+            n_held,
+            n_stop,
+            n_delta,
+            n_2delta,
+            std::cbrt(ring_max),
+            std::cbrt(mesh_max));
+        return n_stop == 0;
+    };
+    const auto log_newton = [&](const std::string& what) {
+        const size_t refused = m_repulsion_embed_refused.exchange(0);
+        logger().info(
+            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
+            what,
+            m_newton_repulsion.to_string(),
+            m_repulsion_veto_fired.exchange(0),
+            m_repulsion_veto_asked.exchange(0),
+            n_rounds > 0
+                ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
+                : std::string());
+        m_newton_repulsion.reset();
+    };
+
+    logger().info(
+        "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
+        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
+        "most {} pass(es)",
+        outer.size() - n_held,
+        2. * delta,
+        stop,
+        n_passes);
+    bool done = report("before");
+    // The engine's per-pass frames are the loop's numbered series; these passes write their own.
+    // m_params and m_offset_params are one object, so the flag is read before it is switched off.
+    const bool frames = m_params.debug_output;
+    m_params.debug_output = false;
+    int k = 0;
+    while (!done && k < n_passes) {
+        ++k;
+        smooth_all_vertices(1);
+        log_newton(fmt::format("pass {}", k));
+        done = report(fmt::format("after pass {}", k));
+        if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
+    }
+    if (n_passes > 0) {
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "pass(es)",
+                k);
+        } else {
+            logger().info(
+                "\t[repulsion] {} pass(es), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                k);
+        }
+    }
+
+    // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
+    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
+    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
+    // every operation aims at the base edge length) and no split of a marched edge
+    // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
+    // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
+    int r = 0;
+    if (!done && n_rounds > 0) {
+        // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
+        // when the complex is a body's cells (offset_out) or the cells outside a body (offset_in).
+        if (!m_singlebody || m_single_tag == m_sheet_tag ||
+            m_offset_params.offset_in == m_offset_params.offset_out) {
+            log_and_throw_error(
+                "repulsion_rounds: supported for a single body offset inward or outward only "
+                "(not a surface group, an expression, or both directions)");
+        }
+        m_edge_split_mode = EdgeSplitMode::Optimization;
+        init_vertex_order(); // the collapse rules read it; optimize_offset() recomputes it
+        compute_vertex_partition_morton();
+        const bool interleaved = m_params.interleaved_smoothing;
+        const int ks = std::max(
+            1,
+            interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+        const std::vector<std::array<int, 4>> groups =
+            interleaved
+                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
+                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
+        logger().info(
+            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
+            "marched-edge split",
+            n_rounds,
+            interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
+                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
+        op_accounting_reset(); // the [ops accounting] lines below are per round
+        swap_counters_reset();
+        while (!done && r < n_rounds) {
+            ++r;
+            for (const auto& g : groups) {
+                // The operations, then the labels from the tags, then the smoothing: the loop's
+                // operations carry the tets' tags and labels but not the construction labels of
+                // vertices, edges and faces, which say what the input complex is and so which
+                // vertices the smoothing pushes.
+                local_operations({{g[0], g[1], g[2], 0}});
+                relabel_input_complex();
+                // A collapse or a swap may have joined two complex vertices by an edge off the
+                // complex. The march needs the complex simplicially embedded, so it is embedded
+                // here, before the smoothing: the embedding's midpoints are new outer ends, and
+                // the smoothing and the stop test must see the mesh the march will get. (Measured
+                // without this, on the cylinder inward at 1e-1: one round left a single outer end
+                // at 1.37 delta, the embedding after the rounds then split 249 tets' chords and
+                // the march fell back to 0.027 delta.)
+                if (!is_simplicially_embedded()) {
+                    m_edge_split_mode = EdgeSplitMode::Midpoint;
+                    simplicial_embedding();
+                    bool dummy = is_simplicially_embedded();
+                    m_edge_split_mode = EdgeSplitMode::Optimization;
+                    init_vertex_order();
+                    compute_vertex_partition_morton();
+                }
+                local_operations({{0, 0, 0, g[3]}});
+            }
+            // How every split, collapse and swap of the round ended, as the loop logs it per turn.
+            // The embedding guard's refusals (repulsion_embedding_kept()) have no reason name in
+            // the engine's counters, so these lines count them as unexplained; the guard's own
+            // count is in the newton line below. Logged at info for that reason.
+            logger().info("\t[repulsion] round {} [swap reject]: {}", r, swap_reject_report());
+            swap_counters_reset();
+            for (const OpKind k :
+                 {OpKind::split,
+                  OpKind::collapse,
+                  OpKind::swap_32,
+                  OpKind::swap_44,
+                  OpKind::swap_56,
+                  OpKind::swap_face}) {
+                logger().info(
+                    "\t[repulsion] round {} [ops accounting] {}",
+                    r,
+                    op_accounting_report(k));
+            }
+            op_accounting_reset();
+            log_newton(fmt::format("round {}", r));
+            done = report(fmt::format("after round {}", r));
+            if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
+        }
+        // Every group above leaves the complex embedded and smoothing changes no topology, so
+        // this finds nothing; it stays as the guard the march relies on.
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (!is_simplicially_embedded()) {
+            logger().warn(
+                "\t[repulsion] the complex is not simplicially embedded after the rounds; "
+                "embedding it before the march");
+            simplicial_embedding();
+            bool dummy = is_simplicially_embedded();
+        }
+        consolidate_mesh();
+        if (done) {
+            logger().info(
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
+                "round(s)",
+                r);
+        } else {
+            logger().info(
+                "\t[repulsion] {} round(s), the cap: some outer end is still within "
+                "target_distance + front_conv",
+                r);
+        }
+    }
+    m_params.debug_output = frames;
+    m_repulsion_potential.reset();
+    m_repulsion_term.reset();
+}
+
+bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) const
+{
+    // In a cell of the complex (label 1: a body cell for offset_out, a cell outside the body for
+    // offset_in), as label_input_complex() labels them; for offset_in also on a domain-boundary
+    // face of a body cell, which label_input_complex() adds to the complex.
+    std::vector<Tuple> cells;
+    if (c.size() == 2) {
+        cells = get_incident_tets_for_edge(c[0], c[1]);
+    } else if (c.size() == 3) {
+        const auto [ft, fid] = tuple_from_face({{c[0], c[1], c[2]}});
+        cells.push_back(ft);
+        if (const auto o = ft.switch_tetrahedron(*this)) cells.push_back(*o);
+    } else {
+        return false;
+    }
+    for (const Tuple& t : cells) {
+        if (m_tet_attribute[t.tid(*this)].label != 0) return true;
+    }
+    if (!m_offset_params.offset_in) return false;
+    for (const Tuple& t : cells) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].tag.count(m_single_tag) == 0) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            if (f.switch_tetrahedron(*this)) continue; // not on the domain boundary
+            const auto fv = get_face_vids(f);
+            bool contains = true;
+            for (const size_t v : c) {
+                contains = contains && std::find(fv.begin(), fv.end(), v) != fv.end();
+            }
+            if (contains) return true;
+        }
+    }
+    return false;
+}
+
+bool TopoOffsetTetMesh::repulsion_embedding_kept(const std::vector<size_t>& tids) const
+{
+    // tet_is_simp_emb() on each cell, with the spanned simplex judged by
+    // simplex_in_input_complex(): vertex and cell labels are exact during an operation pass, the
+    // edge and face labels of new simplices are not.
+    for (const size_t tid : tids) {
+        if (m_tet_attribute[tid].label != 0) continue;
+        std::vector<size_t> in;
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (m_vertex_extra[v].label != 0) in.push_back(v);
+        }
+        if (in.size() <= 1) continue;
+        if (in.size() == 4 || !simplex_in_input_complex(in)) return false;
+    }
+    return true;
+}
+
 void TopoOffsetTetMesh::marching_tets()
 {
     m_marching_root_splits = 0;
@@ -1466,49 +1684,85 @@ void TopoOffsetTetMesh::marching_tets()
         sort_edges_by_length(e_to_split);
     }
 
-    // EXPERIMENTAL_consistent_construction_split: the march becomes all-or-nothing. Normally a
-    // trace that leaves its edge falls back to the midpoint for THAT edge alone, so one
-    // construction can mix vertices on the level set with vertices at edge midpoints. Here the
-    // march is probed first and a single untraceable edge sends every edge to its midpoint.
-    //
-    // The probe is exact, not an estimate: edge_split_sphere_trace() is const and reads only the
-    // two endpoint positions and the input-complex BVH; a split inserts a vertex without moving
-    // any existing one, and the labels this loop reads are only rewritten after it. So the answers
-    // here are the answers the split hook would get. The cost is that a march which does trace
-    // everywhere traces twice. Only SphereTrace can mix, so the flag is a no-op otherwise.
-    const EdgeSplitMode entry_split_mode = m_edge_split_mode;
-    if (m_offset_params.experimental_consistent_construction_split &&
-        m_edge_split_mode == EdgeSplitMode::SphereTrace) {
-        size_t untraceable = 0;
-        for (const simplex::Edge& e : e_to_split) {
-            const size_t va = e.vertices()[0];
-            const size_t vb = e.vertices()[1];
-            // Exactly one end carries a non-zero label: that is how e_to_split was built.
-            const size_t v_in = m_vertex_extra[va].label != 0 ? va : vb;
-            const size_t v_out = (v_in == va) ? vb : va;
-            Vector3d p_probe;
-            size_t steps = 0;
-            if (!edge_split_sphere_trace(
-                    m_vertex_attribute[v_in].m_posf,
-                    m_vertex_attribute[v_out].m_posf,
-                    p_probe,
-                    steps)) {
-                ++untraceable;
-            }
-        }
-        if (untraceable > 0) {
-            m_edge_split_mode = EdgeSplitMode::Midpoint;
-            logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: {} of {} marched "
-                "edges cannot be traced to the level set, so the WHOLE march falls back to "
-                "midpoint splits",
-                untraceable,
-                e_to_split.size());
+    // Construction (construction_mode). The maximum marchable distance is the smallest
+    // d(outer end) over the marched edges: an edge's inner end is on the complex (d = 0), so by
+    // continuity the level set d = D crosses every marched edge for every D up to it, and the
+    // sphere trace (edge_split_sphere_trace()) finds it. A target below it is traced to.
+    // Otherwise "max_marchable_fallback" traces to half of it, where every edge holds the level
+    // set with room to spare, and "midpoint_fallback" splits every marched edge at its midpoint.
+    // target_distance itself is untouched: the optimization carries the surface out to it.
+    const double target = m_offset_params.target_distance;
+    double d_max = std::numeric_limits<double>::infinity();
+    for (const simplex::Edge& e : e_to_split) {
+        const size_t va = e.vertices()[0];
+        const size_t vb = e.vertices()[1];
+        // Exactly one end carries a zero label: that is how e_to_split was built.
+        const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
+        d_max = std::min(d_max, m_input_complex_bvh->dist(m_vertex_attribute[v_out].m_posf));
+    }
+    const bool reachable = target < d_max;
+    const std::string& mode = m_offset_params.construction_mode;
+    m_construction_distance = target;
+    m_edge_split_mode = EdgeSplitMode::SphereTrace;
+    if (e_to_split.empty()) {
+        logger().info("\t[construction] construction_mode {}: no edge to march", mode);
+    } else if (reachable) {
+        logger().info(
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is below it, so the march traces to the target",
+            mode,
+            d_max,
+            e_to_split.size(),
+            target);
+    } else if (mode == "max_marchable_fallback" && d_max > 0.) {
+        m_construction_distance = 0.5 * d_max;
+        logger().info(
+            "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over {} "
+            "marched edges; target_distance {:.6g} is not below it, so the march traces to half "
+            "of it, {:.6g} ({:.4g}x target_distance)",
+            mode,
+            d_max,
+            e_to_split.size(),
+            target,
+            m_construction_distance,
+            m_construction_distance / target);
+    } else {
+        m_edge_split_mode = EdgeSplitMode::Midpoint;
+        if (mode == "max_marchable_fallback") {
+            logger().warn(
+                "\t[construction] construction_mode {}: maximum marchable distance {} -- a "
+                "marched edge ends on the complex -- so there is nothing to trace to and every "
+                "marched edge is split at its midpoint",
+                mode,
+                d_max);
         } else {
             logger().info(
-                "\t[construction] EXPERIMENTAL_consistent_construction_split: all {} marched "
-                "edges can be traced, so the march traces everywhere",
-                e_to_split.size());
+                "\t[construction] construction_mode {}: maximum marchable distance {:.6g} over "
+                "{} marched edges; target_distance {:.6g} is not below it, so every marched edge "
+                "is split at its midpoint",
+                mode,
+                d_max,
+                e_to_split.size(),
+                target);
+        }
+    }
+
+    // init_optimize, only when the target is not below the maximum
+    // marchable distance: optimize_offset() opens with a loop without refinement. A target below
+    // it is marched to and the run is the ordinary one.
+    if (m_offset_params.init_optimize && !e_to_split.empty()) {
+        if (!reachable) {
+            m_init_optimize = true;
+            logger().info(
+                "\t[init_optimize] target_distance is not below the maximum marchable distance, so "
+                "the loop opens with a stencil_order {} loop without refinement, then the same "
+                "stencil with refinement",
+                m_offset_params.stencil_order);
+        } else {
+            logger().info(
+                "\t[init_optimize] not done: target_distance is below the maximum marchable "
+                "distance; the offset is marched to the target and the loop runs with refinement "
+                "as usual");
         }
     }
 
@@ -1533,12 +1787,13 @@ void TopoOffsetTetMesh::marching_tets()
     }
     if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         logger().info(
-            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
-            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
-            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
+            "\t[construction] sphere trace: {} of {} marched edges placed where |d(x) - D| <= {} "
+            "x D (D = {:.6g}), {} at the midpoint (the trace left the edge) | trace steps: {} "
+            "total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
             m_offset_params.sphere_trace_target_rel_tol,
+            m_construction_distance,
             m_marching_midpoint_splits,
             m_marching_trace_steps,
             m_marching_trace_steps_max,
@@ -1546,9 +1801,9 @@ void TopoOffsetTetMesh::marching_tets()
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
-    // Leave the mode as it was found: the consistency flag may have forced it to Midpoint above,
-    // and that decision belongs to this march alone.
-    m_edge_split_mode = entry_split_mode;
+    // The march's placement decision is its own; every later split is a midpoint one until the
+    // optimization sets its own mode.
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // mark all offset tets and children
     for (const size_t& v_id : frontier_verts) {
@@ -1798,7 +2053,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
-    //                         |relative_residual()| over the relative bar -- face_conv_ratio()'s
+    //                         |relative_residual()| over the relative bar -- the face term's
     //                         measure at the vertex alone, its distance to the level set along
     //                         the field over front_conv (for the euclidean field |d -
     //                         target_distance| / front_conv). <= 1 reads as "placed". The loop reports it and no
@@ -1849,6 +2104,22 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         for (size_t vid = 0; vid < fold.size() && vid < size_t(v_fold.size()); ++vid) {
             v_fold[int(vid)] = fold[vid] ? 1. : 0.;
         }
+    }
+
+    // The front solves since the last frame (m_front_solve_log), as point data:
+    //   front_newton_iters   the Newton iterations the vertex's solve took; 10 is the cap.
+    //   front_newton_status  polysolve's stop status + 1, NewtonCounters::status_name()'s
+    //                        numbering: 2 IterationLimit, 6 GradNormTolerance,
+    //                        7 RelGradNormTolerance, 12 LineSearchFailed.
+    // -1 where the vertex was not solved since the last frame: not on the front, refused before
+    // its solve, or the frame closes an operation pass. DEBUG ONLY, as the log is.
+    VectorXd v_newton_it(vert_capacity()), v_newton_st(vert_capacity());
+    v_newton_it.setConstant(-1.);
+    v_newton_st.setConstant(-1.);
+    for (const FrontSolveRecord& r : m_front_solve_log) {
+        if (r.vid >= vert_capacity()) continue;
+        v_newton_it[int(r.vid)] = r.iterations;
+        v_newton_st[int(r.vid)] = r.status;
     }
 
     for (size_t k = 0; k < tets.size(); ++k) {
@@ -1908,8 +2179,6 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         assign_band_regions(/*log=*/false);
     }
     {
-        const OptPhase saved_phase = m_phase;
-        m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
         const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
         for (const Tuple& v : vs) {
             const size_t vid = v.vid(*this);
@@ -1929,7 +2198,6 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             v_cdist[vid] =
                 m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
-        m_phase = saved_phase;
     }
 
     for (size_t k = 0; k < tets.size(); ++k) {
@@ -1961,6 +2229,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("front_move_align", v_align);
     writer.add_field("front_complex_distance", v_cdist);
     writer.add_field("offset_foldover", v_fold);
+    writer.add_field("front_newton_iters", v_newton_it);
+    writer.add_field("front_newton_status", v_newton_st);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1981,9 +2251,10 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         // test rather than the resolution half of it, and which has nowhere to live on the tet
         // frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_err_ratio  face_conv_ratio(): the RMS over the face's stencil_order stencil of
-        //                    relative_residual() -- the distance to the level set along the field
-        //                    over target_distance -- over the one bar as a fraction of it.
+        //   front_err_ratio  the root of face_offset_term(): the RMS over the
+        //                    face's stencil_order stencil of relative_residual() -- the distance
+        //                    to the level set along the field over target_distance -- over the
+        //                    one bar as a fraction of it.
         //                    > 1 is what makes a face refinable, and the same number at 1 point
         //                    is what makes a vertex placed. -1 unmeasurable, including a face
         //                    with a corner that is not a front vertex. Measured under the same
@@ -1995,16 +2266,16 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         //   chord_length     the face's longest edge, so the error can be read against the
         //                    geometry that produced it.
         //   front_ring_ratio point data, in both front_measure modes: the ring measure at each
-        //                    front vertex, sqrt(sum A_f front_err_ratio^2 / sum A_f) over its
-        //                    incident offset faces with three front corners, A_f the face's area
+        //                    front vertex, sqrt(mean of front_err_ratio^2) over its incident
+        //                    offset faces with three front corners, every face weighted equally
         //                    -- the exit test under front_measure "vertex_ring"
         //                    (EnergyCriterion::ring_exit), with energy_criterion()'s rules: a
-        //                    vertex with an unmeasurable incident face, or whose faces have zero
-        //                    total area, has none. NaN where there is no ring measure.
+        //                    vertex with an unmeasurable incident face has none. NaN where there
+        //                    is no ring measure.
         VectorXd f_err(faces_off.size()), f_len(faces_off.size());
-        VectorXd v_ring_sum(vert_capacity()), v_ring_a(vert_capacity());
+        VectorXd v_ring_sum(vert_capacity()), v_ring_n(vert_capacity());
         v_ring_sum.setZero();
-        v_ring_a.setZero();
+        v_ring_n.setZero();
         std::vector<char> ring_bad(vert_capacity(), 0);
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
@@ -2012,18 +2283,18 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
             const bool all_front = front(a) && front(b) && front(c);
-            f_err[i] = all_front ? face_conv_ratio(a, b, c) : -1.;
+            const double term = all_front ? face_offset_term(a, b, c) : -1.;
+            f_err[i] = term < 0. ? -1. : std::sqrt(term);
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
             if (all_front) {
-                const double area = ring_face_area(a, b, c);
                 for (const size_t u : {a, b, c}) {
-                    if (f_err[i] < 0.) {
+                    if (term < 0.) {
                         ring_bad[u] = 1;
                     } else {
-                        v_ring_sum[int(u)] += area * f_err[i] * f_err[i];
-                        v_ring_a[int(u)] += area;
+                        v_ring_sum[int(u)] += term;
+                        v_ring_n[int(u)] += 1.;
                     }
                 }
             }
@@ -2031,8 +2302,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         VectorXd v_ring(vert_capacity());
         v_ring.setConstant(std::numeric_limits<double>::quiet_NaN());
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-            if (ring_bad[vid] || !(v_ring_a[int(vid)] > 0.)) continue;
-            v_ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_a[int(vid)]);
+            if (ring_bad[vid] || !(v_ring_n[int(vid)] > 0.)) continue;
+            v_ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
         }
         paraviewo::VTUWriter off_writer;
         off_writer.add_cell_field("front_err_ratio", f_err);
@@ -2047,6 +2318,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         off_writer.add_field("front_move_align", v_align);
         off_writer.add_field("front_complex_distance", v_cdist);
         off_writer.add_field("offset_foldover", v_fold);
+        off_writer.add_field("front_newton_iters", v_newton_it);
+        off_writer.add_field("front_newton_status", v_newton_st);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
     }

@@ -360,6 +360,18 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The number the shared smoother compares for one face, given the face's quality at
+     * the position being tested: the projected step's candidate test and the quality veto take
+     * the max of this over the ring. The quality itself by default, so TriWild and SimWild
+     * compare exactly what they compared before. The 3D twin is
+     * TetOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*fid*/, const double quality) const
+    {
+        return quality;
+    }
+
     double active_quality_threshold() const
     {
         return m_params.skip_good_regions_margin * m_params.stop_energy;
