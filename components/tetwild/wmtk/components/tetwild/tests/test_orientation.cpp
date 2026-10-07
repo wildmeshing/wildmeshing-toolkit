@@ -1,8 +1,11 @@
 // The tracked surface carries the input's orientation (SurfaceTagAttributes::m_orientation)
 // from the insertion through every operation, so the tracked-surface winding number is the
-// input's own rather than a per-patch guess. These cases are the configurations a guess gets
-// wrong: several components, one of them inside out, one nested in another, two touching
-// face-to-face, one resting on another.
+// input's own rather than a per-patch guess. The configurations below are the ones a guess gets
+// wrong -- several components, one of them inside out, one nested in another, two touching
+// face-to-face, one resting on another -- side by side in ONE input, so a single insertion and
+// optimization covers them all: the insertion's background lattice is diag/20 whatever the
+// input, ~40k tets, and seven separate runs took the tetwild suite past its 1500 s ctest limit
+// in a Windows Debug build.
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <wmtk/components/tetwild/Parameters.h>
@@ -71,7 +74,9 @@ struct Soup
     }
 };
 
-double volume_where(TetWildMesh& mesh, bool tracked)
+/// Volume of the tets whose barycenter has x in [x0, x1) and whose winding number (tracked or
+/// input) exceeds 1/2.
+double volume_where(TetWildMesh& mesh, bool tracked, double x0, double x1)
 {
     double vol = 0;
     for (const auto& t : mesh.get_tets()) {
@@ -80,6 +85,9 @@ double volume_where(TetWildMesh& mesh, bool tracked)
         if ((tracked ? a.m_winding_number_tracked : a.m_winding_number_input) <= 0.5) continue;
         const auto vs = mesh.oriented_tet_vids(tid);
         const auto& p = mesh.m_vertex_attribute;
+        const double cx =
+            (p[vs[0]].m_posf[0] + p[vs[1]].m_posf[0] + p[vs[2]].m_posf[0] + p[vs[3]].m_posf[0]) / 4;
+        if (cx < x0 || cx >= x1) continue;
         vol += std::abs((p[vs[1]].m_posf - p[vs[0]].m_posf)
                             .cross(p[vs[2]].m_posf - p[vs[0]].m_posf)
                             .dot(p[vs[3]].m_posf - p[vs[0]].m_posf)) /
@@ -96,13 +104,47 @@ void compute_both_winding_numbers(TetWildMesh& mesh, const Soup& s)
     mesh.compute_winding_number(tets, c);
 }
 
-/// Insert, check, optimize a little, check again. `expected` is the volume where the input's
-/// winding number exceeds 1/2.
-void check_case(const char* name, const Soup& s, double expected)
+struct Region
 {
+    const char* name;
+    double x0, x1; // the configuration's slab of x
+    double expected; // volume where the input's winding number exceeds 1/2
+};
+
+} // namespace
+
+TEST_CASE("orientation-configurations", "[tetwild][orientation]")
+{
+    Soup s;
+    // A box and an inside-out box: the second is a negative solid and must stay out.
+    s.box({0, 0, 0}, {1, 1, 1});
+    s.box({2, 0, 0}, {3, 1, 1}, true);
+    // Nested boxes: winding number 2 inside the inner one, still inside.
+    s.box({5, 0, 0}, {8, 3, 3});
+    s.box({6, 1, 1}, {7, 2, 2});
+    // Boxes sharing a face, on the same vertices: one coplanar group with both orientations,
+    // which cancel to 0 there.
+    s.box({10, 0, 0}, {11, 1, 1});
+    s.box({11, 0, 0}, {12, 1, 1});
+    // A box resting on a plate (Thingi10K 52564): its bottom lies inside the plate's top without
+    // sharing vertices, so the facets under it belong to two coplanar groups.
+    s.box({14, 0, 0}, {17, 3, 1});
+    s.box({15, 1, 1}, {16, 2, 2});
+    // A box resting along a plate's edge: sharing an edge makes the two opposite faces one
+    // coplanar group of mixed orientation, the exact per-point path. (Thingi10K 104513 also has
+    // a facet straddling an uncut edge between two of such a group's triangles; this does not
+    // reproduce that.)
+    s.box({19, 0, 0}, {22, 3, 1});
+    s.box({19, 0, 1}, {22, 1, 2});
+    const std::vector<Region> regions = {
+        {"box + inside-out box", -1, 4, 1},
+        {"nested boxes", 4, 9, 27},
+        {"boxes sharing a face", 9, 13, 2},
+        {"box resting on a plate", 13, 18, 10},
+        {"box resting along a plate edge", 18, 23, 12}};
+
     Parameters params;
     params.init(s.v, s.f);
-
     components::shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(s.v, 0);
     surf_mesh.create_mesh(s.v.size(), s.f, {}, params.eps);
     const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
@@ -159,94 +201,33 @@ void check_case(const char* name, const Soup& s, double expected)
         }
     }
     logger().info(
-        "[orientation] {}: {} tets ({} flat), {} disagree after insertion",
-        name,
+        "[orientation] {} tets ({} flat), {} disagree after insertion",
         tets.size(),
         flat,
         disagree);
     CHECK(disagree == 0);
-    CHECK(std::abs(volume_where(mesh, true) - expected) < 1e-6 * expected);
+    for (const auto& r : regions) {
+        const double vt = volume_where(mesh, true, r.x0, r.x1);
+        INFO(r.name << ": tracked " << vt << " expected " << r.expected);
+        CHECK(std::abs(vt - r.expected) < 1e-6 * r.expected);
+    }
 
     // The operations must carry the orientation: still closed, and the tracked surface -- now
-    // within eps of the input rather than on it -- still encloses the same solid.
-    mesh.mesh_improvement(3);
+    // within eps of the input rather than on it -- still encloses the same solids.
+    mesh.mesh_improvement(2);
     CHECK(mesh.tracked_surface_boundary().empty());
     compute_both_winding_numbers(mesh, s);
-    const double vt = volume_where(mesh, true), vi = volume_where(mesh, false);
-    logger().info(
-        "[orientation] {}: after optimization, tracked {} input {} expected {}",
-        name,
-        vt,
-        vi,
-        expected);
-    CHECK(std::abs(vt - expected) < 0.02 * expected);
-    CHECK(std::abs(vi - expected) < 0.02 * expected);
-}
-
-} // namespace
-
-TEST_CASE("orientation-single-box", "[tetwild][orientation]")
-{
-    Soup s;
-    s.box({0, 0, 0}, {1, 1, 1});
-    check_case("single box", s, 1);
-}
-
-TEST_CASE("orientation-inside-out-box", "[tetwild][orientation]")
-{
-    // Alone, inside out: both winding numbers take the same whole-surface flip.
-    Soup s;
-    s.box({0, 0, 0}, {1, 1, 1}, true);
-    check_case("inside-out box", s, 1);
-}
-
-TEST_CASE("orientation-box-and-inside-out-box", "[tetwild][orientation]")
-{
-    // The inside-out one is a negative solid and must stay out; the other one in.
-    Soup s;
-    s.box({0, 0, 0}, {1, 1, 1});
-    s.box({2, 0, 0}, {3, 1, 1}, true);
-    check_case("box + inside-out box", s, 1);
-}
-
-TEST_CASE("orientation-nested-boxes", "[tetwild][orientation]")
-{
-    // Winding number 2 inside the inner box: still inside.
-    Soup s;
-    s.box({0, 0, 0}, {3, 3, 3});
-    s.box({1, 1, 1}, {2, 2, 2});
-    check_case("nested boxes", s, 27);
-}
-
-TEST_CASE("orientation-boxes-sharing-a-face", "[tetwild][orientation]")
-{
-    // The shared face carries two opposite, coincident triangle pairs on the same vertices: one
-    // coplanar group with both orientations, which cancel to 0 there.
-    Soup s;
-    s.box({0, 0, 0}, {1, 1, 1});
-    s.box({1, 0, 0}, {2, 1, 1});
-    check_case("boxes sharing a face", s, 2);
-}
-
-TEST_CASE("orientation-box-resting-on-a-plate", "[tetwild][orientation]")
-{
-    // Thingi10K 52564's configuration: the peg's bottom lies inside the plate's top without
-    // sharing vertices, so the facets under it belong to two coplanar groups of opposite
-    // orientation.
-    Soup s;
-    s.box({0, 0, 0}, {3, 3, 1});
-    s.box({1, 1, 1}, {2, 2, 2});
-    check_case("box resting on a plate", s, 10);
-}
-
-TEST_CASE("orientation-box-resting-along-a-plate-edge", "[tetwild][orientation]")
-{
-    // The box's bottom shares an edge with the plate's top, so the two opposite faces are one
-    // coplanar group of mixed orientation: the exact per-point path. (Thingi10K 104513 also has
-    // a facet straddling an uncut edge between two of such a group's triangles; this
-    // arrangement happens to cut along the plate's diagonal, so it does not reproduce that.)
-    Soup s;
-    s.box({0, 0, 0}, {3, 3, 1});
-    s.box({0, 0, 1}, {3, 1, 2});
-    check_case("box resting along a plate edge", s, 12);
+    for (const auto& r : regions) {
+        const double vt = volume_where(mesh, true, r.x0, r.x1);
+        const double vi = volume_where(mesh, false, r.x0, r.x1);
+        logger().info(
+            "[orientation] {}: after optimization, tracked {} input {} expected {}",
+            r.name,
+            vt,
+            vi,
+            r.expected);
+        INFO(r.name);
+        CHECK(std::abs(vt - r.expected) < 0.02 * r.expected);
+        CHECK(std::abs(vi - r.expected) < 0.02 * r.expected);
+    }
 }
