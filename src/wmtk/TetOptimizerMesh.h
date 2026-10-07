@@ -561,6 +561,10 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}

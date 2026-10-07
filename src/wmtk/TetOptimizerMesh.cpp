@@ -10,6 +10,7 @@
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/VertexColoring.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -20,6 +21,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <cstdlib>
 #include <queue>
 
@@ -395,11 +397,15 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
         logger().debug("#V = {}", collect_all_ops.size());
-        run_pass(
-            *this,
-            PassLock::VertexRing,
-            "vertex smoothing operation",
-            [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        if (use_colored_smoothing()) {
+            smooth_vertices_colored(collect_all_ops);
+        } else {
+            run_pass(
+                *this,
+                PassLock::VertexRing,
+                "vertex smoothing operation",
+                [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        }
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
         log_smoothing_pass_accounting();
@@ -410,6 +416,59 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
     }
 }
 
+
+bool TetOptimizerMesh::use_colored_smoothing() const
+{
+    return NUM_THREADS > 0 && m_params.colored_smoothing;
+}
+
+void TetOptimizerMesh::smooth_vertices_colored(
+    const std::vector<std::pair<std::string, Tuple>>& ops)
+{
+    igl::Timer timer;
+    timer.start();
+
+    std::vector<size_t> vids;
+    vids.reserve(ops.size());
+    for (const auto& op : ops) {
+        vids.push_back(op.second.vid(*this));
+    }
+    auto classes = utils::greedy_vertex_coloring(
+        vids,
+        vert_capacity(),
+        NUM_THREADS,
+        [this](size_t vid, std::vector<size_t>& out) {
+            const std::vector<size_t> ring = get_one_ring_vids_for_vertex(vid);
+            out.insert(out.end(), ring.begin(), ring.end());
+        });
+    const double coloring_time = timer.getElapsedTime();
+
+    // Each class runs fully in parallel: its vertices share no edge and no cell, so smoothing one
+    // neither moves a vertex another reads nor writes a cell attribute another writes. Nothing
+    // is locked, and the result does not depend on which thread smooths which vertex.
+    // Surface vertices first: they are the expensive ones (envelope), and starting them early
+    // keeps a thread from picking one up just before a class's barrier. The order within a class
+    // does not change the result -- its vertices do not interact.
+    size_t n_total = 0;
+    for (std::vector<size_t>& cls : classes) {
+        std::stable_partition(cls.begin(), cls.end(), [this](size_t v) {
+            return m_vertex_attribute.at(v).m_is_on_surface;
+        });
+        n_total += cls.size();
+    }
+    const size_t successes = utils::for_each_in_classes(classes, NUM_THREADS, 16, [this](size_t v) {
+        return smooth_vertex(tuple_from_vertex(v));
+    });
+    const size_t failures = n_total - successes;
+
+    logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);
+    logger().info(
+        "vertex smoothing colored: {} classes, coloring {:.4}s",
+        classes.size(),
+        coloring_time);
+    // Same wording as run_pass's line, so pass timings read the same either way.
+    logger().info("vertex smoothing operation time parallel: {:.4}s", timer.getElapsedTime());
+}
 
 std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
 {

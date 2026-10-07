@@ -185,6 +185,16 @@ struct OptimizerParameters
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.
     int num_smoothing_passes = 2;
+    /**
+     * Parallel smoothing by color class instead of by locked partition.
+     *
+     * The vertices to smooth are split into classes of pairwise non-adjacent vertices, and the
+     * classes run one after another, each fully in parallel and without any lock: two vertices
+     * of a class share no edge and no cell, so neither touches what the other reads or writes.
+     * The result does not depend on the number of threads. Serial runs (NUM_THREADS == 0) keep
+     * the original single-queue order either way.
+     */
+    bool colored_smoothing = true;
     bool interleaved_smoothing = true;
     int interleaved_smoothing_passes = 1;
 

@@ -364,6 +364,10 @@ public:
      * quality veto, and skip_good_regions selection.
      */
     void smooth_all_vertices(size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
