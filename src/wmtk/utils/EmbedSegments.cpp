@@ -1,7 +1,6 @@
 #include "EmbedSegments.hpp"
 
 #include <VolumeRemesher/2d/embed2d.h>
-#include <VolumeRemesher/numerics.h>
 
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
@@ -19,10 +18,10 @@ namespace wmtk::utils {
 namespace {
 
 // The remesher hands back exact coordinates; which concrete bignum type depends on
-// how VolumeRemesher was configured (see cmake/recipes/volumemesher.cmake). Go
+// how VolumeRemesher was configured (see cmake/recipes/volumeremesher.cmake). Go
 // through wmtk::Rational -- the same conversion the 3D insertion uses -- so both
 // backends are handled.
-Rational bigrational_to_rational(const vol_rem::bigrational& r)
+Rational bigrational_to_rational(const NFG::bigrational& r)
 {
     Rational q;
 #ifdef USE_GNU_GMP_CLASSES
@@ -148,7 +147,7 @@ void embed_segments(
     // bounding box grown by 10%. Segments may cross, overlap or be duplicated; the
     // remesher resolves all of that and reports, per input segment, the output
     // triangle edges that tile it.
-    std::vector<vol_rem::bigrational> vertices;
+    std::vector<NFG::bigrational> vertices;
     std::vector<std::array<uint32_t, 3>> tris;
     std::vector<std::vector<std::array<uint32_t, 3>>> segment_provenance;
     std::vector<std::array<uint32_t, 2>> point_provenance;
@@ -182,6 +181,11 @@ void embed_segments(
             ++n_indirect;
         }
     }
+    // As in embed_triangles_in_tets: free the remesher's numbers, then the memory NFG's
+    // bignatural pool grew into for them, which it never returns on its own (52 MB of a 245 MB
+    // peak on Thingi10K 193153).
+    std::vector<NFG::bigrational>().swap(vertices);
+    NFG::bignatural::trimMemoryPool();
 
     F_out.resize(tris.size(), 3);
     for (size_t t = 0; t < tris.size(); ++t) {

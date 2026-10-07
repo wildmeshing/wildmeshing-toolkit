@@ -17,7 +17,6 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <VolumeRemesher/embed.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
