@@ -91,7 +91,7 @@ private:
      * face barycenter exceeds 0.5.
      *
      * Auto-corrects an inverted input orientation and warns when an input claims nothing, as
-     * triwild's compute_winding_numbers does and the 3D tag_from_winding_number does not.
+     * triwild's compute_winding_numbers and the 3D EmbedSurface::tag_from_winding_number do.
      */
     void tag_from_winding_number();
 

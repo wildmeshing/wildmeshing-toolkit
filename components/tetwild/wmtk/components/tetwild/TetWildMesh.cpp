@@ -243,6 +243,9 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         }
 
         init(T);
+        // The legacy optimizer hands back surface flags only, not the input's orientation, so
+        // a tracked-surface winding number has to go back to guessing it.
+        m_tracks_orientation = false;
 
         const auto& verts = legacy_tetwild.tet_vertices;
         assert(verts.size() >= vert_capacity());
@@ -488,7 +491,22 @@ void TetWildMesh::compute_winding_number(
                 F(i, j) = (int)faces[i][j];
             }
         }
-    } else { // use track to filter
+    } else if (m_tracks_orientation) {
+        // The tracked surface with the orientation the input gave it, carried through
+        // insertion and every operation: no guessing, so this means what the input winding
+        // number means, evaluated on the surface the mesh actually conforms to. Coincident
+        // sheets appear as often as they cover a face, and opposite ones cancel.
+        const auto outface = oriented_tracked_faces();
+        V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
+        for (auto v : get_vertices()) {
+            auto vid = v.vid(*this);
+            V.row(vid) = m_vertex_attribute[vid].m_posf;
+        }
+        F.resize(outface.size(), 3);
+        for (size_t i = 0; i < outface.size(); i++) {
+            F.row(i) << (int)outface[i][0], (int)outface[i][1], (int)outface[i][2];
+        }
+    } else { // use track to filter, orientation unknown: guess it per patch
         auto outface = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {

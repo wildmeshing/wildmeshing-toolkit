@@ -152,6 +152,11 @@ private:
     void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
+    /**
+     * @brief One binary tag column per input, set where that input's winding number at a tet
+     * barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input
+     * claims nothing, as the 2D EmbedCurves::tag_from_winding_number does.
+     */
     void tag_from_winding_number();
 
     /**

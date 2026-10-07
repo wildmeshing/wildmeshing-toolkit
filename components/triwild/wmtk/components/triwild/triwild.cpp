@@ -358,7 +358,10 @@ void triwild(nlohmann::json json_params)
     std::vector<Vector2r> V_rational; // the same vertices, exact
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
-    wmtk::utils::embed_segments(V_simp, E_simp, V, V_rational, F, E);
+    // The input's direction on each constraint edge, so the tracked curves can be oriented as
+    // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
+    std::vector<int> E_orientation;
+    wmtk::utils::embed_segments(V_simp, E_simp, V, V_rational, F, E, nullptr, &E_orientation);
 
     // The arrangement is the baseline for everything after it. It is EXPECTED to differ
     // from the input: resolving a crossing inserts a vertex shared by both curves, which
@@ -440,7 +443,7 @@ void triwild(nlohmann::json json_params)
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, &E_orientation);
     // The arrangement now lives in `mesh`. These are function locals, so without this they --
     // the exact coordinates above all -- would be held through the optimization, which is where
     // the run peaks.
@@ -448,6 +451,7 @@ void triwild(nlohmann::json json_params)
     F.resize(0, 0);
     E.resize(0, 0);
     std::vector<Vector2r>().swap(V_rational);
+    std::vector<int>().swap(E_orientation);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -502,6 +506,10 @@ void triwild(nlohmann::json json_params)
 
     if (filter_option == "input") {
         mesh.filter_with_input_winding_number();
+        mesh.consolidate_mesh();
+    } else if (filter_option == "tracked") {
+        mesh.compute_tracked_winding_number();
+        mesh.filter_with_tracked_winding_number();
         mesh.consolidate_mesh();
     } else if (filter_option == "flood") {
         mesh.filter_with_flood_fill();

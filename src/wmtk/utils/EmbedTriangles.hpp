@@ -82,6 +82,12 @@ struct EmbedTrianglesProvenance
  * @param[out] tets_after    output tets
  * @param[out] tet_face_on_input_surface  4 flags per tet, in WMTK local face order
  * @param[out] provenance    optional: which input triangles each surface face came from
+ * @param[out] tet_face_orientation  optional: 4 values per tet, in WMTK local face order -- the
+ *     input's orientation on that face, as the signed number of input triangles covering it,
+ *     measured against the face's vertices in ascending id order (see
+ *     SurfaceTagAttributes::m_orientation). 0 off the surface, and where coincident sheets
+ *     cancel. Computed exactly from the input triangles, not from the remesher's facet vertex
+ *     order, which carries no orientation.
  */
 void embed_triangles_in_tets(
     const std::vector<double>& tri_vrt_coord,
@@ -95,6 +101,7 @@ void embed_triangles_in_tets(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts = {},
-    EmbedTrianglesProvenance* provenance = nullptr);
+    EmbedTrianglesProvenance* provenance = nullptr,
+    std::vector<int>* tet_face_orientation = nullptr);
 
 } // namespace wmtk::utils

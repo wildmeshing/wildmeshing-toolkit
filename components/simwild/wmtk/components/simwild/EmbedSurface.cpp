@@ -1141,6 +1141,21 @@ void EmbedSurface::tag_from_winding_number()
     for (size_t i = 0; i < Fs.size(); ++i) {
         // igl::winding_number(Vs[i], Fs[i], P, W);
         utils::winding_number(Vs[i], Fs[i], P, W, m_num_threads);
+        if (W.size() > 0 && W.maxCoeff() < 0.5) {
+            // Nothing is inside, which for a closed surface means it is wound inside out: flip
+            // it, as the 2D EmbedCurves::tag_from_winding_number and tetwild's input winding
+            // number do. Without this an inward-wound input silently tagged no tet at all.
+            logger().info("Correcting winding number for input {}", i);
+            MatrixXi F = Fs[i];
+            F.col(1).swap(F.col(2));
+            utils::winding_number(Vs[i], F, P, W, m_num_threads);
+        }
+        if (W.size() == 0 || W.maxCoeff() < 0.5) {
+            logger().warn(
+                "No winding number above 0.5 for input {}: it tags no tet. An open surface "
+                "encloses nothing, so it cannot define a material.",
+                i);
+        }
         assert(W.size() == m_T_tags.rows());
         for (size_t j = 0; j < W.size(); ++j) {
             if (W[j] < 0.5) {

@@ -477,6 +477,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
+    // The input's orientation on the tracked faces, so the tracked-surface winding number
+    // (filter "tracked", and the winding_number_tracked output field) is the input's own
+    // rather than a guess. See SurfaceTagAttributes::m_orientation.
+    std::vector<int> tet_face_orientation;
 
     logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
 
@@ -492,7 +496,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        &tet_face_orientation);
 
     logger().info("=== finished insertion");
     background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
@@ -507,7 +512,22 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        &tet_face_orientation);
+
+    // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
+    // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
+    // one check that catches an operation forgetting to carry the orientation.
+    const auto log_orientation_check = [&](const char* when) {
+        if (!params.perform_sanity_checks || !mesh_new.m_tracks_orientation) return;
+        const auto boundary = mesh_new.tracked_surface_boundary();
+        logger().info(
+            "oriented tracked surface {}: {} faces, {} boundary edges",
+            when,
+            mesh_new.oriented_tracked_faces().size(),
+            boundary.size());
+    };
+    log_orientation_check("after insertion");
 
     // The insertion's output now lives in mesh_new. These are function locals, so without this
     // they -- the rational coordinates above all -- would be held through the optimization,
@@ -555,6 +575,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else {
         mesh_new.mesh_improvement(max_its);
     }
+    log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done
     phase_timer.start(); // finalize (winding/flood/filter) begins
 

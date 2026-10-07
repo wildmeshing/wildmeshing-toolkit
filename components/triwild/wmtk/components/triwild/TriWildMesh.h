@@ -172,6 +172,9 @@ public:
      *        stay near what the user gave us, not near the simplified version of it. Same
      *        arrangement as tetwild, which hands its optimizer the envelope built on the
      *        unsimplified input surface.
+     * @param E_orientation optional: per row of E, the input's direction on it, measured along
+     *        the row as written (embed_segments' E_out_orientation). When given, the tracked
+     *        edges carry it and m_tracks_orientation is set.
      */
     void init_mesh(
         const MatrixXd& V,
@@ -180,7 +183,8 @@ public:
         const MatrixXi& E,
         const std::vector<std::string>& tag_names,
         const MatrixXd& V_env,
-        const MatrixXi& E_env);
+        const MatrixXi& E_env,
+        const std::vector<int>* E_orientation = nullptr);
 
     void init_surfaces_and_boundaries();
 
@@ -222,6 +226,19 @@ public:
 
     /// Remove the faces that lie inside no input (needs compute_winding_numbers).
     void filter_with_input_winding_number();
+
+    /**
+     * @brief Winding number of every face's centroid w.r.t. the tracked curves, oriented as the
+     * input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number.
+     *
+     * The tracked counterpart of compute_winding_numbers: evaluated on the curves the mesh
+     * actually conforms to rather than on the input, and over all inputs at once -- coincident
+     * curves add up, opposite ones cancel. Like the input winding number, a result with nothing
+     * inside is taken as an inside-out input and flipped.
+     */
+    void compute_tracked_winding_number();
+    /// Remove the faces whose tracked winding number is at most 1/2.
+    void filter_with_tracked_winding_number();
     /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
     void filter_with_flood_fill();
 

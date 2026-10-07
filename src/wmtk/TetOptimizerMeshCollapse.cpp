@@ -106,6 +106,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.changed_tids.clear();
     cache.changed_energies.clear();
     cache.surface_faces.clear();
+    cache.renamed_orientations.clear();
     cache.boundary_edges.clear();
 
     size_t v1_id = loc.vid(*this);
@@ -218,6 +219,13 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
         auto f_attr = m_face_attribute.at(global_fid1);
         f_attr.merge(m_face_attribute.at(global_fid2));
+        // (v1,l1,l2) and (v2,l1,l2) become one face (v2,l1,l2): renaming v1 to v2 keeps the
+        // first one's orientation along that order, and the two sheets add up.
+        const std::array<size_t, 3> merged{{v2_id, f_vids[1], f_vids[2]}};
+        f_attr.set_orientation_along(
+            merged,
+            m_face_attribute.at(global_fid1).orientation_along(f_vids) +
+                m_face_attribute.at(global_fid2).orientation_along(merged));
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
@@ -251,6 +259,9 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                     if (!m_face_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
+                    }
+                    if (const int o = m_face_attribute.at(fid).orientation_along(f); o != 0) {
+                        cache.renamed_orientations.push_back({{{v2_id, va, vb}}, o});
                     }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
@@ -414,6 +425,14 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
 
     // no need to update on_bbox_faces
     // face attr
+    // Faces renamed in place keep their slot but not their vertex set; re-express their
+    // orientation against the new one. First, so the merged faces below -- which are among them
+    // when the face (v1,l1,l2) also bounds a tet of v1's ring -- overwrite with the sum.
+    for (const auto& [f, o] : cache.renamed_orientations) {
+        if (const auto found = try_tuple_from_face(f); found.has_value()) {
+            m_face_attribute[std::get<1>(found.value())].set_orientation_along(f, o);
+        }
+    }
     for (auto& info : cache.changed_faces) {
         auto& f_attr = info.first;
         auto& old_vids = info.second;

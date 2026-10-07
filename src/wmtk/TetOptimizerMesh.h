@@ -104,6 +104,34 @@ public:
     FaceAttCol m_face_attribute;
 
     /**
+     * @brief The application set FaceAttributes::m_orientation at insertion, so the tracked
+     * surface carries the input's orientation and the operations keep it.
+     *
+     * The operations maintain the orientation whether or not this is set (it is 0 everywhere on
+     * a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See
+     * tracked_surface_orientation_defects() for the invariant it obeys.
+     */
+    bool m_tracks_orientation = false;
+
+    /**
+     * @brief The tracked surface as an oriented soup: each tracked face emitted |m_orientation|
+     * times, in the orientation the input gave it. Faces whose sheets cancel are left out.
+     * Vertex ids index m_vertex_attribute.
+     */
+    std::vector<std::array<size_t, 3>> oriented_tracked_faces() const;
+
+    /**
+     * @brief Mesh edges where the oriented tracked surface has a boundary.
+     *
+     * The tracked surface is an integer 2-chain, and every operation preserves its boundary: a
+     * closed input stays a cycle (signed sum of incident oriented tracked faces is 0 on every
+     * edge), and an open one keeps its boundary on the input's open boundary. Returns the edges
+     * with a nonzero sum, each with that sum, for the caller to compare with what the input
+     * allows. Linear in the number of tracked faces.
+     */
+    std::vector<std::pair<std::array<size_t, 2>, int>> tracked_surface_boundary() const;
+
+    /**
      * @brief What p_vertex_attrs points at, so a derived class can register more.
      *
      * VertexAttributes holds only what both 3D applications need. tetwild adds a per-vertex
@@ -651,6 +679,7 @@ protected:
         flip_nonmanifold_edge, // more than two incident surface faces
         flip_cd_nonmanifold, // a surface face already sits on the new edge (c,d)
         flip_new_face_surface, // (a,c,d) or (b,c,d) is already tagged surface
+        flip_orientation_mismatch, // the two surface faces are not oriented alike across (a,b)
         flip_app_refused, // swap_before_surface() refused (see the app_* reasons)
         flip_wrong_case, // 4-4 / 5-6: the retetrahedralization is not the one that makes
         // the surface diagonal (c,d), so this case is not the flip
@@ -829,6 +858,8 @@ protected:
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
+        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
+        int sf_orientation = 0;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -851,6 +882,10 @@ protected:
         double edge_length = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         std::vector<std::array<size_t, 3>> surface_faces;
+        /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
+        /// the orientation measured along that order. Their attribute stays in its slot, so
+        /// without this the value would be read against the wrong vertex set.
+        std::vector<std::pair<std::array<size_t, 3>, int>> renamed_orientations;
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;

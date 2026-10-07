@@ -46,7 +46,8 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<std::array<size_t, 3>>& polygon_faces, // out: triangular facets
     std::vector<bool>& is_v_on_input, // out: vertex-on-input-surface flags
     std::vector<std::array<size_t, 4>>& tets_after, // out: output tets
-    std::vector<bool>& tet_face_on_input_surface) // out: 4 face-on-surface flags per tet
+    std::vector<bool>& tet_face_on_input_surface, // out: 4 face-on-surface flags per tet
+    std::vector<int>* tet_face_orientation) // out, optional: 4 input orientations per tet
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
 
@@ -130,7 +131,9 @@ void TetWildMesh::insertion_by_volumeremesher(
         is_v_on_input,
         tets_after,
         tet_face_on_input_surface,
-        opts);
+        opts,
+        nullptr,
+        tet_face_orientation);
 
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is
@@ -171,7 +174,8 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<std::array<size_t, 3>>& facets,
     const std::vector<bool>& is_v_on_input,
     const std::vector<std::array<size_t, 4>>& tets,
-    const std::vector<bool>& tet_face_on_input_surface)
+    const std::vector<bool>& tet_face_on_input_surface,
+    const std::vector<int>* tet_face_orientation)
 {
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
@@ -218,6 +222,17 @@ void TetWildMesh::init_from_Volumeremesher(
 
     for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
         m_face_attribute[i].m_is_surface_fs = tet_face_on_input_surface[i];
+    }
+    // The input's orientation on the tracked faces: every slot holds the value for its face,
+    // so whichever one ends up canonical is right.
+    if (tet_face_orientation != nullptr) {
+        assert(tet_face_orientation->size() == tet_face_on_input_surface.size());
+        for (size_t i = 0; i < tet_face_orientation->size(); i++) {
+            // One byte; see SurfaceTagAttributes::m_orientation.
+            m_face_attribute[i].m_orientation =
+                int8_t(std::clamp((*tet_face_orientation)[i], -127, 127));
+        }
+        m_tracks_orientation = true;
     }
 
     // Faces are visited in place, each at its canonical tet (the one whose fid() is 4 * tid +

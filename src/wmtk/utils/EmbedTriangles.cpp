@@ -14,7 +14,187 @@
 // clang-format on
 
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
 #include <set>
+
+namespace wmtk::utils {
+namespace {
+
+int sign_of(const Rational& r)
+{
+    return r.get_sign();
+}
+
+/**
+ * The input's orientation on every on-input facet, as a signed count against the facet's
+ * ascending vertex order -- see embed_triangles_in_tets' tet_face_orientation.
+ *
+ * `groups_of(facet)` yields the (facet, group) entries naming a facet. Within a group, the
+ * input's signed coverage -- the sum over the group's triangles of +-1 where they cover -- is
+ * constant over every facet tiling it: the arrangement cuts wherever it changes. It does NOT
+ * necessarily cut along every input edge, though: the edge between two coplanar triangles of
+ * a group need not be in the arrangement (on Thingi10K 104513 a facet straddles one, with its
+ * centroid exactly on it), so a facet is not inside one triangle or another in general.
+ *
+ * Exact where it matters, cheap where it can be. Within a group every triangle's normal is
+ * parallel to the group's reference normal, so a group whose triangles all face the same way
+ * gives every facet tiling it the same answer, one sign test; that test is the sign of a dot
+ * product of two parallel vectors, taken in double precision when the rounding cannot reach
+ * it and exactly otherwise. (Such a group counts once even where its triangles overlap: a
+ * region covered twice the same way is taken as one sheet.) A group whose triangles face both
+ * ways -- a solid resting on another with a shared edge, a fold -- takes the exact path: the
+ * coverage at a point of the facet that lies on no edge of the group's triangles, which, the
+ * coverage being constant over the facet, is the facet's.
+ */
+template <typename GroupsOf>
+std::vector<int> facet_orientations(
+    const std::vector<double>& tri_vrt_coord,
+    const std::vector<uint32_t>& triangle_indices,
+    const std::vector<uint32_t>& tri_group,
+    const std::vector<Vector3r>& v_rational,
+    const std::vector<std::array<size_t, 3>>& facets,
+    const std::vector<bool>& facets_on_input,
+    const GroupsOf& groups_of)
+{
+    const size_t n_tri = triangle_indices.size() / 3;
+    const auto in_vertex = [&](uint32_t v) {
+        Vector3r p;
+        for (int k = 0; k < 3; ++k) p[k] = Rational(tri_vrt_coord[3 * v + k]);
+        return p;
+    };
+    const auto tri_normal = [&](size_t t) {
+        const Vector3r a = in_vertex(triangle_indices[3 * t + 0]);
+        const Vector3r b = in_vertex(triangle_indices[3 * t + 1]);
+        const Vector3r c = in_vertex(triangle_indices[3 * t + 2]);
+        return Vector3r((b - a).cross(c - a));
+    };
+
+    // Per group: a reference normal, and whether all its triangles face along it.
+    uint32_t n_groups = 0;
+    for (const uint32_t g : tri_group) {
+        if (g != UINT32_MAX) n_groups = std::max(n_groups, g + 1);
+    }
+    std::vector<std::vector<size_t>> group_tris(n_groups);
+    for (size_t t = 0; t < n_tri; ++t) {
+        if (tri_group[t] != UINT32_MAX) group_tris[tri_group[t]].push_back(t);
+    }
+    std::vector<Vector3r> ref(n_groups);
+    std::vector<Vector3d> ref_unit(n_groups);
+    std::vector<int> drop_axis(n_groups, 2);
+    std::vector<bool> uniform(n_groups, true);
+    std::vector<int> tri_sign(n_tri, 0); // against its group's reference normal
+    for (uint32_t g = 0; g < n_groups; ++g) {
+        if (group_tris[g].empty()) continue;
+        ref[g] = tri_normal(group_tris[g][0]);
+        const Vector3d r = to_double(ref[g]);
+        ref_unit[g] = r.normalized();
+        r.cwiseAbs().maxCoeff(&drop_axis[g]);
+        for (const size_t t : group_tris[g]) {
+            tri_sign[t] = sign_of(tri_normal(t).dot(ref[g]));
+            if (tri_sign[t] != 1) uniform[g] = false;
+        }
+    }
+
+    // sign(n_facet . ref_unit), where n_facet is the facet's normal in ascending vertex order.
+    // n_facet is exactly parallel to the reference, so the dot is +-|n_facet| and its sign is
+    // the answer; the double evaluation is trusted once it clears the rounding bound (input
+    // coordinates rounded to double, then a cross product of differences of them).
+    const auto facet_sign = [&](const std::array<size_t, 3>& f, uint32_t g) {
+        const Vector3d a = to_double(v_rational[f[0]]);
+        const Vector3d b = to_double(v_rational[f[1]]);
+        const Vector3d c = to_double(v_rational[f[2]]);
+        const double m =
+            std::max({a.cwiseAbs().maxCoeff(), b.cwiseAbs().maxCoeff(), c.cwiseAbs().maxCoeff()});
+        const double err = 128 * DBL_EPSILON * m * m;
+        const double dot = (b - a).cross(c - a).dot(ref_unit[g]);
+        if (std::abs(dot) > 2 * err) return dot > 0 ? 1 : -1;
+        const Vector3r n =
+            (v_rational[f[1]] - v_rational[f[0]]).cross(v_rational[f[2]] - v_rational[f[0]]);
+        return sign_of(n.dot(ref[g]));
+    };
+
+    // Where is the (rational) point q, on group g's plane, w.r.t. input triangle t? Exact:
+    // 1 strictly inside, 0 outside, -1 on one of its edges (so q tells nothing about t).
+    const auto classify = [&](const Vector3r& q, size_t t, uint32_t g) {
+        const int ax0 = (drop_axis[g] + 1) % 3, ax1 = (drop_axis[g] + 2) % 3;
+        std::array<Vector3r, 3> p;
+        for (int j = 0; j < 3; ++j) p[j] = in_vertex(triangle_indices[3 * t + j]);
+        const auto orient2 = [&](const Vector3r& u, const Vector3r& v, const Vector3r& w) {
+            return sign_of(
+                (v[ax0] - u[ax0]) * (w[ax1] - u[ax1]) - (v[ax1] - u[ax1]) * (w[ax0] - u[ax0]));
+        };
+        const auto between = [&](const Vector3r& u, const Vector3r& v) {
+            for (const int ax : {ax0, ax1}) {
+                const Rational& lo = u[ax] < v[ax] ? u[ax] : v[ax];
+                const Rational& hi = u[ax] < v[ax] ? v[ax] : u[ax];
+                if (q[ax] < lo || q[ax] > hi) return false;
+            }
+            return true;
+        };
+        const int s = orient2(p[0], p[1], p[2]);
+        bool inside = true;
+        for (int j = 0; j < 3; ++j) {
+            const int o = orient2(p[j], p[(j + 1) % 3], q);
+            if (o == 0 && between(p[j], p[(j + 1) % 3])) return -1;
+            if (o != s) inside = false;
+        }
+        return inside ? 1 : 0;
+    };
+
+    // Interior points of a facet to try, as integer barycentric weights in general position:
+    // the first one on no edge of the group's triangles is used.
+    static constexpr int candidates[8][3] =
+        {{1, 1, 1}, {5, 3, 2}, {2, 5, 3}, {3, 2, 5}, {7, 4, 2}, {2, 7, 4}, {4, 2, 7}, {11, 6, 5}};
+
+    std::vector<int> res(facets.size(), 0);
+    for (size_t i = 0; i < facets.size(); ++i) {
+        if (!facets_on_input[i]) continue;
+        std::array<size_t, 3> f = facets[i];
+        std::sort(f.begin(), f.end());
+        const auto [lo, hi] = groups_of(f);
+        int o = 0;
+        for (auto it = lo; it != hi; ++it) {
+            const uint32_t g = it->second;
+            const int fs = facet_sign(f, g);
+            if (uniform[g]) {
+                o += fs;
+                continue;
+            }
+            bool found = false;
+            for (const auto& w : candidates) {
+                const Vector3r q =
+                    (v_rational[f[0]] * Rational(w[0]) + v_rational[f[1]] * Rational(w[1]) +
+                     v_rational[f[2]] * Rational(w[2])) /
+                    Rational(w[0] + w[1] + w[2]);
+                int cover = 0;
+                bool on_edge = false;
+                for (const size_t t : group_tris[g]) {
+                    const int c = classify(q, t, g);
+                    if (c < 0) {
+                        on_edge = true;
+                        break;
+                    }
+                    cover += c * tri_sign[t];
+                }
+                if (on_edge) continue;
+                o += fs * cover;
+                found = true;
+                break;
+            }
+            if (!found) {
+                logger().warn(
+                    "orientation of facet {}: every test point lies on an input edge; left 0",
+                    i);
+            }
+        }
+        res[i] = o;
+    }
+    return res;
+}
+
+} // namespace
+} // namespace wmtk::utils
 
 namespace wmtk::utils {
 
@@ -30,7 +210,8 @@ void embed_triangles_in_tets(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts,
-    EmbedTrianglesProvenance* provenance)
+    EmbedTrianglesProvenance* provenance,
+    std::vector<int>* tet_face_orientation)
 {
     // Remesher outputs. The tet-based ones are what this consumes: out_tets (the
     // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
@@ -236,6 +417,26 @@ void embed_triangles_in_tets(
     }
     logger().info("done");
 
+    // Per facet: the input's orientation on it, against the facet's ascending vertex order.
+    // The remesher's facet vertex order says nothing about the input (it comes from whichever
+    // tet's local face first named the facet), and its coplanar groups are unions over
+    // undirected edges, so one group can hold triangles facing both ways. So: a facet tiling a
+    // group counts +1 or -1 for every input triangle of that group it lies in, by whether its
+    // normal agrees with that triangle's, and the counts of every group naming it add up.
+    std::vector<int> facet_orientation;
+    if (tet_face_orientation != nullptr) {
+        logger().info("Orienting the tracked surface...");
+        facet_orientation = facet_orientations(
+            tri_vrt_coord,
+            triangle_indices,
+            vr_tri_group,
+            v_rational,
+            polygon_faces,
+            polygon_faces_on_input,
+            groups_of);
+        logger().info("done");
+    }
+
     // The old colour-based answer, kept only to be diffed against the one above. Off by
     // default: it is what the check exists to retire, and holding both costs a second pass.
     if (opts.check_surface_provenance) {
@@ -284,6 +485,7 @@ void embed_triangles_in_tets(
         if (!any_on_input) {
             for (int k = 0; k < 4; ++k) {
                 tet_face_on_input_surface.push_back(false);
+                if (tet_face_orientation != nullptr) tet_face_orientation->push_back(0);
             }
             continue;
         }
@@ -305,6 +507,7 @@ void embed_triangles_in_tets(
         // copy that face's on-input flag into the matching slot.
         // track surface
         std::array<bool, 4> tet_face_on_input{{false, false, false, false}};
+        std::array<int, 4> tet_face_orient{{0, 0, 0, 0}};
         for (const auto& f : final_tets_parent_faces[i]) {
             assert(polygon_faces[f].size() == 3);
 
@@ -329,10 +532,15 @@ void embed_triangles_in_tets(
             }
 
             tet_face_on_input[local_f_idx] = polygon_faces_on_input[f];
+            // Same vertex set as the facet, so the ascending-order value carries over as is.
+            if (tet_face_orientation != nullptr)
+                tet_face_orient[local_f_idx] = facet_orientation[f];
         }
 
         for (int k = 0; k < 4; k++) {
             tet_face_on_input_surface.push_back(tet_face_on_input[k]);
+            if (tet_face_orientation != nullptr)
+                tet_face_orientation->push_back(tet_face_orient[k]);
         }
     }
 
@@ -422,6 +630,17 @@ void embed_triangles_in_tets(
         tet_face_on_input_surface[4 * i + 1] = fl1;
         tet_face_on_input_surface[4 * i + 2] = fl2;
         tet_face_on_input_surface[4 * i + 3] = fl0;
+
+        // The orientations take the same reorder. They are measured against ascending vertex
+        // ids, which the monotone compaction above (v_map is increasing) leaves in order.
+        if (tet_face_orientation != nullptr) {
+            auto& o = *tet_face_orientation;
+            const std::array<int, 4> opp{{o[4 * i + 0], o[4 * i + 1], o[4 * i + 2], o[4 * i + 3]}};
+            o[4 * i + 0] = opp[3];
+            o[4 * i + 1] = opp[1];
+            o[4 * i + 2] = opp[2];
+            o[4 * i + 3] = opp[0];
+        }
     }
 
     // final sanity check: every published tet must be positively
