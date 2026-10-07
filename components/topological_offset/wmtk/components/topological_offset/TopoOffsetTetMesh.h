@@ -727,6 +727,12 @@ public:
     /// the survivor's ring, swaps for not strictly lowering it over the cells they make.
     mutable std::atomic<int> iter_cnt_collapse_energy_reject{0}; // both halves count here
     mutable std::atomic<int> iter_cnt_swap_energy_reject{0};
+    /// The main iterations' rules (main_iteration_rules()): collapses and swaps refused for not
+    /// being on the offset front, and refused by the front measure (vertex_ms()).
+    std::atomic<int> iter_cnt_collapse_offfront_reject{0};
+    std::atomic<int> iter_cnt_swap_offfront_reject{0};
+    std::atomic<int> iter_cnt_collapse_ms_reject{0};
+    std::atomic<int> iter_cnt_swap_ms_reject{0};
     /// perform_sanity_checks: swaps whose cells the case search or the face gate scored before
     /// they existed (SwapRecord::scored_energy), compared in swap_after_cells() against the same
     /// cells read on the mesh, and those that read differently (a warning each, the first 8 per
@@ -1266,7 +1272,7 @@ public:
      */
     bool swap_quality_allowed(double after, double /*before*/, bool) const override
     {
-        if (!m_offset_params.offset_swap_veto) return true;
+        if (main_iteration_rules() || !m_offset_params.offset_swap_veto) return true;
         // Under use_rest_pose the new cells are stamped at creation: they read 27 unless
         // degenerate.
         const double q = (m_plastic_active && after < MAX_ENERGY) ? 27. : after;
@@ -1347,13 +1353,22 @@ public:
      * replaces. See Optimize3d.cpp.
      */
     bool smooth_nonfront_vertex(const Tuple& t);
-    /// w AMIPS^3 over vid's one-ring, equilateral, the per-tet energy's AMIPS part in the
-    /// smoother's form (CubedAMIPSEnergy3D), w = offset_amips_weight.
-    std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
+    /// weight x AMIPS^3 over vid's one-ring, equilateral (CubedAMIPSEnergy3D); weight < 0 means
+    /// offset_amips_weight, the per-tet energy's AMIPS part.
+    std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid, double weight = -1.)
+        const;
     /// THE shape term of every smoothing objective, all-or-nothing on the plastic medium: under
-    /// use_rest_pose every cell is plastic and this is w sum_t V_p(t) pAMIPS(t)^3 over vid's ring
-    /// (rest_energy_for_vertex()); without it, w sum_t AMIPS(t)^3 (amips3_energy()).
+    /// use_rest_pose every cell is plastic and this is w sum_t pAMIPS(t)^3 over vid's ring
+    /// (rest_energy_for_vertex()); without it, w sum_t AMIPS(t)^3 (amips3_energy()). w is
+    /// shape_weight(vid).
     std::shared_ptr<polysolve::nonlinear::Problem> shape_energy(size_t vid) const;
+    /// The shape term's weight at vid: offset_amips_weight, except for a vertex off the front in
+    /// the main iterations, whose energy is the plain sum (weight 1).
+    double shape_weight(const size_t vid) const
+    {
+        if (main_iteration_rules() && !m_vertex_extra[vid].m_is_on_offset) return 1.;
+        return m_offset_params.offset_amips_weight;
+    }
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
@@ -1457,6 +1472,42 @@ public:
     /// a cell a split or a swap creates, at creation. Without it (and in the final pass) no cell
     /// is, and AMIPS is against the regular tet.
     bool m_plastic_active = false; ///< use_rest_pose, outside the final pass
+
+    // ------- The main iterations' operation and smoothing rules (.claude/ENERGIES.md) -------
+
+    /// Set by optimize_offset_loop() for its turns (init_optimize included).
+    bool m_main_iterations = false;
+    /// Whether the main iterations' rules apply: inside optimize_offset_loop()'s turns, not in
+    /// its final pass (m_freeze_front), not coarsening, not before the march. Under them:
+    /// - a collapse is admitted only for an edge of the offset front surface, and only if the
+    ///   front measure of the faces it reshapes does not rise (collapse_before_vertex());
+    /// - a swap only as a flip of the offset front surface, and only if the measure of the flipped
+    ///   pair strictly falls (swap_before_surface()); every other swap is refused;
+    /// - no AMIPS or energy test on either (collapse_quality_allowed(), swap_quality_allowed(),
+    ///   collapse_after_connectivity(), swap_after_cells(), the 4-4 / 5-6 case search);
+    /// - a vertex off the front smooths the plain AMIPS^3 sum (shape_weight());
+    /// - each smoothing pass runs the front, then the rest (smooth_pass()).
+    bool main_iteration_rules() const
+    {
+        return m_main_iterations && !m_freeze_front && !m_coarsen_mode && !m_repulsion_potential &&
+               m_offset_potential != nullptr;
+    }
+    /// One face for vertex_ms(): its field and its three corners.
+    struct MsFace
+    {
+        const OffsetPotential3D* pot;
+        Vector3d a, b, c;
+    };
+    /// THE vertex measure over a set of faces: the mean of face_offset_term() over them, weighted
+    /// by area under area_weight_front and plainly otherwise. 0 for no face; +inf when any face is
+    /// unmeasurable. 1 is the bar.
+    double vertex_ms(const std::vector<MsFace>& faces) const;
+    /// A face's weight in the vertex measure: its area under area_weight_front, else 1.
+    double ms_face_weight(const Vector3d& a, const Vector3d& b, const Vector3d& c) const
+    {
+        if (!m_offset_params.area_weight_front) return 1.;
+        return 0.5 * (b - a).cross(c - a).norm();
+    }
     bool cell_is_plastic(size_t /*tid*/) const { return m_plastic_active; }
     /// Stamp rest := current for every plastic cell; called when the loop starts and once before
     /// every block of smoothing passes.
@@ -1464,15 +1515,21 @@ public:
     /// Stamp one cell's rest := its current corners (oriented order); no-op off the plastic
     /// medium. For the cells a split or a swap creates.
     void stamp_rest_cell(size_t tid);
-    /// A block of `k` smoothing passes, local_operations({0,0,0,k}), with the plastic rests
-    /// stamped once before it.
+    /// A block of `k` smoothing passes (smooth_pass()), with the plastic rests stamped once
+    /// before it.
     void smooth_passes(int k);
+    /// One smoothing pass. In the main iterations (main_iteration_rules()): the offset front
+    /// vertices first, then every other vertex, each through local_operations({0,0,0,1}) with
+    /// smooth_before() admitting only that set (m_smooth_subset). Otherwise one pass over all.
+    void smooth_pass();
+    enum class SmoothSubset { All, Front, Background };
+    SmoothSubset m_smooth_subset = SmoothSubset::All;
     /// The plastic vertex's smoothing: the shape term (rest-shape AMIPS^3) over its ring, nothing
     /// else.
     bool smooth_plastic_vertex(const Tuple& t);
-    /// w sum_t V_p(t) pAMIPS(t)^3 over the plastic cells of vid's one-ring: rest-shape AMIPS
-    /// cubed, each cell weighted by its rest tet's volume, w = offset_amips_weight. Null when the
-    /// ring has no cell with a valid rest.
+    /// w sum_t pAMIPS(t)^3 over the plastic cells of vid's one-ring: rest-shape AMIPS cubed,
+    /// every cell weighing 1, w = shape_weight(vid). Null when the ring has no cell with a valid
+    /// rest.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy3D over its
     /// incident live front faces, whose value is sum_f O(f), the terms the per-tet energy carries.
@@ -1731,7 +1788,7 @@ public:
         size_t n_rings_at_floor = 0;
         double max_ring_at_floor = 0.; ///< the worst of them, as a ratio to the bar
         Vector3d worst_ring_at_floor_pos = Vector3d::Zero();
-        bool rings_ok() const { return max_ring <= bar; }
+        bool rings_ok() const { return max_ring < bar; } // strict: vertex_ms(v) < 1
         double avg_ring() const { return n_rings ? sum_ring / double(n_rings) : 0.; }
         /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
         /// front_placed_by_ratio() rather than re-derived from max_vertex, so the reported count
@@ -1875,6 +1932,7 @@ public:
      */
     bool collapse_quality_allowed(size_t v1, double q, double /*ring_max*/) const override
     {
+        if (main_iteration_rules()) return true; // no AMIPS test in the main iterations
         if (!m_offset_params.offset_collapse_veto || !m_vertex_attribute.at(v1).m_is_rounded) {
             return true;
         }

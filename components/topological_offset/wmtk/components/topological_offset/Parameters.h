@@ -97,6 +97,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the loop -- the smoother, the operation guards and the vetoes; false: against the regular
     /// tet. The final pass is always against the regular tet. See the spec doc.
     bool use_rest_pose = true;
+    /// 3D: the vertex measure is the AREA-WEIGHTED mean of the face measures over the vertex's
+    /// offset faces -- in the front smoothing energy, the collapse and swap rules of the main
+    /// iterations, and the ring exit test; false (the default): every face weighs 1. See the spec.
+    bool area_weight_front = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
@@ -321,6 +325,7 @@ struct Parameters : public wmtk::OptimizerParameters
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
+        area_weight_front = json_params["area_weight_front"];
         max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];

@@ -312,19 +312,17 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
-    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
-    // in units of the tolerance, so the term below is sum_f O(f) -- for the euclidean field the
-    // very terms the per-tet energy tet_energy() carries on these faces' band cells, and the
-    // ring measure's n_v r_v^2. It replaced 1 - w_amips, a weight with no unit, on 2026-09-28.
-    const double w_off = offset_term_weight();
+    // ENERGIES.md: (1 - w) vertex_ms(v, O_f), w = offset_amips_weight and vertex_ms the MEAN of
+    // the face measures over the vertex's offset faces -- weighted by area under
+    // area_weight_front (StencilEnergy3D's area mode), plainly otherwise (1/|O_f| here). The face
+    // measure is the mean over the stencil of the squared error in units of the tolerance, the
+    // 1 / front_conv_frac()^2 of offset_term_weight() -- face_offset_term(), 1 at the bar.
+    const double w_off = (1. - m_offset_params.offset_amips_weight) * offset_term_weight();
     // THE offset term, and the only one: the mean squared relative error over each incident
-    // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
-    // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
-    // V/N_s times for a vertex of valence V -- and the sag term that used to sit below, whose
-    // interior samples are the stencil's non-corner points. See StencilEnergy3D. Every face
-    // weighs 1: the area weights front_measure "vertex_ring" used to put here went with the
-    // per-tet energy, which has no area in it, and the ring measure dropped them with it.
-    // Null when the vertex has no live front face to carry a term.
+    // face's stencil, averaged over the ring. The stencil contains the face's corners, so the
+    // moving vertex's own residual is in it. See StencilEnergy3D. The same average as the ring
+    // exit test and the main iterations' collapse and swap rules (vertex_ms()). Null when the
+    // vertex has no live front face to carry a term.
     std::vector<StencilEnergy3D::Face> stencil_faces;
     for (const Tuple& f : offset_surface_faces_live_at(vid)) {
         StencilEnergy3D::Face sf;
@@ -332,7 +330,9 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
         stencil_faces.push_back(std::move(sf));
     }
     if (stencil_faces.empty()) return nullptr;
-    return std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off);
+    const bool area = m_offset_params.area_weight_front;
+    const double w = area ? w_off : w_off / double(stencil_faces.size());
+    return std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w, false, area);
 }
 
 } // namespace wmtk::components::topological_offset

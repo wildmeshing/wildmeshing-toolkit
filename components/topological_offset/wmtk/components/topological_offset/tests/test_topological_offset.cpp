@@ -1280,18 +1280,18 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
 
 TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
 {
-    // One energy for the smoother and the rules without the plastic medium: at every vertex, the
-    // objective the shared smoother minimises (smoothing_extra_energy(); every caller passes
-    // w_amips 0, so the smoother adds no AMIPS term of its own) is w AMIPS^3 over the ring plus the
-    // front terms at the vertex, i.e. the sum of tet_energy() over the ring, up to the terms that
-    // do not move with the vertex -- the ring's front faces that do not have it as a corner. The
-    // fixture has no plastic medium, so the shape term is equilateral AMIPS^3 (shape_energy()).
-    // Checked on the per-tet-energy fixture by moving each vertex (front vertices a, b, c0, c1,
-    // c2; c3 is on no front face) to three nearby positions: objective minus ring sum must not
-    // change, and the shared smoother's own per-cell comparison (smoothing_cell_energy()) is
-    // tet_energy(). The w AMIPS^3 part's gradient and Hessian against central differences too.
-    // At w = 1 and at the default w. Then, with the plastic medium on, the shape term is
-    // w sum V_p pAMIPS^3 over EVERY ring cell, band included: 27 w V_p at the stamp, its minimum.
+    // The smoothing objective of ENERGIES.md: at every vertex, what the shared smoother minimises
+    // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
+    // of its own) is w AMIPS^3 over the ring plus, at a front vertex, (1 - w) times the MEAN of
+    // the face measures (face_offset_term()) over its live front faces. The fixture has no
+    // plastic medium, so the shape term is equilateral AMIPS^3 (shape_energy()). Checked on the
+    // per-tet-energy fixture by moving each vertex (front vertices a, b, c0, c1, c2; c3 is on no
+    // front face) to three nearby positions, against the formula evaluated from the mesh; and the
+    // shared smoother's own per-cell comparison (smoothing_cell_energy()) is tet_energy(). The
+    // w AMIPS^3 part's gradient and Hessian against central differences too. At w = 1 and at the
+    // default w. In the main iterations a vertex off the front smooths the plain sum (weight 1).
+    // Then, with the plastic medium on, the shape term is w sum pAMIPS^3 over EVERY ring cell,
+    // band included, every cell weighing 1: 27 w per cell at the stamp, its minimum.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1318,17 +1318,33 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         for (size_t v = 0; v < 6; ++v) {
             const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
             const bool front = mesh->vertex_carries_offset_term(v);
-            const auto ring_energy = [&]() {
-                double s = 0.;
-                for (const size_t tid : ring) s += mesh->tet_energy(tid);
-                return s;
-            };
             INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
             REQUIRE(front == (v != size_t(c3)));
             const auto energy = mesh->smoothing_extra_energy(v);
             const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
             Eigen::VectorXd xv = x0;
-            const double d0 = energy->value(xv) - ring_energy();
+            // ENERGIES.md's objective, evaluated from the mesh as it stands.
+            const auto formula = [&]() {
+                double e = 0.;
+                for (const size_t tid : ring) {
+                    e += w * mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
+                }
+                if (front) {
+                    double s = 0.;
+                    const auto faces = mesh->offset_surface_faces_live_at(v);
+                    for (const auto& ft : faces) {
+                        const auto f = mesh->get_face_vids(ft);
+                        s += mesh->face_offset_term(
+                            *pot,
+                            mesh->m_vertex_attribute[f[0]].m_posf,
+                            mesh->m_vertex_attribute[f[1]].m_posf,
+                            mesh->m_vertex_attribute[f[2]].m_posf);
+                    }
+                    e += (1. - w) * s / double(faces.size());
+                }
+                return e;
+            };
+            CHECK(energy->value(xv) == Catch::Approx(formula()).epsilon(1e-9));
             for (const Vector3d& dx :
                  {Vector3d(0.01, 0., 0.),
                   Vector3d(0., -0.008, 0.005),
@@ -1337,10 +1353,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 for (const size_t tid : ring)
                     REQUIRE(!mesh->is_inverted(mesh->tuple_from_tet(tid)));
                 xv = x0 + dx;
-                const double e = energy->value(xv);
-                CHECK(
-                    e - ring_energy() ==
-                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
+                CHECK(energy->value(xv) == Catch::Approx(formula()).epsilon(1e-9));
                 // The shared smoother's own per-cell comparison is the same energy.
                 for (const size_t tid : ring) {
                     const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
@@ -1372,8 +1385,24 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 }
             }
         }
+        // The main iterations: a vertex off the front smooths sum AMIPS^3, weight 1.
+        {
+            mesh->m_main_iterations = true;
+            REQUIRE(mesh->main_iteration_rules());
+            double plain = 0.;
+            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
+                plain += mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
+            }
+            Eigen::VectorXd xv = mesh->m_vertex_attribute[size_t(c3)].m_posf;
+            CHECK(mesh->shape_weight(size_t(c3)) == 1.);
+            CHECK(mesh->shape_weight(size_t(a)) == w);
+            CHECK(
+                mesh->smoothing_extra_energy(size_t(c3))->value(xv) ==
+                Catch::Approx(plain).epsilon(1e-12));
+            mesh->m_main_iterations = false;
+        }
         // The plastic medium, all or nothing: every cell is plastic, stamped at its current
-        // shape, so each ring cell reads pAMIPS^3 = 27 weighted by w and its rest volume.
+        // shape, so each ring cell reads pAMIPS^3 = 27 weighted by w, every cell weighing 1.
         mesh->m_plastic_active = true;
         mesh->stamp_plastic_rests();
         for (size_t v = 0; v < 6; ++v) {
@@ -1381,13 +1410,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
             double expected = 0.;
             for (const size_t tid : mesh->get_one_ring_tids_for_vertex(v)) {
                 REQUIRE(mesh->cell_is_plastic(tid));
-                const auto vs = mesh->oriented_tet_vids(tid);
-                const Vector3d p0 = mesh->m_vertex_attribute[vs[0]].m_posf;
-                Eigen::Matrix3d R;
-                for (int k = 1; k < 4; ++k) {
-                    R.col(k - 1) = mesh->m_vertex_attribute[vs[k]].m_posf - p0;
-                }
-                expected += w * 27. * std::abs(R.determinant()) / 6.;
+                expected += w * 27.;
             }
             const auto shape = mesh->shape_energy(v);
             REQUIRE(shape);

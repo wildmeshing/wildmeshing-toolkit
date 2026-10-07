@@ -92,7 +92,8 @@
       "offset_collapse_veto",
       "offset_swap_veto",
       "perform_sanity_checks",
-      "use_rest_pose"
+      "use_rest_pose",
+      "area_weight_front"
     ]
   },
   {
@@ -588,8 +589,8 @@
   {
     "pointer": "/offset_smooth_veto",
     "type": "bool",
-    "default": true,
-    "doc": "The engine's smoothing veto (TetWild's, TriWild's, SimWild's smooth_quality_veto, which this key replaces in this component; a config that still sets that name is refused): a move of a NON-FRONT vertex is refused when the largest per-cell energy over its ring rises (tet_energy() in 3D, tri_energy() in 2D; for a vertex off the front that is w times the engine's cell quality, AMIPS^3 in 3D and AMIPS in 2D). Default true, TetWild's behaviour. Front vertices are switched by offset_front_smooth_veto instead. Measured 2026-09-28 on the cube (target 1e-2, tolerance 1e-4): with this and the front veto both off the loop converged in 6 turns serial (20876 faces, max AMIPS 7.68); the comparison with this on and the front veto off is the run 'mix' of the same day."
+    "default": false,
+    "doc": "The engine's smoothing veto (TetWild's, TriWild's, SimWild's smooth_quality_veto, which this key replaces in this component; a config that still sets that name is refused): a move of a NON-FRONT vertex is refused when the largest per-cell energy over its ring rises (tet_energy() in 3D, tri_energy() in 2D; for a vertex off the front that is w times the engine's cell quality, AMIPS^3 in 3D and AMIPS in 2D). Default false since 2026-10-07 (true is TetWild's behaviour). Front vertices are switched by offset_front_smooth_veto instead. Measured 2026-09-28 on the cube (target 1e-2, tolerance 1e-4): with this and the front veto both off the loop converged in 6 turns serial (20876 faces, max AMIPS 7.68); the comparison with this on and the front veto off is the run 'mix' of the same day."
   },
   {
     "pointer": "/offset_front_smooth_veto",
@@ -655,5 +656,11 @@
     "default": true,
     "type": "bool",
     "doc": "3D. true (the default): AMIPS is measured against each cell's rest shape (plastic AMIPS) everywhere in the loop -- the smoothing shape term (w sum over the ring of the rest volume times pAMIPS^3), the per-tet energy the collapse and swap guards and the smoothing vetoes compare, and the swaps' candidate scoring. Every cell is stamped with its current shape when the loop starts and once before every block of smoothing passes; a cell a split or a swap creates is stamped when it is created, so it reads the minimum, 27; a cell a collapse reshapes keeps its rest. false: AMIPS against the regular tet everywhere. The final pass always uses AMIPS against the regular tet. The envelopes do not depend on it: the input complex boundary and the domain wall are held throughout; the offset surface and every other region boundary only in the final pass. 2D does not read it (it always runs with its plastic medium on)."
+  },
+  {
+    "pointer": "/area_weight_front",
+    "default": false,
+    "type": "bool",
+    "doc": "3D. How a front vertex's measure averages the face measures of its offset faces (each face measure being the mean over the face's stencil of the squared error in units of front_conv). false (the default): the plain mean, every face weighing 1. true: the mean weighted by face area. Read by the front smoothing energy, by the main iterations' collapse rule (the faces a collapse reshapes) and swap rule (the flipped pair), and by the ring exit test and its halving (front_measure \"vertex_ring\"). Under true the smoothing energy also depends on the areas, so a front vertex can lower it by growing well-placed faces and shrinking badly placed ones. 2D does not read it."
   }
 ]

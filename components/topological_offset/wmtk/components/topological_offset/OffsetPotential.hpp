@@ -519,6 +519,16 @@ using OffsetEnergy3D = OffsetEnergy<3>;
  * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
  * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
  * PSD by construction -- the form used until 2026-09-28; hessian() says why the default changed.
+ *
+ * AREA-WEIGHTED MODE (`area_weighted`, the area_weight_front key): the per-face means m_f are
+ * averaged with the faces' areas as weights instead of summed,
+ *
+ *     E(x) = w * sum_f A_f(x) m_f(x) / sum_f A_f(x),   A_f(x) = |(q1 - x) x (q2 - x)| / 2,
+ *
+ * the areas moving with x. The derivatives are the quotient rule on P = sum A_f m_f over
+ * S = sum A_f, exact in the areas and in m_f (with m_f's Hessian as above, gauss_newton
+ * included); the result is indefinite in general. A face of zero area weighs 0 and contributes
+ * no area derivative; if every face has zero area the plain mean is used.
  */
 class StencilEnergy3D : public polysolve::nonlinear::Problem
 {
@@ -543,7 +553,8 @@ public:
         const std::shared_ptr<const OffsetPotential3D>& potential,
         std::vector<Face> faces,
         double weight,
-        bool gauss_newton = false);
+        bool gauss_newton = false,
+        bool area_weighted = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -555,6 +566,13 @@ public:
     void solution_changed(const TVector& new_x) override {}
 
 private:
+    /// The area-weighted form's value, gradient and Hessian (any output may be null).
+    void area_weighted_eval(
+        const Eigen::Vector3d& x,
+        double* value,
+        Eigen::Vector3d* grad,
+        Eigen::Matrix3d* hess) const;
+
     /// One stencil point's r = (Phi - c)/c and dr = grad Phi / c. A sample whose Phi is not
     /// finite is dropped everywhere, and one whose gradient is not finite from the gradient and
     /// the Hessian, exactly as the criterion drops it.
@@ -577,6 +595,7 @@ private:
     std::vector<Face> m_faces;
     double m_weight;
     bool m_gauss_newton;
+    bool m_area_weighted;
     double m_c = 1.; ///< the potential's target level, cached
 
     mutable std::vector<Reading> m_readings;

@@ -1072,13 +1072,106 @@ StencilEnergy3D::StencilEnergy3D(
     const std::shared_ptr<const OffsetPotential3D>& potential,
     std::vector<Face> faces,
     const double weight,
-    const bool gauss_newton)
+    const bool gauss_newton,
+    const bool area_weighted)
     : m_potential(potential)
     , m_faces(std::move(faces))
     , m_weight(weight)
     , m_gauss_newton(gauss_newton)
+    , m_area_weighted(area_weighted)
     , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
+
+void StencilEnergy3D::area_weighted_eval(
+    const Eigen::Vector3d& x,
+    double* value,
+    Eigen::Vector3d* grad,
+    Eigen::Matrix3d* hess) const
+{
+    const bool need_dr = grad != nullptr || hess != nullptr;
+    const std::vector<Reading>& rds = readings_at(x, need_dr);
+    // P = sum A_f m_f and S = sum A_f, with their gradients and Hessians. N(x) = (q1 - x) x
+    // (q2 - x) = q1 x q2 + u x x with u = q2 - q1, so dN/dx = [u]_x, a constant: A = |N| / 2,
+    // grad A = [u]_x^T n / 2, hess A = [u]_x^T (I - n n^T) [u]_x / (2 |N|). m_f, its gradient
+    // and its Hessian per sample exactly as the summed form below.
+    double P = 0., S = 0., M = 0.;
+    size_t n_faces = 0;
+    Eigen::Vector3d gP = Eigen::Vector3d::Zero(), gS = Eigen::Vector3d::Zero();
+    Eigen::Vector3d gM = Eigen::Vector3d::Zero();
+    Eigen::Matrix3d HP = Eigen::Matrix3d::Zero(), HS = Eigen::Matrix3d::Zero();
+    Eigen::Matrix3d HM = Eigen::Matrix3d::Zero();
+    size_t k = 0;
+    for (const Face& f : m_faces) {
+        double s = 0.;
+        size_t n_val = 0, n_der = 0;
+        Eigen::Vector3d gm = Eigen::Vector3d::Zero();
+        Eigen::Matrix3d Hm = Eigen::Matrix3d::Zero();
+        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok) continue;
+            s += rd.r * rd.r;
+            ++n_val;
+            if (!need_dr || !rd.dr_ok) continue;
+            const Sample& sm = f.samples[i];
+            const double a = sm.a;
+            gm += (2. * a * rd.r) * rd.dr;
+            if (hess) {
+                Hm += (2. * a * a) * (rd.dr * rd.dr.transpose());
+                if (!m_gauss_newton) {
+                    const Eigen::Vector3d p = a * x + sm.b * f.q1 + sm.c * f.q2;
+                    const Eigen::Matrix3d Hphi = m_potential->hessian(p);
+                    if (Hphi.allFinite()) Hm += (2. * a * a * rd.r / m_c) * Hphi;
+                }
+            }
+            ++n_der;
+        }
+        if (n_val == 0) continue; // nothing measured: the face is in neither mean
+        const double m = s / double(n_val);
+        if (n_der > 0) {
+            gm /= double(n_der);
+            Hm /= double(n_der);
+        }
+        M += m;
+        gM += gm;
+        HM += Hm;
+        ++n_faces;
+
+        const Eigen::Vector3d u = f.q2 - f.q1;
+        Eigen::Matrix3d J;
+        J << 0., -u.z(), u.y(), u.z(), 0., -u.x(), -u.y(), u.x(), 0.;
+        const Eigen::Vector3d N = f.q1.cross(f.q2) + u.cross(x);
+        const double nN = N.norm();
+        if (!(nN > 0.) || !std::isfinite(nN)) continue; // zero area: weight 0
+        const double A = 0.5 * nN;
+        const Eigen::Vector3d nh = N / nN;
+        const Eigen::Vector3d gA = 0.5 * (J.transpose() * nh);
+        P += A * m;
+        S += A;
+        gP += m * gA + A * gm;
+        gS += gA;
+        if (hess) {
+            const Eigen::Matrix3d HA =
+                J.transpose() * (Eigen::Matrix3d::Identity() - nh * nh.transpose()) * J / (2. * nN);
+            HP += m * HA + gA * gm.transpose() + gm * gA.transpose() + A * Hm;
+            HS += HA;
+        }
+    }
+    if (!(S > 0.)) {
+        // Every face degenerate, or none measured: the plain mean.
+        const double inv = n_faces > 0 ? 1. / double(n_faces) : 0.;
+        if (value) *value = m_weight * M * inv;
+        if (grad) *grad = m_weight * inv * gM;
+        if (hess) *hess = m_weight * inv * HM;
+        return;
+    }
+    if (value) *value = m_weight * P / S;
+    if (grad) *grad = m_weight * (gP / S - (P / (S * S)) * gS);
+    if (hess) {
+        *hess = m_weight * (HP / S - (P / (S * S)) * HS -
+                            (gP * gS.transpose() + gS * gP.transpose()) / (S * S) +
+                            (2. * P / (S * S * S)) * (gS * gS.transpose()));
+    }
+}
 
 const std::vector<StencilEnergy3D::Reading>& StencilEnergy3D::readings_at(
     const Eigen::Vector3d& x,
@@ -1119,6 +1212,11 @@ const std::vector<StencilEnergy3D::Reading>& StencilEnergy3D::readings_at(
 double StencilEnergy3D::value(const TVector& xv)
 {
     const Eigen::Vector3d x = xv.head(3);
+    if (m_area_weighted) {
+        double v = 0.;
+        area_weighted_eval(x, &v, nullptr, nullptr);
+        return v;
+    }
     const std::vector<Reading>& rds = readings_at(x, false);
     double E = 0.;
     size_t k = 0;
@@ -1139,6 +1237,12 @@ double StencilEnergy3D::value(const TVector& xv)
 void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
     const Eigen::Vector3d x = xv.head(3);
+    if (m_area_weighted) {
+        Eigen::Vector3d g;
+        area_weighted_eval(x, nullptr, &g, nullptr);
+        gradv = g;
+        return;
+    }
     const std::vector<Reading>& rds = readings_at(x, true);
     gradv = Eigen::VectorXd::Zero(3);
     Eigen::Vector3d g = Eigen::Vector3d::Zero();
@@ -1163,6 +1267,12 @@ void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
 void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
     const Eigen::Vector3d x = xv.head(3);
+    if (m_area_weighted) {
+        Eigen::Matrix3d H;
+        area_weighted_eval(x, nullptr, nullptr, &H);
+        hess = H;
+        return;
+    }
     const std::vector<Reading>& rds = readings_at(x, true);
     Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
     size_t k = 0;

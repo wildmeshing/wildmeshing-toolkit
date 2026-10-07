@@ -1051,6 +1051,100 @@ TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
     CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
 }
 
+TEST_CASE("stencil-energy-3d-area-weighted", "[offset][potential]")
+{
+    // The area-weighted form (area_weight_front): E = w sum_f A_f m_f / sum_f A_f, the areas
+    // moving with x. Value against the formula computed by hand, gradient against central
+    // differences of the value, and both Hessian forms against central differences of the
+    // gradient -- the exact one directly, the Gauss-Newton one after adding back the dropped
+    // per-sample term, which enters the quotient only through m_f's Hessian, i.e. weighted by
+    // A_f / S. Three faces of different areas, so the area weights genuinely differ.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+    const std::vector<StencilEnergy3D::Sample> st =
+        {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}, {0.5, 0.25, 0.25}};
+    std::vector<StencilEnergy3D::Face> faces(3);
+    faces[0].q1 = Vector3d(0.31, -0.05, 0.02);
+    faces[0].q2 = Vector3d(0.12, 0.29, -0.04);
+    faces[1].q1 = Vector3d(0.12, 0.29, -0.04);
+    faces[1].q2 = Vector3d(-0.21, 0.17, 0.26);
+    faces[2].q1 = Vector3d(-0.21, 0.17, 0.26);
+    faces[2].q2 = Vector3d(0.05, -0.30, 0.10);
+    for (auto& f : faces) f.samples = st;
+
+    const double w = 0.7;
+    StencilEnergy3D energy(pot, faces, w, false, true);
+    StencilEnergy3D energy_gn(pot, faces, w, true, true);
+    VectorXd xv(3);
+    xv << 0.21, 0.13, 0.07;
+    const Vector3d x = xv;
+    const double c = pot->target_level();
+
+    // By hand.
+    double P = 0., S = 0.;
+    std::vector<double> A(faces.size());
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto& f = faces[i];
+        A[i] = 0.5 * (f.q1 - x).cross(f.q2 - x).norm();
+        double m = 0.;
+        for (const auto& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            m += r * r;
+        }
+        m /= double(f.samples.size());
+        P += A[i] * m;
+        S += A[i];
+    }
+    REQUIRE(*std::min_element(A.begin(), A.end()) * 1.5 < *std::max_element(A.begin(), A.end()));
+    CHECK(energy.value(xv) == Catch::Approx(w * P / S).epsilon(1e-12));
+
+    const double h = 1e-6;
+    VectorXd g(3);
+    energy.gradient(xv, g);
+    MatrixXd H, Hgn;
+    energy.hessian(xv, H);
+    energy_gn.hessian(xv, Hgn);
+    // The Gauss-Newton form's missing part: sum_f (A_f / S) w (1/n) sum_i 2 a_i^2 r_i hess Phi/c.
+    Eigen::Matrix3d dropped = Eigen::Matrix3d::Zero();
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto& f = faces[i];
+        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
+        for (const auto& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            Hf += (2. * sm.a * sm.a * r / c) * pot->hessian(q);
+        }
+        dropped += (A[i] / S) * w * Hf / double(f.samples.size());
+    }
+    for (int k = 0; k < 3; ++k) {
+        VectorXd xp = xv, xm = xv;
+        xp[k] += h;
+        xm[k] -= h;
+        const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+        INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+        CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+        VectorXd gp(3), gm(3);
+        energy.gradient(xp, gp);
+        energy.gradient(xm, gm);
+        for (int j = 0; j < 3; ++j) {
+            const double fdh = (gp[j] - gm[j]) / (2. * h);
+            INFO("hess " << j << "," << k << " fd " << fdh << " exact " << H(j, k));
+            CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
+            CHECK(std::abs(fdh - (Hgn(j, k) + dropped(j, k))) <= 1e-4 * std::max(1., H.norm()));
+        }
+    }
+    CHECK((H - H.transpose()).norm() <= 1e-10 * std::max(1., H.norm()));
+}
+
 TEST_CASE("stencil-energy-2d-derivatives", "[offset][potential]")
 {
     // StencilEnergy2D, the 2D front smoother's offset term, against finite differences: the
