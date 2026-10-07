@@ -102,6 +102,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
+    const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -236,7 +237,38 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         100 * simplify_envelope_ratio,
         tet_eps);
 
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, simplify_eps);
+    // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
+    // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
+    // is a 0.02-wide crumpled knot holding every boundary edge of the model: it survives as a
+    // non-manifold tangle, the arrangement cuts it into ~460 sealed cells, and the optimizer --
+    // refusing 5.3M collapses there in its first pass, on inversion and quality alone --
+    // leaves ~570 tets with edges under 0.2% of the target length in one spot.
+    //
+    // With the envelope the boundary may move as long as it stays within a tube around the
+    // input's boundary edges, the simplification counterpart of the optimizer's order-2
+    // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
+    // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
+    // built around the boundary it is handed, so a boundary drifts at most
+    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 0.75 eps at the
+    // defaults.
+    //
+    // Not under preserve_topology: a hole narrower than the tube closes.
+    const double simplify_boundary_eps =
+        simplify_boundary_envelope && !params.preserve_topology
+            ? simplify_eps * params.order2_envelope_ratio
+            : 0.0;
+    if (simplify_boundary_eps > 0) {
+        logger().info("simplification boundary envelope eps {:.6}", simplify_boundary_eps);
+    } else {
+        logger().info("simplification freezes the open boundary");
+    }
+
+    surf_mesh.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        simplify_eps,
+        simplify_boundary_eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {

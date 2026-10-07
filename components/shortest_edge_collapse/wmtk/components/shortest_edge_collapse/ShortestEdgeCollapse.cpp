@@ -37,11 +37,57 @@ void ShortestEdgeCollapse::freeze_boundary()
     }
 }
 
+void ShortestEdgeCollapse::init_boundary_envelope(size_t n_vertices, double boundary_eps)
+{
+    std::vector<Eigen::Vector2i> E;
+    for (const Tuple& e : get_edges()) {
+        if (is_boundary_edge(e)) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            E.emplace_back((int)a, (int)b);
+            vertex_attrs[a].input_boundary = true;
+            vertex_attrs[b].input_boundary = true;
+        }
+    }
+    // A closed input has nothing to build and, with no input_boundary vertex, nothing to judge.
+    m_has_boundary_envelope = !E.empty();
+    if (!m_has_boundary_envelope) {
+        return;
+    }
+    std::vector<Eigen::Vector3d> V(n_vertices);
+    for (size_t i = 0; i < V.size(); i++) {
+        V[i] = vertex_attrs[i].pos;
+    }
+    // An edge envelope only builds its exact structure when use_exact is already set at init,
+    // so take the surface envelope's choice now; collapse_shortest() re-syncs the flag in case
+    // the caller flips m_envelope.use_exact afterwards, as tetwild does.
+    m_boundary_envelope.use_exact = m_envelope.use_exact;
+    m_boundary_envelope.init(V, E, boundary_eps);
+}
+
+bool ShortestEdgeCollapse::boundary_edges_inside(const std::vector<Tuple>& tris) const
+{
+    // Only boundary that descends from the input's. A boundary edge derived from the input
+    // outline always touches an input_boundary vertex: those disappear only by being merged,
+    // and the survivor inherits the flag.
+    for (const Tuple& t : tris) {
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(t.fid(*this), j);
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!vertex_attrs[a].input_boundary && !vertex_attrs[b].input_boundary) continue;
+            if (!is_boundary_edge(e)) continue;
+            const std::array<Eigen::Vector3d, 2> seg{{vertex_attrs[a].pos, vertex_attrs[b].pos}};
+            if (m_boundary_envelope.is_outside(seg)) return false;
+        }
+    }
+    return true;
+}
+
 void ShortestEdgeCollapse::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
-    double eps)
+    double eps,
+    double boundary_eps)
 {
     wmtk::TriMesh::init(n_vertices, tris);
 
@@ -61,7 +107,11 @@ void ShortestEdgeCollapse::create_mesh(
     for (size_t v : frozen_verts) {
         vertex_attrs[v].freeze = true;
     }
-    freeze_boundary();
+    if (boundary_eps > 0) {
+        init_boundary_envelope(n_vertices, boundary_eps);
+    } else {
+        freeze_boundary();
+    }
 }
 
 void ShortestEdgeCollapse::partition_mesh()
@@ -74,6 +124,10 @@ void ShortestEdgeCollapse::partition_mesh()
 
 bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
 {
+    // First: it touches only boundary edges, and is far cheaper than the surface test.
+    if (m_has_boundary_envelope && !boundary_edges_inside(new_tris)) {
+        return false;
+    }
     if (m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
@@ -139,19 +193,10 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
-    // TriMesh::collapse_edge_before is the classical link condition, and it is applied
-    // unconditionally -- it is not gated on preserve_topology.
-    //
-    // It does stop the simplification from changing the surface topology, so on the face of
-    // it it belongs under that flag. But it is not only a topology guard: it is the only
-    // check standing between collapse_edge_conn and a connectivity that wmtk::TriMesh
-    // cannot represent, since nothing downstream re-checks it (invariants() only tests the
-    // envelope). Relaxing it does not produce a valid mesh with different topology, it
-    // produces a corrupt one.
-    //
-    // TODO: the simplification therefore still preserves topology even when
-    // preserve_topology is off, because the toolkit does not support non-manifold meshes.
-    // Lifting this needs a mesh data structure that can represent them.
+    // TriMesh::collapse_edge_before is the classical link condition, applied only when
+    // set_use_link_condition() left it on. tetwild sets it from simplify_use_link_condition,
+    // off by default, and the simplification then may change the surface topology, including
+    // creating non-manifold edges and vertices.
     if (!TriMesh::collapse_edge_before(t)) return false;
 
     // v1 is removed by the collapse, v2 survives (TriMesh::collapse_edge_conn keeps vid2).
@@ -161,12 +206,22 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
     cache.v1_frozen = vertex_attrs[v1].freeze;
     cache.v2_frozen = vertex_attrs[v2].freeze;
 
-    // Two frozen endpoints cannot be merged without moving one of them. In particular this
-    // is what keeps the outline of an open surface from retracting: the envelope is a
-    // containment test, so it would not notice a boundary sliding inwards along itself.
+    // Two frozen endpoints cannot be merged without moving one of them. With a frozen boundary
+    // this is what keeps the outline of an open surface from retracting: the surface envelope
+    // is a containment test, so it would not notice a boundary sliding inwards along the
+    // surface. With a boundary envelope that job is boundary_edges_inside()'s instead.
     if (cache.v1_frozen && cache.v2_frozen) {
         return false;
     }
+
+    // Read on the connectivity before the collapse, for the placement in collapse_edge_after.
+    // Only input_boundary vertices count, so that boundary torn open elsewhere is placed as it
+    // always was, and so that only they pay for the ring walk.
+    cache.v1_input_boundary = vertex_attrs[v1].input_boundary;
+    cache.v2_input_boundary = vertex_attrs[v2].input_boundary;
+    cache.v1_on_boundary = cache.v1_input_boundary && is_boundary_vertex(t);
+    cache.v2_on_boundary =
+        cache.v2_input_boundary && is_boundary_vertex(t.switch_vertex(*this));
 
     cache.v1p = vertex_attrs[v1].pos;
     cache.v2p = vertex_attrs[v2].pos;
@@ -181,14 +236,24 @@ bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
     // preserved exactly and the collapse is still allowed; onto the midpoint otherwise.
     // Rejecting these outright, as this used to, froze not just the boundary but every
     // vertex adjacent to it.
+    //
+    // A boundary endpoint is preferred the same way when the other one is interior: the
+    // midpoint would pull the outline into the surface, which the boundary envelope then
+    // refuses, so the collapse would be lost rather than taken. Two boundary endpoints get the
+    // midpoint -- on the boundary when the edge is a boundary edge, and judged by the envelope
+    // when it is not.
     const Eigen::Vector3d p = cache.v1_frozen   ? cache.v1p
                               : cache.v2_frozen ? cache.v2p
-                                                : (cache.v1p + cache.v2p) / 2.0;
+                              : cache.v1_on_boundary && !cache.v2_on_boundary ? cache.v1p
+                              : cache.v2_on_boundary && !cache.v1_on_boundary
+                                  ? cache.v2p
+                                  : (cache.v1p + cache.v2p) / 2.0;
     const size_t vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     // The survivor now stands exactly where the frozen vertex stood, so it takes over its
     // frozen role -- otherwise a later collapse could move that position after all.
     vertex_attrs[vid].freeze = cache.v1_frozen || cache.v2_frozen;
+    vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
     return true;
 }
@@ -211,6 +276,13 @@ std::vector<TriMesh::Tuple> ShortestEdgeCollapse::new_edges_after(
 
 bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
 {
+    // Answer boundary queries with the same predicate as surface ones. Callers choose it by
+    // setting m_envelope.use_exact between create_mesh() and here; the exact structure of
+    // the boundary envelope exists only if the flag was on when it was built.
+    if (m_has_boundary_envelope) {
+        m_boundary_envelope.use_exact = m_envelope.use_exact;
+    }
+
     size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);

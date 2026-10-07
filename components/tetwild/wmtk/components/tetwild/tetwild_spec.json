@@ -14,6 +14,7 @@
       "simplify_use_link_condition",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
+      "simplify_boundary_envelope",
       "optimize_envelope_around_simplified",
       "order2_envelope_ratio",
       "use_sample_envelope",
@@ -141,6 +142,12 @@
     "type": "float",
     "default": 0.5,
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
+    "pointer": "/simplify_boundary_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen."
   },
   {
     "pointer": "/optimize_envelope_around_simplified",
