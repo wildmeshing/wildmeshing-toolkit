@@ -3,6 +3,8 @@
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <atomic>
+#include <cfenv>
+#include <chrono>
 #include <stdexcept>
 #include <thread>
 #include <wmtk/Types.hpp>
@@ -223,6 +225,208 @@ TEST_CASE("enumerable_thread_specific", "[threading]")
     }
 
     CHECK(total_sum == (N * (N - 1)) / 2);
+}
+
+namespace {
+// Run `n` tasks that each call `fn` and then wait until all `n` have started, so they are
+// guaranteed to occupy `n` distinct workers. With `n` larger than any other test asks for, that
+// is every worker in the pool: which idle worker picks up a task is otherwise arbitrary.
+// Returns false if the tasks did not all start within the deadline.
+template <typename F>
+bool run_on_distinct_workers(int n, F fn)
+{
+    std::atomic<int> started{0};
+    std::atomic<bool> all_met{true};
+    threading::task_group tg;
+    for (int i = 0; i < n; ++i) {
+        tg.run([&]() {
+            fn();
+            started.fetch_add(1);
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+            while (started.load() < n) {
+                if (std::chrono::steady_clock::now() > deadline) {
+                    all_met = false;
+                    return;
+                }
+                std::this_thread::yield();
+            }
+        });
+    }
+    tg.wait();
+    return all_met;
+}
+// Larger than the concurrency any other test in this file uses, so a wave this wide covers the
+// whole pool (the pool only grows to the largest number of tasks ever outstanding at once).
+constexpr int kWholePool = 128;
+} // namespace
+
+TEST_CASE("task_group", "[threading]")
+{
+    SECTION("runs every task, and wait() can be called again")
+    {
+        std::atomic<int> sum{0};
+        threading::task_group tg;
+        for (int round = 0; round < 3; ++round) {
+            for (int i = 1; i <= 10; ++i) {
+                tg.run([&sum, i]() { sum.fetch_add(i); });
+            }
+            tg.wait();
+            CHECK(sum.load() == 55 * (round + 1));
+        }
+    }
+
+    SECTION("rethrows the first exception, and the group stays usable")
+    {
+        threading::task_group tg;
+        tg.run([]() { throw std::runtime_error("boom"); });
+        tg.run([]() {});
+        REQUIRE_THROWS_AS(tg.wait(), std::runtime_error);
+        std::atomic<bool> ran{false};
+        tg.run([&ran]() { ran = true; });
+        tg.wait();
+        CHECK(ran);
+    }
+
+    SECTION("every task runs concurrently with the others")
+    {
+        // A pool that queued tasks behind running ones would never let this finish: each task
+        // waits until all of them have started. The deadline turns a hang into a failure.
+        constexpr int kTasks = 24;
+        std::atomic<int> started{0};
+        std::atomic<bool> all_met{true};
+        threading::task_group tg;
+        for (int i = 0; i < kTasks; ++i) {
+            tg.run([&]() {
+                started.fetch_add(1);
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+                while (started.load() < kTasks) {
+                    if (std::chrono::steady_clock::now() > deadline) {
+                        all_met = false;
+                        return;
+                    }
+                    std::this_thread::yield();
+                }
+            });
+        }
+        tg.wait();
+        CHECK(all_met);
+    }
+
+    SECTION("a task can run a task_group of its own")
+    {
+        std::atomic<int> inner{0};
+        threading::task_group outer;
+        for (int i = 0; i < 4; ++i) {
+            outer.run([&inner]() {
+                threading::task_group tg;
+                for (int j = 0; j < 4; ++j) {
+                    tg.run([&inner]() { inner.fetch_add(1); });
+                }
+                tg.wait();
+            });
+        }
+        outer.wait();
+        CHECK(inner.load() == 16);
+    }
+
+    SECTION("workers are reused across groups")
+    {
+        // The point of the pool: a later pass runs on threads that already ran tasks, and so
+        // with their thread_local caches.
+        static thread_local int tasks_run_here = 0;
+        REQUIRE(run_on_distinct_workers(kWholePool, []() { ++tasks_run_here; }));
+        // Give the workers time to get back to waiting; otherwise the pool may (correctly)
+        // start new ones rather than wait for them.
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::atomic<int> on_used_thread{0};
+        {
+            threading::task_group tg;
+            for (int i = 0; i < 4; ++i) {
+                tg.run([&on_used_thread]() {
+                    if (tasks_run_here++ > 0) on_used_thread.fetch_add(1);
+                });
+            }
+            tg.wait();
+        }
+        CHECK(on_used_thread.load() > 0);
+    }
+
+    SECTION("a task starts in round-to-nearest even if an earlier one did not restore it")
+    {
+        threading::task_group tg;
+        for (int round = 0; round < 8; ++round) {
+            tg.run([]() { std::fesetround(FE_UPWARD); });
+            tg.wait();
+            int mode = -1;
+            tg.run([&mode]() { mode = std::fegetround(); });
+            tg.wait();
+            CHECK(mode == FE_TONEAREST);
+        }
+    }
+}
+
+namespace {
+// Counts destructions of live values only: local() builds its value through a by-value
+// factory, so moved-from temporaries are destroyed along the way and must not count.
+struct CountsDestructions
+{
+    static std::atomic<int>& destroyed()
+    {
+        static std::atomic<int> n{0};
+        return n;
+    }
+    static std::atomic<int>& wrong_thread()
+    {
+        static std::atomic<int> n{0};
+        return n;
+    }
+    std::thread::id created_on = std::this_thread::get_id();
+    bool live = true;
+
+    CountsDestructions() = default;
+    CountsDestructions(const CountsDestructions&) = delete;
+    CountsDestructions(CountsDestructions&& o) noexcept
+        : created_on(o.created_on)
+        , live(o.live)
+    {
+        o.live = false;
+    }
+    ~CountsDestructions()
+    {
+        if (!live) return;
+        destroyed().fetch_add(1);
+        if (std::this_thread::get_id() != created_on) wrong_thread().fetch_add(1);
+    }
+};
+} // namespace
+
+TEST_CASE("enumerable_thread_specific_slots_of_dead_instances", "[threading]")
+{
+    // task_group workers persist, so a slot outlives its instance on every worker that used
+    // it. Each worker must drop such slots itself, on its own thread, the next time it creates
+    // a slot -- otherwise every mesh ever built leaves its per-thread caches behind for good.
+    CountsDestructions::destroyed() = 0;
+    CountsDestructions::wrong_thread() = 0;
+    // Let earlier tests' workers go idle, so the wave below is spread over exactly
+    // kWholePool workers and the second wave meets every one of them again.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    {
+        threading::enumerable_thread_specific<CountsDestructions> ets;
+        REQUIRE(run_on_distinct_workers(kWholePool, [&ets]() { ets.local(); }));
+    }
+    // The instance is gone, its values are not: they live on the workers until those meet a
+    // new instance.
+    CHECK(CountsDestructions::destroyed().load() == 0);
+
+    // Every worker meets a new instance, and so drops its dead slot.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    threading::enumerable_thread_specific<CountsDestructions> fresh;
+    REQUIRE(run_on_distinct_workers(kWholePool, [&fresh]() { fresh.local(); }));
+
+    // Every dead value, each destroyed on the thread that created it. (`fresh`'s own values are
+    // still alive on the workers, so they do not count.)
+    CHECK(CountsDestructions::destroyed().load() == kWholePool);
+    CHECK(CountsDestructions::wrong_thread().load() == 0);
 }
 
 TEST_CASE("spin_mutex", "[threading]")
