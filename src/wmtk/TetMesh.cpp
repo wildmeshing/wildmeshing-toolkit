@@ -361,6 +361,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+    if (dry_run()) return true;
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tets_for_vertex(loc0))) {
         rollback_protected_attributes();

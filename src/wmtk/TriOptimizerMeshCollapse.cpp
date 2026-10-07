@@ -47,6 +47,13 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
         lock_ring,
         "edge collapse",
         [&](auto& executor, auto& mesh) {
+            // The one pass that is not screened (ExecutePass::screen_before_commit). In 2D a
+            // collapse's time goes into the attempts that pass their pre-checks -- the queue
+            // already turns the refusals away cheaply, with no 3D-sized ring to lock -- so
+            // screening only added the dry runs, and the attempts that a stale snapshot
+            // multiplies: triwild 191265 collapsed in 8.8-9.7s screened, 5.8-6.2s not (main
+            // 6.2-6.4s), 190586 in 11.8-13.6s against 9.8-11.1s.
+            executor.screen_before_commit = false;
             executor.renew_neighbor_tuples =
                 [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
                     std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;

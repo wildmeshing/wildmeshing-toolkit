@@ -205,6 +205,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         wmtk::array_replace_inline(new_tets[0], v2_id, (size_t)n0_id);
         wmtk::array_replace_inline(new_tets[1], v1_id, (size_t)n2_id);
     }
+    if (dry_run()) return op_screened(OpKind::swap_32);
 
     auto new_tet_id = affected;
     bool conn_ok = true;
@@ -302,6 +303,7 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             wmtk::array_replace_inline(new_tets[i], tri[i], v3);
         }
     }
+    if (dry_run()) return op_screened(OpKind::swap_face);
 
     {
         auto new_tet_id = affected;
@@ -583,6 +585,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             OpKind::swap_44,
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
+    if (dry_run()) return op_screened(OpKind::swap_44);
 
     std::vector<size_t> new_tet_id = affected;
     {
@@ -819,6 +822,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             OpKind::swap_56,
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
+    if (dry_run()) return op_screened(OpKind::swap_56);
 
     std::vector<size_t> new_tet_id = affected;
     bool is_succeed = false;

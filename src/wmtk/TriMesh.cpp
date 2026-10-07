@@ -794,6 +794,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (operation_dry_run()) return true;
     // get local eid for return tuple construction
     const size_t eid = t.local_eid(*this);
     const size_t t_fid = t.fid(*this);
@@ -1150,6 +1151,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+    if (operation_dry_run()) return true; // checks done, the change would come next
 
     Tuple return_t;
     size_t new_vid;
@@ -1519,6 +1521,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         // should be already checked in swap_edge_before
         return false; // can't sawp on boundary or non-manifold edge
     }
+    if (operation_dry_run()) return true;
 
     Tuple tmp_tuple;
     tmp_tuple = t_opps[0];
@@ -1606,6 +1609,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+    if (operation_dry_run()) return true;
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     // Smoothing moves a vertex without touching connectivity, so the reference is simply
@@ -1645,6 +1649,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (operation_dry_run()) return true;
 
     // get local eid for return tuple construction
     const size_t local_eid = t.local_eid(*this);

@@ -636,6 +636,10 @@ bool TetOptimizerMesh::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
+    // Rounding writes the vertex, which a dry run must not do (other threads are reading it).
+    // Answer optimistically: a dry run that passes only means "worth attempting", and the real
+    // attempt rounds, or finds it cannot, for itself.
+    if (operation_dry_run()) return true;
 
     const auto old_exact = m_vertex_attribute[i].m_exact;
     m_vertex_attribute[i].set_pos_to_posf();
@@ -943,6 +947,7 @@ const char* TetOptimizerMesh::op_event_name(const OpEvent e)
     case OpEvent::after_hook: return "after_hook";
     case OpEvent::invariants: return "invariants";
     case OpEvent::committed: return "committed";
+    case OpEvent::screened: return "screened";
     default: return "?";
     }
 }
@@ -986,11 +991,12 @@ std::string TetOptimizerMesh::op_accounting_report(const OpKind k) const
         return fmt::format("{} {{{} unattributed={} }}", total, leaves, total - sum);
     };
     std::string out = fmt::format(
-        "{}: attempts={} committed={} | before_hook={} |{} | after_hook={} | invariants={} | "
-        "unaccounted={}",
+        "{}: attempts={} committed={} screened={} | before_hook={} |{} | after_hook={} | "
+        "invariants={} | unaccounted={}",
         op_kind_name(k),
         op_event_count(k, OpEvent::attempt),
         op_event_count(k, OpEvent::committed),
+        op_event_count(k, OpEvent::screened),
         hook(before, h.before, h.before_sum),
         between.empty() ? std::string(" none") : between,
         hook(after, h.after, h.after_sum),

@@ -12,6 +12,7 @@ bool TetMesh::split_tet(const Tuple& t, std::vector<Tuple>& new_tets)
     if (!tt.is_valid()) {
         return false;
     }
+    if (dry_run()) return true;
 
     /**
      *
