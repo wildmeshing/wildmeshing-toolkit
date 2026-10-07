@@ -1,7 +1,7 @@
 #include "Delaunay.hpp"
 
 // clang-format off
-#include <VolumeRemesher/delaunay.h>
+#include <wmtk/utils/VolumeRemesher.hpp>
 #include <VolumeRemesher/2d/delaunay2d.h>
 // clang-format on
 
@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <cstdlib>
 #include <numeric>
 #include <vector>
 
@@ -108,7 +107,7 @@ void unique_points(
 /**
  * @brief Whether four of the points span a volume.
  *
- * Mirrors the search in vol_rem::TetMesh::init(): fix the first two points and look for a
+ * Mirrors the search in Del3D::TetMesh_t::init(): fix the first two points and look for a
  * third and fourth that are not coplanar with them. init() calls ip_error() when it fails,
  * which exits the process, so the check has to happen before we hand anything over. The
  * geogram-backed implementation returned an empty tetrahedrization for such input.
@@ -152,26 +151,15 @@ auto delaunay3D(const std::vector<Point3D>& points)
     // tetrahedrization; report it as an empty one rather than letting the kernel exit().
     if (spans_a_volume(coords, n)) {
         vol_rem::TetMesh mesh;
-
-        // ~TetMesh frees this with free(), so it has to come from malloc.
-        mesh.vertices = static_cast<vol_rem::vertex_t*>(std::malloc(n * sizeof(vol_rem::vertex_t)));
-        if (mesh.vertices == nullptr) {
-            log_and_throw_error("delaunay3D: could not allocate {} vertices", n);
-        }
-        mesh.num_vertices = static_cast<uint32_t>(n);
-        for (size_t i = 0; i < n; ++i) {
-            mesh.vertices[i].coord[0] = coords[3 * i + 0];
-            mesh.vertices[i].coord[1] = coords[3 * i + 1];
-            mesh.vertices[i].coord[2] = coords[3 * i + 2];
-            // tetrahedrize() permutes the vertex array; this is what maps a tet node back.
-            mesh.vertices[i].original_index = static_cast<uint32_t>(i);
-        }
-
+        mesh.init_vertices(coords.data(), static_cast<uint32_t>(n));
         mesh.tetrahedrize();
 
-        tets.reserve(mesh.tet_num);
-        for (uint64_t t = 0; t < mesh.tet_num; ++t) {
-            const uint32_t* tn = mesh.tet_node + 4 * t;
+        // tetrahedrize() leaves the vertices in the order they were given, so a tet node
+        // indexes `coords` directly.
+        const uint32_t num_tets = mesh.numTets();
+        tets.reserve(mesh.countNonGhostTets());
+        for (uint32_t t = 0; t < num_tets; ++t) {
+            const uint32_t* tn = mesh.tet_node.data() + 4 * t;
             // Ghost tets close the convex hull off against the vertex at infinity; they are
             // not part of the triangulation.
             if (tn[0] == INFINITE_VERTEX || tn[1] == INFINITE_VERTEX || tn[2] == INFINITE_VERTEX ||
@@ -180,7 +168,7 @@ auto delaunay3D(const std::vector<Point3D>& points)
             }
             Tetrahedron tet;
             for (size_t j = 0; j < 4; ++j) {
-                tet[j] = to_original[mesh.vertices[tn[j]].original_index];
+                tet[j] = to_original[tn[j]];
             }
             tets.push_back(tet);
         }

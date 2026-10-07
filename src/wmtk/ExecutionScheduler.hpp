@@ -4,6 +4,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
 #include <wmtk/threading/serial_priority_queue.hpp>
+#include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -19,15 +20,30 @@
 #include <cassert>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <stdexcept>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 
 namespace wmtk {
 enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
 
 using Op = std::string;
+
+/// An edge's ExecutePass::queue_key: its two vertex ids, smaller first, packed into 64 bits.
+/// Never 0, the "not tracked" key: the ids of an edge differ, so the larger one is at least 1.
+inline uint64_t edge_queue_key(size_t a, size_t b)
+{
+    if (a > b) std::swap(a, b);
+    if (b >> 32) {
+        log_and_throw_error("edge_queue_key: vertex id {} does not fit in 32 bits", b);
+    }
+    return (uint64_t(a) << 32) | uint64_t(b);
+}
 
 template <class AppMesh>
 struct ExecutePass
@@ -114,6 +130,32 @@ struct ExecutePass
      */
     std::function<void(const AppMesh&, Op, const Tuple& t)> on_fail =
         [](const AppMesh&, Op, const Tuple& t) {};
+
+    /**
+     * @brief Optional order between queued operations, used by the split passes.
+     *
+     * `queue_key` names what an operation is about -- for a split, its edge (edge_queue_key) --
+     * or returns 0 for "not tracked". A tracked operation is counted from the moment it is
+     * queued until it is tried, or dropped as invalid or out of date. Being set aside after a
+     * lost lock race does not end it. is_queued() reads that count, for any thread.
+     *
+     * `must_wait` is asked after is_weight_up_to_date, with the operation's ring locked. True
+     * sets the operation aside exactly like a lost lock race: it is retried later in the pass
+     * and, after max_retry_limit attempts, handed to the serial queue drained after the barrier.
+     * A serial run -- kSeq, or that serial queue -- pops in priority order, so whatever an
+     * operation could wait on has been tried before it. There a `must_wait` that still says true
+     * is a defect: the operation fails (on_fail) and is counted in wait_defects() rather than
+     * being set aside forever.
+     *
+     * Both empty, the default: nothing is counted and nothing waits.
+     */
+    std::function<uint64_t(const AppMesh&, const Op&, const Tuple&)> queue_key;
+    std::function<bool(const AppMesh&, const Op&, const Tuple&)> must_wait;
+    bool is_queued(uint64_t key) const { return m_queued.contains(key); }
+    /// Over every call on this executor: operations set aside by must_wait, and must_wait
+    /// refusals in a serial run (defects, see above).
+    size_t waits() const { return m_waits.load(); }
+    size_t wait_defects() const { return m_wait_defects.load(); }
 
     ExecutionPolicy policy;
 
@@ -332,7 +374,9 @@ public:
         // priority is an integer compare instead of a string compare. It also turns the
         // per-operation dispatch from a string-keyed std::map lookup into an index.
         using OpId = uint32_t;
-        using Elem = std::tuple<double, OpId, Tuple, size_t>; // priority, op index, tuple, #retries
+        // priority, op index, tuple, #retries, queue_key. The key compares last, after the tuple,
+        // and two elements with the same tuple have the same key, so the pop order is unchanged.
+        using Elem = std::tuple<double, OpId, Tuple, size_t, uint64_t>;
         // Each task owns its queue outright -- it is seeded before any thread starts, and the
         // task both pops from it and pushes its renewed operations back into it -- so those need
         // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
@@ -366,6 +410,22 @@ public:
         std::atomic<bool> stop(false);
         cnt_success = 0;
         cnt_fail = 0;
+
+        // queue_key bookkeeping (see must_wait). `track` when an element is queued, `done` when
+        // it is tried or dropped; both no-ops for the untracked key 0.
+        m_queued.clear();
+        std::atomic<size_t> untracked_done(0);
+        const auto key_of = [&](const Op& op, const Tuple& e) -> uint64_t {
+            return queue_key ? queue_key(m, op, e) : 0;
+        };
+        const auto track = [&](const uint64_t key) {
+            if (key != 0) m_queued.add(key);
+        };
+        const auto done = [&](const uint64_t key) {
+            if (key != 0 && !m_queued.remove(key)) {
+                untracked_done.fetch_add(1, std::memory_order_relaxed);
+            }
+        };
 
         // Whether anything actually watches the success count *while the pass runs*. When no
         // stopping criterion is configured -- the case for every tetwild/triwild/simwild pass --
@@ -423,7 +483,9 @@ public:
             }
         };
 
-        auto run_single_queue = [&](auto& Q, int task_id) {
+        // `serial`: Q is popped by this task alone and in priority order (kSeq, or the queue
+        // drained after the barrier), so a must_wait that says true is a defect there.
+        auto run_single_queue = [&](auto& Q, int task_id, const bool serial) {
             CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
@@ -466,8 +528,9 @@ public:
                     continue;
                 }
                 ++since_refill;
-                auto& [weight, op, tup, retry] = ele_in_queue;
+                auto& [weight, op, tup, retry, key] = ele_in_queue;
                 if (!tup.is_valid(m)) {
+                    done(key);
                     continue;
                 }
 
@@ -494,10 +557,34 @@ public:
                         if (!is_weight_up_to_date(
                                 m,
                                 std::tuple<double, Op, Tuple>(weight, op_str, tup))) {
+                            done(key);
                             operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
+                        if (must_wait && must_wait(m, op_str, tup)) {
+                            if (serial) {
+                                m_wait_defects.fetch_add(1, std::memory_order_relaxed);
+                                done(key);
+                                on_fail(m, op_str, tup);
+                                counts.fail++;
+                                operation_cleanup(m);
+                                continue;
+                            }
+                            // Set aside exactly like a lost lock race, above.
+                            operation_cleanup(m);
+                            m_waits.fetch_add(1, std::memory_order_relaxed);
+                            retry++;
+                            if (retry < max_retry_limit) {
+                                second_chance.push_back(ele_in_queue);
+                            } else {
+                                retry = 0;
+                                counts.overflow++;
+                                final_queue.emplace(ele_in_queue);
+                            }
+                            continue;
+                        }
                         auto newtup = (*op_fn[op])(m, tup);
+                        done(key);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
@@ -509,12 +596,18 @@ public:
                             on_fail(m, op_str, tup);
                             counts.fail++;
                         }
+                        // Tracked here, with the ring still locked, although the elements are
+                        // queued only after it is released: in between they count as queued.
                         for (const auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
                             if (should_renew(val)) {
-                                renewed_elements.emplace_back(val, id_of(o), e, 0);
+                                const uint64_t k = key_of(o, e);
+                                track(k);
+                                renewed_elements.emplace_back(val, id_of(o), e, 0, k);
                             }
                         }
+                    } else {
+                        done(key);
                     }
                     operation_cleanup(m); // Maybe use RAII
                 }
@@ -540,15 +633,19 @@ public:
                 if (!e.is_valid(m)) {
                     continue;
                 }
-                final_queue.emplace(priority(m, op, e), id_of(op), e, 0);
+                const uint64_t k = key_of(op, e);
+                track(k);
+                final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
-            run_single_queue(final_queue, 0);
+            run_single_queue(final_queue, 0, true);
         } else {
             for (const auto& [op, e] : operation_tuples) {
                 if (!e.is_valid(m)) {
                     continue;
                 }
-                queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0);
+                const uint64_t k = key_of(op, e);
+                track(k);
+                queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
             }
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
@@ -557,7 +654,7 @@ public:
             for (int task_id = 0; task_id < queues.size(); task_id++) {
                 tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
                     const auto t0 = clock::now();
-                    run_single_queue(queues[task_id], task_id);
+                    run_single_queue(queues[task_id], task_id, false);
                     // Each task writes only its own slot.
                     task_seconds[task_id] =
                         std::chrono::duration<double>(clock::now() - t0).count();
@@ -571,7 +668,7 @@ public:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
-            run_single_queue(final_queue, 0);
+            run_single_queue(final_queue, 0, true);
             m_stats.serial_tail_seconds =
                 std::chrono::duration<double>(clock::now() - t_tail).count();
         }
@@ -590,6 +687,21 @@ public:
             (int)cnt_success,
             (int)cnt_fail);
         log_contention();
+        // Every tracked element queued in this call was tried or dropped, unless the stopping
+        // criterion ended the call early. Anything else is a bookkeeping defect, and is_queued()
+        // may have answered wrongly during the call.
+        if (queue_key && !stop.load()) {
+            const size_t left = m_queued.size();
+            const size_t untracked = untracked_done.load();
+            if (left > 0 || untracked > 0) {
+                logger().warn(
+                    "queue_key bookkeeping: {} keys still counted as queued after the pass, {} "
+                    "finished elements were never counted",
+                    left,
+                    untracked);
+            }
+        }
+        m_queued.clear();
         return true;
     }
 
@@ -654,5 +766,63 @@ private:
     std::atomic_int cnt_success = 0;
     std::atomic_int cnt_fail = 0;
     PassStats m_stats;
+
+    /// The count behind is_queued(): per key, the queued elements not yet tried or dropped.
+    /// Striped, so threads queueing and finishing elements of different keys rarely meet on a
+    /// lock; a single mutex (threading::concurrent_map) would be taken by every thread for
+    /// every queued split.
+    class QueuedCount
+    {
+        static constexpr size_t n_stripes = 1024;
+        struct alignas(64) Stripe
+        {
+            threading::spin_mutex mutex;
+            std::unordered_map<uint64_t, int> count;
+        };
+        std::unique_ptr<Stripe[]> m_stripes = std::make_unique<Stripe[]>(n_stripes);
+        Stripe& stripe(const uint64_t key) const
+        {
+            return m_stripes[std::hash<uint64_t>{}(key) % n_stripes];
+        }
+
+    public:
+        void add(const uint64_t key)
+        {
+            Stripe& s = stripe(key);
+            std::lock_guard<threading::spin_mutex> lock(s.mutex);
+            ++s.count[key];
+        }
+        /// False if `key` was not counted.
+        bool remove(const uint64_t key)
+        {
+            Stripe& s = stripe(key);
+            std::lock_guard<threading::spin_mutex> lock(s.mutex);
+            const auto it = s.count.find(key);
+            if (it == s.count.end()) return false;
+            if (--it->second == 0) s.count.erase(it);
+            return true;
+        }
+        bool contains(const uint64_t key) const
+        {
+            Stripe& s = stripe(key);
+            std::lock_guard<threading::spin_mutex> lock(s.mutex);
+            return s.count.find(key) != s.count.end();
+        }
+        /// Keys still counted. Only while no thread is queueing or finishing elements.
+        size_t size() const
+        {
+            size_t n = 0;
+            for (size_t i = 0; i < n_stripes; ++i) n += m_stripes[i].count.size();
+            return n;
+        }
+        /// Only while no thread is queueing or finishing elements.
+        void clear()
+        {
+            for (size_t i = 0; i < n_stripes; ++i) m_stripes[i].count.clear();
+        }
+    };
+    QueuedCount m_queued;
+    std::atomic<size_t> m_waits = 0;
+    std::atomic<size_t> m_wait_defects = 0;
 };
 } // namespace wmtk

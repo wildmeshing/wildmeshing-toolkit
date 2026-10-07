@@ -28,17 +28,14 @@ namespace detail {
 /**
  * @brief The exact backend, behind a plain-double interface.
  *
- * Declared here and defined in predicates.cpp rather than included, and it has to be that
- * way. The backend reaches its arithmetic kernel through `#include "numerics.h"`, and
- * VolumeRemesher's `VolumeRemesher/numerics.h` is `namespace vol_rem { #include <numerics.h> }`
- * around that same NFG header. `#pragma once` then means whichever party includes it first
- * captures it into their namespace and the other can never have it: include VolumeRemesher
- * first and the global `bigrational` does not exist, include the backend first and
- * `vol_rem::bigrational` does not. Wrapping it on this side does not help -- in a TU where
- * VolumeRemesher won, the wrap would include nothing.
+ * Declared here and defined in predicates.cpp rather than included. This used to be forced:
+ * VolumeRemesher wrapped NFG in `namespace vol_rem { #include <numerics.h> }`, so whichever
+ * party included the header first captured it into its namespace. Upstream now puts NFG and
+ * Indirect_Predicates in their own namespaces and VolumeRemesher includes them unwrapped, so
+ * that conflict is gone.
  *
- * Keeping the include in a single .cpp that never sees VolumeRemesher sidesteps it, and
- * keeps a heavy header out of every translation unit. It costs the inlining of the predicate
+ * The include stays in a single .cpp anyway: it keeps a heavy header out of every translation
+ * unit, and leaves the backend swappable in one place. It costs the inlining of the predicate
  * call: measured at 0.54 ns per call, about 16% of the predicate's own cost but far below
  * run-to-run noise on any real workload, so it is not worth trading the isolation for.
  *

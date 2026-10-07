@@ -164,6 +164,13 @@ public:
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
 
+    /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
+    /// sizing scalars, or a force-split edge.
+    bool split_edge_is_due(const Tuple& e) const;
+    /// The current split pass's ExecutePass::waits() and wait_defects().
+    size_t m_split_order_waits = 0;
+    size_t m_split_order_wait_defects = 0;
+
     explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
         : m_params(params)
         , m_envelope(std::move(env))

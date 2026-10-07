@@ -4,8 +4,8 @@
 // goes through the wrappers in the header, so changing backend again is a change to this
 // file alone rather than to the call sites.
 //
-// Marco Attene's Indirect_Predicates, reached through fast-envelope, which fetches and pins
-// it. orient2d/orient3d here are the direct (non-indirect) predicates: a semi-static double
+// Marco Attene's Indirect_Predicates, fetched and pinned -- at the same commit -- by both
+// VolumeRemesher and fast-envelope. orient2d/orient3d here are the direct (non-indirect) predicates: a semi-static double
 // filter first, falling back to exact expansion arithmetic only when the filter cannot
 // decide the sign.
 #include <implicit_point.h>
