@@ -18,6 +18,7 @@
 #include <memory>
 #include <queue>
 
+#include <wmtk/envelope/BoundaryEnvelope.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 
 namespace wmtk::components::shortest_edge_collapse {
@@ -29,7 +30,7 @@ struct VertexAttributes
     bool freeze = false;
     /// The vertex is, or was merged from, a vertex on a boundary edge of the input. Only set
     /// when create_mesh() gets a boundary_eps: it marks which boundary edges the boundary
-    /// envelope judges.
+    /// envelope judges. See wmtk::BoundaryEnvelope.
     bool input_boundary = false;
 };
 
@@ -40,8 +41,8 @@ public:
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), used instead of
     /// freezing the boundary when create_mesh() gets a positive boundary_eps. See there.
-    wmtk::SampleEnvelope m_boundary_envelope;
-    bool m_has_boundary_envelope = false;
+    /// initialized() is false otherwise, and for a closed input.
+    wmtk::BoundaryEnvelope m_boundary_envelope;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 
     int retry_limit = 10;
@@ -109,10 +110,6 @@ private:
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& t) const;
-    void init_boundary_envelope(size_t n_vertices, double boundary_eps);
-    /// Every boundary edge of @p tris that touches an input_boundary vertex lies in
-    /// m_boundary_envelope.
-    bool boundary_edges_inside(const std::vector<Tuple>& tris) const;
 };
 
 } // namespace wmtk::components::shortest_edge_collapse

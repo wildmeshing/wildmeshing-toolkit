@@ -37,51 +37,6 @@ void ShortestEdgeCollapse::freeze_boundary()
     }
 }
 
-void ShortestEdgeCollapse::init_boundary_envelope(size_t n_vertices, double boundary_eps)
-{
-    std::vector<Eigen::Vector2i> E;
-    for (const Tuple& e : get_edges()) {
-        if (is_boundary_edge(e)) {
-            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-            E.emplace_back((int)a, (int)b);
-            vertex_attrs[a].input_boundary = true;
-            vertex_attrs[b].input_boundary = true;
-        }
-    }
-    // A closed input has nothing to build and, with no input_boundary vertex, nothing to judge.
-    m_has_boundary_envelope = !E.empty();
-    if (!m_has_boundary_envelope) {
-        return;
-    }
-    std::vector<Eigen::Vector3d> V(n_vertices);
-    for (size_t i = 0; i < V.size(); i++) {
-        V[i] = vertex_attrs[i].pos;
-    }
-    // An edge envelope only builds its exact structure when use_exact is already set at init,
-    // so take the surface envelope's choice now; collapse_shortest() re-syncs the flag in case
-    // the caller flips m_envelope.use_exact afterwards, as tetwild does.
-    m_boundary_envelope.use_exact = m_envelope.use_exact;
-    m_boundary_envelope.init(V, E, boundary_eps);
-}
-
-bool ShortestEdgeCollapse::boundary_edges_inside(const std::vector<Tuple>& tris) const
-{
-    // Only boundary that descends from the input's. A boundary edge derived from the input
-    // outline always touches an input_boundary vertex: those disappear only by being merged,
-    // and the survivor inherits the flag.
-    for (const Tuple& t : tris) {
-        for (int j = 0; j < 3; ++j) {
-            const Tuple e = tuple_from_edge(t.fid(*this), j);
-            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-            if (!vertex_attrs[a].input_boundary && !vertex_attrs[b].input_boundary) continue;
-            if (!is_boundary_edge(e)) continue;
-            const std::array<Eigen::Vector3d, 2> seg{{vertex_attrs[a].pos, vertex_attrs[b].pos}};
-            if (m_boundary_envelope.is_outside(seg)) return false;
-        }
-    }
-    return true;
-}
-
 void ShortestEdgeCollapse::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
@@ -108,7 +63,10 @@ void ShortestEdgeCollapse::create_mesh(
         vertex_attrs[v].freeze = true;
     }
     if (boundary_eps > 0) {
-        init_boundary_envelope(n_vertices, boundary_eps);
+        // The edge envelope builds its exact structure only if use_exact is set now, so take
+        // the surface envelope's choice; collapse_shortest() re-syncs the flag in case the
+        // caller flips m_envelope.use_exact afterwards, as tetwild does.
+        m_boundary_envelope.init(*this, vertex_attrs, boundary_eps, m_envelope.use_exact);
     } else {
         freeze_boundary();
     }
@@ -125,7 +83,7 @@ void ShortestEdgeCollapse::partition_mesh()
 bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
 {
     // First: it touches only boundary edges, and is far cheaper than the surface test.
-    if (m_has_boundary_envelope && !boundary_edges_inside(new_tris)) {
+    if (!m_boundary_envelope.boundary_edges_inside(*this, vertex_attrs, new_tris)) {
         return false;
     }
     if (m_has_envelope) {
@@ -209,7 +167,7 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
     // Two frozen endpoints cannot be merged without moving one of them. With a frozen boundary
     // this is what keeps the outline of an open surface from retracting: the surface envelope
     // is a containment test, so it would not notice a boundary sliding inwards along the
-    // surface. With a boundary envelope that job is boundary_edges_inside()'s instead.
+    // surface. With a boundary envelope that job is m_boundary_envelope's instead.
     if (cache.v1_frozen && cache.v2_frozen) {
         return false;
     }
@@ -219,8 +177,9 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
     // always was, and so that only they pay for the ring walk.
     cache.v1_input_boundary = vertex_attrs[v1].input_boundary;
     cache.v2_input_boundary = vertex_attrs[v2].input_boundary;
-    cache.v1_on_boundary = cache.v1_input_boundary && is_boundary_vertex(t);
-    cache.v2_on_boundary = cache.v2_input_boundary && is_boundary_vertex(t.switch_vertex(*this));
+    cache.v1_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t);
+    cache.v2_on_boundary =
+        wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t.switch_vertex(*this));
 
     cache.v1p = vertex_attrs[v1].pos;
     cache.v2p = vertex_attrs[v2].pos;
@@ -278,9 +237,7 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
     // Answer boundary queries with the same predicate as surface ones. Callers choose it by
     // setting m_envelope.use_exact between create_mesh() and here; the exact structure of
     // the boundary envelope exists only if the flag was on when it was built.
-    if (m_has_boundary_envelope) {
-        m_boundary_envelope.use_exact = m_envelope.use_exact;
-    }
+    m_boundary_envelope.set_use_exact(m_envelope.use_exact);
 
     size_t initial_size = get_vertices().size();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
