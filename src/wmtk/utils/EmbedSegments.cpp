@@ -181,6 +181,11 @@ void embed_segments(
             ++n_indirect;
         }
     }
+    // As in embed_triangles_in_tets: free the remesher's numbers, then the memory NFG's
+    // bignatural pool grew into for them, which it never returns on its own (52 MB of a 245 MB
+    // peak on Thingi10K 193153).
+    std::vector<NFG::bigrational>().swap(vertices);
+    NFG::bignatural::trimMemoryPool();
 
     F_out.resize(tris.size(), 3);
     for (size_t t = 0; t < tris.size(); ++t) {
