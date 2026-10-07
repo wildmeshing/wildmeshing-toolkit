@@ -92,10 +92,10 @@ public:
     CellTag tag;
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
     /**
-     * Rest shape (deform_others): the tet's corners when it last changed topologically, in the
-     * oriented order. Stamped for every plastic cell at optimize_offset() and re-stamped by the
-     * operation after-hooks for every cell an accepted split / collapse / swap changed, never by
-     * smoothing -- a child left on its parent's rest reads det F ~ 1/2 and fights to regrow.
+     * Rest shape (use_rest_pose): the tet's corners as last stamped, in the oriented order.
+     * Stamped for every cell when the loop starts and once before every block of smoothing
+     * passes, and for a cell a split or a swap creates when it is created; a cell a collapse
+     * reshapes keeps its rest.
      */
     bool rest_valid = false;
     std::array<Vector3d, 4> rest_pos;
@@ -253,11 +253,10 @@ public:
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
      * labels it reads), never stored:
      * - a domain-wall face (no opposite tet), always;
-     * - deform_others false: every other tracked face that is not the offset surface, i.e.
-     *   every region boundary, the input complex's included;
-     * - deform_others true: the input complex's boundary only (face_is_complex_boundary()).
-     *   The other regions' boundaries stay tracked faces -- the operations preserve their
-     *   topology -- but no envelope holds them: they deform with the plastic medium.
+     * - the input complex's boundary (face_is_complex_boundary()), always;
+     * - every other region boundary, only in the final pass (m_freeze_front), where
+     *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
+     *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
      * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is
      * kept within eps of their union, not pinned to the junction curve.
      */
@@ -272,6 +271,17 @@ public:
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
+    /// The final pass's envelopes: the offset surface's tube (build_offset_envelope()), and
+    /// m_envelope swapped for one that also holds every other region boundary, at its position as
+    /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
+    /// then). release_final_envelopes() puts the loop's envelope back.
+    void build_final_envelopes();
+    void release_final_envelopes();
+    /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
+    std::vector<Eigen::Vector3d> m_held_verts;
+    std::vector<Eigen::Vector3i> m_held_tris;
+    /// The loop's m_envelope while the final pass holds its own.
+    std::shared_ptr<SampleEnvelope> m_loop_envelope;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -392,17 +402,18 @@ public:
      * @brief THE per-tet energy, read from the mesh as it is -- labels, neighbours and positions,
      * nothing hypothetical.
      *
-     *     E(t) = A(t)^3 + [t is band] * sum over the live front faces f of t of O(f)
+     *     E(t) = w A(t)^3 + [t is band] * sum over the live front faces f of t of O(f)
      *     O(f) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
      *
-     * A(t)^3 is the base's TetOptimizerMesh::get_quality(), the AMIPS^3 the engine stores as the
-     * cell quality; its MAX_ENERGY (unscoreable) passes through unchanged. q_i are the N points
-     * of f's stencil_order stencil (for_each_face_sample()) on the field of f's band cell
+     * w is offset_amips_weight and A(t)^3 is the base's TetOptimizerMesh::get_quality(), the
+     * AMIPS^3 the engine stores as the cell quality (weighted_amips()); its MAX_ENERGY
+     * (unscoreable) passes through unchanged. q_i are the N
+     * points of f's stencil_order stencil (for_each_face_sample()) on the field of f's band cell
      * (potential_for_face()), f's corners sorted so that a face's term does not depend on which
-     * cell or which operation reads it. O is face_offset_term(), the face measure
-     * the squared face measure: the error IN UNITS OF THE TOLERANCE front_conv, so O = 1 exactly
-     * at the bar. No weights anywhere: no area, no w_amips, no valence normalisation. With no
-     * field yet (m_offset_potential null) E = A^3.
+     * cell or which operation reads it. O is face_offset_term(), the face measure the squared face
+     * measure: the error IN UNITS OF THE TOLERANCE front_conv, so O = 1 exactly at the bar. No
+     * weights anywhere: no area, no w_amips, no valence normalisation. With no field yet
+     * (m_offset_potential null) E = w A^3.
      *
      * A face whose term is unmeasurable (a stencil point where relative_residual() is not
      * finite; the euclidean field has none) makes the cell MAX_ENERGY, the engine's own
@@ -413,8 +424,7 @@ public:
      * THE BAND SIDE CARRIES THE FACE: only a band cell (cell_is_offset_band()) adds terms, and a
      * live front face has exactly one band side (face_is_offset_surface_live()), so every front
      * face is counted once; a band cell with two front faces carries both. The cell across is
-     * background -- under deform_others the plastic medium, with a rest shape of its own -- and
-     * carries none.
+     * background and carries none.
      *
      * WHERE IT IS COMPARED: in the application's after-hooks, on the real mesh, each against the
      * max over the same cells as its before-hook cached them -- the collapse in
@@ -452,8 +462,13 @@ public:
      * AMIPS (see swap_after_cells()).
      */
     double tet_energy(size_t tid) const;
-    /// tet_energy() with the cell's AMIPS^3 given, as the shared smoother has just computed it.
-    double tet_energy(size_t tid, double amips3) const;
+    /// tet_energy() with the cell's regular-tet AMIPS^3 given, as the shared smoother has just
+    /// computed it (cell_amips3() turns it into the rest-shape one under use_rest_pose).
+    double tet_energy(size_t tid, double eq_amips3) const;
+    /// The AMIPS^3 the energy charges a cell: against its stamped rest shape when the cell is
+    /// plastic (use_rest_pose, outside the final pass) and has a valid, non-degenerate rest; else
+    /// `eq_amips3`, the engine's against the regular tet. MAX_ENERGY when inverted.
+    double cell_amips3(size_t tid, double eq_amips3) const;
     /// The shared smoother's per-cell comparison -- its projected step for a vertex held on a
     /// surface, and its quality veto -- is the per-tet energy, so every smoothing test judges a
     /// move by the energy the smoother minimises (smoothing_extra_energy()).
@@ -1239,20 +1254,23 @@ public:
      * @brief The energy rule's EARLY half for a swap, on the engine's lower bound.
      *
      * `after` is the largest AMIPS^3 over the new cells, which the engine computes before this
-     * component has labelled them (swap_after_cells()). tet_energy() of a cell is its AMIPS^3
-     * plus a non-negative face term, so `after` not strictly below the before-maximum
-     * (swap_before_interior() / swap_before_surface()) already decides what swap_after_cells()
-     * would decide on the real cells: refused. Same rule, same counter, applied before the
-     * rollback would cost anything (see collapse_quality_allowed() for the measurement). The
-     * engine's `before` (stored AMIPS^3 of the old cells) is not read. The 4-4 / 5-6 case search
-     * and the face swap's gate score the same energy earlier still, through
+     * component has labelled them (swap_after_cells()). tet_energy() of a cell is weighted_amips()
+     * of its AMIPS^3 plus a non-negative face term, so `after` not strictly below the
+     * before-maximum (swap_before_interior() / swap_before_surface()) already decides what
+     * swap_after_cells() would decide on the real cells: refused. Same rule, same counter, applied
+     * before the rollback would cost anything (see collapse_quality_allowed() for the measurement).
+     * The engine's `before` (stored AMIPS^3 of the old cells) is not read. The 4-4 / 5-6 case
+     * search and the face swap's gate score the same energy earlier still, through
      * swap_edge_44_energy(), swap_edge_56_energy() and swap_face_before(). Off with
      * offset_swap_veto. No placement test: a swap moves no vertex.
      */
     bool swap_quality_allowed(double after, double /*before*/, bool) const override
     {
         if (!m_offset_params.offset_swap_veto) return true;
-        if (weighted_amips(after) < m_swap_energy_before.local().max) return true;
+        // Under use_rest_pose the new cells are stamped at creation: they read 27 unless
+        // degenerate.
+        const double q = (m_plastic_active && after < MAX_ENERGY) ? 27. : after;
+        if (weighted_amips(q) < m_swap_energy_before.local().max) return true;
         ++iter_cnt_swap_energy_reject;
         return false;
     }
@@ -1322,16 +1340,20 @@ public:
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
      * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
-     * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises the per-tet
-     * energy -- smoothing_extra_energy(), w AMIPS^3 over the ring, the smoother adding no AMIPS
-     * term of its own -- and the veto compares the max of tet_energy() over the ring, under the
+     * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises
+     * smoothing_extra_energy() -- shape_energy(), the smoother adding no AMIPS term of its own --
+     * and the veto compares the max of tet_energy() over the ring, under the
      * same key (offset_smooth_veto) and on the same vertices as the engine's AMIPS^3 veto it
      * replaces. See Optimize3d.cpp.
      */
     bool smooth_nonfront_vertex(const Tuple& t);
-    /// w AMIPS^3 over vid's one-ring, the per-tet energy's AMIPS part in the smoother's form
-    /// (CubedAMIPSEnergy3D), w = offset_amips_weight.
+    /// w AMIPS^3 over vid's one-ring, equilateral, the per-tet energy's AMIPS part in the
+    /// smoother's form (CubedAMIPSEnergy3D), w = offset_amips_weight.
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
+    /// THE shape term of every smoothing objective, all-or-nothing on the plastic medium: under
+    /// use_rest_pose every cell is plastic and this is w sum_t V_p(t) pAMIPS(t)^3 over vid's ring
+    /// (rest_energy_for_vertex()); without it, w sum_t AMIPS(t)^3 (amips3_energy()).
+    std::shared_ptr<polysolve::nonlinear::Problem> shape_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
@@ -1380,10 +1402,8 @@ public:
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
-    /// places against the offset term (smoothing_extra_energy()): w AMIPS^3 over the one-ring
-    /// (amips3_energy()), the rest-shape AMIPS of its plastic cells (rest_energy_for_vertex(),
-    /// null without the plastic medium), and front_energy(). What the measure above
-    /// differentiates.
+    /// places against the offset term (smoothing_extra_energy()): the shape term shape_energy()
+    /// and front_energy(). What the measure above differentiates.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
     /// frozen-front final pass, that no envelope also holds (vertex_is_held()).
@@ -1392,70 +1412,71 @@ public:
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                !vertex_is_held(vid);
     }
-    /// The AMIPS weight the shared smoother uses at vid, amips_w in smooth_vertex_3d(): 1 for a
-    /// vertex it places against the offset term, whose objective is the per-tet energy's two
-    /// parts at 1:1 (AMIPS, and the offset term in units of the tolerance); w_amips otherwise,
-    /// the engine's own balance against the input-surface envelope term.
-    double smoother_amips_weight(const size_t vid) const
-    {
-        if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
-        return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    }
-    /// THE smoothing objective at vid, for every vertex the shared smoother places: the per-tet
-    /// energy tet_energy() = w AMIPS^3 + O summed over vid's ring, up to the terms that do not
-    /// move with vid. w AMIPS^3 over the ring (amips3_energy()) for every vertex -- the smoother
-    /// adds no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms
-    /// of the front faces at vid when it is a front vertex the loop places (front_energy(); null
-    /// in the final pass and for a front vertex an input envelope also pins), or, in the passes
-    /// before the march, a repulsion vertex's term once per ring cell that carries it
-    /// (repulsion_energy(), repulsion_cell_term()). The ring's other
-    /// front faces do not have vid as a corner, so their terms are constants here. Under
-    /// deform_others the rest-shape AMIPS of the plastic cells in the ring is added, as before.
+    /// THE smoothing objective at vid, for every vertex the shared smoother places: the shape
+    /// term shape_energy() -- w sum V_p pAMIPS^3 under use_rest_pose, w sum AMIPS^3 without it;
+    /// the smoother adds no AMIPS term of its own, every caller passing opts.w_amips 0 --
+    /// plus the offset terms of the front faces at vid when it is a front vertex the loop places
+    /// (front_energy(); null in the final pass and for a front vertex an input envelope also
+    /// pins). The ring's other front faces do not have vid as a corner, so their terms are
+    /// constants here. In the passes before the march a repulsion vertex minimises w AMIPS^3 over
+    /// its ring plus its repulsion term (repulsion_energy(), repulsion_cell_term()).
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
         auto sum = std::make_shared<optimization::EnergySum>();
-        sum->add_energy(amips3_energy(vid));
         // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
         if (is_repulsion_vertex(vid)) {
+            sum->add_energy(amips3_energy(vid));
             sum->add_energy(repulsion_energy(vid));
             return sum;
         }
-        if (vertex_carries_offset_term(vid)) {
-            sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
+        bool any = false;
+        if (const auto shape = shape_energy(vid)) {
+            sum->add_energy(shape);
+            any = true;
         }
-        if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
+        if (vertex_carries_offset_term(vid)) {
+            if (const auto front = front_energy(vid, potential_ptr_for(vid))) {
+                sum->add_energy(front);
+                any = true;
+            }
+        }
+        // Nothing to minimise -- no cell with a valid rest and no front face: a zero energy, so
+        // the vertex stays put. Not an empty EnergySum, whose gradient and Hessian read its first
+        // term.
+        if (!any) sum->add_energy(std::make_shared<ZeroEnergy3D>());
         return sum;
     }
 
-    // ------- deform_others: the medium outside the band deforms -------
+    // ------- use_rest_pose: the whole mesh is plastic -------
 
-    /// Plastic medium: under deform_others every background cell -- ambient and the other objects
-    /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
-    /// resists only the increment since the group started and the medium flows instead of behaving
-    /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
-    /// not plastic; element quality in the medium is the operation passes' job.
-    bool m_plastic_active = false; ///< deform_others, outside the final pass
-    bool cell_is_plastic(size_t tid) const
-    {
-        // Everything outside the band: ambient, the other objects and the input complex's
-        // interior alike -- one material. The complex's boundary is what its tube holds.
-        return m_plastic_active && m_tet_attribute[tid].label != 2;
-    }
-    /// Stamp rest := current for every plastic cell; called before every operation group.
+    /// Plastic medium, all or nothing: under use_rest_pose EVERY cell -- band, ambient, the other
+    /// objects and the input complex alike -- is plastic, and every AMIPS in the loop is measured
+    /// against its rest shape (cell_amips3(), the smoother's shape term). Re-stamped once before
+    /// every block of smoothing passes (smooth_passes(), smooth_group_to_convergence()) and, for
+    /// a cell a split or a swap creates, at creation. Without it (and in the final pass) no cell
+    /// is, and AMIPS is against the regular tet.
+    bool m_plastic_active = false; ///< use_rest_pose, outside the final pass
+    bool cell_is_plastic(size_t /*tid*/) const { return m_plastic_active; }
+    /// Stamp rest := current for every plastic cell; called when the loop starts and once before
+    /// every block of smoothing passes.
     void stamp_plastic_rests();
-    /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else.
-    bool smooth_plastic_vertex(const Tuple& t);
-    /// Stamp rest := the cell's current corner positions (oriented order). No-op for
-    /// non-plastic cells.
+    /// Stamp one cell's rest := its current corners (oriented order); no-op off the plastic
+    /// medium. For the cells a split or a swap creates.
     void stamp_rest_cell(size_t tid);
-    /// The rest-shape AMIPS over the plastic cells of vid's one-ring, weighted like the
-    /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the ring
-    /// has none.
+    /// A block of `k` smoothing passes, local_operations({0,0,0,k}), with the plastic rests
+    /// stamped once before it.
+    void smooth_passes(int k);
+    /// The plastic vertex's smoothing: the shape term (rest-shape AMIPS^3) over its ring, nothing
+    /// else.
+    bool smooth_plastic_vertex(const Tuple& t);
+    /// w sum_t V_p(t) pAMIPS(t)^3 over the plastic cells of vid's one-ring: rest-shape AMIPS
+    /// cubed, each cell weighted by its rest tet's volume, w = offset_amips_weight. Null when the
+    /// ring has no cell with a valid rest.
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy3D over its
     /// incident live front faces, whose value is sum_f O(f), the terms the per-tet energy carries.
-    /// Defined in FrontSmooth3d.cpp.
+    /// Null when vid has no live front face. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
         size_t vid,
         const std::shared_ptr<const OffsetPotential3D>& pot) const;
@@ -1842,21 +1863,24 @@ public:
     /**
      * @brief The energy rule's EARLY half, on the engine's lower bound.
      *
-     * The engine scores each reshaped cell before the collapse exists and hands its AMIPS^3 in
-     * as `q`. tet_energy() of that cell is q plus a non-negative face term, so q alone above the
-     * before-maximum (collapse_before_vertex()) already decides: the rule that
-     * collapse_after_connectivity() applies on the real cells would refuse too. Refusing here
-     * costs nothing; refusing there costs the collapse and its rollback -- measured 2026-09-28 on
-     * the cube at 10 threads, 400000-650000 refused collapses per late turn, every pass 2-3x
-     * slower than the AMIPS-only rule that refused before executing. Same rule, same counter,
-     * applied as soon as it can be. The engine's own `ring_max` (AMIPS^3 over v1's ring) is not
-     * read; TetWild's exemption for an unrounded v1 is kept. Off with offset_collapse_veto.
+     * The engine scores each reshaped cell before the collapse exists and hands its AMIPS^3 in as
+     * `q`. tet_energy() of that cell is weighted_amips(q) plus a non-negative face term, so
+     * weighted_amips(q) alone above the before-maximum (collapse_before_vertex()) already decides:
+     * the rule that collapse_after_connectivity() applies on the real cells would refuse too.
+     * Refusing here costs nothing; refusing there costs the collapse and its rollback -- measured
+     * 2026-09-28 on the cube at 10 threads, 400000-650000 refused collapses per late turn, every
+     * pass 2-3x slower than the AMIPS-only rule that refused before executing. Same rule, same
+     * counter, applied as soon as it can be. The engine's own `ring_max` (AMIPS^3 over v1's ring)
+     * is not read; TetWild's exemption for an unrounded v1 is kept. Off with offset_collapse_veto.
      */
     bool collapse_quality_allowed(size_t v1, double q, double /*ring_max*/) const override
     {
         if (!m_offset_params.offset_collapse_veto || !m_vertex_attribute.at(v1).m_is_rounded) {
             return true;
         }
+        // Under use_rest_pose a reshaped cell is measured against the rest it keeps, which `q` (the
+        // regular-tet AMIPS^3) does not bound: only a degenerate cell is decided here.
+        if (m_plastic_active && q < MAX_ENERGY) return true;
         if (weighted_amips(q) <= m_collapse_energy_before.local()) return true;
         ++iter_cnt_collapse_energy_reject;
         return false;

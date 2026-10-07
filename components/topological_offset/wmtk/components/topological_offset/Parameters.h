@@ -37,7 +37,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// called and the constructed band is written as the result.
     bool optimize_offset;
     // Half-width of the envelope that holds the held surfaces (3D: the input complex boundary and
-    // the domain wall, plus every region boundary when deform_others is false; see the spec doc).
+    // the domain wall, plus every other region boundary in the final pass; see the spec doc).
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
@@ -93,9 +93,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
-    /// complex boundary and the domain wall are envelope-held. See the spec doc.
-    bool deform_others = true;
+    /// 3D: AMIPS is measured against each cell's stamped rest shape (plastic AMIPS) everywhere in
+    /// the loop -- the smoother, the operation guards and the vetoes; false: against the regular
+    /// tet. The final pass is always against the regular tet. See the spec doc.
+    bool use_rest_pose = true;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
@@ -319,7 +320,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_collapse_changed_cells = json_params["offset_collapse_changed_cells"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
-        deform_others = json_params["deform_others"];
+        use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];

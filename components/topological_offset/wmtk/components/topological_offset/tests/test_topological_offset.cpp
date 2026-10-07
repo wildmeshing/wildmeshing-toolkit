@@ -157,8 +157,8 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
     // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
-    // are HELD depends on deform_others and on the input complex, read live off the cells, and
-    // one envelope holds them all.
+    // are HELD depends on the input complex and on whether the final pass is running, read live
+    // off the cells, and one envelope holds them all.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -183,30 +183,33 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // deform_others false: every tracked face is held, the a/b boundary and the wall alike.
-    param.deform_others = false;
-    mesh.build_envelopes();
-    REQUIRE(mesh.m_envelope != nullptr);
-    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
-    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
-    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
-    // One envelope around all of them: a point on any held face is inside, a point off all of
-    // them is outside.
-    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
-    REQUIRE(!mesh.m_envelope->is_outside(on_shared));
-    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
-    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-
-    // deform_others true, no input complex: the a/b boundary stays a tracked face but nothing
-    // holds it; the wall is held either way.
-    param.deform_others = true;
+    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
+    // the wall is held.
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
     REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
+    REQUIRE(mesh.m_envelope != nullptr);
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
     REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
+    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
     REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
+    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+
+    // The final pass: every region boundary is held too, in one envelope with the wall, and the
+    // loop's envelope comes back afterwards.
+    const auto loop_env = mesh.m_envelope;
+    mesh.build_final_envelopes();
+    mesh.m_freeze_front = true;
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
+    for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
+    REQUIRE(!mesh.m_envelope->is_outside(on_shared));
+    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+    REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    mesh.m_freeze_front = false;
+    mesh.release_final_envelopes();
+    REQUIRE(mesh.m_envelope == loop_env);
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
 
     // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
     mesh.m_tet_attribute[0].label = 1;
@@ -1277,15 +1280,18 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
 
 TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
 {
-    // One energy for the smoother and the rules: at every vertex, the objective the shared
-    // smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother
-    // adds no AMIPS term of its own) is the sum of tet_energy() over the vertex's ring, up to the
-    // terms that do not move with the vertex -- the ring's front faces that do not have it as a
-    // corner. Checked on the per-tet-energy fixture by moving each vertex (front vertices a, b,
-    // c0, c1, c2; c3 is on no front face) to three nearby positions: objective minus ring sum must
-    // not change, and the shared smoother's own per-cell comparison (smoothing_cell_energy()) is
-    // tet_energy(). The w AMIPS^3 part's gradient and Hessian against central differences too. At
-    // w = 1 and at the default w.
+    // One energy for the smoother and the rules without the plastic medium: at every vertex, the
+    // objective the shared smoother minimises (smoothing_extra_energy(); every caller passes
+    // w_amips 0, so the smoother adds no AMIPS term of its own) is w AMIPS^3 over the ring plus the
+    // front terms at the vertex, i.e. the sum of tet_energy() over the ring, up to the terms that
+    // do not move with the vertex -- the ring's front faces that do not have it as a corner. The
+    // fixture has no plastic medium, so the shape term is equilateral AMIPS^3 (shape_energy()).
+    // Checked on the per-tet-energy fixture by moving each vertex (front vertices a, b, c0, c1,
+    // c2; c3 is on no front face) to three nearby positions: objective minus ring sum must not
+    // change, and the shared smoother's own per-cell comparison (smoothing_cell_energy()) is
+    // tet_energy(). The w AMIPS^3 part's gradient and Hessian against central differences too.
+    // At w = 1 and at the default w. Then, with the plastic medium on, the shape term is
+    // w sum V_p pAMIPS^3 over EVERY ring cell, band included: 27 w V_p at the stamp, its minimum.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1311,12 +1317,12 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         REQUIRE(!mesh->m_vertex_extra[size_t(c3)].m_is_on_offset);
         for (size_t v = 0; v < 6; ++v) {
             const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
+            const bool front = mesh->vertex_carries_offset_term(v);
             const auto ring_energy = [&]() {
                 double s = 0.;
                 for (const size_t tid : ring) s += mesh->tet_energy(tid);
                 return s;
             };
-            const bool front = mesh->vertex_carries_offset_term(v);
             INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
             REQUIRE(front == (v != size_t(c3)));
             const auto energy = mesh->smoothing_extra_energy(v);
@@ -1344,28 +1350,127 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
             mesh->set_vertex_position(v, x0);
 
             // The w AMIPS^3 part's derivatives against central differences.
-            const auto amips3 = mesh->amips3_energy(v);
+            const auto amips = mesh->amips3_energy(v);
             const double h = 1e-6;
             Eigen::VectorXd g(3);
             Eigen::MatrixXd H(3, 3);
             xv = x0;
-            amips3->gradient(xv, g);
-            amips3->hessian(xv, H);
+            amips->gradient(xv, g);
+            amips->hessian(xv, H);
             for (int i = 0; i < 3; ++i) {
                 Eigen::VectorXd xp = xv, xm = xv;
                 xp[i] += h;
                 xm[i] -= h;
-                const double fd = (amips3->value(xp) - amips3->value(xm)) / (2. * h);
+                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
                 CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
                 Eigen::VectorXd gp(3), gm(3);
-                amips3->gradient(xp, gp);
-                amips3->gradient(xm, gm);
+                amips->gradient(xp, gp);
+                amips->gradient(xm, gm);
                 for (int j = 0; j < 3; ++j) {
                     const double fdh = (gp[j] - gm[j]) / (2. * h);
                     CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
                 }
             }
         }
+        // The plastic medium, all or nothing: every cell is plastic, stamped at its current
+        // shape, so each ring cell reads pAMIPS^3 = 27 weighted by w and its rest volume.
+        mesh->m_plastic_active = true;
+        mesh->stamp_plastic_rests();
+        for (size_t v = 0; v < 6; ++v) {
+            INFO("plastic, w " << w << ", vertex " << v);
+            double expected = 0.;
+            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(v)) {
+                REQUIRE(mesh->cell_is_plastic(tid));
+                const auto vs = mesh->oriented_tet_vids(tid);
+                const Vector3d p0 = mesh->m_vertex_attribute[vs[0]].m_posf;
+                Eigen::Matrix3d R;
+                for (int k = 1; k < 4; ++k) {
+                    R.col(k - 1) = mesh->m_vertex_attribute[vs[k]].m_posf - p0;
+                }
+                expected += w * 27. * std::abs(R.determinant()) / 6.;
+            }
+            const auto shape = mesh->shape_energy(v);
+            REQUIRE(shape);
+            Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf;
+            CHECK(shape->value(xv) == Catch::Approx(expected).epsilon(1e-12));
+            Eigen::VectorXd g(3);
+            shape->gradient(xv, g);
+            CHECK(g.norm() <= 1e-9 * std::max(1., expected));
+        }
+        // The per-tet energy under use_rest_pose: AMIPS^3 against the rest, 27 at the stamp; a
+        // moved corner raises it, and it is no longer the regular-tet AMIPS^3.
+        for (size_t tid = 0; tid < 4; ++tid) {
+            const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
+            CHECK(mesh->cell_amips3(tid, q) == Catch::Approx(27.).epsilon(1e-9));
+        }
+        {
+            const Vector3d x0 = mesh->m_vertex_attribute[size_t(c3)].m_posf;
+            mesh->set_vertex_position(size_t(c3), x0 + Vector3d(0.03, 0.01, -0.02));
+            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
+                const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
+                const double p3 = mesh->cell_amips3(tid, q);
+                CHECK(p3 > 27.);
+                CHECK(p3 != Catch::Approx(q));
+            }
+            mesh->set_vertex_position(size_t(c3), x0);
+        }
+        // The whole smoothing objective with the plastic medium on -- shape term plus, at a
+        // front vertex, the stencil term -- away from the stamp: gradient and Hessian against
+        // central differences, and front_objective() equal to it where the vertex carries the
+        // offset term.
+        for (size_t v = 0; v < 6; ++v) {
+            INFO("plastic objective, w " << w << ", vertex " << v);
+            const auto obj = mesh->smoothing_extra_energy(v);
+            if (mesh->vertex_carries_offset_term(v)) {
+                const auto fo = mesh->front_objective(v);
+                for (const Vector3d& dx : {Vector3d(0.01, 0., 0.), Vector3d(0., -0.008, 0.005)}) {
+                    Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf + dx;
+                    CHECK(fo->value(xv) == Catch::Approx(obj->value(xv)).epsilon(1e-12));
+                }
+            }
+            const double h = 1e-6;
+            for (const Vector3d& dx : {Vector3d(0.01, 0., 0.), Vector3d(-0.004, 0.006, -0.007)}) {
+                Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf + dx;
+                Eigen::VectorXd g(3);
+                Eigen::MatrixXd H(3, 3);
+                obj->gradient(xv, g);
+                obj->hessian(xv, H);
+                REQUIRE(g.allFinite());
+                for (int i = 0; i < 3; ++i) {
+                    Eigen::VectorXd xp = xv, xm = xv;
+                    xp[i] += h;
+                    xm[i] -= h;
+                    const double fd = (obj->value(xp) - obj->value(xm)) / (2. * h);
+                    CHECK(g[i] == Catch::Approx(fd).epsilon(1e-5).margin(1e-7 * g.norm()));
+                    Eigen::VectorXd gp(3), gm(3);
+                    obj->gradient(xp, gp);
+                    obj->gradient(xm, gm);
+                    for (int j = 0; j < 3; ++j) {
+                        const double fdh = (gp[j] - gm[j]) / (2. * h);
+                        CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-4).margin(1e-6 * H.norm()));
+                    }
+                }
+            }
+        }
+        // Nothing to minimise -- c3 is on no front face and none of its cells has a valid rest:
+        // a well-formed zero objective (an empty EnergySum would read past its end).
+        for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
+            mesh->m_tet_attribute[tid].rest_valid = false;
+        }
+        {
+            const auto obj = mesh->smoothing_extra_energy(size_t(c3));
+            Eigen::VectorXd xv = mesh->m_vertex_attribute[size_t(c3)].m_posf;
+            Eigen::VectorXd g;
+            Eigen::MatrixXd H;
+            CHECK(obj->value(xv) == 0.);
+            obj->gradient(xv, g);
+            obj->hessian(xv, H);
+            CHECK(g.size() == 3);
+            CHECK(g.norm() == 0.);
+            CHECK(H.rows() == 3);
+            CHECK(H.norm() == 0.);
+        }
+        mesh->m_plastic_active = false;
     }
 }
 

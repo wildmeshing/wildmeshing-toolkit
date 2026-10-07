@@ -4391,13 +4391,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // flag from the construction labels; this asks the live label test the same question.
     check_offset_membership("construction");
 
-    // deform_others: from here on, other input regions deform instead of being envelope-held.
-    if (m_offset_params.deform_others) {
-        release_deformable_regions();
-        if (!m_deform_tags.empty()) {
-            m_plastic_active = true;
-            stamp_plastic_rests();
-        }
+    // From here on, other input regions deform instead of being envelope-held (what the removed
+    // deform_others key's default selected; the key is gone, this is the only behaviour).
+    release_deformable_regions();
+    if (!m_deform_tags.empty()) {
+        m_plastic_active = true;
+        stamp_plastic_rests();
     }
 
     // The released-boundary tube, from the boundaries as released. The offset envelope is only

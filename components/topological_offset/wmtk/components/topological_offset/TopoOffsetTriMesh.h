@@ -319,7 +319,8 @@ public:
     enum class EnvelopeSetup { PerTag, WallComplex };
     EnvelopeSetup envelope_setup() const
     {
-        return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
+        // The removed deform_others key's default; PerTag is still built explicitly at load.
+        return EnvelopeSetup::WallComplex;
     }
     static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
     static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary

@@ -92,7 +92,7 @@
       "offset_collapse_veto",
       "offset_swap_veto",
       "perform_sanity_checks",
-      "deform_others"
+      "use_rest_pose"
     ]
   },
   {
@@ -190,7 +190,7 @@
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
-    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built once after the simplicial embedding, before the repulsion and the march: the domain wall, and the input complex's boundary when deform_others is true, or every region boundary when it is false (see deform_others). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
+    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built once after the simplicial embedding, before the repulsion and the march: the domain wall and the input complex's boundary. The final pass adds every other region boundary, at its position when the pass starts; the offset surface is held there by its own tube (offset_envelope). 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
   },
   {
     "pointer": "/envelope_size",
@@ -651,9 +651,9 @@
     "doc": "Check after every operation pass that no element is inverted and no tracked-surface simplex left its envelope. Slow; for debugging."
   },
   {
-    "pointer": "/deform_others",
+    "pointer": "/use_rest_pose",
     "default": true,
     "type": "bool",
-    "doc": "Whether everything outside the offset band deforms when the optimization pushes it. 3D: true (the default): no envelope holds a region boundary other than the input complex's -- the held surfaces are the input complex boundary and the domain wall -- and every cell outside the band is plastic: stamped with its rest shape at the top of optimize_offset() and before every operation group, with smoothing carrying a rest-shape AMIPS term for those cells weighted like the smoother's own. The other regions' boundaries stay tracked faces, so the operations preserve their topology (no collapse across them, no surface flip across a junction), but nothing holds them in place. false: every region boundary is held as well, in the same single envelope. Either way the offset surface is held by nothing during the loop; only the frozen-front final pass holds it, to offset_envelope. A cell keeps its rest shape until an operation touches it; an accepted split, collapse or swap re-stamps the cells it changed. 2D: true drops the other regions' per-tag envelopes at the top of optimize_offset() and releases them, as before."
+    "doc": "3D. true (the default): AMIPS is measured against each cell's rest shape (plastic AMIPS) everywhere in the loop -- the smoothing shape term (w sum over the ring of the rest volume times pAMIPS^3), the per-tet energy the collapse and swap guards and the smoothing vetoes compare, and the swaps' candidate scoring. Every cell is stamped with its current shape when the loop starts and once before every block of smoothing passes; a cell a split or a swap creates is stamped when it is created, so it reads the minimum, 27; a cell a collapse reshapes keeps its rest. false: AMIPS against the regular tet everywhere. The final pass always uses AMIPS against the regular tet. The envelopes do not depend on it: the input complex boundary and the domain wall are held throughout; the offset surface and every other region boundary only in the final pass. 2D does not read it (it always runs with its plastic medium on)."
   }
 ]

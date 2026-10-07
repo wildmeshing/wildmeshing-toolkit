@@ -1462,7 +1462,8 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
 {
     // The rest-shape AMIPS of a tet: gradient and Hessian against finite differences, and the
     // minimum of 3 at the rest shape (F = I), the same scale as the shared AMIPS against the
-    // regular tet.
+    // regular tet. The two cells carry different per-cell factors (Cell::weight, the rest
+    // volume at a front vertex), so the derivatives are checked with the factor in them.
     std::vector<RestAMIPSEnergy3D::Cell> cells;
     {
         RestAMIPSEnergy3D::Cell c;
@@ -1474,6 +1475,7 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
         R.col(1) = Vector3d(0.1, 1., 0.);
         R.col(2) = Vector3d(0., 0.2, 1.);
         c.rest_inv = R.inverse();
+        c.weight = 0.4;
         cells.push_back(c);
     }
     {
@@ -1486,6 +1488,7 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
         R.col(1) = Vector3d(0., -1., 0.);
         R.col(2) = Vector3d(0., 0., -1.);
         c.rest_inv = R.inverse();
+        c.weight = 2.5;
         cells.push_back(c);
     }
     RestAMIPSEnergy3D energy(cells, 1.3);
@@ -1525,6 +1528,11 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
     RestAMIPSEnergy3D at_rest({rest}, 1.0);
     VectorXd origin = Vector3d::Zero();
     CHECK(at_rest.value(origin) == Catch::Approx(3.));
+    // The per-cell factor multiplies the cell's term, on top of the energy's own weight.
+    RestAMIPSEnergy3D::Cell rest_v = rest;
+    rest_v.weight = 0.25;
+    RestAMIPSEnergy3D at_rest_v({rest_v}, 2.0);
+    CHECK(at_rest_v.value(origin) == Catch::Approx(1.5));
     VectorXd g0;
     at_rest.gradient(origin, g0);
     CHECK(g0.norm() <= 1e-12);
@@ -1532,6 +1540,44 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
     VectorXd bad = Vector3d(2., 2., 2.);
     CHECK(std::isnan(at_rest.value(bad)));
     CHECK(!at_rest.is_step_valid(origin, bad));
+
+    // Cubed (the form every 3D smoother uses): each cell's term is pAMIPS^3, 27 at the rest
+    // shape, with the chain-rule derivatives against finite differences.
+    RestAMIPSEnergy3D at_rest3({rest_v}, 2.0, true);
+    CHECK(at_rest3.value(origin) == Catch::Approx(2.0 * 0.25 * 27.));
+    RestAMIPSEnergy3D cubed(cells, 1.3, true);
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        VectorXd g;
+        cubed.gradient(xv, g);
+        MatrixXd H;
+        cubed.hessian(xv, H);
+        // value is the cube of the first-power energy cell by cell
+        double expected = 0.;
+        for (const RestAMIPSEnergy3D::Cell& c : cells) {
+            RestAMIPSEnergy3D one({c}, 1.0);
+            const double a = one.value(xv) / c.weight;
+            expected += 1.3 * c.weight * a * a * a;
+        }
+        CHECK(cubed.value(xv) == Catch::Approx(expected).epsilon(1e-12));
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (cubed.value(xp) - cubed.value(xm)) / (2. * h);
+            INFO("cubed k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            cubed.gradient(xp, gp);
+            cubed.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("cubed H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
 }
 
 

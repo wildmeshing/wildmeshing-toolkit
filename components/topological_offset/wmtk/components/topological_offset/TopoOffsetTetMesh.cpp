@@ -265,7 +265,9 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
     if (!f.switch_tetrahedron(*this)) return true; // the domain wall
     if (face_is_offset_surface_live(f)) return false;
-    return !m_offset_params.deform_others || face_is_complex_boundary(f);
+    // The loop holds the input complex's boundary only; the final pass every other tracked face
+    // too, the region boundaries (build_final_envelopes()).
+    return m_freeze_front || face_is_complex_boundary(f);
 }
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
@@ -301,25 +303,68 @@ void TopoOffsetTetMesh::build_envelopes()
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
     const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+    // Kept as built, so the final pass can hold the same surfaces where they were here
+    // (build_final_envelopes()).
+    m_held_verts.assign(vert_capacity(), Eigen::Vector3d::Zero());
+    for (size_t i = 0; i < vert_capacity(); ++i) m_held_verts[i] = m_vertex_attribute[i].m_posf;
+    m_held_tris = tris;
     if (tris.empty()) {
         m_envelope = nullptr;
     } else {
-        std::vector<Eigen::Vector3d> verts(vert_capacity());
-        for (size_t i = 0; i < vert_capacity(); ++i) verts[i] = m_vertex_attribute[i].m_posf;
         m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
-        m_envelope->init(verts, tris, m_envelope_eps);
+        m_envelope->init(m_held_verts, tris, m_envelope_eps);
     }
     logger().info(
-        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; deform_others {}: {}), "
-        "eps {:.6g}, {}",
+        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; the input complex "
+        "boundary and the wall), eps {:.6g}, {}",
         tris.size(),
         n_tracked,
         n_wall,
-        m_offset_params.deform_others,
-        m_offset_params.deform_others ? "the input complex boundary and the wall"
-                                      : "every region boundary and the wall",
         m_envelope_eps,
         exact_ok ? "EXACT" : "sampled (no valid eps)");
+}
+
+void TopoOffsetTetMesh::build_final_envelopes()
+{
+    // See the declaration. The offset surface's own tube first.
+    build_offset_envelope();
+    // The held surfaces where build_envelopes() captured them, plus every region boundary as the
+    // loop left it: a tracked face off the wall, off the offset surface and off the input
+    // complex's boundary.
+    std::vector<Eigen::Vector3d> verts = m_held_verts;
+    std::vector<Eigen::Vector3i> tris = m_held_tris;
+    const int base = int(verts.size());
+    for (size_t i = 0; i < vert_capacity(); ++i) verts.push_back(m_vertex_attribute[i].m_posf);
+    size_t n_region = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        if (!f.switch_tetrahedron(*this)) continue; // the wall: already held
+        if (face_is_offset_surface_live(f)) continue; // its own tube
+        if (face_is_complex_boundary(f)) continue; // already held
+        const auto vs = get_face_vids(f);
+        tris.emplace_back(base + int(vs[0]), base + int(vs[1]), base + int(vs[2]));
+        ++n_region;
+    }
+    m_loop_envelope = m_envelope;
+    if (n_region == 0) {
+        logger().info("\t[envelope] final pass: no region boundary besides the held surfaces");
+        return;
+    }
+    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+    m_envelope->init(verts, tris, m_envelope_eps);
+    logger().info(
+        "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
+        "construction, eps {:.6g}",
+        n_region,
+        m_held_tris.size(),
+        m_envelope_eps);
+}
+
+void TopoOffsetTetMesh::release_final_envelopes()
+{
+    if (m_loop_envelope) m_envelope = m_loop_envelope;
+    m_loop_envelope = nullptr;
 }
 
 void TopoOffsetTetMesh::mark_input_complex_vertices()

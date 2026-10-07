@@ -832,9 +832,10 @@ bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 // The 3D twin of the 2D rest-shape energy above.
 // ---------------------------------------------------------------------------------------------
 
-RestAMIPSEnergy3D::RestAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
+RestAMIPSEnergy3D::RestAMIPSEnergy3D(std::vector<Cell> cells, const double weight, const bool cubed)
     : m_cells(std::move(cells))
     , m_weight(weight)
+    , m_cubed(cubed)
 {}
 
 bool RestAMIPSEnergy3D::cell_F(
@@ -850,18 +851,6 @@ bool RestAMIPSEnergy3D::cell_F(
     F = A * c.rest_inv;
     d = F.determinant();
     return d > 0.;
-}
-
-double RestAMIPSEnergy3D::value(const TVector& x)
-{
-    double E = 0.;
-    Eigen::Matrix3d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) return std::nan("");
-        E += m_weight * F.squaredNorm() / std::cbrt(d * d);
-    }
-    return E;
 }
 
 namespace {
@@ -881,78 +870,110 @@ inline int levi_civita(const int i, const int j, const int k)
 }
 } // namespace
 
-void RestAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
+bool RestAMIPSEnergy3D::cell_amips(
+    const Eigen::Vector3d& x,
+    const Cell& c,
+    double& a,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d* H) const
 {
-    // E = e / d^(2/3): dE/dF = 2 F d^(-2/3) - (2/3) e d^(-5/3) cof(F). F = Q Rinv - x r^T with
-    // r = Rinv^T (1,1,1)^T, so dF/dx_k = -e_k r^T and grad_x = -(dE/dF) r, summed over cells.
-    Eigen::Vector3d G = Eigen::Vector3d::Zero();
+    // a = e / d^(2/3) with e = |F|^2, d = det F. dE/dF = 2 F d^(-2/3) - (2/3) e d^(-5/3) cof(F).
+    // F = Q Rinv - x r^T with r = Rinv^T (1,1,1)^T, so dF/dx_k = -e_k r^T and
+    // grad_x a = -(dE/dF) r. F is affine in x, so hess_x a = M^T H_F M exactly, with M the
+    // constant 9x3 dvecF/dx and H_F the closed-form Hessian of e / d^(2/3) in F (column-major vec):
+    //   d2E = e'' d^(-2/3) - (2/3) d^(-5/3) (e' d'^T + d' e'^T) + (10/9) e d^(-8/3) d' d'^T
+    //         - (2/3) e d^(-5/3) d''
+    // e' = 2 vecF, e'' = 2 I, d' = vec(cof F), d''_{(ij),(kl)} = eps_ikm eps_jln F_mn.
     Eigen::Matrix3d F;
     double d;
+    if (!cell_F(x, c, F, d)) return false;
+    const double e = F.squaredNorm();
+    const double d23 = std::cbrt(d * d);
+    a = e / d23;
+    const Eigen::Matrix3d C = cofactor3(F);
+    const Eigen::Matrix3d dEdF = (2. / d23) * F - (2. / 3.) * (e / (d23 * d)) * C;
+    const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
+    g = -(dEdF * r);
+    if (H == nullptr) return true;
+    const double d53 = d23 * d, d83 = d23 * d * d;
+    Eigen::Matrix<double, 9, 1> vF, dd;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            vF(3 * j + i) = F(i, j);
+            dd(3 * j + i) = C(i, j);
+        }
+    }
+    const Eigen::Matrix<double, 9, 1> de = 2. * vF;
+    Eigen::Matrix<double, 9, 9> K = Eigen::Matrix<double, 9, 9>::Zero();
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            for (int k = 0; k < 3; ++k)
+                for (int l = 0; l < 3; ++l) {
+                    double v = 0.;
+                    for (int m = 0; m < 3; ++m)
+                        for (int n = 0; n < 3; ++n)
+                            v += levi_civita(i, k, m) * levi_civita(j, l, n) * F(m, n);
+                    K(3 * j + i, 3 * l + k) = v;
+                }
+    Eigen::Matrix<double, 9, 9> HF = (2. / d23) * Eigen::Matrix<double, 9, 9>::Identity();
+    HF -= (2. / 3.) / d53 * (de * dd.transpose() + dd * de.transpose());
+    HF += (10. / 9.) * e / d83 * (dd * dd.transpose());
+    HF -= (2. / 3.) * e / d53 * K;
+    Eigen::Matrix<double, 9, 3> M = Eigen::Matrix<double, 9, 3>::Zero();
+    // dF(i,j)/dx_k = -r_j when k == i: vec index 3j + i.
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            M(3 * j + i, i) = -r(j);
+        }
+    }
+    *H = M.transpose() * HF * M;
+    return true;
+}
+
+double RestAMIPSEnergy3D::value(const TVector& x)
+{
+    double E = 0.;
+    double a;
+    Eigen::Vector3d g;
     for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) {
+        if (!cell_amips(x.head(3), c, a, g, nullptr)) return std::nan("");
+        E += c.weight * (m_cubed ? a * a * a : a);
+    }
+    return m_weight * E;
+}
+
+void RestAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    // Per cell v_c grad a, or v_c 3 a^2 grad a when cubed; summed, times w.
+    Eigen::Vector3d G = Eigen::Vector3d::Zero();
+    double a;
+    Eigen::Vector3d g;
+    for (const Cell& c : m_cells) {
+        if (!cell_amips(x.head(3), c, a, g, nullptr)) {
             gradv = Eigen::Vector3d::Zero(); // invalid point: the line search never accepts it
             return;
         }
-        const double e = F.squaredNorm();
-        const double d23 = std::cbrt(d * d);
-        const Eigen::Matrix3d dEdF = (2. / d23) * F - (2. / 3.) * (e / (d23 * d)) * cofactor3(F);
-        const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
-        G += -m_weight * (dEdF * r);
+        G += c.weight * (m_cubed ? Eigen::Vector3d(3. * a * a * g) : g);
     }
-    gradv = G;
+    gradv = m_weight * G;
 }
 
 void RestAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    // F is affine in x, so H_x = M^T H_F M exactly, with M the constant 9x3 dvecF/dx and H_F
-    // the closed-form Hessian of e / d^(2/3) in F (column-major vec):
-    //   dE  = e' d^(-2/3) - (2/3) e d^(-5/3) d'
-    //   d2E = e'' d^(-2/3) - (2/3) d^(-5/3) (e' d'^T + d' e'^T) + (10/9) e d^(-8/3) d' d'^T
-    //         - (2/3) e d^(-5/3) d''
-    // e' = 2 vecF, e'' = 2 I, d' = vec(cof F), d''_{(ij),(kl)} = eps_ikm eps_jln F_mn.
+    // Per cell v_c hess a, or v_c (3 a^2 hess a + 6 a grad a grad a^T) when cubed.
     Eigen::Matrix3d Hx = Eigen::Matrix3d::Zero();
-    Eigen::Matrix3d F;
-    double d;
+    double a;
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
     for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) continue; // invalid point: contribute nothing
-        const double e = F.squaredNorm();
-        const double d23 = std::cbrt(d * d);
-        const double d53 = d23 * d, d83 = d23 * d * d;
-        Eigen::Matrix<double, 9, 1> vF, dd;
-        const Eigen::Matrix3d C = cofactor3(F);
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
-                vF(3 * j + i) = F(i, j);
-                dd(3 * j + i) = C(i, j);
-            }
+        if (!cell_amips(x.head(3), c, a, g, &H)) continue; // invalid point: contribute nothing
+        if (m_cubed) {
+            Hx += c.weight * (3. * a * a * H + 6. * a * g * g.transpose());
+        } else {
+            Hx += c.weight * H;
         }
-        const Eigen::Matrix<double, 9, 1> de = 2. * vF;
-        Eigen::Matrix<double, 9, 9> K = Eigen::Matrix<double, 9, 9>::Zero();
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-                for (int k = 0; k < 3; ++k)
-                    for (int l = 0; l < 3; ++l) {
-                        double v = 0.;
-                        for (int m = 0; m < 3; ++m)
-                            for (int n = 0; n < 3; ++n)
-                                v += levi_civita(i, k, m) * levi_civita(j, l, n) * F(m, n);
-                        K(3 * j + i, 3 * l + k) = v;
-                    }
-        Eigen::Matrix<double, 9, 9> HF = (2. / d23) * Eigen::Matrix<double, 9, 9>::Identity();
-        HF -= (2. / 3.) / d53 * (de * dd.transpose() + dd * de.transpose());
-        HF += (10. / 9.) * e / d83 * (dd * dd.transpose());
-        HF -= (2. / 3.) * e / d53 * K;
-        const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
-        Eigen::Matrix<double, 9, 3> M = Eigen::Matrix<double, 9, 3>::Zero();
-        // dF(i,j)/dx_k = -r_j when k == i: vec index 3j + i.
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
-                M(3 * j + i, i) = -r(j);
-            }
-        }
-        Hx += m_weight * (M.transpose() * HF * M);
     }
-    hessian = Hx;
+    hessian = m_weight * Hx;
 }
 
 bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)

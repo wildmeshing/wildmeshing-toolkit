@@ -663,7 +663,7 @@ private:
 };
 
 /**
- * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
+ * @brief AMIPS against a rest shape, for the plastic medium: the smoothing term of a deformable
  * region's faces.
  *
  *     E(x) = w * sum over cells of tr(F^T F) / det F,   F = A(x) * Rinv
@@ -713,7 +713,10 @@ private:
 /**
  * @brief The 3D twin of RestAMIPSEnergy2D: AMIPS of a tet against its rest shape.
  *
- *     E(x) = w * sum over cells of tr(F^T F) / det(F)^(2/3),   F = A(x) * Rinv
+ *     E(x) = w * sum over cells of v_c a_c^p,   a_c = tr(F^T F) / det(F)^(2/3),   F = A(x) * Rinv
+ *
+ * with p = 1, or p = 3 when `cubed` (gradient 3 a^2 grad a, Hessian 3 a^2 hess a + 6 a grad a
+ * grad a^T).
  *
  * A(x) = [q1 - x, q2 - x, q3 - x] with the moving vertex first (the shared smoother's
  * convention), Rinv the inverse rest Jacobian in the same corner order. det^(2/3) is what makes
@@ -732,8 +735,13 @@ public:
     {
         Eigen::Vector3d q1, q2, q3; ///< the fixed corners, current positions
         Eigen::Matrix3d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0, r3-r0]^-1
+        /// v_c, the cell's own factor on top of w: 1, or the rest tet's volume at a front vertex
+        /// (rest_energy_for_vertex()).
+        double weight = 1.;
     };
-    RestAMIPSEnergy3D(std::vector<Cell> cells, double weight);
+    /// `cubed`: each cell's term is pAMIPS^3 instead of pAMIPS -- the form every 3D smoother uses,
+    /// the same power as the per-tet energy's AMIPS^3.
+    RestAMIPSEnergy3D(std::vector<Cell> cells, double weight, bool cubed = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -748,8 +756,35 @@ public:
 private:
     /// F and d = det F at x for one cell; false when d <= 0.
     bool cell_F(const Eigen::Vector3d& x, const Cell& c, Eigen::Matrix3d& F, double& d) const;
+    /// One cell's pAMIPS a at x with its gradient and (when H is non-null) Hessian in x, first
+    /// power, unweighted; false when the cell is inverted at x.
+    bool cell_amips(
+        const Eigen::Vector3d& x,
+        const Cell& c,
+        double& a,
+        Eigen::Vector3d& g,
+        Eigen::Matrix3d* H) const;
     std::vector<Cell> m_cells;
     double m_weight;
+    bool m_cubed;
+};
+
+/// E = 0 at a single 3-D vertex: the smoothing objective of a vertex with nothing to minimise,
+/// so that the solver sees a well-formed problem (EnergySum reads its first term) and stays put.
+class ZeroEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    double value(const TVector&) override { return 0.; }
+    void gradient(const TVector&, TVector& gradv) override { gradv = TVector::Zero(3); }
+    void hessian(const TVector&, THessian&) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector&, MatrixXd& hessian) override { hessian = MatrixXd::Zero(3, 3); }
+    void solution_changed(const TVector&) override {}
 };
 
 /**

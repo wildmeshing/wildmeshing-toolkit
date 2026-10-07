@@ -69,13 +69,12 @@ bool stencil_face_at(
 bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The whole objective arrives
-    // through smoothing_extra_energy() -- w AMIPS^3 over the ring and the offset terms at
-    // offset_term_weight(), tet_energy()'s two parts -- and w_amips 0 keeps the smoother from
-    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
-    // term. The smoother holds a front vertex to no envelope (see
-    // smoothing_containment_envelope()), so neither the projected path nor the containment check
-    // applies -- solve, exact inversion test, then the
-    // veto on tet_energy() below.
+    // through smoothing_extra_energy() -- the offset terms at offset_term_weight() and the shape
+    // term shape_energy() -- and w_amips 0 keeps the smoother from adding an AMIPS term of its
+    // own; a front vertex an input envelope pins carries no offset term. The smoother holds a front
+    // vertex to no envelope (see smoothing_containment_envelope()), so neither the projected path
+    // nor the containment check applies -- solve, exact inversion test, then the veto on
+    // tet_energy() below.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -291,12 +290,21 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objectiv
     const size_t vid) const
 {
     // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
-    // term included unconditionally: w AMIPS^3 over the one-ring, the plastic cells' rest-shape
-    // AMIPS, and the offset terms on the vertex's own region's field.
+    // term included unconditionally: the shape term (shape_energy(), w sum V_p pAMIPS^3 under
+    // use_rest_pose, w sum AMIPS^3 without it) and the offset terms on the vertex's own region's
+    // field.
+    // An empty sum is a ZeroEnergy3D: EnergySum's gradient and Hessian read its first term.
     auto sum = std::make_shared<optimization::EnergySum>();
-    sum->add_energy(amips3_energy(vid));
-    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
-    sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
+    bool any = false;
+    if (const auto shape = shape_energy(vid)) {
+        sum->add_energy(shape);
+        any = true;
+    }
+    if (const auto front = front_energy(vid, potential_ptr_for(vid))) {
+        sum->add_energy(front);
+        any = true;
+    }
+    if (!any) sum->add_energy(std::make_shared<ZeroEnergy3D>());
     return sum;
 }
 
@@ -309,7 +317,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     // very terms the per-tet energy tet_energy() carries on these faces' band cells, and the
     // ring measure's n_v r_v^2. It replaced 1 - w_amips, a weight with no unit, on 2026-09-28.
     const double w_off = offset_term_weight();
-    auto sum = std::make_shared<optimization::EnergySum>();
     // THE offset term, and the only one: the mean squared relative error over each incident
     // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
     // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
@@ -317,19 +324,15 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     // interior samples are the stencil's non-corner points. See StencilEnergy3D. Every face
     // weighs 1: the area weights front_measure "vertex_ring" used to put here went with the
     // per-tet energy, which has no area in it, and the ring measure dropped them with it.
-    {
-        std::vector<StencilEnergy3D::Face> stencil_faces;
-        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
-            StencilEnergy3D::Face sf;
-            if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
-            stencil_faces.push_back(std::move(sf));
-        }
-        if (!stencil_faces.empty()) {
-            sum->add_energy(
-                std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off));
-        }
+    // Null when the vertex has no live front face to carry a term.
+    std::vector<StencilEnergy3D::Face> stencil_faces;
+    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+        StencilEnergy3D::Face sf;
+        if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
+        stencil_faces.push_back(std::move(sf));
     }
-    return sum;
+    if (stencil_faces.empty()) return nullptr;
+    return std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off);
 }
 
 } // namespace wmtk::components::topological_offset
