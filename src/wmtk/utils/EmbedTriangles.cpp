@@ -121,6 +121,13 @@ void embed_triangles_in_tets(
         v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
+    // The remesher's numbers are all converted: free them, then return the memory NFG's
+    // thread-local bignatural pool grew into while computing them. The pool never shrinks on
+    // its own, so the arrangement's high-water mark would otherwise stay allocated for the rest
+    // of the run (171 MB on Thingi10K 46024); later exact arithmetic regrows it only as far as
+    // it needs. A no-op if any of this thread's bignaturals is still alive.
+    std::vector<NFG::bigrational>().swap(embedded_vertices);
+    NFG::bignatural::trimMemoryPool();
 
     // Debug-only sanity check: the remesher now returns tets already in the WMTK
     // orientation ((v1-v0)x(v2-v0).(v3-v0) > 0), so out_tets is used directly (no

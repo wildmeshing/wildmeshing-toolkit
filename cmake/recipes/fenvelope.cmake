@@ -59,9 +59,13 @@ CPMAddPackage(
     # And PR #10, which follows VolumeRemesher #28 onto NFG 9b7635a (MarcoAttene/NFG#4: MSVC
     # x64 counts as SSE2, see volumeremesher.cmake). VolumeRemesher, fast-envelope and this
     # repository now all name the same upstream NFG and Indirect_Predicates commits.
+    #
+    # And PR #11, which follows VolumeRemesher #30 onto wildmeshing/NFG#1 (05f99ea: 9b7635a
+    # plus bignatural::trimMemoryPool(), see volumeremesher.cmake). Identical NFG pins again.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    # main. A commit rather than the branch name, so the build stays reproducible.
-    GIT_TAG 1a6478e1b5aa7754e407b7e7d86a672badebd755
+    # PR #11's head, not yet on main. A commit rather than a branch name, so the build stays
+    # reproducible. fast-envelope squash-merges: move this to the merge commit once #11 lands.
+    GIT_TAG 1091df558a3b314ba20998ebe980cb58a850db92
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )

@@ -29,7 +29,21 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # on VolumeRemesher returning every coordinate in lowest terms (GMP requires canonical
 # operands; see PR #27 below).
 #
-# Pinned at main, fc72cc0. Since the previous pin (48b200f) came PR #28, which pins NFG to
+# Pinned at 72745a5, the head of PR #30, which is stacked on PR #29; neither is on main yet.
+# VolumeRemesher merges with merge commits, so the commit stays reachable once they land.
+#
+#   - PR #29: embed_tri_in_poly_mesh frees the BSPcomplex it builds. It used to leak it, so
+#     the whole arrangement stayed allocated for the rest of the run: about 1 GB of tetwild's
+#     3.1 GB peak on Thingi10K 46024, 400 MB on 1017020.
+#   - PR #30 pins NFG to wildmeshing/NFG#1 (05f99ea), which is 9b7635a plus
+#     bignatural::trimMemoryPool(). NFG's thread-local bignatural pool only grows, so the
+#     arrangement's high-water mark stayed allocated too (171 MB on 46024, 52 MB of a 245 MB
+#     2D peak on 193153); embed_triangles_in_tets and embed_segments now return it once the
+#     coordinates are converted. fast-envelope #11 pins the same NFG commit.
+#
+# Neither changes any output.
+#
+# Before that (48b200f -> fc72cc0) came PR #28, which pins NFG to
 # upstream 9b7635a -- MarcoAttene/NFG#4 merged, see below -- so NFG and Indirect_Predicates
 # are upstream's latest, and VolumeRemesher and fast-envelope declare identical commits of
 # both. Nothing changes on GCC or Clang.
@@ -87,7 +101,7 @@ include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG fc72cc03fb3076528cc0c2c3c3702a1b9e524b27
+    GIT_TAG 72745a505622b47a6c5a8a0f3790aea3a910aa1b
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
