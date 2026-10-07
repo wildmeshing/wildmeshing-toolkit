@@ -253,10 +253,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // defaults.
     //
     // Not under preserve_topology: a hole narrower than the tube closes.
-    const double simplify_boundary_eps =
-        simplify_boundary_envelope && !params.preserve_topology
-            ? simplify_eps * params.order2_envelope_ratio
-            : 0.0;
+    const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
+                                             ? simplify_eps * params.order2_envelope_ratio
+                                             : 0.0;
     if (simplify_boundary_eps > 0) {
         logger().info("simplification boundary envelope eps {:.6}", simplify_boundary_eps);
     } else {

@@ -220,8 +220,7 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
     cache.v1_input_boundary = vertex_attrs[v1].input_boundary;
     cache.v2_input_boundary = vertex_attrs[v2].input_boundary;
     cache.v1_on_boundary = cache.v1_input_boundary && is_boundary_vertex(t);
-    cache.v2_on_boundary =
-        cache.v2_input_boundary && is_boundary_vertex(t.switch_vertex(*this));
+    cache.v2_on_boundary = cache.v2_input_boundary && is_boundary_vertex(t.switch_vertex(*this));
 
     cache.v1p = vertex_attrs[v1].pos;
     cache.v2p = vertex_attrs[v2].pos;
@@ -242,8 +241,8 @@ bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
     // refuses, so the collapse would be lost rather than taken. Two boundary endpoints get the
     // midpoint -- on the boundary when the edge is a boundary edge, and judged by the envelope
     // when it is not.
-    const Eigen::Vector3d p = cache.v1_frozen   ? cache.v1p
-                              : cache.v2_frozen ? cache.v2p
+    const Eigen::Vector3d p = cache.v1_frozen                                 ? cache.v1p
+                              : cache.v2_frozen                               ? cache.v2p
                               : cache.v1_on_boundary && !cache.v2_on_boundary ? cache.v1p
                               : cache.v2_on_boundary && !cache.v1_on_boundary
                                   ? cache.v2p

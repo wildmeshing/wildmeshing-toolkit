@@ -193,7 +193,9 @@ TEST_CASE("sec-boundary-envelope-outline-stays-in-tube", "[test_sec][boundary]")
         CHECK(max_dist_on_segment(e[0], e[1], outline) <= r);
     }
     for (const Eigen::Vector3d corner :
-         {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(1, 1, 0),
+         {Eigen::Vector3d(0, 0, 0),
+          Eigen::Vector3d(1, 0, 0),
+          Eigen::Vector3d(1, 1, 0),
           Eigen::Vector3d(0, 1, 0)}) {
         double d = std::numeric_limits<double>::max();
         for (const auto& e : be) d = std::min(d, dist_to_segment(corner, e[0], e[1]));
