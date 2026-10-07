@@ -70,6 +70,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     const std::string input_path = resolve_path(root, json_params["input"]).string();
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
+    const double boundary_env_rel = json_params["boundary_eps_rel"];
     const double length_rel = json_params["length_rel"];
     const int num_threads = json_params["num_threads"];
     const int itrs = json_params["max_iterations"];
@@ -80,7 +81,6 @@ void isotropic_remeshing(nlohmann::json json_params)
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
-    wmtk::logger().info("freeze bnd {}", freeze_boundary);
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
@@ -96,12 +96,24 @@ void isotropic_remeshing(nlohmann::json json_params)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
+    const double boundary_envelope_size = boundary_env_rel > 0 ? boundary_env_rel * diag : 0;
+    if (boundary_envelope_size > 0) {
+        wmtk::logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
+    } else {
+        wmtk::logger().info("freeze bnd {}", freeze_boundary);
+    }
     igl::Timer timer;
 
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
-    m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
+    m.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        freeze_boundary,
+        envelope_size,
+        boundary_envelope_size);
 
     {
         size_t nm_e = 0;
