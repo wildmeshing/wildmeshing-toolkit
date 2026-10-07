@@ -63,9 +63,8 @@ CPMAddPackage(
     # And PR #11, which follows VolumeRemesher #30 onto wildmeshing/NFG#1 (05f99ea: 9b7635a
     # plus bignatural::trimMemoryPool(), see volumeremesher.cmake). Identical NFG pins again.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    # PR #11's head, not yet on main. A commit rather than a branch name, so the build stays
-    # reproducible. fast-envelope squash-merges: move this to the merge commit once #11 lands.
-    GIT_TAG 1091df558a3b314ba20998ebe980cb58a850db92
+    # main. A commit rather than the branch name, so the build stays reproducible.
+    GIT_TAG d7cf760df2ae8a822c9d6b3775798bd80505ba53
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )
