@@ -90,9 +90,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af2c09f5517a8f2a85b0da2fccc60ead7" id="r_af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#af2c09f5517a8f2a85b0da2fccc60ead7">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false)</td></tr>
 <tr class="memdesc:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
 <tr class="separator:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4318e8f936e41b386e616d41a1e8749f" id="r_a4318e8f936e41b386e616d41a1e8749f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a4318e8f936e41b386e616d41a1e8749f">simplify_surface</a> (const double eps, const int num_threads=0)</td></tr>
-<tr class="memdesc:a4318e8f936e41b386e616d41a1e8749f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
-<tr class="separator:a4318e8f936e41b386e616d41a1e8749f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5e90f7f0207cc9beb61ed6e5db16fa2" id="r_ae5e90f7f0207cc9beb61ed6e5db16fa2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae5e90f7f0207cc9beb61ed6e5db16fa2">simplify_surface</a> (const double eps, const int num_threads=0, const double boundary_eps=0)</td></tr>
+<tr class="memdesc:ae5e90f7f0207cc9beb61ed6e5db16fa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
+<tr class="separator:ae5e90f7f0207cc9beb61ed6e5db16fa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa74c124f5249f70b274105df856a699a" id="r_aa74c124f5249f70b274105df856a699a"><td class="memItemLeft" align="right" valign="top"><a id="aa74c124f5249f70b274105df856a699a" name="aa74c124f5249f70b274105df856a699a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_duplicates</b> (const double eps)</td></tr>
 <tr class="memdesc:aa74c124f5249f70b274105df856a699a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merge vertices that are closer than eps. <br /></td></tr>
@@ -359,8 +359,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a4318e8f936e41b386e616d41a1e8749f" name="a4318e8f936e41b386e616d41a1e8749f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4318e8f936e41b386e616d41a1e8749f">&#9670;&#160;</a></span>simplify_surface()</h2>
+<a id="ae5e90f7f0207cc9beb61ed6e5db16fa2" name="ae5e90f7f0207cc9beb61ed6e5db16fa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5e90f7f0207cc9beb61ed6e5db16fa2">&#9670;&#160;</a></span>simplify_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -375,7 +375,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const int&#160;</td>
-          <td class="paramname"><em>num_threads</em> = <code>0</code>&#160;</td>
+          <td class="paramname"><em>num_threads</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>boundary_eps</em> = <code>0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -389,6 +395,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">eps</td><td>The absolute envelope thickness. </td></tr>
+    <tr><td class="paramname">boundary_eps</td><td>How the open boundary is held: 0 freezes it; positive lets it move within a tube of this radius around the input's boundary edges. See ShortestEdgeCollapse::create_mesh. </td></tr>
   </table>
   </dd>
 </dl>

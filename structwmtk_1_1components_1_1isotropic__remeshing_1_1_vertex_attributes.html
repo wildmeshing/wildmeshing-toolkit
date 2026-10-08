@@ -91,7 +91,25 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>partition_id</b></t
 <tr class="memitem:af8bb1cd22adbdd36a3c4528e4b8a237b" id="r_af8bb1cd22adbdd36a3c4528e4b8a237b"><td class="memItemLeft" align="right" valign="top"><a id="af8bb1cd22adbdd36a3c4528e4b8a237b" name="af8bb1cd22adbdd36a3c4528e4b8a237b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>freeze</b> = false</td></tr>
 <tr class="separator:af8bb1cd22adbdd36a3c4528e4b8a237b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5451ad57cc441aad10254a2104782e90" id="r_a5451ad57cc441aad10254a2104782e90"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_vertex_attributes.html#a5451ad57cc441aad10254a2104782e90">input_boundary</a> = false</td></tr>
+<tr class="separator:a5451ad57cc441aad10254a2104782e90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a5451ad57cc441aad10254a2104782e90" name="a5451ad57cc441aad10254a2104782e90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5451ad57cc441aad10254a2104782e90">&#9670;&#160;</a></span>input_boundary</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::VertexAttributes::input_boundary = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The vertex is, or descends from, a vertex on a boundary edge of the input: merged from one by a collapse, or inserted by a split on a boundary edge touching one. Only set when create_mesh() gets a boundary_eps: it marks which boundary edges the boundary envelope judges. See <a class="el" href="classwmtk_1_1_boundary_envelope.html" title="A tube around the open boundary of a triangle mesh, for operations allowed to move it.">wmtk::BoundaryEnvelope</a>. </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/isotropic_remeshing/wmtk/components/isotropic_remeshing/<a class="el" href="_isotropic_remeshing_8h_source.html">IsotropicRemeshing.h</a></li>
 </ul>

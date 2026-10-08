@@ -106,9 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af75e0301f87435b04d4517699d79295a" id="r_af75e0301f87435b04d4517699d79295a"><td class="memItemLeft" align="right" valign="top"><a id="af75e0301f87435b04d4517699d79295a" name="af75e0301f87435b04d4517699d79295a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>freeze_boundary</b> ()</td></tr>
 <tr class="separator:af75e0301f87435b04d4517699d79295a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96792a511553730e1caa7e88cdfc1377" id="r_a96792a511553730e1caa7e88cdfc1377"><td class="memItemLeft" align="right" valign="top"><a id="a96792a511553730e1caa7e88cdfc1377" name="a96792a511553730e1caa7e88cdfc1377"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>create_mesh</b> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris, const std::vector&lt; size_t &gt; &amp;frozen_verts={}, double eps=0)</td></tr>
-<tr class="separator:a96792a511553730e1caa7e88cdfc1377"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a062f98ccb059903ef0c764e59821efe3" id="r_a062f98ccb059903ef0c764e59821efe3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a062f98ccb059903ef0c764e59821efe3">create_mesh</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris, const std::vector&lt; size_t &gt; &amp;frozen_verts={}, double eps=0, double boundary_eps=0)</td></tr>
+<tr class="separator:a062f98ccb059903ef0c764e59821efe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b5c9cb9c0224bfe05d5a76960846b70" id="r_a3b5c9cb9c0224bfe05d5a76960846b70"><td class="memItemLeft" align="right" valign="top"><a id="a3b5c9cb9c0224bfe05d5a76960846b70" name="a3b5c9cb9c0224bfe05d5a76960846b70"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh</b> ()</td></tr>
 <tr class="separator:a3b5c9cb9c0224bfe05d5a76960846b70"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -464,6 +463,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aaddab1a84f5c58cd58c31da9df420f08" id="r_aaddab1a84f5c58cd58c31da9df420f08"><td class="memItemLeft" align="right" valign="top"><a id="aaddab1a84f5c58cd58c31da9df420f08" name="aaddab1a84f5c58cd58c31da9df420f08"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = false</td></tr>
 <tr class="separator:aaddab1a84f5c58cd58c31da9df420f08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f99fce08ffa8fc4d344af221aedb042" id="r_a9f99fce08ffa8fc4d344af221aedb042"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_boundary_envelope.html">wmtk::BoundaryEnvelope</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a9f99fce08ffa8fc4d344af221aedb042">m_boundary_envelope</a></td></tr>
+<tr class="separator:a9f99fce08ffa8fc4d344af221aedb042"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d81170a7f6bc8ad67b50ef1f391faed" id="r_a6d81170a7f6bc8ad67b50ef1f391faed"><td class="memItemLeft" align="right" valign="top"><a id="a6d81170a7f6bc8ad67b50ef1f391faed" name="a6d81170a7f6bc8ad67b50ef1f391faed"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1shortest__edge__collapse_1_1_vertex_attributes.html">VertexAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_attrs</b></td></tr>
 <tr class="separator:a6d81170a7f6bc8ad67b50ef1f391faed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -600,6 +601,62 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="a062f98ccb059903ef0c764e59821efe3" name="a062f98ccb059903ef0c764e59821efe3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a062f98ccb059903ef0c764e59821efe3">&#9670;&#160;</a></span>create_mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::create_mesh </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>n_vertices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>frozen_verts</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>boundary_eps</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">eps</td><td>surface envelope thickness; 0 = no envelope </td></tr>
+    <tr><td class="paramname">boundary_eps</td><td>how the open boundary is kept in place. 0 (default): every boundary vertex is frozen. The outline survives exactly, and everything enclosed by boundary loops too close together to leave a free vertex between them survives with it. <blockquote class="doxtable">
+<p>&zwj;0: no boundary vertex is frozen; instead every boundary edge a collapse leaves that descends from the input's boundary (touches an input_boundary vertex) must lie within boundary_eps of the boundary edges of this input. The outline can then coarsen, and holes and slits smaller than the tube close. Boundary that a collapse opens elsewhere is not judged, as with a frozen boundary: with the link condition off, simplifying a dense closed patch passes through such transient tears, and refusing them leaves it stuck as a non-manifold tangle (Thingi10K 55928, the second eye). </p>
+</blockquote>
+</td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a22b0164a78450351ab7e5fdcbef46897" name="a22b0164a78450351ab7e5fdcbef46897"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a22b0164a78450351ab7e5fdcbef46897">&#9670;&#160;</a></span>invariants()</h2>
 
@@ -634,6 +691,22 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <dl class="section return"><dt>Returns</dt><dd>true if the invairnats are not violated </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a9f99fce08ffa8fc4d344af221aedb042" name="a9f99fce08ffa8fc4d344af221aedb042"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f99fce08ffa8fc4d344af221aedb042">&#9670;&#160;</a></span>m_boundary_envelope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_boundary_envelope.html">wmtk::BoundaryEnvelope</a> wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::m_boundary_envelope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Tube around the boundary edges of the mesh given to <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a062f98ccb059903ef0c764e59821efe3">create_mesh()</a>, used instead of freezing the boundary when <a class="el" href="classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html#a062f98ccb059903ef0c764e59821efe3">create_mesh()</a> gets a positive boundary_eps. See there. initialized() is false otherwise, and for a closed input. </p>
 
 </div>
 </div>
