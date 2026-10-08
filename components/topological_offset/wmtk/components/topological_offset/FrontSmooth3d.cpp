@@ -9,6 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
@@ -290,10 +291,11 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
             if (!found) continue;
             const size_t fid = std::get<1>(*found);
             if (!m_face_attribute[fid].m_is_surface_fs || face_is_offset(fid)) continue;
+            // Const: fv holds neighbours, which a non-const read would record and a rejected
+            // smooth write back -- see TetOptimizerMesh::smooth_after().
+            const auto& VA = std::as_const(m_vertex_attribute);
             const std::array<Vector3d, 3> tri = {
-                {m_vertex_attribute[fv[0]].m_posf,
-                 m_vertex_attribute[fv[1]].m_posf,
-                 m_vertex_attribute[fv[2]].m_posf}};
+                {VA[fv[0]].m_posf, VA[fv[1]].m_posf, VA[fv[2]].m_posf}};
             if (hold->is_outside(tri)) {
                 set_vertex_position(vid, x0);
                 ++m_smooth_rejects.envelope;
