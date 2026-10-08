@@ -1,4 +1,5 @@
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
+#include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -145,9 +146,8 @@ double level_set_radius(
 // ---------------------------------------------------------------------------------------------
 
 /// A triangle soup as OffsetPotential<3> takes it. `E` is not optional: ipc derives
-/// faces_to_edges from it and throws if a face's edge is missing, and the OGC feasible-region
-/// test for a vertex reads that vertex's edge neighbours, so an incomplete edge list would
-/// silently widen every Voronoi region.
+/// faces_to_edges from it and throws if a face's edge is missing, and an edge's ESP weight counts
+/// the triangles on it.
 struct TriSoup
 {
     MatrixXd V;
@@ -454,8 +454,11 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
 
     // Around a convex corner: the exact offset is the arc of radius delta about the corner.
     double corner_err = 0.;
+    // Strictly between +x and +y about the (h,h) corner. The end rays themselves lie on the
+    // boundary of a side's feasible region (projection ratio exactly 0 or 1), where ipc's ESP
+    // builder and its debug assert classify the point differently and Debug builds abort.
     for (int i = 0; i <= 8; ++i) {
-        const double a = 0.5 * M_PI * i / 8; // from +x to +y about the (h,h) corner
+        const double a = 0.5 * M_PI * (i + 0.5) / 9;
         const double r = level_set_radius(
             phi,
             Vector2d(h, h),
@@ -718,11 +721,11 @@ TEST_CASE("offset-potential-3d-hessian-fd", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential]")
 {
-    // The broad-phase test (see the section note above). Outside a convex cube every point is
-    // claimed by exactly one primitive: above a face interior -> that triangle (needs vf_set);
-    // beside an edge -> that edge (needs ve_set); beyond a corner -> that vertex (needs vv_set).
-    // So the exact Euclidean offset of the cube is also the level set, to machine precision, and
-    // an unseeded candidate set shows up as a CHECK that cannot even bracket the level set.
+    // The broad-phase test (see the section note above). Outside a convex cube every point has
+    // exactly one closest feature: above a face interior -> that triangle; beside an edge -> that
+    // edge; beyond a corner -> that vertex. So the exact Euclidean offset of the cube is also the
+    // level set, to machine precision, and a feature the broad phase misses shows up as a CHECK
+    // that cannot even bracket the level set.
     const double h = 1.0;
     const double delta = 0.1;
     const TriSoup s = cube(h);
@@ -842,10 +845,9 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 {
-    // A 1-dimensional input in 3D: one segment, no triangles, which exercises the edge tree and
-    // the isolated-edge branch directly. The exact offset is a capsule, and both halves are
-    // single-primitive regions here: with no incident triangle the edge's feasible-region test
-    // degenerates to "the projection is interior", and the endpoints claim everything beyond.
+    // A 1-dimensional input in 3D: one segment, no triangles, so ESP weighs the segment +1 and
+    // its two ends 0. The exact offset is a capsule, and both halves are single-feature regions
+    // here: beside the segment its interior is closest, beyond it an endpoint.
     const double delta = 0.1;
     MatrixXd V(2, 3);
     V << -1., 0., 0., 1., 0., 0.;
@@ -872,8 +874,11 @@ TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 
     // The spherical cap beyond an end.
     double cap_err = 0.;
+    // Strictly between +x and +y about the (1,0,0) end. The +y ray itself starts on the
+    // boundary of the segment's feasible region (projection ratio exactly 1), where ipc's ESP
+    // builder and its debug assert classify the point differently and Debug builds abort.
     for (int i = 0; i <= 6; ++i) {
-        const double a = 0.5 * M_PI * i / 6; // from +x round to +y about the (1,0,0) end
+        const double a = 0.5 * M_PI * (i + 0.5) / 7;
         const double r = level_set_radius<3>(
             phi,
             Vector3d(1., 0., 0.),
@@ -981,49 +986,6 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
 }
 
 
-TEST_CASE("align-energy-3d-derivatives", "[offset][potential]")
-{
-    // The 3D alignment term against finite differences: one residual per incident front face,
-    // both dependences on x (the face normal's rotation and the field's turning) differentiated.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-
-    // Two faces around x on the sphere of radius ~delta, oriented outward by sigma.
-    const Vector3d x0(0.31, 0.02, -0.05);
-    std::vector<AlignEnergy3D::Face> faces;
-    faces.push_back({Vector3d(0.2, 0.25, 0.1), Vector3d(0.22, -0.1, 0.24), 1., 0.9});
-    faces.push_back({Vector3d(0.22, -0.1, 0.24), Vector3d(0.18, -0.2, -0.15), -1., 1.});
-    AlignEnergy3D energy(phi, faces, -1., 0.7);
-
-    const double h = 1e-6;
-    for (const Vector3d& x : {x0, Vector3d(0.27, 0.05, 0.03), Vector3d(0.35, -0.04, -0.02)}) {
-        VectorXd xv = x;
-        VectorXd g;
-        energy.gradient(xv, g);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
-            CHECK(std::abs(fd - g[k]) <= 1e-4 * std::max(1., std::abs(g[k])));
-        }
-        MatrixXd H;
-        energy.hessian(xv, H);
-        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
-        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
-    }
-}
-
-
 TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
 {
     // The one offset term against finite differences. x enters only through the sample points
@@ -1077,14 +1039,408 @@ TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
         CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
     }
 
-    // The Gauss-Newton Hessian is deliberately not the exact one, so it is not checked against
-    // central differences of the gradient. What IS guaranteed, and what the solver needs, is
-    // that it is symmetric and PSD by construction, being a sum of outer products.
+    // The Gauss-Newton form (gauss_newton = true) is deliberately not the exact Hessian, so it is
+    // not checked against central differences of the gradient here; stencil-energy-3d-hessian-fd
+    // checks both forms that way. What IS guaranteed, and what the solver needs, is that it is
+    // symmetric and PSD by construction, being a sum of outer products.
+    StencilEnergy3D energy_gn(pot, faces, w, true);
     MatrixXd H;
-    energy.hessian(xv, H);
+    energy_gn.hessian(xv, H);
     CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
     const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
     CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
+}
+
+TEST_CASE("stencil-energy-3d-area-weighted", "[offset][potential]")
+{
+    // The area-weighted form (area_weight_front): E = w sum_f A_f m_f / sum_f A_f, the areas
+    // moving with x. Value against the formula computed by hand, gradient against central
+    // differences of the value, and both Hessian forms against central differences of the
+    // gradient -- the exact one directly, the Gauss-Newton one after adding back the dropped
+    // per-sample term, which enters the quotient only through m_f's Hessian, i.e. weighted by
+    // A_f / S. Three faces of different areas, so the area weights genuinely differ.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+    const std::vector<StencilEnergy3D::Sample> st =
+        {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}, {0.5, 0.25, 0.25}};
+    std::vector<StencilEnergy3D::Face> faces(3);
+    faces[0].q1 = Vector3d(0.31, -0.05, 0.02);
+    faces[0].q2 = Vector3d(0.12, 0.29, -0.04);
+    faces[1].q1 = Vector3d(0.12, 0.29, -0.04);
+    faces[1].q2 = Vector3d(-0.21, 0.17, 0.26);
+    faces[2].q1 = Vector3d(-0.21, 0.17, 0.26);
+    faces[2].q2 = Vector3d(0.05, -0.30, 0.10);
+    for (auto& f : faces) f.samples = st;
+
+    const double w = 0.7;
+    StencilEnergy3D energy(pot, faces, w, false, true);
+    StencilEnergy3D energy_gn(pot, faces, w, true, true);
+    VectorXd xv(3);
+    xv << 0.21, 0.13, 0.07;
+    const Vector3d x = xv;
+    const double c = pot->target_level();
+
+    // By hand.
+    double P = 0., S = 0.;
+    std::vector<double> A(faces.size());
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto& f = faces[i];
+        A[i] = 0.5 * (f.q1 - x).cross(f.q2 - x).norm();
+        double m = 0.;
+        for (const auto& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            m += r * r;
+        }
+        m /= double(f.samples.size());
+        P += A[i] * m;
+        S += A[i];
+    }
+    REQUIRE(*std::min_element(A.begin(), A.end()) * 1.5 < *std::max_element(A.begin(), A.end()));
+    CHECK(energy.value(xv) == Catch::Approx(w * P / S).epsilon(1e-12));
+
+    const double h = 1e-6;
+    VectorXd g(3);
+    energy.gradient(xv, g);
+    MatrixXd H, Hgn;
+    energy.hessian(xv, H);
+    energy_gn.hessian(xv, Hgn);
+    // The Gauss-Newton form's missing part: sum_f (A_f / S) w (1/n) sum_i 2 a_i^2 r_i hess Phi/c.
+    Eigen::Matrix3d dropped = Eigen::Matrix3d::Zero();
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto& f = faces[i];
+        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
+        for (const auto& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            Hf += (2. * sm.a * sm.a * r / c) * pot->hessian(q);
+        }
+        dropped += (A[i] / S) * w * Hf / double(f.samples.size());
+    }
+    for (int k = 0; k < 3; ++k) {
+        VectorXd xp = xv, xm = xv;
+        xp[k] += h;
+        xm[k] -= h;
+        const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+        INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+        CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+        VectorXd gp(3), gm(3);
+        energy.gradient(xp, gp);
+        energy.gradient(xm, gm);
+        for (int j = 0; j < 3; ++j) {
+            const double fdh = (gp[j] - gm[j]) / (2. * h);
+            INFO("hess " << j << "," << k << " fd " << fdh << " exact " << H(j, k));
+            CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
+            CHECK(std::abs(fdh - (Hgn(j, k) + dropped(j, k))) <= 1e-4 * std::max(1., H.norm()));
+        }
+    }
+    CHECK((H - H.transpose()).norm() <= 1e-10 * std::max(1., H.norm()));
+}
+
+TEST_CASE("stencil-energy-2d-derivatives", "[offset][potential]")
+{
+    // StencilEnergy2D, the 2D front smoother's offset term, against finite differences: the
+    // gradient of the value and both Hessian forms of the gradient. As in 3D, x enters only
+    // through the samples sliding with it, q_i = a_i x + b_i q1, so the chain rule is the moving
+    // vertex's own weight a_i; the stencils carry a_i = 1, a_i = 0 and 0 < a_i < 1. The exact
+    // Hessian (the default) must match the difference directly; the Gauss-Newton form must be
+    // symmetric PSD and, with the dropped 2 a_i^2 r hess Phi / c term added back from the
+    // potential's own hessian(), must recover the exact one. On the smooth field around a point and
+    // on the Euclidean field of a segment (via the BVH, as TopoOffsetTriMesh builds it).
+    const double delta = 0.25;
+    MatrixXd V(1, 2);
+    V << 0., 0.;
+    const auto smooth = std::make_shared<const SmoothOffsetPotential2D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+    auto bvh = std::make_shared<SimplicialComplexBVH>();
+    {
+        MatrixXd SV(2, 2);
+        SV << -1., 0., 1., 0.;
+        MatrixXi SE(1, 2);
+        SE << 0, 1;
+        bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
+    }
+    const auto euclid = std::make_shared<const EuclideanOffsetPotential2D>(bvh, delta);
+
+    struct Case
+    {
+        const char* name;
+        std::shared_ptr<const OffsetPotential2D> pot;
+        Eigen::Vector2d x, q1, q2; // chords (x, q1) and (x, q2)
+    };
+    const std::vector<Case> cases = {
+        {"smooth, around a point", smooth, {0.21, 0.13}, {0.31, -0.05}, {0.09, 0.33}},
+        {"euclid, above a segment", euclid, {0.1, 0.31}, {0.35, 0.22}, {-0.2, 0.28}}};
+    for (const Case& cs : cases) {
+        std::vector<StencilEnergy2D::Edge> edges(2);
+        edges[0].q1 = cs.q1;
+        edges[0].samples = {{1., 0.}, {0., 1.}, {0.5, 0.5}};
+        edges[1].q1 = cs.q2;
+        edges[1].samples = {{1., 0.}, {0., 1.}, {0.75, 0.25}, {0.25, 0.75}, {0.5, 0.5}};
+        const double w = 0.9;
+        StencilEnergy2D energy(cs.pot, edges, w);
+        VectorXd xv = cs.x;
+        INFO(cs.name);
+
+        const double h = 1e-6;
+        VectorXd g(2);
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 2; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp(2), gm(2);
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 2; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
+            }
+        }
+
+        StencilEnergy2D energy_gn(cs.pot, edges, w, true);
+        MatrixXd Hgn;
+        energy_gn.hessian(xv, Hgn);
+        CHECK((Hgn - Hgn.transpose()).norm() <= 1e-12 * std::max(1., Hgn.norm()));
+        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(Hgn);
+        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., Hgn.norm()));
+        // The dropped term, added back independently: per chord, the mean over its samples of
+        // 2 a^2 r hess Phi / c, times the weight.
+        const double c = cs.pot->target_level();
+        Eigen::Matrix2d dropped = Eigen::Matrix2d::Zero();
+        for (const StencilEnergy2D::Edge& e : edges) {
+            Eigen::Matrix2d sum = Eigen::Matrix2d::Zero();
+            for (const StencilEnergy2D::Sample& sm : e.samples) {
+                const Eigen::Vector2d q = sm.a * cs.x + sm.b * e.q1;
+                const double r = (cs.pot->value(q) - c) / c;
+                sum += (2. * sm.a * sm.a * r / c) * cs.pot->hessian(q);
+            }
+            dropped += sum / double(e.samples.size());
+        }
+        CHECK((Hgn + w * dropped - H).norm() <= 1e-9 * std::max(1., H.norm()));
+    }
+}
+
+TEST_CASE("stencil-energy-3d-hessian-fd", "[offset][potential]")
+{
+    // Both Hessian forms of StencilEnergy3D against a central difference of the gradient. The
+    // exact form (the default) must match it directly. The Gauss-Newton form (gauss_newton =
+    // true) drops the 2 r a_i^2 hess Phi / c term on purpose; adding it back here, computed
+    // independently from the potential's own hessian(), must recover the exact Hessian to FD
+    // precision. That pins two things at once: the kept part is exactly 2 a_i^2 dr dr^T under the
+    // per-face mean and the weight, and the dropped part is exactly the one the class comment
+    // names -- a Gauss-Newton form returning the exact Hessian, or missing the a_i^2, fails this.
+    // Both fields, since the derivatives test above uses the smooth field only and the runs use
+    // the Euclidean one; near a face, an edge and a vertex of a cube, since the Euclidean
+    // hessian is cased on the feature kind (zero on a face, curved around an edge or a vertex).
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    const auto smooth = std::make_shared<const SmoothOffsetPotential3D>(
+        s.V,
+        s.E,
+        s.F,
+        std::vector<int>{},
+        delta,
+        DHAT_FACTOR);
+    // The exact-kind query envelope, as TopoOffsetTetMesh builds it for the Euclidean field.
+    auto env = std::make_shared<SampleEnvelope>();
+    env->use_exact = true;
+    {
+        std::vector<Eigen::Vector3d> verts(size_t(s.V.rows()));
+        for (int i = 0; i < s.V.rows(); ++i) verts[size_t(i)] = s.V.row(i).head<3>();
+        std::vector<Eigen::Vector3i> tris(size_t(s.F.rows()));
+        for (int i = 0; i < s.F.rows(); ++i) {
+            tris[size_t(i)] = Eigen::Vector3i(s.F(i, 0), s.F(i, 1), s.F(i, 2));
+        }
+        env->init(verts, tris, delta);
+    }
+    const auto euclid = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+
+    // Order 0 (the corners) and order 1 (corners + centroid, the default), written by hand as
+    // the derivatives test writes its stencils.
+    const std::vector<StencilEnergy3D::Sample> order0 = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}};
+    const std::vector<StencilEnergy3D::Sample> order1 = {
+        {1., 0., 0.},
+        {0., 1., 0.},
+        {0., 0., 1.},
+        {1. / 3., 1. / 3., 1. / 3.}};
+
+    // Two faces sharing the moving vertex x, given by their other corners. All samples of a case
+    // lie in one feature region, well inside it, so no difference step crosses a region boundary
+    // (or, for the smooth field, the support boundary).
+    struct Case
+    {
+        const char* name;
+        std::shared_ptr<const OffsetPotential3D> pot;
+        Vector3d x, q1, q2, q3; // faces (x, q1, q2) and (x, q2, q3)
+        bool flat; // hess Phi == 0 everywhere in the region: the omission must be exactly zero
+    };
+    const Vector3d fx(0.10, -0.05, 1.08), fq1(0.35, 0.10, 1.11), fq2(0.05, 0.30, 1.13),
+        fq3(-0.20, 0.02, 1.06); // above the +z face interior
+    const Vector3d ex(1.08, 0.10, 1.06), eq1(1.11, 0.35, 1.09), eq2(1.05, -0.20, 1.12),
+        eq3(1.13, -0.05, 1.04); // nearest feature the edge x = z = 1
+    const Vector3d vx(1.08, 1.06, 1.07), vq1(1.11, 1.09, 1.03), vq2(1.04, 1.12, 1.08),
+        vq3(1.09, 1.02, 1.11); // nearest feature the vertex (1, 1, 1)
+    const std::vector<Case> cases = {
+        {"smooth, +z face", smooth, fx, fq1, fq2, fq3, false},
+        {"euclid, +z face", euclid, fx, fq1, fq2, fq3, true},
+        {"euclid, edge region", euclid, ex, eq1, eq2, eq3, false},
+        {"euclid, vertex region", euclid, vx, vq1, vq2, vq3, false},
+        {"smooth, edge region", smooth, ex, eq1, eq2, eq3, false},
+    };
+
+    const double w = 0.9;
+    for (const Case& cs : cases) {
+        const double c = cs.pot->target_level();
+        for (const auto* order : {&order0, &order1}) {
+            std::vector<StencilEnergy3D::Face> faces(2);
+            faces[0].q1 = cs.q1;
+            faces[0].q2 = cs.q2;
+            faces[1].q1 = cs.q2;
+            faces[1].q2 = cs.q3;
+            for (StencilEnergy3D::Face& f : faces) f.samples = *order;
+            StencilEnergy3D energy(cs.pot, faces, w);
+            const VectorXd xv = cs.x;
+            INFO(cs.name << ", " << order->size() << " samples per face");
+
+            // The gradient, as in the derivatives test.
+            VectorXd g(3);
+            energy.gradient(xv, g);
+            for (int k = 0; k < 3; ++k) {
+                const double h = 1e-6;
+                VectorXd xp = xv, xm = xv;
+                xp[k] += h;
+                xm[k] -= h;
+                const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+                INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+                CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            }
+
+            // The exact Hessian by central differences of the gradient.
+            Matrix3d Hfd = Matrix3d::Zero();
+            for (int k = 0; k < 3; ++k) {
+                const double h = 1e-5;
+                VectorXd xp = xv, xm = xv, gp(3), gm(3);
+                xp[k] += h;
+                xm[k] -= h;
+                energy.gradient(xp, gp);
+                energy.gradient(xm, gm);
+                Hfd.col(k) = (gp - gm) / (2. * h);
+            }
+            // The omitted term, from the potential's own Hessian: w sum_f (1/n_f) sum_i
+            // 2 r_i a_i^2 hess Phi(q_i) / c.
+            Matrix3d dropped = Matrix3d::Zero();
+            for (const StencilEnergy3D::Face& f : faces) {
+                Matrix3d Df = Matrix3d::Zero();
+                for (const StencilEnergy3D::Sample& sm : f.samples) {
+                    const Vector3d q = sm.a * cs.x + sm.b * f.q1 + sm.c * f.q2;
+                    const double r = (cs.pot->value(q) - c) / c;
+                    Df += (2. * r * sm.a * sm.a / c) * cs.pot->hessian(q);
+                }
+                dropped += Df / double(f.samples.size());
+            }
+            dropped *= w;
+
+            // The gradient is the same in both forms, so Hfd serves both.
+            StencilEnergy3D energy_gn(cs.pot, faces, w, true);
+            MatrixXd H, Hgn;
+            energy.hessian(xv, H);
+            energy_gn.hessian(xv, Hgn);
+            const double scale = std::max(1., Hfd.norm());
+            INFO(
+                "||Hfd - H_exact|| / scale "
+                << (Hfd - Matrix3d(H)).norm() / scale << ", ||Hfd - H_gn|| / scale "
+                << (Hfd - Matrix3d(Hgn)).norm() / scale << ", ||dropped|| / scale "
+                << dropped.norm() / scale);
+            // Exact form: the difference itself. No PSD check: the dropped term is indefinite
+            // where r < 0, and every sample here happens to be outside the level set.
+            CHECK((Hfd - Matrix3d(H)).norm() <= 1e-6 * scale);
+            CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
+            // Gauss-Newton form: the difference less exactly the dropped term, and PSD.
+            CHECK((Hfd - (Matrix3d(Hgn) + dropped)).norm() <= 1e-6 * scale);
+            CHECK((Hgn - Hgn.transpose()).norm() <= 1e-12 * std::max(1., Hgn.norm()));
+            const Eigen::SelfAdjointEigenSolver<MatrixXd> es(Hgn);
+            CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., Hgn.norm()));
+            if (cs.flat) CHECK(dropped.norm() == 0.);
+        }
+    }
+
+    // Neither check is vacuous: off the level set in a curved region the omission is a real
+    // fraction of the Hessian (measured 25% here), so the Gauss-Newton form does NOT match the
+    // finite difference -- the reconstruction above bites on the dropped part, and an exact form
+    // that lost the term would fail the direct check above.
+    {
+        std::vector<StencilEnergy3D::Face> faces(2);
+        faces[0].q1 = vq1;
+        faces[0].q2 = vq2;
+        faces[1].q1 = vq2;
+        faces[1].q2 = vq3;
+        for (StencilEnergy3D::Face& f : faces) f.samples = order1;
+        StencilEnergy3D energy(euclid, faces, w, true);
+        const VectorXd xv = vx;
+        Matrix3d Hfd = Matrix3d::Zero();
+        for (int k = 0; k < 3; ++k) {
+            const double h = 1e-5;
+            VectorXd xp = xv, xm = xv, gp(3), gm(3);
+            xp[k] += h;
+            xm[k] -= h;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            Hfd.col(k) = (gp - gm) / (2. * h);
+        }
+        MatrixXd H;
+        energy.hessian(xv, H);
+        CHECK((Hfd - Matrix3d(H)).norm() >= 0.1 * Hfd.norm());
+    }
+
+    // Where every moving sample sits on the level set the omission vanishes, so the
+    // Gauss-Newton Hessian IS the exact one and the finite difference must match the code's
+    // Hessian with nothing added -- even though hess Phi != 0 there. Corners on the cylinder of
+    // radius delta around the edge x = z = 1, order 0 (the corners alone).
+    {
+        const auto on_cyl = [&](const double th, const double y) {
+            return Vector3d(1. + delta * std::cos(th), y, 1. + delta * std::sin(th));
+        };
+        std::vector<StencilEnergy3D::Face> faces(2);
+        faces[0].q1 = on_cyl(0.4, 0.35);
+        faces[0].q2 = on_cyl(1.1, -0.20);
+        faces[1].q1 = on_cyl(1.1, -0.20);
+        faces[1].q2 = on_cyl(0.9, -0.05);
+        for (StencilEnergy3D::Face& f : faces) f.samples = order0;
+        StencilEnergy3D energy(euclid, faces, w, true);
+        const VectorXd xv = on_cyl(0.7, 0.10);
+        REQUIRE(std::abs(euclid->value(Vector3d(xv)) - euclid->target_level()) <= 1e-12);
+        Matrix3d Hfd = Matrix3d::Zero();
+        for (int k = 0; k < 3; ++k) {
+            const double h = 1e-5;
+            VectorXd xp = xv, xm = xv, gp(3), gm(3);
+            xp[k] += h;
+            xm[k] -= h;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            Hfd.col(k) = (gp - gm) / (2. * h);
+        }
+        MatrixXd H;
+        energy.hessian(xv, H);
+        CHECK((Hfd - Matrix3d(H)).norm() <= 1e-6 * std::max(1., Hfd.norm()));
+    }
 }
 
 TEST_CASE("stencil-energy-3d-is-the-mean-squared-relative-error", "[offset][potential]")
@@ -1200,7 +1556,8 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
 {
     // The rest-shape AMIPS of a tet: gradient and Hessian against finite differences, and the
     // minimum of 3 at the rest shape (F = I), the same scale as the shared AMIPS against the
-    // regular tet.
+    // regular tet. The two cells carry different per-cell factors (Cell::weight, the rest
+    // volume at a front vertex), so the derivatives are checked with the factor in them.
     std::vector<RestAMIPSEnergy3D::Cell> cells;
     {
         RestAMIPSEnergy3D::Cell c;
@@ -1212,6 +1569,7 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
         R.col(1) = Vector3d(0.1, 1., 0.);
         R.col(2) = Vector3d(0., 0.2, 1.);
         c.rest_inv = R.inverse();
+        c.weight = 0.4;
         cells.push_back(c);
     }
     {
@@ -1224,6 +1582,7 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
         R.col(1) = Vector3d(0., -1., 0.);
         R.col(2) = Vector3d(0., 0., -1.);
         c.rest_inv = R.inverse();
+        c.weight = 2.5;
         cells.push_back(c);
     }
     RestAMIPSEnergy3D energy(cells, 1.3);
@@ -1263,6 +1622,11 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
     RestAMIPSEnergy3D at_rest({rest}, 1.0);
     VectorXd origin = Vector3d::Zero();
     CHECK(at_rest.value(origin) == Catch::Approx(3.));
+    // The per-cell factor multiplies the cell's term, on top of the energy's own weight.
+    RestAMIPSEnergy3D::Cell rest_v = rest;
+    rest_v.weight = 0.25;
+    RestAMIPSEnergy3D at_rest_v({rest_v}, 2.0);
+    CHECK(at_rest_v.value(origin) == Catch::Approx(1.5));
     VectorXd g0;
     at_rest.gradient(origin, g0);
     CHECK(g0.norm() <= 1e-12);
@@ -1270,6 +1634,44 @@ TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
     VectorXd bad = Vector3d(2., 2., 2.);
     CHECK(std::isnan(at_rest.value(bad)));
     CHECK(!at_rest.is_step_valid(origin, bad));
+
+    // Cubed (the form every 3D smoother uses): each cell's term is pAMIPS^3, 27 at the rest
+    // shape, with the chain-rule derivatives against finite differences.
+    RestAMIPSEnergy3D at_rest3({rest_v}, 2.0, true);
+    CHECK(at_rest3.value(origin) == Catch::Approx(2.0 * 0.25 * 27.));
+    RestAMIPSEnergy3D cubed(cells, 1.3, true);
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        VectorXd g;
+        cubed.gradient(xv, g);
+        MatrixXd H;
+        cubed.hessian(xv, H);
+        // value is the cube of the first-power energy cell by cell
+        double expected = 0.;
+        for (const RestAMIPSEnergy3D::Cell& c : cells) {
+            RestAMIPSEnergy3D one({c}, 1.0);
+            const double a = one.value(xv) / c.weight;
+            expected += 1.3 * c.weight * a * a * a;
+        }
+        CHECK(cubed.value(xv) == Catch::Approx(expected).epsilon(1e-12));
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (cubed.value(xp) - cubed.value(xm)) / (2. * h);
+            INFO("cubed k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            cubed.gradient(xp, gp);
+            cubed.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("cubed H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
 }
 
 

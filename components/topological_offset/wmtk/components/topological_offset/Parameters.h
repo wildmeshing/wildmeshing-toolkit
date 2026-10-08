@@ -36,7 +36,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
-    // Half-width of the envelope that contains every tag-region boundary during optimization.
+    // Half-width of the envelope that holds the held surfaces (3D: the input complex boundary and
+    // the domain wall, plus every other region boundary in the final pass; see the spec doc).
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
@@ -46,11 +47,6 @@ struct Parameters : public wmtk::OptimizerParameters
     // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
-    /// [2D ONLY] Debugging override for the potential's support radius: >= 0 uses this dhat as an
-    /// ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the
-    /// constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only
-    /// the 2D construction reads it; the 3D twin ignores it until the port.
-    double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // ---- the two convergence epsilons (was the single front_conv_rel) ----
     // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
@@ -60,114 +56,79 @@ struct Parameters : public wmtk::OptimizerParameters
     // refuses either one above target_distance: an epsilon coarser than the offset it measures
     // cannot decide anything.
     //
-    // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
-    // the distance to the level set along the field (OffsetPotential::relative_residual(), which
-    // for the euclidean field is the relative error (Phi - c)/c) -- and compares it against
-    // this. A vertex is placed when that same measure at the vertex alone is within it, which is
-    // the order-0 stencil, so the vertex measure and the face measure are one measure at two
-    // sample counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23. The
-    // loop exits on the face measure alone (every face within the bar, nothing unmeasurable);
-    // the vertex measure is a diagnostic since 2026-09-25. 2D exits on its chord measure, the
-    // midpoint sag, which unlike the 3D stencil does not sample the chord's two ends.
+    // THE ONE BAR, in 2D and in 3D. One quantity is measured everywhere -- over a simplex's
+    // stencil (a face's in 3D, a front chord's in 2D), the RMS of the distance to the level set
+    // along the field (OffsetPotential::relative_residual(), which for the euclidean field is the
+    // relative error (Phi - c)/c) -- and compared against this. A vertex is placed when that same
+    // measure at the vertex alone is within it, which is the order-0 stencil, so the vertex
+    // measure and the face (chord) measure are one measure at two sample counts. Replaces
+    // vertex_conv / sag_conv, which split the two apart 2026-09-23. What the loop exits on is
+    // front_measure's choice; the vertex measure is a diagnostic since 2026-09-25.
     double front_conv;
     double front_conv_rel;
 
     /// The convergence epsilon as a FRACTION of target_distance, which is the form the
-    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A mean of squared relative
-    /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
-    /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
-    /// code uses is a matter of where the division sits, not of what is being asked. 2D's
-    /// fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason.
+    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A
+    /// mean of squared relative errors is below front_conv_frac()^2 exactly when the same mean
+    /// taken in lengths is below front_conv^2 -- the two differ by target_distance^2 on both
+    /// sides -- so which form the code uses is a matter of where the division sits, not of what
+    /// is being asked.
     double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
-    // 2D ONLY since the 3D criteria were unified. Which convergence test gates a 2D run's vertex
-    // placement. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian,
-    // n its move direction; all four compare against front_conv. See front_vertex_conv_ratio().
-    //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
-    //     front_conv.
-    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against
-    //     front_conv_frac() x F.
-    //   "gradient_norm_rel": |n.g| against front_conv_frac() x the reference gradient, measured
-    //     once on the band as constructed.
-    //   "residual_error": not a stationarity measure at all -- the field's own residual at the
-    //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the distance to the level set along the field for the smooth
-    //     one), against front_conv.
-    //     No objective is built and n does not enter.
-    //
-    // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is
-    // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
-    /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
-    std::string front_conv_criterion;
-    // The front is placed by a one-dimensional solve along its field normal
-    // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
-    // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
-    // information, and in the free solve that tangential motion made fronts slide and fold where
-    // two of them meet.
-    bool front_normal_projection = true;
-    bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
+    /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
+    bool offset_collapse_veto = true, offset_swap_veto = true;
+    /// The front vertices' smoothing veto on the per-cell energy (see the spec); the engine's
+    /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
+    bool offset_front_smooth_veto = false;
+    /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
+    bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// Other input regions (no input-complex simplex, no wall contact) deform under smoothing
-    /// against their rest shape instead of being envelope-held. See the spec doc.
-    bool deform_others = true;
+    /// 3D: AMIPS is measured against each cell's stamped rest shape (plastic AMIPS) everywhere in
+    /// the loop -- the smoother, the operation guards and the vetoes; false: against the regular
+    /// tet. The final pass is always against the regular tet. See the spec doc.
+    bool use_rest_pose = true;
+    /// 3D: the vertex measure is the AREA-WEIGHTED mean of the face measures over the vertex's
+    /// offset faces -- in the front smoothing energy, the collapse and swap rules of the main
+    /// iterations, and the ring exit test; false (the default): every face weighs 1. See the spec.
+    bool area_weight_front = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
-    // Sampling density of THE measure -- in 3D both the criterion's and the energy's -- and of
-    // the residual diagnostics that share the lattice. Order k puts these points on a face:
+    // Sampling density of THE measure -- both the criterion's and the energy's, in 2D and 3D --
+    // and of the residual diagnostics that share the lattice. Order k puts these points on a
+    // face (3D):
     //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
     //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
     //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
+    // and on a front chord (2D), the same rule one dimension down:
+    //   0 -> 2, the ENDS alone;
+    //   k >= 1 -> the vertices of the chord cut into 2^(k-1) pieces plus the midpoint of each
+    //   piece, i.e. 3, 5, 9, 17, ...
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
     // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
-    // the ops guard's hot path as well as in energy_criterion() and every smoothing solve.
-    // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
-    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
+    // the operations' energy rules (TopoOffsetTetMesh::tet_energy(),
+    // TopoOffsetTriMesh::tri_energy()) as well as in energy_criterion() and every smoothing solve.
+    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     int stencil_order;
-    /// Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the
+    /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
-    /// square of the face measures (face_conv_ratio()) of its incident offset faces weighted by
-    /// area -- in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by
-    /// length. The loop exits when every ring measure is within the bar and nothing is
-    /// unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front
-    /// smoother's stencil energy weights its faces by area the same way
-    /// (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and
-    /// the halving at the corners of every face over it -- the rule of 2026-09-25, kept for
-    /// comparison.
+    /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D
+    /// of the chord measures (edge_offset_term()) of its front chords -- every simplex weighted
+    /// equally as in the per-cell energy. The loop exits when every ring measure is within the
+    /// bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone.
+    /// "face": every offset face (2D: chord) within the bar and the halving at the corners of
+    /// every face over it -- the rule of 2026-09-25, kept for comparison.
     std::string front_measure;
     bool sorted_marching;
-    /// See the spec: the marching places each new vertex where d(x) reaches target_distance
-    /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
-    bool sphere_trace_initialization;
-    double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
-    /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
-    /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
-    /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
-    /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
-    /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
-    /// See the spec doc, and marching_tris() / marching_tets().
-    bool experimental_consistent_construction_split = true;
-    /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
-    /// refinement. With it FALSE a face over the bar is handed to the halving only when all
-    /// THREE of its corners are already placed -- the safeguard that stops refinement from
-    /// chasing a moving front. True (the default) refines EVERY face over the bar, placed or not,
-    /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
-    /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
-    /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
-    /// `max_face_placed` still report the PLACED subset alone.
-    ///
-    /// Why it exists: under one unified measure the two halves can deadlock. A face chording a
-    /// feature of radius delta puts its centroid far inside the level set, and that sample's
-    /// pull cancels the corners' own placement pull almost exactly, so the corners never place;
-    /// refinement, which is the only thing that would shorten the chord and remove the sag, is
-    /// gated on exactly those corners being placed. Measured on the deliverable cube at
-    /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
-    /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
-    /// for 40 turns.
-    bool experimental_aggresive_refine = true;
+    /// How the marching places the offset (see the spec). A target_distance below the maximum
+    /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
+    /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
+    /// midpoint. See marching_tris() / marching_tets().
+    std::string construction_mode = "max_marchable_fallback";
+    double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
     /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
     /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
     /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
@@ -182,6 +143,22 @@ struct Parameters : public wmtk::OptimizerParameters
     /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
     /// more runs confirm it; false keeps the TetWild gates.
     bool experimental_nonoverlapping_gates = false;
+    /// Default true. Only when the target is not below the maximum marchable distance (marched
+    /// as construction_mode says): the loop first converges under stencil_order without
+    /// refinement, then under stencil_order with refinement. See the spec doc.
+    bool init_optimize = true;
+    /// EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1 (the
+    /// default) uses stencil_order there too. See the spec doc.
+    int init_optimize_stencil_order = -1;
+    /// Smoothing passes before the march that push the outer ends of the marched edges out to
+    /// 2 x target_distance; they stop early once every outer end is beyond target_distance +
+    /// front_conv. 0 (the default) = off. See the spec doc and
+    /// TopoOffsetTetMesh::repulsion_smoothing() / TopoOffsetTriMesh::repulsion_smoothing().
+    int repulsion_smoothing_passes = 0;
+    /// 2D and 3D. After those passes, at most this many rounds of the loop's operations (split,
+    /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
+    /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
+    int repulsion_rounds = 0;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -193,9 +170,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
     /// frozen-front finishing pass.
     int max_iterations;
-    // The operation passes' offset envelope half-width: the leash the front is kept inside while
-    // the operation passes run, the same tube every turn, rebuilt after every smoothing pass; see
-    // rebuild_offset_envelope(). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
+    // final pass, built once before it (3D: build_offset_envelope(); 2D:
+    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
     // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
     // tying it to target_distance made every change of the offset distance a silent change of the
     // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
@@ -232,7 +209,7 @@ struct Parameters : public wmtk::OptimizerParameters
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
-    /// smoothing) before the first turn of the single-phase loop.
+    /// smoothing) before the first turn of the loop.
     bool pre_smooth;
 
     VectorXd box_min;
@@ -267,21 +244,20 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
-        debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
         front_conv = json_params["front_conv"];
         front_conv_rel = json_params["front_conv_rel"];
-        front_conv_criterion = json_params["front_conv_criterion"];
         stencil_order = json_params["stencil_order"];
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
-        sphere_trace_initialization = json_params["sphere_trace_initialization"];
+        construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
-        experimental_consistent_construction_split =
-            json_params["EXPERIMENTAL_consistent_construction_split"];
-        experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
+        init_optimize = json_params["init_optimize"];
+        init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
+        repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
+        repulsion_rounds = json_params["repulsion_rounds"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
@@ -333,16 +309,23 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        front_normal_projection = json_params["front_normal_projection"];
-        front_alignment_energy = json_params["front_alignment_energy"];
+        offset_collapse_veto = json_params["offset_collapse_veto"];
+        offset_swap_veto = json_params["offset_swap_veto"];
+        offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
+        debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
-        deform_others = json_params["deform_others"];
+        use_rest_pose = json_params["use_rest_pose"];
+        area_weight_front = json_params["area_weight_front"];
         max_rounds = json_params["max_rounds"];
+        // THE weight w of AMIPS (OptimizerParameters' field): the per-cell energy (tet_energy =
+        // w AMIPS^3 + the offset terms in 3D, tri_energy = w AMIPS + the offset terms in 2D), the
+        // smoothing objectives, and 1 - w for the envelope term of envelope-held vertices.
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
-        smooth_quality_veto = json_params["smooth_quality_veto"];
+        smooth_quality_veto =
+            json_params["offset_smooth_veto"]; // the engine's field, this component's key
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

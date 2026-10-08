@@ -20,6 +20,12 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // repulsion_rounds, before the march: a marched edge is never split -- its midpoint would
+        // be a new outer end nearer the input than the one the rounds push out. As in 3D.
+        if (m_repulsion_potential &&
+            is_marched_edge(t.vid(*this), t.switch_vertex(*this).vid(*this))) {
+            return false;
+        }
         // No edge class is refused here, the domain wall included: a wall edge is a tracked
         // region boundary like any other, so the envelopes hold it. Do not re-add a wall
         // refusal; measured worse -- see git history of this file.
@@ -32,7 +38,7 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         c.v1_id = t.vid(*this);
         c.v2_id = t.switch_vertex(*this).vid(*this);
         // Captured here, while both endpoints are in hand, and propagated as the endpoints' AND
-        // -- never recomputed from the incident faces, whose tags execute_offset() replaces as
+        // -- never recomputed from the incident faces, whose tags construct_offset() replaces as
         // the band grows. Boundary membership is a property of the input partition, not of the
         // current tags. split_after_vertex() gates these bits on the edge's own persistent
         // class, so a chord's midpoint never picks them up.
@@ -69,10 +75,9 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     Vector2d p1 = m_vertex_attribute[cache.v1_id].m_posf;
     Vector2d p2 = m_vertex_attribute[cache.v2_id].m_posf;
     Vector2d p_new;
-    // Midpoint: no target_distance enters construction at all, and carrying the front out to
-    // the level set is the optimization phase's job. SphereTrace (marching_tris under
-    // sphere_trace_initialization): the vertex goes to the point of the edge where d(x) reaches
-    // target_distance within the tolerance, and to the midpoint when the trace leaves the edge.
+    // Midpoint: the plain edge midpoint. SphereTrace (marching_tris(), see construction_mode):
+    // the vertex goes to the point of the edge where d(x) reaches m_construction_distance within
+    // the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
@@ -101,7 +106,7 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     // The flag is the edge's own class, not an AND of the endpoints: two vertices sharing a
     // region can be joined by a chord through the interior, and marching splits exactly such
     // chords. Behind that gate the bits are the endpoints' AND, propagated, never recomputed from
-    // the incident faces, whose tags execute_offset() replaces as the band grows.
+    // the incident faces, whose tags construct_offset() replaces as the band grows.
     cache.new_v_extra.m_is_on_region = edge_is_region(e_id);
     cache.new_v_extra.m_boundary_mask = cache.new_v_extra.m_is_on_region
                                             ? (m_vertex_extra[cache.v1_id].m_boundary_mask &
@@ -141,12 +146,13 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
     Vector2d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
-    // d = target_distance is at least target_distance - d away in every direction, and stepping
-    // exactly that far along the edge can never cross it. The step is positive while the trace
-    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
-    // the loop ends within L / tol steps, one way or the other. Same as 3D.
-    const double D = m_offset_params.target_distance;
+    // Sphere tracing to D = m_construction_distance (target_distance, or the construction_mode
+    // fallback; see the marching): d is 1-Lipschitz, so from a point at distance d the level set
+    // d = D is at least D - d away in every direction, and stepping exactly that far along the
+    // edge can never cross it. The step is positive while the trace has not converged
+    // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
+    // steps, one way or the other. Same as 3D.
+    const double D = m_construction_distance;
     const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector2d dir = p_out - p_in;
     const double L = dir.norm();
