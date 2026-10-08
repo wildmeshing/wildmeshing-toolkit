@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -22,10 +23,12 @@ namespace wmtk::utils {
  * This is what lets a pass that touches only a vertex and its one-ring -- smoothing -- run a
  * whole class in parallel with no locks: two vertices of one class share no edge, so neither
  * moves a vertex the other reads, and they share no cell, so neither writes a cell attribute the
- * other writes. Vertices outside `vids` are not moved by the pass and do not constrain the
- * coloring.
+ * other writes. They can share a neighbour, so the pass must only READ outside a vertex's star
+ * (see smooth_classes_checked). Vertices outside `vids` are not moved by the pass and do not
+ * constrain the coloring.
  *
- * @param vids the vertices to color, in the order the greedy pass should visit them.
+ * @param vids the vertices to color, in the order the greedy pass should visit them; no
+ *        vertex twice.
  * @param vert_capacity an upper bound on every vertex id involved.
  * @param num_threads threads used to collect the adjacency (the coloring itself is serial).
  * @param neighbors `neighbors(vid, out)` appends the vertices adjacent to `vid` to `out`;
@@ -44,6 +47,9 @@ std::vector<std::vector<size_t>> greedy_vertex_coloring(
     constexpr uint32_t kNone = UINT32_MAX;
     std::vector<uint32_t> slot(vert_capacity, kNone);
     for (size_t i = 0; i < vids.size(); ++i) {
+        // A repeated vertex would not see its other copy as a neighbour and could land twice in
+        // one class, smoothed by two threads at once.
+        assert(slot[vids[i]] == kNone && "greedy_vertex_coloring: a vertex is listed twice");
         slot[vids[i]] = uint32_t(i);
     }
 
@@ -123,7 +129,15 @@ inline size_t color_class_chunk(size_t n, int num_threads, size_t max_chunk)
  * The barrier counts on every task, so no task starts before all of them are launched: if
  * launching one fails (a thread cannot be created), the tasks already running leave without
  * touching the barrier and the launch failure is rethrown, instead of those tasks waiting forever
- * for one that never came.
+ * for one that never came. For the same reason the barrier needs all `num_threads` tasks running
+ * at once, which task_group guarantees (each task gets a thread of its own).
+ *
+ * The barrier and the start gate wait by spinning on std::this_thread::yield() rather than
+ * blocking: a thread reaches the barrier only once its class has no chunk left to hand out, so
+ * it waits for the last few chunks the other threads are finishing -- too short a wait to be
+ * worth a sleep and a wake-up through a condition variable. The price is paid when the machine
+ * has fewer free cores than `num_threads` (CI, other jobs): the waiting threads keep yielding
+ * instead of sleeping and compete for the cores the threads they wait for need.
  */
 template <typename F>
 size_t for_each_in_classes(
@@ -132,6 +146,9 @@ size_t for_each_in_classes(
     size_t max_chunk,
     F&& fn)
 {
+    size_t n_total = 0;
+    for (const auto& cls : classes) n_total += cls.size();
+    if (n_total == 0) return 0;
     const size_t nt = size_t(num_threads > 1 ? num_threads : 1);
     if (nt == 1) {
         size_t successes = 0;
@@ -194,7 +211,8 @@ size_t for_each_in_classes(
                     failed.store(true, std::memory_order_relaxed);
                 }
             }
-            barrier();
+            // Not after the last class: tg.wait() is the barrier there.
+            if (c + 1 < classes.size()) barrier();
         }
         successes.fetch_add(mine, std::memory_order_relaxed);
     };
@@ -210,6 +228,33 @@ size_t for_each_in_classes(
     tg.wait();
     if (error) std::rethrow_exception(error);
     return successes.load();
+}
+
+/**
+ * @brief One smoothing sweep over `classes` (see for_each_in_classes): `m.smooth_vertex` on every
+ * vertex, with the mesh checking that each smooth stays in its vertex's star; returns how many
+ * smooths succeeded.
+ *
+ * Two vertices of a class share no simplex of their stars, but they can share a neighbour, and
+ * a smoothing hook that reaches anything outside the star through non-const access has it
+ * written back when its smooth is rejected -- by two threads at once. The check
+ * (Mesh::m_check_smoothing_stays_in_star) turns that into an error on the first such access,
+ * whatever the number of threads.
+ */
+template <typename Mesh>
+size_t
+smooth_classes_checked(Mesh& m, const std::vector<std::vector<size_t>>& classes, size_t max_chunk)
+{
+    struct Restore
+    {
+        bool& flag;
+        bool saved;
+        ~Restore() { flag = saved; }
+    } restore{m.m_check_smoothing_stays_in_star, m.m_check_smoothing_stays_in_star};
+    m.m_check_smoothing_stays_in_star = true;
+    return for_each_in_classes(classes, m.NUM_THREADS, max_chunk, [&m](size_t v) {
+        return m.smooth_vertex(m.tuple_from_vertex(v));
+    });
 }
 
 } // namespace wmtk::utils

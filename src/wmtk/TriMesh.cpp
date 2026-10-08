@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 
 using namespace wmtk;
 
@@ -794,7 +795,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
-    if (operation_dry_run()) return true;
+    if (dry_run()) return true;
     // get local eid for return tuple construction
     const size_t eid = t.local_eid(*this);
     const size_t t_fid = t.fid(*this);
@@ -1151,7 +1152,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             return false;
         }
     }
-    if (operation_dry_run()) return true; // checks done, the change would come next
+    if (dry_run()) return true; // checks done, the change would come next
 
     Tuple return_t;
     size_t new_vid;
@@ -1521,7 +1522,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         // should be already checked in swap_edge_before
         return false; // can't sawp on boundary or non-manifold edge
     }
-    if (operation_dry_run()) return true;
+    if (dry_run()) return true;
 
     Tuple tmp_tuple;
     tmp_tuple = t_opps[0];
@@ -1609,7 +1610,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
-    if (operation_dry_run()) return true;
+    if (dry_run()) return true;
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     // Smoothing moves a vertex without touching connectivity, so the reference is simply
@@ -1622,7 +1623,9 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
 #endif
 
     start_protect_attributes();
-    if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tris_for_vertex(loc0));
+    if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
+    if (!ok) {
         rollback_protected_attributes();
         return false;
     }
@@ -1641,6 +1644,48 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
+void TriMesh::check_smoothing_stayed_in_star(const size_t vid)
+{
+    const auto tri_has = [&](size_t fid, size_t skip) {
+        for (size_t k = 0; k < 3; ++k) {
+            if (k != skip && m_tri_connectivity[fid][k] == vid) return true;
+        }
+        return false;
+    };
+    std::vector<size_t> recorded;
+    const auto first_outside = [&](AbstractAttributeContainer* c, auto in_star) {
+        recorded.clear();
+        if (c != nullptr) c->append_recorded(recorded);
+        for (const size_t i : recorded) {
+            if (!in_star(i)) return std::optional<size_t>(i);
+        }
+        return std::optional<size_t>();
+    };
+
+    const char* kind = "vertex";
+    std::optional<size_t> bad = first_outside(p_vertex_attrs, [&](size_t v) { return v == vid; });
+    if (!bad) {
+        // Edge 3 * fid + l is the edge of triangle fid opposite its l-th vertex.
+        kind = "edge";
+        bad = first_outside(p_edge_attrs, [&](size_t e) { return tri_has(e / 3, e % 3); });
+    }
+    if (!bad) {
+        kind = "triangle";
+        bad = first_outside(p_face_attrs, [&](size_t f) { return tri_has(f, 3); });
+    }
+    if (!bad) return;
+    // Drop the record without writing it back: the write-back is the race this check prevents.
+    release_protect_attributes();
+    log_and_throw_error(
+        "Smoothing vertex {} reached {} {}, outside its star, through non-const attribute access. "
+        "Smoothing runs non-adjacent vertices concurrently without locks, and a rejected smooth "
+        "writes every entry it reached back: read anything outside the star through a const view "
+        "(std::as_const).",
+        vid,
+        kind,
+        *bad);
+}
+
 bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_face_before(t)) {
@@ -1649,7 +1694,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
-    if (operation_dry_run()) return true;
+    if (dry_run()) return true;
 
     // get local eid for return tuple construction
     const size_t local_eid = t.local_eid(*this);

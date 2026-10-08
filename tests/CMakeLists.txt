@@ -26,8 +26,10 @@ set(TEST_SOURCES
     test_orient_by_majority.cpp
     test_optimization.cpp
     test_threading.cpp
+    test_vertex_coloring.cpp
     test_ring_lock.cpp
     test_slot_allocation.cpp
+    test_screening.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

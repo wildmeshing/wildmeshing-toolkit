@@ -396,8 +396,10 @@ bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
         while (k < 3 && vs[k] != vid) ++k;
         if (k == 3) continue;
         RestAMIPSEnergy2D::Cell c;
-        c.q1 = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
-        c.q2 = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
+        // Neighbours: read through the const smoothing_position(), see
+        // TriOptimizerMesh::smooth_after().
+        c.q1 = smoothing_position(vs[(k + 1) % 3]);
+        c.q2 = smoothing_position(vs[(k + 2) % 3]);
         Eigen::Matrix2d R;
         R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
         R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];

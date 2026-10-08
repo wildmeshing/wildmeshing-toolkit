@@ -558,6 +558,18 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access, e.g.
+     * `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
@@ -721,12 +733,17 @@ protected:
     /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
     /// entered the surface branch at all, so "the surface never even presents a candidate" is
     /// distinguishable from "candidates are presented and refused".
+    ///
+    /// In a screened pass (ExecutePass::screen_before_commit) the stages up to before_pass are
+    /// counted by the dry run as well as by the real attempt. `screened` counts the dry runs
+    /// that passed every check, i.e. the before_pass counts a real attempt repeats.
     enum class SwapStage : int {
         attempt,
         surface_attempt,
         before_pass,
         after_enter,
         accepted,
+        screened,
         COUNT
     };
 
@@ -803,6 +820,11 @@ protected:
     {
         if (e == OpEvent::attempt) current_op_kind() = k;
         m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+        // The edge swaps whose hooks count SwapStage; see swap_reject_report().
+        if (e == OpEvent::screened &&
+            (k == OpKind::swap_32 || k == OpKind::swap_44 || k == OpKind::swap_56)) {
+            swap_stage(SwapStage::screened);
+        }
     }
     /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
     /// can be charged to the right kind without passing the kind through every hook. COUNT

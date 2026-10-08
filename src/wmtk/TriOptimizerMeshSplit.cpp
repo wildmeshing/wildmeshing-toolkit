@@ -188,7 +188,7 @@ bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
         // Claim only once the whole link is known to be free, so a refusal late in the loop
         // does not burn the budget of a vertex found earlier.
         // A dry run only checks: claiming here would make the real attempt refuse itself.
-        if (!operation_dry_run()) {
+        if (!dry_run()) {
             for (const size_t vid : to_claim) {
                 m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
             }

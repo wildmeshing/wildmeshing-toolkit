@@ -13,8 +13,8 @@ namespace wmtk::threading {
  * `num_threads` tasks.
  *
  * Unlike parallel_for, which gives each thread one fixed slice, a task here takes the next chunk
- * whenever it finishes one, so items of very different cost -- dry runs, say -- still keep every
- * thread busy.
+ * whenever it finishes one, so items of very different cost -- the one-ring gathers of vertices
+ * of very different valence, say -- still keep every thread busy.
  *
  * Which task runs which chunk is arbitrary. Callers that need a result independent of the
  * number of threads must make the items independent of each other.

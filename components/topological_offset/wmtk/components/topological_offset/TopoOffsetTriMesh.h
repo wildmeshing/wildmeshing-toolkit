@@ -723,7 +723,8 @@ public:
     /// offset surface. No swap counter here: the 3D twin also guards the surface flip, which has
     /// no 2D counterpart -- see swap_edge_before().
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
-    /// Splits of an offset-boundary edge: offered, accepted.
+    /// Splits of an offset-boundary edge: offered, accepted. Real attempts only: a screened
+    /// pass's dry runs are not counted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
     /// Parent face labels for an optimization split, keyed by the apex vertex opposite the split

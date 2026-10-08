@@ -5,6 +5,9 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <optional>
+#include <vector>
+
 namespace wmtk {
 
 // Atomically reserve `n` contiguous fresh tet slots from the preallocated storage.
@@ -363,13 +366,66 @@ bool TetMesh::smooth_vertex(const Tuple& loc0)
     if (!smooth_before(loc0)) return false;
     if (dry_run()) return true;
     start_protect_attributes();
-    if (!smooth_after(loc0) || !invariants(get_one_ring_tets_for_vertex(loc0))) {
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0));
+    if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
+    if (!ok) {
         rollback_protected_attributes();
         return false;
     }
     release_protect_attributes();
 
     return true;
+}
+
+void TetMesh::check_smoothing_stayed_in_star(const size_t vid)
+{
+    const auto& tets = m_tet_connectivity;
+    const auto tet_has = [&](size_t tid, const int* local, int n) {
+        for (int k = 0; k < n; ++k) {
+            if (tets[tid][local[k]] == vid) return true;
+        }
+        return false;
+    };
+    const int all4[4] = {0, 1, 2, 3};
+    std::vector<size_t> recorded;
+    const auto first_outside = [&](AbstractAttributeContainer* c, auto in_star) {
+        recorded.clear();
+        if (c != nullptr) c->append_recorded(recorded);
+        for (const size_t i : recorded) {
+            if (!in_star(i)) return std::optional<size_t>(i);
+        }
+        return std::optional<size_t>();
+    };
+
+    const char* kind = "vertex";
+    std::optional<size_t> bad = first_outside(p_vertex_attrs, [&](size_t v) { return v == vid; });
+    if (!bad) {
+        kind = "edge";
+        bad = first_outside(p_edge_attrs, [&](size_t e) {
+            return tet_has(e / 6, m_local_edges[e % 6].data(), 2);
+        });
+    }
+    if (!bad) {
+        kind = "face";
+        bad = first_outside(p_face_attrs, [&](size_t f) {
+            return tet_has(f / 4, m_local_faces[f % 4].data(), 3);
+        });
+    }
+    if (!bad) {
+        kind = "tet";
+        bad = first_outside(p_tet_attrs, [&](size_t t) { return tet_has(t, all4, 4); });
+    }
+    if (!bad) return;
+    // Drop the record without writing it back: the write-back is the race this check prevents.
+    release_protect_attributes();
+    log_and_throw_error(
+        "Smoothing vertex {} reached {} {}, outside its star, through non-const attribute access. "
+        "Smoothing runs non-adjacent vertices concurrently without locks, and a rejected smooth "
+        "writes every entry it reached back: read anything outside the star through a const view "
+        "(std::as_const).",
+        vid,
+        kind,
+        *bad);
 }
 
 

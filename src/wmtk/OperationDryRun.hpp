@@ -23,6 +23,11 @@ namespace wmtk {
  * that does write (TetOptimizerMesh rounds the vertex in smooth_before, and claims high-valence
  * vertices in split_edge_before) skips that write when operation_dry_run() is set, answering as
  * if it had succeeded where it cannot tell without writing.
+ *
+ * A counter in a hook sees the dry run and then, for a candidate that passes it, the real attempt
+ * too. A refusal is counted once, since a refused dry run ends the candidate; a counter of how far
+ * candidates got either skips the dry runs (as topological_offset's flip funnel does) or is
+ * corrected for them (as TetOptimizerMesh's swap stages are, see SwapStage::screened).
  */
 inline bool& operation_dry_run()
 {
