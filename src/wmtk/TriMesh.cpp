@@ -294,18 +294,21 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
     return faces;
 }
 
-bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+bool TriMesh::Tuple::is_valid_unlocked(const TriMesh& m) const
 {
     if (m_fid + 1 == 0) {
         return false;
     }
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
-        // assert(false);
         return false;
     }
     // Condition 3: tuple m_hash check
-    if (m_hash != m.m_tri_connectivity[m_fid].hash) {
-        // assert(false);
+    return m_hash == m.m_tri_connectivity[m_fid].hash;
+}
+
+bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+{
+    if (!is_valid_unlocked(m)) {
         return false;
     }
 #ifndef NDEBUG
@@ -795,6 +798,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (dry_run()) return true;
     // get local eid for return tuple construction
     const size_t eid = t.local_eid(*this);
     const size_t t_fid = t.fid(*this);
@@ -1151,6 +1155,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+    if (dry_run()) return true; // checks done, the change would come next
 
     Tuple return_t;
     size_t new_vid;
@@ -1520,6 +1525,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         // should be already checked in swap_edge_before
         return false; // can't sawp on boundary or non-manifold edge
     }
+    if (dry_run()) return true;
 
     Tuple tmp_tuple;
     tmp_tuple = t_opps[0];
@@ -1607,6 +1613,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+    if (dry_run()) return true;
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     // Smoothing moves a vertex without touching connectivity, so the reference is simply
@@ -1690,6 +1697,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (dry_run()) return true;
 
     // get local eid for return tuple construction
     const size_t local_eid = t.local_eid(*this);
@@ -2737,7 +2745,9 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
         }
     }
 
-    if (!v1.is_valid(*this)) {
+    // Only once v1 is ours, as in TetMesh: while another thread holds it, that thread may be
+    // rewriting e's triangle, and is_valid()'s debug checks would read it mid-change.
+    if (!release_flag && !v1.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {
@@ -2754,7 +2764,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
             release_flag = true;
         }
     }
-    if (!v2.is_valid(*this)) {
+    if (!release_flag && !v2.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {

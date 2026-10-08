@@ -3,13 +3,16 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/serial_priority_queue.hpp>
 #include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
+#include <array>
 #include <deque>
+#include <iterator>
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -22,10 +25,13 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <tuple>
 #include <type_traits>
@@ -214,6 +220,14 @@ struct ExecutePass
      * is a defect: the operation fails (on_fail) and is counted in wait_defects() rather than
      * being set aside forever.
      *
+     * In a screened pass (screen_before_commit) an operation that waits is not retried within
+     * the round: it stays counted and is a candidate of the next round, screened again. A round
+     * in which nothing got as far as an attempt while operations waited cannot make progress --
+     * what they wait on is still queued and the mesh has not changed -- so there, too, every
+     * waiting operation is a defect: it fails and is counted in wait_defects(). A `must_wait`
+     * that orders the operations strictly never gets there, since the first operation in its
+     * order never waits.
+     *
      * Both empty, the default: nothing is counted and nothing waits.
      */
     std::function<uint64_t(const AppMesh&, const Op&, const Tuple&)> queue_key;
@@ -273,6 +287,36 @@ struct ExecutePass
      * result is not sharp between 32 and 512; it is sharp against 0.
      */
     size_t deferral_window = 128;
+
+    /**
+     * @brief Screen every operation with a dry run before committing any.
+     *
+     * When set, a parallel pass runs in rounds. Each round first dry-runs every candidate in
+     * parallel against the unchanging mesh, with no locks (see operation_dry_run()): everything
+     * an operation checks before its first change -- the before-hook, valence, the choice of swap
+     * configuration -- runs, and the operations refused there are reported through on_fail like
+     * any failure. Only the survivors go through the queues and ring locks, where they are
+     * attempted for real with every check repeated. The operations their successes renew are
+     * not queued straight away; they are the next round's candidates, screened the same way.
+     *
+     * The point is that the expensive part of a parallel pass was claiming a two-ring of locks
+     * for every attempt, and ~98% of attempts on the challenging tetwild models are refused
+     * before their first change: those now cost a lock-free read, and the ring locks are taken
+     * by the ~2% that get as far as changing the mesh.
+     *
+     * On by default for every parallel pass: every operation of the TetMesh and TriMesh
+     * registries honours operation_dry_run(), including the splits and vertex smoothing, where it
+     * screens out almost nothing but keeps all passes on one pipeline. One driver turns it off:
+     * the 2D collapse pass, where it costs more than it saves (TriOptimizerMeshCollapse.cpp).
+     * Not used by serial passes, which keep their single queue (and their output), nor by a
+     * pass with a live stopping criterion (qslim, shortest edge collapse): those collapse in
+     * global priority order up to an exact count, which rounds would reorder.
+     *
+     * Memory: a round holds its candidates as (operation rank, tuple), compacts the survivors in
+     * place, and collects the next round's in deques, so a screened pass holds about what the
+     * queues of an unscreened one would.
+     */
+    bool screen_before_commit = true;
     /**
      * @brief Construct a new Execute Pass object. It contains the name-to-operation map and the
      *functions that define the rules for operations
@@ -433,7 +477,7 @@ public:
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
         return execute(m, [&](const Push& push) {
-            for (const auto& [op, e] : operation_tuples) push(op, e);
+            for (const auto& [op, e] : operation_tuples) push(op, e, 0);
         });
     }
 
@@ -449,7 +493,7 @@ public:
     bool operator()(AppMesh& m, std::vector<std::pair<Op, Tuple>>&& operation_tuples)
     {
         return execute(m, [&](const Push& push) {
-            for (const auto& [op, e] : operation_tuples) push(op, e);
+            for (const auto& [op, e] : operation_tuples) push(op, e, 0);
             // Swapping with an empty vector, not clear(), so the storage is returned.
             std::vector<std::pair<Op, Tuple>>().swap(operation_tuples);
         });
@@ -461,15 +505,460 @@ public:
      */
     bool operator()(AppMesh& m, OpList<Tuple>&& operation_tuples)
     {
-        return execute(m, [&](const Push& push) { operation_tuples.consume(push); });
+        return execute(m, [&](const Push& push) {
+            operation_tuples.consume([&](const Op& op, const Tuple& t) { push(op, t, 0); });
+        });
     }
 
 private:
-    /// Queues one candidate; what a seeder calls for each entry of its list.
-    using Push = std::function<void(const Op&, const Tuple&)>;
+    /**
+     * @brief Queues one candidate; what a seeder calls for each entry of its list.
+     *
+     * The third argument is the candidate's queue key when the caller has already counted it
+     * (a screened round's commit, see WaitSink); every other seeder passes 0, and the key is
+     * computed and counted as the candidate is queued.
+     */
+    using Push = std::function<void(const Op&, const Tuple&, uint64_t)>;
+    using OpFn = std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>;
 
-    bool execute(AppMesh& m, const std::function<void(const Push&)>& seed)
+    /**
+     * @brief The registered operations by rank. edit_operation_maps is a std::map, so iterating
+     * it yields the names in lexicographic order and an operation's index is its name's rank:
+     * comparing ranks is comparing names, which is what keeps the queue order unchanged.
+     */
+    struct OpTable
     {
+        std::vector<const Op*> name;
+        std::vector<OpFn*> fn;
+
+        explicit OpTable(std::map<Op, OpFn>& ops)
+        {
+            name.reserve(ops.size());
+            fn.reserve(ops.size());
+            for (auto& kv : ops) {
+                name.push_back(&kv.first);
+                fn.push_back(&kv.second);
+            }
+        }
+
+        // An operation with no entry here was previously default-constructed into the map by
+        // operator[] and then called, which throws bad_function_call -- so it cannot occur in
+        // any working configuration. Say so plainly rather than ordering it arbitrarily.
+        uint32_t rank(const Op& op) const
+        {
+            const auto it =
+                std::lower_bound(name.begin(), name.end(), op, [](const Op* a, const Op& b) {
+                    return *a < b;
+                });
+            if (it == name.end() || **it != op) {
+                log_and_throw_error("No operation registered under the name '{}'.", op);
+            }
+            return uint32_t(it - name.begin());
+        }
+    };
+
+    /**
+     * @brief Where a screened round collects the next round's candidates: the operations its
+     * successes renewed and the ones must_wait set aside, by rank (see OpTable), each with its
+     * queue key, which stays counted (`keys` is empty when the pass sets no queue_key).
+     *
+     * Deques, because these lists reach millions of entries on the first rounds of a pass, and a
+     * vector growing by doubling holds its old and its new buffer at once.
+     */
+    struct WaitSink
+    {
+        std::mutex mutex;
+        std::deque<std::pair<uint32_t, Tuple>> ops;
+        std::deque<uint64_t> keys;
+    };
+
+    /// Screened rounds; see screen_before_commit.
+    bool run_screened(AppMesh& m, const std::function<void(const Push&)>& seed)
+    {
+        m_stats = PassStats{};
+        m_untracked_done = 0;
+        const OpTable ops(edit_operation_maps);
+        const bool keyed = bool(queue_key);
+
+        // The candidates, compact (rank, tuple), in a deque so that growing it never holds two
+        // buffers at once. The input list is released as it is read, so it and this never both
+        // hold every candidate.
+        using Cand = std::pair<uint32_t, Tuple>;
+        std::deque<Cand> candidates;
+        seed([&](const Op& op, const Tuple& t, uint64_t) {
+            candidates.emplace_back(ops.rank(op), t);
+        });
+
+        // queue_key bookkeeping (see must_wait) for the whole call, across its rounds: an
+        // operation counts as queued from the moment it is a candidate -- or renewed -- until it
+        // is refused, tried, or dropped. A waiting operation stays queued into the next round.
+        // `keys[i]` is candidate i's key; `keys` stays empty when the pass sets no queue_key.
+        m_queued.clear();
+        const auto done = [&](const uint64_t key) {
+            if (key != 0 && !m_queued.remove(key)) ++m_untracked_done;
+        };
+        std::deque<uint64_t> keys;
+        const auto key_at = [&keys, keyed](size_t i) -> uint64_t { return keyed ? keys[i] : 0; };
+        if (keyed) {
+            keys.resize(candidates.size(), 0);
+            threading::dynamic_parallel_for(
+                candidates.size(),
+                std::max(1, num_threads),
+                256,
+                [&](size_t b, size_t e) {
+                    for (size_t i = b; i < e; ++i) {
+                        const auto& [op, t] = candidates[i];
+                        if (!t.is_valid(m)) continue;
+                        keys[i] = queue_key(m, *ops.name[op], t);
+                        if (keys[i] != 0) m_queued.add(keys[i]);
+                    }
+                });
+        }
+
+        // Operations renewed by a success come back here, to be screened in the next round,
+        // instead of going straight into the commit queues; counted as queued right away, with
+        // the ring still locked. Restored on every way out.
+        using RenewFn = decltype(renew_neighbor_tuples);
+        struct RestoreRenew
+        {
+            RenewFn& slot;
+            RenewFn saved;
+            ~RestoreRenew() { slot = std::move(saved); }
+        } restore{renew_neighbor_tuples, renew_neighbor_tuples};
+        WaitSink next; // renewed and waiting operations, with their keys
+        renew_neighbor_tuples =
+            [&next, &ops, keyed, this, driver = restore.saved](
+                const AppMesh& mm,
+                Op op,
+                const std::vector<Tuple>& newts) -> std::vector<std::pair<Op, Tuple>> {
+            const std::vector<std::pair<Op, Tuple>> tups = driver(mm, op, newts);
+            std::vector<Cand> ranked;
+            ranked.reserve(tups.size());
+            for (const auto& [o, t] : tups) ranked.emplace_back(ops.rank(o), t);
+            std::vector<uint64_t> ks;
+            if (keyed) {
+                ks.assign(tups.size(), 0);
+                for (size_t k = 0; k < tups.size(); ++k) {
+                    if (!tups[k].second.is_valid(mm)) continue;
+                    ks[k] = queue_key(mm, tups[k].first, tups[k].second);
+                    if (ks[k] != 0) m_queued.add(ks[k]);
+                }
+            }
+            std::lock_guard<std::mutex> lock(next.mutex);
+            next.ops.insert(next.ops.end(), ranked.begin(), ranked.end());
+            next.keys.insert(next.keys.end(), ks.begin(), ks.end());
+            return {};
+        };
+
+        enum : uint8_t { kStale = 0, kSurvives = 1, kRefused = 2 };
+        constexpr size_t kInlineCommit = 64;
+        size_t attempts = 0, successes = 0, failures = 0, rounds = 0, committed_attempts = 0;
+        const size_t waits_before = m_waits.load();
+        using Clock = std::chrono::steady_clock;
+        Clock::duration screen_time{}, commit_time{};
+        while (!candidates.empty()) {
+            ++rounds;
+            const auto screen_start = Clock::now();
+            // 1. Screen: dry runs, in parallel, against a mesh nobody is changing.
+            std::vector<uint8_t> verdict(candidates.size(), kStale);
+            threading::dynamic_parallel_for(
+                candidates.size(),
+                std::max(1, num_threads),
+                64,
+                [&](size_t b, size_t e) {
+                    OperationDryRunScope dry;
+                    for (size_t i = b; i < e; ++i) {
+                        const auto& [op, t] = candidates[i];
+                        if (!t.is_valid(m)) continue;
+                        const Op& name = *ops.name[op];
+                        if (!is_weight_up_to_date(
+                                m,
+                                std::tuple<double, Op, Tuple>(priority(m, name, t), name, t))) {
+                            continue;
+                        }
+                        verdict[i] = (*ops.fn[op])(m, t) ? kSurvives : kRefused;
+                    }
+                });
+
+            // 2. The refused are failures, reported as the queues would report them; they and
+            // the stale ones are no longer queued. The survivors are compacted to the front, in
+            // place: a second list beside this one would double the round's footprint.
+            size_t n = 0;
+            for (size_t i = 0; i < candidates.size(); ++i) {
+                if (verdict[i] == kSurvives) {
+                    if (n != i) {
+                        candidates[n] = std::move(candidates[i]);
+                        if (keyed) keys[n] = keys[i];
+                    }
+                    ++n;
+                    continue;
+                }
+                done(key_at(i));
+                if (verdict[i] == kRefused) {
+                    on_fail(m, *ops.name[candidates[i].first], candidates[i].second);
+                    ++failures;
+                    ++attempts;
+                }
+            }
+            std::vector<uint8_t>().swap(verdict);
+            candidates.resize(n);
+            candidates.shrink_to_fit();
+            if (keyed) {
+                keys.resize(n);
+                keys.shrink_to_fit();
+            }
+
+            // 3. Commit the survivors for real, through the usual queues and ring locks.
+            const auto commit_start = Clock::now();
+            screen_time += commit_start - screen_start;
+            const size_t committed_before = committed_attempts;
+            if (n > kInlineCommit) {
+                execute(
+                    m,
+                    [&](const Push& push) {
+                        for (size_t i = 0; i < candidates.size(); ++i) {
+                            push(*ops.name[candidates[i].first], candidates[i].second, key_at(i));
+                        }
+                        // Released once queued, so the list and the queues never both hold
+                        // every survivor (see operator()).
+                        std::deque<Cand>().swap(candidates);
+                        std::deque<uint64_t>().swap(keys);
+                    },
+                    &next);
+                successes += size_t(cnt_success);
+                failures += size_t(cnt_fail);
+                attempts += size_t(cnt_success) + size_t(cnt_fail);
+                committed_attempts += size_t(cnt_success) + size_t(cnt_fail);
+            } else if (n > 0) {
+                const auto inline_start = Clock::now();
+                // Too few to be worth a parallel pass: commit them here, best first, as a
+                // single queue would -- no tasks, no locks, nothing else is running. A chain of
+                // dependent operations, each renewing the next in one spot, comes through as one
+                // survivor per round, thousands of rounds in a row (a 2D split pass: 4973), and
+                // starting the workers for each of those was most of what the pass cost.
+                // Same order as the queue would pop them: its element and comparator.
+                using Elem = std::tuple<double, uint32_t, Tuple, size_t>;
+                std::priority_queue<Elem> q;
+                for (size_t k = 0; k < n; ++k) {
+                    const auto& [op, t] = candidates[k];
+                    q.emplace(priority(m, *ops.name[op], t), op, t, k);
+                }
+                for (; !q.empty(); q.pop()) {
+                    const auto& [weight, op, t, k] = q.top();
+                    const Op& name = *ops.name[op];
+                    const uint64_t key = key_at(k);
+                    if (!t.is_valid(m) ||
+                        !is_weight_up_to_date(m, std::tuple<double, Op, Tuple>(weight, name, t))) {
+                        done(key);
+                        continue;
+                    }
+                    if (must_wait && must_wait(m, name, t)) {
+                        m_waits.fetch_add(1, std::memory_order_relaxed);
+                        next.ops.emplace_back(op, t); // still queued
+                        if (keyed) next.keys.push_back(key);
+                        continue;
+                    }
+                    // Serial here, as in the queues' serial drain: the storage may grow first.
+                    m.reserve_free_slots(m.cell_slot_bound(t), 1);
+                    auto newtup = (*ops.fn[op])(m, t);
+                    done(key);
+                    ++attempts;
+                    ++committed_attempts;
+                    if (newtup) {
+                        renew_neighbor_tuples(m, name, newtup.value());
+                        ++successes;
+                    } else {
+                        on_fail(m, name, t);
+                        ++failures;
+                    }
+                }
+                candidates.clear();
+                keys.clear();
+                m_stats.serial_tail_seconds +=
+                    std::chrono::duration<double>(Clock::now() - inline_start).count();
+            }
+
+            // A round in which nothing got as far as an attempt, while operations waited: what
+            // they wait on is still queued and the mesh did not change, so they would wait
+            // forever. Fail them as the serial queue fails a wait (see must_wait). With no
+            // attempt there was no success, so everything in `next` waited.
+            if (committed_attempts == committed_before && !next.ops.empty()) {
+                for (size_t i = 0; i < next.ops.size(); ++i) {
+                    done(keyed ? next.keys[i] : 0);
+                    m_wait_defects.fetch_add(1, std::memory_order_relaxed);
+                    on_fail(m, *ops.name[next.ops[i].first], next.ops[i].second);
+                    ++failures;
+                    ++attempts;
+                }
+                std::deque<Cand>().swap(next.ops);
+                std::deque<uint64_t>().swap(next.keys);
+            }
+
+            const auto round_commit = Clock::now() - commit_start;
+            commit_time += round_commit;
+
+            // 4. Next round: what the successes renewed and what waited, once each, filtered as
+            // the queue would.
+            take_unique_renewed(m, ops, next);
+            candidates = std::move(next.ops);
+            keys = std::move(next.keys);
+            next.ops = {};
+            next.keys = {};
+        }
+
+        cnt_success = int(successes);
+        cnt_fail = int(failures);
+        logger().info("executed: {} | success / fail: {} / {}", attempts, successes, failures);
+        const auto secs = [](Clock::duration d) {
+            return std::chrono::duration<double>(d).count();
+        };
+        logger().info(
+            "  screened: {} rounds, {} of {} attempts got past the screen, {} waits; screen "
+            "{:.4}s, commit {:.4}s",
+            rounds,
+            committed_attempts,
+            attempts,
+            m_waits.load() - waits_before,
+            secs(screen_time),
+            secs(commit_time));
+        // Ring-acquisition failures are a property of the commits, not of the screen refusals.
+        log_contention(committed_attempts);
+        check_queued_drained();
+        return true;
+    }
+
+    /// Every operation counted as queued during a call was tried or dropped by its end; anything
+    /// left, or a finished operation that was never counted, means is_queued() may have answered
+    /// wrongly during the call.
+    void check_queued_drained()
+    {
+        if (queue_key) {
+            const size_t left = m_queued.size();
+            if (left > 0 || m_untracked_done > 0) {
+                logger().warn(
+                    "queue_key bookkeeping: {} keys still counted as queued after the pass, {} "
+                    "finished operations were never counted",
+                    left,
+                    m_untracked_done);
+            }
+        }
+        m_queued.clear();
+    }
+
+    /**
+     * @brief Leaves in `s` the valid, still-wanted operations, each (operation, simplex) once,
+     * with their queue keys; the ones left out are no longer queued.
+     *
+     * Each entry's validity, priority and dedup key are computed in parallel -- priority() is the
+     * expensive part. The key is the operation's rank and its simplex: the vertex ids, ordered
+     * for edges since a collapse is directed, sorted for faces; the tet id for tets. An operation
+     * named after none of these is never merged with another. The list is compacted in place.
+     */
+    void take_unique_renewed(const AppMesh& m, const OpTable& ops, WaitSink& s)
+    {
+        const bool keyed = bool(queue_key);
+        const size_t n = s.ops.size();
+        if (n == 0) return;
+        assert(n < std::numeric_limits<uint32_t>::max());
+        // The kind of simplex each operation is named after.
+        enum : uint8_t { kOther, kVertex, kEdge, kFace, kTet };
+        std::vector<uint8_t> kind(ops.name.size(), kOther);
+        for (size_t o = 0; o < ops.name.size(); ++o) {
+            const Op& name = *ops.name[o];
+            if (name.rfind("vertex", 0) == 0) {
+                kind[o] = kVertex;
+            } else if (name.rfind("edge", 0) == 0) {
+                kind[o] = kEdge;
+            } else if (name.rfind("face", 0) == 0) {
+                kind[o] = kFace;
+            } else if (name.rfind("tet", 0) == 0) {
+                kind[o] = kTet;
+            }
+        }
+        // (rank, ids...) and the entry's index; a dropped entry has the largest rank, so it sorts
+        // last. Ids are 32-bit: no mesh here comes near 2^32 vertices or cells.
+        using Key = std::array<uint32_t, 4>;
+        constexpr uint32_t kDropped = std::numeric_limits<uint32_t>::max();
+        const auto id = [](size_t v) {
+            assert(v < std::numeric_limits<uint32_t>::max());
+            return uint32_t(v);
+        };
+        std::vector<std::pair<Key, uint32_t>> keyed_entries(n);
+        threading::dynamic_parallel_for(n, std::max(1, num_threads), 256, [&](size_t b, size_t e) {
+            for (size_t i = b; i < e; ++i) {
+                const auto& [o, t] = s.ops[i];
+                Key k = {{kDropped, 0, 0, 0}};
+                if (t.is_valid(m) && should_renew(priority(m, *ops.name[o], t))) {
+                    k = {{o, kDropped, uint32_t(i), 0}};
+                    switch (kind[o]) {
+                    case kVertex: k = {{o, id(t.vid(m)), 0, 0}}; break;
+                    case kEdge: k = {{o, id(t.vid(m)), id(t.switch_vertex(m).vid(m)), 0}}; break;
+                    case kTet:
+                        if constexpr (std::is_base_of<TetMesh, AppMesh>::value) {
+                            k = {{o, id(t.tid(m)), 0, 0}};
+                        }
+                        break;
+                    case kFace: {
+                        std::array<size_t, 3> v;
+                        if constexpr (std::is_base_of<TetMesh, AppMesh>::value) {
+                            const auto fv = m.get_face_vertices(t);
+                            v = {{fv[0].vid(m), fv[1].vid(m), fv[2].vid(m)}};
+                        } else {
+                            v = m.oriented_tri_vids(t);
+                        }
+                        std::sort(v.begin(), v.end());
+                        k = {{o, id(v[0]), id(v[1]), id(v[2])}};
+                        break;
+                    }
+                    default: break;
+                    }
+                }
+                keyed_entries[i] = {k, uint32_t(i)};
+            }
+        });
+        std::sort(keyed_entries.begin(), keyed_entries.end());
+        // The first entry of each key -- the earliest renewed -- stays.
+        std::vector<uint8_t> kept(n, 0);
+        for (size_t j = 0; j < n && keyed_entries[j].first[0] != kDropped; ++j) {
+            if (j > 0 && keyed_entries[j].first == keyed_entries[j - 1].first) continue;
+            kept[keyed_entries[j].second] = 1;
+        }
+        std::vector<std::pair<Key, uint32_t>>().swap(keyed_entries);
+        size_t w = 0;
+        for (size_t i = 0; i < n; ++i) {
+            if (!kept[i]) {
+                if (keyed && s.keys[i] != 0 && !m_queued.remove(s.keys[i])) ++m_untracked_done;
+                continue;
+            }
+            if (w != i) {
+                s.ops[w] = std::move(s.ops[i]);
+                if (keyed) s.keys[w] = s.keys[i];
+            }
+            ++w;
+        }
+        s.ops.resize(w);
+        s.ops.shrink_to_fit();
+        if (keyed) {
+            s.keys.resize(w);
+            s.keys.shrink_to_fit();
+        }
+    }
+
+    /// `sink` non-null: a screened round's commit. It logs nothing (the screened call does);
+    /// the queue_key counts span the whole screened call, so they are neither reset nor counted
+    /// here -- the seeder hands over each candidate's counted key -- and a waiting operation goes
+    /// to the sink.
+    bool execute(AppMesh& m, const std::function<void(const Push&)>& seed, WaitSink* sink = nullptr)
+    {
+        if constexpr (
+            std::is_base_of<TetMesh, AppMesh>::value || std::is_base_of<TriMesh, AppMesh>::value) {
+            const bool live_stop =
+                stopping_criterion_checking_frequency != std::numeric_limits<size_t>::max();
+            if (sink == nullptr && screen_before_commit && policy != ExecutionPolicy::kSeq &&
+                !live_stop) {
+                return run_screened(m, seed);
+            }
+        }
         // The queue holds an operation's INDEX rather than its name. edit_operation_maps is a
         // std::map, so iterating it yields the names in lexicographic order and an index is
         // exactly a name's rank among them -- comparing indices is therefore identical to
@@ -525,27 +1014,10 @@ private:
         using LocalQueue = wmtk::threading::serial_priority_queue<Elem>;
         using SharedQueue = wmtk::threading::concurrent_priority_queue<Elem>;
 
-        std::vector<const Op*> op_name;
-        std::vector<std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>*>
-            op_fn;
-        std::map<Op, OpId> op_id;
-        op_name.reserve(edit_operation_maps.size());
-        op_fn.reserve(edit_operation_maps.size());
-        for (auto& kv : edit_operation_maps) {
-            op_id.emplace(kv.first, OpId(op_name.size()));
-            op_name.push_back(&kv.first);
-            op_fn.push_back(&kv.second);
-        }
-        // An operation with no entry here was previously default-constructed into the map by
-        // operator[] and then called, which throws bad_function_call -- so it cannot occur in
-        // any working configuration. Say so plainly rather than ordering it arbitrarily.
-        const auto id_of = [&op_id](const Op& name) {
-            const auto it = op_id.find(name);
-            if (it == op_id.end()) {
-                log_and_throw_error("No operation registered under the name '{}'.", name);
-            }
-            return it->second;
-        };
+        const OpTable table(edit_operation_maps);
+        const auto& op_name = table.name;
+        const auto& op_fn = table.fn;
+        const auto id_of = [&table](const Op& name) -> OpId { return table.rank(name); };
 
         std::atomic<bool> stop(false);
         cnt_success = 0;
@@ -553,7 +1025,7 @@ private:
 
         // queue_key bookkeeping (see must_wait). `track` when an element is queued, `done` when
         // it is tried or dropped; both no-ops for the untracked key 0.
-        m_queued.clear();
+        if (!sink) m_queued.clear();
         std::atomic<size_t> untracked_done(0);
         const auto key_of = [&](const Op& op, const Tuple& e) -> uint64_t {
             return queue_key ? queue_key(m, op, e) : 0;
@@ -582,7 +1054,7 @@ private:
         // write to the task's own slot, so it adds nothing to the inner loop. It answers the
         // two questions the pass could not previously be asked: how often ring acquisition
         // loses a race, and how much of a "parallel" pass is really the serial drain.
-        m_stats = PassStats{};
+        PassStats st{};
         std::atomic<size_t> lock_failures(0);
         std::atomic<size_t> overflowed(0);
         std::vector<double> task_seconds(queues.size(), 0.);
@@ -675,7 +1147,9 @@ private:
                 }
                 ++since_refill;
                 auto& [weight, op, retry, tup, key] = ele_in_queue;
-                if (!tup.is_valid(m)) {
+                // Without the ring yet, so other tasks may be changing this cell: a cheap filter
+                // only (is_valid_unlocked), repeated in full once the ring is held.
+                if (!tup.is_valid_unlocked(m)) {
                     done(key);
                     continue;
                 }
@@ -708,6 +1182,15 @@ private:
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
                         if (must_wait && must_wait(m, op_str, tup)) {
+                            if (sink) {
+                                // Next round, still queued.
+                                operation_cleanup(m);
+                                m_waits.fetch_add(1, std::memory_order_relaxed);
+                                std::lock_guard<std::mutex> lock(sink->mutex);
+                                sink->ops.emplace_back(op, tup);
+                                if (queue_key) sink->keys.push_back(key);
+                                continue;
+                            }
                             if (serial) {
                                 m_wait_defects.fetch_add(1, std::memory_order_relaxed);
                                 done(key);
@@ -796,7 +1279,7 @@ private:
         };
 
         if (policy == ExecutionPolicy::kSeq) {
-            seed([&](const Op& op, const Tuple& e) {
+            seed([&](const Op& op, const Tuple& e, uint64_t) {
                 if (!e.is_valid(m)) {
                     return;
                 }
@@ -806,12 +1289,15 @@ private:
             });
             run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
         } else {
-            seed([&](const Op& op, const Tuple& e) {
+            seed([&](const Op& op, const Tuple& e, const uint64_t counted) {
                 if (!e.is_valid(m)) {
+                    if (sink) done(counted);
                     return;
                 }
-                const uint64_t k = key_of(op, e);
-                track(k);
+                // A screened commit's candidates were counted by the screened call, under the
+                // key it hands over; anything else is counted here.
+                const uint64_t k = sink ? counted : key_of(op, e);
+                if (!sink) track(k);
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
             });
             // Comment out parallel: work on serial first.
@@ -869,39 +1355,50 @@ private:
                     if (!budgets[t].progressed) boost[t] = std::min(boost[t] + 1, 24u);
                 }
                 if (!again) break;
-                m_stats.rounds = round + 2;
+                st.rounds = round + 2;
             }
-            m_stats.parallel_seconds =
-                std::chrono::duration<double>(clock::now() - t_parallel).count();
-            m_stats.final_queue_size = final_queue.size();
+            st.parallel_seconds = std::chrono::duration<double>(clock::now() - t_parallel).count();
+            st.final_queue_size = final_queue.size();
 
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
             run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
-            m_stats.serial_tail_seconds =
-                std::chrono::duration<double>(clock::now() - t_tail).count();
+            st.serial_tail_seconds = std::chrono::duration<double>(clock::now() - t_tail).count();
         }
 
-        m_stats.lock_failures = lock_failures.load(std::memory_order_relaxed);
-        m_stats.overflowed = overflowed.load(std::memory_order_relaxed);
+        st.lock_failures = lock_failures.load(std::memory_order_relaxed);
+        st.overflowed = overflowed.load(std::memory_order_relaxed);
         if (!task_seconds.empty()) {
             const auto mm = std::minmax_element(task_seconds.begin(), task_seconds.end());
-            m_stats.idlest_task_seconds = *mm.first;
-            m_stats.busiest_task_seconds = *mm.second;
+            st.idlest_task_seconds = *mm.first;
+            st.busiest_task_seconds = *mm.second;
         }
 
-        logger().info(
-            "executed: {} | success / fail: {} / {}",
-            (int)cnt_success + (int)cnt_fail,
-            (int)cnt_success,
-            (int)cnt_fail);
-        if (m_stats.rounds > 1) {
-            logger().info(
-                "  parallel region ran in {} rounds (storage grown between them)",
-                m_stats.rounds);
+        if (sink) {
+            m_stats += st; // a round of a screened call: the call adds its rounds up
+        } else {
+            m_stats = st;
         }
-        log_contention();
+
+        if (!sink) {
+            logger().info(
+                "executed: {} | success / fail: {} / {}",
+                (int)cnt_success + (int)cnt_fail,
+                (int)cnt_success,
+                (int)cnt_fail);
+            if (st.rounds > 1) {
+                logger().info(
+                    "  parallel region ran in {} rounds (storage grown between them)",
+                    st.rounds);
+            }
+            log_contention();
+        }
+        if (sink) {
+            // The screened call checks the counts at its end.
+            m_untracked_done += untracked_done.load();
+            return true;
+        }
         // Every tracked element queued in this call was tried or dropped, unless the stopping
         // criterion ended the call early. Anything else is a bookkeeping defect, and is_queued()
         // may have answered wrongly during the call.
@@ -928,7 +1425,10 @@ public:
      * @brief What the last pass cost in contention, as opposed to in work.
      *
      * Populated by every `operator()` call, so under run_localized_to_convergence it describes
-     * the most recent round only. Zeroed at the start of each pass.
+     * the most recent round only. Zeroed at the start of each pass. A screened pass
+     * (screen_before_commit) adds up the commit phases of all its rounds -- the busiest and
+     * idlest task times too, one round's after another's -- and a round committed inline, on the
+     * calling thread, counts as serial tail.
      */
     struct PassStats
     {
@@ -948,20 +1448,38 @@ public:
         double busiest_task_seconds = 0.;
         double idlest_task_seconds = 0.;
         /// Rounds the parallel region took: more than one when the tasks ran through their
-        /// slot budgets and the storage had to grow between rounds.
+        /// slot budgets and the storage had to grow between rounds. For a screened pass, the most
+        /// any one commit took.
         size_t rounds = 1;
+
+        PassStats& operator+=(const PassStats& o)
+        {
+            lock_failures += o.lock_failures;
+            overflowed += o.overflowed;
+            final_queue_size += o.final_queue_size;
+            parallel_seconds += o.parallel_seconds;
+            serial_tail_seconds += o.serial_tail_seconds;
+            busiest_task_seconds += o.busiest_task_seconds;
+            idlest_task_seconds += o.idlest_task_seconds;
+            rounds = std::max(rounds, o.rounds);
+            return *this;
+        }
     };
     const PassStats& stats() const { return m_stats; }
 
 private:
     /// Debug-level because it is per pass and there are many passes per iteration. Enable with
     /// the logger at debug to see whether contention is worth acting on.
-    void log_contention() const
+    /// `executed`: the operations the contention is spread over; by default every attempt of the
+    /// last call. A screened call passes the attempts that got past its screen.
+    void log_contention(size_t executed_ops = std::numeric_limits<size_t>::max()) const
     {
         if (policy == ExecutionPolicy::kSeq || !logger().should_log(spdlog::level::debug)) {
             return;
         }
-        const int executed = (int)cnt_success + (int)cnt_fail;
+        const int executed = executed_ops != std::numeric_limits<size_t>::max()
+                                 ? int(executed_ops)
+                                 : (int)cnt_success + (int)cnt_fail;
         const double total = m_stats.parallel_seconds + m_stats.serial_tail_seconds;
         logger().debug(
             "  contention: {} ring-acquisition failures over {} executed ops ({:.2f} per op); "
@@ -1043,5 +1561,8 @@ private:
     QueuedCount m_queued;
     std::atomic<size_t> m_waits = 0;
     std::atomic<size_t> m_wait_defects = 0;
+    /// A screened call's finished operations that were not counted as queued (see
+    /// check_queued_drained()); written by the calling thread only.
+    size_t m_untracked_done = 0;
 };
 } // namespace wmtk

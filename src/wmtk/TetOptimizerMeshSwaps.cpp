@@ -202,6 +202,7 @@ const char* TetOptimizerMesh::swap_stage_name(const SwapStage s)
     case SwapStage::before_pass: return "before_pass";
     case SwapStage::after_enter: return "after_enter";
     case SwapStage::accepted: return "accepted";
+    case SwapStage::screened: return "screened";
     default: return "?";
     }
 }
@@ -222,9 +223,12 @@ std::string TetOptimizerMesh::swap_reject_report() const
     // before_pass counts proposals that cleared every before-hook; after_enter counts those that
     // also cleared TetMesh's own connectivity tests, so the difference is exactly the
     // connectivity-level refusal this class cannot see (valence, boundary). See SwapReject.
+    // A dry run that cleared both counted a before_pass but stopped short of the after-hook;
+    // `screened` counts exactly those, whether or not the real attempt then repeated it.
     const long bp = m_swap_stage[size_t(SwapStage::before_pass)].load(std::memory_order_relaxed);
     const long ae = m_swap_stage[size_t(SwapStage::after_enter)].load(std::memory_order_relaxed);
-    out += fmt::format(" connectivity={}", bp - ae);
+    const long sc = m_swap_stage[size_t(SwapStage::screened)].load(std::memory_order_relaxed);
+    out += fmt::format(" connectivity={}", bp - ae - sc);
     for (int i = 0; i < int(SwapReject::COUNT); ++i) {
         const long v = m_swap_reject[size_t(i)].load(std::memory_order_relaxed);
         if (v != 0) out += fmt::format(" {}={}", swap_reject_name(SwapReject(i)), v);

@@ -749,6 +749,11 @@ public:
      * it replaces. quality_ok - committed is swap_after_cells() refusing on the side/label
      * capture. What the envelope check then refuses is past this hook and shows as
      * after_envelope in [swap reject].
+     *
+     * The funnel counts real attempts only. In a screened pass (a parallel pass, see
+     * ExecutePass::screen_before_commit) every candidate is first dry-run, and that dry run
+     * counts nothing here; [swap reject] does count the refusals of the dry runs, so there
+     * offered - cases is what flip_wrong_case threw away in the real attempts.
      */
     mutable std::atomic<long long> funnel_offered{0};
     /// offered, split by swap kind: [0] = 3-2, [1] = 4-4, [2] = 5-6.
@@ -769,7 +774,8 @@ public:
     mutable std::atomic<long long> funnel_committed{0};
     std::string flip_funnel_report() const;
     void flip_funnel_reset();
-    /// Splits of an offset-surface edge: offered, accepted.
+    /// Splits of an offset-surface edge: offered, accepted. Real attempts only: a screened pass's
+    /// dry runs are not counted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
     /// Longest-edge order in the optimization split (see split_edge_before()), counted per turn:

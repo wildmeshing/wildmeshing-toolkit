@@ -15,7 +15,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
+        if (is_edge_on_offset(t) && !dry_run()) ++iter_cnt_split_offset_before;
         // Longest-edge order: a split waits while one of the tets incident to its edge has a
         // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
         // edge than its longest flattens it; its edges stay over the gate and it is bisected

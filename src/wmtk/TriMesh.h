@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/OperationDryRun.hpp>
 #include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -145,6 +146,17 @@ public:
          *
          */
         bool is_valid(const TriMesh& m) const;
+        /**
+         * @brief is_valid() without its debug-build consistency checks: the same answer as
+         * is_valid() in a release build.
+         *
+         * For a check made without holding the triangle's ring -- ExecutePass's filter before it
+         * claims the ring -- while another thread may be changing that triangle. The consistency
+         * checks read the triangle's vertices, which are then momentarily inconsistent, and
+         * would abort a debug build on a race the caller tolerates: a stale answer only costs
+         * a lock attempt, and the check is repeated once the ring is held.
+         */
+        bool is_valid_unlocked(const TriMesh& m) const;
 
         /**
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
@@ -570,6 +582,8 @@ public:
      * @return true if the preparation succeed
      */
     virtual bool smooth_before(const Tuple& t) { return true; }
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
     /**
      * @brief User specified modifications and desideras after an edge smooth
      * @param the edge Tuple to be smoothed

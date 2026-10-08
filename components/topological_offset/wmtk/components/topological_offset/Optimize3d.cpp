@@ -376,8 +376,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
         // Followed through the rest of the swap by [flip funnel].
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
-        ++funnel_offered;
-        if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
+        // The funnel follows real attempts: a screened pass's dry run (see TetMesh::dry_run())
+        // is followed by the real attempt, which counts the flip itself.
+        if (!dry_run()) {
+            ++funnel_offered;
+            if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
+        }
     }
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
@@ -690,7 +694,7 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
     // take a case only when it scores strictly below the current cells -- is the quality rule.
     const double e = TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
     SwapSurfaceSides& sides = m_swap_sides.local();
-    if (!sides.worthwhile) return e;
+    if (!sides.worthwhile || dry_run()) return e; // the funnel follows real attempts
     if (op_case == 0) {
         sides.case0_energy = e; // the current cells: the score every case has to beat
         return e;
@@ -717,7 +721,7 @@ double TopoOffsetTetMesh::swap_edge_56_energy(
     // As swap_edge_44_energy(): counting only.
     const double e = TetOptimizerMesh::swap_edge_56_energy(tets, op_case);
     SwapSurfaceSides& sides = m_swap_sides.local();
-    if (!sides.worthwhile) return e;
+    if (!sides.worthwhile || dry_run()) return e; // the funnel follows real attempts
     if (op_case == 0) {
         sides.case0_energy = e;
         return e;

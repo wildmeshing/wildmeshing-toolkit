@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/OperationDryRun.hpp>
 #include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -80,6 +81,9 @@ public:
          * the tet id can't be -1
          */
         bool is_valid(const TetMesh& m) const;
+        /// is_valid() for a check made without holding the tet's ring; see
+        /// TriMesh::Tuple::is_valid_unlocked(). The 3D is_valid() has no debug-only checks.
+        bool is_valid_unlocked(const TetMesh& m) const { return is_valid(m); }
         /**
          * Check if the current tuple the refers to an edge is on the boundary
          *
@@ -881,6 +885,7 @@ public:
         after_hook, // the application's *_after said no, so the operation was rolled back
         invariants, // invariants() said no after the after-hook passed; rolled back
         committed,
+        screened, // a dry run passed every check that precedes the change (see dry_run())
         COUNT
     };
     virtual void op_event(OpKind, OpEvent) const {}
@@ -889,6 +894,15 @@ public:
     {
         op_event(k, e);
         return false;
+    }
+
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
+    /// The end of a dry run that would have gone on to change the mesh: true, and counted.
+    bool op_screened(const OpKind k) const
+    {
+        op_event(k, OpEvent::screened);
+        return true;
     }
 
 protected:

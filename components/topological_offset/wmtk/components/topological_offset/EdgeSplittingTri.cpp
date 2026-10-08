@@ -8,7 +8,8 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
-    if (m_edge_split_mode == EdgeSplitMode::Optimization && edge_is_offset_surface_live(t)) {
+    if (m_edge_split_mode == EdgeSplitMode::Optimization && edge_is_offset_surface_live(t) &&
+        !dry_run()) {
         ++iter_cnt_split_offset_before;
     }
     // Cleared for both modes: split_after_vertex() reads emptiness to tell which mode produced

@@ -9,6 +9,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (!split_edge_before(loc0)) {
         return op_refused(OpKind::split, OpEvent::before_hook);
     }
+    if (dry_run()) return op_screened(OpKind::split);
 
     // backup of everything
     const Tuple loc1 = loc0;
