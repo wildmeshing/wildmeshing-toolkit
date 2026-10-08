@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: Class Members - Variables</title>
+<title>Wildmeshing Toolkit: wmtk::utils::OrientationLink Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -46,7 +46,6 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
-</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -68,16 +67,37 @@ $(function() {
 </div>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>utils</b></li><li class="navelem"><a class="el" href="structwmtk_1_1utils_1_1_orientation_link.html">OrientationLink</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="structwmtk_1_1utils_1_1_orientation_link-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::utils::OrientationLink Struct Reference</div></div>
+</div><!--header-->
 <div class="contents">
-<div class="textblock">Here is a list of all documented variables with links to the class documentation for each member:</div>
 
-<h3><a id="index_t" name="index_t"></a>- t -</h3><ul>
-<li>tags&#160;:&#160;<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_tet_attributes.html#a81dc989da2de50a56d4d3e1bbce929b0">wmtk::components::simwild::TetAttributes</a></li>
-<li>target&#160;:&#160;<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_quality_group.html#aa50bf3d6152847a668338b5b431b8595">wmtk::components::simwild::QualityGroup</a></li>
-<li>tets&#160;:&#160;<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_tag_cache.html#aef8b25f1a1bc03b7c7b6e7404d430d80">wmtk::components::simwild::SimWildMesh::SplitTagCache</a></li>
-<li>triangle_group&#160;:&#160;<a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aac4b3b16d2f3921e1a95a208a1e22c64">wmtk::utils::EmbedTrianglesProvenance</a></li>
-<li>turn&#160;:&#160;<a class="el" href="structwmtk_1_1utils_1_1_orientation_repair.html#a9f78e95107b1e99290c52938db331ffb">wmtk::utils::OrientationRepair</a></li>
-<li>two_stage&#160;:&#160;<a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#adc4ff773ab354c4a2496e67fb7341cde">wmtk::optimization::SmoothVertexOptions</a></li>
+<p><code>#include &lt;<a class="el" href="orient__by__majority_8hpp_source.html">orient_by_majority.hpp</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a6e2350a6118ccb68943559e706d389fe" id="r_a6e2350a6118ccb68943559e706d389fe"><td class="memItemLeft" align="right" valign="top"><a id="a6e2350a6118ccb68943559e706d389fe" name="a6e2350a6118ccb68943559e706d389fe"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>a</b></td></tr>
+<tr class="separator:a6e2350a6118ccb68943559e706d389fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa40d63799d97edc040cfc5238da9ccd6" id="r_aa40d63799d97edc040cfc5238da9ccd6"><td class="memItemLeft" align="right" valign="top"><a id="aa40d63799d97edc040cfc5238da9ccd6" name="aa40d63799d97edc040cfc5238da9ccd6"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>b</b></td></tr>
+<tr class="separator:aa40d63799d97edc040cfc5238da9ccd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66bbcfadc3b06cf63d03af4388db0a7c" id="r_a66bbcfadc3b06cf63d03af4388db0a7c"><td class="memItemLeft" align="right" valign="top"><a id="a66bbcfadc3b06cf63d03af4388db0a7c" name="a66bbcfadc3b06cf63d03af4388db0a7c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>consistent</b></td></tr>
+<tr class="separator:a66bbcfadc3b06cf63d03af4388db0a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Two oriented elements sharing a manifold junction (a facet edge in 3D, a curve vertex in 2D): <code>consistent</code> if, as they stand, they induce opposite orientations on it. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/<a class="el" href="orient__by__majority_8hpp_source.html">orient_by_majority.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

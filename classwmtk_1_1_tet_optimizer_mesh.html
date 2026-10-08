@@ -188,6 +188,13 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a41206b9d68463951edecc2d60fe9f75e" id="r_a41206b9d68463951edecc2d60fe9f75e"><td class="memItemLeft" align="right" valign="top"><a id="a41206b9d68463951edecc2d60fe9f75e" name="a41206b9d68463951edecc2d60fe9f75e"></a>
+std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>oriented_tracked_faces</b> () const</td></tr>
+<tr class="memdesc:a41206b9d68463951edecc2d60fe9f75e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tracked surface as an oriented soup: each tracked face emitted |m_orientation| times, in the orientation the input gave it. Faces whose sheets cancel are left out. Vertex ids index m_vertex_attribute. <br /></td></tr>
+<tr class="separator:a41206b9d68463951edecc2d60fe9f75e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e8f260061f594ffeba877edd3b3ce05" id="r_a9e8f260061f594ffeba877edd3b3ce05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::array&lt; size_t, 2 &gt;, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9e8f260061f594ffeba877edd3b3ce05">tracked_surface_boundary</a> () const</td></tr>
+<tr class="memdesc:a9e8f260061f594ffeba877edd3b3ce05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mesh edges where the oriented tracked surface has a boundary.  <br /></td></tr>
+<tr class="separator:a9e8f260061f594ffeba877edd3b3ce05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top"><a id="a0b0ec9196be8d44927cc358afb618cf6" name="a0b0ec9196be8d44927cc358afb618cf6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -761,6 +768,12 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aa0dce79266ad1b852b198021752e776c" id="r_aa0dce79266ad1b852b198021752e776c"><td class="memItemLeft" align="right" valign="top"><a id="aa0dce79266ad1b852b198021752e776c" name="aa0dce79266ad1b852b198021752e776c"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">FaceAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_attribute</b></td></tr>
 <tr class="separator:aa0dce79266ad1b852b198021752e776c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13c1014ea0e9e44248803d5473ebcda6" id="r_a13c1014ea0e9e44248803d5473ebcda6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a13c1014ea0e9e44248803d5473ebcda6">m_tracks_orientation</a> = false</td></tr>
+<tr class="memdesc:a13c1014ea0e9e44248803d5473ebcda6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The application set <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a20141019339d52b2b10fac74a7d8c569" title="The input&#39;s orientation on this simplex: a signed count of input sheets lying on it,...">FaceAttributes::m_orientation</a> at insertion, so the tracked surface carries the input's orientation and the operations keep it.  <br /></td></tr>
+<tr class="separator:a13c1014ea0e9e44248803d5473ebcda6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8859f99ac984292717893b4946526c37" id="r_a8859f99ac984292717893b4946526c37"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8859f99ac984292717893b4946526c37">m_inconsistent_orientation_flips</a> = 0</td></tr>
+<tr class="memdesc:a8859f99ac984292717893b4946526c37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface flips that joined two faces not oriented alike (a fold of the tracked surface, or unequal multiplicities).  <br /></td></tr>
+<tr class="separator:a8859f99ac984292717893b4946526c37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1bef57efdf12f4cc7501189f243b7ee8" id="r_a1bef57efdf12f4cc7501189f243b7ee8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1bef57efdf12f4cc7501189f243b7ee8">m_vertex_attr_group</a></td></tr>
 <tr class="memdesc:a1bef57efdf12f4cc7501189f243b7ee8"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_vertex_attrs points at, so a derived class can register more.  <br /></td></tr>
 <tr class="separator:a1bef57efdf12f4cc7501189f243b7ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2738,7 +2751,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside. </p>
-<p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one.">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
+<p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
 <p>Keyed on the vertex ids rather than the fid because every caller is a topological operation asking about the triangles it is ABOUT to create or has just created, where only the vids are known for certain. </p>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
@@ -3407,6 +3420,26 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a9e8f260061f594ffeba877edd3b3ce05" name="a9e8f260061f594ffeba877edd3b3ce05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e8f260061f594ffeba877edd3b3ce05">&#9670;&#160;</a></span>tracked_surface_boundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::pair&lt; std::array&lt; size_t, 2 &gt;, int &gt; &gt; wmtk::TetOptimizerMesh::tracked_surface_boundary </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Mesh edges where the oriented tracked surface has a boundary. </p>
+<p>The tracked surface is an integer 2-chain, and every operation preserves its boundary &ndash; except a surface flip of two faces not oriented alike, which is counted in m_inconsistent_orientation_flips: a closed input stays a cycle (signed sum of incident oriented tracked faces is 0 on every edge), and an open one keeps its boundary on the input's open boundary. Returns the edges with a nonzero sum, each with that sum, for the caller to compare with what the input allows. One pass over every face, then a map over the tracked faces' edges. </p>
+
+</div>
+</div>
 <a id="a37d8e2f8dc1fa0e283ed3a0378ca660f" name="a37d8e2f8dc1fa0e283ed3a0378ca660f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a37d8e2f8dc1fa0e283ed3a0378ca660f">&#9670;&#160;</a></span>update_attributes()</h2>
 
@@ -3597,6 +3630,23 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a8859f99ac984292717893b4946526c37" name="a8859f99ac984292717893b4946526c37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8859f99ac984292717893b4946526c37">&#9670;&#160;</a></span>m_inconsistent_orientation_flips</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;size_t&gt; wmtk::TetOptimizerMesh::m_inconsistent_orientation_flips = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Surface flips that joined two faces not oriented alike (a fold of the tracked surface, or unequal multiplicities). </p>
+<p>The flip runs anyway &ndash; orientation must not change the operations &ndash; so the oriented surface no longer has the input's boundary there, and the tracked winding number is not an integer near the flipped faces. Nonzero only on a tracked surface that was folded or inconsistently oriented to begin with. </p>
+
+</div>
+</div>
 <a id="a16e91d6d43fc96e99afd3b7816e4138e" name="a16e91d6d43fc96e99afd3b7816e4138e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a16e91d6d43fc96e99afd3b7816e4138e">&#9670;&#160;</a></span>m_newton</h2>
 
@@ -3662,6 +3712,23 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 <p>Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared distance) on a comparable footing. </p>
+
+</div>
+</div>
+<a id="a13c1014ea0e9e44248803d5473ebcda6" name="a13c1014ea0e9e44248803d5473ebcda6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13c1014ea0e9e44248803d5473ebcda6">&#9670;&#160;</a></span>m_tracks_orientation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetOptimizerMesh::m_tracks_orientation = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The application set <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a20141019339d52b2b10fac74a7d8c569" title="The input&#39;s orientation on this simplex: a signed count of input sheets lying on it,...">FaceAttributes::m_orientation</a> at insertion, so the tracked surface carries the input's orientation and the operations keep it. </p>
+<p>The operations maintain the orientation whether or not this is set (it is 0 everywhere on a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9e8f260061f594ffeba877edd3b3ce05" title="Mesh edges where the oriented tracked surface has a boundary.">tracked_surface_boundary()</a> for the invariant it obeys. The orientation never changes which operations run: it only feeds the tracked winding number. </p>
 
 </div>
 </div>

@@ -117,9 +117,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_breaks_featu
 <tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top"><a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TriWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a7cdd3374bab4310909003eb79004eb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6bb795a33b2dc44c0e7dfacaada0192" id="r_ae6bb795a33b2dc44c0e7dfacaada0192"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae6bb795a33b2dc44c0e7dfacaada0192">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env)</td></tr>
-<tr class="memdesc:ae6bb795a33b2dc44c0e7dfacaada0192"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
-<tr class="separator:ae6bb795a33b2dc44c0e7dfacaada0192"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71e755c526b4557295ea328aaf42975f" id="r_a71e755c526b4557295ea328aaf42975f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a71e755c526b4557295ea328aaf42975f">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env, const std::vector&lt; int &gt; *E_orientation=nullptr)</td></tr>
+<tr class="memdesc:a71e755c526b4557295ea328aaf42975f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
+<tr class="separator:a71e755c526b4557295ea328aaf42975f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2513e9e9b7776b5915c40ebcf34472d0" id="r_a2513e9e9b7776b5915c40ebcf34472d0"><td class="memItemLeft" align="right" valign="top"><a id="a2513e9e9b7776b5915c40ebcf34472d0" name="a2513e9e9b7776b5915c40ebcf34472d0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
 <tr class="separator:a2513e9e9b7776b5915c40ebcf34472d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,6 +142,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtu</b> (const 
 void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_input_winding_number</b> ()</td></tr>
 <tr class="memdesc:a15c0d2dad408b33701e850c0950531df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the faces that lie inside no input (needs compute_winding_numbers). <br /></td></tr>
 <tr class="separator:a15c0d2dad408b33701e850c0950531df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6691e1bbc3830d546cfb7c23a5acd43" id="r_ae6691e1bbc3830d546cfb7c23a5acd43"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae6691e1bbc3830d546cfb7c23a5acd43">compute_tracked_winding_number</a> ()</td></tr>
+<tr class="memdesc:ae6691e1bbc3830d546cfb7c23a5acd43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Winding number of every face's centroid w.r.t. the tracked curves, oriented as the input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number.  <br /></td></tr>
+<tr class="separator:ae6691e1bbc3830d546cfb7c23a5acd43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ecaa414acd9116f9ded3c41673af7e6" id="r_a6ecaa414acd9116f9ded3c41673af7e6"><td class="memItemLeft" align="right" valign="top"><a id="a6ecaa414acd9116f9ded3c41673af7e6" name="a6ecaa414acd9116f9ded3c41673af7e6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_tracked_winding_number</b> ()</td></tr>
+<tr class="memdesc:a6ecaa414acd9116f9ded3c41673af7e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the faces whose tracked winding number is at most 1/2. <br /></td></tr>
+<tr class="separator:a6ecaa414acd9116f9ded3c41673af7e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac204d7c09ae32f7d23762531c9e4cd56" id="r_ac204d7c09ae32f7d23762531c9e4cd56"><td class="memItemLeft" align="right" valign="top"><a id="ac204d7c09ae32f7d23762531c9e4cd56" name="ac204d7c09ae32f7d23762531c9e4cd56"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_flood_fill</b> ()</td></tr>
 <tr class="memdesc:ac204d7c09ae32f7d23762531c9e4cd56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove the flood-fill region that dominates the mesh boundary (needs flood_fill). <br /></td></tr>
@@ -150,6 +157,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_flood_fil
 int&#160;</td><td class="memItemRight" valign="bottom"><b>flood_fill</b> ()</td></tr>
 <tr class="separator:ae07c555a593bbcd2f504f3f9db9a7f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:a761c8a3800a616af7b9ad9fcde162d45 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a761c8a3800a616af7b9ad9fcde162d45"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a761c8a3800a616af7b9ad9fcde162d45">oriented_tracked_edges</a> () const</td></tr>
+<tr class="separator:a761c8a3800a616af7b9ad9fcde162d45 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ff0715ca94ae4fa13a612421d9b2853 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a4ff0715ca94ae4fa13a612421d9b2853"><td class="memItemLeft" align="right" valign="top">
+std::vector&lt; std::pair&lt; size_t, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_curve_boundary</b> () const</td></tr>
+<tr class="memdesc:a4ff0715ca94ae4fa13a612421d9b2853 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vertices where the oriented tracked curves have a boundary (in minus out != 0), each with that sum. Empty for closed input curves; the operations preserve it. <br /></td></tr>
+<tr class="separator:a4ff0715ca94ae4fa13a612421d9b2853 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a82979ee23eb94c2488543dcfd827ac4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a82979ee23eb94c2488543dcfd827ac4a">TriOptimizerMesh</a> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params)</td></tr>
 <tr class="separator:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3f31270434c883de9661b1983f0e916 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_af3f31270434c883de9661b1983f0e916"><td class="memItemLeft" align="right" valign="top">
@@ -643,6 +656,10 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:a83b0fbb35b3ec202a6c2c0c6d9cffc00 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a83b0fbb35b3ec202a6c2c0c6d9cffc00"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_attribute</b></td></tr>
 <tr class="separator:a83b0fbb35b3ec202a6c2c0c6d9cffc00 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af47f1c426ed7aad35a55096d03115fc8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_af47f1c426ed7aad35a55096d03115fc8"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_tracks_orientation</b> = false</td></tr>
+<tr class="memdesc:af47f1c426ed7aad35a55096d03115fc8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The application set <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a20141019339d52b2b10fac74a7d8c569" title="The input&#39;s orientation on this simplex: a signed count of input sheets lying on it,...">EdgeAttributes::m_orientation</a> at insertion, so the tracked curves carry the input's direction and the operations keep it. See <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a13c1014ea0e9e44248803d5473ebcda6" title="The application set FaceAttributes::m_orientation at insertion, so the tracked surface carries the in...">TetOptimizerMesh::m_tracks_orientation</a>; this is the same thing one dimension down. <br /></td></tr>
+<tr class="separator:af47f1c426ed7aad35a55096d03115fc8 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab89a5173b907aa8bdc43fbbb46691916 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ab89a5173b907aa8bdc43fbbb46691916"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="structwmtk_1_1_attribute_collection.html">FaceAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_attribute</b></td></tr>
 <tr class="separator:ab89a5173b907aa8bdc43fbbb46691916 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -974,6 +991,26 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="ae6691e1bbc3830d546cfb7c23a5acd43" name="ae6691e1bbc3830d546cfb7c23a5acd43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6691e1bbc3830d546cfb7c23a5acd43">&#9670;&#160;</a></span>compute_tracked_winding_number()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::triwild::TriWildMesh::compute_tracked_winding_number </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Winding number of every face's centroid w.r.t. the tracked curves, oriented as the input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number. </p>
+<p>The tracked counterpart of compute_winding_numbers: evaluated on the curves the mesh actually conforms to rather than on the input, and over all inputs at once &ndash; coincident curves add up, opposite ones cancel. Like the input winding number, a result with nothing inside is taken as an inside-out input and flipped. </p>
+
+</div>
+</div>
 <a id="a104870ccc1fa4f601d17495692f9a039" name="a104870ccc1fa4f601d17495692f9a039"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a104870ccc1fa4f601d17495692f9a039">&#9670;&#160;</a></span>compute_winding_numbers()</h2>
 
@@ -1026,8 +1063,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="ae6bb795a33b2dc44c0e7dfacaada0192" name="ae6bb795a33b2dc44c0e7dfacaada0192"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6bb795a33b2dc44c0e7dfacaada0192">&#9670;&#160;</a></span>init_mesh()</h2>
+<a id="a71e755c526b4557295ea328aaf42975f" name="a71e755c526b4557295ea328aaf42975f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71e755c526b4557295ea328aaf42975f">&#9670;&#160;</a></span>init_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1072,7 +1109,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const MatrixXi &amp;&#160;</td>
-          <td class="paramname"><em>E_env</em>&#160;</td>
+          <td class="paramname"><em>E_env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int &gt; *&#160;</td>
+          <td class="paramname"><em>E_orientation</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1091,6 +1134,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
     <tr><td class="paramname">tag_names</td><td>Names for each tag. </td></tr>
     <tr><td class="paramname">V_rational</td><td>the arrangement's EXACT vertex positions, matching V row for row. V is only their rounding, and two exactly distinct vertices can round to the same double, so V alone cannot tell a genuine degeneracy from a rounding collision. Pass an empty vector when no exact positions exist (unit tests building a mesh from doubles); every vertex is then taken as rounded. </td></tr>
     <tr><td class="paramname">V_env,E_env</td><td>the curves the envelope is built around. These are the <em>original</em> input curves, not the arrangement's constrained edges: the optimizer has to stay near what the user gave us, not near the simplified version of it. Same arrangement as tetwild, which hands its optimizer the envelope built on the unsimplified input surface. </td></tr>
+    <tr><td class="paramname">E_orientation</td><td>optional: per row of E, the input's direction on it, measured along the row as written (embed_segments' E_out_orientation). When given, the tracked edges carry it and m_tracks_orientation is set. </td></tr>
   </table>
   </dd>
 </dl>

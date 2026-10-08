@@ -100,6 +100,8 @@ std::vector&lt; std::pair&lt; <a class="el" href="classwmtk_1_1_surface_tag_attr
 <tr class="memitem:acfb4e7c32405b792c6ddb109a1550176" id="r_acfb4e7c32405b792c6ddb109a1550176"><td class="memItemLeft" align="right" valign="top"><a id="acfb4e7c32405b792c6ddb109a1550176" name="acfb4e7c32405b792c6ddb109a1550176"></a>
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>surface_faces</b></td></tr>
 <tr class="separator:acfb4e7c32405b792c6ddb109a1550176"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7749f2934bde3daf6a8675ca305b9a76" id="r_a7749f2934bde3daf6a8675ca305b9a76"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::array&lt; size_t, 3 &gt;, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_collapse_info_cache.html#a7749f2934bde3daf6a8675ca305b9a76">renamed_orientations</a></td></tr>
+<tr class="separator:a7749f2934bde3daf6a8675ca305b9a76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a431557e2276f0c7fc159264fdae4a500" id="r_a431557e2276f0c7fc159264fdae4a500"><td class="memItemLeft" align="right" valign="top"><a id="a431557e2276f0c7fc159264fdae4a500" name="a431557e2276f0c7fc159264fdae4a500"></a>
 std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>boundary_edges</b></td></tr>
 <tr class="separator:a431557e2276f0c7fc159264fdae4a500"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,6 +127,21 @@ std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><
       </table>
 </div><div class="memdoc">
 <p>Coarsening pass only: the worst relative quality in the region the composite may disturb, measured before the collapse. See collapse_edge_after. </p>
+
+</div>
+</div>
+<a id="a7749f2934bde3daf6a8675ca305b9a76" name="a7749f2934bde3daf6a8675ca305b9a76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7749f2934bde3daf6a8675ca305b9a76">&#9670;&#160;</a></span>renamed_orientations</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::pair&lt;std::array&lt;size_t, 3&gt;, int&gt; &gt; wmtk::TetOptimizerMesh::CollapseInfoCache::renamed_orientations</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with the orientation measured along that order. Their attribute stays in its slot, so without this the value would be read against the wrong vertex set. </p>
 
 </div>
 </div>
