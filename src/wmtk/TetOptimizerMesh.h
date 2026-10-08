@@ -561,8 +561,8 @@ public:
     /**
      * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
      * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
-     * vertices, and the edges, faces and tets not incident to the vertex) through const access, e.g.
-     * `std::as_const(m_vertex_attribute)[u]`.
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access,
+     * e.g. `std::as_const(m_vertex_attribute)[u]`.
      *
      * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
      * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
