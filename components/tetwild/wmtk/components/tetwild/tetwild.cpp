@@ -117,6 +117,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+    params.colored_smoothing = json_params["colored_smoothing"];
 
     // Coarsening pass.
     params.coarsen_pass = json_params["coarsen_pass"];
