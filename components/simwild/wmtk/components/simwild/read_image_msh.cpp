@@ -435,6 +435,8 @@ InputData read_mesh(
     const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
+    const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
+    const double order2_envelope_ratio = json_params["order2_envelope_ratio"];
     const std::vector<std::string> input_names = json_params["input_names"];
 
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
@@ -468,7 +470,26 @@ InputData read_mesh(
         }
         logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
 
-        image_mesh.simplify_surface(eps_simplify, NUM_THREADS);
+        // The open boundary. Frozen, the simplification cannot touch anything enclosed by
+        // boundary loops packed too tightly to leave a free vertex between them -- on Thingi10K
+        // 55928 a crumpled knot holding every boundary edge of the model, which survives as a
+        // non-manifold tangle and costs tetwild ~570 tiny tets (see tetwild.cpp). Within a tube
+        // around the input's boundary edges instead, it coarsens like the rest of the surface.
+        //
+        // Scaled as tetwild scales it: the simplification counterpart of the optimizer's
+        // order-2 envelope, i.e. order2_envelope_ratio of the simplification's surface eps.
+        // Only reached with preserve_topology off; under it the surface is simplified after
+        // insertion instead, by SimWildMesh::simplify against its own order-2 envelope.
+        const double boundary_eps = simplify_boundary_envelope && eps_simplify > 0
+                                        ? eps_simplify * order2_envelope_ratio
+                                        : 0.0;
+        if (boundary_eps > 0) {
+            logger().info("simplification boundary envelope eps {:.4}", boundary_eps);
+        } else {
+            logger().info("simplification freezes the open boundary");
+        }
+
+        image_mesh.simplify_surface(eps_simplify, NUM_THREADS, boundary_eps);
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");

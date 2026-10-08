@@ -13,7 +13,11 @@ set(SRC_FILES
     test_simwild_swap_tags.cpp
     test_wild_conformance.cpp
     test_embed_surface_components.cpp
+    test_simplify_boundary.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::tetwild)
+# test_simplify_boundary.cpp builds its parameters the way the application does, defaults
+# injected from the spec.
+target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE jse::jse wmtk_${COMPONENT_NAME}_spec)

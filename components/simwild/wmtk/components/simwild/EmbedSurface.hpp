@@ -89,8 +89,12 @@ public:
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
+     * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
+     *        within a tube of this radius around the input's boundary edges. See
+     *        ShortestEdgeCollapse::create_mesh.
      */
-    void simplify_surface(const double eps, const int num_threads = 0);
+    void
+    simplify_surface(const double eps, const int num_threads = 0, const double boundary_eps = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.

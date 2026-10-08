@@ -22,6 +22,7 @@
       "eps_simplify_rel",
       "optimize_envelope_around_simplified",
       "eps_simplify",
+      "simplify_boundary_envelope",
       "remove_duplicate_eps",
       "order2_envelope_ratio",
       "length",
@@ -227,6 +228,12 @@
     "type": "float",
     "default": -1,
     "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+  },
+  {
+    "pointer": "/simplify_boundary_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and skip_simplify is false; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
   },
   {
     "pointer": "/remove_duplicate_eps",
