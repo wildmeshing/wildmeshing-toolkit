@@ -20,6 +20,11 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         if (m_repulsion_potential && is_marched_edge(t.vid(*this), switch_vertex(t).vid(*this))) {
             return false;
         }
+        // EXPERIMENTAL_repulsion_refine: nor any split whose midpoint would be an outer end
+        // within target_distance + front_conv, for the same reason.
+        if (repulsion_split_makes_close_outer_end(t.vid(*this), switch_vertex(t).vid(*this))) {
+            return false;
+        }
         if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
         // Longest-edge order: a split waits while one of the tets incident to its edge has a
         // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
@@ -71,10 +76,58 @@ bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
     // repulsion_rounds: split_edge_before() refuses a marched edge, so it is never due, and no
     // shorter edge waits on it.
     if (m_repulsion_potential && is_marched_edge(v1, v2)) return false;
+    if (repulsion_split_makes_close_outer_end(v1, v2)) return false;
     if (is_force_split_edge(v1, v2)) return true;
     const double s =
         (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
     return !(get_length2(e) < m_params.splitting_l2 * s * s);
+}
+
+bool TopoOffsetTetMesh::repulsion_split_makes_close_outer_end(const size_t v1, const size_t v2)
+    const
+{
+    // EXPERIMENTAL_repulsion_refine. The rounds keep every outer end beyond target_distance +
+    // front_conv, the march's precondition. A split's midpoint becomes an outer end when a cell
+    // around the edge has a complex corner off the edge (an edge with a complex end is marched,
+    // or on the complex, whose midpoint is complex); it is refused when that midpoint is within
+    // target_distance + front_conv. Measured on the one-slot model without this refusal: the
+    // rounds' split passes made 0, 0, 11, 69, 596, 2502 such outer ends in rounds 1-6, the
+    // smoothing pushed most out, and 0, 0, 0, 4, 86, 633 stayed within, until the march could no
+    // longer reach the target.
+    if (!m_repulsion_potential || !m_offset_params.repulsion_refine) return false;
+    if (m_vertex_extra[v1].label != 0 || m_vertex_extra[v2].label != 0) return false;
+    bool beside_complex = false;
+    for (const Tuple& tet : get_incident_tets_for_edge(v1, v2)) {
+        for (const size_t u : oriented_tet_vids(tet.tid(*this))) {
+            beside_complex = beside_complex || m_vertex_extra[u].label != 0;
+        }
+    }
+    if (!beside_complex) return false;
+    const Vector3d mid = 0.5 * (m_vertex_attribute[v1].m_posf + m_vertex_attribute[v2].m_posf);
+    return m_input_complex_bvh->dist(mid) <=
+           m_offset_params.target_distance + m_offset_params.front_conv;
+}
+
+bool TopoOffsetTetMesh::repulsion_outer_ends_kept(const std::vector<size_t>& tids) const
+{
+    // EXPERIMENTAL_repulsion_refine, the swaps' half of the rule repulsion_split_makes_close_
+    // outer_end() states for splits: a swap rewires cells, and a cell that joins a complex corner
+    // to a corner within target_distance + front_conv makes that corner an outer end the march
+    // cannot trace past. Measured on the one-slot model with the split refusal alone: the swap
+    // passes of rounds 4 and 5 made 8 and 104 such outer ends.
+    if (!m_repulsion_potential || !m_offset_params.repulsion_refine) return true;
+    const double stop = m_offset_params.target_distance + m_offset_params.front_conv;
+    for (const size_t tid : tids) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        bool has_complex = false;
+        for (const size_t v : vs) has_complex = has_complex || m_vertex_extra[v].label != 0;
+        if (!has_complex) continue;
+        for (const size_t v : vs) {
+            if (m_vertex_extra[v].label != 0) continue;
+            if (m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf) <= stop) return false;
+        }
+    }
+    return true;
 }
 
 void TopoOffsetTetMesh::op_event(const OpKind k, const OpEvent e) const

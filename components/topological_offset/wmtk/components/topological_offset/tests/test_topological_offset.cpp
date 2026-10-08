@@ -1017,6 +1017,47 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
     REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
 }
 
+TEST_CASE("stencil-quadratic-weights", "[offset]")
+{
+    // EXPERIMENTAL_quadratic_stencil: the weights for_each_face_sample() hands a five-argument
+    // visitor make the weighted mean of any quadratic over the stencil its exact mean over the
+    // face, at every order >= 1; with the key off every weight is 1.
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
+    // f = 1 + 2x - 3y + 5x^2 - 7xy + 11y^2; exact means over the triangle: 1, 1/3, 1/3, 1/6,
+    // 1/12, 1/6.
+    const auto f = [](const Vector3d& q) {
+        const double x = q[0], y = q[1];
+        return 1. + 2. * x - 3. * y + 5. * x * x - 7. * x * y + 11. * y * y;
+    };
+    const double exact = 1. + 2. / 3. - 1. + 5. / 6. - 7. / 12. + 11. / 6.;
+    for (int k = 1; k <= 4; ++k) {
+        mesh.m_offset_params.stencil_order = k;
+        for (const bool quad : {false, true}) {
+            mesh.m_offset_params.quadratic_stencil = quad;
+            double s = 0., sw = 0.;
+            bool all_one = true;
+            mesh.for_each_face_sample(
+                p0,
+                p1,
+                p2,
+                [&](const Vector3d& q, double, double, double, double w) {
+                    s += w * f(q);
+                    sw += w;
+                    all_one = all_one && w == 1.;
+                });
+            INFO(
+                "order " << k << " quadratic " << quad << " mean " << s / sw << " exact " << exact);
+            if (quad) {
+                CHECK(s / sw == Catch::Approx(exact).epsilon(1e-13));
+            } else {
+                CHECK(all_one);
+            }
+        }
+    }
+}
+
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {
     // The stencil the whole 3D criterion and energy sample, checked against the counts the
@@ -1230,6 +1271,66 @@ TEST_CASE("stencil-energy-3d-is-the-sum-of-face-terms", "[offset][3d]")
         CHECK(by_hand > 10.); // the fixture really is off the level set
         CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
         CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
+    }
+}
+
+TEST_CASE("face-remainder", "[offset][3d]")
+{
+    // face_offset_term()'s remainder, EXPERIMENTAL_unreachable_exit's refinement measure: the mean
+    // over the stencil of (e - L)^2, L the least-squares function linear on the face. On a face
+    // over the triangle's interior the distance is linear on the face and the remainder is 0; past
+    // the triangle's vertex (0, 10, 0) the distance is the distance to that point, not linear, and
+    // the remainder is (3/16) b^2 at order 1 (b = the centroid's e minus the mean of the corners')
+    // and the least-squares residual computed here by hand at order 2.
+    Parameters param;
+    param.target_distance = kEnergyDelta;
+    param.front_conv = kEnergyConv;
+    TopoOffsetTetMesh mesh(param, 0);
+    const auto pot = plane_field();
+    const double frac = mesh.m_offset_params.front_conv_frac();
+    const auto e_at = [&](const Vector3d& q) { return pot->relative_residual(q) / frac; };
+    for (const int k : {1, 2}) {
+        mesh.m_offset_params.stencil_order = k;
+        double rem = -1.;
+        mesh.face_offset_term(
+            *pot,
+            Vector3d(0.1, -0.05, 0.53),
+            Vector3d(0.4, 0.1, 0.61),
+            Vector3d(0.2, 0.35, 0.44),
+            nullptr,
+            &rem);
+        INFO("flat, stencil_order " << k);
+        CHECK(std::abs(rem) <= 1e-9);
+    }
+    const Vector3d a(0.0, 11.0, 0.5), b(0.6, 11.4, 0.9), c(-0.5, 11.8, 0.3);
+    {
+        mesh.m_offset_params.stencil_order = 1;
+        double rem = -1.;
+        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
+        const double bend = e_at((a + b + c) / 3.) - (e_at(a) + e_at(b) + e_at(c)) / 3.;
+        CHECK(std::abs(bend) > 1.); // the fixture really bends
+        CHECK(rem == Catch::Approx(3. / 16. * bend * bend).epsilon(1e-10));
+    }
+    {
+        mesh.m_offset_params.stencil_order = 2;
+        double rem = -1.;
+        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
+        std::vector<Vector3d> lam;
+        std::vector<double> ev;
+        mesh.for_each_face_sample(a, b, c, [&](const Vector3d& q, double wa, double wb, double wc) {
+            lam.push_back(Vector3d(wa, wb, wc));
+            ev.push_back(e_at(q));
+        });
+        Eigen::MatrixXd A(lam.size(), 3);
+        Eigen::VectorXd y(lam.size());
+        for (size_t i = 0; i < lam.size(); ++i) {
+            A.row(Eigen::Index(i)) = lam[i].transpose();
+            y[Eigen::Index(i)] = ev[i];
+        }
+        const Eigen::VectorXd coef = A.colPivHouseholderQr().solve(y);
+        const double by_hand = (y - A * coef).squaredNorm() / double(lam.size());
+        CHECK(by_hand > 1e-3);
+        CHECK(rem == Catch::Approx(by_hand).epsilon(1e-8));
     }
 }
 

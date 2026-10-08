@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 
@@ -515,6 +517,19 @@ using OffsetEnergy3D = OffsetEnergy<3>;
  * over delta, while r here stays the field's own relative error -- the same zero set, about
  * 3.44x the criterion's number at the default offset_dhat_factor.)
  *
+ * AREA WEIGHTING (set_area_weighted(), EXPERIMENTAL_area_weighted_ring): the term becomes
+ * n * sum_f area(f) O(f) / sum_f area(f), n the number of faces -- n times the ring measure R(v)^2
+ * as the loop's exit reads it under the key, so the smoother minimises w AMIPS^3 / n + R(v)^2 up
+ * to the constant n. area(f) = |(q1 - x) x (q2 - x)| / 2 is a VARIABLE, differentiated, not a
+ * weight frozen at the start of the solve as the 2026-09-25 A_f / A_mean weights were: with
+ * frozen weights a vertex sliding within a flat front still moves its samples toward lower error
+ * at no cost, which is the slide this removes. Measured (one-slot model, stage 9, the pressed
+ * front above and below the plate, where d grows along the front toward its edge): sliding 0.02
+ * outward lowered the per-face-mean sum at 514 of 517 failing vertices (median -5.7%), the
+ * area-weighted sum at 225 (median +0.3%). Exactly: an affine field is integrated exactly by the
+ * stencil, so the force from the front's distance to the level set vanishes; the rest is the
+ * stencil's quadrature error on r^2's quadratic part.
+ *
  * The derivatives are exact, and so is the Hessian by default: per stencil point
  * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
  * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
@@ -531,6 +546,9 @@ public:
     struct Sample
     {
         double a, b, c;
+        /// The point's quadrature weight in its face's mean (1 = equal weights; see
+        /// TopoOffsetTetMesh::for_each_face_sample(), EXPERIMENTAL_quadratic_stencil).
+        double w = 1.;
     };
     /// One incident offset face, the moving vertex implicit.
     struct Face
@@ -554,6 +572,32 @@ public:
     void hessian(const TVector& x, MatrixXd& hessian) override;
     void solution_changed(const TVector& new_x) override {}
 
+    /**
+     * @brief EXPERIMENTAL_visible_distance: read the field at a sample from the mesh instead of
+     * from the potential. Called with the face's index, the sample's barycentric weights (a the
+     * moving vertex's), the moving vertex's iterate x and the sample point p; fills the
+     * potential's value v, gradient g and
+     * Hessian H at p. Returns 1 for a reading, 0 for an unmeasurable sample (dropped, as a
+     * non-finite Phi is), -1 when x itself cannot be scored (the energy is +inf there, so the
+     * line search refuses it).
+     */
+    using SampleReader = std::function<int(
+        size_t face,
+        const Sample& sample,
+        const Eigen::Vector3d& x,
+        const Eigen::Vector3d& p,
+        double& v,
+        Eigen::Vector3d& g,
+        Eigen::Matrix3d& H)>;
+    void set_sample_reader(SampleReader r) { m_reader = std::move(r); }
+
+    /// See AREA WEIGHTING in the class comment.
+    void set_area_weighted(bool on) { m_area_weighted = on; }
+    /// EXPERIMENTAL_integral_energy: the term is weight * sum_f area(f) * mean_f(r^2) -- the
+    /// discrete surface integral of e^2 over the vertex's faces, areas at x and differentiated --
+    /// with no division by the ring's area (AREA WEIGHTING divides; this does not).
+    void set_area_integral(bool on) { m_area_integral = on; }
+
 private:
     /// One stencil point's r = (Phi - c)/c and dr = grad Phi / c. A sample whose Phi is not
     /// finite is dropped everywhere, and one whose gradient is not finite from the gradient and
@@ -564,6 +608,7 @@ private:
         Eigen::Vector3d dr = Eigen::Vector3d::Zero();
         bool r_ok = false;
         bool dr_ok = false;
+        Eigen::Matrix3d H = Eigen::Matrix3d::Zero(); ///< hess Phi, from the sample reader only
     };
 
     /// Every stencil point's reading at x, faces in order and each face's samples in order,
@@ -583,6 +628,21 @@ private:
     mutable Eigen::Vector3d m_readings_x;
     mutable bool m_readings_valid = false;
     mutable bool m_readings_have_dr = false;
+    SampleReader m_reader;
+    mutable bool m_readings_unscorable = false; ///< the reader refused x (energy +inf)
+    bool m_area_weighted = false;
+    bool m_area_integral = false;
+
+    /// Under area weighting: per face, its O(f) / weight (the mean of r^2 over its readings), the
+    /// gradient and Hessian of that mean in x (need >= 1: gradient, >= 2: Hessian), and the face's
+    /// area with its gradient and Hessian; then the ring's n * sum area O / sum area. Faces with
+    /// no reading are left out of both sums, as the plain sum leaves them out.
+    void area_weighted(
+        const Eigen::Vector3d& x,
+        int need,
+        double& E,
+        Eigen::Vector3d& g,
+        Eigen::Matrix3d& H) const;
 };
 
 /**
@@ -770,6 +830,10 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
     CubedAMIPSEnergy3D(std::vector<std::array<double, 12>> cells, double weight);
+    /// EXPERIMENTAL_integral_energy: each cell's AMIPS^3 times its volume (the discrete volume
+    /// integral of AMIPS^3), as (sqrt2/12) T^(3/2) AMIPS^(3/2) with T = (1/2) sum |e|^2 -- the
+    /// volume never from a determinant (see cubed_amips_vol_term() in the .cpp).
+    void set_volume_weighted(bool on) { m_volume_weighted = on; }
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -784,6 +848,127 @@ public:
 private:
     std::vector<std::array<double, 12>> m_cells;
     double m_weight;
+    bool m_volume_weighted = false;
+};
+
+/**
+ * @brief EXPERIMENTAL_band_volume_energy: a front vertex's part of the band-volume offset term,
+ *
+ *     E(x) = w * sum over the vertex's band cells t of  Vol_t(x) * m_t(x),
+ *     m_t(x) = (1/n_t) * sum over t's four corners and its centroid of  r(q_i(x)),
+ *
+ * r = (Phi - c)/c the relative error (for the euclidean field (d - delta)/delta), Vol_t the cell's
+ * signed volume, positive on a valid cell, and n_t the number of those five points where Phi is
+ * finite (a point where it is not is left out, as StencilEnergy3D leaves it out). The caller
+ * passes w = 1 / front_conv_frac(), which makes w Vol r = Vol (d - delta) / front_conv: each cell's
+ * term is TopoOffsetTetMesh::band_cell_term(), and E the vertex's part of int_B e dV.
+ *
+ * The rule per cell is exact wherever d is affine on the cell (one input face nearest): the mean
+ * of an affine function over a tetrahedron is its mean over the four corners, and its value at
+ * the centroid. Where a kink of d (two faces facing each other across a gap, a concave edge) or
+ * its curvature near a convex edge crosses the cell, the error is of order the cell's size
+ * relative to the cell's term; such cells lie along a surface, so the band's total error still
+ * vanishes under refinement.
+ *
+ * Vol_t(x) = (q1 - x) . ((q2 - q1) x (q3 - q1)) / 6 is affine in x: its gradient is
+ * -(q2 - q1) x (q3 - q1) / 6 and its Hessian zero. The three other corners' r are constants of
+ * the visit; the moving vertex's own r and the centroid's move with x (dq/dx = I and I/4). So
+ *     grad E_t = m_t grad Vol + Vol grad m_t,
+ *     hess E_t = grad Vol grad m_t^T + grad m_t grad Vol^T + Vol hess m_t,
+ * grad m_t = (dr(x) + dr(c)/4) / n_t, hess m_t = (hess r(x) + hess r(c)/16) / n_t, exact (hess r
+ * = hess Phi / c, the field's own). The outer-product pair is indefinite in general;
+ * polysolve's Newton regularises, and the AMIPS term beside it carries the shape.
+ */
+/**
+ * @brief EXPERIMENTAL_band_volume_rule "corner_bound": the input's triangles as convex primitives.
+ *
+ * The distance d to the input is the min over its triangles i of d_i, the distance to triangle i
+ * alone. Each d_i is convex (the distance to a convex set), which the corner-bound rule needs
+ * (TopoOffsetTetMesh::band_cell_term()). nearest() is the triangle nearest to a point (the BVH's
+ * nearest facet); distance() is d_i with its gradient (p - foot)/d_i and the Hessian of the
+ * distance to the feature the foot lies on: 0 inside the triangle, (I - u u^T - e e^T)/d_i on an
+ * edge of direction e, (I - u u^T)/d_i at a vertex (u the unit gradient). At d_i = 0 the gradient
+ * and Hessian are reported as 0.
+ */
+class InputTriangles
+{
+public:
+    InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    int64_t nearest(const Eigen::Vector3d& p) const;
+    double distance(
+        int64_t tri,
+        const Eigen::Vector3d& p,
+        Eigen::Vector3d* grad = nullptr,
+        Eigen::Matrix3d* hess = nullptr) const;
+    size_t size() const { return size_t(m_F.rows()); }
+
+private:
+    Eigen::MatrixXd m_V;
+    Eigen::MatrixXi m_F;
+    SimpleBVH::BVH m_bvh;
+};
+
+class BandVolumeEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One band cell of the ring: its three other corners, at their current positions.
+    struct Cell
+    {
+        Eigen::Vector3d q1, q2, q3;
+    };
+    /// x0: the moving vertex's current position. Each cell's corners are ordered here so that
+    /// its volume at x0 is positive (the ring the smoother starts from is valid).
+    BandVolumeEnergy3D(
+        const std::shared_ptr<const OffsetPotential3D>& potential,
+        std::vector<Cell> cells,
+        const Eigen::Vector3d& x0,
+        double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    /// EXPERIMENTAL_band_volume_rule "centroid": m_t is r at the centroid alone (grad m_t = dr(c)/4,
+    /// hess m_t = hess r(c)/16), the corners left out.
+    void set_centroid_only(bool on) { m_centroid_only = on; }
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "corner_bound": m_t becomes
+     *     min over the cell's candidate triangles P of (1/4) sum over its 4 corners of r_P(q),
+     *     r_P = (d_P - delta)/delta,
+     * an upper bound on the cell's mean of r for every P (d <= d_P, and the convex d_P lies below
+     * its linear interpolant). `candidates[k]` are cell k's triangles (in the order of the cells
+     * given to the constructor); the three fixed corners' terms are computed here, once. The
+     * gradient and Hessian are the active (minimising) triangle's: grad m_t = grad r_P(x)/4,
+     * hess m_t = hess r_P(x)/4.
+     */
+    void set_corner_bound(
+        std::shared_ptr<const InputTriangles> tris,
+        std::vector<std::vector<int64_t>> candidates,
+        double delta);
+
+private:
+    /// need: 0 value, 1 + gradient, 2 + Hessian.
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    bool m_centroid_only = false;
+    std::shared_ptr<const InputTriangles> m_tris; ///< corner_bound when set
+    std::vector<std::vector<int64_t>> m_cand;
+    std::vector<std::vector<double>>
+        m_cand_fixed; ///< per cell, per candidate: sum of r_P at q1..q3
+    double m_delta = 1.;
+
+    std::shared_ptr<const OffsetPotential3D> m_potential;
+    std::vector<Cell> m_cells;
+    std::vector<double> m_fixed_sum; ///< per cell: the sum of r over q1, q2, q3 where finite
+    std::vector<int> m_fixed_n; ///< per cell: how many of q1, q2, q3 are finite
+    double m_weight;
+    double m_c = 1.;
 };
 
 } // namespace wmtk::components::topological_offset
