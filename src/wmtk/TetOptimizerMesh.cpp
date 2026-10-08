@@ -444,8 +444,10 @@ void TetOptimizerMesh::smooth_vertices_colored(
     const double coloring_time = timer.getElapsedTime();
 
     // Each class runs fully in parallel: its vertices share no edge and no cell, so smoothing one
-    // neither moves a vertex another reads nor writes a cell attribute another writes. Nothing
-    // is locked, and the result does not depend on which thread smooths which vertex.
+    // neither moves a vertex another reads nor writes a cell attribute another writes -- as long
+    // as the hooks read everything outside the vertex's star through const access (see
+    // smooth_after()), which every smooth checks (m_check_smoothing_stays_in_star). Nothing is
+    // locked, and the result does not depend on which thread smooths which vertex.
     // Surface vertices first: they are the expensive ones (envelope), and starting them early
     // keeps a thread from picking one up just before a class's barrier. The order within a class
     // does not change the result -- its vertices do not interact.
@@ -456,9 +458,7 @@ void TetOptimizerMesh::smooth_vertices_colored(
         });
         n_total += cls.size();
     }
-    const size_t successes = utils::for_each_in_classes(classes, NUM_THREADS, 16, [this](size_t v) {
-        return smooth_vertex(tuple_from_vertex(v));
-    });
+    const size_t successes = utils::smooth_classes_checked(*this, classes, 16);
     const size_t failures = n_total - successes;
 
     logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);

@@ -149,7 +149,9 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
             const size_t eid = e.eid(*this);
             if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
             const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-            const Vector2d q = m_vertex_attribute[(va == vid) ? vb : va].m_posf;
+            // Const: a neighbour, which a non-const read would record and a rejected smooth
+            // write back -- see TriOptimizerMesh::smooth_after().
+            const Vector2d q = smoothing_position((va == vid) ? vb : va);
             if (hold->is_outside(std::array<Vector2d, 2>{{p, q}})) {
                 set_smoothing_position(vid, x0);
                 ++m_smooth_rejects.envelope;

@@ -312,6 +312,7 @@ struct Parameters : public wmtk::OptimizerParameters
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+        colored_smoothing = json_params["colored_smoothing"];
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         // skip_good_regions is deliberately not exposed: it would restrict a smoothing pass to
         // cells still far from stop_energy, but the smoother is what places the offset boundary,

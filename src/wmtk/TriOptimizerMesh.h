@@ -368,6 +368,18 @@ public:
     bool use_colored_smoothing() const;
     /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
     void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges and triangles not incident to the vertex) through const access, e.g.
+     * `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 

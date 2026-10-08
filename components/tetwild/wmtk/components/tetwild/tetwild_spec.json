@@ -34,6 +34,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "colored_smoothing",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -264,6 +265,12 @@
     "type": "int",
     "default": 1,
     "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
     "pointer": "/preserve_topology",
