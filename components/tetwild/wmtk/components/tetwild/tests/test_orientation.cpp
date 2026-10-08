@@ -2,7 +2,9 @@
 // from the insertion through every operation, so the tracked-surface winding number is the
 // input's own rather than a per-patch guess. The configurations below are the ones a guess gets
 // wrong -- several components, one of them inside out, one nested in another, two touching
-// face-to-face, one resting on another -- side by side in ONE input, so a single insertion and
+// face-to-face, one resting on another -- and the inputs it must repair or count once -- a
+// triangle or a face flipped against its neighbours, a duplicated triangle -- side by side in
+// ONE input, so a single insertion and
 // optimization covers them all: the insertion's background lattice is diag/20 whatever the
 // input, ~40k tets, and seven separate runs took the tetwild suite past its 1500 s ctest limit
 // in a Windows Debug build.
@@ -108,8 +110,20 @@ struct Region
 {
     const char* name;
     double x0, x1; // the configuration's slab of x
-    double expected; // volume where the input's winding number exceeds 1/2
+    double expected; // the solid's volume
+    /// The input is consistently oriented there, so its own winding number gets the solid
+    /// right and agrees with the tracked one. Not where the tracked surface repairs it.
+    bool input_consistent = true;
 };
+
+/// The slab of x the tet with barycenter-x `cx` lies in, or nullptr.
+const Region* region_of(const std::vector<Region>& regions, double cx)
+{
+    for (const auto& r : regions) {
+        if (cx >= r.x0 && cx < r.x1) return &r;
+    }
+    return nullptr;
+}
 
 } // namespace
 
@@ -136,12 +150,27 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
     // reproduce that.)
     s.box({19, 0, 0}, {22, 3, 1});
     s.box({19, 0, 1}, {22, 1, 2});
+    // A box with one triangle of its top flipped: its coplanar neighbour now faces the other
+    // way across their shared diagonal, which the arrangement need not cut. Repaired.
+    s.box({25, 0, 0}, {26, 1, 1});
+    std::swap(s.f[s.f.size() - 12 + 3][1], s.f[s.f.size() - 12 + 3][2]);
+    // A box with a whole face flipped, both its triangles: no coplanar neighbour, so it is the
+    // links across the box's edges that repair it.
+    s.box({28, 0, 0}, {29, 1, 1});
+    std::swap(s.f[s.f.size() - 12 + 10][1], s.f[s.f.size() - 12 + 10][2]);
+    std::swap(s.f[s.f.size() - 12 + 11][1], s.f[s.f.size() - 12 + 11][2]);
+    // A box with a triangle duplicated: the copies count once, so the surface stays closed.
+    s.box({31, 0, 0}, {32, 1, 1});
+    s.f.push_back(s.f[s.f.size() - 12 + 4]);
     const std::vector<Region> regions = {
         {"box + inside-out box", -1, 4, 1},
         {"nested boxes", 4, 9, 27},
         {"boxes sharing a face", 9, 13, 2},
         {"box resting on a plate", 13, 18, 10},
-        {"box resting along a plate edge", 18, 23, 12}};
+        {"box resting along a plate edge", 18, 23, 12},
+        {"box with a flipped triangle", 24, 27, 1, false},
+        {"box with a flipped face", 27, 30, 1, false},
+        {"box with a duplicated triangle", 30, 33, 1, false}};
 
     Parameters params;
     params.init(s.v, s.f);
@@ -154,7 +183,7 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
-    std::vector<int> tet_face_orientation;
+    std::vector<int8_t> tet_face_orientation;
     {
         TetWildMesh mesh_insertion(params, env, 0);
         mesh_insertion.insertion_by_volumeremesher(
@@ -177,10 +206,11 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
         &tet_face_orientation);
     REQUIRE(mesh.m_tracks_orientation);
 
-    // Right after the insertion the tracked surface IS the input, so the two winding numbers
-    // agree tet by tet, and the oriented surface is closed. Except on the arrangement's flat
-    // tets: lying in the surface, with their barycenter on it, they have no winding number to
-    // agree on (the evaluation lands anywhere around 1/2), and the optimizer removes them.
+    // Right after the insertion the tracked surface IS the input, repaired, so the oriented
+    // surface is closed and the two winding numbers agree tet by tet where the input needed no
+    // repair. Except on the arrangement's flat tets: lying in the surface, with their barycenter
+    // on it, they have no winding number to agree on (the evaluation lands anywhere around 1/2),
+    // and the optimizer removes them.
     CHECK(mesh.tracked_surface_boundary().empty());
     compute_both_winding_numbers(mesh, s);
     size_t disagree = 0, flat = 0;
@@ -195,6 +225,10 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
             ++flat;
             continue;
         }
+        const double cx =
+            (p[vs[0]].m_posf[0] + p[vs[1]].m_posf[0] + p[vs[2]].m_posf[0] + p[vs[3]].m_posf[0]) / 4;
+        const Region* r = region_of(regions, cx);
+        if (r != nullptr && !r->input_consistent) continue;
         const auto& a = mesh.tet_finalize(tid);
         if (std::lround(a.m_winding_number_input) != std::lround(a.m_winding_number_tracked)) {
             ++disagree;
@@ -228,6 +262,6 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
             r.expected);
         INFO(r.name);
         CHECK(std::abs(vt - r.expected) < 0.02 * r.expected);
-        CHECK(std::abs(vi - r.expected) < 0.02 * r.expected);
+        if (r.input_consistent) CHECK(std::abs(vi - r.expected) < 0.02 * r.expected);
     }
 }

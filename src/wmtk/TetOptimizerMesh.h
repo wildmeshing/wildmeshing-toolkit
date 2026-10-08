@@ -109,7 +109,7 @@ public:
      *
      * The operations maintain the orientation whether or not this is set (it is 0 everywhere on
      * a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See
-     * tracked_surface_orientation_defects() for the invariant it obeys.
+     * tracked_surface_boundary() for the invariant it obeys.
      */
     bool m_tracks_orientation = false;
 
@@ -127,7 +127,7 @@ public:
      * closed input stays a cycle (signed sum of incident oriented tracked faces is 0 on every
      * edge), and an open one keeps its boundary on the input's open boundary. Returns the edges
      * with a nonzero sum, each with that sum, for the caller to compare with what the input
-     * allows. Linear in the number of tracked faces.
+     * allows. One pass over every face, then a map over the tracked faces' edges.
      */
     std::vector<std::pair<std::array<size_t, 2>, int>> tracked_surface_boundary() const;
 

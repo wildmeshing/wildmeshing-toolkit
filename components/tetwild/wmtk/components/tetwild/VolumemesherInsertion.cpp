@@ -47,7 +47,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     std::vector<bool>& is_v_on_input, // out: vertex-on-input-surface flags
     std::vector<std::array<size_t, 4>>& tets_after, // out: output tets
     std::vector<bool>& tet_face_on_input_surface, // out: 4 face-on-surface flags per tet
-    std::vector<int>* tet_face_orientation) // out, optional: 4 input orientations per tet
+    std::vector<int8_t>* tet_face_orientation) // out, optional: 4 input orientations per tet
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
 
@@ -120,6 +120,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     opts.check_collinear_input = m_params.perform_sanity_checks;
     opts.check_orientation = m_params.perform_sanity_checks;
     opts.check_surface_provenance = m_params.perform_sanity_checks;
+    opts.num_threads = NUM_THREADS;
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -175,7 +176,7 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& is_v_on_input,
     const std::vector<std::array<size_t, 4>>& tets,
     const std::vector<bool>& tet_face_on_input_surface,
-    const std::vector<int>* tet_face_orientation)
+    const std::vector<int8_t>* tet_face_orientation)
 {
     init_with_isolated_vertices(v_rational.size(), tets);
     assert(check_mesh_connectivity_validity());
@@ -228,9 +229,7 @@ void TetWildMesh::init_from_Volumeremesher(
     if (tet_face_orientation != nullptr) {
         assert(tet_face_orientation->size() == tet_face_on_input_surface.size());
         for (size_t i = 0; i < tet_face_orientation->size(); i++) {
-            // One byte; see SurfaceTagAttributes::m_orientation.
-            m_face_attribute[i].m_orientation =
-                int8_t(std::clamp((*tet_face_orientation)[i], -127, 127));
+            m_face_attribute[i].set_orientation((*tet_face_orientation)[i]);
         }
         m_tracks_orientation = true;
     }

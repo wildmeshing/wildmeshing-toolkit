@@ -18,12 +18,19 @@ namespace wmtk {
  */
 class SurfaceTagAttributes
 {
-    // One byte per field. The values are tiny -- a flag, a bbox side in [-1, 5], a class in
-    // {0, 1}, an orientation count that is +-1 or 0 almost everywhere -- but as int the struct
-    // was 12 bytes, and the 3D meshes carry four of these per tet slot (the 2D ones three per
-    // triangle slot) in storage preallocated several times over: on the largest tetwild inputs
-    // that alone was most of a gigabyte.
+    // Three bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
+    // orientation count that is +-1 or 0 almost everywhere -- but as int the struct was 12
+    // bytes, and the 3D meshes carry four of these per tet slot (the 2D ones three per triangle
+    // slot) in storage preallocated several times over: on the largest tetwild inputs that alone
+    // was most of a gigabyte. The class and the orientation share a byte as bitfields; both are
+    // int8_t so every compiler packs them together.
 public:
+    // Bitfields cannot take default member initializers before C++20.
+    SurfaceTagAttributes()
+        : m_surface_class(0)
+        , m_orientation(0)
+    {}
+
     /// Is this simplex part of the tracked surface.
     bool m_is_surface_fs = false;
     /// Which bbox side this simplex is on; -1 for none.
@@ -31,7 +38,7 @@ public:
 
     /**
      * @brief Which tracked surface this simplex belongs to, for applications that track more
-     * than one.
+     * than one. 0 to 3.
      *
      * 0 is the application's primary surface, and is all tetwild and simwild ever use.
      * topological_offset tracks two -- the input complex it must stay in the envelope of, and
@@ -44,18 +51,24 @@ public:
      * field here is carried by all of that for free; a parallel container would be silently
      * dropped by every one of those operations.
      */
-    int8_t m_surface_class = 0;
+    int8_t m_surface_class : 3;
 
     /**
-     * @brief The input's orientation on this simplex: the signed number of input sheets lying
-     * on it, measured against its vertices in ASCENDING id order.
+     * @brief The input's orientation on this simplex: a signed count of input sheets lying on
+     * it, measured against its vertices in ASCENDING id order. -15 to 15.
      *
-     * For a face (a < b < c), +k means a net k input triangles cover it with normal along
-     * (b-a) x (c-a); for an edge (a < b), +k means a net k input segments run a -> b. An integer
-     * rather than a sign so coincident sheets combine the way they do in the input's winding
-     * number: two opposite sheets cancel to 0 (a solid resting on another, a fold), two equal
-     * ones give 2. A tracked simplex can therefore have orientation 0 and still be constrained;
-     * m_is_surface_fs keeps that meaning, and the orientation only feeds winding numbers.
+     * For a face (a < b < c), +k means a net k sheets cover it with normal along (b-a) x (c-a);
+     * for an edge (a < b), +k means a net k run a -> b. A count rather than a sign so coincident
+     * sheets combine the way they do in a winding number: two opposite ones cancel to 0 (a solid
+     * resting on another, a fold), two equal ones give 2. A tracked simplex can therefore have
+     * orientation 0 and still be constrained; m_is_surface_fs keeps that meaning, and the
+     * orientation only feeds winding numbers.
+     *
+     * At insertion a SHEET is a set of coincident input triangles (segments) of one orientation:
+     * duplicates of one triangle count once, as do the triangles of one coplanar group
+     * overlapping the same way, so the count is +-1 or 0 per coplanar group (per input curve in
+     * 2D). A collapse merging two separate sheets can make it larger. See
+     * embed_triangles_in_tets and embed_segments.
      *
      * Ascending ids because the value then depends on nothing but the simplex's vertex set:
      * attribute copies keyed by the sorted vertex tuple (the swap trackers), a different slot
@@ -66,12 +79,11 @@ public:
      * merge() does not touch it for that reason: it cannot know the two vertex orders.
      *
      * Meaningful only on a mesh whose application set it at insertion
-     * (TetOptimizerMesh / TriOptimizerMesh::m_tracks_orientation); 0 elsewhere.
-     *
-     * One byte, like the other fields: a face would need more than 127 net coincident input
-     * sheets to overflow it, and set_orientation_along clamps rather than wraps if one does.
+     * (TetOptimizerMesh / TriOptimizerMesh::m_tracks_orientation); 0 elsewhere. Writes clamp to
+     * the range rather than wrap: a face would need 16 net coincident sheets to reach it.
      */
-    int8_t m_orientation = 0;
+    int8_t m_orientation : 5;
+    static constexpr int max_orientation = 15;
 
     /// +1 if `v` is an even permutation of its ascending sort, -1 if odd. N is 2 or 3.
     template <size_t N>
@@ -82,6 +94,12 @@ public:
             for (size_t j = i + 1; j < N; ++j)
                 if (v[i] > v[j]) ++inversions;
         return (inversions % 2 == 0) ? 1 : -1;
+    }
+
+    /// Store an orientation already measured against the ascending vertex order, clamped.
+    void set_orientation(int o)
+    {
+        m_orientation = int8_t(std::clamp(o, -max_orientation, max_orientation));
     }
 
     /// The orientation measured against the simplex ordered as `v` (which must be its vertices).
@@ -95,7 +113,7 @@ public:
     template <size_t N>
     void set_orientation_along(const std::array<size_t, N>& v, int o)
     {
-        m_orientation = int8_t(std::clamp(o * ascending_parity(v), -127, 127));
+        set_orientation(o * ascending_parity(v));
     }
 
     void reset()
@@ -115,6 +133,6 @@ public:
     }
 };
 
-static_assert(sizeof(SurfaceTagAttributes) == 4, "keep the surface tags byte-sized");
+static_assert(sizeof(SurfaceTagAttributes) == 3, "keep the surface tags byte-sized");
 
 } // namespace wmtk

@@ -307,7 +307,7 @@ public:
         std::vector<bool>& is_v_on_input,
         std::vector<std::array<size_t, 4>>& tets_after,
         std::vector<bool>& tet_face_on_input_surface,
-        std::vector<int>* tet_face_orientation = nullptr);
+        std::vector<int8_t>* tet_face_orientation = nullptr);
 
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
@@ -315,7 +315,7 @@ public:
         const std::vector<bool>& is_v_on_input,
         const std::vector<std::array<size_t, 4>>& tets,
         const std::vector<bool>& tet_face_on_input_surface,
-        const std::vector<int>* tet_face_orientation = nullptr);
+        const std::vector<int8_t>* tet_face_orientation = nullptr);
 
     void init_from_file(std::string input_dir);
 

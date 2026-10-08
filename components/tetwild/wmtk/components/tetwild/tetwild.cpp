@@ -480,7 +480,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // The input's orientation on the tracked faces, so the tracked-surface winding number
     // (filter "tracked", and the winding_number_tracked output field) is the input's own
     // rather than a guess. See SurfaceTagAttributes::m_orientation.
-    std::vector<int> tet_face_orientation;
+    std::vector<int8_t> tet_face_orientation;
 
     logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
 
@@ -520,12 +520,28 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // one check that catches an operation forgetting to carry the orientation.
     const auto log_orientation_check = [&](const char* when) {
         if (!params.perform_sanity_checks || !mesh_new.m_tracks_orientation) return;
-        const auto boundary = mesh_new.tracked_surface_boundary();
-        logger().info(
-            "oriented tracked surface {}: {} faces, {} boundary edges",
-            when,
-            mesh_new.oriented_tracked_faces().size(),
-            boundary.size());
+        // The chain may have boundary only on the input's open boundary.
+        size_t n_unexpected = 0;
+        for (const auto& [e, sum] : mesh_new.tracked_surface_boundary()) {
+            if (!mesh_new.m_vertex_extra[e[0]].m_is_on_open_boundary ||
+                !mesh_new.m_vertex_extra[e[1]].m_is_on_open_boundary) {
+                ++n_unexpected;
+            }
+        }
+        const size_t n_faces = mesh_new.oriented_tracked_faces().size();
+        if (n_unexpected > 0) {
+            logger().warn(
+                "oriented tracked surface {}: {} faces, {} boundary edges off the input's open "
+                "boundary -- the tracked winding number is not an integer near them",
+                when,
+                n_faces,
+                n_unexpected);
+        } else {
+            logger().info(
+                "oriented tracked surface {}: {} faces, no boundary off the input's",
+                when,
+                n_faces);
+        }
     };
     log_orientation_check("after insertion");
 
@@ -537,6 +553,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<bool>().swap(is_v_on_input);
     std::vector<std::array<size_t, 4>>().swap(tets);
     std::vector<bool>().swap(tet_face_on_input_surface);
+    std::vector<int8_t>().swap(tet_face_orientation);
     std::vector<Eigen::Vector3d>().swap(vsimp);
     std::vector<std::array<size_t, 3>>().swap(fsimp);
 

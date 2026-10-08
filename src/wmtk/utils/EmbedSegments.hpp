@@ -34,8 +34,10 @@ namespace wmtk::utils {
  * @param[out] E_out_orientation optional: for each row of E_out, the input's direction on it,
  *             as the signed number of input edges covering it, measured along the row as
  *             written (E_out rows are (min, max)): +1 for an input edge running min -> max.
- *             Overlapping edges add up and opposite ones cancel. See
- *             SurfaceTagAttributes::m_orientation.
+ *             Overlapping edges add up and opposite ones cancel, but the copies of a repeated
+ *             input edge count once. Then made consistent curve by curve, by length-weighted
+ *             majority, which repairs edges reversed against their neighbours and changes
+ *             nothing on a consistently oriented input. See SurfaceTagAttributes::m_orientation.
  */
 void embed_segments(
     const MatrixXd& V,

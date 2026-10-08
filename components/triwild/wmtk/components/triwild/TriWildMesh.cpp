@@ -172,6 +172,7 @@ void TriWildMesh::init_mesh(
     }
 
     // mark edges as on surface if they are in E
+    assert(E_orientation == nullptr || E_orientation->size() == size_t(E.rows()));
     for (int i = 0; i < E.rows(); i++) {
         std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
@@ -185,10 +186,7 @@ void TriWildMesh::init_mesh(
         m_vertex_attribute[vids[0]].m_is_on_surface = true;
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
-    if (E_orientation != nullptr) {
-        assert(E_orientation->size() == size_t(E.rows()));
-        m_tracks_orientation = true;
-    }
+    if (E_orientation != nullptr) m_tracks_orientation = true;
 
     // Feature points: the 0-dimensional features of the curve network, taken from the
     // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;

@@ -2,7 +2,8 @@
 // direction (SurfaceTagAttributes::m_orientation) from embed_segments through every
 // operation, so filter "tracked" agrees with filter "input" on the configurations a guess gets
 // wrong -- several loops, one inside out, one nested, two sharing an edge, one resting on
-// another.
+// another -- and the tracked curves alone get right the inputs embed_segments repairs or counts
+// once: an edge reversed against its neighbours, a repeated edge.
 
 #include <wmtk/components/triwild/TriWildMesh.h>
 #include <wmtk/utils/EmbedSegments.hpp>
@@ -90,7 +91,9 @@ std::array<double, 2> areas(TriWildMesh& mesh, const MatrixXd& V, const MatrixXi
     return res;
 }
 
-void check_case(const char* name, const Loops& l, double expected)
+/// `input_consistent`: the input is consistently oriented, so its own winding number gets the
+/// area right and agrees with the tracked one. Not where the tracked curves repair it.
+void check_case(const char* name, const Loops& l, double expected, bool input_consistent = true)
 {
     const MatrixXd V = l.V();
     const MatrixXi E = l.E();
@@ -107,8 +110,9 @@ void check_case(const char* name, const Loops& l, double expected)
     mesh.init_mesh(Vo, Vr, F, Eo, {"input"}, V, E, &orientation);
     REQUIRE(mesh.m_tracks_orientation);
 
-    // Right after the insertion the tracked curves ARE the input: closed, and the two winding
-    // numbers agree face by face (no face of a 2D arrangement is flat).
+    // Right after the insertion the tracked curves ARE the input, repaired: closed, and the two
+    // winding numbers agree face by face (no face of a 2D arrangement is flat) where the input
+    // needed no repair.
     CHECK(mesh.tracked_curve_boundary().empty());
     const auto a0 = areas(mesh, V, E);
     size_t disagree = 0;
@@ -122,7 +126,7 @@ void check_case(const char* name, const Loops& l, double expected)
         disagree,
         a0[0],
         a0[1]);
-    CHECK(disagree == 0);
+    if (input_consistent) CHECK(disagree == 0);
     CHECK(std::abs(a0[1] - expected) < 1e-9 * expected);
 
     mesh.mesh_improvement(3);
@@ -135,7 +139,7 @@ void check_case(const char* name, const Loops& l, double expected)
         a1[1],
         expected);
     CHECK(std::abs(a1[1] - expected) < 0.02 * expected);
-    CHECK(std::abs(a1[0] - expected) < 0.02 * expected);
+    if (input_consistent) CHECK(std::abs(a1[0] - expected) < 0.02 * expected);
 }
 
 } // namespace
@@ -187,4 +191,22 @@ TEST_CASE("orientation-2d-square-resting-on-a-strip", "[triwild][orientation]")
     l.square({0, 0}, {3, 1});
     l.square({1, 1}, {2, 2});
     check_case("square resting on a strip", l, 4);
+}
+
+TEST_CASE("orientation-2d-square-with-a-reversed-edge", "[triwild][orientation]")
+{
+    // Three edges against one: the reversed one is turned to agree with its loop.
+    Loops l;
+    l.square({0, 0}, {1, 1});
+    std::swap(l.e[1][0], l.e[1][1]);
+    check_case("square with a reversed edge", l, 1, false);
+}
+
+TEST_CASE("orientation-2d-square-with-a-repeated-edge", "[triwild][orientation]")
+{
+    // The copies count once, so the loop stays closed.
+    Loops l;
+    l.square({0, 0}, {1, 1});
+    l.e.push_back(l.e[0]);
+    check_case("square with a repeated edge", l, 1, false);
 }
