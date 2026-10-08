@@ -2745,7 +2745,9 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
         }
     }
 
-    if (!v1.is_valid(*this)) {
+    // Only once v1 is ours, as in TetMesh: while another thread holds it, that thread may be
+    // rewriting e's triangle, and is_valid()'s debug checks would read it mid-change.
+    if (!release_flag && !v1.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {
@@ -2762,7 +2764,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
             release_flag = true;
         }
     }
-    if (!v2.is_valid(*this)) {
+    if (!release_flag && !v2.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {
