@@ -34,11 +34,25 @@ namespace wmtk::components::tetwild {
 using VertexAttributes = wmtk::TetOptimizerMesh::VertexAttributes;
 using FaceAttributes = wmtk::TetOptimizerMesh::FaceAttributes;
 
-// TODO: missing comments on what these attributes are
+/// What the optimizer keeps per tet.
 class TetAttributes
 {
 public:
     double m_quality;
+};
+
+/**
+ * @brief Per-tet data that only the finalization stage reads or writes: winding numbers, the
+ * flood-fill part, and what the writers export from them.
+ *
+ * Kept out of TetAttributes and registered with the mesh only when that stage first touches
+ * it (enable_finalize_attributes()). The optimizer never reads these fields, but as members of
+ * TetAttributes they were 48 of each tet slot's 56 bytes for the whole run -- and the tet
+ * storage is preallocated several times over.
+ */
+class TetFinalizeAttributes
+{
+public:
     double m_winding_number_input = 0; // winding number w.r.t. the input
     double m_winding_number_tracked = 0; // winding number w.r.t. the tracked surface
     std::vector<double> m_winding_number_per_input;
@@ -80,6 +94,41 @@ public:
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
     TetAttCol m_tet_attribute;
 
+    /**
+     * @name Finalization attributes
+     *
+     * Empty until enable_finalize_attributes() registers the collection alongside
+     * m_tet_attribute; from then on it is resized, moved and rolled back with the rest of the
+     * tet storage. The const accessor does not register anything: before registration every
+     * tet reads as default-constructed, which is exactly what the fields held until the
+     * finalization stage wrote them.
+     * @{
+     */
+    void enable_finalize_attributes()
+    {
+        if (m_tet_finalize_enabled) return;
+        m_tet_finalize.resize(m_tet_attribute.size());
+        m_tet_attr_group.add(&m_tet_finalize);
+        m_tet_finalize_enabled = true;
+    }
+    TetFinalizeAttributes& tet_finalize(const size_t tid)
+    {
+        enable_finalize_attributes();
+        return m_tet_finalize[tid];
+    }
+    const TetFinalizeAttributes& tet_finalize(const size_t tid) const
+    {
+        static const TetFinalizeAttributes defaults;
+        return m_tet_finalize_enabled ? m_tet_finalize[tid] : defaults;
+    }
+    /** @} */
+
+private:
+    wmtk::AttributeCollection<TetFinalizeAttributes> m_tet_finalize;
+    wmtk::AttributeContainerGroup m_tet_attr_group;
+    bool m_tet_finalize_enabled = false;
+
+public:
     double cell_quality(const size_t tid) const override { return m_tet_attribute[tid].m_quality; }
     void set_cell_quality(const size_t tid, const double q) override
     {
@@ -128,7 +177,8 @@ public:
     {
         m_vertex_attr_group.add(&m_vertex_extra);
         NUM_THREADS = _num_threads;
-        p_tet_attrs = &m_tet_attribute;
+        m_tet_attr_group.add(&m_tet_attribute);
+        p_tet_attrs = &m_tet_attr_group;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
 

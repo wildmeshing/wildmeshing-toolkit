@@ -74,15 +74,20 @@ void TriWildMesh::init_mesh(
         auto& va = m_vertex_attribute[i];
         if (V_rational.empty()) {
             // No exact input available (a caller that only has doubles, e.g. a unit test).
-            va.m_pos = to_rational(Vector2d(V.row(i)));
             va.m_posf = V.row(i);
+            va.set_pos_to_posf();
             va.m_is_rounded = true;
             continue;
         }
-        va.m_pos = V_rational[i];
         va.m_posf = Vector2d(V_rational[i][0].to_double(), V_rational[i][1].to_double());
-        va.m_is_rounded =
-            (Rational(va.m_posf[0]) == va.m_pos[0]) && (Rational(va.m_posf[1]) == va.m_pos[1]);
+        va.m_is_rounded = (Rational(va.m_posf[0]) == V_rational[i][0]) &&
+                          (Rational(va.m_posf[1]) == V_rational[i][1]);
+        // A representable position needs no exact copy; see ExactPosition.
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(V_rational[i]);
+        }
         if (!va.m_is_rounded) {
             ++n_indirect;
             m_all_rounded.store(false, std::memory_order_relaxed);
@@ -116,12 +121,12 @@ void TriWildMesh::init_mesh(
     size_t n_degenerate = 0, n_negative = 0, n_total = 0;
     size_t first_bad_fid = std::numeric_limits<size_t>::max();
     std::array<size_t, 3> first_bad_vids = {{0, 0, 0}};
-    for (const Tuple& t : get_faces()) {
-        const size_t fid = t.fid(*this);
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
         const auto vs = oriented_tri_vids(fid);
-        const Vector2r& p0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2r& p1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2r& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r p0 = m_vertex_attribute[vs[0]].pos();
+        const Vector2r p1 = m_vertex_attribute[vs[1]].pos();
+        const Vector2r p2 = m_vertex_attribute[vs[2]].pos();
         const Rational d = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]);
         if (!(d > 0)) {
             if (d == 0) {
@@ -135,7 +140,7 @@ void TriWildMesh::init_mesh(
             }
         }
         ++n_total;
-        m_face_attribute[fid].m_quality = get_quality(t);
+        m_face_attribute[fid].m_quality = get_quality(fid);
     }
 
     if (n_degenerate + n_negative > 0) {
@@ -274,34 +279,44 @@ void TriWildMesh::init_mesh(
     const Vector2d domain_min = V.colwise().minCoeff();
     const Vector2d domain_max = V.colwise().maxCoeff();
 
-    const auto edges = get_edges();
-    for (size_t i = 0; i < edges.size(); i++) {
-        const auto vids = get_edge_vids(edges[i]);
+    // Edges are visited in place, in get_edges() order and with the same tuples, rather than
+    // through a list of every edge built while the arrangement -- the largest mesh of the run --
+    // is being set up.
+    const auto bbox_edge = [&](const Tuple& edge) {
+        const auto vids = get_edge_vids(edge);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_min[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_min[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_min[k])) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_max[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_max[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_max[k])) {
                 on_bbox = k * 2 + 1;
                 break;
             }
         }
         if (on_bbox < 0) {
-            continue;
+            return;
         }
-        if (edges[i].switch_face(*this)) {
+        if (edge.switch_face(*this)) {
             log_and_throw_error("Boundary edge {} is not on the boundary!", vids);
         }
 
-        const size_t eid = edges[i].eid(*this);
+        const size_t eid = edge.eid(*this);
         m_edge_attribute[eid].m_is_bbox_fs = on_bbox;
 
         for (const size_t vid : vids) {
             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    };
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        for (size_t j = 0; j < 3; j++) {
+            const size_t loc_eid = (j + 2) % 3;
+            const Tuple edge = tuple_from_edge(fid, loc_eid);
+            if (edge.eid(*this) == 3 * fid + loc_eid) bbox_edge(edge);
         }
     }
 

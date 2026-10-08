@@ -1,6 +1,8 @@
 #pragma once
 
+#include <iterator>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 namespace wmtk::threading {
@@ -76,6 +78,23 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.insert(m_data.end(), v.begin(), v.end());
     }
+    /**
+     * @brief Append by moving. The first chunk into an empty collector is adopted outright, so
+     * a single-chunk (serial) collect never holds its elements twice.
+     * This function is thread-safe.
+     */
+    void append(std::vector<T>&& v)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_data.empty()) {
+            m_data = std::move(v);
+        } else {
+            m_data.insert(
+                m_data.end(),
+                std::make_move_iterator(v.begin()),
+                std::make_move_iterator(v.end()));
+        }
+    }
 
     /**
      * @brief Resize the collector to contain n elements.
@@ -118,6 +137,13 @@ public:
      * @return The underlying data vector.
      */
     const std::vector<T>& data() const { return m_data; }
+
+    /**
+     * @brief Move the collected elements out, leaving the collector empty.
+     * This function is NOT thread-safe. Returning data() by value copies every element, which
+     * for an operation list over a whole mesh doubles it at the moment it is complete.
+     */
+    std::vector<T> take() { return std::exchange(m_data, std::vector<T>()); }
 
     /**
      * @brief operator[] is not thread-safe for concurrent writes, but is safe for concurrent reads

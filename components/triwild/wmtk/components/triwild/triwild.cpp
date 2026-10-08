@@ -441,6 +441,13 @@ void triwild(nlohmann::json json_params)
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env);
+    // The arrangement now lives in `mesh`. These are function locals, so without this they --
+    // the exact coordinates above all -- would be held through the optimization, which is where
+    // the run peaks.
+    V.resize(0, 0);
+    F.resize(0, 0);
+    E.resize(0, 0);
+    std::vector<Vector2r>().swap(V_rational);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.

@@ -92,7 +92,7 @@ void TetOptimizerMesh::split_all_edges()
                 }
                 return false;
             };
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
             m_split_order_waits = executor.waits();
             m_split_order_wait_defects = executor.wait_defects();
         });
@@ -246,7 +246,7 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+    m_vertex_attribute[v_id].set_pos_to_posf();
 
     for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
@@ -262,7 +262,8 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
         // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
         // shared edge, so it can never invert a previously-valid incident tet: the split
         // always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
+        // it.
         //
         // This used to apply only when an endpoint was already rational, to stop a split
         // between two rounded endpoints from reintroducing exact coordinates into a
@@ -278,15 +279,15 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
         // split is the only operation that can un-round a vertex (collapse, all four swaps
         // and smoothing never do), the post-optimization pass is collapse-only, and the loop
         // does not stop until every vertex is rounded as well as the energy target being met.
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].set_pos(
+            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
         // Keep m_posf in step with the exact position. It was left holding the double
         // midpoint, which is a different point -- and specifically the one just found to
         // invert an incident tet. Every un-guarded m_posf read (edge length, the envelope
         // tests, the smoothing seed) then works from a position the vertex does not have.
         // When an endpoint is itself un-rounded the gap is not a rounding step but the whole
         // distance between that endpoint's exact and approximate positions.
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].pos());
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
         for (const Tuple& t : locs) {

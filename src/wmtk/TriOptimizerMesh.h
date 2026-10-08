@@ -4,6 +4,7 @@
 #include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -41,7 +42,6 @@ public:
     struct VertexAttributes
     {
         Vector2d m_posf; // position as double
-        Vector2r m_pos; // exact position in rational
         /**
          * If a vertex cannot be rounded without inverting an incident face, the exact position
          * must be used. Once the vertex can be rounded to double precision, the rational
@@ -56,16 +56,35 @@ public:
 
         size_t partition_id = 0;
 
+        /**
+         * @name Exact position
+         *
+         * Stored only while it differs from m_posf; see ExactPosition. Read it with pos() (or
+         * pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely
+         * exact value, or set_pos_to_posf() when it is m_posf -- a rounded vertex, or one
+         * placed at a double position.
+         * @{
+         */
+        Vector2r pos() const { return m_exact.value(m_posf); }
+        bool pos_coord_equals(int k, const Rational& r) const
+        {
+            return m_exact.coord_equals(k, m_posf, r);
+        }
+        void set_pos(const Vector2r& p) { m_exact.store(p); }
+        void set_pos_to_posf() { m_exact.clear(); }
+        ExactPosition<Vector2r, Vector2d> m_exact;
+        /** @} */
+
         VertexAttributes() {}
         VertexAttributes(const Vector2d& p)
             : m_posf(p)
-            , m_pos(to_rational(p))
             , m_is_rounded(true)
         {}
         VertexAttributes(const Vector2r& p)
             : m_posf(to_double(p))
-            , m_pos(p)
-        {}
+        {
+            set_pos(p);
+        }
     };
 
     using EdgeAttributes = wmtk::SurfaceTagAttributes;
@@ -232,6 +251,29 @@ public:
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
 
+    /// Every pass grows the storage at its serial points -- between operations when serial,
+    /// between rounds when parallel (see ExecutePass) -- so the optimizer only keeps a small
+    /// slack instead of the preallocation factor.
+    bool storage_grows_on_demand() const override { return true; }
+
+protected:
+    /// The high-valence claims are indexed by vertex id and sized to the storage at the start
+    /// of a split pass; a split pass that grows the storage has to grow them with it, or the
+    /// vertices it creates would fall outside the gate. Existing claims are kept.
+    void on_slot_storage_grown() override
+    {
+        if (!m_high_valence_claim) return;
+        const size_t n = std::max(vert_capacity(), m_vertex_attribute.size());
+        if (n <= m_high_valence_claim_size) return;
+        auto grown = std::make_unique<std::atomic<int>[]>(n);
+        for (size_t i = 0; i < m_high_valence_claim_size; ++i) {
+            grown[i].store(m_high_valence_claim[i].load(std::memory_order_relaxed));
+        }
+        m_high_valence_claim = std::move(grown);
+        m_high_valence_claim_size = n;
+    }
+
+public:
     /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
     /// sizing scalars, or a force-split edge.
     bool split_edge_is_due(const Tuple& e) const;

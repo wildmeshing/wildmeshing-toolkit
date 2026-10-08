@@ -55,8 +55,9 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
     m_tet_attribute.resize(tets.size());
     m_face_attribute.resize(tets.size() * 4);
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = Vector3r(points[i][0], points[i][1], points[i][2]);
+        // A double position, so the exact one is the same point: nothing to store.
         m_vertex_attribute[i].m_posf = Vector3d(points[i][0], points[i][1], points[i][2]);
+        m_vertex_attribute[i].set_pos_to_posf();
     }
     logger().info("attribute vectors created");
 }

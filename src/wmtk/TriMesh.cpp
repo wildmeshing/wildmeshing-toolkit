@@ -2370,6 +2370,38 @@ size_t TriMesh::request_tri_slots(size_t n)
     return m_tri_connectivity.request(n);
 }
 
+size_t TriMesh::cell_slot_bound(const Tuple& t) const
+{
+    const auto& tri = m_tri_connectivity[t.fid(*this)];
+    size_t n = 0;
+    for (int j = 0; j < 3; ++j) {
+        n += m_vertex_connectivity[tri[j]].m_conn_tris.size();
+    }
+    return n;
+}
+
+void TriMesh::reserve_free_slots(size_t cells, size_t verts)
+{
+    bool grown = false;
+    if (m_tri_connectivity.capacity() - m_tri_connectivity.live() < cells) {
+        const size_t cap = m_tri_connectivity.capacity();
+        const size_t newcap = std::max(m_tri_connectivity.live() + cells, cap + cap / 2);
+        m_tri_connectivity.resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(3 * newcap);
+        grown = true;
+    }
+    if (m_vertex_connectivity.capacity() - m_vertex_connectivity.live() < verts) {
+        const size_t cap = m_vertex_connectivity.capacity();
+        const size_t newcap = std::max(m_vertex_connectivity.live() + verts, cap + cap / 2);
+        m_vertex_connectivity.resize(newcap);
+        resize_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+        grown = true;
+    }
+    if (grown) on_slot_storage_grown();
+}
+
 size_t TriMesh::request_vert_slots(size_t n)
 {
     return m_vertex_connectivity.request(n);

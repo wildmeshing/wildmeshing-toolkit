@@ -30,8 +30,9 @@ void SimWildMesh::init_from_image(
     auto& VA = m_vertex_attribute;
 
     for (int i = 0; i < vert_capacity(); i++) {
-        VA[i].m_pos = V.row(i);
-        VA[i].m_posf = to_double(VA[i].m_pos);
+        const Vector3r r = V.row(i);
+        VA[i].set_pos(r);
+        VA[i].m_posf = to_double(r);
     }
 
     if (m_params.perform_sanity_checks) {
@@ -83,10 +84,12 @@ void SimWildMesh::init_from_image(
             threading::range(0, vert_capacity()),
             [&](const threading::range& range) {
                 for (size_t i = range.begin(); i < range.end(); ++i) {
-                    const Vector3r& r = VA[i].m_pos;
+                    const Vector3r r = VA[i].pos();
                     const Vector3r r_from_d = to_rational(VA[i].m_posf);
                     is_direct_point[i] = (r_from_d == r);
                     VA[i].m_is_rounded = is_direct_point[i];
+                    // A direct point's exact position is its double one; see ExactPosition.
+                    if (is_direct_point[i]) VA[i].set_pos_to_posf();
                 }
             },
             NUM_THREADS);
@@ -106,7 +109,7 @@ void SimWildMesh::init_from_image(
         for_each_vertex([&](const Tuple& v) {
             const size_t i = v.vid(*this);
             if (!VA[i].m_is_rounded) {
-                VA[i].m_pos = to_rational(VA[i].m_posf);
+                VA[i].set_pos_to_posf();
                 VA[i].m_is_rounded = true;
             }
         });
@@ -141,7 +144,7 @@ void SimWildMesh::init_from_image(
                     continue;
                 }
                 if (m_vertex_attribute[vid].m_is_rounded) {
-                    m_vertex_attribute[vid].m_pos = V.row(vid);
+                    m_vertex_attribute[vid].set_pos(Vector3r(V.row(vid)));
                     m_vertex_attribute[vid].m_is_rounded = false;
                     m_all_rounded.store(false, std::memory_order_relaxed);
                 }
@@ -217,7 +220,7 @@ void SimWildMesh::init_from_image(
 
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_posf = V.row(i);
-        m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
+        m_vertex_attribute[i].set_pos_to_posf();
         m_vertex_attribute[i].m_is_rounded = true;
     }
 
@@ -364,15 +367,15 @@ void SimWildMesh::init_surfaces_and_boundaries()
         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         int on_bbox = -1;
         for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_min[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_sim_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_min[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_min[k]) &&
+                m_vertex_attribute[vids[2]].pos_coord_equals(k, m_sim_params.box_min[k])) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_max[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_sim_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_max[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_max[k]) &&
+                m_vertex_attribute[vids[2]].pos_coord_equals(k, m_sim_params.box_max[k])) {
                 on_bbox = k * 2 + 1;
                 break;
             }

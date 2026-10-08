@@ -1112,6 +1112,7 @@ void TopoOffsetTriMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2]);
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_face(t, garbage)) {
             log_and_throw_error("face split failed! (simplicial_embedding)");
         }
@@ -1136,6 +1137,7 @@ void TopoOffsetTriMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = get_tuple_from_edge(e);
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_edge(t, garbage)) {
             log_and_throw_error("edge split failed! (simplicial_embedding)");
         }
@@ -1229,6 +1231,7 @@ void TopoOffsetTriMesh::marching_tris()
         // split edge
         garbage.clear();
         Tuple t = get_tuple_from_edge(e);
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (split_edge(t, garbage)) { // this should never fail
             frontier_verts.push_back(v_in);
         } else {

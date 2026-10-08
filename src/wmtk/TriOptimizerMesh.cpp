@@ -301,7 +301,7 @@ size_t TriOptimizerMesh::swap_all_edges()
             const double w = m.swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
-        total_success = run_localized_to_convergence(mesh, executor, collect_all_ops);
+        total_success = run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
     });
 
     return total_success;
@@ -491,9 +491,9 @@ bool TriOptimizerMesh::is_inverted(const std::array<size_t, 3>& vs) const
         }
         return true;
     } else {
-        const Vector2r& v0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2r& v1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2r& v2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r v0 = m_vertex_attribute[vs[0]].pos();
+        const Vector2r v1 = m_vertex_attribute[vs[1]].pos();
+        const Vector2r v2 = m_vertex_attribute[vs[2]].pos();
         const Vector2r a = v1 - v0;
         const Vector2r b = v2 - v0;
         Rational res = a.x() * b.y() - a.y() * b.x();
@@ -535,8 +535,8 @@ bool TriOptimizerMesh::round(const Tuple& v)
         return true;
     }
 
-    auto old_pos = m_vertex_attribute[i].m_pos;
-    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1];
+    const auto old_exact = m_vertex_attribute[i].m_exact;
+    m_vertex_attribute[i].set_pos_to_posf();
     auto conn_tets = get_one_ring_tris_for_vertex(v);
     // Set before the loop so is_inverted takes the float path: the question being asked is
     // exactly whether the ROUNDED position keeps every incident face valid.
@@ -544,7 +544,7 @@ bool TriOptimizerMesh::round(const Tuple& v)
     for (const Tuple& tet : conn_tets) {
         if (is_inverted(tet)) {
             m_vertex_attribute[i].m_is_rounded = false;
-            m_vertex_attribute[i].m_pos = old_pos;
+            m_vertex_attribute[i].m_exact = old_exact;
             return false;
         }
     }

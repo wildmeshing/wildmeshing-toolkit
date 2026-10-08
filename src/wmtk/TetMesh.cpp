@@ -23,6 +23,39 @@ size_t TetMesh::request_vert_slots(size_t n)
     return m_vertex_connectivity.request(n);
 }
 
+size_t TetMesh::cell_slot_bound(const Tuple& t) const
+{
+    const auto& tet = m_tet_connectivity[t.tid(*this)];
+    size_t n = 0;
+    for (int j = 0; j < 4; ++j) {
+        n += m_vertex_connectivity[tet[j]].m_conn_tets.size();
+    }
+    return n;
+}
+
+void TetMesh::reserve_free_slots(size_t cells, size_t verts)
+{
+    bool grown = false;
+    if (m_tet_connectivity.capacity() - m_tet_connectivity.live() < cells) {
+        const size_t cap = m_tet_connectivity.capacity();
+        const size_t newcap = std::max(m_tet_connectivity.live() + cells, cap + cap / 2);
+        m_tet_connectivity.resize(newcap);
+        if (p_tet_attrs) p_tet_attrs->resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(4 * newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(6 * newcap);
+        grown = true;
+    }
+    if (m_vertex_connectivity.capacity() - m_vertex_connectivity.live() < verts) {
+        const size_t cap = m_vertex_connectivity.capacity();
+        const size_t newcap = std::max(m_vertex_connectivity.live() + verts, cap + cap / 2);
+        m_vertex_connectivity.resize(newcap);
+        resize_vertex_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+        grown = true;
+    }
+    if (grown) on_slot_storage_grown();
+}
+
 size_t TetMesh::get_next_empty_slot_t()
 {
     return request_tet_slots(1);

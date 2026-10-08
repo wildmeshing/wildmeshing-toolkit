@@ -45,7 +45,7 @@ void build_grid(TriWildMesh& mesh, int n)
             auto& va = mesh.m_vertex_attribute[vid(i, j)];
             va.m_posf = Vector2d(double(i) / n, double(j) / n);
             va.m_is_rounded = true;
-            va.m_pos = to_rational(va.m_posf);
+            va.set_pos_to_posf();
         }
     }
 }

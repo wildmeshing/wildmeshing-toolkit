@@ -9,6 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 // clang-format off
+#include <deque>
 #include <functional>
 #include <limits>
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -26,6 +27,7 @@
 #include <queue>
 #include <stdexcept>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 
@@ -33,6 +35,71 @@ namespace wmtk {
 enum class ExecutionPolicy { kSeq, kUnSeq, kPartition, kColor, kMax };
 
 using Op = std::string;
+
+/**
+ * @brief A pass's candidate operations, compact and consumed as they are queued.
+ *
+ * A pass lists every candidate before it runs -- two per edge for a collapse, three for the
+ * combined edge swap -- and on the first pass after construction that list is the size of the
+ * whole mesh. As `std::vector<std::pair<Op, Tuple>>` each entry carried a std::string (72 bytes
+ * an entry on a tet mesh), and the list sat next to the priority queue built from it until the
+ * queue was complete.
+ *
+ * Here an entry is the Tuple and a 32-bit index into the handful of operation names the list
+ * has seen, and the entries live in a deque that ExecutePass pops as it seeds its queues, so
+ * the list shrinks while the queue grows instead of the two coexisting. The interface the passes
+ * use to build it -- `emplace_back(name, tuple)` -- is unchanged.
+ */
+template <class Tuple>
+class OpList
+{
+public:
+    void emplace_back(const Op& op, const Tuple& t) { m_items.emplace_back(intern(op), t); }
+    size_t size() const { return m_items.size(); }
+    bool empty() const { return m_items.empty(); }
+    void clear() { m_items.clear(); }
+
+    /// Hand every entry to `f(name, tuple)`, front to back, releasing them as it goes.
+    template <class F>
+    void consume(F&& f)
+    {
+        while (!m_items.empty()) {
+            const auto& [id, t] = m_items.front();
+            f(m_names[id], t);
+            m_items.pop_front();
+        }
+        m_items.shrink_to_fit();
+    }
+
+    /// Move `other`'s entries to the end of this list, releasing them from `other` as it goes.
+    void append(OpList&& other)
+    {
+        if (m_items.empty() && m_names.empty()) {
+            *this = std::move(other);
+            return;
+        }
+        std::vector<uint32_t> remap(other.m_names.size());
+        for (size_t i = 0; i < remap.size(); ++i) remap[i] = intern(other.m_names[i]);
+        while (!other.m_items.empty()) {
+            m_items.emplace_back(remap[other.m_items.front().first], other.m_items.front().second);
+            other.m_items.pop_front();
+        }
+    }
+
+private:
+    uint32_t intern(const Op& op)
+    {
+        // A list sees one to three distinct names; a scan is cheaper than any map.
+        for (size_t i = 0; i < m_names.size(); ++i) {
+            if (m_names[i] == op) return static_cast<uint32_t>(i);
+        }
+        m_names.push_back(op);
+        return static_cast<uint32_t>(m_names.size() - 1);
+    }
+
+    std::vector<Op> m_names;
+    std::deque<std::pair<uint32_t, Tuple>> m_items;
+};
 
 /// An edge's ExecutePass::queue_key: its two vertex ids, smaller first, packed into 64 bits.
 /// Never 0, the "not tracked" key: the ids of an edge differ, so the larger one is at least 1.
@@ -365,6 +432,44 @@ public:
      */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
+        return execute(m, [&](const Push& push) {
+            for (const auto& [op, e] : operation_tuples) push(op, e);
+        });
+    }
+
+    /**
+     * @brief As above, but takes the operation list over and frees it as soon as the queues are
+     * seeded.
+     *
+     * The queues hold their own copy of every operation, so the list is dead weight from then
+     * on -- and it is at its longest on the first pass after construction, which is also when
+     * the mesh is at its largest. Releasing it there is what keeps a pass from holding every
+     * candidate twice at the run's peak.
+     */
+    bool operator()(AppMesh& m, std::vector<std::pair<Op, Tuple>>&& operation_tuples)
+    {
+        return execute(m, [&](const Push& push) {
+            for (const auto& [op, e] : operation_tuples) push(op, e);
+            // Swapping with an empty vector, not clear(), so the storage is returned.
+            std::vector<std::pair<Op, Tuple>>().swap(operation_tuples);
+        });
+    }
+
+    /**
+     * @brief As above for an OpList, which is released entry by entry while the queues are
+     * seeded, so the list and the queue never both hold every candidate.
+     */
+    bool operator()(AppMesh& m, OpList<Tuple>&& operation_tuples)
+    {
+        return execute(m, [&](const Push& push) { operation_tuples.consume(push); });
+    }
+
+private:
+    /// Queues one candidate; what a seeder calls for each entry of its list.
+    using Push = std::function<void(const Op&, const Tuple&)>;
+
+    bool execute(AppMesh& m, const std::function<void(const Push&)>& seed)
+    {
         // The queue holds an operation's INDEX rather than its name. edit_operation_maps is a
         // std::map, so iterating it yields the names in lexicographic order and an index is
         // exactly a name's rank among them -- comparing indices is therefore identical to
@@ -374,9 +479,44 @@ public:
         // priority is an integer compare instead of a string compare. It also turns the
         // per-operation dispatch from a string-keyed std::map lookup into an index.
         using OpId = uint32_t;
-        // priority, op index, tuple, #retries, queue_key. The key compares last, after the tuple,
-        // and two elements with the same tuple have the same key, so the pop order is unchanged.
-        using Elem = std::tuple<double, OpId, Tuple, size_t, uint64_t>;
+        // priority, op index, #retries, tuple, queue_key. A struct rather than a std::tuple so the
+        // two 32-bit fields share a word: std::tuple lays its members out in reverse and pads each
+        // one to the Tuple's alignment, which costs 8 bytes per queued operation. The ordering
+        // is the one the std::tuple had -- (priority, op, tuple, retry, key), lexicographic -- so
+        // the pop order is unchanged. The key compares last, after the tuple, and two elements
+        // with the same tuple have the same key.
+        // What a parallel task may still take from the storage this round.
+        struct SlotBudget
+        {
+            size_t cells = 0;
+            size_t verts = 0;
+            bool stopped = false; // ended its round for want of slots, queue not drained
+            bool progressed = false; // ran at least one operation this round
+        };
+        struct Elem
+        {
+            double weight = 0;
+            OpId op = 0;
+            uint32_t retry = 0;
+            Tuple tup;
+            uint64_t key = 0; // queue_key, 0 when untracked
+
+            Elem() = default;
+            Elem(double w, OpId o, const Tuple& t, uint32_t r, uint64_t k)
+                : weight(w)
+                , op(o)
+                , retry(r)
+                , tup(t)
+                , key(k)
+            {}
+
+            // A member, not a hidden friend: a local class cannot define friend functions.
+            bool operator<(const Elem& b) const
+            {
+                return std::tie(weight, op, tup, retry, key) <
+                       std::tie(b.weight, b.op, b.tup, b.retry, b.key);
+            }
+        };
         // Each task owns its queue outright -- it is seeded before any thread starts, and the
         // task both pops from it and pushes its renewed operations back into it -- so those need
         // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
@@ -483,9 +623,15 @@ public:
             }
         };
 
-        // `serial`: Q is popped by this task alone and in priority order (kSeq, or the queue
-        // drained after the barrier), so a must_wait that says true is a defect there.
-        auto run_single_queue = [&](auto& Q, int task_id, const bool serial) {
+        // `serial`: no other thread is running operations on the mesh, and Q is popped by this
+        // task alone and in priority order -- the serial policy, and the serial drain after a
+        // parallel pass. The storage may then grow between operations (see
+        // TetMesh::reserve_free_slots), never inside a parallel task; and a must_wait that says
+        // true is a defect there.
+        //
+        // `budget`: the slots a parallel task may still take this round (see the round loop
+        // below); null when the task may grow the storage instead.
+        auto run_single_queue = [&](auto& Q, int task_id, const bool serial, SlotBudget* budget) {
             CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
@@ -528,7 +674,7 @@ public:
                     continue;
                 }
                 ++since_refill;
-                auto& [weight, op, tup, retry, key] = ele_in_queue;
+                auto& [weight, op, retry, tup, key] = ele_in_queue;
                 if (!tup.is_valid(m)) {
                     done(key);
                     continue;
@@ -583,8 +729,29 @@ public:
                             }
                             continue;
                         }
+                        if (serial) {
+                            m.reserve_free_slots(m.cell_slot_bound(tup), 1);
+                        } else if (budget != nullptr) {
+                            // The ring is locked, so the stars the bound reads are stable.
+                            if (m.cell_slot_bound(tup) > budget->cells || budget->verts < 1) {
+                                // Out of this round's slots: hand the operation back untouched,
+                                // with everything deferred, and end the task's round.
+                                operation_cleanup(m);
+                                Q.emplace(ele_in_queue);
+                                refill();
+                                budget->stopped = true;
+                                return;
+                            }
+                        }
+                        const auto usage_before = AppMesh::slot_usage_of_this_thread();
                         auto newtup = (*op_fn[op])(m, tup);
                         done(key);
+                        if (budget != nullptr) {
+                            const auto usage = AppMesh::slot_usage_of_this_thread();
+                            budget->cells -= usage.cells - usage_before.cells;
+                            budget->verts -= usage.verts - usage_before.verts;
+                            budget->progressed = true;
+                        }
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
@@ -629,38 +796,81 @@ public:
         };
 
         if (policy == ExecutionPolicy::kSeq) {
-            for (const auto& [op, e] : operation_tuples) {
+            seed([&](const Op& op, const Tuple& e) {
                 if (!e.is_valid(m)) {
-                    continue;
+                    return;
                 }
                 const uint64_t k = key_of(op, e);
                 track(k);
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
-            }
-            run_single_queue(final_queue, 0, true);
+            });
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
         } else {
-            for (const auto& [op, e] : operation_tuples) {
+            seed([&](const Op& op, const Tuple& e) {
                 if (!e.is_valid(m)) {
-                    continue;
+                    return;
                 }
                 const uint64_t k = key_of(op, e);
                 track(k);
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
-            }
+            });
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
             const auto t_parallel = clock::now();
+            // Rounds. The storage cannot grow while the tasks run, so each round starts at a
+            // serial point that grows it by a headroom split into per-task budgets; a task runs
+            // an operation only if its budget covers the operation's slot bound, and is charged
+            // what the operation actually took. A task that cannot afford its next operation
+            // hands it back and ends its round. No operation is ever refused for want of slots,
+            // and the storage only ever needs to be a quarter larger than the mesh.
+            //
+            // A task that ends a round without having run anything had a single operation
+            // larger than its share; its share doubles until it fits, so every round but the
+            // last makes progress and the loop terminates.
+            const size_t n_tasks = queues.size();
+            std::vector<SlotBudget> budgets(n_tasks);
+            std::vector<unsigned> boost(n_tasks, 0);
             wmtk::threading::task_group tg;
-            for (int task_id = 0; task_id < queues.size(); task_id++) {
-                tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
-                    const auto t0 = clock::now();
-                    run_single_queue(queues[task_id], task_id, false);
-                    // Each task writes only its own slot.
-                    task_seconds[task_id] =
-                        std::chrono::duration<double>(clock::now() - t0).count();
-                });
+            for (size_t round = 0;; ++round) {
+                // A quarter of the mesh per round, or whatever the storage already has free if
+                // that is more -- a mesh that still preallocates never runs more rounds than
+                // its headroom forces.
+                const size_t cell_room =
+                    std::max(m.cell_capacity() / 4, m.cell_storage_capacity() - m.cell_capacity());
+                const size_t vert_room =
+                    std::max(m.vert_capacity() / 4, m.vert_storage_capacity() - m.vert_capacity());
+                const size_t cell_share = std::max<size_t>(4096, cell_room / n_tasks);
+                const size_t vert_share = std::max<size_t>(1024, vert_room / n_tasks);
+                size_t cells = 0, verts = 0;
+                for (size_t t = 0; t < n_tasks; ++t) {
+                    budgets[t] = SlotBudget{cell_share << boost[t], vert_share << boost[t]};
+                    cells += budgets[t].cells;
+                    verts += budgets[t].verts;
+                }
+                m.reserve_free_slots(cells, verts);
+                for (int task_id = 0; task_id < n_tasks; task_id++) {
+                    tg.run([&run_single_queue, &queues, &task_seconds, &budgets, task_id] {
+                        const auto t0 = clock::now();
+                        run_single_queue(
+                            queues[task_id],
+                            task_id,
+                            /*serial=*/false,
+                            &budgets[task_id]);
+                        // Each task writes only its own slot.
+                        task_seconds[task_id] +=
+                            std::chrono::duration<double>(clock::now() - t0).count();
+                    });
+                }
+                tg.wait();
+                bool again = false;
+                for (size_t t = 0; t < n_tasks; ++t) {
+                    if (!budgets[t].stopped) continue;
+                    again = true;
+                    if (!budgets[t].progressed) boost[t] = std::min(boost[t] + 1, 24u);
+                }
+                if (!again) break;
+                m_stats.rounds = round + 2;
             }
-            tg.wait();
             m_stats.parallel_seconds =
                 std::chrono::duration<double>(clock::now() - t_parallel).count();
             m_stats.final_queue_size = final_queue.size();
@@ -668,7 +878,7 @@ public:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
-            run_single_queue(final_queue, 0, true);
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
             m_stats.serial_tail_seconds =
                 std::chrono::duration<double>(clock::now() - t_tail).count();
         }
@@ -686,6 +896,11 @@ public:
             (int)cnt_success + (int)cnt_fail,
             (int)cnt_success,
             (int)cnt_fail);
+        if (m_stats.rounds > 1) {
+            logger().info(
+                "  parallel region ran in {} rounds (storage grown between them)",
+                m_stats.rounds);
+        }
         log_contention();
         // Every tracked element queued in this call was tried or dropped, unless the stopping
         // criterion ended the call early. Anything else is a bookkeeping defect, and is_queued()
@@ -705,6 +920,7 @@ public:
         return true;
     }
 
+public:
     int get_cnt_success() const { return cnt_success; }
     int get_cnt_fail() const { return cnt_fail; }
 
@@ -731,6 +947,9 @@ public:
         /// split the work unevenly, and since tasks never steal, the tail is one thread.
         double busiest_task_seconds = 0.;
         double idlest_task_seconds = 0.;
+        /// Rounds the parallel region took: more than one when the tasks ran through their
+        /// slot budgets and the storage had to grow between rounds.
+        size_t rounds = 1;
     };
     const PassStats& stats() const { return m_stats; }
 
