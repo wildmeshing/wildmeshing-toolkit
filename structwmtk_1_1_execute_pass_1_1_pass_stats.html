@@ -107,6 +107,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>serial_tail_seconds
 <tr class="memitem:ac02a656b61ce39056a96f4e3a8b88fc9" id="r_ac02a656b61ce39056a96f4e3a8b88fc9"><td class="memItemLeft" align="right" valign="top"><a id="ac02a656b61ce39056a96f4e3a8b88fc9" name="ac02a656b61ce39056a96f4e3a8b88fc9"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>idlest_task_seconds</b> = 0.</td></tr>
 <tr class="separator:ac02a656b61ce39056a96f4e3a8b88fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af46c7823db686132bbed984a2a986457" id="r_af46c7823db686132bbed984a2a986457"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#af46c7823db686132bbed984a2a986457">rounds</a> = 1</td></tr>
+<tr class="separator:af46c7823db686132bbed984a2a986457"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class AppMesh&gt;<br />
@@ -161,6 +163,23 @@ template&lt;class AppMesh &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>Wall time inside the parallel region, and in the serial drain that follows it. The pass is billed as "parallel" in the driver's log line, but it is the sum of these. </p>
+
+</div>
+</div>
+<a id="af46c7823db686132bbed984a2a986457" name="af46c7823db686132bbed984a2a986457"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af46c7823db686132bbed984a2a986457">&#9670;&#160;</a></span>rounds</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::PassStats::rounds = 1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Rounds the parallel region took: more than one when the tasks ran through their slot budgets and the storage had to grow between rounds. </p>
 
 </div>
 </div>

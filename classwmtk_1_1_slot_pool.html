@@ -76,7 +76,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classwmtk_1_1_slot_pool-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::SlotPool&lt; T &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -156,6 +158,12 @@ auto&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> () const</t
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> () const</td></tr>
 <tr class="separator:ac3a8140844e09a246ac9d8cf9c162a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a0a70161b99d2c0a5e22af438a9e0b0a4" id="r_a0a70161b99d2c0a5e22af438a9e0b0a4"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_slot_pool.html#a0a70161b99d2c0a5e22af438a9e0b0a4">taken_by_this_thread</a> ()</td></tr>
+<tr class="memdesc:a0a70161b99d2c0a5e22af438a9e0b0a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Slots this thread has been handed by pools of this type, over its lifetime.  <br /></td></tr>
+<tr class="separator:a0a70161b99d2c0a5e22af438a9e0b0a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:ae4d3121ae46412648b5ebbd03f4f5f83" id="r_ae4d3121ae46412648b5ebbd03f4f5f83"><td class="memItemLeft" align="right" valign="top"><a id="ae4d3121ae46412648b5ebbd03f4f5f83" name="ae4d3121ae46412648b5ebbd03f4f5f83"></a>
@@ -167,6 +175,12 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:a28ca72782f14fbc867854d60d471648a" id="r_a28ca72782f14fbc867854d60d471648a"><td class="memItemLeft" align="right" valign="top"><a id="a28ca72782f14fbc867854d60d471648a" name="a28ca72782f14fbc867854d60d471648a"></a>
 std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_refused</b> {false}</td></tr>
 <tr class="separator:a28ca72782f14fbc867854d60d471648a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:af88cafe2521d69759e55de088268c0aa" id="r_af88cafe2521d69759e55de088268c0aa"><td class="memItemLeft" align="right" valign="top"><a id="af88cafe2521d69759e55de088268c0aa" name="af88cafe2521d69759e55de088268c0aa"></a>
+static thread_local size_t&#160;</td><td class="memItemRight" valign="bottom"><b>t_taken</b> = 0</td></tr>
+<tr class="separator:af88cafe2521d69759e55de088268c0aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class T&gt;<br />
@@ -233,6 +247,36 @@ template&lt;class T &gt; </div>
 <p>Atomically reserve <code>n</code> contiguous fresh slots. </p>
 <dl class="section return"><dt>Returns</dt><dd>The first index of the block, or INVALID_SLOT if serving it would run past <code><a class="el" href="classwmtk_1_1_slot_pool.html#a6c3b737c42ade905bb8ab9f7b9a8c4a2" title="Slots the storage can hold: the end of the spare region.">capacity()</a></code>. A refusal leaves the counter untouched, so the slots that remain stay available to a later, smaller request; a request that leaked would push <code><a class="el" href="classwmtk_1_1_slot_pool.html#ad31b543781963ff6b8adc725e1f206cd">live()</a></code> past <code><a class="el" href="classwmtk_1_1_slot_pool.html#a6c3b737c42ade905bb8ab9f7b9a8c4a2" title="Slots the storage can hold: the end of the spare region.">capacity()</a></code> and send subsequent iteration out of bounds.</dd></dl>
 <p><code>n == 0</code> reports the current <code><a class="el" href="classwmtk_1_1_slot_pool.html#ad31b543781963ff6b8adc725e1f206cd">live()</a></code> without consuming anything. </p>
+
+</div>
+</div>
+<a id="a0a70161b99d2c0a5e22af438a9e0b0a4" name="a0a70161b99d2c0a5e22af438a9e0b0a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a70161b99d2c0a5e22af438a9e0b0a4">&#9670;&#160;</a></span>taken_by_this_thread()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static size_t <a class="el" href="classwmtk_1_1_slot_pool.html">wmtk::SlotPool</a>&lt; T &gt;::taken_by_this_thread </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Slots this thread has been handed by pools of this type, over its lifetime. </p>
+<p>Only differences are meaningful. The scheduler reads it before and after an operation to learn exactly what the operation took &ndash; which is how a parallel pass charges operations against per-thread budgets without a shared counter. </p>
 
 </div>
 </div>

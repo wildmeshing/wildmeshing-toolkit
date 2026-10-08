@@ -95,9 +95,6 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a267258acfe7aecf496926da42e731265" id="r_a267258acfe7aecf496926da42e731265"><td class="memItemLeft" align="right" valign="top"><a id="a267258acfe7aecf496926da42e731265" name="a267258acfe7aecf496926da42e731265"></a>
 Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>m_posf</b></td></tr>
 <tr class="separator:a267258acfe7aecf496926da42e731265"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae33ae8384b7b8f5a0533be6943821a50" id="r_ae33ae8384b7b8f5a0533be6943821a50"><td class="memItemLeft" align="right" valign="top"><a id="ae33ae8384b7b8f5a0533be6943821a50" name="ae33ae8384b7b8f5a0533be6943821a50"></a>
-Vector2r&#160;</td><td class="memItemRight" valign="bottom"><b>m_pos</b></td></tr>
-<tr class="separator:ae33ae8384b7b8f5a0533be6943821a50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d27c78d4a0be73bba744fe148c06c31" id="r_a4d27c78d4a0be73bba744fe148c06c31"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html#a4d27c78d4a0be73bba744fe148c06c31">m_is_rounded</a> = false</td></tr>
 <tr class="separator:a4d27c78d4a0be73bba744fe148c06c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a145ae92fdc91e30b5aa1668fc1175e" id="r_a5a145ae92fdc91e30b5aa1668fc1175e"><td class="memItemLeft" align="right" valign="top"><a id="a5a145ae92fdc91e30b5aa1668fc1175e" name="a5a145ae92fdc91e30b5aa1668fc1175e"></a>
@@ -112,6 +109,25 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_scalar</b>
 <tr class="memitem:a62cb9a34577728c17e97d987f236c2db" id="r_a62cb9a34577728c17e97d987f236c2db"><td class="memItemLeft" align="right" valign="top"><a id="a62cb9a34577728c17e97d987f236c2db" name="a62cb9a34577728c17e97d987f236c2db"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>partition_id</b> = 0</td></tr>
 <tr class="separator:a62cb9a34577728c17e97d987f236c2db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Exact position</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>Stored only while it differs from m_posf; see <a class="el" href="classwmtk_1_1_exact_position.html" title="A vertex&#39;s exact (rational) position, stored only while it differs from the vertex&#39;s double position.">ExactPosition</a>. Read it with pos() (or pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely exact value, or set_pos_to_posf() when it is m_posf &ndash; a rounded vertex, or one placed at a double position. </p>
+</td></tr>
+<tr class="memitem:a221237d989ebc66579fc5353f7b5b113" id="r_a221237d989ebc66579fc5353f7b5b113"><td class="memItemLeft" align="right" valign="top"><a id="a221237d989ebc66579fc5353f7b5b113" name="a221237d989ebc66579fc5353f7b5b113"></a>
+<a class="el" href="classwmtk_1_1_exact_position.html">ExactPosition</a>&lt; Vector2r, Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_exact</b></td></tr>
+<tr class="separator:a221237d989ebc66579fc5353f7b5b113"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea6497488a39293880ebeeef8b16c486" id="r_aea6497488a39293880ebeeef8b16c486"><td class="memItemLeft" align="right" valign="top"><a id="aea6497488a39293880ebeeef8b16c486" name="aea6497488a39293880ebeeef8b16c486"></a>
+Vector2r&#160;</td><td class="memItemRight" valign="bottom"><b>pos</b> () const</td></tr>
+<tr class="separator:aea6497488a39293880ebeeef8b16c486"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87ee59f7f65099910030d52c3e25704c" id="r_a87ee59f7f65099910030d52c3e25704c"><td class="memItemLeft" align="right" valign="top"><a id="a87ee59f7f65099910030d52c3e25704c" name="a87ee59f7f65099910030d52c3e25704c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>pos_coord_equals</b> (int k, const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;r) const</td></tr>
+<tr class="separator:a87ee59f7f65099910030d52c3e25704c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b99b291e9f79ad5f91f7710b44b876c" id="r_a9b99b291e9f79ad5f91f7710b44b876c"><td class="memItemLeft" align="right" valign="top"><a id="a9b99b291e9f79ad5f91f7710b44b876c" name="a9b99b291e9f79ad5f91f7710b44b876c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_pos</b> (const Vector2r &amp;p)</td></tr>
+<tr class="separator:a9b99b291e9f79ad5f91f7710b44b876c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25b54fec55c2c79b93542b71c3ff49b7" id="r_a25b54fec55c2c79b93542b71c3ff49b7"><td class="memItemLeft" align="right" valign="top"><a id="a25b54fec55c2c79b93542b71c3ff49b7" name="a25b54fec55c2c79b93542b71c3ff49b7"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_pos_to_posf</b> ()</td></tr>
+<tr class="separator:a25b54fec55c2c79b93542b71c3ff49b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a4d27c78d4a0be73bba744fe148c06c31" name="a4d27c78d4a0be73bba744fe148c06c31"></a>

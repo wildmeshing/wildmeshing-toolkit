@@ -78,6 +78,7 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structwmtk_1_1_execute_pass-members.html">List of all members</a>  </div>
@@ -118,6 +119,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>wait_defects</b> ()
 <tr class="memitem:ac7d73ef75b92299972f3fb90c5ef048b" id="r_ac7d73ef75b92299972f3fb90c5ef048b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ac7d73ef75b92299972f3fb90c5ef048b">operator()</a> (AppMesh &amp;m, const std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;operation_tuples)</td></tr>
 <tr class="memdesc:ac7d73ef75b92299972f3fb90c5ef048b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes the operations for an application when the lambda function is invoked. The rules that are customizly defined for applications are applied.  <br /></td></tr>
 <tr class="separator:ac7d73ef75b92299972f3fb90c5ef048b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1ab37f564ab472324f7adfb0bedbaff" id="r_ab1ab37f564ab472324f7adfb0bedbaff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ab1ab37f564ab472324f7adfb0bedbaff">operator()</a> (AppMesh &amp;m, std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;&amp;operation_tuples)</td></tr>
+<tr class="memdesc:ab1ab37f564ab472324f7adfb0bedbaff"><td class="mdescLeft">&#160;</td><td class="mdescRight">As above, but takes the operation list over and frees it as soon as the queues are seeded.  <br /></td></tr>
+<tr class="separator:ab1ab37f564ab472324f7adfb0bedbaff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fc461612ff1351e7a8bb022b2d0173c" id="r_a6fc461612ff1351e7a8bb022b2d0173c"><td class="memItemLeft" align="right" valign="top"><a id="a6fc461612ff1351e7a8bb022b2d0173c" name="a6fc461612ff1351e7a8bb022b2d0173c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (AppMesh &amp;m, <a class="el" href="classwmtk_1_1_op_list.html">OpList</a>&lt; Tuple &gt; &amp;&amp;operation_tuples)</td></tr>
+<tr class="memdesc:a6fc461612ff1351e7a8bb022b2d0173c"><td class="mdescLeft">&#160;</td><td class="mdescRight">As above for an <a class="el" href="classwmtk_1_1_op_list.html" title="A pass&#39;s candidate operations, compact and consumed as they are queued.">OpList</a>, which is released entry by entry while the queues are seeded, so the list and the queue never both hold every candidate. <br /></td></tr>
+<tr class="separator:a6fc461612ff1351e7a8bb022b2d0173c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adda51de95e01b8ece0a223cbd4b95adf" id="r_adda51de95e01b8ece0a223cbd4b95adf"><td class="memItemLeft" align="right" valign="top"><a id="adda51de95e01b8ece0a223cbd4b95adf" name="adda51de95e01b8ece0a223cbd4b95adf"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_cnt_success</b> () const</td></tr>
 <tr class="separator:adda51de95e01b8ece0a223cbd4b95adf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -178,6 +186,13 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</t
 <tr class="memdesc:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operations to run before handing deferred operations back to the queue, or 0 to wait until the queue empties.  <br /></td></tr>
 <tr class="separator:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a77632b3e593a36821007acc61ebc6ca9" id="r_a77632b3e593a36821007acc61ebc6ca9"><td class="memItemLeft" align="right" valign="top"><a id="a77632b3e593a36821007acc61ebc6ca9" name="a77632b3e593a36821007acc61ebc6ca9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Push</b> = std::function&lt; void(const Op &amp;, const Tuple &amp;)&gt;</td></tr>
+<tr class="memdesc:a77632b3e593a36821007acc61ebc6ca9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queues one candidate; what a seeder calls for each entry of its list. <br /></td></tr>
+<tr class="separator:a77632b3e593a36821007acc61ebc6ca9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:ad23f5a900db4f0f0be70ad3b0d00d2bb" id="r_ad23f5a900db4f0f0be70ad3b0d00d2bb"><td class="memItemLeft" align="right" valign="top"><a id="ad23f5a900db4f0f0be70ad3b0d00d2bb" name="ad23f5a900db4f0f0be70ad3b0d00d2bb"></a>
@@ -186,6 +201,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operation_cleanup</b>
 <tr class="memitem:a91b4d3835c9160e8347fd9b28ed82e08" id="r_a91b4d3835c9160e8347fd9b28ed82e08"><td class="memItemLeft" align="right" valign="top"><a id="a91b4d3835c9160e8347fd9b28ed82e08" name="a91b4d3835c9160e8347fd9b28ed82e08"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const AppMesh &amp;m, const Tuple &amp;e)</td></tr>
 <tr class="separator:a91b4d3835c9160e8347fd9b28ed82e08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf180a5e9794d2d5bc4f689b840a520e" id="r_acf180a5e9794d2d5bc4f689b840a520e"><td class="memItemLeft" align="right" valign="top"><a id="acf180a5e9794d2d5bc4f689b840a520e" name="acf180a5e9794d2d5bc4f689b840a520e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>execute</b> (AppMesh &amp;m, const std::function&lt; void(const <a class="el" href="structwmtk_1_1_execute_pass.html#a77632b3e593a36821007acc61ebc6ca9">Push</a> &amp;)&gt; &amp;seed)</td></tr>
+<tr class="separator:acf180a5e9794d2d5bc4f689b840a520e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a406de64b79dfcc15aa5a1ea627309e18" id="r_a406de64b79dfcc15aa5a1ea627309e18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a> () const</td></tr>
 <tr class="separator:a406de64b79dfcc15aa5a1ea627309e18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -272,7 +290,7 @@ template&lt;class AppMesh &gt; </div>
 </div>
 </div>
 <a id="ac7d73ef75b92299972f3fb90c5ef048b" name="ac7d73ef75b92299972f3fb90c5ef048b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac7d73ef75b92299972f3fb90c5ef048b">&#9670;&#160;</a></span>operator()()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7d73ef75b92299972f3fb90c5ef048b">&#9670;&#160;</a></span>operator()() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -316,6 +334,47 @@ template&lt;class AppMesh &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if finished successfully </dd></dl>
+
+</div>
+</div>
+<a id="ab1ab37f564ab472324f7adfb0bedbaff" name="ab1ab37f564ab472324f7adfb0bedbaff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1ab37f564ab472324f7adfb0bedbaff">&#9670;&#160;</a></span>operator()() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::operator() </td>
+          <td>(</td>
+          <td class="paramtype">AppMesh &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>operation_tuples</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>As above, but takes the operation list over and frees it as soon as the queues are seeded. </p>
+<p>The queues hold their own copy of every operation, so the list is dead weight from then on &ndash; and it is at its longest on the first pass after construction, which is also when the mesh is at its largest. Releasing it there is what keeps a pass from holding every candidate twice at the run's peak. </p>
 
 </div>
 </div>

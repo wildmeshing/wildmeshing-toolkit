@@ -479,9 +479,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_
 <tr class="memitem:aa4eb9235bf581b8bd21f107a009d64f2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_aa4eb9235bf581b8bd21f107a009d64f2"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
 <tr class="separator:aa4eb9235bf581b8bd21f107a009d64f2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d0343188a671488a46cc02d5d7874dd inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8d0343188a671488a46cc02d5d7874dd"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capacity</b> () const</td></tr>
+<tr class="separator:a8d0343188a671488a46cc02d5d7874dd inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad834bd212917c682513c6757bbd4436a inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ad834bd212917c682513c6757bbd4436a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ad834bd212917c682513c6757bbd4436a">cell_slot_bound</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:ad834bd212917c682513c6757bbd4436a inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56bffd394492c315918a7055b2cb36d7 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a56bffd394492c315918a7055b2cb36d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a56bffd394492c315918a7055b2cb36d7">reserve_free_slots</a> (size_t cells, size_t verts)</td></tr>
+<tr class="separator:a56bffd394492c315918a7055b2cb36d7 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a961d33e83a1fbba80fa930d4b39b83ae inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a961d33e83a1fbba80fa930d4b39b83ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a961d33e83a1fbba80fa930d4b39b83ae">storage_grows_on_demand</a> () const</td></tr>
+<tr class="separator:a961d33e83a1fbba80fa930d4b39b83ae inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -534,11 +543,17 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_static_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:a1453e4b936e5315f38a94ce1224eadfb inherit pub_static_methods_classwmtk_1_1_tri_mesh" id="r_a1453e4b936e5315f38a94ce1224eadfb"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
+<tr class="separator:a1453e4b936e5315f38a94ce1224eadfb inherit pub_static_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh" id="r_ab9497bf06e5d322c0b0b3959cc401efc"><td class="memItemLeft" align="right" valign="top">
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 3</td></tr>
 <tr class="separator:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:ad012cd93eef2a2c97ebfd48f2faee3e1 inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_ad012cd93eef2a2c97ebfd48f2faee3e1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ad012cd93eef2a2c97ebfd48f2faee3e1">on_slot_storage_grown</a> ()</td></tr>
+<tr class="separator:ad012cd93eef2a2c97ebfd48f2faee3e1 inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_a144cf2df60cc0a6aeb76916d24931ebb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a144cf2df60cc0a6aeb76916d24931ebb">vertex_fan_components</a> (size_t vid, std::vector&lt; size_t &gt; &amp;component_of, std::vector&lt; size_t &gt; &amp;representatives) const</td></tr>
 <tr class="separator:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top">

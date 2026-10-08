@@ -503,9 +503,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_
 <tr class="memitem:a04cfb9bfa4bbca13962b1c2682e46aad inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a04cfb9bfa4bbca13962b1c2682e46aad"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
 <tr class="separator:a04cfb9bfa4bbca13962b1c2682e46aad inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab61c13b02898dccd23c1d97cd3c0e940 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ab61c13b02898dccd23c1d97cd3c0e940"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capacity</b> () const</td></tr>
+<tr class="separator:ab61c13b02898dccd23c1d97cd3c0e940 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c21956bfa1c739eb303ff02b999460f inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a1c21956bfa1c739eb303ff02b999460f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:a1c21956bfa1c739eb303ff02b999460f inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8afac5260868d1c1ca8dbe9030921bb inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ab8afac5260868d1c1ca8dbe9030921bb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ab8afac5260868d1c1ca8dbe9030921bb">cell_slot_bound</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:ab8afac5260868d1c1ca8dbe9030921bb inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30d398e412ded8538d99b321fccbfac4 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a30d398e412ded8538d99b321fccbfac4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a30d398e412ded8538d99b321fccbfac4">reserve_free_slots</a> (size_t cells, size_t verts)</td></tr>
+<tr class="separator:a30d398e412ded8538d99b321fccbfac4 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46854728e13e98079ec805437c09bdab inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a46854728e13e98079ec805437c09bdab"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a46854728e13e98079ec805437c09bdab">storage_grows_on_demand</a> () const</td></tr>
+<tr class="separator:a46854728e13e98079ec805437c09bdab inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -597,6 +606,10 @@ template&lt;typename T &gt; </td></tr>
 <tr class="separator:a2800e82bb0cb3288c8cefb78b2f834e1 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdb25494468c101ae7c8dfbaa04abcb1 inherit pub_types_classwmtk_1_1_tet_mesh" id="r_abdb25494468c101ae7c8dfbaa04abcb1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#abdb25494468c101ae7c8dfbaa04abcb1">VertexMutex</a> = <a class="el" href="classwmtk_1_1threading_1_1_vertex_mutex.html">wmtk::threading::VertexMutex</a></td></tr>
 <tr class="separator:abdb25494468c101ae7c8dfbaa04abcb1 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_static_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a6931fcc6889e1e6804351d2cc6602b39"><td class="memItemLeft" align="right" valign="top">
+static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
+<tr class="separator:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a37d7aa1a21e836379f48aaa608f82de2 inherit pub_static_attribs_classwmtk_1_1_tet_mesh" id="r_a37d7aa1a21e836379f48aaa608f82de2"><td class="memItemLeft" align="right" valign="top">
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 6</td></tr>
@@ -605,6 +618,8 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES_PER_CELL</b> = 4</td></tr>
 <tr class="separator:a02765ba8ad43dc9fec162a405e0e3ad6 inherit pub_static_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:ad8c77bbb147cb4c22831a5a03b550c36 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_ad8c77bbb147cb4c22831a5a03b550c36"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ad8c77bbb147cb4c22831a5a03b550c36">on_slot_storage_grown</a> ()</td></tr>
+<tr class="separator:ad8c77bbb147cb4c22831a5a03b550c36 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
 <tr class="separator:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -109,6 +109,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tri_mesh_1_1_ring_lock_scratch.html">RingLockScratch</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-thread buffers for the n-ring lock, so a lock acquisition allocates nothing.  <a href="structwmtk_1_1_tri_mesh_1_1_ring_lock_scratch.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsage</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_smart_tuple.html">SmartTuple</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a></td></tr>
@@ -477,6 +479,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:ad012cd93eef2a2c97ebfd48f2faee3e1" id="r_ad012cd93eef2a2c97ebfd48f2faee3e1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ad012cd93eef2a2c97ebfd48f2faee3e1">on_slot_storage_grown</a> ()</td></tr>
+<tr class="separator:ad012cd93eef2a2c97ebfd48f2faee3e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a144cf2df60cc0a6aeb76916d24931ebb" id="r_a144cf2df60cc0a6aeb76916d24931ebb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a144cf2df60cc0a6aeb76916d24931ebb">vertex_fan_components</a> (size_t vid, std::vector&lt; size_t &gt; &amp;component_of, std::vector&lt; size_t &gt; &amp;representatives) const</td></tr>
 <tr class="separator:a144cf2df60cc0a6aeb76916d24931ebb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fa52701ce0be73479b416da52fd77e" id="r_ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top"><a id="ae1fa52701ce0be73479b416da52fd77e" name="ae1fa52701ce0be73479b416da52fd77e"></a>
@@ -541,9 +545,27 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES
 <tr class="memitem:aa4eb9235bf581b8bd21f107a009d64f2" id="r_aa4eb9235bf581b8bd21f107a009d64f2"><td class="memItemLeft" align="right" valign="top"><a id="aa4eb9235bf581b8bd21f107a009d64f2" name="aa4eb9235bf581b8bd21f107a009d64f2"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
 <tr class="separator:aa4eb9235bf581b8bd21f107a009d64f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d0343188a671488a46cc02d5d7874dd" id="r_a8d0343188a671488a46cc02d5d7874dd"><td class="memItemLeft" align="right" valign="top"><a id="a8d0343188a671488a46cc02d5d7874dd" name="a8d0343188a671488a46cc02d5d7874dd"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capacity</b> () const</td></tr>
+<tr class="separator:a8d0343188a671488a46cc02d5d7874dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfb1ab1ee5ce24afbeedab25a13e917b" id="r_acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memItemLeft" align="right" valign="top"><a id="acfb1ab1ee5ce24afbeedab25a13e917b" name="acfb1ab1ee5ce24afbeedab25a13e917b"></a>
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Growing the storage at serial points</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>The storage cannot grow while operations run in parallel &ndash; growing reallocates it out from under concurrent readers &ndash; which is why it is preallocated. A serial pass has no concurrent readers, and between two of its operations nothing holds a reference into the storage either: so it can grow there, and only there, with no synchronisation at all.</p>
+<p>The scheduler does exactly that: before each operation of a serial pass it reserves <a class="el" href="classwmtk_1_1_tri_mesh.html#ad834bd212917c682513c6757bbd4436a">cell_slot_bound()</a> cells and one vertex. Every local operation creates its cells inside the stars of the vertices of its tuple's cell and adds at most one vertex, so the reservation covers whatever the operation requests, and a serial pass never refuses an operation for want of slots. The ids handed out are unchanged &ndash; the same counter, in the same order &ndash; so the result is the one an unbounded preallocation would give.</p>
+<p>With that in place a serial mesh only needs a small slack at init/consolidate, instead of the preallocation factor (see <a class="el" href="classwmtk_1_1_tri_mesh.html#a961d33e83a1fbba80fa930d4b39b83ae">storage_grows_on_demand()</a>). </p>
+</td></tr>
+<tr class="memitem:ad834bd212917c682513c6757bbd4436a" id="r_ad834bd212917c682513c6757bbd4436a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ad834bd212917c682513c6757bbd4436a">cell_slot_bound</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:ad834bd212917c682513c6757bbd4436a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56bffd394492c315918a7055b2cb36d7" id="r_a56bffd394492c315918a7055b2cb36d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a56bffd394492c315918a7055b2cb36d7">reserve_free_slots</a> (size_t cells, size_t verts)</td></tr>
+<tr class="separator:a56bffd394492c315918a7055b2cb36d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a961d33e83a1fbba80fa930d4b39b83ae" id="r_a961d33e83a1fbba80fa930d4b39b83ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a961d33e83a1fbba80fa930d4b39b83ae">storage_grows_on_demand</a> () const</td></tr>
+<tr class="separator:a961d33e83a1fbba80fa930d4b39b83ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1453e4b936e5315f38a94ce1224eadfb" id="r_a1453e4b936e5315f38a94ce1224eadfb"><td class="memItemLeft" align="right" valign="top"><a id="a1453e4b936e5315f38a94ce1224eadfb" name="a1453e4b936e5315f38a94ce1224eadfb"></a>
+static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
+<tr class="separator:a1453e4b936e5315f38a94ce1224eadfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a204d98a521bf730c6ddf2080a6aa416c" name="a204d98a521bf730c6ddf2080a6aa416c"></a>
@@ -562,6 +584,25 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ad834bd212917c682513c6757bbd4436a" name="ad834bd212917c682513c6757bbd4436a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad834bd212917c682513c6757bbd4436a">&#9670;&#160;</a></span>cell_slot_bound()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t TriMesh::cell_slot_bound </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Upper bound on the fresh cell slots one local operation on <code>t</code> can take: the sum of the star sizes of the vertices of t's cell. <code>t</code> must be valid. </p>
+
+</div>
+</div>
 <a id="ae3dca4cc8f5751b15375589789c14a9e" name="ae3dca4cc8f5751b15375589789c14a9e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae3dca4cc8f5751b15375589789c14a9e">&#9670;&#160;</a></span>check_link_condition()</h2>
 
@@ -1414,6 +1455,34 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 
 </div>
 </div>
+<a id="ad012cd93eef2a2c97ebfd48f2faee3e1" name="ad012cd93eef2a2c97ebfd48f2faee3e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad012cd93eef2a2c97ebfd48f2faee3e1">&#9670;&#160;</a></span>on_slot_storage_grown()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TriMesh::on_slot_storage_grown </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Called after <a class="el" href="classwmtk_1_1_tri_mesh.html#a56bffd394492c315918a7055b2cb36d7">reserve_free_slots()</a> grew the storage, for derived classes that keep per-slot side arrays. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a0c652c3d2fdff9e8b0ecf0a88658065a">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="aaab31eef8e025f6185a4760ed80be722" name="aaab31eef8e025f6185a4760ed80be722"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaab31eef8e025f6185a4760ed80be722">&#9670;&#160;</a></span>oriented_tri_vertices()</h2>
 
@@ -1515,6 +1584,35 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 
 <p>Mark the given triangles, and any vertex left without an incident triangle, as removed. </p>
 <p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f" title="remove the tetrahedrons in the mesh that have given tet ids">TetMesh::remove_tets_by_ids</a>, used by the output filters to drop the region outside the input. Call <a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">consolidate_mesh()</a> afterwards to compact. </p>
+
+</div>
+</div>
+<a id="a56bffd394492c315918a7055b2cb36d7" name="a56bffd394492c315918a7055b2cb36d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56bffd394492c315918a7055b2cb36d7">&#9670;&#160;</a></span>reserve_free_slots()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TriMesh::reserve_free_slots </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>cells</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>verts</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Serial points only: make <code>cells</code> fresh cell slots and <code>verts</code> fresh vertex slots available, growing the storage (connectivity and attributes) by at least half if not. </p>
 
 </div>
 </div>
@@ -1875,6 +1973,34 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1d390ec515a74231442cf1e249e65f1e">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+
+</div>
+</div>
+<a id="a961d33e83a1fbba80fa930d4b39b83ae" name="a961d33e83a1fbba80fa930d4b39b83ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a961d33e83a1fbba80fa930d4b39b83ae">&#9670;&#160;</a></span>storage_grows_on_demand()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TriMesh::storage_grows_on_demand </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether this mesh's passes run serially and so grow the storage on demand; if so, init/consolidate reserve a small slack instead of the preallocation factor. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a9120fbec804f68d50eb75e7fe238fb15">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>

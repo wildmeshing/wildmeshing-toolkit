@@ -109,6 +109,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html">RingLockScratch</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-thread buffers for the n-ring lock, so a lock acquisition allocates nothing.  <a href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_smart_tuple.html">SmartTuple</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a></td></tr>
@@ -563,6 +565,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:ad8c77bbb147cb4c22831a5a03b550c36" id="r_ad8c77bbb147cb4c22831a5a03b550c36"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ad8c77bbb147cb4c22831a5a03b550c36">on_slot_storage_grown</a> ()</td></tr>
+<tr class="separator:ad8c77bbb147cb4c22831a5a03b550c36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top"><a id="a8e721b4f8d5679988869b984f03fe6e1" name="a8e721b4f8d5679988869b984f03fe6e1"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
 <tr class="separator:a8e721b4f8d5679988869b984f03fe6e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -740,9 +744,27 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 <tr class="memitem:a04cfb9bfa4bbca13962b1c2682e46aad" id="r_a04cfb9bfa4bbca13962b1c2682e46aad"><td class="memItemLeft" align="right" valign="top"><a id="a04cfb9bfa4bbca13962b1c2682e46aad" name="a04cfb9bfa4bbca13962b1c2682e46aad"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
 <tr class="separator:a04cfb9bfa4bbca13962b1c2682e46aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab61c13b02898dccd23c1d97cd3c0e940" id="r_ab61c13b02898dccd23c1d97cd3c0e940"><td class="memItemLeft" align="right" valign="top"><a id="ab61c13b02898dccd23c1d97cd3c0e940" name="ab61c13b02898dccd23c1d97cd3c0e940"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capacity</b> () const</td></tr>
+<tr class="separator:ab61c13b02898dccd23c1d97cd3c0e940"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c21956bfa1c739eb303ff02b999460f" id="r_a1c21956bfa1c739eb303ff02b999460f"><td class="memItemLeft" align="right" valign="top"><a id="a1c21956bfa1c739eb303ff02b999460f" name="a1c21956bfa1c739eb303ff02b999460f"></a>
 <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:a1c21956bfa1c739eb303ff02b999460f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Growing the storage at serial points</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>The storage cannot grow while operations run in parallel &ndash; growing reallocates it out from under concurrent readers &ndash; which is why it is preallocated. A serial pass has no concurrent readers, and between two of its operations nothing holds a reference into the storage either: so it can grow there, and only there, with no synchronisation at all.</p>
+<p>The scheduler does exactly that: before each operation of a serial pass it reserves <a class="el" href="classwmtk_1_1_tet_mesh.html#ab8afac5260868d1c1ca8dbe9030921bb">cell_slot_bound()</a> cells and one vertex. Every local operation creates its cells inside the stars of the vertices of its tuple's cell and adds at most one vertex, so the reservation covers whatever the operation requests, and a serial pass never refuses an operation for want of slots. The ids handed out are unchanged &ndash; the same counter, in the same order &ndash; so the result is the one an unbounded preallocation would give.</p>
+<p>With that in place a serial mesh only needs a small slack at init/consolidate, instead of the preallocation factor (see <a class="el" href="classwmtk_1_1_tet_mesh.html#a46854728e13e98079ec805437c09bdab">storage_grows_on_demand()</a>). </p>
+</td></tr>
+<tr class="memitem:ab8afac5260868d1c1ca8dbe9030921bb" id="r_ab8afac5260868d1c1ca8dbe9030921bb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ab8afac5260868d1c1ca8dbe9030921bb">cell_slot_bound</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:ab8afac5260868d1c1ca8dbe9030921bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30d398e412ded8538d99b321fccbfac4" id="r_a30d398e412ded8538d99b321fccbfac4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a30d398e412ded8538d99b321fccbfac4">reserve_free_slots</a> (size_t cells, size_t verts)</td></tr>
+<tr class="separator:a30d398e412ded8538d99b321fccbfac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46854728e13e98079ec805437c09bdab" id="r_a46854728e13e98079ec805437c09bdab"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a46854728e13e98079ec805437c09bdab">storage_grows_on_demand</a> () const</td></tr>
+<tr class="separator:a46854728e13e98079ec805437c09bdab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6931fcc6889e1e6804351d2cc6602b39" id="r_a6931fcc6889e1e6804351d2cc6602b39"><td class="memItemLeft" align="right" valign="top"><a id="a6931fcc6889e1e6804351d2cc6602b39" name="a6931fcc6889e1e6804351d2cc6602b39"></a>
+static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
+<tr class="separator:a6931fcc6889e1e6804351d2cc6602b39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="abdb25494468c101ae7c8dfbaa04abcb1" name="abdb25494468c101ae7c8dfbaa04abcb1"></a>
@@ -761,6 +783,25 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab8afac5260868d1c1ca8dbe9030921bb" name="ab8afac5260868d1c1ca8dbe9030921bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8afac5260868d1c1ca8dbe9030921bb">&#9670;&#160;</a></span>cell_slot_bound()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::cell_slot_bound </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Upper bound on the fresh cell slots one local operation on <code>t</code> can take: the sum of the star sizes of the vertices of t's cell. <code>t</code> must be valid. </p>
+
+</div>
+</div>
 <a id="a96119301d2b8a9d5c34e52cac42ac7d6" name="a96119301d2b8a9d5c34e52cac42ac7d6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a96119301d2b8a9d5c34e52cac42ac7d6">&#9670;&#160;</a></span>check_mesh_connectivity_validity()</h2>
 
@@ -1778,6 +1819,34 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="ad8c77bbb147cb4c22831a5a03b550c36" name="ad8c77bbb147cb4c22831a5a03b550c36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8c77bbb147cb4c22831a5a03b550c36">&#9670;&#160;</a></span>on_slot_storage_grown()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetMesh::on_slot_storage_grown </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Called after <a class="el" href="classwmtk_1_1_tet_mesh.html#a30d398e412ded8538d99b321fccbfac4">reserve_free_slots()</a> grew the storage, for derived classes that keep per-slot side arrays. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aeac9914f668df6b89e2ba371936a9ad7">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="a902b1af12dde3976b41041a8abee44c0" name="a902b1af12dde3976b41041a8abee44c0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a902b1af12dde3976b41041a8abee44c0">&#9670;&#160;</a></span>operation_update_connectivity_impl()</h2>
 
@@ -1920,6 +1989,35 @@ false </dd></dl>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a30d398e412ded8538d99b321fccbfac4" name="a30d398e412ded8538d99b321fccbfac4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a30d398e412ded8538d99b321fccbfac4">&#9670;&#160;</a></span>reserve_free_slots()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetMesh::reserve_free_slots </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>cells</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>verts</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Serial points only: make <code>cells</code> fresh cell slots and <code>verts</code> fresh vertex slots available, growing the storage (connectivity and attributes) by at least half if not. </p>
 
 </div>
 </div>
@@ -2377,6 +2475,34 @@ false </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed. </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac5391109e21aedd268fce581d189bf13">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a46854728e13e98079ec805437c09bdab" name="a46854728e13e98079ec805437c09bdab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46854728e13e98079ec805437c09bdab">&#9670;&#160;</a></span>storage_grows_on_demand()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::storage_grows_on_demand </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether this mesh's passes run serially and so grow the storage on demand; if so, init/consolidate reserve a small slack instead of the preallocation factor. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a57e8283626156be030f7cd47147babca">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>

@@ -89,9 +89,6 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a8ec2f2698b429d76fc92b40cce6e3e13" id="r_a8ec2f2698b429d76fc92b40cce6e3e13"><td class="memItemLeft" align="right" valign="top"><a id="a8ec2f2698b429d76fc92b40cce6e3e13" name="a8ec2f2698b429d76fc92b40cce6e3e13"></a>
-Vector3r&#160;</td><td class="memItemRight" valign="bottom"><b>m_pos</b></td></tr>
-<tr class="separator:a8ec2f2698b429d76fc92b40cce6e3e13"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4413b312235b3eec842633239616c835" id="r_a4413b312235b3eec842633239616c835"><td class="memItemLeft" align="right" valign="top"><a id="a4413b312235b3eec842633239616c835" name="a4413b312235b3eec842633239616c835"></a>
 Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>m_posf</b></td></tr>
 <tr class="separator:a4413b312235b3eec842633239616c835"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -112,6 +109,25 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_scalar</b>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>partition_id</b> = 0</td></tr>
 <tr class="memdesc:a4e66e18fb3fbd912c63eac96b8f469f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required for multi-threading. <br /></td></tr>
 <tr class="separator:a4e66e18fb3fbd912c63eac96b8f469f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Exact position</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>Stored only while it differs from m_posf; see <a class="el" href="classwmtk_1_1_exact_position.html" title="A vertex&#39;s exact (rational) position, stored only while it differs from the vertex&#39;s double position.">ExactPosition</a>. Read it with pos() (or pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely exact value, or set_pos_to_posf() when it is m_posf &ndash; a rounded vertex, or one placed at a double position. </p>
+</td></tr>
+<tr class="memitem:aa9c119bd2d21091505081180c69f636a" id="r_aa9c119bd2d21091505081180c69f636a"><td class="memItemLeft" align="right" valign="top"><a id="aa9c119bd2d21091505081180c69f636a" name="aa9c119bd2d21091505081180c69f636a"></a>
+<a class="el" href="classwmtk_1_1_exact_position.html">ExactPosition</a>&lt; Vector3r, Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_exact</b></td></tr>
+<tr class="separator:aa9c119bd2d21091505081180c69f636a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a739d9a44446e60dad9b2199ed1de10b0" id="r_a739d9a44446e60dad9b2199ed1de10b0"><td class="memItemLeft" align="right" valign="top"><a id="a739d9a44446e60dad9b2199ed1de10b0" name="a739d9a44446e60dad9b2199ed1de10b0"></a>
+Vector3r&#160;</td><td class="memItemRight" valign="bottom"><b>pos</b> () const</td></tr>
+<tr class="separator:a739d9a44446e60dad9b2199ed1de10b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f716d23686865ba723555a924ddac79" id="r_a7f716d23686865ba723555a924ddac79"><td class="memItemLeft" align="right" valign="top"><a id="a7f716d23686865ba723555a924ddac79" name="a7f716d23686865ba723555a924ddac79"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>pos_coord_equals</b> (int k, const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;r) const</td></tr>
+<tr class="separator:a7f716d23686865ba723555a924ddac79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef587c0bb859edb078106921a0f50cac" id="r_aef587c0bb859edb078106921a0f50cac"><td class="memItemLeft" align="right" valign="top"><a id="aef587c0bb859edb078106921a0f50cac" name="aef587c0bb859edb078106921a0f50cac"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_pos</b> (const Vector3r &amp;p)</td></tr>
+<tr class="separator:aef587c0bb859edb078106921a0f50cac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab617afc39be8e4bb411741ea5a8599cd" id="r_ab617afc39be8e4bb411741ea5a8599cd"><td class="memItemLeft" align="right" valign="top"><a id="ab617afc39be8e4bb411741ea5a8599cd" name="ab617afc39be8e4bb411741ea5a8599cd"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_pos_to_posf</b> ()</td></tr>
+<tr class="separator:ab617afc39be8e4bb411741ea5a8599cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="ae3b121027220e5a72b7a339f12984579" name="ae3b121027220e5a72b7a339f12984579"></a>

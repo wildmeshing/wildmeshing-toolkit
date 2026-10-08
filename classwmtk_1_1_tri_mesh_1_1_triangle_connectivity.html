@@ -104,10 +104,9 @@ std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_removed</b> = false</td></tr>
 <tr class="memdesc:a1753f3561e7cb7c824b534db353e32e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">is the triangle removed <br /></td></tr>
 <tr class="separator:a1753f3561e7cb7c824b534db353e32e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae80c31e0e64bcec276d7688027dc83bb" id="r_ae80c31e0e64bcec276d7688027dc83bb"><td class="memItemLeft" align="right" valign="top"><a id="ae80c31e0e64bcec276d7688027dc83bb" name="ae80c31e0e64bcec276d7688027dc83bb"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>hash</b> = 0</td></tr>
-<tr class="memdesc:ae80c31e0e64bcec276d7688027dc83bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">the hash is changed every time there is an operation that influences the triangle <br /></td></tr>
-<tr class="separator:ae80c31e0e64bcec276d7688027dc83bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a721976fe5be5bfb0e0fc405ed1e58232" id="r_a721976fe5be5bfb0e0fc405ed1e58232"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#a721976fe5be5bfb0e0fc405ed1e58232">hash</a> = 0</td></tr>
+<tr class="memdesc:a721976fe5be5bfb0e0fc405ed1e58232"><td class="mdescLeft">&#160;</td><td class="mdescRight">the hash is changed every time there is an operation that influences the triangle  <br /></td></tr>
+<tr class="separator:a721976fe5be5bfb0e0fc405ed1e58232"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>(internal use) Maintains a list of vertices of the given triangle </p>
@@ -143,6 +142,24 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>hash</b> = 0</td></
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>local vid of the vertex given the triangle <br  />
  -1 if the vertex is not incident to the triangle </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a721976fe5be5bfb0e0fc405ed1e58232" name="a721976fe5be5bfb0e0fc405ed1e58232"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a721976fe5be5bfb0e0fc405ed1e58232">&#9670;&#160;</a></span>hash</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t wmtk::TriMesh::TriangleConnectivity::hash = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the hash is changed every time there is an operation that influences the triangle </p>
+<p>32 bits, packed next to m_is_removed (32 bytes instead of 40); see <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html#afa4d4a6cfdc62d389800dbe8a34df41e">TetMesh::TetrahedronConnectivity::hash</a>. </p>
 
 </div>
 </div>
