@@ -1,11 +1,33 @@
 #include "Envelope.hpp"
 
 #include <limits>
+#include <vector>
 
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
+
+namespace {
+// The sample buffers of the sampled envelope queries below are per thread, to save an allocation
+// per query, and a buffer grows to the largest primitive its thread has sampled. The optimizers'
+// threads persist for the whole run (wmtk::threading::task_group runs on a pool), so a few large
+// triangles sampled once -- while the input surface is simplified -- left about 2 MB on every
+// worker until the process ended: 30 MB of tetwild's peak footprint on Thingi10K 104187 at 16
+// threads. Keep a buffer only while it is small; one that needed more is freed after its query.
+// That costs an allocation per query on primitives that large, next to the thousands of
+// distance queries their samples take.
+constexpr size_t kKeptSamples = size_t(1) << 13; // 192 KB of Vector3d
+
+struct ReleaseIfLarge
+{
+    std::vector<Vector3d>& buffer;
+    ~ReleaseIfLarge()
+    {
+        if (buffer.capacity() > kKeptSamples) std::vector<Vector3d>().swap(buffer);
+    }
+};
+} // namespace
 
 // From TetWild
 void sampleTriangle(
@@ -360,6 +382,7 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
          Vector3d(tri[1][0], tri[1][1], tri[1][2]),
          Vector3d(tri[2][0], tri[2][1], tri[2][2])}};
     static thread_local std::vector<Vector3d> ps;
+    const ReleaseIfLarge release{ps};
     ps.clear();
 
 
@@ -418,6 +441,7 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
         return exact_envelope.is_outside(edge[0], edge[1]);
     }
     static thread_local std::vector<Vector3d> pts;
+    const ReleaseIfLarge release{pts};
     pts.clear();
 
     // N > L / sampling_dist, so the spacing L/N is strictly below sampling_dist and every

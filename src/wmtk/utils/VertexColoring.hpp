@@ -116,11 +116,12 @@ inline size_t color_class_chunk(size_t n, int num_threads, size_t max_chunk)
  * @brief Run `fn(vid)` for every vertex of `classes`, one class after another and each class in
  * parallel; returns how many calls returned true.
  *
- * The threads are started once for all the classes and meet at a barrier between two classes,
- * rather than being started once per class: task_group starts a thread per task, and a thread
- * keeps its thread_local state -- smoothing's Newton solver, say -- only for as long as it lives.
- * Started once, they live as long as the locked pass this replaces kept them. Within a class a
- * thread takes the next color_class_chunk() vertices whenever it is done with its last ones.
+ * The tasks are launched once for all the classes and meet at a barrier between two classes,
+ * rather than being launched once per class, which would cost a launch per class and a wait for
+ * every task to finish. Within a class a task takes the next color_class_chunk() vertices
+ * whenever it is done with its last ones. The barrier relies on task_group running every task at
+ * once: each task gets a worker of its own, even while other threads submit tasks too, so a task
+ * never waits for a worker another task holds.
  *
  * `fn` runs concurrently only for vertices of one class. If it throws, the remaining vertices are
  * skipped and the first exception is rethrown once every thread has stopped.
