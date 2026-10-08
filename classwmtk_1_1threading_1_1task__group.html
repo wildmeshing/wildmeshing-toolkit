@@ -74,13 +74,21 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1threading_1_1task__group-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::threading::task_group Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1task__group_1_1task__job.html">task_job</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A task of this group, queued on the pool. Move-only tasks are fine.  <a href="classwmtk_1_1threading_1_1task__group_1_1task__job.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aa68be9c5c5fb9a2168a7901a03b633ce" id="r_aa68be9c5c5fb9a2168a7901a03b633ce"><td class="memItemLeft" align="right" valign="top"><a id="aa68be9c5c5fb9a2168a7901a03b633ce" name="aa68be9c5c5fb9a2168a7901a03b633ce"></a>
@@ -97,17 +105,29 @@ template&lt;typename F &gt; </td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>wait</b> ()</td></tr>
 <tr class="separator:afbdb250d72b6b38690ec7797730162af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a4bf5f0630304734320270ceb111916e4" id="r_a4bf5f0630304734320270ceb111916e4"><td class="memItemLeft" align="right" valign="top"><a id="a4bf5f0630304734320270ceb111916e4" name="a4bf5f0630304734320270ceb111916e4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>record</b> (std::exception_ptr e)</td></tr>
+<tr class="separator:a4bf5f0630304734320270ceb111916e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a456afbb4efbe84317039354329f42cf8" id="r_a456afbb4efbe84317039354329f42cf8"><td class="memItemLeft" align="right" valign="top"><a id="a456afbb4efbe84317039354329f42cf8" name="a456afbb4efbe84317039354329f42cf8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>finish_one</b> ()</td></tr>
+<tr class="separator:a456afbb4efbe84317039354329f42cf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a7e85ed98f7540a0ba3d9860957024805" id="r_a7e85ed98f7540a0ba3d9860957024805"><td class="memItemLeft" align="right" valign="top"><a id="a7e85ed98f7540a0ba3d9860957024805" name="a7e85ed98f7540a0ba3d9860957024805"></a>
-std::vector&lt; std::thread &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_threads</b></td></tr>
-<tr class="separator:a7e85ed98f7540a0ba3d9860957024805"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4a7e6ecce949999a9e6053d9f5a54c1" id="r_ae4a7e6ecce949999a9e6053d9f5a54c1"><td class="memItemLeft" align="right" valign="top"><a id="ae4a7e6ecce949999a9e6053d9f5a54c1" name="ae4a7e6ecce949999a9e6053d9f5a54c1"></a>
+std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>m_mutex</b></td></tr>
+<tr class="separator:ae4a7e6ecce949999a9e6053d9f5a54c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9adf84afbc13caaaa6563f3d7c75c59b" id="r_a9adf84afbc13caaaa6563f3d7c75c59b"><td class="memItemLeft" align="right" valign="top"><a id="a9adf84afbc13caaaa6563f3d7c75c59b" name="a9adf84afbc13caaaa6563f3d7c75c59b"></a>
+std::condition_variable&#160;</td><td class="memItemRight" valign="bottom"><b>m_done</b></td></tr>
+<tr class="separator:a9adf84afbc13caaaa6563f3d7c75c59b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7d962a4ac3c5c027de880318fb53de4" id="r_ac7d962a4ac3c5c027de880318fb53de4"><td class="memItemLeft" align="right" valign="top"><a id="ac7d962a4ac3c5c027de880318fb53de4" name="ac7d962a4ac3c5c027de880318fb53de4"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_pending</b> = 0</td></tr>
+<tr class="separator:ac7d962a4ac3c5c027de880318fb53de4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebac11eefe180ea10274bec70a088eec" id="r_aebac11eefe180ea10274bec70a088eec"><td class="memItemLeft" align="right" valign="top"><a id="aebac11eefe180ea10274bec70a088eec" name="aebac11eefe180ea10274bec70a088eec"></a>
 std::exception_ptr&#160;</td><td class="memItemRight" valign="bottom"><b>m_eptr</b></td></tr>
 <tr class="separator:aebac11eefe180ea10274bec70a088eec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97b25fd7ac481b0aef9fed39ab62608d" id="r_a97b25fd7ac481b0aef9fed39ab62608d"><td class="memItemLeft" align="right" valign="top"><a id="a97b25fd7ac481b0aef9fed39ab62608d" name="a97b25fd7ac481b0aef9fed39ab62608d"></a>
-std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>m_eptr_mutex</b></td></tr>
-<tr class="separator:a97b25fd7ac481b0aef9fed39ab62608d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/threading/<a class="el" href="task__group_8hpp_source.html">task_group.hpp</a></li>

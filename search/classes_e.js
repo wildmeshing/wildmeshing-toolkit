@@ -1,9 +1,15 @@
 var searchData=
 [
-  ['parameters_0',['parameters',['../structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html',1,'wmtk::components::manifold_extraction::Parameters'],['../structwmtk_1_1components_1_1simwild_1_1_parameters.html',1,'wmtk::components::simwild::Parameters'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html',1,'wmtk::components::tetwild::Parameters'],['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html',1,'wmtk::components::topological_offset::Parameters'],['../structwmtk_1_1components_1_1triwild_1_1_parameters.html',1,'wmtk::components::triwild::Parameters']]],
-  ['parser_1',['Parser',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html',1,'wmtk::components::simwild::expression_parser']]],
-  ['passstats_2',['PassStats',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html',1,'wmtk::ExecutePass']]],
-  ['pointcloud_3',['PointCloud',['../structwmtk_1_1_point_cloud.html',1,'wmtk']]],
-  ['positioninfocache_4',['positioninfocache',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache'],['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache']]],
-  ['pyexpression_5',['PyExpression',['../class_py_expression.html',1,'']]]
+  ['offsetenergy_0',['OffsetEnergy',['../classwmtk_1_1components_1_1topological__offset_1_1_offset_energy.html',1,'wmtk::components::topological_offset']]],
+  ['offsetpotential_1',['OffsetPotential',['../classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html',1,'wmtk::components::topological_offset']]],
+  ['operationdryrunscope_2',['OperationDryRunScope',['../structwmtk_1_1_operation_dry_run_scope.html',1,'wmtk']]],
+  ['ophookreasons_3',['OpHookReasons',['../structwmtk_1_1_tet_optimizer_mesh_1_1_op_hook_reasons.html',1,'wmtk::TetOptimizerMesh']]],
+  ['oplist_4',['OpList',['../classwmtk_1_1_op_list.html',1,'wmtk']]],
+  ['optable_5',['OpTable',['../structwmtk_1_1_execute_pass_1_1_op_table.html',1,'wmtk::ExecutePass']]],
+  ['optimizerparameters_6',['OptimizerParameters',['../structwmtk_1_1_optimizer_parameters.html',1,'wmtk']]],
+  ['optsplitcache_7',['OptSplitCache',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_opt_split_cache.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['optsplitcache2d_8',['OptSplitCache2d',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['orexpr_9',['OrExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_or_expr.html',1,'wmtk::components::simwild::expression_parser']]],
+  ['orientationlink_10',['OrientationLink',['../structwmtk_1_1utils_1_1_orientation_link.html',1,'wmtk::utils']]],
+  ['orientationrepair_11',['OrientationRepair',['../structwmtk_1_1utils_1_1_orientation_repair.html',1,'wmtk::utils']]]
 ];
