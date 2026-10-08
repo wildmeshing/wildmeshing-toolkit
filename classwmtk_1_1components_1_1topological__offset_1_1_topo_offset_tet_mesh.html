@@ -211,7 +211,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>SurfaceTopoSignature
 &#160;&#160;<b>after_hook</b>
 , <b>invariants</b>
 , <b>committed</b>
-, <b>COUNT</b>
+, <b>screened</b>
+, <br />
+&#160;&#160;<b>COUNT</b>
 <br />
  }</td></tr>
 <tr class="separator:a3e46b40b2ae938c410e66bceea9a86c7 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1102,6 +1104,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capa
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>op_refused</b> (const OpKind k, const OpEvent e) const</td></tr>
 <tr class="memdesc:a7be77488a271ea6a30b60528bccc5a62 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">op_event() for a refusal, returning false so a site reads <code>return op_refused(...)</code>. <br /></td></tr>
 <tr class="separator:a7be77488a271ea6a30b60528bccc5a62 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a721dd53562369d5f58ba57717293dee5"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>op_screened</b> (const OpKind k) const</td></tr>
+<tr class="memdesc:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The end of a dry run that would have gone on to change the mesh: true, and counted. <br /></td></tr>
+<tr class="separator:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
 <tr class="separator:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1354,6 +1360,10 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a4889554a6f2c572a8c6e585ab05de02f" id="r_a4889554a6f2c572a8c6e585ab05de02f"><td class="memItemLeft" align="right" valign="top">static bool &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4889554a6f2c572a8c6e585ab05de02f">split_off_longest</a> ()</td></tr>
 <tr class="separator:a4889554a6f2c572a8c6e585ab05de02f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a9cbc5de6e447ac4f5259e12c9ac7232c"><td class="memItemLeft" align="right" valign="top">
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>dry_run</b> ()</td></tr>
+<tr class="memdesc:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether operations on this thread are dry runs (see <a class="el" href="_operation_dry_run_8hpp_source.html">wmtk/OperationDryRun.hpp</a>). <br /></td></tr>
+<tr class="separator:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a6931fcc6889e1e6804351d2cc6602b39"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
 <tr class="separator:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1602,9 +1612,7 @@ std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom
 <tr class="memitem:a9c5b437c60925a8321c907abcac9eff7" id="r_a9c5b437c60925a8321c907abcac9eff7"><td class="memItemLeft" align="right" valign="top"><a id="a9c5b437c60925a8321c907abcac9eff7" name="a9c5b437c60925a8321c907abcac9eff7"></a>
 std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>funnel_committed</b> {0}</td></tr>
 <tr class="separator:a9c5b437c60925a8321c907abcac9eff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a2828af15fdb954bd96dd51cbf4f765" id="r_a5a2828af15fdb954bd96dd51cbf4f765"><td class="memItemLeft" align="right" valign="top"><a id="a5a2828af15fdb954bd96dd51cbf4f765" name="a5a2828af15fdb954bd96dd51cbf4f765"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_split_offset_before</b> {0}</td></tr>
-<tr class="memdesc:a5a2828af15fdb954bd96dd51cbf4f765"><td class="mdescLeft">&#160;</td><td class="mdescRight">Splits of an offset-surface edge: offered, accepted. <br /></td></tr>
+<tr class="memitem:a5a2828af15fdb954bd96dd51cbf4f765" id="r_a5a2828af15fdb954bd96dd51cbf4f765"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5a2828af15fdb954bd96dd51cbf4f765">iter_cnt_split_offset_before</a> {0}</td></tr>
 <tr class="separator:a5a2828af15fdb954bd96dd51cbf4f765"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a097000bdef57785379f416cdbeada04d" id="r_a097000bdef57785379f416cdbeada04d"><td class="memItemLeft" align="right" valign="top"><a id="a097000bdef57785379f416cdbeada04d" name="a097000bdef57785379f416cdbeada04d"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_split_offset</b> {0}</td></tr>
@@ -2003,6 +2011,7 @@ Additional Inherited Members</h2></td></tr>
 , <b>after_enter</b>
 , <br />
 &#160;&#160;<b>accepted</b>
+, <b>screened</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -6110,7 +6119,8 @@ requirement", which the base handles by skipping the check. </p>
 
 <p>[flip funnel]: of the flips of the offset surface that passed the sag rule, how many survive each later stage. Reset per turn and reported next to [swap reject]. </p>
 <p>[swap reject] counts every refusal of every surface flip, most of which SHOULD be refused. This follows only the flips that passed the sag rule of swap_before_surface() &ndash; the pair's worst face measure not raised &ndash; so a drop here is the quality half at work.</p>
-<p>Reading it. <code>passed the sag rule</code> is set in swap_before_surface(), which is the app's first sight of a candidate; anything the base turned down earlier (valence, bbox, connectivity) never reaches it and is in [swap reject] instead. For a 4-4 or 5-6, what does not reach the quality test is lost in the base's case search: no retetrahedralization that makes the (c,d) diagonal was found, or none scored strictly below the current cells (the <code>cases</code> split). quality - quality_ok is a 3-2 refused for not being strictly better than the cells it replaces. quality_ok - committed is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> refusing on the side/label capture. What the envelope check then refuses is past this hook and shows as after_envelope in [swap reject]. </p>
+<p>Reading it. <code>passed the sag rule</code> is set in swap_before_surface(), which is the app's first sight of a candidate; anything the base turned down earlier (valence, bbox, connectivity) never reaches it and is in [swap reject] instead. For a 4-4 or 5-6, what does not reach the quality test is lost in the base's case search: no retetrahedralization that makes the (c,d) diagonal was found, or none scored strictly below the current cells (the <code>cases</code> split). quality - quality_ok is a 3-2 refused for not being strictly better than the cells it replaces. quality_ok - committed is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> refusing on the side/label capture. What the envelope check then refuses is past this hook and shows as after_envelope in [swap reject].</p>
+<p>The funnel counts real attempts only. In a screened pass (a parallel pass, see <a class="el" href="structwmtk_1_1_execute_pass.html#aaa73dc99c2a9555487d4084a18fc8a65" title="Screen every operation with a dry run before committing any.">ExecutePass::screen_before_commit</a>) every candidate is first dry-run, and that dry run counts nothing here; [swap reject] does count the refusals of the dry runs, so there offered - cases is what flip_wrong_case threw away in the real attempts. </p>
 
 </div>
 </div>
@@ -6166,6 +6176,21 @@ requirement", which the base handles by skipping the check. </p>
       </table>
 </div><div class="memdoc">
 <p>Churn: split-born vertices that a collapse later removed, and the subset removed in the same pass-pair that created them. </p>
+
+</div>
+</div>
+<a id="a5a2828af15fdb954bd96dd51cbf4f765" name="a5a2828af15fdb954bd96dd51cbf4f765"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a2828af15fdb954bd96dd51cbf4f765">&#9670;&#160;</a></span>iter_cnt_split_offset_before</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::iter_cnt_split_offset_before {0}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Splits of an offset-surface edge: offered, accepted. Real attempts only: a screened pass's dry runs are not counted. </p>
 
 </div>
 </div>

@@ -93,6 +93,8 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a194c005c743775e7e74a0205b2f29c48" id="r_a194c005c743775e7e74a0205b2f29c48"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a194c005c743775e7e74a0205b2f29c48">is_valid</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a194c005c743775e7e74a0205b2f29c48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55278357cca494bee73cf49dccf4a0cd" id="r_a55278357cca494bee73cf49dccf4a0cd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a55278357cca494bee73cf49dccf4a0cd">is_valid_unlocked</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="separator:a55278357cca494bee73cf49dccf4a0cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade407919430873037e472748005623b7" id="r_ade407919430873037e472748005623b7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#ade407919430873037e472748005623b7">is_boundary_edge</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:ade407919430873037e472748005623b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e708b580de8fa535d3f169522eab354" id="r_a2e708b580de8fa535d3f169522eab354"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a2e708b580de8fa535d3f169522eab354">is_boundary_face</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
@@ -364,6 +366,33 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;</b> (con
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>if not removed and the tuple is up to date with respect to the connectivity. And the tet id can't be -1 </dd></dl>
+
+</div>
+</div>
+<a id="a55278357cca494bee73cf49dccf4a0cd" name="a55278357cca494bee73cf49dccf4a0cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55278357cca494bee73cf49dccf4a0cd">&#9670;&#160;</a></span>is_valid_unlocked()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetMesh::Tuple::is_valid_unlocked </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a194c005c743775e7e74a0205b2f29c48">is_valid()</a> for a check made without holding the tet's ring; see <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2870086a71380b1acbd7f851f520e6ea" title="is_valid() without its debug-build consistency checks: the same answer as is_valid() in a release bui...">TriMesh::Tuple::is_valid_unlocked()</a>. The 3D <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html#a194c005c743775e7e74a0205b2f29c48">is_valid()</a> has no debug-only checks. </p>
 
 </div>
 </div>

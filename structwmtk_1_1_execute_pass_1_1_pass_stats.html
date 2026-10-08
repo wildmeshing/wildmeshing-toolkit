@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structwmtk_1_1_execute_pass_1_1_pass_stats-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::ExecutePass&lt; AppMesh &gt;::PassStats Struct Reference</div></div>
@@ -85,6 +86,12 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="_execution_scheduler_8hpp_source.html">ExecutionScheduler.hpp</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:af2762df71f31c224aa85ed17c5ff756a" id="r_af2762df71f31c224aa85ed17c5ff756a"><td class="memItemLeft" align="right" valign="top"><a id="af2762df71f31c224aa85ed17c5ff756a" name="af2762df71f31c224aa85ed17c5ff756a"></a>
+<a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator+=</b> (const <a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a> &amp;o)</td></tr>
+<tr class="separator:af2762df71f31c224aa85ed17c5ff756a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:aa4d3c5269ae6c722e1a8aa55d5ed643b" id="r_aa4d3c5269ae6c722e1a8aa55d5ed643b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a> = 0</td></tr>
@@ -113,7 +120,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>idlest_task_seconds
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class AppMesh&gt;<br />
 struct wmtk::ExecutePass&lt; AppMesh &gt;::PassStats</div><p>What the last pass cost in contention, as opposed to in work. </p>
-<p>Populated by every <code>operator()</code> call, so under run_localized_to_convergence it describes the most recent round only. Zeroed at the start of each pass. </p>
+<p>Populated by every <code>operator()</code> call, so under run_localized_to_convergence it describes the most recent round only. Zeroed at the start of each pass. A screened pass (screen_before_commit) adds up the commit phases of all its rounds &ndash; the busiest and idlest task times too, one round's after another's &ndash; and a round committed inline, on the calling thread, counts as serial tail. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="adb56418f061237d47be787f218d8f8e2" name="adb56418f061237d47be787f218d8f8e2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adb56418f061237d47be787f218d8f8e2">&#9670;&#160;</a></span>busiest_task_seconds</h2>
@@ -179,7 +186,7 @@ template&lt;class AppMesh &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Rounds the parallel region took: more than one when the tasks ran through their slot budgets and the storage had to grow between rounds. </p>
+<p>Rounds the parallel region took: more than one when the tasks ran through their slot budgets and the storage had to grow between rounds. For a screened pass, the most any one commit took. </p>
 
 </div>
 </div>

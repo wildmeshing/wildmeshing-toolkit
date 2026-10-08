@@ -155,7 +155,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>SurfaceTopoSignature
 &#160;&#160;<b>after_hook</b>
 , <b>invariants</b>
 , <b>committed</b>
-, <b>COUNT</b>
+, <b>screened</b>
+, <br />
+&#160;&#160;<b>COUNT</b>
 <br />
  }</td></tr>
 <tr class="separator:a3e46b40b2ae938c410e66bceea9a86c7 inherit pub_types_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -600,6 +602,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capa
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>op_refused</b> (const OpKind k, const OpEvent e) const</td></tr>
 <tr class="memdesc:a7be77488a271ea6a30b60528bccc5a62 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">op_event() for a refusal, returning false so a site reads <code>return op_refused(...)</code>. <br /></td></tr>
 <tr class="separator:a7be77488a271ea6a30b60528bccc5a62 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a721dd53562369d5f58ba57717293dee5"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>op_screened</b> (const OpKind k) const</td></tr>
+<tr class="memdesc:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The end of a dry run that would have gone on to change the mesh: true, and counted. <br /></td></tr>
+<tr class="separator:a721dd53562369d5f58ba57717293dee5 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
 <tr class="separator:a994201bc6b9c05cca284e544228bffc3 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1021,6 +1027,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_finalize_enable
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_static_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a9cbc5de6e447ac4f5259e12c9ac7232c"><td class="memItemLeft" align="right" valign="top">
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>dry_run</b> ()</td></tr>
+<tr class="memdesc:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether operations on this thread are dry runs (see <a class="el" href="_operation_dry_run_8hpp_source.html">wmtk/OperationDryRun.hpp</a>). <br /></td></tr>
+<tr class="separator:a9cbc5de6e447ac4f5259e12c9ac7232c inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a6931fcc6889e1e6804351d2cc6602b39"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
 <tr class="separator:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1085,6 +1095,7 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 , <b>after_enter</b>
 , <br />
 &#160;&#160;<b>accepted</b>
+, <b>screened</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>

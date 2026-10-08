@@ -112,6 +112,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>print_info</b> ()</td
 <tr class="memitem:a3856af55a040259ae692b680515913d6" id="r_a3856af55a040259ae692b680515913d6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6">is_valid</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="memdesc:a3856af55a040259ae692b680515913d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is valid  <br /></td></tr>
 <tr class="separator:a3856af55a040259ae692b680515913d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2870086a71380b1acbd7f851f520e6ea" id="r_a2870086a71380b1acbd7f851f520e6ea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2870086a71380b1acbd7f851f520e6ea">is_valid_unlocked</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
+<tr class="memdesc:a2870086a71380b1acbd7f851f520e6ea"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6" title="check if a Tuple is valid">is_valid()</a> without its debug-build consistency checks: the same answer as <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6" title="check if a Tuple is valid">is_valid()</a> in a release build.  <br /></td></tr>
+<tr class="separator:a2870086a71380b1acbd7f851f520e6ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ccb6872291134383402772bb8234101" id="r_a5ccb6872291134383402772bb8234101"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a5ccb6872291134383402772bb8234101">oriented_tri_vertices</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a5ccb6872291134383402772bb8234101"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -264,6 +267,27 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;</b> (con
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>false if 1. the fid of the <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is -1, 2. either the vertex or the face refered to by the <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is removed, 3. the hash of the <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is not the same as the hash of the triangle it refers to in the mesh </dd></dl>
+
+</div>
+</div>
+<a id="a2870086a71380b1acbd7f851f520e6ea" name="a2870086a71380b1acbd7f851f520e6ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2870086a71380b1acbd7f851f520e6ea">&#9670;&#160;</a></span>is_valid_unlocked()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool TriMesh::Tuple::is_valid_unlocked </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6" title="check if a Tuple is valid">is_valid()</a> without its debug-build consistency checks: the same answer as <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6" title="check if a Tuple is valid">is_valid()</a> in a release build. </p>
+<p>For a check made without holding the triangle's ring &ndash; <a class="el" href="structwmtk_1_1_execute_pass.html">ExecutePass</a>'s filter before it claims the ring &ndash; while another thread may be changing that triangle. The consistency checks read the triangle's vertices, which are then momentarily inconsistent, and would abort a debug build on a race the caller tolerates: a stale answer only costs a lock attempt, and the check is repeated once the ring is held. </p>
 
 </div>
 </div>

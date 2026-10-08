@@ -1329,9 +1329,7 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>i
 <tr class="separator:a5c48faa00c99f0f5cb2f8018b817aa6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e5a689837daedfa2cd38ffbb2adf4b4" id="r_a1e5a689837daedfa2cd38ffbb2adf4b4"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1e5a689837daedfa2cd38ffbb2adf4b4">iter_cnt_collapse_guard_reject</a> {0}</td></tr>
 <tr class="separator:a1e5a689837daedfa2cd38ffbb2adf4b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34860383735336ee8e0be5fccfae19a8" id="r_a34860383735336ee8e0be5fccfae19a8"><td class="memItemLeft" align="right" valign="top"><a id="a34860383735336ee8e0be5fccfae19a8" name="a34860383735336ee8e0be5fccfae19a8"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_split_offset_before</b> {0}</td></tr>
-<tr class="memdesc:a34860383735336ee8e0be5fccfae19a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Splits of an offset-boundary edge: offered, accepted. <br /></td></tr>
+<tr class="memitem:a34860383735336ee8e0be5fccfae19a8" id="r_a34860383735336ee8e0be5fccfae19a8"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a34860383735336ee8e0be5fccfae19a8">iter_cnt_split_offset_before</a> {0}</td></tr>
 <tr class="separator:a34860383735336ee8e0be5fccfae19a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d8ff2c64417716dcfea98ce87705d36" id="r_a6d8ff2c64417716dcfea98ce87705d36"><td class="memItemLeft" align="right" valign="top"><a id="a6d8ff2c64417716dcfea98ce87705d36" name="a6d8ff2c64417716dcfea98ce87705d36"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_split_offset</b> {0}</td></tr>
@@ -1623,6 +1621,10 @@ Private Attributes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_static_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:a789b9eed645cf43c42234f005becd6e5 inherit pub_static_methods_classwmtk_1_1_tri_mesh" id="r_a789b9eed645cf43c42234f005becd6e5"><td class="memItemLeft" align="right" valign="top">
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>dry_run</b> ()</td></tr>
+<tr class="memdesc:a789b9eed645cf43c42234f005becd6e5 inherit pub_static_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether operations on this thread are dry runs (see <a class="el" href="_operation_dry_run_8hpp_source.html">wmtk/OperationDryRun.hpp</a>). <br /></td></tr>
+<tr class="separator:a789b9eed645cf43c42234f005becd6e5 inherit pub_static_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1453e4b936e5315f38a94ce1224eadfb inherit pub_static_methods_classwmtk_1_1_tri_mesh" id="r_a1453e4b936e5315f38a94ce1224eadfb"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
 <tr class="separator:a1453e4b936e5315f38a94ce1224eadfb inherit pub_static_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5200,6 +5202,21 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>Churn: split-born vertices that a collapse later removed, and the subset removed in the same pass-pair that created them. </p>
+
+</div>
+</div>
+<a id="a34860383735336ee8e0be5fccfae19a8" name="a34860383735336ee8e0be5fccfae19a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34860383735336ee8e0be5fccfae19a8">&#9670;&#160;</a></span>iter_cnt_split_offset_before</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::iter_cnt_split_offset_before {0}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Splits of an offset-boundary edge: offered, accepted. Real attempts only: a screened pass's dry runs are not counted. </p>
 
 </div>
 </div>

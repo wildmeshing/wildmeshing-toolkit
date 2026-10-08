@@ -88,10 +88,16 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_op_table.html">OpTable</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The registered operations by rank. edit_operation_maps is a std::map, so iterating it yields the names in lexicographic order and an operation's index is its name's rank: comparing ranks is comparing names, which is what keeps the queue order unchanged.  <a href="structwmtk_1_1_execute_pass_1_1_op_table.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">What the last pass cost in contention, as opposed to in work.  <a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_execute_pass_1_1_queued_count.html">QueuedCount</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html">WaitSink</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where a screened round collects the next round's candidates: the operations its successes renewed and the ones must_wait set aside, by rank (see <a class="el" href="structwmtk_1_1_execute_pass_1_1_op_table.html" title="The registered operations by rank. edit_operation_maps is a std::map, so iterating it yields the name...">OpTable</a>), each with its queue key, which stays counted (<code>keys</code> is empty when the pass sets no queue_key).  <a href="structwmtk_1_1_execute_pass_1_1_wait_sink.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
@@ -185,13 +191,18 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</t
 <tr class="memitem:ad528fecedb797a7ebe3b1bb7ac882bf4" id="r_ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a> = 128</td></tr>
 <tr class="memdesc:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operations to run before handing deferred operations back to the queue, or 0 to wait until the queue empties.  <br /></td></tr>
 <tr class="separator:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa73dc99c2a9555487d4084a18fc8a65" id="r_aaa73dc99c2a9555487d4084a18fc8a65"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#aaa73dc99c2a9555487d4084a18fc8a65">screen_before_commit</a> = true</td></tr>
+<tr class="memdesc:aaa73dc99c2a9555487d4084a18fc8a65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Screen every operation with a dry run before committing any.  <br /></td></tr>
+<tr class="separator:aaa73dc99c2a9555487d4084a18fc8a65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:a77632b3e593a36821007acc61ebc6ca9" id="r_a77632b3e593a36821007acc61ebc6ca9"><td class="memItemLeft" align="right" valign="top"><a id="a77632b3e593a36821007acc61ebc6ca9" name="a77632b3e593a36821007acc61ebc6ca9"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>Push</b> = std::function&lt; void(const Op &amp;, const Tuple &amp;)&gt;</td></tr>
-<tr class="memdesc:a77632b3e593a36821007acc61ebc6ca9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queues one candidate; what a seeder calls for each entry of its list. <br /></td></tr>
-<tr class="separator:a77632b3e593a36821007acc61ebc6ca9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b80d6ab8db0ce55ae9803b7d172dae0" id="r_a6b80d6ab8db0ce55ae9803b7d172dae0"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0">Push</a> = std::function&lt; void(const Op &amp;, const Tuple &amp;, uint64_t)&gt;</td></tr>
+<tr class="memdesc:a6b80d6ab8db0ce55ae9803b7d172dae0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queues one candidate; what a seeder calls for each entry of its list.  <br /></td></tr>
+<tr class="separator:a6b80d6ab8db0ce55ae9803b7d172dae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9174216fc6aa8814cddb71ecda228249" id="r_a9174216fc6aa8814cddb71ecda228249"><td class="memItemLeft" align="right" valign="top"><a id="a9174216fc6aa8814cddb71ecda228249" name="a9174216fc6aa8814cddb71ecda228249"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>OpFn</b> = std::function&lt; std::optional&lt; std::vector&lt; Tuple &gt; &gt;(AppMesh &amp;, const Tuple &amp;)&gt;</td></tr>
+<tr class="separator:a9174216fc6aa8814cddb71ecda228249"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -201,11 +212,19 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operation_cleanup</b>
 <tr class="memitem:a91b4d3835c9160e8347fd9b28ed82e08" id="r_a91b4d3835c9160e8347fd9b28ed82e08"><td class="memItemLeft" align="right" valign="top"><a id="a91b4d3835c9160e8347fd9b28ed82e08" name="a91b4d3835c9160e8347fd9b28ed82e08"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const AppMesh &amp;m, const Tuple &amp;e)</td></tr>
 <tr class="separator:a91b4d3835c9160e8347fd9b28ed82e08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf180a5e9794d2d5bc4f689b840a520e" id="r_acf180a5e9794d2d5bc4f689b840a520e"><td class="memItemLeft" align="right" valign="top"><a id="acf180a5e9794d2d5bc4f689b840a520e" name="acf180a5e9794d2d5bc4f689b840a520e"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>execute</b> (AppMesh &amp;m, const std::function&lt; void(const <a class="el" href="structwmtk_1_1_execute_pass.html#a77632b3e593a36821007acc61ebc6ca9">Push</a> &amp;)&gt; &amp;seed)</td></tr>
-<tr class="separator:acf180a5e9794d2d5bc4f689b840a520e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a406de64b79dfcc15aa5a1ea627309e18" id="r_a406de64b79dfcc15aa5a1ea627309e18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a> () const</td></tr>
-<tr class="separator:a406de64b79dfcc15aa5a1ea627309e18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a220d7c852ace3b26806a8bf4796bce2f" id="r_a220d7c852ace3b26806a8bf4796bce2f"><td class="memItemLeft" align="right" valign="top"><a id="a220d7c852ace3b26806a8bf4796bce2f" name="a220d7c852ace3b26806a8bf4796bce2f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>run_screened</b> (AppMesh &amp;m, const std::function&lt; void(const <a class="el" href="structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0">Push</a> &amp;)&gt; &amp;seed)</td></tr>
+<tr class="memdesc:a220d7c852ace3b26806a8bf4796bce2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Screened rounds; see screen_before_commit. <br /></td></tr>
+<tr class="separator:a220d7c852ace3b26806a8bf4796bce2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a30729ca2b64f064215baec282dff78" id="r_a9a30729ca2b64f064215baec282dff78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a9a30729ca2b64f064215baec282dff78">check_queued_drained</a> ()</td></tr>
+<tr class="separator:a9a30729ca2b64f064215baec282dff78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a421f2bc3fb565bdf6d9e7443be28b986" id="r_a421f2bc3fb565bdf6d9e7443be28b986"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a421f2bc3fb565bdf6d9e7443be28b986">take_unique_renewed</a> (const AppMesh &amp;m, const <a class="el" href="structwmtk_1_1_execute_pass_1_1_op_table.html">OpTable</a> &amp;ops, <a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html">WaitSink</a> &amp;s)</td></tr>
+<tr class="memdesc:a421f2bc3fb565bdf6d9e7443be28b986"><td class="mdescLeft">&#160;</td><td class="mdescRight">Leaves in <code>s</code> the valid, still-wanted operations, each (operation, simplex) once, with their queue keys; the ones left out are no longer queued.  <br /></td></tr>
+<tr class="separator:a421f2bc3fb565bdf6d9e7443be28b986"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada41231e9a66263fda25d37fc4a383d5" id="r_ada41231e9a66263fda25d37fc4a383d5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ada41231e9a66263fda25d37fc4a383d5">execute</a> (AppMesh &amp;m, const std::function&lt; void(const <a class="el" href="structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0">Push</a> &amp;)&gt; &amp;seed, <a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html">WaitSink</a> *sink=nullptr)</td></tr>
+<tr class="separator:ada41231e9a66263fda25d37fc4a383d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab32e575526bcb2da87f7b91ec1fd5303" id="r_ab32e575526bcb2da87f7b91ec1fd5303"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ab32e575526bcb2da87f7b91ec1fd5303">log_contention</a> (size_t executed_ops=std::numeric_limits&lt; size_t &gt;::max()) const</td></tr>
+<tr class="separator:ab32e575526bcb2da87f7b91ec1fd5303"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -227,7 +246,37 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:adb8e9e7ecf087bc180716a78c69f72c2" id="r_adb8e9e7ecf087bc180716a78c69f72c2"><td class="memItemLeft" align="right" valign="top"><a id="adb8e9e7ecf087bc180716a78c69f72c2" name="adb8e9e7ecf087bc180716a78c69f72c2"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_wait_defects</b> = 0</td></tr>
 <tr class="separator:adb8e9e7ecf087bc180716a78c69f72c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69d788f9468b4b5e8e3189c868ef339b" id="r_a69d788f9468b4b5e8e3189c868ef339b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a69d788f9468b4b5e8e3189c868ef339b">m_untracked_done</a> = 0</td></tr>
+<tr class="separator:a69d788f9468b4b5e8e3189c868ef339b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a6b80d6ab8db0ce55ae9803b7d172dae0" name="a6b80d6ab8db0ce55ae9803b7d172dae0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b80d6ab8db0ce55ae9803b7d172dae0">&#9670;&#160;</a></span>Push</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::Push =  std::function&lt;void(const Op&amp;, const Tuple&amp;, uint64_t)&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Queues one candidate; what a seeder calls for each entry of its list. </p>
+<p>The third argument is the candidate's queue key when the caller has already counted it (a screened round's commit, see <a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html" title="Where a screened round collects the next round&#39;s candidates: the operations its successes renewed and...">WaitSink</a>); every other seeder passes 0, and the key is computed and counted as the candidate is queued. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a922fdd528b06468eafe56f70d0b8d2aa" name="a922fdd528b06468eafe56f70d0b8d2aa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a922fdd528b06468eafe56f70d0b8d2aa">&#9670;&#160;</a></span>ExecutePass()</h2>
@@ -261,8 +310,81 @@ template&lt;class AppMesh &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a406de64b79dfcc15aa5a1ea627309e18" name="a406de64b79dfcc15aa5a1ea627309e18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a406de64b79dfcc15aa5a1ea627309e18">&#9670;&#160;</a></span>log_contention()</h2>
+<a id="a9a30729ca2b64f064215baec282dff78" name="a9a30729ca2b64f064215baec282dff78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a30729ca2b64f064215baec282dff78">&#9670;&#160;</a></span>check_queued_drained()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::check_queued_drained </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Every operation counted as queued during a call was tried or dropped by its end; anything left, or a finished operation that was never counted, means is_queued() may have answered wrongly during the call. </p>
+
+</div>
+</div>
+<a id="ada41231e9a66263fda25d37fc4a383d5" name="ada41231e9a66263fda25d37fc4a383d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada41231e9a66263fda25d37fc4a383d5">&#9670;&#160;</a></span>execute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::execute </td>
+          <td>(</td>
+          <td class="paramtype">AppMesh &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; void(const <a class="el" href="structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0">Push</a> &amp;)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>seed</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html">WaitSink</a> *&#160;</td>
+          <td class="paramname"><em>sink</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><code>sink</code> non-null: a screened round's commit. It logs nothing (the screened call does); the queue_key counts span the whole screened call, so they are neither reset nor counted here &ndash; the seeder hands over each candidate's counted key &ndash; and a waiting operation goes to the sink. </p>
+
+</div>
+</div>
+<a id="ab32e575526bcb2da87f7b91ec1fd5303" name="ab32e575526bcb2da87f7b91ec1fd5303"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab32e575526bcb2da87f7b91ec1fd5303">&#9670;&#160;</a></span>log_contention()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -275,7 +397,8 @@ template&lt;class AppMesh &gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::log_contention </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>executed_ops</em> = <code>std::numeric_limits&lt;size_t&gt;::max()</code></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -285,7 +408,7 @@ template&lt;class AppMesh &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Debug-level because it is per pass and there are many passes per iteration. Enable with the logger at debug to see whether contention is worth acting on. </p>
+<p>Debug-level because it is per pass and there are many passes per iteration. Enable with the logger at debug to see whether contention is worth acting on. <code>executed</code>: the operations the contention is spread over; by default every attempt of the last call. A screened call passes the attempts that got past its screen. </p>
 
 </div>
 </div>
@@ -375,6 +498,53 @@ template&lt;class AppMesh &gt; </div>
 
 <p>As above, but takes the operation list over and frees it as soon as the queues are seeded. </p>
 <p>The queues hold their own copy of every operation, so the list is dead weight from then on &ndash; and it is at its longest on the first pass after construction, which is also when the mesh is at its largest. Releasing it there is what keeps a pass from holding every candidate twice at the run's peak. </p>
+
+</div>
+</div>
+<a id="a421f2bc3fb565bdf6d9e7443be28b986" name="a421f2bc3fb565bdf6d9e7443be28b986"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a421f2bc3fb565bdf6d9e7443be28b986">&#9670;&#160;</a></span>take_unique_renewed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::take_unique_renewed </td>
+          <td>(</td>
+          <td class="paramtype">const AppMesh &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1_execute_pass_1_1_op_table.html">OpTable</a> &amp;&#160;</td>
+          <td class="paramname"><em>ops</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1_execute_pass_1_1_wait_sink.html">WaitSink</a> &amp;&#160;</td>
+          <td class="paramname"><em>s</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Leaves in <code>s</code> the valid, still-wanted operations, each (operation, simplex) once, with their queue keys; the ones left out are no longer queued. </p>
+<p>Each entry's validity, priority and dedup key are computed in parallel &ndash; <a class="el" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc" title="Priority function (default to edge length)">priority()</a> is the expensive part. The key is the operation's rank and its simplex: the vertex ids, ordered for edges since a collapse is directed, sorted for faces; the tet id for tets. An operation named after none of these is never merged with another. The list is compacted in place. </p>
 
 </div>
 </div>
@@ -475,6 +645,31 @@ template&lt;class AppMesh &gt; </div>
 
 </div>
 </div>
+<a id="a69d788f9468b4b5e8e3189c868ef339b" name="a69d788f9468b4b5e8e3189c868ef339b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69d788f9468b4b5e8e3189c868ef339b">&#9670;&#160;</a></span>m_untracked_done</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::m_untracked_done = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A screened call's finished operations that were not counted as queued (see <a class="el" href="structwmtk_1_1_execute_pass.html#a9a30729ca2b64f064215baec282dff78">check_queued_drained()</a>); written by the calling thread only. </p>
+
+</div>
+</div>
 <a id="a02a89f6f7fe09f5c6f1d1c2207ed4c58" name="a02a89f6f7fe09f5c6f1d1c2207ed4c58"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02a89f6f7fe09f5c6f1d1c2207ed4c58">&#9670;&#160;</a></span>max_retry_limit</h2>
 
@@ -554,6 +749,7 @@ template&lt;class AppMesh &gt; </div>
 <p>Optional order between queued operations, used by the split passes. </p>
 <p><code>queue_key</code> names what an operation is about &ndash; for a split, its edge (edge_queue_key) &ndash; or returns 0 for "not tracked". A tracked operation is counted from the moment it is queued until it is tried, or dropped as invalid or out of date. Being set aside after a lost lock race does not end it. is_queued() reads that count, for any thread.</p>
 <p><code>must_wait</code> is asked after is_weight_up_to_date, with the operation's ring locked. True sets the operation aside exactly like a lost lock race: it is retried later in the pass and, after max_retry_limit attempts, handed to the serial queue drained after the barrier. A serial run &ndash; kSeq, or that serial queue &ndash; pops in priority order, so whatever an operation could wait on has been tried before it. There a <code>must_wait</code> that still says true is a defect: the operation fails (on_fail) and is counted in wait_defects() rather than being set aside forever.</p>
+<p>In a screened pass (screen_before_commit) an operation that waits is not retried within the round: it stays counted and is a candidate of the next round, screened again. A round in which nothing got as far as an attempt while operations waited cannot make progress &ndash; what they wait on is still queued and the mesh has not changed &ndash; so there, too, every waiting operation is a defect: it fails and is counted in wait_defects(). A <code>must_wait</code> that orders the operations strictly never gets there, since the first operation in its order never waits.</p>
 <p>Both empty, the default: nothing is counted and nothing waits. </p>
 
 </div>
@@ -577,6 +773,28 @@ template&lt;class AppMesh &gt; </div>
 <div class="line">    }</div>
 </div><!-- fragment -->
 <p>renew neighboring Tuples after each operation depends on the operation </p>
+
+</div>
+</div>
+<a id="aaa73dc99c2a9555487d4084a18fc8a65" name="aaa73dc99c2a9555487d4084a18fc8a65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa73dc99c2a9555487d4084a18fc8a65">&#9670;&#160;</a></span>screen_before_commit</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::screen_before_commit = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Screen every operation with a dry run before committing any. </p>
+<p>When set, a parallel pass runs in rounds. Each round first dry-runs every candidate in parallel against the unchanging mesh, with no locks (see operation_dry_run()): everything an operation checks before its first change &ndash; the before-hook, valence, the choice of swap configuration &ndash; runs, and the operations refused there are reported through on_fail like any failure. Only the survivors go through the queues and ring locks, where they are attempted for real with every check repeated. The operations their successes renew are not queued straight away; they are the next round's candidates, screened the same way.</p>
+<p>The point is that the expensive part of a parallel pass was claiming a two-ring of locks for every attempt, and ~98% of attempts on the challenging tetwild models are refused before their first change: those now cost a lock-free read, and the ring locks are taken by the ~2% that get as far as changing the mesh.</p>
+<p>On by default for every parallel pass: every operation of the <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> and <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> registries honours operation_dry_run(), including the splits and vertex smoothing, where it screens out almost nothing but keeps all passes on one pipeline. One driver turns it off: the 2D collapse pass, where it costs more than it saves (TriOptimizerMeshCollapse.cpp). Not used by serial passes, which keep their single queue (and their output), nor by a pass with a live stopping criterion (qslim, shortest edge collapse): those collapse in global priority order up to an exact count, which rounds would reorder.</p>
+<p>Memory: a round holds its candidates as (operation rank, tuple), compacts the survivors in place, and collects the next round's in deques, so a screened pass holds about what the queues of an unscreened one would. </p>
 
 </div>
 </div>
