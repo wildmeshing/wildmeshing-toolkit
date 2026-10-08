@@ -5,14 +5,25 @@
 #include <cstddef>
 #include <deque>
 #include <exception>
-#include <functional>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
+#include <type_traits>
 #include <utility>
 
 namespace wmtk::threading {
 
 namespace detail {
+
+/// What the pool queues: one task, type-erased. Unlike std::function it does not require the task
+/// to be copyable -- std::thread, which ran task_group's tasks before the pool, did not either.
+struct job
+{
+    virtual ~job() = default;
+    /// Runs the task and reports it finished. Never throws.
+    virtual void run() noexcept = 0;
+};
 
 /**
  * @brief The process-wide set of threads that task_group runs its tasks on.
@@ -49,7 +60,7 @@ public:
     }
 
     /// Run @p job on a worker. Throws (and queues nothing) if a needed worker cannot be started.
-    void submit(std::function<void()> job)
+    void submit(std::unique_ptr<job> j)
     {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -57,7 +68,7 @@ public:
             // running a task that waits for this one. Waking an idle worker that then finds the
             // queue already drained by a worker finishing early is harmless; it waits again.
             if (m_jobs.size() < m_idle) {
-                m_jobs.push_back(std::move(job));
+                m_jobs.push_back(std::move(j));
                 m_cv.notify_one();
                 return;
             }
@@ -68,7 +79,7 @@ public:
         std::thread([this] { work(); }).detach();
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_jobs.push_back(std::move(job));
+            m_jobs.push_back(std::move(j));
         }
         m_cv.notify_one();
     }
@@ -79,13 +90,13 @@ private:
     void work()
     {
         for (;;) {
-            std::function<void()> job;
+            std::unique_ptr<job> j;
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 ++m_idle;
                 m_cv.wait(lock, [this] { return !m_jobs.empty(); });
                 --m_idle;
-                job = std::move(m_jobs.front());
+                j = std::move(m_jobs.front());
                 m_jobs.pop_front();
             }
             // A fresh std::thread starts in round-to-nearest. A reused one starts in whatever
@@ -93,13 +104,13 @@ private:
             // around their interval filters, so an exception in the middle of one would leak an
             // upward mode into every later task on this thread. Restore the fresh-thread state.
             std::fesetround(FE_TONEAREST);
-            job();
+            j->run();
         }
     }
 
     std::mutex m_mutex;
     std::condition_variable m_cv;
-    std::deque<std::function<void()>> m_jobs;
+    std::deque<std::unique_ptr<job>> m_jobs;
     size_t m_idle = 0; ///< workers blocked in work(), waiting for a job
 };
 
@@ -126,12 +137,16 @@ public:
     template <typename F>
     void run(F&& f)
     {
+        // The task is copied or moved into its job here, on the calling thread: a task whose copy
+        // or move throws makes run() throw -- as std::thread's constructor did -- before anything
+        // is counted or queued.
+        auto j = std::make_unique<task_job<std::decay_t<F>>>(*this, std::forward<F>(f));
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             ++m_pending;
         }
         try {
-            submit(std::forward<F>(f));
+            detail::worker_pool::instance().submit(std::move(j));
         } catch (...) {
             // Nothing was queued (see worker_pool::submit), so nothing will decrement this.
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -159,31 +174,51 @@ public:
     }
 
 private:
-    template <typename F>
-    void submit(F&& f)
+    /// A task of this group, queued on the pool. Move-only tasks are fine.
+    template <typename Fn>
+    class task_job final : public detail::job
     {
-        detail::worker_pool::instance().submit([this, f = std::forward<F>(f)]() mutable {
-            {
-                // Destroy the task's own state before reporting it finished: once it is
-                // reported, wait() may return and the caller may tear down whatever the task
-                // captured by reference.
-                auto task = std::move(f);
-                try {
-                    task();
-                } catch (...) {
-                    std::lock_guard<std::mutex> lock(m_mutex);
-                    if (!m_eptr) {
-                        m_eptr = std::current_exception();
-                    }
-                }
+        task_group& m_group;
+        std::optional<Fn> m_fn;
+
+    public:
+        template <typename G>
+        task_job(task_group& group, G&& fn)
+            : m_group(group)
+            , m_fn(std::in_place, std::forward<G>(fn))
+        {}
+
+        void run() noexcept override
+        {
+            try {
+                (*m_fn)();
+            } catch (...) {
+                m_group.record(std::current_exception());
             }
-            // Notify while holding the lock, so wait() cannot return -- and the group cannot be
-            // destroyed -- until this thread has let go of the group's mutex.
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (--m_pending == 0) {
-                m_done.notify_all();
-            }
-        });
+            // Destroy the task's own state before reporting it finished: once it is reported,
+            // wait() may return and the caller may tear down whatever the task captured by
+            // reference. After finish_one() this job touches nothing of the group's.
+            m_fn.reset();
+            m_group.finish_one();
+        }
+    };
+
+    void record(std::exception_ptr e)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_eptr) {
+            m_eptr = std::move(e);
+        }
+    }
+
+    void finish_one()
+    {
+        // Notify while holding the lock, so wait() cannot return -- and the group cannot be
+        // destroyed -- until this thread has let go of the group's mutex.
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (--m_pending == 0) {
+            m_done.notify_all();
+        }
     }
 };
 

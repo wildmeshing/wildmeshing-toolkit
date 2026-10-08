@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cfenv>
 #include <chrono>
+#include <memory>
 #include <stdexcept>
 #include <thread>
 #include <wmtk/Types.hpp>
@@ -362,6 +363,46 @@ TEST_CASE("task_group", "[threading]")
             tg.wait();
             CHECK(mode == FE_TONEAREST);
         }
+    }
+
+    SECTION("accepts move-only tasks")
+    {
+        threading::task_group tg;
+        auto owned = std::make_unique<int>(41);
+        std::atomic<int> seen{0};
+        tg.run([p = std::move(owned), &seen]() { seen = *p + 1; });
+        tg.wait();
+        CHECK(seen == 42);
+    }
+
+    SECTION("a task whose copy or move throws makes run() throw, and the group stays usable")
+    {
+        struct ThrowsOnTransfer
+        {
+            ThrowsOnTransfer() = default;
+            ThrowsOnTransfer(const ThrowsOnTransfer&) { throw std::runtime_error("copy"); }
+            ThrowsOnTransfer(ThrowsOnTransfer&&) { throw std::runtime_error("move"); }
+            void operator()() const {}
+        };
+        threading::task_group tg;
+        ThrowsOnTransfer task;
+        CHECK_THROWS_AS(tg.run(task), std::runtime_error);
+        CHECK_THROWS_AS(tg.run(std::move(task)), std::runtime_error);
+        std::atomic<bool> ran{false};
+        tg.run([&ran]() { ran = true; });
+        tg.wait(); // returns: the failed run() calls left nothing pending
+        CHECK(ran);
+    }
+
+    SECTION("a task's state is destroyed before wait() returns")
+    {
+        auto token = std::make_shared<int>(0);
+        threading::task_group tg;
+        for (int i = 0; i < 4; ++i) {
+            tg.run([token]() {});
+        }
+        tg.wait();
+        CHECK(token.use_count() == 1);
     }
 }
 
