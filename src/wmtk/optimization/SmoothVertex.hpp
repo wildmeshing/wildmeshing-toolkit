@@ -15,6 +15,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace wmtk::optimization {
@@ -305,6 +306,12 @@ bool smooth_vertex_3d(
 
     const size_t vid = t.vid(m);
     auto& VA = m.m_vertex_attribute;
+    // Every OTHER vertex is read through this const view. A non-const AttributeCollection access
+    // made while the operation is protected records the entry, and a rejected smooth writes every
+    // recorded entry back -- so reading a neighbour through `VA` would also write it. Under the
+    // one-ring lock that was only wasted copying; when non-adjacent vertices smooth concurrently
+    // (colored smoothing), two of them can share a neighbour and would write it back at once.
+    const auto& VA_read = std::as_const(m.m_vertex_attribute);
     const auto locs = m.get_one_ring_tets_for_vertex(t);
     assert(!locs.empty());
 
@@ -327,7 +334,7 @@ bool smooth_vertex_3d(
         local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
         for (int k = 0; k < 4; k++) {
             for (int j = 0; j < 3; j++) {
-                assembles[i][k * 3 + j] = VA[local_verts[k]].m_posf[j];
+                assembles[i][k * 3 + j] = VA_read[local_verts[k]].m_posf[j];
             }
         }
     }
@@ -477,9 +484,9 @@ bool smooth_vertex_3d(
         const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
         for (const simplex::Face& f : surf.faces()) {
             const std::array<Eigen::Vector3d, 3> face = {
-                {VA[f.vertices()[0]].m_posf,
-                 VA[f.vertices()[1]].m_posf,
-                 VA[f.vertices()[2]].m_posf}};
+                {VA_read[f.vertices()[0]].m_posf,
+                 VA_read[f.vertices()[1]].m_posf,
+                 VA_read[f.vertices()[2]].m_posf}};
             if (check_env->is_outside(face)) {
                 if (counters) ++counters->envelope;
                 return false;

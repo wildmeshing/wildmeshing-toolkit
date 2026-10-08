@@ -558,9 +558,25 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access,
+     * e.g. `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}

@@ -46,6 +46,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "colored_smoothing",
       "adaptive_smoothing",
       "adaptive_smoothing_max_passes",
       "adaptive_smoothing_stall_rel",
@@ -395,6 +396,12 @@
     "type": "int",
     "default": 2,
     "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
     "pointer": "/adaptive_smoothing",
