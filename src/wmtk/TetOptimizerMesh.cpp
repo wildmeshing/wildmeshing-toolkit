@@ -639,7 +639,7 @@ bool TetOptimizerMesh::round(const Tuple& v)
     // Rounding writes the vertex, which a dry run must not do (other threads are reading it).
     // Answer optimistically: a dry run that passes only means "worth attempting", and the real
     // attempt rounds, or finds it cannot, for itself.
-    if (operation_dry_run()) return true;
+    if (dry_run()) return true;
 
     const auto old_exact = m_vertex_attribute[i].m_exact;
     m_vertex_attribute[i].set_pos_to_posf();

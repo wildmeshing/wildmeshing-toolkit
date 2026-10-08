@@ -571,6 +571,8 @@ public:
      * @return true if the preparation succeed
      */
     virtual bool smooth_before(const Tuple& t) { return true; }
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
     /**
      * @brief User specified modifications and desideras after an edge smooth
      * @param the edge Tuple to be smoothed

@@ -721,12 +721,17 @@ protected:
     /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
     /// entered the surface branch at all, so "the surface never even presents a candidate" is
     /// distinguishable from "candidates are presented and refused".
+    ///
+    /// In a screened pass (ExecutePass::screen_before_commit) the stages up to before_pass are
+    /// counted by the dry run as well as by the real attempt. `screened` counts the dry runs
+    /// that passed every check, i.e. the before_pass counts a real attempt repeats.
     enum class SwapStage : int {
         attempt,
         surface_attempt,
         before_pass,
         after_enter,
         accepted,
+        screened,
         COUNT
     };
 
@@ -803,6 +808,11 @@ protected:
     {
         if (e == OpEvent::attempt) current_op_kind() = k;
         m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+        // The edge swaps whose hooks count SwapStage; see swap_reject_report().
+        if (e == OpEvent::screened &&
+            (k == OpKind::swap_32 || k == OpKind::swap_44 || k == OpKind::swap_56)) {
+            swap_stage(SwapStage::screened);
+        }
     }
     /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
     /// can be charged to the right kind without passing the kind through every hook. COUNT
