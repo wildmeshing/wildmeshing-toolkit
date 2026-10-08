@@ -496,6 +496,13 @@ void TetWildMesh::compute_winding_number(
         // insertion and every operation: no guessing, so this means what the input winding
         // number means, evaluated on the surface the mesh actually conforms to. Coincident
         // sheets appear as often as they cover a face, and opposite ones cancel.
+        if (const size_t n = m_inconsistent_orientation_flips.load(); n > 0) {
+            logger().warn(
+                "tracked winding number: {} surface flips joined faces not oriented alike (the "
+                "tracked surface is folded or inconsistently oriented there), so the orientation "
+                "may be inconsistent and the winding number not an integer near them",
+                n);
+        }
         const auto outface = oriented_tracked_faces();
         V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
         for (auto v : get_vertices()) {

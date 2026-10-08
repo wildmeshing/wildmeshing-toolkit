@@ -109,9 +109,21 @@ public:
      *
      * The operations maintain the orientation whether or not this is set (it is 0 everywhere on
      * a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See
-     * tracked_surface_boundary() for the invariant it obeys.
+     * tracked_surface_boundary() for the invariant it obeys. The orientation never changes
+     * which operations run: it only feeds the tracked winding number.
      */
     bool m_tracks_orientation = false;
+
+    /**
+     * @brief Surface flips that joined two faces not oriented alike (a fold of the tracked
+     * surface, or unequal multiplicities).
+     *
+     * The flip runs anyway -- orientation must not change the operations -- so the oriented
+     * surface no longer has the input's boundary there, and the tracked winding number is not
+     * an integer near the flipped faces. Nonzero only on a tracked surface that was folded or
+     * inconsistently oriented to begin with.
+     */
+    std::atomic<size_t> m_inconsistent_orientation_flips = 0;
 
     /**
      * @brief The tracked surface as an oriented soup: each tracked face emitted |m_orientation|
@@ -123,9 +135,11 @@ public:
     /**
      * @brief Mesh edges where the oriented tracked surface has a boundary.
      *
-     * The tracked surface is an integer 2-chain, and every operation preserves its boundary: a
-     * closed input stays a cycle (signed sum of incident oriented tracked faces is 0 on every
-     * edge), and an open one keeps its boundary on the input's open boundary. Returns the edges
+     * The tracked surface is an integer 2-chain, and every operation preserves its boundary --
+     * except a surface flip of two faces not oriented alike, which is counted in
+     * m_inconsistent_orientation_flips: a closed input stays a cycle (signed sum of incident
+     * oriented tracked faces is 0 on every edge), and an open one keeps its boundary on the
+     * input's open boundary. Returns the edges
      * with a nonzero sum, each with that sum, for the caller to compare with what the input
      * allows. One pass over every face, then a map over the tracked faces' edges.
      */
@@ -679,7 +693,6 @@ protected:
         flip_nonmanifold_edge, // more than two incident surface faces
         flip_cd_nonmanifold, // a surface face already sits on the new edge (c,d)
         flip_new_face_surface, // (a,c,d) or (b,c,d) is already tagged surface
-        flip_orientation_mismatch, // the two surface faces are not oriented alike across (a,b)
         flip_app_refused, // swap_before_surface() refused (see the app_* reasons)
         flip_wrong_case, // 4-4 / 5-6: the retetrahedralization is not the one that makes
         // the surface diagonal (c,d), so this case is not the flip
@@ -860,6 +873,8 @@ protected:
         FaceAttributes sf_face_attr;
         /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
         int sf_orientation = 0;
+        /// The pair's two faces were not oriented alike; see prepare_surface_flip.
+        bool sf_orientation_mismatch = false;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
