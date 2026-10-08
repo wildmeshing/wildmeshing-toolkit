@@ -12,6 +12,7 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
+#include <map>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -484,6 +485,23 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
 
+    // The chain boundary of the surface handed to the insertion, for the orientation check
+    // below: edges whose incident triangles do not cancel -- open, non-manifold or folded. The
+    // tracked surface reproduces it, so it may have boundary exactly where this does. A closed
+    // input can still get some here: a simplification that does not preserve topology can open
+    // the surface or make it non-manifold.
+    size_t inserted_boundary = 0;
+    if (params.perform_sanity_checks) {
+        std::map<std::array<size_t, 2>, int> net;
+        for (const auto& f : fsimp) {
+            for (int j = 0; j < 3; ++j) {
+                const size_t a = f[j], b = f[(j + 1) % 3];
+                if (a != b) net[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+            }
+        }
+        for (const auto& [e, sum] : net) inserted_boundary += sum != 0;
+    }
+
     igl::Timer insertion_timer;
     insertion_timer.start();
 
@@ -520,27 +538,23 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // one check that catches an operation forgetting to carry the orientation.
     const auto log_orientation_check = [&](const char* when) {
         if (!params.perform_sanity_checks || !mesh_new.m_tracks_orientation) return;
-        // The chain may have boundary only on the input's open boundary.
-        size_t n_unexpected = 0;
-        for (const auto& [e, sum] : mesh_new.tracked_surface_boundary()) {
-            if (!mesh_new.m_vertex_extra[e[0]].m_is_on_open_boundary ||
-                !mesh_new.m_vertex_extra[e[1]].m_is_on_open_boundary) {
-                ++n_unexpected;
-            }
-        }
+        const size_t n_boundary = mesh_new.tracked_surface_boundary().size();
         const size_t n_faces = mesh_new.oriented_tracked_faces().size();
-        if (n_unexpected > 0) {
+        if (inserted_boundary == 0 && n_boundary > 0) {
             logger().warn(
-                "oriented tracked surface {}: {} faces, {} boundary edges off the input's open "
-                "boundary -- the tracked winding number is not an integer near them",
+                "oriented tracked surface {}: {} faces, {} boundary edges although the inserted "
+                "surface is closed -- the tracked winding number is not an integer near them",
                 when,
                 n_faces,
-                n_unexpected);
+                n_boundary);
         } else {
             logger().info(
-                "oriented tracked surface {}: {} faces, no boundary off the input's",
+                "oriented tracked surface {}: {} faces, {} boundary edges (the inserted surface "
+                "has {}: open, non-manifold or folded edges)",
                 when,
-                n_faces);
+                n_faces,
+                n_boundary,
+                inserted_boundary);
         }
     };
     log_orientation_check("after insertion");
