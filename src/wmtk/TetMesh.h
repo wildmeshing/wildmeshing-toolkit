@@ -81,6 +81,9 @@ public:
          * the tet id can't be -1
          */
         bool is_valid(const TetMesh& m) const;
+        /// is_valid() for a check made without holding the tet's ring; see
+        /// TriMesh::Tuple::is_valid_unlocked(). The 3D is_valid() has no debug-only checks.
+        bool is_valid_unlocked(const TetMesh& m) const { return is_valid(m); }
         /**
          * Check if the current tuple the refers to an edge is on the boundary
          *

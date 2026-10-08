@@ -294,18 +294,21 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
     return faces;
 }
 
-bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+bool TriMesh::Tuple::is_valid_unlocked(const TriMesh& m) const
 {
     if (m_fid + 1 == 0) {
         return false;
     }
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
-        // assert(false);
         return false;
     }
     // Condition 3: tuple m_hash check
-    if (m_hash != m.m_tri_connectivity[m_fid].hash) {
-        // assert(false);
+    return m_hash == m.m_tri_connectivity[m_fid].hash;
+}
+
+bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+{
+    if (!is_valid_unlocked(m)) {
         return false;
     }
 #ifndef NDEBUG
