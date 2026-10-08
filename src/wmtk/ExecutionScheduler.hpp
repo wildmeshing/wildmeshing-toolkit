@@ -1147,7 +1147,9 @@ private:
                 }
                 ++since_refill;
                 auto& [weight, op, retry, tup, key] = ele_in_queue;
-                if (!tup.is_valid(m)) {
+                // Without the ring yet, so other tasks may be changing this cell: a cheap filter
+                // only (is_valid_unlocked), repeated in full once the ring is held.
+                if (!tup.is_valid_unlocked(m)) {
                     done(key);
                     continue;
                 }
