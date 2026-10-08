@@ -1191,21 +1191,29 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// The collapse energy rule's before-half: the max of tet_energy() over the one-rings of v1
-    /// and v2, cached by collapse_edge_before() and compared by collapse_after_connectivity().
+    /// The collapse energy rule's before-half: the max of tet_energy() over the collapse's
+    /// before cells (CollapseSets), cached by collapse_before_vertex() and compared by
+    /// collapse_after_connectivity().
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_energy_before;
-    /// offset_collapse_changed_cells: the collapse in flight's before-energies, for the rule over
-    /// the changed cells only (collapse_after_connectivity()). ring1_max is the max of
-    /// tet_energy() over v1's ring, every cell of which the collapse reshapes or removes;
-    /// v2_only holds (tid, tet_energy) of the cells of v2's ring outside v1's ring, sorted by tid:
-    /// the collapse leaves their slots and vertices alone, so one of them changes energy only
-    /// through a front face relabelled across it, and an unchanged one is in neither max.
-    struct CollapseCells
+    /**
+     * @brief THE CELL SETS OF A COLLAPSE, and the only ones any collapse check in this component
+     * compares -- TetWild's. v1 is removed and v2 kept at its position:
+     * - before: v1's one-ring, every cell the collapse reshapes or removes;
+     * - after: v1's one-ring minus v2's, i.e. the cells of v1's ring that do not hold v2 -- the
+     *   cells the collapse reshapes (v1 becomes v2). TetMesh::collapse_edge_conn() keeps them in
+     *   their slots, so the same ids name them once the collapse is done.
+     * Taken by collapse_sets() in collapse_before_vertex(), before anything is modified, and kept
+     * in m_collapse_sets for the after-hooks. Read by: the energy rule (both halves; the engine's
+     * early half scores exactly the after cells), the main iterations' front rule and the
+     * coarsening bar (through collapse_offset_faces()), and repulsion_embedding_kept(). The
+     * engine's own collapse rule uses the same two sets on AMIPS^3.
+     */
+    struct CollapseSets
     {
-        double ring1_max = 0.;
-        std::vector<std::pair<size_t, double>> v2_only;
+        std::vector<size_t> before, after;
     };
-    mutable wmtk::threading::enumerable_thread_specific<CollapseCells> m_collapse_cells;
+    CollapseSets collapse_sets(size_t v1, size_t v2) const;
+    mutable wmtk::threading::enumerable_thread_specific<CollapseSets> m_collapse_sets;
     /**
      * @brief The link of the collapsed edge, captured in collapse_before_vertex().
      *
@@ -1498,6 +1506,16 @@ public:
         const OffsetPotential3D* pot;
         Vector3d a, b, c;
     };
+    /// The offset faces of a collapse, from its cell sets (CollapseSets): `before`, the live
+    /// offset-surface faces at v1 of the before cells; `after`, those of the after cells, with v1
+    /// moved to v2's position -- the faces the collapse reshapes, predicted before it runs (a
+    /// collapse moves no vertex). Each face reads its own field (potential_for_face()).
+    void collapse_offset_faces(
+        const CollapseSets& sets,
+        size_t v1,
+        size_t v2,
+        std::vector<MsFace>& before,
+        std::vector<MsFace>& after) const;
     /// THE vertex measure over a set of faces: the mean of face_offset_term() over them, weighted
     /// by area under area_weight_front and plainly otherwise. 0 for no face; +inf when any face is
     /// unmeasurable. 1 is the bar.

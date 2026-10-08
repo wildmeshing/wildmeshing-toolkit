@@ -86,7 +86,6 @@
       "project_line_search_nested_steps",
       "offset_smooth_veto",
       "offset_front_smooth_veto",
-      "offset_collapse_changed_cells",
       "DEBUG_crossings",
       "offset_collapse_veto",
       "offset_swap_veto",
@@ -598,12 +597,6 @@
     "doc": "Whether a FRONT vertex's smoothing move is refused when the largest per-tet energy over its ring rises (TopoOffsetTetMesh::tet_energy(): w AMIPS^3 plus the offset terms of the front faces a band cell carries, w = w_amips; in 2D TopoOffsetTriMesh::tri_energy(), w AMIPS plus the front chords' terms); the front's twin of offset_smooth_veto, applied by the component after the solve. The smoother minimises the SUM of the ring's energy and the veto bounds its MAX, TetWild's structure; the per-pass line 'front veto: fired X of Y' reports the refusals. DEFAULT FALSE since 2026-09-30 (it was true from the same morning): on the 3x-subdivided simple models at target_distance_rel 0.1 (serial, all other defaults) the cube and the prism diverged with it on, while with it off all four (cube, prism, sphere, cylinder) converged; the sphere and cylinder converged either way in about the same time. With it on, the cube kept a handful of folded-over front vertices from the first turn that the loop never cleared. The case for it, measured on the cube outward at target_distance_rel 1e-2 / front_conv_rel 1e-4 (2026-09-29, serial): with the weight alone the band's max AMIPS reached 53; with this veto too, 15-19 (5 turns, 4874 faces). With all three defaults it refuses about 57% of front moves and the loop still converges. The veto needs the small weight: at w = 1, AMIPS^3 sets the ring's max, so a vertex 0.3 of the offset distance off, which has to move by about its tets' size, is refused (2026-09-28: the ring error stayed at 20-40x the bar and refinement doubled the faces every turn, 159382 faces at turn 7, no convergence). Switch it off when setting w = 1. Both dimensions read it."
   },
   {
-    "pointer": "/offset_collapse_changed_cells",
-    "type": "bool",
-    "default": true,
-    "doc": "The collapse energy rule over the cells whose energy the collapse changes, instead of the whole rings. true (DEFAULT since 2026-09-30): after = the max of tet_energy over the survivor's ring without the cells of v2's ring whose energy is unchanged (a collapse moves no vertex, so an untouched cell changes only through a front face relabelled across it); before = the max over v1's ring and over those same changed cells of v2's ring. false: the max over the survivor's ring after may not exceed the max over the rings of v1 and v2 before -- so a cell of v2's ring that the collapse does not change can set the cap, and a changed face may rise up to it. true is strictly stronger: it refuses every collapse false refuses, and more. The early half keeps the whole-ring max, which bounds both. Measured 2026-09-29 on the cube outward (target_distance_rel 1e-2, front_conv_rel 1e-4, serial) with w_amips 1e-4: the weight alone let the band's max AMIPS reach 53; adding this rule alone brought it to 15-19 (4098 faces). At w = 1 it changed nothing on the cube. 2D and 3D (in 2D over the faces of the rings; see TopoOffsetTriMesh::collapse_edge_after())."
-  },
-  {
     "pointer": "/DEBUG_crossings",
     "type": "bool",
     "default": false,
@@ -613,7 +606,7 @@
     "pointer": "/offset_collapse_veto",
     "type": "bool",
     "default": true,
-    "doc": "Whether a collapse is refused when the largest per-tet energy over the survivor's ring after the collapse exceeds the largest before it -- over the cells the collapse changes by default, over both endpoints' whole rings when offset_collapse_changed_cells is false (TetWild's collapse rule, ties allowed, on the per-cell energy instead of AMIPS: tet_energy() in 3D, see TopoOffsetTetMesh::collapse_after_connectivity(); tri_energy() in 2D, see TopoOffsetTriMesh::collapse_edge_after()). False accepts every collapse the engine's other checks (inversion, envelopes, topology) allow: a debugging switch, since the energy comparison is the only quality rule a collapse has."
+    "doc": "Whether a collapse is refused when the largest per-cell energy over the cells it reshapes (v1's one-ring minus v2's, v1 the removed vertex) exceeds the largest over v1's whole one-ring before it -- the collapse cell sets every collapse check in this component compares (CollapseSets; offset_collapse_changed_cells, which chose other sets, was removed on 2026-10-08) (TetWild's collapse rule, ties allowed, on the per-cell energy instead of AMIPS: tet_energy() in 3D, see TopoOffsetTetMesh::collapse_after_connectivity(); tri_energy() in 2D, see TopoOffsetTriMesh::collapse_edge_after()). False accepts every collapse the engine's other checks (inversion, envelopes, topology) allow: a debugging switch, since the energy comparison is the only quality rule a collapse has."
   },
   {
     "pointer": "/offset_swap_veto",

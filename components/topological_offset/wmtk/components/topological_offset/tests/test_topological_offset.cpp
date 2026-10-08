@@ -1278,6 +1278,50 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
     }
 }
 
+TEST_CASE("collapse-cell-sets", "[offset][3d]")
+{
+    // THE cell sets every collapse check compares (TopoOffsetTetMesh::CollapseSets), TetWild's:
+    // before = v1's one-ring, after = v1's one-ring minus v2's (the cells without v2). On the
+    // per-tet-energy fixture, four cells around (a, b): c0 is in cells 0 and 3, c1 in 0 and 1.
+    Eigen::MatrixXd V(6, 3);
+    V << 0., 0., 0.12, // a
+        0., 0., 0.88, // b
+        0.4, 0., 0.5, // c0
+        0., 0.4, 0.55, // c1
+        -0.4, 0., 0.45, // c2
+        0., -0.4, 0.5; // c3
+    const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
+    Parameters param;
+    auto mesh = energy_mesh(
+        param,
+        V,
+        {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
+        {2, 2, 0, 1},
+        plane_field());
+    const auto sorted = [](std::vector<size_t> v) {
+        std::sort(v.begin(), v.end());
+        return v;
+    };
+    {
+        // c0 into c1: c0's ring is {0, 3}; cell 0 holds c1 and vanishes, cell 3 is reshaped.
+        const auto s = mesh->collapse_sets(size_t(c0), size_t(c1));
+        CHECK(sorted(s.before) == std::vector<size_t>{0, 3});
+        CHECK(sorted(s.after) == std::vector<size_t>{3});
+    }
+    {
+        // a into b: every cell holds both, so every cell vanishes and none is reshaped.
+        const auto s = mesh->collapse_sets(size_t(a), size_t(b));
+        CHECK(sorted(s.before) == std::vector<size_t>{0, 1, 2, 3});
+        CHECK(s.after.empty());
+    }
+    {
+        // b into c2: b's ring is every cell; cells 1 and 2 hold c2.
+        const auto s = mesh->collapse_sets(size_t(b), size_t(c2));
+        CHECK(sorted(s.before) == std::vector<size_t>{0, 1, 2, 3});
+        CHECK(sorted(s.after) == std::vector<size_t>{0, 3});
+    }
+}
+
 TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
 {
     // The smoothing objective of ENERGIES.md: at every vertex, what the shared smoother minimises

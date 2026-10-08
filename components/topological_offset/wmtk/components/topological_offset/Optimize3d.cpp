@@ -783,6 +783,58 @@ void TopoOffsetTetMesh::smooth_pass()
     m_smooth_subset = SmoothSubset::All;
 }
 
+TopoOffsetTetMesh::CollapseSets TopoOffsetTetMesh::collapse_sets(const size_t v1, const size_t v2)
+    const
+{
+    CollapseSets s;
+    s.before = get_one_ring_tids_for_vertex(v1);
+    for (const size_t tid : s.before) {
+        const auto vs = oriented_tet_vids(tid);
+        if (std::find(vs.begin(), vs.end(), v2) == vs.end()) s.after.push_back(tid);
+    }
+    return s;
+}
+
+void TopoOffsetTetMesh::collapse_offset_faces(
+    const CollapseSets& sets,
+    const size_t v1,
+    const size_t v2,
+    std::vector<MsFace>& before,
+    std::vector<MsFace>& after) const
+{
+    before.clear();
+    after.clear();
+    const auto collect = [&](const std::vector<size_t>& tids, const bool moved) {
+        std::vector<std::array<size_t, 3>> seen;
+        std::vector<MsFace>& out = moved ? after : before;
+        for (const size_t tid : tids) {
+            for (int j = 0; j < 4; ++j) {
+                const Tuple ft = tuple_from_face(tid, j);
+                std::array<size_t, 3> f = get_face_vids(ft);
+                if (std::find(f.begin(), f.end(), v1) == f.end()) continue;
+                std::sort(f.begin(), f.end());
+                if (std::find(seen.begin(), seen.end(), f) != seen.end()) continue;
+                seen.push_back(f);
+                if (!face_is_offset_surface_live(ft)) continue;
+                if (moved) {
+                    for (size_t& u : f) {
+                        if (u == v1) u = v2;
+                    }
+                    std::sort(f.begin(), f.end());
+                }
+                out.push_back(
+                    MsFace{
+                        &potential_for_face(ft),
+                        m_vertex_attribute[f[0]].m_posf,
+                        m_vertex_attribute[f[1]].m_posf,
+                        m_vertex_attribute[f[2]].m_posf});
+            }
+        }
+    };
+    collect(sets.before, false);
+    collect(sets.after, true);
+}
+
 double TopoOffsetTetMesh::vertex_ms(const std::vector<MsFace>& faces) const
 {
     double sum = 0., wsum = 0.;
@@ -1239,9 +1291,9 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
-    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept());
-    // every cell the collapse made is in the survivor's ring.
-    if (m_repulsion_potential && !repulsion_embedding_kept(get_one_ring_tids_for_vertex(v2_id))) {
+    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept()),
+    // checked on the collapse's after cells, the only ones whose vertices changed.
+    if (m_repulsion_potential && !repulsion_embedding_kept(m_collapse_sets.local().after)) {
         ++m_repulsion_embed_refused;
         return false;
     }
@@ -1283,39 +1335,18 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     const size_t v2_id,
     const double edge_length)
 {
-    // The energy rule's before-half: the largest tet_energy() over both endpoints' rings, the
-    // number collapse_after_connectivity() compares the survivor's ring against. Taken HERE, in
-    // the hook the engine calls before its scoring loop, so that collapse_quality_allowed() can
-    // apply the same rule early on the AMIPS^3 lower bound (see its declaration). Not in
+    // THE cell sets of this collapse (CollapseSets), taken first and kept for every check after
+    // this one, the after-hooks included.
+    CollapseSets& sets = m_collapse_sets.local();
+    sets = collapse_sets(v1_id, v2_id);
+    // The energy rule's before-half: the largest tet_energy() over the before cells, the number
+    // collapse_after_connectivity() compares the after cells against. Taken HERE, in the hook
+    // the engine calls before its scoring loop, so that collapse_quality_allowed() can apply the
+    // same rule early on the AMIPS^3 lower bound of each after cell (see its declaration). Not in
     // coarsening, where the engine skips its own collapse rule as well, and not in the main
     // iterations, which have no energy rule.
     if (!m_coarsen_mode && m_offset_params.offset_collapse_veto && !main_iteration_rules()) {
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // The per-cell energies the changed-cells rule needs (see CollapseCells), and the
-            // whole-ring max the early half reads: it bounds the changed-cells before-max, so an
-            // early refusal is one the full rule makes too.
-            std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
-            const std::vector<size_t> ring2 = get_one_ring_tids_for_vertex(v2_id);
-            std::sort(ring1.begin(), ring1.end());
-            CollapseCells& cc = m_collapse_cells.local();
-            cc.ring1_max = max_tet_energy(ring1);
-            cc.v2_only.clear();
-            double whole = cc.ring1_max;
-            for (const size_t tid : ring2) {
-                if (std::binary_search(ring1.begin(), ring1.end(), tid)) continue;
-                const double e = tet_energy(tid);
-                cc.v2_only.emplace_back(tid, e);
-                whole = std::max(whole, e);
-            }
-            std::sort(cc.v2_only.begin(), cc.v2_only.end());
-            m_collapse_energy_before.local() = whole;
-        } else {
-            std::vector<size_t> cells = get_one_ring_tids_for_vertex(v1_id);
-            const std::vector<size_t>& ring2 = get_one_ring_tids_for_vertex(v2_id);
-            cells.insert(cells.end(), ring2.begin(), ring2.end());
-            wmtk::vector_unique(cells);
-            m_collapse_energy_before.local() = max_tet_energy(cells);
-        }
+        m_collapse_energy_before.local() = max_tet_energy(sets.before);
     }
     // Diagnostic: the flattest cell this collapse is about to reshape, read back by
     // record_flatness() in collapse_after_vertex().
@@ -1384,32 +1415,14 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     }
 
     // The main iterations' collapse rule (ENERGIES.md), for an edge OF THE OFFSET FRONT SURFACE
-    // only; any other edge is gated by length alone (and the topology rules above). The faces
-    // whose geometry the collapse changes are v1's offset faces that do not hold v2 -- the two
-    // that hold the edge vanish, and v2's own faces keep their corners, the survivor keeping its
-    // position. The rule compares their vertex measure with v1 at its place (before) and at v2's
-    // (after), and refuses a rise; a tie passes. Exact before anything is modified: the collapse
-    // moves no vertex.
+    // only; any other edge is gated by length alone (and the topology rules above). The vertex
+    // measure of the offset faces of the before cells (every offset face at v1, the two on the
+    // edge included) against that of the after cells' (the faces the collapse reshapes, v1 at
+    // v2's position): refused on a rise, a tie passes. Exact before anything is modified: the
+    // collapse moves no vertex. See collapse_offset_faces().
     if (main_iteration_rules() && edge_is_offset_surface_live(v1_id, v2_id)) {
         std::vector<MsFace> before, after;
-        const auto face = [&](const OffsetPotential3D& pot, std::array<size_t, 3> f) {
-            std::sort(f.begin(), f.end());
-            return MsFace{
-                &pot,
-                m_vertex_attribute[f[0]].m_posf,
-                m_vertex_attribute[f[1]].m_posf,
-                m_vertex_attribute[f[2]].m_posf};
-        };
-        for (const Tuple& ft : offset_surface_faces_live_at(v1_id)) {
-            std::array<size_t, 3> f = get_face_vids(ft);
-            if (std::find(f.begin(), f.end(), v2_id) != f.end()) continue;
-            const OffsetPotential3D& pot = potential_for_face(ft);
-            before.push_back(face(pot, f));
-            for (size_t& u : f) {
-                if (u == v1_id) u = v2_id;
-            }
-            after.push_back(face(pot, f));
-        }
+        collapse_offset_faces(sets, v1_id, v2_id, before, after);
         if (!(vertex_ms(after) <= vertex_ms(before))) { // a NaN refuses; inf <= inf passes
             ++iter_cnt_collapse_ms_reject;
             return collapse_reject(CollapseReject::app_ops_guard);
@@ -1425,13 +1438,9 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const std::vector<std::array<size_t, 2>>&)
 {
     // THE ENERGY RULE for a collapse (see tet_energy()): the max of tet_energy() over the
-    // survivor's one-ring afterwards may not exceed the max over the one-rings of v1 and v2
-    // before (collapse_edge_before()). A tie passes, as in TetWild's collapse rule, which
-    // collapse_quality_allowed() switches off. The before-set holds v2's ring too because every
-    // cell whose energy a collapse can change holds v2 afterwards -- the reshaped cells (v1
-    // became v2), and a cell that shared a face with a removed cell, a face holding v1 or v2,
-    // whose front faces can change with the labels across them -- so the two maxima are over the
-    // same region, and the rule says the max energy there does not rise.
+    // collapse's after cells may not exceed the max over its before cells (CollapseSets, taken in
+    // collapse_before_vertex()). A tie passes, as in TetWild's collapse rule, which
+    // collapse_quality_allowed() replaces.
     //
     // HERE: the connectivity is final, the cells the collapse keeps keep their slots and labels,
     // and a collapse moves no vertex, so the energy is read from the mesh as it now is. Not in
@@ -1442,31 +1451,10 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     //
     // Not in coarsening, where the engine skips its own collapse rule as well and judges the
     // region after re-smoothing.
+    const CollapseSets& sets = m_collapse_sets.local();
     if (!m_coarsen_mode && m_offset_params.offset_collapse_veto && !main_iteration_rules()) {
-        double after = 0.;
-        double before = m_collapse_energy_before.local();
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // Only the cells whose energy changed: every cell of the survivor's ring except the
-            // cells of v2's old ring (outside v1's) whose energy reads the same as before. A
-            // changed one of those counts on both sides, with its old energy before.
-            const CollapseCells& cc = m_collapse_cells.local();
-            before = cc.ring1_max;
-            const std::vector<size_t> ring = get_one_ring_tids_for_vertex(v2_id);
-            for (const size_t tid : ring) {
-                const double e = tet_energy(tid);
-                const auto it = std::lower_bound(
-                    cc.v2_only.begin(),
-                    cc.v2_only.end(),
-                    std::make_pair(tid, -std::numeric_limits<double>::infinity()));
-                if (it != cc.v2_only.end() && it->first == tid) {
-                    if (e == it->second) continue; // unchanged: in neither max
-                    before = std::max(before, it->second);
-                }
-                after = std::max(after, e);
-            }
-        } else {
-            after = max_tet_energy(get_one_ring_tids_for_vertex(v2_id));
-        }
+        const double after = max_tet_energy(sets.after);
+        const double before = m_collapse_energy_before.local();
         if (!(after <= before)) { // a NaN refuses
             ++iter_cnt_collapse_energy_reject;
             return false;
@@ -1474,10 +1462,21 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     }
     // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
     // elements for nothing but the promise that the result is still good. As in 2D.
+    // Over the live offset faces at v2 of the after cells: the faces the collapse reshaped.
     if (m_coarsen_mode && m_offset_potential) {
         double after = 0.;
-        for (const Tuple& f : offset_surface_faces_live_at(v2_id)) {
-            after = std::max(after, face_criterion_rel(f));
+        std::vector<std::array<size_t, 3>> seen;
+        for (const size_t tid : sets.after) {
+            for (int j = 0; j < 4; ++j) {
+                const Tuple f = tuple_from_face(tid, j);
+                std::array<size_t, 3> vs = get_face_vids(f);
+                if (std::find(vs.begin(), vs.end(), v2_id) == vs.end()) continue;
+                if (!face_is_offset_surface_live(f)) continue;
+                std::sort(vs.begin(), vs.end());
+                if (std::find(seen.begin(), seen.end(), vs) != seen.end()) continue;
+                seen.push_back(vs);
+                after = std::max(after, face_criterion_rel(f));
+            }
         }
         if (after > 1.0) {
             ++iter_cnt_collapse_offset_reject;

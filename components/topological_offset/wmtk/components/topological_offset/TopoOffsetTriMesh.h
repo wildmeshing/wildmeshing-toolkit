@@ -1109,21 +1109,26 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// The collapse energy rule's before-half: the max of tri_energy() over the one-rings of v1
-    /// and v2, cached by collapse_before_vertex() and compared by collapse_edge_after().
+    /// The collapse energy rule's before-half: the max of tri_energy() over the collapse's
+    /// before cells (CollapseSets), cached by collapse_before_vertex() and compared by
+    /// collapse_edge_after().
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_energy_before;
-    /// offset_collapse_changed_cells: the collapse in flight's before-energies, for the rule over
-    /// the changed faces only (collapse_edge_after()). ring1_max is the max of tri_energy() over
-    /// v1's ring, every face of which the collapse reshapes or removes; v2_only holds
-    /// (fid, tri_energy) of the faces of v2's ring outside v1's ring, sorted by fid: the collapse
-    /// leaves their slots and vertices alone, so one of them changes energy only through a front
-    /// chord relabelled across it, and an unchanged one is in neither max. As in 3D.
-    struct CollapseCells
+    /**
+     * @brief THE CELL SETS OF A COLLAPSE, and the only ones any collapse check in this component
+     * compares -- TriWild's, the 2D twin of TopoOffsetTetMesh::CollapseSets. v1 is removed and v2
+     * kept at its position:
+     * - before: v1's one-ring, every face the collapse reshapes or removes;
+     * - after: v1's one-ring minus v2's, i.e. the faces of v1's ring that do not hold v2 -- the
+     *   faces the collapse reshapes (v1 becomes v2), which keep their slots.
+     * Taken by collapse_sets() in collapse_before_vertex() and read by the energy rule (both
+     * halves), the coarsening bar and repulsion_embedding_kept().
+     */
+    struct CollapseSets
     {
-        double ring1_max = 0.;
-        std::vector<std::pair<size_t, double>> v2_only;
+        std::vector<size_t> before, after;
     };
-    mutable wmtk::threading::enumerable_thread_specific<CollapseCells> m_collapse_cells;
+    CollapseSets collapse_sets(size_t v1, size_t v2) const;
+    mutable wmtk::threading::enumerable_thread_specific<CollapseSets> m_collapse_sets;
     /**
      * @brief The link of the collapsed edge, captured in collapse_before_vertex(): the only
      * vertices besides v2 whose offset membership a collapse can change.

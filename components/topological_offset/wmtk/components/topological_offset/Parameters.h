@@ -79,9 +79,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The front vertices' smoothing veto on the per-cell energy (see the spec); the engine's
     /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
     bool offset_front_smooth_veto = false;
-    /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
-    /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
-    bool offset_collapse_changed_cells = true;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -315,7 +312,6 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_collapse_veto = json_params["offset_collapse_veto"];
         offset_swap_veto = json_params["offset_swap_veto"];
         offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
-        offset_collapse_changed_cells = json_params["offset_collapse_changed_cells"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];

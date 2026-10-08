@@ -481,12 +481,9 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
 {
     const size_t v2_id = collapse_cache.local().v2_id;
     // THE ENERGY RULE for a collapse (see tri_energy()): the max of tri_energy() over the
-    // survivor's one-ring afterwards may not exceed the max over the one-rings of v1 and v2
-    // before (collapse_before_vertex()). A tie passes, as in TriWild's collapse rule, which
-    // collapse_quality_allowed() replaces. The before-set holds v2's ring too because every face
-    // whose energy a collapse can change holds v2 afterwards -- the reshaped faces (v1 became
-    // v2), and a face that shared an edge with a removed face, whose front chords can change with
-    // the labels across them -- so the two maxima are over the same region.
+    // collapse's after cells may not exceed the max over its before cells (CollapseSets, taken in
+    // collapse_before_vertex()). A tie passes, as in TriWild's collapse rule, which
+    // collapse_quality_allowed() replaces.
     //
     // HERE, first, before the base's after-hook: TriMesh::collapse_edge() has committed the
     // connectivity (v1 retired, v2 kept), the faces the collapse keeps keep their slots and
@@ -498,40 +495,19 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     //
     // Not in coarsening, where the engine skips its own collapse rule as well and judges the
     // region after re-smoothing.
+    const CollapseSets& sets = m_collapse_sets.local();
     if (!m_coarsen_mode && m_offset_params.offset_collapse_veto) {
-        double after = 0.;
-        double before = m_collapse_energy_before.local();
-        const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(v2_id);
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // Only the faces whose energy changed: every face of the survivor's ring except the
-            // faces of v2's old ring (outside v1's) whose energy reads the same as before. A
-            // changed one of those counts on both sides, with its old energy before.
-            const CollapseCells& cc = m_collapse_cells.local();
-            before = cc.ring1_max;
-            for (const size_t fid : ring) {
-                const double e = tri_energy(fid);
-                const auto it = std::lower_bound(
-                    cc.v2_only.begin(),
-                    cc.v2_only.end(),
-                    std::make_pair(fid, -std::numeric_limits<double>::infinity()));
-                if (it != cc.v2_only.end() && it->first == fid) {
-                    if (e == it->second) continue; // unchanged: in neither max
-                    before = std::max(before, it->second);
-                }
-                after = std::max(after, e);
-            }
-        } else {
-            after = max_tri_energy(ring);
-        }
+        const double after = max_tri_energy(sets.after);
+        const double before = m_collapse_energy_before.local();
         if (!(after <= before)) { // a NaN refuses
             ++iter_cnt_collapse_energy_reject;
             return false;
         }
     }
-    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept());
-    // every face the collapse made is in the survivor's ring. Before the base's hook for the
-    // reason the energy rule is.
-    if (m_repulsion_potential && !repulsion_embedding_kept(get_one_ring_fids_for_vertex(v2_id))) {
+    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept()),
+    // checked on the collapse's after cells, the only ones whose vertices changed. Before the
+    // base's hook for the reason the energy rule is.
+    if (m_repulsion_potential && !repulsion_embedding_kept(sets.after)) {
         ++m_repulsion_embed_refused;
         return false;
     }
@@ -541,9 +517,10 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
     // elements for nothing but the promise that the result is still good. As in 3D.
     // face_criterion_rel() is the max of AMIPS over stop_energy and the chord measure.
+    // Over the collapse's after cells, the faces it reshaped.
     if (m_coarsen_mode && m_offset_potential) {
         double after = 0.;
-        for (const size_t fid : get_one_ring_fids_for_vertex(v2_id)) {
+        for (const size_t fid : sets.after) {
             after = std::max(after, face_criterion_rel(fid));
         }
         if (after > 1.0) {
@@ -597,40 +574,31 @@ std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_li
     return result;
 }
 
+TopoOffsetTriMesh::CollapseSets TopoOffsetTriMesh::collapse_sets(const size_t v1, const size_t v2)
+    const
+{
+    CollapseSets s;
+    s.before = get_one_ring_fids_for_vertex(v1);
+    for (const size_t fid : s.before) {
+        const auto vs = oriented_tri_vids(fid);
+        if (std::find(vs.begin(), vs.end(), v2) == vs.end()) s.after.push_back(fid);
+    }
+    return s;
+}
+
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
-    // The energy rule's before-half: the largest tri_energy() over both endpoints' rings, the
-    // number collapse_edge_after() compares the survivor's ring against. Taken HERE, in the hook
-    // the engine calls before its scoring loop, so that collapse_quality_allowed() can apply the
-    // same rule early on the AMIPS lower bound (see its declaration). Not in coarsening, where
-    // the engine skips its own collapse rule as well. As in 3D.
+    // THE cell sets of this collapse (CollapseSets), taken first and kept for every check after
+    // this one, the after-hook included. As in 3D.
+    CollapseSets& sets = m_collapse_sets.local();
+    sets = collapse_sets(v1_id, v2_id);
+    // The energy rule's before-half: the largest tri_energy() over the before cells, the number
+    // collapse_edge_after() compares the after cells against. Taken HERE, in the hook the engine
+    // calls before its scoring loop, so that collapse_quality_allowed() can apply the same rule
+    // early on the AMIPS lower bound of each after cell (see its declaration). Not in
+    // coarsening, where the engine skips its own collapse rule as well. As in 3D.
     if (!m_coarsen_mode && m_offset_params.offset_collapse_veto) {
-        if (m_offset_params.offset_collapse_changed_cells) {
-            // The per-face energies the changed-cells rule needs (see CollapseCells), and the
-            // whole-ring max the early half reads: it bounds the changed-cells before-max, so an
-            // early refusal is one the full rule makes too.
-            std::vector<size_t> ring1 = get_one_ring_fids_for_vertex(v1_id);
-            const std::vector<size_t>& ring2 = get_one_ring_fids_for_vertex(v2_id);
-            std::sort(ring1.begin(), ring1.end());
-            CollapseCells& cc = m_collapse_cells.local();
-            cc.ring1_max = max_tri_energy(ring1);
-            cc.v2_only.clear();
-            double whole = cc.ring1_max;
-            for (const size_t fid : ring2) {
-                if (std::binary_search(ring1.begin(), ring1.end(), fid)) continue;
-                const double e = tri_energy(fid);
-                cc.v2_only.emplace_back(fid, e);
-                whole = std::max(whole, e);
-            }
-            std::sort(cc.v2_only.begin(), cc.v2_only.end());
-            m_collapse_energy_before.local() = whole;
-        } else {
-            std::vector<size_t> cells = get_one_ring_fids_for_vertex(v1_id);
-            const std::vector<size_t>& ring2 = get_one_ring_fids_for_vertex(v2_id);
-            cells.insert(cells.end(), ring2.begin(), ring2.end());
-            wmtk::vector_unique(cells);
-            m_collapse_energy_before.local() = max_tri_energy(cells);
-        }
+        m_collapse_energy_before.local() = max_tri_energy(sets.before);
     }
     // Diagnostic: the flattest face this collapse is about to reshape, read back by
     // record_flatness() in collapse_after_vertex().
