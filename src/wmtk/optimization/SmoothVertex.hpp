@@ -310,16 +310,25 @@ bool smooth_vertex_3d(
     const auto locs = m.get_one_ring_tets_for_vertex(t);
     assert(!locs.empty());
 
-    double max_quality = 0.;
+    // Here and below, every cell's inversion test runs before any cell's energy is read: an
+    // application's smoothing_cell_energy() may read cells beyond its own, which must all be
+    // valid when it does. Measured: the topological offset's EXPERIMENTAL_visible_distance walks
+    // from a front face through other cells; at a non-front vertex's trial position it walked
+    // into a later cell of the same ring, inverted there, before that cell's test (one-slot
+    // model, stage 1). A refused move rolls back the stored qualities either way, so the order
+    // changes no result.
     for (const Tuple& tet : locs) {
-        max_quality =
-            std::max(max_quality, m.smoothing_cell_energy(tet.tid(m), m.cell_quality(tet.tid(m))));
         if (m.is_inverted_f(tet)) {
             // A neighbour that is not rounded can leave a tet inverted in floats even
             // though it is fine in exact arithmetic; there is nothing to optimize from.
             if (counters) ++counters->already_inverted;
             return false;
         }
+    }
+    double max_quality = 0.;
+    for (const Tuple& tet : locs) {
+        max_quality =
+            std::max(max_quality, m.smoothing_cell_energy(tet.tid(m), m.cell_quality(tet.tid(m))));
     }
 
     // AMIPS wants each tet as 12 doubles with the moving vertex first, so that the solver
@@ -386,11 +395,13 @@ bool smooth_vertex_3d(
         const auto worst_at = [&](const Vector3d& p) {
             VA[vid].m_posf = p;
             VA[vid].m_pos = to_rational(p);
-            double mq = 0.;
             for (const Tuple& loc : locs) {
                 if (m.is_inverted(loc)) {
                     return std::numeric_limits<double>::infinity();
                 }
+            }
+            double mq = 0.;
+            for (const Tuple& loc : locs) {
                 mq = std::max(mq, m.smoothing_cell_energy(loc.tid(m), m.get_quality(loc)));
             }
             return mq;
@@ -493,12 +504,14 @@ bool smooth_vertex_3d(
     // The rational position must be current before the exact inversion test.
     VA[vid].m_pos = to_rational(VA[vid].m_posf);
 
-    double max_after_quality = 0.;
     for (const Tuple& loc : locs) {
         if (m.is_inverted(loc)) {
             if (counters) ++counters->inverted;
             return false;
         }
+    }
+    double max_after_quality = 0.;
+    for (const Tuple& loc : locs) {
         const size_t tid = loc.tid(m);
         const double quality = m.get_quality(loc);
         m.set_cell_quality(tid, quality);
@@ -551,15 +564,18 @@ bool smooth_vertex_2d(
     const std::vector<size_t>& locs = m.get_one_ring_fids_for_vertex(t);
     assert(!locs.empty());
 
-    double max_quality = 0.;
+    // Every cell's inversion test before any cell's energy, as in smooth_vertex_3d().
     for (const size_t fid : locs) {
-        max_quality = std::max(max_quality, m.smoothing_cell_energy(fid, FA[fid].m_quality));
         if (m.is_inverted_f(fid)) {
             // Nothing to optimize from: a neighbour that is not rounded can leave a face
             // inverted in floats even when it is fine exactly.
             if (counters) ++counters->already_inverted;
             return false;
         }
+    }
+    double max_quality = 0.;
+    for (const size_t fid : locs) {
+        max_quality = std::max(max_quality, m.smoothing_cell_energy(fid, FA[fid].m_quality));
     }
 
     // AMIPS wants each face as 6 doubles with the moving vertex first, keeping the winding.
@@ -650,11 +666,13 @@ bool smooth_vertex_2d(
         // is_inverted below depends on.
         const auto worst_at = [&](const Vector2d& p) {
             m.set_smoothing_position(vid, p);
-            double mq = 0.;
             for (const size_t fid : locs) {
                 if (m.is_inverted(fid)) {
                     return std::numeric_limits<double>::infinity();
                 }
+            }
+            double mq = 0.;
+            for (const size_t fid : locs) {
                 mq = std::max(mq, m.smoothing_cell_energy(fid, m.get_quality(fid)));
             }
             return mq;
@@ -757,12 +775,14 @@ bool smooth_vertex_2d(
         }
     }
 
-    double max_after_quality = 0.;
     for (const size_t fid : locs) {
         if (m.is_inverted(fid)) {
             if (counters) ++counters->inverted;
             return false;
         }
+    }
+    double max_after_quality = 0.;
+    for (const size_t fid : locs) {
         const double q = m.get_quality(fid);
         FA[fid].m_quality = q;
         max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(fid, q));
