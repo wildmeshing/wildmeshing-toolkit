@@ -6,10 +6,13 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <limits>
 #include <map>
+#include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -21,8 +24,10 @@ namespace {
 /// A flat, open n x n grid on [0, 1]^2: a square outline of 4 * (n - 1) boundary edges.
 std::filesystem::path write_open_patch(const int n)
 {
+    // A name of its own, so concurrent runs sharing the temp directory do not collide.
     const std::filesystem::path path =
-        std::filesystem::temp_directory_path() / "wmtk_simwild_open_patch.obj";
+        std::filesystem::temp_directory_path() /
+        ("wmtk_simwild_open_patch_" + std::to_string(std::random_device{}()) + ".obj");
     std::ofstream out(path);
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {

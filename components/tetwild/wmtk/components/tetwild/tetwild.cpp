@@ -303,10 +303,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             surf_mesh.m_envelope.use_exact = false;
         }
 
+        // Without preserve_topology the simplification is free to change the topology: with the
+        // link condition off it can create non-manifold edges and vertices, and with the
+        // boundary envelope it closes holes and slits narrower than the tube. (This used to
+        // warn that it "still preserves topology", which neither has been true of.)
         if (!params.preserve_topology) {
-            logger().warn(
-                "TODO the simplification still preserves topology as the toolkit does not "
-                "support non-manifold meshes, to fix");
+            logger().info(
+                "simplification may change the surface topology (link condition {}, open "
+                "boundary {})",
+                simplify_use_link_condition ? "on" : "off",
+                simplify_boundary_eps > 0 ? "in a tube" : "frozen");
         }
         surf_mesh.collapse_shortest(0);
 
