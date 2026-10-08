@@ -46,7 +46,8 @@ void TriWildMesh::init_mesh(
     const MatrixXi& E,
     const std::vector<std::string>& tag_names,
     const MatrixXd& V_env,
-    const MatrixXi& E_env)
+    const MatrixXi& E_env,
+    const std::vector<int>* E_orientation)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -171,6 +172,7 @@ void TriWildMesh::init_mesh(
     }
 
     // mark edges as on surface if they are in E
+    assert(E_orientation == nullptr || E_orientation->size() == size_t(E.rows()));
     for (int i = 0; i < E.rows(); i++) {
         std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
@@ -178,9 +180,13 @@ void TriWildMesh::init_mesh(
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
+        if (E_orientation != nullptr) {
+            m_edge_attribute[eid].set_orientation_along(vids, (*E_orientation)[i]);
+        }
         m_vertex_attribute[vids[0]].m_is_on_surface = true;
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
+    if (E_orientation != nullptr) m_tracks_orientation = true;
 
     // Feature points: the 0-dimensional features of the curve network, taken from the
     // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
@@ -573,6 +579,59 @@ void TriWildMesh::compute_winding_numbers(
             }
         }
     }
+}
+
+void TriWildMesh::compute_tracked_winding_number()
+{
+    if (!m_tracks_orientation) {
+        log_and_throw_error(
+            "compute_tracked_winding_number: the tracked curves carry no orientation");
+    }
+    const auto& faces = get_faces();
+    MatrixXd C = MatrixXd::Zero(faces.size(), 2);
+    for (size_t i = 0; i < faces.size(); i++) {
+        for (size_t v : oriented_tri_vids(faces[i])) {
+            C.row(i) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(i) /= 3;
+    }
+    MatrixXd V = MatrixXd::Zero(vert_capacity(), 2);
+    for (const Tuple& v : get_vertices()) {
+        V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
+    }
+    const auto oriented = oriented_tracked_edges();
+    MatrixXi E(oriented.size(), 2);
+    for (size_t i = 0; i < oriented.size(); ++i) {
+        E(i, 0) = int(oriented[i][0]);
+        E(i, 1) = int(oriented[i][1]);
+    }
+
+    Eigen::VectorXd W;
+    utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+    if (W.size() > 0 && W.maxCoeff() <= 0.5) {
+        logger().info("Correcting tracked winding number");
+        E.col(0).swap(E.col(1));
+        utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+    }
+    if (W.size() == 0 || W.maxCoeff() <= 0.5) {
+        logger().warn("No tracked winding number above 0.5");
+    }
+    for (size_t i = 0; i < faces.size(); ++i) {
+        m_face_attribute[faces[i].fid(*this)].m_winding_number = W.size() > 0 ? W(i) : 0;
+    }
+}
+
+void TriWildMesh::filter_with_tracked_winding_number()
+{
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].m_winding_number <= 0.5) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    logger().info("Filter with tracked winding number: removing {} faces", rm_fids.size());
+    remove_tris_by_ids(rm_fids);
 }
 
 void TriWildMesh::filter_with_input_winding_number()

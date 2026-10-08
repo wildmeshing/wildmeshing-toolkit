@@ -273,6 +273,26 @@ bool TetOptimizerMesh::prepare_surface_flip(
             cache.sf_face_attr = m_face_attribute[fid];
         } else if (n_surf == 1) {
             d = r;
+            // The flip replaces k[a,b,c] + k[b,a,d] by k[c,a,d] + k[d,b,c], which bounds the
+            // same loop when the two faces carry the same k, i.e. are oriented alike across
+            // (a,b). When they do not (a fold, or unequal multiplicities) no flip of this
+            // diagonal keeps the oriented surface's boundary. The flip goes ahead regardless --
+            // the orientation must never change which operations run, only the winding number
+            // computed from it at the end -- and the new faces take the orientation of the
+            // larger of the two; the flip is counted (m_inconsistent_orientation_flips) so the
+            // winding number can warn. A mesh that does not track orientation has 0 everywhere.
+            const int k_c = cache.sf_face_attr.orientation_along(std::array<size_t, 3>{{a, b, c}});
+            const int k_d =
+                m_face_attribute[fid].orientation_along(std::array<size_t, 3>{{b, a, d}});
+            cache.sf_orientation_mismatch = k_c != k_d;
+            cache.sf_orientation = k_c;
+            if (cache.sf_orientation_mismatch) {
+                const Vector3d& pa = m_vertex_attribute[a].m_posf;
+                const Vector3d& pb = m_vertex_attribute[b].m_posf;
+                const double area_c = (pb - pa).cross(m_vertex_attribute[c].m_posf - pa).norm();
+                const double area_d = (pb - pa).cross(m_vertex_attribute[d].m_posf - pa).norm();
+                if (area_d > area_c) cache.sf_orientation = k_d;
+            }
         } else {
             return swap_reject(SwapReject::flip_nonmanifold_edge); // > 2: non-manifold edge
         }
@@ -425,6 +445,14 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
         (void)ft2;
         m_face_attribute[fid1] = cache.sf_face_attr;
         m_face_attribute[fid2] = cache.sf_face_attr;
+        // fid1 = (a,c,d), fid2 = (b,c,d): k[c,a,d] + k[d,b,c] (see prepare_surface_flip).
+        m_face_attribute[fid1].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_c, cache.sf_a, cache.sf_d}},
+            cache.sf_orientation);
+        m_face_attribute[fid2].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_d, cache.sf_b, cache.sf_c}},
+            cache.sf_orientation);
+        if (cache.sf_orientation_mismatch) ++m_inconsistent_orientation_flips;
         /**
          * Setting the m_is_surface_fs flag to true is not necessary. This is already true in
          * cache.sf_face_attr.
@@ -724,6 +752,14 @@ bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
         (void)ft2;
         m_face_attribute[fid1] = cache.sf_face_attr;
         m_face_attribute[fid2] = cache.sf_face_attr;
+        // fid1 = (a,c,d), fid2 = (b,c,d): k[c,a,d] + k[d,b,c] (see prepare_surface_flip).
+        m_face_attribute[fid1].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_c, cache.sf_a, cache.sf_d}},
+            cache.sf_orientation);
+        m_face_attribute[fid2].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_d, cache.sf_b, cache.sf_c}},
+            cache.sf_orientation);
+        if (cache.sf_orientation_mismatch) ++m_inconsistent_orientation_flips;
         m_face_attribute[fid1].m_is_surface_fs = true;
         m_face_attribute[fid2].m_is_surface_fs = true;
         cnt_surface_swap++;
@@ -854,6 +890,14 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
         (void)ft2;
         m_face_attribute[fid1] = cache.sf_face_attr;
         m_face_attribute[fid2] = cache.sf_face_attr;
+        // fid1 = (a,c,d), fid2 = (b,c,d): k[c,a,d] + k[d,b,c] (see prepare_surface_flip).
+        m_face_attribute[fid1].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_c, cache.sf_a, cache.sf_d}},
+            cache.sf_orientation);
+        m_face_attribute[fid2].set_orientation_along(
+            std::array<size_t, 3>{{cache.sf_d, cache.sf_b, cache.sf_c}},
+            cache.sf_orientation);
+        if (cache.sf_orientation_mismatch) ++m_inconsistent_orientation_flips;
         m_face_attribute[fid1].m_is_surface_fs = true;
         m_face_attribute[fid2].m_is_surface_fs = true;
         cnt_surface_swap++;

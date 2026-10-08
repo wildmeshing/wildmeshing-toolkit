@@ -585,6 +585,34 @@ double TriOptimizerMesh::get_quality(const size_t fid) const
     return get_quality(its);
 }
 
+std::vector<std::array<size_t, 2>> TriOptimizerMesh::oriented_tracked_edges() const
+{
+    std::vector<std::array<size_t, 2>> res;
+    for (const Tuple& e : get_edges()) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        if (a > b) std::swap(a, b);
+        if (attr.m_orientation < 0) std::swap(a, b);
+        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back({{a, b}});
+    }
+    return res;
+}
+
+std::vector<std::pair<size_t, int>> TriOptimizerMesh::tracked_curve_boundary() const
+{
+    std::map<size_t, int> sum;
+    for (const auto& e : oriented_tracked_edges()) {
+        sum[e[1]] += 1;
+        sum[e[0]] -= 1;
+    }
+    std::vector<std::pair<size_t, int>> res;
+    for (const auto& [v, s] : sum) {
+        if (s != 0) res.emplace_back(v, s);
+    }
+    return res;
+}
+
 std::vector<std::array<size_t, 2>> TriOptimizerMesh::get_edges_by_condition(
     std::function<bool(const EdgeAttributes&)> cond) const
 {

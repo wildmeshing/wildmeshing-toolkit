@@ -353,8 +353,7 @@ void EmbedCurves::tag_from_winding_number()
 
         if (W.size() > 0 && W.maxCoeff() <= 0.5) {
             // Nothing is inside, which for a closed curve means it is wound the other way.
-            // The 3D tag_from_winding_number does not do this and silently produces an
-            // all-zero tag column; triwild does, and so does this.
+            // triwild does the same, and so does the 3D EmbedSurface::tag_from_winding_number.
             logger().info("Correcting winding number for input {}", input_idx);
             for (int i = 0; i < E.rows(); ++i) {
                 std::swap(E(i, 0), E(i, 1));

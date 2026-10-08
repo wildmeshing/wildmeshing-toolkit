@@ -104,6 +104,7 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.changed_fids.clear();
     cache.changed_energies.clear();
     cache.surface_edges.clear();
+    cache.renamed_orientations.clear();
 
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
@@ -226,6 +227,12 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         auto [_2, global_eid2] = tuple_from_edge({{v2_id, e_vids[1]}});
         auto e_attr = m_edge_attribute.at(global_eid1);
         e_attr.merge(m_edge_attribute.at(global_eid2));
+        // (v1,x) and (v2,x) become one edge (v2,x); their directions add up along it.
+        const std::array<size_t, 2> merged{{v2_id, e_vids[1]}};
+        e_attr.set_orientation_along(
+            merged,
+            m_edge_attribute.at(global_eid1).orientation_along(e_vids) +
+                m_edge_attribute.at(global_eid2).orientation_along(merged));
         cache.changed_edges.push_back(std::make_pair(e_attr, e_vids));
     }
 
@@ -258,6 +265,9 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                     if (!m_edge_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
+                    }
+                    if (const int o = m_edge_attribute.at(fid).orientation_along(f); o != 0) {
+                        cache.renamed_orientations.push_back({{{v2_id, va}}, o});
                     }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
@@ -328,6 +338,13 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     VA[v2_id].m_sizing_scalar =
         std::min(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     // no need to update on_bbox_faces
+    // Edges renamed in place keep their slot but not their vertex pair; re-express their
+    // direction against the new one, before the merged link edges below overwrite theirs.
+    for (const auto& [e, o] : cache.renamed_orientations) {
+        if (const auto found = try_tuple_from_edge(e); found.has_value()) {
+            m_edge_attribute[std::get<1>(found.value())].set_orientation_along(e, o);
+        }
+    }
     // face attr
     for (auto& info : cache.changed_edges) {
         auto& f_attr = info.first;

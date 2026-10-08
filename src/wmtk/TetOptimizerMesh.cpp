@@ -634,6 +634,38 @@ bool TetOptimizerMesh::invariants(const std::vector<Tuple>& tets)
     return true;
 }
 
+std::vector<std::array<size_t, 3>> TetOptimizerMesh::oriented_tracked_faces() const
+{
+    std::vector<std::array<size_t, 3>> res;
+    for (const auto& f : get_faces()) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        const auto vs = get_face_vertices(f);
+        std::array<size_t, 3> v{{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        std::sort(v.begin(), v.end());
+        if (attr.m_orientation < 0) std::swap(v[1], v[2]);
+        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back(v);
+    }
+    return res;
+}
+
+std::vector<std::pair<std::array<size_t, 2>, int>> TetOptimizerMesh::tracked_surface_boundary()
+    const
+{
+    std::map<std::array<size_t, 2>, int> sum;
+    for (const auto& f : oriented_tracked_faces()) {
+        for (int j = 0; j < 3; ++j) {
+            const size_t a = f[j], b = f[(j + 1) % 3];
+            sum[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+        }
+    }
+    std::vector<std::pair<std::array<size_t, 2>, int>> res;
+    for (const auto& [e, s] : sum) {
+        if (s != 0) res.emplace_back(e, s);
+    }
+    return res;
+}
+
 std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond) const
 {

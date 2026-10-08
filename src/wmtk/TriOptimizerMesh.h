@@ -103,6 +103,23 @@ public:
 
     VertAttCol m_vertex_attribute;
     EdgeAttCol m_edge_attribute;
+
+    /**
+     * @brief The application set EdgeAttributes::m_orientation at insertion, so the tracked
+     * curves carry the input's direction and the operations keep it. See
+     * TetOptimizerMesh::m_tracks_orientation; this is the same thing one dimension down.
+     */
+    bool m_tracks_orientation = false;
+
+    /// The tracked curves as oriented segments, each edge |m_orientation| times, in the input's
+    /// direction. Edges whose segments cancel are left out.
+    std::vector<std::array<size_t, 2>> oriented_tracked_edges() const;
+
+    /**
+     * @brief Vertices where the oriented tracked curves have a boundary (in minus out != 0),
+     * each with that sum. Empty for closed input curves; the operations preserve it.
+     */
+    std::vector<std::pair<size_t, int>> tracked_curve_boundary() const;
     FaceAttCol m_face_attribute;
 
     /**
@@ -626,6 +643,9 @@ protected:
         double edge_length = 0.;
         std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
         std::vector<std::array<size_t, 2>> surface_edges;
+        /// Oriented edges (v1,y) the collapse renames in place to (v2,y), as {v2,y} with the
+        /// orientation measured along that order -- see the 3D counterpart.
+        std::vector<std::pair<std::array<size_t, 2>, int>> renamed_orientations;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
         /// Coarsening pass only: the worst relative quality in the region the composite may

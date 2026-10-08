@@ -12,6 +12,7 @@
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
+#include <map>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -477,8 +478,29 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
+    // The input's orientation on the tracked faces, so the tracked-surface winding number
+    // (filter "tracked", and the winding_number_tracked output field) is the input's own
+    // rather than a guess. See SurfaceTagAttributes::m_orientation.
+    std::vector<int8_t> tet_face_orientation;
 
     logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
+
+    // The chain boundary of the surface handed to the insertion, for the orientation check
+    // below: edges whose incident triangles do not cancel -- open, non-manifold or folded. The
+    // tracked surface reproduces it, so it may have boundary exactly where this does. A closed
+    // input can still get some here: a simplification that does not preserve topology can open
+    // the surface or make it non-manifold.
+    size_t inserted_boundary = 0;
+    if (params.perform_sanity_checks) {
+        std::map<std::array<size_t, 2>, int> net;
+        for (const auto& f : fsimp) {
+            for (int j = 0; j < 3; ++j) {
+                const size_t a = f[j], b = f[(j + 1) % 3];
+                if (a != b) net[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+            }
+        }
+        for (const auto& [e, sum] : net) inserted_boundary += sum != 0;
+    }
 
     igl::Timer insertion_timer;
     insertion_timer.start();
@@ -492,7 +514,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        &tet_face_orientation);
 
     logger().info("=== finished insertion");
     background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
@@ -507,7 +530,34 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        &tet_face_orientation);
+
+    // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
+    // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
+    // one check that catches an operation forgetting to carry the orientation.
+    const auto log_orientation_check = [&](const char* when) {
+        if (!params.perform_sanity_checks || !mesh_new.m_tracks_orientation) return;
+        const size_t n_boundary = mesh_new.tracked_surface_boundary().size();
+        const size_t n_faces = mesh_new.oriented_tracked_faces().size();
+        if (inserted_boundary == 0 && n_boundary > 0) {
+            logger().warn(
+                "oriented tracked surface {}: {} faces, {} boundary edges although the inserted "
+                "surface is closed -- the tracked winding number is not an integer near them",
+                when,
+                n_faces,
+                n_boundary);
+        } else {
+            logger().info(
+                "oriented tracked surface {}: {} faces, {} boundary edges (the inserted surface "
+                "has {}: open, non-manifold or folded edges)",
+                when,
+                n_faces,
+                n_boundary,
+                inserted_boundary);
+        }
+    };
+    log_orientation_check("after insertion");
 
     // The insertion's output now lives in mesh_new. These are function locals, so without this
     // they -- the rational coordinates above all -- would be held through the optimization,
@@ -517,6 +567,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<bool>().swap(is_v_on_input);
     std::vector<std::array<size_t, 4>>().swap(tets);
     std::vector<bool>().swap(tet_face_on_input_surface);
+    std::vector<int8_t>().swap(tet_face_orientation);
     std::vector<Eigen::Vector3d>().swap(vsimp);
     std::vector<std::array<size_t, 3>>().swap(fsimp);
 
@@ -555,6 +606,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else {
         mesh_new.mesh_improvement(max_its);
     }
+    log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done
     phase_timer.start(); // finalize (winding/flood/filter) begins
 
