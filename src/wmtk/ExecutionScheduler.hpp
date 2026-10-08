@@ -504,6 +504,8 @@ private:
     /// Screened rounds; see screen_before_commit.
     bool run_screened(AppMesh& m, const std::function<void(const Push&)>& seed)
     {
+        m_stats = PassStats{};
+
         // Operations by their rank among the registered names -- edit_operation_maps is a
         // std::map, so its keys are sorted -- as the queues and the localized retry keep them.
         std::vector<const Op*> names;
@@ -655,6 +657,7 @@ private:
                 attempts += size_t(cnt_success) + size_t(cnt_fail);
                 committed_attempts += size_t(cnt_success) + size_t(cnt_fail);
             } else if (!survivors.empty()) {
+                const auto inline_start = Clock::now();
                 // Too few to be worth a parallel pass: commit them here, best first, as a
                 // single queue would -- no tasks, no locks, nothing else is running. A chain of
                 // dependent operations, each renewing the next in one spot, comes through as one
@@ -696,6 +699,8 @@ private:
                         ++failures;
                     }
                 }
+                m_stats.serial_tail_seconds +=
+                    std::chrono::duration<double>(Clock::now() - inline_start).count();
             }
 
             const auto round_commit = Clock::now() - commit_start;
@@ -726,6 +731,7 @@ private:
             m_waits.load() - waits_before,
             secs(screen_time),
             secs(commit_time));
+        log_contention();
         check_queued_drained();
         return true;
     }
@@ -944,7 +950,7 @@ private:
         // write to the task's own slot, so it adds nothing to the inner loop. It answers the
         // two questions the pass could not previously be asked: how often ring acquisition
         // loses a race, and how much of a "parallel" pass is really the serial drain.
-        m_stats = PassStats{};
+        PassStats st{};
         std::atomic<size_t> lock_failures(0);
         std::atomic<size_t> overflowed(0);
         std::vector<double> task_seconds(queues.size(), 0.);
@@ -1240,26 +1246,30 @@ private:
                     if (!budgets[t].progressed) boost[t] = std::min(boost[t] + 1, 24u);
                 }
                 if (!again) break;
-                m_stats.rounds = round + 2;
+                st.rounds = round + 2;
             }
-            m_stats.parallel_seconds =
-                std::chrono::duration<double>(clock::now() - t_parallel).count();
-            m_stats.final_queue_size = final_queue.size();
+            st.parallel_seconds = std::chrono::duration<double>(clock::now() - t_parallel).count();
+            st.final_queue_size = final_queue.size();
 
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
             run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
-            m_stats.serial_tail_seconds =
-                std::chrono::duration<double>(clock::now() - t_tail).count();
+            st.serial_tail_seconds = std::chrono::duration<double>(clock::now() - t_tail).count();
         }
 
-        m_stats.lock_failures = lock_failures.load(std::memory_order_relaxed);
-        m_stats.overflowed = overflowed.load(std::memory_order_relaxed);
+        st.lock_failures = lock_failures.load(std::memory_order_relaxed);
+        st.overflowed = overflowed.load(std::memory_order_relaxed);
         if (!task_seconds.empty()) {
             const auto mm = std::minmax_element(task_seconds.begin(), task_seconds.end());
-            m_stats.idlest_task_seconds = *mm.first;
-            m_stats.busiest_task_seconds = *mm.second;
+            st.idlest_task_seconds = *mm.first;
+            st.busiest_task_seconds = *mm.second;
+        }
+
+        if (sink) {
+            m_stats += st; // a round of a screened call: the call adds its rounds up
+        } else {
+            m_stats = st;
         }
 
         if (!quiet) {
@@ -1268,10 +1278,10 @@ private:
                 (int)cnt_success + (int)cnt_fail,
                 (int)cnt_success,
                 (int)cnt_fail);
-            if (m_stats.rounds > 1) {
+            if (st.rounds > 1) {
                 logger().info(
                     "  parallel region ran in {} rounds (storage grown between them)",
-                    m_stats.rounds);
+                    st.rounds);
             }
             log_contention();
         }
@@ -1304,7 +1314,10 @@ public:
      * @brief What the last pass cost in contention, as opposed to in work.
      *
      * Populated by every `operator()` call, so under run_localized_to_convergence it describes
-     * the most recent round only. Zeroed at the start of each pass.
+     * the most recent round only. Zeroed at the start of each pass. A screened pass
+     * (screen_before_commit) adds up the commit phases of all its rounds -- the busiest and
+     * idlest task times too, one round's after another's -- and a round committed inline, on the
+     * calling thread, counts as serial tail.
      */
     struct PassStats
     {
@@ -1324,8 +1337,22 @@ public:
         double busiest_task_seconds = 0.;
         double idlest_task_seconds = 0.;
         /// Rounds the parallel region took: more than one when the tasks ran through their
-        /// slot budgets and the storage had to grow between rounds.
+        /// slot budgets and the storage had to grow between rounds. For a screened pass, the most
+        /// any one commit took.
         size_t rounds = 1;
+
+        PassStats& operator+=(const PassStats& o)
+        {
+            lock_failures += o.lock_failures;
+            overflowed += o.overflowed;
+            final_queue_size += o.final_queue_size;
+            parallel_seconds += o.parallel_seconds;
+            serial_tail_seconds += o.serial_tail_seconds;
+            busiest_task_seconds += o.busiest_task_seconds;
+            idlest_task_seconds += o.idlest_task_seconds;
+            rounds = std::max(rounds, o.rounds);
+            return *this;
+        }
     };
     const PassStats& stats() const { return m_stats; }
 

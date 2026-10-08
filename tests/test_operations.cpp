@@ -1,6 +1,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/AMIPS.h>
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/OperationDryRun.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/examples/TetMesh_examples.hpp>
 
@@ -478,4 +479,21 @@ TEST_CASE("tet_tet_split", "[TetMesh][tuple_operation]")
         CHECK(m.oriented_tet_vids(3) == std::array<size_t, 4>{0, 1, 5, 3});
         CHECK(m.oriented_tet_vids(4) == std::array<size_t, 4>{0, 1, 2, 5});
     }
+}
+
+TEST_CASE("operation_dry_run_scope_nests", "[operations]")
+{
+    // A scope restores what it found, so an inner scope -- or one opened where the flag was
+    // already set -- does not end the outer dry run.
+    REQUIRE_FALSE(wmtk::operation_dry_run());
+    {
+        wmtk::OperationDryRunScope outer;
+        CHECK(wmtk::operation_dry_run());
+        {
+            wmtk::OperationDryRunScope inner;
+            CHECK(wmtk::operation_dry_run());
+        }
+        CHECK(wmtk::operation_dry_run());
+    }
+    CHECK_FALSE(wmtk::operation_dry_run());
 }

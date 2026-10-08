@@ -30,13 +30,21 @@ inline bool& operation_dry_run()
     return flag;
 }
 
-/// Turns operation_dry_run() on for the calling thread for the lifetime of the object.
+/// Turns operation_dry_run() on for the calling thread for the lifetime of the object, and then
+/// back to what it was -- so scopes nest.
 struct OperationDryRunScope
 {
-    OperationDryRunScope() { operation_dry_run() = true; }
-    ~OperationDryRunScope() { operation_dry_run() = false; }
+    OperationDryRunScope()
+        : m_previous(operation_dry_run())
+    {
+        operation_dry_run() = true;
+    }
+    ~OperationDryRunScope() { operation_dry_run() = m_previous; }
     OperationDryRunScope(const OperationDryRunScope&) = delete;
     OperationDryRunScope& operator=(const OperationDryRunScope&) = delete;
+
+private:
+    bool m_previous;
 };
 
 } // namespace wmtk
