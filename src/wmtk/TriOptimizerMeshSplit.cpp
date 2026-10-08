@@ -7,6 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
+#include <wmtk/utils/SplitContainment.hpp>
 
 namespace wmtk {
 
@@ -332,7 +333,17 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // envelope on Thingi10K 243014, while the end-of-run Hausdorff check still reported
         // "inside the envelope (as expected)" --- that check samples by AREA and cannot see
         // violations that live on vanishingly small elements.
-        if (cache.old_e_attrs.m_is_surface_fs) {
+        //
+        // Under the sampled envelope the two pieces inherit the segment's containment instead,
+        // when the new vertex lies on it: the sampled test is not hereditary, and its refusing
+        // a piece of a segment it accepted hangs the split pass (split_inherits_containment).
+        const bool on_edge =
+            lies_on_segment(p, m_vertex_attribute[v1_id].m_posf, m_vertex_attribute[v2_id].m_posf);
+        const bool inherited = on_edge && split_inherits_containment(
+                                              surface_envelope_for_edge({{v1_id, v2_id}}),
+                                              surface_envelope_for_edge({{v1_id, v_id}}),
+                                              surface_envelope_for_edge({{v_id, v2_id}}));
+        if (cache.old_e_attrs.m_is_surface_fs && !inherited) {
             if (surface_segment_is_outside(v1_id, v_id)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
