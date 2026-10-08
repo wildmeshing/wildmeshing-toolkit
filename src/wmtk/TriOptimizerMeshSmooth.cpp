@@ -6,10 +6,8 @@
 #include <wmtk/utils/VertexColoring.hpp>
 
 #include <igl/Timer.h>
-
 #include <spdlog/fmt/bundled/format.h>
 #include <algorithm>
-#include <atomic>
 #include <string>
 
 namespace wmtk {
@@ -110,9 +108,11 @@ void TriOptimizerMesh::smooth_vertices_colored(
     const std::vector<std::pair<std::string, Tuple>>& ops)
 {
     // The 2D twin of TetOptimizerMesh::smooth_vertices_colored: classes of pairwise
-    // non-adjacent vertices, each run fully in parallel without locks. Smoothing a vertex reads
-    // its neighbours only through smoothing_position(), which is const, and writes the vertex and
-    // the qualities of its own faces, which no other vertex of its class shares.
+    // non-adjacent vertices, each run fully in parallel without locks. TriOptimizerMesh's own
+    // smoothing reads its neighbours only through smoothing_position(), which is const, and writes
+    // the vertex and the qualities of its own triangles, which no other vertex of its class
+    // shares. A derived class's hooks must keep to the same rule (see smooth_after()); every
+    // smooth checks that it did (m_check_smoothing_stays_in_star).
     igl::Timer timer;
     timer.start();
 
@@ -140,9 +140,7 @@ void TriOptimizerMesh::smooth_vertices_colored(
         });
         n_total += cls.size();
     }
-    const size_t successes = utils::for_each_in_classes(classes, NUM_THREADS, 32, [this](size_t v) {
-        return smooth_vertex(tuple_from_vertex(v));
-    });
+    const size_t successes = utils::smooth_classes_checked(*this, classes, 32);
     const size_t failures = n_total - successes;
 
     logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);

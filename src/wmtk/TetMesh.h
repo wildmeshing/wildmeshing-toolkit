@@ -548,6 +548,21 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+    /**
+     * @brief While true, smooth_vertex() checks that the smooth recorded nothing outside the
+     * vertex's star -- the vertex itself and the edges, faces and cells incident to it -- and
+     * throws if it did.
+     *
+     * Set by a pass that smooths several vertices at once without locks (colored smoothing, see
+     * TetOptimizerMesh::smooth_vertices_colored). Two vertices it runs together share no simplex of
+     * their stars, but they can share a neighbour. A smoothing hook that reaches an attribute entry
+     * through non-const access records it, and a rejected smooth writes every recorded entry
+     * back -- so an entry outside the star, such as a neighbour read as `m_vertex_attribute[u]`
+     * instead of through a const view, would be written by two threads at once. Hooks must read
+     * everything outside the star through const access; this turns a hook that does not into an
+     * error on its first such read, instead of a rare race.
+     */
+    bool m_check_smoothing_stays_in_star = false;
 
     /**
      * @brief Split a tet in 4 tets.
@@ -1464,6 +1479,9 @@ private:
 
     /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
     bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);
+
+    /// See m_check_smoothing_stays_in_star; throws, after dropping the record, if the check fails.
+    void check_smoothing_stayed_in_star(size_t vid);
 
 protected:
     void resize_vertex_mutex(size_t v)
