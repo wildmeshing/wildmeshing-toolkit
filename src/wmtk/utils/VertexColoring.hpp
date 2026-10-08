@@ -114,7 +114,8 @@ inline size_t color_class_chunk(size_t n, int num_threads, size_t max_chunk)
  * rather than being launched once per class, which would cost a launch per class and a wait for
  * every task to finish. Within a class a task takes the next color_class_chunk() vertices
  * whenever it is done with its last ones. The barrier relies on task_group running every task at
- * once (a task never waits for a worker another task holds).
+ * once: each task gets a worker of its own, even while other threads submit tasks too, so a task
+ * never waits for a worker another task holds.
  *
  * `fn` runs concurrently only for vertices of one class. If it throws, the remaining vertices are
  * skipped and the first exception is rethrown once every thread has stopped.

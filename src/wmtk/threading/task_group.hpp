@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cfenv>
 #include <condition_variable>
 #include <cstddef>
@@ -12,6 +13,11 @@
 #include <type_traits>
 #include <utility>
 
+#if defined(__unix__) || defined(__APPLE__)
+#include <pthread.h>
+#define WMTK_WORKER_POOL_RESET_ON_FORK 1
+#endif
+
 namespace wmtk::threading {
 
 namespace detail {
@@ -21,8 +27,11 @@ namespace detail {
 struct job
 {
     virtual ~job() = default;
-    /// Runs the task and reports it finished. Never throws.
+    /// Runs the task and destroys its state. Never throws.
     virtual void run() noexcept = 0;
+    /// Reports the task finished. Called after run(), once the worker that ran it is idle again.
+    /// Never throws.
+    virtual void finish() noexcept = 0;
 };
 
 /**
@@ -39,79 +48,141 @@ struct job
  * The workers here are started once and kept, so a thread's caches survive from one pass to the
  * next exactly as they already did in serial mode, where one thread runs everything.
  *
- * SEMANTICS ARE THOSE OF A THREAD PER TASK. A task submitted while no worker is idle gets a new
- * worker; it never waits in a queue behind tasks that are still running. So a task may block on
- * another task of the same or of another group, and a task may run a task_group of its own,
- * exactly as before -- a fixed-size pool would deadlock on either. The pool only ever grows to
- * the largest number of tasks that were outstanding at once, which for every caller in this
- * repository is NUM_THREADS.
+ * SEMANTICS ARE THOSE OF A THREAD PER TASK. A task submitted while no worker is free for it gets a
+ * new worker; it never waits in a queue behind tasks that are still running. So a task may block
+ * on another task of the same or of another group, a task may run a task_group of its own, and
+ * several threads may submit at once, exactly as before -- a fixed-size pool would deadlock on
+ * the first two. Every queued job is owed an idle worker, or a worker being started for it, and
+ * no other job can take that worker.
+ *
+ * A worker counts as idle again before its task is reported finished, so a caller that starts its
+ * next group as soon as wait() returns finds every worker of the last one free. With one thread
+ * submitting -- every caller in this repository -- the pool therefore never grows past the
+ * largest number of tasks that were outstanding at once, which is NUM_THREADS.
  *
  * The workers are never joined: they block on the condition variable for the life of the
  * process, and the pool is deliberately leaked so that nothing in it is destroyed while a
  * detached worker could still touch it.
+ *
+ * A forked child (POSIX) inherits the pool's memory but none of its threads, and possibly its
+ * mutex in a locked state. The child therefore abandons it and starts a fresh pool on its first
+ * task -- as it would have started fresh threads before the pool existed.
  */
 class worker_pool
 {
 public:
     static worker_pool& instance()
     {
-        static worker_pool* pool = new worker_pool(); // leaked on purpose, see above
-        return *pool;
+#ifdef WMTK_WORKER_POOL_RESET_ON_FORK
+        static const bool registered = (pthread_atfork(nullptr, nullptr, &abandon_in_child), true);
+        (void)registered;
+#endif
+        auto& slot = current();
+        worker_pool* p = slot.load(std::memory_order_acquire);
+        if (p != nullptr) return *p;
+        // Created lazily, so that a forked child can start over. Threads racing to create it
+        // agree on one; the losers' pools have no workers yet and are simply deleted.
+        auto* fresh = new worker_pool();
+        if (slot.compare_exchange_strong(p, fresh, std::memory_order_acq_rel)) return *fresh;
+        delete fresh;
+        return *p;
     }
 
     /// Run @p job on a worker. Throws (and queues nothing) if a needed worker cannot be started.
     void submit(std::unique_ptr<job> j)
     {
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            std::unique_lock<std::mutex> lock(m_mutex);
             // Every queued job must have an idle worker of its own: a worker that is busy may be
-            // running a task that waits for this one. Waking an idle worker that then finds the
-            // queue already drained by a worker finishing early is harmless; it waits again.
-            if (m_jobs.size() < m_idle) {
+            // running a task that waits for this one. A worker being started is already owed to
+            // the job that started it, so it does not count as free here: another thread taking
+            // it in the meantime would leave that job with no worker. Waking an idle worker that
+            // then finds the queue already drained by a worker finishing early is harmless; it
+            // waits again.
+            if (m_jobs.size() + m_spawning < m_idle) {
                 m_jobs.push_back(std::move(j));
+                lock.unlock();
                 m_cv.notify_one();
                 return;
             }
+            ++m_spawning;
         }
         // No idle worker is free for this job. Start one BEFORE queueing the job, so that a
         // failure to start it (std::system_error) leaves nothing behind for wait() to hang on.
-        // If an idle worker turned up in the meantime, the new one just waits for the next job.
-        std::thread([this] { work(); }).detach();
+        // If an idle worker turned up in the meantime, one of the two just waits for the next job.
+        try {
+            std::thread([this] { work(); }).detach();
+        } catch (...) {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            --m_spawning;
+            throw;
+        }
         {
             std::lock_guard<std::mutex> lock(m_mutex);
+            ++m_workers;
+            --m_spawning;
             m_jobs.push_back(std::move(j));
         }
         m_cv.notify_one();
     }
 
+    /// How many workers the pool has started. For tests.
+    size_t worker_count()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_workers;
+    }
+
 private:
     worker_pool() = default;
 
-    void work()
+    static std::atomic<worker_pool*>& current()
     {
+        static std::atomic<worker_pool*> pool{nullptr};
+        return pool;
+    }
+
+#ifdef WMTK_WORKER_POOL_RESET_ON_FORK
+    /// pthread_atfork child handler: leak the parent's pool -- its workers do not exist here and
+    /// its mutex may be held by one of them -- and let instance() create a fresh one. Only resets
+    /// a pointer, which is safe in a child of a multi-threaded process.
+    static void abandon_in_child() { current().store(nullptr, std::memory_order_relaxed); }
+#endif
+
+    [[noreturn]] void work()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        ++m_idle;
         for (;;) {
-            std::unique_ptr<job> j;
-            {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                ++m_idle;
-                m_cv.wait(lock, [this] { return !m_jobs.empty(); });
-                --m_idle;
-                j = std::move(m_jobs.front());
-                m_jobs.pop_front();
-            }
-            // A fresh std::thread starts in round-to-nearest. A reused one starts in whatever
-            // the previous task left behind, and the exact predicates switch the rounding mode
-            // around their interval filters, so an exception in the middle of one would leak an
-            // upward mode into every later task on this thread. Restore the fresh-thread state.
+            m_cv.wait(lock, [this] { return !m_jobs.empty(); });
+            --m_idle;
+            std::unique_ptr<job> j = std::move(m_jobs.front());
+            m_jobs.pop_front();
+            lock.unlock();
+            // A task expects round-to-nearest, the mode the code that created its thread ran in.
+            // A reused worker starts in whatever the previous task left behind, and the exact
+            // predicates switch the rounding mode around their interval filters, so an exception
+            // in the middle of one would leak an upward mode into every later task on this thread.
             std::fesetround(FE_TONEAREST);
             j->run();
+            // Idle again BEFORE the task is reported finished: once it is, wait() may return and
+            // its caller start the next group, which must find this worker free rather than start
+            // another one. Until it waits again this worker does nothing that can block.
+            lock.lock();
+            ++m_idle;
+            lock.unlock();
+            j->finish();
+            j.reset();
+            lock.lock();
         }
     }
 
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::deque<std::unique_ptr<job>> m_jobs;
-    size_t m_idle = 0; ///< workers blocked in work(), waiting for a job
+    size_t m_idle = 0; ///< workers that are free for a job: waiting for one, or about to
+    size_t m_spawning = 0; ///< workers being started, each owed to the job that started it
+    size_t m_workers = 0; ///< workers started
 };
 
 } // namespace detail
@@ -195,12 +266,13 @@ private:
             } catch (...) {
                 m_group.record(std::current_exception());
             }
-            // Destroy the task's own state before reporting it finished: once it is reported,
-            // wait() may return and the caller may tear down whatever the task captured by
-            // reference. After finish_one() this job touches nothing of the group's.
+            // Destroy the task's own state before it is reported finished: once it is, wait()
+            // may return and the caller may tear down whatever the task captured by reference.
             m_fn.reset();
-            m_group.finish_one();
         }
+
+        // After this the job touches nothing of the group's.
+        void finish() noexcept override { m_group.finish_one(); }
     };
 
     void record(std::exception_ptr e)

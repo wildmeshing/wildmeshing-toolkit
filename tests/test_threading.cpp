@@ -2,10 +2,13 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
+#include <algorithm>
 #include <atomic>
 #include <cfenv>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <wmtk/Types.hpp>
@@ -16,6 +19,25 @@
 #include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/wait.h>
+#include <unistd.h>
+// ThreadSanitizer refuses to start threads in a child forked from a multi-threaded process
+// (die_after_fork), which is exactly what the fork test does.
+#if defined(__SANITIZE_THREAD__)
+#define WMTK_TEST_FORK 0
+#elif defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define WMTK_TEST_FORK 0
+#endif
+#endif
+#ifndef WMTK_TEST_FORK
+#define WMTK_TEST_FORK 1
+#endif
+#else
+#define WMTK_TEST_FORK 0
+#endif
 
 using namespace wmtk;
 
@@ -256,9 +278,13 @@ bool run_on_distinct_workers(int n, F fn)
     tg.wait();
     return all_met;
 }
-// Larger than the concurrency any other test in this file uses, so a wave this wide covers the
-// whole pool (the pool only grows to the largest number of tasks ever outstanding at once).
-constexpr int kWholePool = 128;
+// The width of a wave that covers the whole pool: every worker it has, and at least 128, which
+// is more than any other test here runs at once. With one thread submitting, a wave this wide
+// leaves the pool at exactly this many workers -- one per task -- each of which ran one task.
+int whole_pool()
+{
+    return std::max(128, int(threading::detail::worker_pool::instance().worker_count()));
+}
 } // namespace
 
 TEST_CASE("task_group", "[threading]")
@@ -335,10 +361,8 @@ TEST_CASE("task_group", "[threading]")
         // The point of the pool: a later pass runs on threads that already ran tasks, and so
         // with their thread_local caches.
         static thread_local int tasks_run_here = 0;
-        REQUIRE(run_on_distinct_workers(kWholePool, []() { ++tasks_run_here; }));
-        // Give the workers time to get back to waiting; otherwise the pool may (correctly)
-        // start new ones rather than wait for them.
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        REQUIRE(run_on_distinct_workers(whole_pool(), []() { ++tasks_run_here; }));
+        // Every worker ran a task, and is idle again by the time wait() returned.
         std::atomic<int> on_used_thread{0};
         {
             threading::task_group tg;
@@ -349,20 +373,36 @@ TEST_CASE("task_group", "[threading]")
             }
             tg.wait();
         }
-        CHECK(on_used_thread.load() > 0);
+        CHECK(on_used_thread.load() == 4);
+    }
+
+    SECTION("back-to-back groups do not grow the pool")
+    {
+        // A worker is idle again before its task is reported finished, so a group started as
+        // soon as the last one's wait() returns finds every worker free. Otherwise the tail of
+        // one group overlaps the head of the next, and the pool starts workers it does not need.
+        const int n = whole_pool();
+        REQUIRE(run_on_distinct_workers(n, []() {}));
+        auto& pool = threading::detail::worker_pool::instance();
+        const size_t before = pool.worker_count();
+        CHECK(before == size_t(n));
+        for (int round = 0; round < 50; ++round) {
+            REQUIRE(run_on_distinct_workers(n, []() {}));
+        }
+        CHECK(pool.worker_count() == before);
     }
 
     SECTION("a task starts in round-to-nearest even if an earlier one did not restore it")
     {
-        threading::task_group tg;
-        for (int round = 0; round < 8; ++round) {
-            tg.run([]() { std::fesetround(FE_UPWARD); });
-            tg.wait();
-            int mode = -1;
-            tg.run([&mode]() { mode = std::fegetround(); });
-            tg.wait();
-            CHECK(mode == FE_TONEAREST);
-        }
+        // Leave every worker in FE_UPWARD, then look at the mode every worker starts its next
+        // task in: without the reset, each of them would see FE_UPWARD.
+        const int n = whole_pool();
+        REQUIRE(run_on_distinct_workers(n, []() { std::fesetround(FE_UPWARD); }));
+        std::atomic<int> not_nearest{0};
+        REQUIRE(run_on_distinct_workers(n, [&not_nearest]() {
+            if (std::fegetround() != FE_TONEAREST) not_nearest.fetch_add(1);
+        }));
+        CHECK(not_nearest.load() == 0);
     }
 
     SECTION("accepts move-only tasks")
@@ -404,6 +444,31 @@ TEST_CASE("task_group", "[threading]")
         tg.wait();
         CHECK(token.use_count() == 1);
     }
+
+#if WMTK_TEST_FORK
+    SECTION("a forked child gets a pool of its own")
+    {
+        // The child inherits the pool's bookkeeping -- idle workers -- but none of its threads.
+        // It must start fresh workers rather than queue its tasks for ones that do not exist.
+        REQUIRE(run_on_distinct_workers(4, []() {}));
+        const pid_t pid = fork();
+        REQUIRE(pid >= 0);
+        if (pid == 0) {
+            alarm(10); // a hang kills the child, which the parent sees as a failure
+            std::atomic<int> ran{0};
+            threading::task_group tg;
+            for (int i = 0; i < 4; ++i) {
+                tg.run([&ran]() { ran.fetch_add(1); });
+            }
+            tg.wait();
+            _exit(ran.load() == 4 ? 0 : 1);
+        }
+        int status = 0;
+        REQUIRE(waitpid(pid, &status, 0) == pid);
+        CHECK(WIFEXITED(status));
+        CHECK(WEXITSTATUS(status) == 0);
+    }
+#endif
 }
 
 namespace {
@@ -448,26 +513,90 @@ TEST_CASE("enumerable_thread_specific_slots_of_dead_instances", "[threading]")
     // a slot -- otherwise every mesh ever built leaves its per-thread caches behind for good.
     CountsDestructions::destroyed() = 0;
     CountsDestructions::wrong_thread() = 0;
-    // Let earlier tests' workers go idle, so the wave below is spread over exactly
-    // kWholePool workers and the second wave meets every one of them again.
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // The wave below leaves the pool at exactly `n` workers, each with a slot, and the second
+    // wave meets every one of them again.
+    const int n = whole_pool();
     {
         threading::enumerable_thread_specific<CountsDestructions> ets;
-        REQUIRE(run_on_distinct_workers(kWholePool, [&ets]() { ets.local(); }));
+        REQUIRE(run_on_distinct_workers(n, [&ets]() { ets.local(); }));
     }
     // The instance is gone, its values are not: they live on the workers until those meet a
     // new instance.
     CHECK(CountsDestructions::destroyed().load() == 0);
 
     // Every worker meets a new instance, and so drops its dead slot.
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     threading::enumerable_thread_specific<CountsDestructions> fresh;
-    REQUIRE(run_on_distinct_workers(kWholePool, [&fresh]() { fresh.local(); }));
+    REQUIRE(run_on_distinct_workers(n, [&fresh]() { fresh.local(); }));
 
     // Every dead value, each destroyed on the thread that created it. (`fresh`'s own values are
     // still alive on the workers, so they do not count.)
-    CHECK(CountsDestructions::destroyed().load() == kWholePool);
+    CHECK(CountsDestructions::destroyed().load() == n);
     CHECK(CountsDestructions::wrong_thread().load() == 0);
+}
+
+TEST_CASE("task_group_concurrent_submitters", "[threading]")
+{
+    // Two threads submit at nearly the same moment, each a task that can only finish once the
+    // other thread's task has started, while every existing worker is busy -- so each submission
+    // has to start a worker. The worker one thread starts is owed to its task: had the other
+    // thread's task taken it, the first task would be queued with no worker while the second
+    // waits for it on the only worker either could have had. The second submission is delayed
+    // by a varying few microseconds, to sweep it across the first one's start-up.
+    auto& pool = threading::detail::worker_pool::instance();
+    constexpr int kRounds = 200;
+    for (int round = 0; round < kRounds; ++round) {
+        // Occupy every worker, blocked rather than spinning.
+        const int busy = int(pool.worker_count());
+        std::mutex m;
+        std::condition_variable cv;
+        bool release = false;
+        std::atomic<int> blocked{0};
+        threading::task_group blockers;
+        for (int i = 0; i < busy; ++i) {
+            blockers.run([&]() {
+                std::unique_lock<std::mutex> lock(m);
+                blocked.fetch_add(1);
+                cv.wait(lock, [&release]() { return release; });
+            });
+        }
+        while (blocked.load() < busy) std::this_thread::yield();
+
+        std::atomic<bool> go{false};
+        std::atomic<int> started{0};
+        std::atomic<bool> met{true};
+        const auto meet = [&]() {
+            started.fetch_add(1);
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+            while (started.load() < 2) {
+                if (std::chrono::steady_clock::now() > deadline) {
+                    met = false;
+                    return;
+                }
+                std::this_thread::yield();
+            }
+        };
+        const auto submit = [&](std::chrono::microseconds delay) {
+            while (!go.load()) std::this_thread::yield();
+            const auto at = std::chrono::steady_clock::now() + delay;
+            while (std::chrono::steady_clock::now() < at) {
+            }
+            threading::task_group tg;
+            tg.run(meet);
+            tg.wait();
+        };
+        std::thread x(submit, std::chrono::microseconds(0));
+        std::thread y(submit, std::chrono::microseconds(round % 50));
+        go = true;
+        x.join();
+        y.join();
+        {
+            std::lock_guard<std::mutex> lock(m);
+            release = true;
+        }
+        cv.notify_all();
+        blockers.wait();
+        REQUIRE(met);
+    }
 }
 
 TEST_CASE("spin_mutex", "[threading]")
