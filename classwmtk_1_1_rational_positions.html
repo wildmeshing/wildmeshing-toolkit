@@ -111,7 +111,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aad5464639e2996486c6123967b3db937"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to round every un-rounded vertex; returns the number reclaimed.  <br /></td></tr>
 <tr class="separator:aad5464639e2996486c6123967b3db937"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a66355e7ed81acdace2d133b2af432a" id="r_a8a66355e7ed81acdace2d133b2af432a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#a8a66355e7ed81acdace2d133b2af432a">round_and_check_all_rounded</a> ()</td></tr>
-<tr class="memdesc:a8a66355e7ed81acdace2d133b2af432a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the sweep, then report whether the mesh is now fully rounded.  <br /></td></tr>
+<tr class="memdesc:a8a66355e7ed81acdace2d133b2af432a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_run.html">Run</a> the sweep, then report whether the mesh is now fully rounded.  <br /></td></tr>
 <tr class="separator:a8a66355e7ed81acdace2d133b2af432a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
@@ -201,7 +201,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Run the sweep, then report whether the mesh is now fully rounded. </p>
+<p><a class="el" href="struct_run.html">Run</a> the sweep, then report whether the mesh is now fully rounded. </p>
 <p>The termination condition of the operation loop. A mesh that hits the quality target while some vertex still carries exact coordinates is not finished, because the output is what the caller consumes and rational coordinates in it are a defect regardless of how good the elements are.</p>
 <p>This is also what makes the exact-rational fallback in split_edge_after safe: a split is the only operation that can un-round a vertex &ndash; collapse, the swaps and smoothing never do, and the post-optimization pass is collapse-only &ndash; so the loop only has to outlast the sweep.</p>
 <p>O(1) once m_all_rounded is set, so it is cheap enough to sit on every early-out. </p>

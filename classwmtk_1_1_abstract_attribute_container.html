@@ -137,10 +137,41 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>clear</b> ()=
 <tr class="separator:a38b1874c967d2eed264a370e2c0f42a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec656e6937955b821754a116a74e5e91" id="r_aec656e6937955b821754a116a74e5e91"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_abstract_attribute_container.html#aec656e6937955b821754a116a74e5e91">end_protect</a> ()=0</td></tr>
 <tr class="separator:aec656e6937955b821754a116a74e5e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d27962084390dc5efd06c52017d5473" id="r_a3d27962084390dc5efd06c52017d5473"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_abstract_attribute_container.html#a3d27962084390dc5efd06c52017d5473">append_recorded</a> (std::vector&lt; size_t &gt; &amp;out)</td></tr>
+<tr class="separator:a3d27962084390dc5efd06c52017d5473"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>serving as buffers for attributes data that can be modified by operations </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a3d27962084390dc5efd06c52017d5473" name="a3d27962084390dc5efd06c52017d5473"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d27962084390dc5efd06c52017d5473">&#9670;&#160;</a></span>append_recorded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::AbstractAttributeContainer::append_recorded </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>out</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Appends to <code>out</code> the index of every entry this thread has recorded since begin_protect(): every entry the operation reached through non-const access, which rollback() would write back. Lets a caller check that an operation stayed within the simplices it owns. </p>
+
+<p>Reimplemented in <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; T &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; app::interior_tet_opt::TetraAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; app::interior_tet_opt::VertexAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; EdgeAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; EdgeExtra2d &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; FaceAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; FaceExtra &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; FaceExtra2d &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; harmonic_tet::HarmonicTet::TetAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; harmonic_tet::HarmonicTet::VertexAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; SurfaceMeshEdgeAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; SurfaceMeshFaceAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; SurfaceMeshVertexAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; TetAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; TetMeshVertexAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; UVMeshVertexAttribute &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; VertexAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; VertexExtra &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; VertexExtra2d &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::qslim::EdgeAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::qslim::FaceAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::qslim::VertexAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::shortest_edge_collapse::VertexAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::tetwild::TetFinalizeAttributes &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::tetwild::TetWildMesh::VertexExtras &gt;</a>, <a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">wmtk::AttributeCollection&lt; wmtk::components::triwild::TriWildMesh::VertexExtras &gt;</a>, and <a class="el" href="classwmtk_1_1_attribute_container_group.html#a2e3b8300caa589452a8436ad47abddd7">wmtk::AttributeContainerGroup</a>.</p>
+
+</div>
+</div>
 <a id="a38b1874c967d2eed264a370e2c0f42a3" name="a38b1874c967d2eed264a370e2c0f42a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a38b1874c967d2eed264a370e2c0f42a3">&#9670;&#160;</a></span>begin_protect()</h2>
 

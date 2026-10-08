@@ -532,6 +532,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:adb3b465edb0af8802cebba3e39c4cdbb" id="r_adb3b465edb0af8802cebba3e39c4cdbb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#adb3b465edb0af8802cebba3e39c4cdbb">m_check_smoothing_stays_in_star</a> = false</td></tr>
+<tr class="memdesc:adb3b465edb0af8802cebba3e39c4cdbb"><td class="mdescLeft">&#160;</td><td class="mdescRight">While true, <a class="el" href="classwmtk_1_1_tet_mesh.html#a2f56aa4bdf3ae5cec64916fc0b0e2479">smooth_vertex()</a> checks that the smooth recorded nothing outside the vertex's star &ndash; the vertex itself and the edges, faces and cells incident to it &ndash; and throws if it did.  <br /></td></tr>
+<tr class="separator:adb3b465edb0af8802cebba3e39c4cdbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a261adc9caf17372cca2270e876ac7b7b" id="r_a261adc9caf17372cca2270e876ac7b7b"><td class="memItemLeft" align="right" valign="top"><a id="a261adc9caf17372cca2270e876ac7b7b" name="a261adc9caf17372cca2270e876ac7b7b"></a>
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
 <tr class="separator:a261adc9caf17372cca2270e876ac7b7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -682,6 +685,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>lock_vertex_ball</b> (const size_t *seeds, size_t n_seeds, int threadid, int n, size_t mark)</td></tr>
 <tr class="memdesc:a6fddcac3db6744e7a8da0b0f8c041d5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The n-ring BFS. <code>mark</code> is the release-stack watermark to unwind to on failure. <br /></td></tr>
 <tr class="separator:a6fddcac3db6744e7a8da0b0f8c041d5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac119ad5d98829cd141a2cccdc942030d" id="r_ac119ad5d98829cd141a2cccdc942030d"><td class="memItemLeft" align="right" valign="top"><a id="ac119ad5d98829cd141a2cccdc942030d" name="ac119ad5d98829cd141a2cccdc942030d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>check_smoothing_stayed_in_star</b> (size_t vid)</td></tr>
+<tr class="memdesc:ac119ad5d98829cd141a2cccdc942030d"><td class="mdescLeft">&#160;</td><td class="mdescRight">See m_check_smoothing_stays_in_star; throws, after dropping the record, if the check fails. <br /></td></tr>
+<tr class="separator:ac119ad5d98829cd141a2cccdc942030d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -3766,6 +3773,23 @@ false </dd></dl>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="adb3b465edb0af8802cebba3e39c4cdbb" name="adb3b465edb0af8802cebba3e39c4cdbb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb3b465edb0af8802cebba3e39c4cdbb">&#9670;&#160;</a></span>m_check_smoothing_stays_in_star</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetMesh::m_check_smoothing_stays_in_star = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>While true, <a class="el" href="classwmtk_1_1_tet_mesh.html#a2f56aa4bdf3ae5cec64916fc0b0e2479">smooth_vertex()</a> checks that the smooth recorded nothing outside the vertex's star &ndash; the vertex itself and the edges, faces and cells incident to it &ndash; and throws if it did. </p>
+<p>Set by a pass that smooths several vertices at once without locks (colored smoothing, see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a0d039e3d7ebcc49e1932e12aef1de129" title="One smoothing sweep over ops (all &quot;vertex_smooth&quot;), one color class at a time.">TetOptimizerMesh::smooth_vertices_colored</a>). Two vertices it runs together share no simplex of their stars, but they can share a neighbour. A smoothing hook that reaches an attribute entry through non-const access records it, and a rejected smooth writes every recorded entry back &ndash; so an entry outside the star, such as a neighbour read as <code>m_vertex_attribute[u]</code> instead of through a const view, would be written by two threads at once. Hooks must read everything outside the star through const access; this turns a hook that does not into an error on its first such read, instead of a rare race. </p>
+
+</div>
+</div>
 <a id="ade7fb5d05c627df8d2b47fb27b1bd69b" name="ade7fb5d05c627df8d2b47fb27b1bd69b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ade7fb5d05c627df8d2b47fb27b1bd69b">&#9670;&#160;</a></span>m_local_edges</h2>
 

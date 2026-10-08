@@ -110,6 +110,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>assign</b> (size_t to
 <tr class="memitem:abc4e548acb727ba52b6ab64aa3d6e742" id="r_abc4e548acb727ba52b6ab64aa3d6e742"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#abc4e548acb727ba52b6ab64aa3d6e742">end_protect</a> () override</td></tr>
 <tr class="memdesc:abc4e548acb727ba52b6ab64aa3d6e742"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear local buffers and finish recording  <br /></td></tr>
 <tr class="separator:abc4e548acb727ba52b6ab64aa3d6e742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8b6555d788aef0b2bf7538286a2f217" id="r_ad8b6555d788aef0b2bf7538286a2f217"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_attribute_collection.html#ad8b6555d788aef0b2bf7538286a2f217">append_recorded</a> (std::vector&lt; size_t &gt; &amp;out) override</td></tr>
+<tr class="separator:ad8b6555d788aef0b2bf7538286a2f217"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b85209afba24041f8716f8dc11ae1ed" id="r_a3b85209afba24041f8716f8dc11ae1ed"><td class="memItemLeft" align="right" valign="top"><a id="a3b85209afba24041f8716f8dc11ae1ed" name="a3b85209afba24041f8716f8dc11ae1ed"></a>
 const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>at</b> (size_t i) const</td></tr>
 <tr class="separator:a3b85209afba24041f8716f8dc11ae1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,6 +138,37 @@ std::vector&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_a
 <tr class="separator:ab5dea487024c335edbcc5d3f57a98883"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ad8b6555d788aef0b2bf7538286a2f217" name="ad8b6555d788aef0b2bf7538286a2f217"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8b6555d788aef0b2bf7538286a2f217">&#9670;&#160;</a></span>append_recorded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; T &gt;::append_recorded </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>out</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Appends to <code>out</code> the index of every entry this thread has recorded since <a class="el" href="structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770" title="clean local buffers for attribute, and start recording">begin_protect()</a>: every entry the operation reached through non-const access, which <a class="el" href="structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287" title="retrieve the protected attribute data on operation-fail">rollback()</a> would write back. Lets a caller check that an operation stayed within the simplices it owns. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_abstract_attribute_container.html#a3d27962084390dc5efd06c52017d5473">wmtk::AbstractAttributeContainer</a>.</p>
+
+</div>
+</div>
 <a id="ae0505eb2677a9eb03e9a76fe03ccf770" name="ae0505eb2677a9eb03e9a76fe03ccf770"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae0505eb2677a9eb03e9a76fe03ccf770">&#9670;&#160;</a></span>begin_protect()</h2>
 

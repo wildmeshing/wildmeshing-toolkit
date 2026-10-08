@@ -13,5 +13,6 @@ var searchData=
   ['coarsen_5fpass_10',['coarsen_pass',['../structwmtk_1_1_optimizer_parameters.html#a298726705134eb1bfe682c936a8f471d',1,'wmtk::OptimizerParameters']]],
   ['coarsen_5fsmooth_5fring_11',['coarsen_smooth_ring',['../structwmtk_1_1_optimizer_parameters.html#addf76dc095dfe988a13ed2f8a36d8dde',1,'wmtk::OptimizerParameters']]],
   ['coarsen_5funbounded_12',['coarsen_unbounded',['../structwmtk_1_1_optimizer_parameters.html#a8e0ac5d288fadfbf1e435f785e201df7',1,'wmtk::OptimizerParameters']]],
-  ['conn_5ftets_13',['conn_tets',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a85ddb029fc1d0546eaeafc412ffa68bd',1,'wmtk::components::tetwild::orig::TetVertex']]]
+  ['colored_5fsmoothing_13',['colored_smoothing',['../structwmtk_1_1_optimizer_parameters.html#ab9d80c08f359fddbfeb2d5cda143cd0e',1,'wmtk::OptimizerParameters']]],
+  ['conn_5ftets_14',['conn_tets',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a85ddb029fc1d0546eaeafc412ffa68bd',1,'wmtk::components::tetwild::orig::TetVertex']]]
 ];

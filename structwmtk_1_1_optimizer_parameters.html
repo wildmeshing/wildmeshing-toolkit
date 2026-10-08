@@ -192,6 +192,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>w_envelope</b> = 1.
 int&#160;</td><td class="memItemRight" valign="bottom"><b>num_smoothing_passes</b> = 2</td></tr>
 <tr class="memdesc:af94f54e1f48f13d77c5ff0afba9f05a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number and placement of smoothing passes in the shared Wild optimization driver. <br /></td></tr>
 <tr class="separator:af94f54e1f48f13d77c5ff0afba9f05a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9d80c08f359fddbfeb2d5cda143cd0e" id="r_ab9d80c08f359fddbfeb2d5cda143cd0e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#ab9d80c08f359fddbfeb2d5cda143cd0e">colored_smoothing</a> = true</td></tr>
+<tr class="separator:ab9d80c08f359fddbfeb2d5cda143cd0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab856b34a5d06bc26ee01467578c2d912" id="r_ab856b34a5d06bc26ee01467578c2d912"><td class="memItemLeft" align="right" valign="top"><a id="ab856b34a5d06bc26ee01467578c2d912" name="ab856b34a5d06bc26ee01467578c2d912"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing</b> = true</td></tr>
 <tr class="separator:ab856b34a5d06bc26ee01467578c2d912"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -394,6 +396,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        std::numeric_limits&lt;double&gt;::max()</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="ab9d80c08f359fddbfeb2d5cda143cd0e" name="ab9d80c08f359fddbfeb2d5cda143cd0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9d80c08f359fddbfeb2d5cda143cd0e">&#9670;&#160;</a></span>colored_smoothing</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::colored_smoothing = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Parallel smoothing by color class instead of by locked partition.</p>
+<p>The vertices to smooth are split into classes of pairwise non-adjacent vertices, and the classes run one after another, each fully in parallel and without any lock: two vertices of a class share no edge and no cell, so neither writes what the other reads or writes. They can share a neighbour, so the smoothing hooks of a derived mesh must read everything outside the vertex's star through const access; every smooth of the pass checks it and throws on the first offence (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aff86a2be179db163a9e5f2d410b664ee" title="User specified modifications and desideratas for after smoothing a vertex.">TetOptimizerMesh::smooth_after</a>). The result does not depend on the number of threads. Serial runs (NUM_THREADS == 0) keep the original single-queue order either way. Off: the locked partitioned pass. </p>
+
 </div>
 </div>
 <a id="a34a7ae8497a0194dbd52399cbba57a59" name="a34a7ae8497a0194dbd52399cbba57a59"></a>
