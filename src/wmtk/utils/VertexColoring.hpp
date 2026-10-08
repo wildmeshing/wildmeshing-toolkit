@@ -118,6 +118,11 @@ inline size_t color_class_chunk(size_t n, int num_threads, size_t max_chunk)
  *
  * `fn` runs concurrently only for vertices of one class. If it throws, the remaining vertices are
  * skipped and the first exception is rethrown once every thread has stopped.
+ *
+ * The barrier counts on every task, so no task starts before all of them are launched: if
+ * launching one fails (a thread cannot be created), the tasks already running leave without
+ * touching the barrier and the launch failure is rethrown, instead of those tasks waiting forever
+ * for one that never came.
  */
 template <typename F>
 size_t for_each_in_classes(
@@ -158,33 +163,49 @@ size_t for_each_in_classes(
     std::atomic<bool> failed{false};
     std::exception_ptr error;
     std::mutex error_mutex;
+    // The start gate: kLaunching until every task is launched, then kGo -- or kAbort if a launch
+    // failed. Declared before the task_group, which waits for the tasks when it is destroyed.
+    enum : int { kLaunching = 0, kGo = 1, kAbort = 2 };
+    std::atomic<int> gate{kLaunching};
 
     threading::task_group tg;
-    for (size_t t = 0; t < nt; ++t) {
-        tg.run([&] {
-            size_t mine = 0;
-            for (size_t c = 0; c < classes.size(); ++c) {
-                const std::vector<size_t>& cls = classes[c];
-                const size_t chunk = color_class_chunk(cls.size(), int(nt), max_chunk);
-                while (!failed.load(std::memory_order_relaxed)) {
-                    const size_t b = next[c].fetch_add(chunk, std::memory_order_relaxed);
-                    if (b >= cls.size()) break;
-                    const size_t e = std::min(cls.size(), b + chunk);
-                    try {
-                        for (size_t i = b; i < e; ++i) {
-                            if (fn(cls[i])) ++mine;
-                        }
-                    } catch (...) {
-                        std::lock_guard<std::mutex> lock(error_mutex);
-                        if (!error) error = std::current_exception();
-                        failed.store(true, std::memory_order_relaxed);
+    const auto task = [&] {
+        int state;
+        while ((state = gate.load(std::memory_order_acquire)) == kLaunching) {
+            std::this_thread::yield();
+        }
+        if (state == kAbort) return;
+        size_t mine = 0;
+        for (size_t c = 0; c < classes.size(); ++c) {
+            const std::vector<size_t>& cls = classes[c];
+            const size_t chunk = color_class_chunk(cls.size(), int(nt), max_chunk);
+            while (!failed.load(std::memory_order_relaxed)) {
+                const size_t b = next[c].fetch_add(chunk, std::memory_order_relaxed);
+                if (b >= cls.size()) break;
+                const size_t e = std::min(cls.size(), b + chunk);
+                try {
+                    for (size_t i = b; i < e; ++i) {
+                        if (fn(cls[i])) ++mine;
                     }
+                } catch (...) {
+                    std::lock_guard<std::mutex> lock(error_mutex);
+                    if (!error) error = std::current_exception();
+                    failed.store(true, std::memory_order_relaxed);
                 }
-                barrier();
             }
-            successes.fetch_add(mine, std::memory_order_relaxed);
-        });
+            barrier();
+        }
+        successes.fetch_add(mine, std::memory_order_relaxed);
+    };
+    try {
+        for (size_t t = 0; t < nt; ++t) {
+            tg.run(task);
+        }
+    } catch (...) {
+        gate.store(kAbort, std::memory_order_release);
+        throw;
     }
+    gate.store(kGo, std::memory_order_release);
     tg.wait();
     if (error) std::rethrow_exception(error);
     return successes.load();
