@@ -729,43 +729,17 @@ template class OffsetEnergy<3>;
 // InputTriangles
 // ---------------------------------------------------------------------------------------------
 
-InputTriangles::InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
-    : m_V(V)
-    , m_F(F)
-{
-    m_bvh.init(m_V, m_F, 1e-6);
-}
-
-int64_t InputTriangles::nearest(const Eigen::Vector3d& p) const
-{
-    // SimpleBVH's nearest_facet returns its own (reordered) facet index; its box query returns
-    // F's. So: the nearest distance from the BVH, then every triangle whose box reaches within it,
-    // and the closest of those by distance() -- the lowest index on a tie.
-    Eigen::Vector3d q;
-    double sq = 0.;
-    m_bvh.nearest_facet(p, q, sq);
-    const double r = std::sqrt(sq) * (1. + 1e-12) + 1e-12;
-    std::vector<unsigned int> list;
-    m_bvh.intersect_box(p - Eigen::Vector3d::Constant(r), p + Eigen::Vector3d::Constant(r), list);
-    int64_t best = -1;
-    double bd = std::numeric_limits<double>::infinity();
-    for (const unsigned int t : list) {
-        const double d = distance(int64_t(t), p);
-        if (d < bd || (d == bd && int64_t(t) < best)) bd = d, best = int64_t(t);
-    }
-    return best;
-}
-
-double InputTriangles::distance(
-    const int64_t tri,
+namespace {
+/// The distance from p to triangle (a, b, c), with InputTriangles::distance()'s derivatives.
+double triangle_distance(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
     const Eigen::Vector3d& p,
     Eigen::Vector3d* grad,
-    Eigen::Matrix3d* hess) const
+    Eigen::Matrix3d* hess)
 {
     // The closest point and the feature it lies on (Ericson, Real-Time Collision Detection 5.1.5).
-    const Eigen::Vector3d a = m_V.row(m_F(tri, 0)).head<3>().transpose();
-    const Eigen::Vector3d b = m_V.row(m_F(tri, 1)).head<3>().transpose();
-    const Eigen::Vector3d c = m_V.row(m_F(tri, 2)).head<3>().transpose();
     const Eigen::Vector3d ab = b - a, ac = c - a, ap = p - a;
     Eigen::Vector3d foot, edge = Eigen::Vector3d::Zero();
     int kind = 2; // 0 vertex, 1 edge (direction `edge`), 2 interior
@@ -806,6 +780,258 @@ double InputTriangles::distance(
         }
     }
     return d;
+}
+} // namespace
+
+// ---------------------------------------------------------------------------------------------
+
+InputTriangles::InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+    : m_V(V)
+    , m_F(F)
+{
+    m_bvh.init(m_V, m_F, 1e-6);
+}
+
+void InputTriangles::near_triangles(
+    const Eigen::Vector3d& p,
+    std::vector<std::pair<int64_t, double>>& out) const
+{
+    // SimpleBVH's nearest_facet returns its own (reordered) facet index; its box query returns
+    // F's. So: the nearest distance from the BVH, then every triangle whose box reaches within it.
+    out.clear();
+    Eigen::Vector3d q;
+    double sq = 0.;
+    m_bvh.nearest_facet(p, q, sq);
+    const double r = std::sqrt(sq) * (1. + 1e-12) + 1e-12 + m_tol;
+    std::vector<unsigned int> list;
+    m_bvh.intersect_box(p - Eigen::Vector3d::Constant(r), p + Eigen::Vector3d::Constant(r), list);
+    for (const unsigned int t : list) {
+        const Eigen::Vector3d a = m_V.row(m_F(t, 0)).head<3>().transpose();
+        const Eigen::Vector3d b = m_V.row(m_F(t, 1)).head<3>().transpose();
+        const Eigen::Vector3d c = m_V.row(m_F(t, 2)).head<3>().transpose();
+        out.emplace_back(int64_t(t), triangle_distance(a, b, c, p, nullptr, nullptr));
+    }
+}
+
+int64_t InputTriangles::nearest(const Eigen::Vector3d& p) const
+{
+    // The closest triangle (pieces mode: the piece of the closest boundary triangle) -- the
+    // lowest index on a tie.
+    std::vector<std::pair<int64_t, double>> near;
+    near_triangles(p, near);
+    int64_t best = -1;
+    double bd = std::numeric_limits<double>::infinity();
+    for (const auto& [t, d] : near) {
+        const int64_t id = m_pieces ? m_tri_piece[size_t(t)] : t;
+        if (d < bd || (d == bd && id < best)) bd = d, best = id;
+    }
+    return best;
+}
+
+void InputTriangles::nearest_all(const Eigen::Vector3d& p, std::vector<int64_t>& out) const
+{
+    if (!m_pieces) {
+        out.push_back(nearest(p));
+        return;
+    }
+    std::vector<std::pair<int64_t, double>> near;
+    near_triangles(p, near);
+    double bd = std::numeric_limits<double>::infinity();
+    for (const auto& tp : near) bd = std::min(bd, tp.second);
+    for (const auto& [t, d] : near) {
+        if (d <= bd + m_tol) out.push_back(m_tri_piece[size_t(t)]);
+    }
+}
+
+double InputTriangles::distance(
+    const int64_t tri,
+    const Eigen::Vector3d& p,
+    Eigen::Vector3d* grad,
+    Eigen::Matrix3d* hess) const
+{
+    const auto corner = [&](const int64_t r, const int j) -> Eigen::Vector3d {
+        return m_V.row(m_F(r, j)).head<3>().transpose();
+    };
+    if (!m_pieces)
+        return triangle_distance(corner(tri, 0), corner(tri, 1), corner(tri, 2), p, grad, hess);
+    // A convex piece: 0 inside (every outward plane on the inner side), else the nearest of its
+    // boundary triangles, whose foot and feature are the piece's.
+    bool inside = true;
+    for (const Eigen::Vector4d& pl : m_piece_planes[size_t(tri)]) {
+        if (pl.head<3>().dot(p) - pl[3] > m_tol) {
+            inside = false;
+            break;
+        }
+    }
+    if (inside) {
+        if (grad) grad->setZero();
+        if (hess) hess->setZero();
+        return 0.;
+    }
+    double bd = std::numeric_limits<double>::infinity();
+    int64_t br = -1;
+    for (const int64_t r : m_piece_tris[size_t(tri)]) {
+        const double d =
+            triangle_distance(corner(r, 0), corner(r, 1), corner(r, 2), p, nullptr, nullptr);
+        if (d < bd) bd = d, br = r;
+    }
+    return triangle_distance(corner(br, 0), corner(br, 1), corner(br, 2), p, grad, hess);
+}
+
+std::shared_ptr<InputTriangles> InputTriangles::convex_pieces(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& T)
+{
+    using Key = std::array<int, 3>;
+    const auto key = [](int a, int b, int c) {
+        Key k{{a, b, c}};
+        std::sort(k.begin(), k.end());
+        return k;
+    };
+    const auto pos = [&](const int v) -> Eigen::Vector3d { return V.row(v).head<3>().transpose(); };
+    double diag = 0.;
+    if (V.rows() > 0) diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
+    const double tol = 1e-9 * std::max(diag, 1e-300);
+
+    // A piece: its tets, its vertices, its volume, and its boundary faces oriented outward.
+    struct Piece
+    {
+        std::vector<int> tets;
+        std::set<int> verts;
+        std::map<Key, std::array<int, 3>> boundary;
+        double volume = 0.;
+        bool alive = true;
+    };
+    std::vector<Piece> pieces(size_t(T.rows()));
+    for (int t = 0; t < T.rows(); ++t) {
+        Piece& pc = pieces[size_t(t)];
+        pc.tets.push_back(t);
+        Eigen::Vector3d ctr = Eigen::Vector3d::Zero();
+        for (int j = 0; j < 4; ++j) pc.verts.insert(T(t, j)), ctr += pos(T(t, j)) / 4.;
+        pc.volume =
+            std::abs((pos(T(t, 1)) - pos(T(t, 0)))
+                         .dot((pos(T(t, 2)) - pos(T(t, 0))).cross(pos(T(t, 3)) - pos(T(t, 0))))) /
+            6.;
+        for (int j = 0; j < 4; ++j) {
+            std::array<int, 3> f{{T(t, (j + 1) % 4), T(t, (j + 2) % 4), T(t, (j + 3) % 4)}};
+            const Eigen::Vector3d n = (pos(f[1]) - pos(f[0])).cross(pos(f[2]) - pos(f[0]));
+            if (n.dot(ctr - pos(f[0])) > 0.) std::swap(f[1], f[2]); // outward
+            pc.boundary[key(f[0], f[1], f[2])] = f;
+        }
+    }
+    const auto plane = [&](const std::array<int, 3>& f) {
+        Eigen::Vector3d n = (pos(f[1]) - pos(f[0])).cross(pos(f[2]) - pos(f[0]));
+        n.normalize();
+        return Eigen::Vector4d(n.x(), n.y(), n.z(), n.dot(pos(f[0])));
+    };
+    // The union of face-connected pieces is convex iff every one of its boundary faces has all of
+    // its vertices on the inner side of the face's plane. Its boundary is the faces carried by
+    // exactly one of the pieces (a face shared by two is interior).
+    const auto union_convex = [&](const std::vector<int>& ids) {
+        std::map<Key, std::pair<std::array<int, 3>, int>> faces;
+        std::set<int> verts;
+        for (const int i : ids) {
+            for (const auto& [k, f] : pieces[size_t(i)].boundary) {
+                auto [it, fresh] = faces.emplace(k, std::make_pair(f, 0));
+                ++it->second.second;
+            }
+            verts.insert(pieces[size_t(i)].verts.begin(), pieces[size_t(i)].verts.end());
+        }
+        size_t shared = 0;
+        for (const auto& [k, fc] : faces) {
+            if (fc.second > 1) {
+                ++shared;
+                continue;
+            }
+            const Eigen::Vector4d pl = plane(fc.first);
+            for (const int v : verts) {
+                if (pl.head<3>().dot(pos(v)) - pl[3] > tol) return false;
+            }
+        }
+        return shared > 0;
+    };
+    const auto merge = [&](const std::vector<int>& ids) {
+        Piece& A = pieces[size_t(ids[0])];
+        for (size_t n = 1; n < ids.size(); ++n) {
+            Piece& B = pieces[size_t(ids[n])];
+            for (const auto& [k, f] : B.boundary) {
+                if (!A.boundary.erase(k)) A.boundary[k] = f;
+            }
+            A.tets.insert(A.tets.end(), B.tets.begin(), B.tets.end());
+            A.verts.insert(B.verts.begin(), B.verts.end());
+            A.volume += B.volume;
+            B = Piece();
+            B.alive = false;
+        }
+    };
+    // The pieces adjacent to each piece, from the faces two live pieces share.
+    const auto adjacency = [&]() {
+        std::map<Key, std::vector<int>> owner;
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            if (!pieces[i].alive) continue;
+            for (const auto& [k, f] : pieces[i].boundary) owner[k].push_back(int(i));
+        }
+        std::map<int, std::set<int>> adj;
+        for (const auto& [k, o] : owner) {
+            if (o.size() == 2) adj[o[0]].insert(o[1]), adj[o[1]].insert(o[0]);
+        }
+        return adj;
+    };
+    // Best first: the convex merge of 2 pieces with the largest union volume; when none is left,
+    // of 3 (a piece and two of its neighbours) -- a cube of Kuhn tets is two 180-degree halves,
+    // which no chain of pairwise convex merges need reach.
+    for (;;) {
+        const auto adj = adjacency();
+        double best = -1.;
+        std::vector<int> pick;
+        for (const auto& [a, nb] : adj) {
+            for (const int b : nb) {
+                if (b < a) continue;
+                const double v = pieces[size_t(a)].volume + pieces[size_t(b)].volume;
+                if (v > best && union_convex({a, b})) best = v, pick = {a, b};
+            }
+        }
+        if (pick.empty()) {
+            for (const auto& [a, nb] : adj) {
+                const std::vector<int> n(nb.begin(), nb.end());
+                for (size_t i = 0; i < n.size(); ++i) {
+                    for (size_t j = i + 1; j < n.size(); ++j) {
+                        const double v = pieces[size_t(a)].volume + pieces[size_t(n[i])].volume +
+                                         pieces[size_t(n[j])].volume;
+                        if (v > best && union_convex({a, n[i], n[j]}))
+                            best = v, pick = {a, n[i], n[j]};
+                    }
+                }
+            }
+        }
+        if (pick.empty()) break;
+        merge(pick);
+    }
+
+    auto out = std::shared_ptr<InputTriangles>(new InputTriangles());
+    out->m_pieces = true;
+    out->m_tol = tol;
+    out->m_V = V.leftCols(3);
+    std::vector<std::array<int, 3>> rows;
+    for (const Piece& pc : pieces) {
+        if (!pc.alive) continue;
+        const int64_t id = int64_t(out->m_piece_tris.size());
+        out->m_piece_tris.emplace_back();
+        out->m_piece_planes.emplace_back();
+        out->m_piece_tet_counts.push_back(pc.tets.size());
+        for (const auto& [k, f] : pc.boundary) {
+            out->m_piece_tris.back().push_back(int64_t(rows.size()));
+            out->m_tri_piece.push_back(id);
+            out->m_piece_planes.back().push_back(plane(f));
+            rows.push_back(f);
+        }
+    }
+    out->m_F.resize(Eigen::Index(rows.size()), 3);
+    for (size_t r = 0; r < rows.size(); ++r) {
+        for (int j = 0; j < 3; ++j) out->m_F(Eigen::Index(r), j) = rows[r][size_t(j)];
+    }
+    out->m_bvh.init(out->m_V, out->m_F, 1e-6);
+    return out;
 }
 
 // ---------------------------------------------------------------------------------------------

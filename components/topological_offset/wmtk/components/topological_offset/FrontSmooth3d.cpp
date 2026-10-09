@@ -57,7 +57,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::vertex_energy(
             BandVolumeEnergy3D::Cell b;
             b.q = q;
             for (const size_t u : orig) {
-                b.candidates.push_back(m_band_tris->nearest(m_vertex_attribute[u].m_posf));
+                m_band_tris->nearest_all(m_vertex_attribute[u].m_posf, b.candidates);
             }
             if (ta.band_tri >= 0) b.candidates.push_back(ta.band_tri);
             std::sort(b.candidates.begin(), b.candidates.end());

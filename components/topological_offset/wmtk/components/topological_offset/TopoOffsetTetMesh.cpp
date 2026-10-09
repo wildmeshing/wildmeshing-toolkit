@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
+#include <map>
 #include <queue>
 #include <unordered_map>
 
@@ -995,7 +996,48 @@ void TopoOffsetTetMesh::init_offset_potential()
                 isolated,
                 m_phi_P.size());
         }
-        m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
+        if (!m_offset_params.experimental_convex_pieces) {
+            m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
+        } else {
+            // EXPERIMENTAL_convex_pieces: the input complex's own tets, merged while convex.
+            std::map<size_t, int> local;
+            std::vector<std::array<int, 4>> tets;
+            for (const Tuple& t : get_tets()) {
+                const size_t tid = t.tid(*this);
+                if (m_tet_attribute[tid].label != 1) continue;
+                std::array<int, 4> lt;
+                const auto vs = oriented_tet_vids(tid);
+                for (int j = 0; j < 4; ++j) {
+                    const auto it = local.emplace(vs[size_t(j)], int(local.size())).first;
+                    lt[size_t(j)] = it->second;
+                }
+                tets.push_back(lt);
+            }
+            if (tets.empty()) {
+                log_and_throw_error(
+                    "EXPERIMENTAL_convex_pieces needs an input complex with volume (no tets are "
+                    "labelled as the input complex)");
+            }
+            Eigen::MatrixXd V(Eigen::Index(local.size()), 3);
+            for (const auto& [vid, k] : local)
+                V.row(k) = m_vertex_attribute[vid].m_posf.transpose();
+            Eigen::MatrixXi T(Eigen::Index(tets.size()), 4);
+            for (size_t i = 0; i < tets.size(); ++i) {
+                for (int j = 0; j < 4; ++j) T(Eigen::Index(i), j) = tets[i][size_t(j)];
+            }
+            m_band_tris = InputTriangles::convex_pieces(V, T);
+            const auto& counts = m_band_tris->piece_tet_counts();
+            logger().info(
+                "[convex pieces] D(t)'s candidates: {} convex pieces of the input solid from {} "
+                "tets (largest {} tets, median {})",
+                counts.size(),
+                tets.size(),
+                *std::max_element(counts.begin(), counts.end()),
+                [c = counts]() mutable {
+                    std::nth_element(c.begin(), c.begin() + c.size() / 2, c.end());
+                    return c[c.size() / 2];
+                }());
+        }
     }
     // Which field the exit and refinement measure reads; see OffsetPotential.hpp and the
     // offset_field parameter. Both are built from the same extraction (m_phi_V/E/F/P), so

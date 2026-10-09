@@ -37,7 +37,7 @@
       "EXPERIMENTAL_area_weighted_ring",
       "EXPERIMENTAL_quadratic_stencil",
       "EXPERIMENTAL_no_refinement",
-      "EXPERIMENTAL_no_collapse_length_gate",
+      "EXPERIMENTAL_convex_pieces",
       "EXPERIMENTAL_no_exit",
       "check_manifoldness",
       "save_vtu",
@@ -281,10 +281,10 @@
     "doc": "EXPERIMENTAL (2026-10-08), 3D, a diagnostic. The offset loop halves no sizing scalar: the exit criterion's refinable vertices or faces are logged and left as they are. false (the default) = refinement as configured."
   },
   {
-    "pointer": "/EXPERIMENTAL_no_collapse_length_gate",
+    "pointer": "/EXPERIMENTAL_convex_pieces",
     "type": "bool",
     "default": false,
-    "doc": "EXPERIMENTAL (2026-10-09), 3D. true: the offset loop's collapse passes are not length-gated -- every edge is offered to the collapse pass whatever its length against the sizing field, front edges included (the front's own rule that refuses an unlimited collapse of a front vertex is lifted too), and a collapse is judged by the energy rule and the topological rules alone. false (the default): the shared pass's length gate (collapsing_l2 scaled by the endpoints' sizing scalars) applies."
+    "doc": "EXPERIMENTAL (2026-10-09), 3D. The candidate primitives of the energy's corner bound D(t): true = convex pieces of the input SOLID, built by merging the input complex's tets across shared faces for as long as the union stays convex; false (the default) = the input's surface triangles. For a point outside the solid the distance to a convex piece K inside it is convex and never below the distance d to the input, so D(t) stays an upper bound and a split still cannot raise it; unlike a single triangle, one piece covers cell corners that lie on two faces of a convex edge or on two triangles of one face, where the triangle bound turns positive. The distance to a piece is 0 inside it. A corner's candidates are every piece within its nearest distance (a point on the solid's surface touches several). Needs an input complex with volume (refused otherwise); meant for offsets outward of the solid."
   },
   {
     "pointer": "/EXPERIMENTAL_no_exit",

@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
 #include <random>
 #include <set>
 #include <utility>
@@ -1460,5 +1461,86 @@ TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
         const double d = x.norm();
         INFO("start " << d0 / delta << "x delta -> " << d / delta << "x delta");
         CHECK(d == Catch::Approx(delta).epsilon(0.02));
+    }
+}
+
+namespace {
+/// Unit hexes at the given integer cells, each split into its 6 Kuhn tets (conforming).
+void kuhn_grid(const std::vector<std::array<int, 3>>& cells, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
+{
+    std::map<std::array<int, 3>, int> vid;
+    std::vector<std::array<int, 4>> tets;
+    const auto id = [&](const std::array<int, 3>& c) {
+        return vid.emplace(c, int(vid.size())).first->second;
+    };
+    for (const auto& c : cells) {
+        std::array<int, 3> perm{{0, 1, 2}};
+        do {
+            std::array<int, 3> cur = c;
+            std::array<int, 4> t;
+            t[0] = id(cur);
+            for (int k = 0; k < 3; ++k)
+                cur[size_t(perm[size_t(k)])] += 1, t[size_t(k + 1)] = id(cur);
+            tets.push_back(t);
+        } while (std::next_permutation(perm.begin(), perm.end()));
+    }
+    V.resize(Eigen::Index(vid.size()), 3);
+    for (const auto& [c, i] : vid) V.row(i) << c[0], c[1], c[2];
+    T.resize(Eigen::Index(tets.size()), 4);
+    for (size_t i = 0; i < tets.size(); ++i) {
+        for (int j = 0; j < 4; ++j) T(Eigen::Index(i), j) = tets[i][size_t(j)];
+    }
+}
+} // namespace
+
+TEST_CASE("input-convex-pieces", "[topological_offset]")
+{
+    // EXPERIMENTAL_convex_pieces: a 2 x 1 x 1 box of Kuhn tets merges into one convex piece whose
+    // distance is the box's; an L of three cubes cannot be one piece, and every piece's distance
+    // is never below the true distance to the L (the upper-bound property D(t) relies on).
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi T;
+        kuhn_grid({{{0, 0, 0}}, {{1, 0, 0}}}, V, T);
+        const auto pcs = InputTriangles::convex_pieces(V, T);
+        CHECK(pcs->size() == 1);
+        CHECK(pcs->distance(0, Eigen::Vector3d(3., 0.5, 0.5)) == Catch::Approx(1.));
+        CHECK(pcs->distance(0, Eigen::Vector3d(2.5, 1.5, 0.5)) == Catch::Approx(std::sqrt(0.5)));
+        CHECK(pcs->distance(0, Eigen::Vector3d(1., 0.5, 0.5)) == 0.);
+        std::vector<int64_t> near;
+        pcs->nearest_all(Eigen::Vector3d(1., 0., 0.5), near);
+        CHECK(near.size() >= 1);
+    }
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi T;
+        kuhn_grid({{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}}, V, T);
+        const auto pcs = InputTriangles::convex_pieces(V, T);
+        CHECK(pcs->size() >= 2);
+        // The true distance to the L-shaped solid, from outside, by its three unit boxes.
+        const auto box = [](const Eigen::Vector3d& p, const Eigen::Vector3d& lo) {
+            const Eigen::Vector3d q = p.cwiseMax(lo).cwiseMin(lo + Eigen::Vector3d::Ones());
+            return (p - q).norm();
+        };
+        std::mt19937 rng(7);
+        std::uniform_real_distribution<double> u(-1., 3.);
+        int checked = 0;
+        for (int s = 0; s < 400; ++s) {
+            const Eigen::Vector3d p(u(rng), u(rng), u(rng));
+            const double d = std::min(
+                {box(p, Eigen::Vector3d(0, 0, 0)),
+                 box(p, Eigen::Vector3d(1, 0, 0)),
+                 box(p, Eigen::Vector3d(0, 1, 0))});
+            if (d <= 0.) continue;
+            ++checked;
+            double dmin = std::numeric_limits<double>::infinity();
+            for (size_t k = 0; k < pcs->size(); ++k) {
+                const double dk = pcs->distance(int64_t(k), p);
+                CHECK(dk >= d - 1e-12);
+                dmin = std::min(dmin, dk);
+            }
+            CHECK(dmin == Catch::Approx(d).margin(1e-12));
+        }
+        CHECK(checked > 100);
     }
 }

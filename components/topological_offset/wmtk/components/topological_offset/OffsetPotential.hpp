@@ -492,18 +492,46 @@ class InputTriangles
 {
 public:
     InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    /**
+     * EXPERIMENTAL_convex_pieces: the primitives are convex pieces of the input SOLID instead of
+     * its surface triangles. The pieces are built by merging the solid's tets (V: positions, T:
+     * #T x 4) greedily across shared faces while the union stays convex. For a point outside the
+     * solid, the distance to a piece K inside it is convex and never below d, so the corner bound
+     * stays an upper bound, and one piece covers corners on several faces of the solid (a convex
+     * edge, two triangles of one face). distance() is 0 inside a piece.
+     */
+    static std::shared_ptr<InputTriangles> convex_pieces(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& T);
     int64_t nearest(const Eigen::Vector3d& p) const;
+    /// The primitives nearest p: nearest() alone for triangles; for pieces, every piece within
+    /// the nearest distance (a point on the solid's surface touches several pieces at d = 0).
+    void nearest_all(const Eigen::Vector3d& p, std::vector<int64_t>& out) const;
     double distance(
         int64_t tri,
         const Eigen::Vector3d& p,
         Eigen::Vector3d* grad = nullptr,
         Eigen::Matrix3d* hess = nullptr) const;
-    size_t size() const { return size_t(m_F.rows()); }
+    size_t size() const { return m_pieces ? m_piece_tris.size() : size_t(m_F.rows()); }
+    bool is_pieces() const { return m_pieces; }
+    /// Pieces mode: the number of tets merged into each piece.
+    const std::vector<size_t>& piece_tet_counts() const { return m_piece_tet_counts; }
 
 private:
+    InputTriangles() = default;
+    /// The candidates within the nearest distance of p, as (triangle row, distance) pairs.
+    void near_triangles(const Eigen::Vector3d& p, std::vector<std::pair<int64_t, double>>& out)
+        const;
     Eigen::MatrixXd m_V;
     Eigen::MatrixXi m_F;
     SimpleBVH::BVH m_bvh;
+    // Pieces mode: m_F holds every piece's boundary triangles, row r belongs to m_tri_piece[r].
+    bool m_pieces = false;
+    std::vector<int64_t> m_tri_piece;
+    std::vector<std::vector<int64_t>> m_piece_tris;
+    std::vector<std::vector<Eigen::Vector4d>> m_piece_planes; ///< outward n and c: inside n.x <= c
+    std::vector<size_t> m_piece_tet_counts;
+    double m_tol = 0.;
 };
 
 class InputSegments

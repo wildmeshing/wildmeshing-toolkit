@@ -156,10 +156,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// scalar. no_exit: the loop does not exit on its criterion and runs max_rounds turns, the
     /// criterion's numbers still logged.
     bool no_refinement = false;
-    /// EXPERIMENTAL, 3D. true: the offset loop's collapse passes are not length-gated -- every
-    /// edge is a collapse candidate, front edges included, and collapses are judged by the energy
-    /// rule alone. false (the default): the shared pass's length gate and the front's rule apply.
-    bool no_collapse_length_gate = false;
+    /// EXPERIMENTAL, 3D. true: D(t)'s candidate primitives are convex pieces of the input solid
+    /// (its tets merged while convex) instead of its surface triangles. See the spec doc.
+    bool experimental_convex_pieces = false;
     bool no_exit = false;
     std::string output_path; // no extension
     bool save_vtu;
@@ -266,7 +265,7 @@ struct Parameters : public wmtk::OptimizerParameters
         area_weighted_ring = json_params["EXPERIMENTAL_area_weighted_ring"];
         quadratic_stencil = json_params["EXPERIMENTAL_quadratic_stencil"];
         no_refinement = json_params["EXPERIMENTAL_no_refinement"];
-        no_collapse_length_gate = json_params["EXPERIMENTAL_no_collapse_length_gate"];
+        experimental_convex_pieces = json_params["EXPERIMENTAL_convex_pieces"];
         no_exit = json_params["EXPERIMENTAL_no_exit"];
         if (area_weighted_ring && front_measure != "vertex_ring") {
             log_and_throw_error(

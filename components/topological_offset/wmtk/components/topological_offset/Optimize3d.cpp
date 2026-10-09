@@ -315,9 +315,9 @@ double TopoOffsetTetMesh::band_cell_vd(
     std::array<Vector3d, 4> p;
     for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
     const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-    std::array<int64_t, 5> cand;
-    for (int j = 0; j < 4; ++j) cand[size_t(j)] = m_band_tris->nearest(p[size_t(j)]);
-    cand[4] = stored_tri;
+    std::vector<int64_t> cand;
+    for (int j = 0; j < 4; ++j) m_band_tris->nearest_all(p[size_t(j)], cand);
+    cand.push_back(stored_tri);
     double m = std::numeric_limits<double>::infinity();
     int64_t arg = -1;
     for (size_t i = 0; i < cand.size(); ++i) {
@@ -1071,9 +1071,7 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
-    // EXPERIMENTAL_no_collapse_length_gate lifts it: the energy rule alone judges the collapse.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset &&
-        !m_offset_params.no_collapse_length_gate) {
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
@@ -4117,17 +4115,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop()
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
-                local_operations(
-                    {{groups[gi][0], groups[gi][1], groups[gi][2], 0}},
-                    !m_offset_params.no_collapse_length_gate);
+                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 energy_after_ops = total_energy();
                 log_energy_step(group_names[gi]);
                 smooth_group_to_convergence(group_names[gi]);
             } else {
                 // The group's operations, then its k smoothing passes, each stamped first.
-                local_operations(
-                    {{groups[gi][0], groups[gi][1], groups[gi][2], 0}},
-                    !m_offset_params.no_collapse_length_gate);
+                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 energy_after_ops = total_energy();
                 log_energy_step(group_names[gi]);
                 smooth_passes(groups[gi][3]);
