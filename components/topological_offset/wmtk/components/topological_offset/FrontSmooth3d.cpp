@@ -54,11 +54,12 @@ bool stencil_face_at(
         x,
         out.q1,
         out.q2,
-        [&](const Vector3d&, const double wa, const double wb, const double wc) {
+        [&](const Vector3d&, const double wa, const double wb, const double wc, const double w) {
             StencilEnergy3D::Sample sm;
             sm.a = wa;
             sm.b = wb;
             sm.c = wc;
+            sm.w = w;
             out.samples.push_back(sm);
         });
     return !out.samples.empty();
@@ -99,10 +100,25 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     // back the position and the ring's stored qualities. smooth_vertex_3d() has counted the move
     // accepted by then; it is recounted as a quality refusal, so the counters still partition the
     // attempts.
+    // EXPERIMENTAL_unreachable_exit: the change this solve makes to the vertex's own error, 0 when
+    // the move is refused and rolled back (see VertexExtra::m_front_change).
+    const double r_before = front_vertex_relative_residual(vid);
+    const auto record_change = [&](const bool moved) {
+        VertexExtra& ve = m_vertex_extra[vid];
+        ve.m_front_change_group = m_smooth_group;
+        const double r_after = moved ? front_vertex_relative_residual(vid) : r_before;
+        ve.m_front_change =
+            moved ? std::abs(r_after - r_before) / m_offset_params.front_conv_frac() : 0.;
+    };
     const auto solve_3d = [&]() {
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
-        const bool veto = m_offset_params.offset_front_smooth_veto;
-        const double before = veto ? max_tet_energy(ring) : 0.;
+        // EXPERIMENTAL_integral_energy: no veto -- the solve descends the vertex's part of E'.
+        // EXPERIMENTAL_band_volume_energy: the same.
+        // EXPERIMENTAL_ops_global_energy: the veto is E itself, as in smooth_nonfront_vertex().
+        const bool e_veto = m_offset_params.ops_global_energy;
+        const bool veto = !e_veto && m_offset_params.offset_front_smooth_veto &&
+                          !m_offset_params.integral_energy && !m_offset_params.band_volume_energy;
+        const double before = e_veto ? global_sum(ring) : veto ? max_tet_energy(ring) : 0.;
         // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
         // every vertex that shares a front face with it -- before the solve.
         std::vector<size_t> nb;
@@ -132,6 +148,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             }
         }
         if (!ok) {
+            record_change(false);
             return false;
         }
         {
@@ -145,12 +162,15 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
         }
         if (veto) ++m_front_veto_asked;
-        if (veto && !(max_tet_energy(ring) <= before)) { // a NaN refuses
+        if ((veto && !(max_tet_energy(ring) <= before)) ||
+            (e_veto && !(global_sum(ring) <= before))) { // a NaN refuses
             ++m_front_veto_fired;
             --m_smooth_rejects.accepted;
             ++m_smooth_rejects.quality;
+            record_change(false);
             return false;
         }
+        record_change(true);
         if (m_offset_params.debug_crossings) {
             for (size_t k = 0; k < nb.size(); ++k) {
                 const double after = ring_measure_at(nb[k]);
@@ -213,7 +233,7 @@ double TopoOffsetTetMesh::front_move_alignment(const size_t vid) const
     // step that cannot reduce the distance at all. Negative marks a missing direction or gradient.
     const Vector3d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) return -2.;
-    const Vector3d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+    const Vector3d g = front_vertex_field_gradient(vid);
     const double gn = g.norm();
     if (!(gn > 0.) || !std::isfinite(gn)) return -2.;
     return std::abs(n.normalized().dot(g / gn));
@@ -281,7 +301,7 @@ Vector3d TopoOffsetTetMesh::front_vertex_move_direction(const size_t vid) const
 
 Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
 {
-    const Vector3d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+    const Vector3d g = front_vertex_field_gradient(vid);
     const double gn = g.norm();
     return (std::isfinite(gn) && gn > 0.) ? Vector3d(g / gn) : Vector3d::Zero();
 }
@@ -312,28 +332,134 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
-    // ENERGIES.md: (1 - w) vertex_ms(v, O_f), w = w_amips and vertex_ms the MEAN of
-    // the face measures over the vertex's offset faces -- weighted by area under
-    // area_weight_front (StencilEnergy3D's area mode), plainly otherwise (1/|O_f| here). The face
-    // measure is the mean over the stencil of the squared error in units of the tolerance, the
-    // 1 / front_conv_frac()^2 of offset_term_weight() -- face_offset_term(), 1 at the bar.
-    const double w_off = (1. - m_offset_params.w_amips) * offset_term_weight();
-    // THE offset term, and the only one: the mean squared relative error over each incident
-    // face's stencil, averaged over the ring. The stencil contains the face's corners, so the
-    // moving vertex's own residual is in it. See StencilEnergy3D. The same average as the ring
-    // exit test and the main iterations' collapse and swap rules (vertex_ms()). Summed over the
-    // considered faces (considered_offset_faces_at()): the vertex's live front faces minus those
-    // on the mesh boundary. Null when the vertex has no considered face to carry a term.
-    std::vector<StencilEnergy3D::Face> stencil_faces;
-    for (const Tuple& f : considered_offset_faces_at(vid)) {
-        StencilEnergy3D::Face sf;
-        if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
-        stencil_faces.push_back(std::move(sf));
+    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
+    // in units of the tolerance, so the term below is sum_f O(f) -- for the euclidean field the
+    // very terms the per-tet energy tet_energy() carries on these faces' band cells, and the
+    // ring measure's n_v r_v^2. It replaced 1 - w_amips, a weight with no unit, on 2026-09-28.
+    const double w_off = offset_term_weight();
+    auto sum = std::make_shared<optimization::EnergySum>();
+    if (m_offset_params.band_volume_energy) {
+        // EXPERIMENTAL_band_volume_energy: the vertex's part of int_B e dV in place of the face
+        // term.
+        if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
+        return sum;
     }
-    if (stencil_faces.empty()) return nullptr;
-    const bool area = m_offset_params.area_weight_front;
-    const double w = area ? w_off : w_off / double(stencil_faces.size());
-    return std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w, false, area);
+    // THE offset term, and the only one: the mean squared relative error over each incident
+    // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
+    // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
+    // V/N_s times for a vertex of valence V -- and the sag term that used to sit below, whose
+    // interior samples are the stencil's non-corner points. See StencilEnergy3D. Every face
+    // weighs 1: the area weights front_measure "vertex_ring" used to put here went with the
+    // per-tet energy, which has no area in it, and the ring measure dropped them with it -- except
+    // under EXPERIMENTAL_area_weighted_ring, where the term is n R(v)^2 with R(v)^2 the
+    // area-weighted ring measure and the areas variables (StencilEnergy3D, AREA WEIGHTING).
+    {
+        std::vector<StencilEnergy3D::Face> stencil_faces;
+        // EXPERIMENTAL_visible_distance: each face's corners in the stencil's order (vid first)
+        // and its band cell, for the sample reader below.
+        std::vector<std::array<size_t, 3>> face_vids;
+        std::vector<int64_t> face_band;
+        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+            StencilEnergy3D::Face sf;
+            if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
+            stencil_faces.push_back(std::move(sf));
+            if (m_visible_active) {
+                std::array<size_t, 3> fv{{vid, vid, vid}};
+                int k = 1;
+                for (const size_t v : get_face_vids(f)) {
+                    if (v != vid && k < 3) fv[size_t(k++)] = v;
+                }
+                face_vids.push_back(fv);
+                face_band.push_back(front_face_band_cell(fv[0], fv[1], fv[2]));
+            }
+        }
+        if (!stencil_faces.empty()) {
+            auto energy = std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off);
+            energy->set_area_weighted(
+                m_offset_params.area_weighted_ring && !m_offset_params.integral_energy);
+            energy->set_area_integral(m_offset_params.integral_energy);
+            if (m_visible_active) {
+                // The field at a sample is d_vis with the moving vertex at the iterate x. The walk
+                // reads the cells around vid at x too, so a trial x whose cells cannot be walked
+                // (an inverted ring the line search would refuse anyway) scores +inf rather than
+                // stopping the run; at the vertex's own position a Stop does stop it.
+                const Vector3d x0 = m_vertex_attribute[vid].m_posf;
+                energy->set_sample_reader(
+                    [this, vid, x0, face_vids, face_band](
+                        const size_t fi,
+                        const StencilEnergy3D::Sample& sm,
+                        const Eigen::Vector3d& x,
+                        const Eigen::Vector3d& p,
+                        double& v,
+                        Eigen::Vector3d& g,
+                        Eigen::Matrix3d& H) -> int {
+                        MeshCells cells(*this);
+                        cells.moved_vid = int64_t(vid);
+                        cells.moved_pos = x;
+                        const VisibleStart st = visible_start(
+                            face_vids[fi],
+                            {{sm.a, sm.b, sm.c}},
+                            face_band[fi],
+                            cells);
+                        const bool at_own_position = x == x0;
+                        const VisibleField::Feature f =
+                            visible_feature(p, st, cells, /*allow_stop=*/!at_own_position);
+                        if (f.status == VisibleField::Feature::Status::Stop) return -1;
+                        if (f.status != VisibleField::Feature::Status::Found) return 0;
+                        v = f.d / m_visible_field->delta();
+                        g = m_visible_field->gradient(p, f);
+                        H = m_visible_field->hessian(p, f);
+                        return 1;
+                    });
+            }
+            sum->add_energy(energy);
+        }
+    }
+    return sum;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
+    const size_t vid) const
+{
+    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
+    if (m_n_regions > 1) {
+        log_and_throw_error(
+            "EXPERIMENTAL_band_volume_energy reads one field, and this input has {} regions",
+            m_n_regions);
+    }
+    std::vector<BandVolumeEnergy3D::Cell> cells;
+    std::vector<std::vector<int64_t>> cand; // corner_bound: per cell, its candidate triangles
+    const bool corner_bound = m_offset_params.band_volume_rule == "corner_bound";
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        if (!cell_is_offset_band(tid)) continue;
+        BandVolumeEnergy3D::Cell c;
+        int k = 0;
+        std::vector<int64_t> cc;
+        for (const size_t u : oriented_tet_vids(tid)) {
+            if (corner_bound) cc.push_back(m_band_tris->nearest(m_vertex_attribute[u].m_posf));
+            if (u == vid) continue;
+            (k == 0 ? c.q1 : k == 1 ? c.q2 : c.q3) = m_vertex_attribute[u].m_posf;
+            ++k;
+        }
+        if (k != 3) continue;
+        cells.push_back(c);
+        if (corner_bound) {
+            if (m_tet_attribute[tid].band_tri >= 0) cc.push_back(m_tet_attribute[tid].band_tri);
+            std::sort(cc.begin(), cc.end());
+            cc.erase(std::unique(cc.begin(), cc.end()), cc.end());
+            cand.push_back(std::move(cc));
+        }
+    }
+    if (cells.empty()) return nullptr;
+    auto e = std::make_shared<BandVolumeEnergy3D>(
+        m_offset_potential,
+        std::move(cells),
+        m_vertex_attribute[vid].m_posf,
+        band_volume_factor());
+    e->set_centroid_only(m_offset_params.band_volume_rule == "centroid");
+    if (corner_bound)
+        e->set_corner_bound(m_band_tris, std::move(cand), m_offset_params.target_distance);
+    return e;
 }
 
 } // namespace wmtk::components::topological_offset

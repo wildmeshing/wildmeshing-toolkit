@@ -1020,6 +1020,47 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
     REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
 }
 
+TEST_CASE("stencil-quadratic-weights", "[offset]")
+{
+    // EXPERIMENTAL_quadratic_stencil: the weights for_each_face_sample() hands a five-argument
+    // visitor make the weighted mean of any quadratic over the stencil its exact mean over the
+    // face, at every order >= 1; with the key off every weight is 1.
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
+    // f = 1 + 2x - 3y + 5x^2 - 7xy + 11y^2; exact means over the triangle: 1, 1/3, 1/3, 1/6,
+    // 1/12, 1/6.
+    const auto f = [](const Vector3d& q) {
+        const double x = q[0], y = q[1];
+        return 1. + 2. * x - 3. * y + 5. * x * x - 7. * x * y + 11. * y * y;
+    };
+    const double exact = 1. + 2. / 3. - 1. + 5. / 6. - 7. / 12. + 11. / 6.;
+    for (int k = 1; k <= 4; ++k) {
+        mesh.m_offset_params.stencil_order = k;
+        for (const bool quad : {false, true}) {
+            mesh.m_offset_params.quadratic_stencil = quad;
+            double s = 0., sw = 0.;
+            bool all_one = true;
+            mesh.for_each_face_sample(
+                p0,
+                p1,
+                p2,
+                [&](const Vector3d& q, double, double, double, double w) {
+                    s += w * f(q);
+                    sw += w;
+                    all_one = all_one && w == 1.;
+                });
+            INFO(
+                "order " << k << " quadratic " << quad << " mean " << s / sw << " exact " << exact);
+            if (quad) {
+                CHECK(s / sw == Catch::Approx(exact).epsilon(1e-13));
+            } else {
+                CHECK(all_one);
+            }
+        }
+    }
+}
+
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {
     // The stencil the whole 3D criterion and energy sample, checked against the counts the
@@ -1236,6 +1277,66 @@ TEST_CASE("stencil-energy-3d-is-the-sum-of-face-terms", "[offset][3d]")
     }
 }
 
+TEST_CASE("face-remainder", "[offset][3d]")
+{
+    // face_offset_term()'s remainder, EXPERIMENTAL_unreachable_exit's refinement measure: the mean
+    // over the stencil of (e - L)^2, L the least-squares function linear on the face. On a face
+    // over the triangle's interior the distance is linear on the face and the remainder is 0; past
+    // the triangle's vertex (0, 10, 0) the distance is the distance to that point, not linear, and
+    // the remainder is (3/16) b^2 at order 1 (b = the centroid's e minus the mean of the corners')
+    // and the least-squares residual computed here by hand at order 2.
+    Parameters param;
+    param.target_distance = kEnergyDelta;
+    param.front_conv = kEnergyConv;
+    TopoOffsetTetMesh mesh(param, 0);
+    const auto pot = plane_field();
+    const double frac = mesh.m_offset_params.front_conv_frac();
+    const auto e_at = [&](const Vector3d& q) { return pot->relative_residual(q) / frac; };
+    for (const int k : {1, 2}) {
+        mesh.m_offset_params.stencil_order = k;
+        double rem = -1.;
+        mesh.face_offset_term(
+            *pot,
+            Vector3d(0.1, -0.05, 0.53),
+            Vector3d(0.4, 0.1, 0.61),
+            Vector3d(0.2, 0.35, 0.44),
+            nullptr,
+            &rem);
+        INFO("flat, stencil_order " << k);
+        CHECK(std::abs(rem) <= 1e-9);
+    }
+    const Vector3d a(0.0, 11.0, 0.5), b(0.6, 11.4, 0.9), c(-0.5, 11.8, 0.3);
+    {
+        mesh.m_offset_params.stencil_order = 1;
+        double rem = -1.;
+        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
+        const double bend = e_at((a + b + c) / 3.) - (e_at(a) + e_at(b) + e_at(c)) / 3.;
+        CHECK(std::abs(bend) > 1.); // the fixture really bends
+        CHECK(rem == Catch::Approx(3. / 16. * bend * bend).epsilon(1e-10));
+    }
+    {
+        mesh.m_offset_params.stencil_order = 2;
+        double rem = -1.;
+        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
+        std::vector<Vector3d> lam;
+        std::vector<double> ev;
+        mesh.for_each_face_sample(a, b, c, [&](const Vector3d& q, double wa, double wb, double wc) {
+            lam.push_back(Vector3d(wa, wb, wc));
+            ev.push_back(e_at(q));
+        });
+        Eigen::MatrixXd A(lam.size(), 3);
+        Eigen::VectorXd y(lam.size());
+        for (size_t i = 0; i < lam.size(); ++i) {
+            A.row(Eigen::Index(i)) = lam[i].transpose();
+            y[Eigen::Index(i)] = ev[i];
+        }
+        const Eigen::VectorXd coef = A.colPivHouseholderQr().solve(y);
+        const double by_hand = (y - A * coef).squaredNorm() / double(lam.size());
+        CHECK(by_hand > 1e-3);
+        CHECK(rem == Catch::Approx(by_hand).epsilon(1e-8));
+    }
+}
+
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
     // Four cells around the edge (a, b): 0 and 1 band, 2 background, 3 input complex. The band's
@@ -1324,12 +1425,11 @@ TEST_CASE("collapse-cell-sets", "[offset][3d]")
 
 TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
 {
-    // The smoothing objective of ENERGIES.md: at every vertex, what the shared smoother minimises
+    // The smoothing objective: at every vertex, what the shared smoother minimises
     // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
-    // of its own) is w AMIPS^3 over the ring plus, at a front vertex, (1 - w) times the MEAN of
-    // the face measures (face_offset_term()) over its considered faces
-    // (considered_offset_faces_at(): its live front faces minus those on the mesh boundary), none
-    // if it has none. The fixture has no plastic medium, so the shape term is equilateral AMIPS^3
+    // of its own) is w AMIPS^3 over the ring plus, at a front vertex, the SUM of the face
+    // measures (face_offset_term()) over its live front faces -- tet_energy()'s two parts. The
+    // fixture has no plastic medium, so the shape term is equilateral AMIPS^3
     // (shape_energy()). Checked on the per-tet-energy fixture by moving each vertex (front vertices
     // a, b, c0, c1, c2; c3 is on no front face) to three nearby positions, against the formula
     // evaluated from the mesh; and the shared smoother's own per-cell comparison
@@ -1361,22 +1461,6 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
             mesh->m_vertex_extra[v].m_is_on_offset = !mesh->offset_surface_faces_live_at(v).empty();
         }
         REQUIRE(!mesh->m_vertex_extra[size_t(c3)].m_is_on_offset);
-        // The considered faces: the live front faces minus those on the mesh boundary. Here the
-        // only interior front face is (a, b, c2), between band cell 1 and background cell 2;
-        // every other live front face is a band face on the boundary, so c0 and c1 consider none.
-        for (size_t v = 0; v < 6; ++v) {
-            const auto considered = mesh->considered_offset_faces_at(v);
-            const bool on_abc2 = v == size_t(a) || v == size_t(b) || v == size_t(c2);
-            INFO("w " << w << ", considered faces at vertex " << v);
-            REQUIRE(considered.size() == (on_abc2 ? 1u : 0u));
-            for (const auto& ft : considered) {
-                CHECK(ft.switch_tetrahedron(*mesh).has_value());
-                auto f = mesh->get_face_vids(ft);
-                std::sort(f.begin(), f.end());
-                CHECK(f == std::array<size_t, 3>{{size_t(a), size_t(b), size_t(c2)}});
-            }
-        }
-        REQUIRE(!mesh->offset_surface_faces_live_at(size_t(c1)).empty());
         for (size_t v = 0; v < 6; ++v) {
             const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
             const bool front = mesh->vertex_carries_offset_term(v);
@@ -1385,24 +1469,21 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
             const auto energy = mesh->smoothing_extra_energy(v);
             const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
             Eigen::VectorXd xv = x0;
-            // ENERGIES.md's objective, evaluated from the mesh as it stands.
+            // The objective, evaluated from the mesh as it stands.
             const auto formula = [&]() {
                 double e = 0.;
                 for (const size_t tid : ring) {
                     e += w * mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
                 }
-                const auto faces = mesh->considered_offset_faces_at(v);
-                if (front && !faces.empty()) {
-                    double s = 0.;
-                    for (const auto& ft : faces) {
+                if (front) {
+                    for (const auto& ft : mesh->offset_surface_faces_live_at(v)) {
                         const auto f = mesh->get_face_vids(ft);
-                        s += mesh->face_offset_term(
+                        e += mesh->face_offset_term(
                             *pot,
                             mesh->m_vertex_attribute[f[0]].m_posf,
                             mesh->m_vertex_attribute[f[1]].m_posf,
                             mesh->m_vertex_attribute[f[2]].m_posf);
                     }
-                    e += (1. - w) * s / double(faces.size());
                 }
                 return e;
             };

@@ -1,5 +1,7 @@
+#include <wmtk/utils/AMIPS.h>
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -10,6 +12,7 @@
 #include <Eigen/Eigenvalues>
 
 #include <cmath>
+#include <random>
 #include <set>
 #include <utility>
 #include <vector>
@@ -1051,100 +1054,6 @@ TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
     CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
 }
 
-TEST_CASE("stencil-energy-3d-area-weighted", "[offset][potential]")
-{
-    // The area-weighted form (area_weight_front): E = w sum_f A_f m_f / sum_f A_f, the areas
-    // moving with x. Value against the formula computed by hand, gradient against central
-    // differences of the value, and both Hessian forms against central differences of the
-    // gradient -- the exact one directly, the Gauss-Newton one after adding back the dropped
-    // per-sample term, which enters the quotient only through m_f's Hessian, i.e. weighted by
-    // A_f / S. Three faces of different areas, so the area weights genuinely differ.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-    const std::vector<StencilEnergy3D::Sample> st =
-        {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}, {0.5, 0.25, 0.25}};
-    std::vector<StencilEnergy3D::Face> faces(3);
-    faces[0].q1 = Vector3d(0.31, -0.05, 0.02);
-    faces[0].q2 = Vector3d(0.12, 0.29, -0.04);
-    faces[1].q1 = Vector3d(0.12, 0.29, -0.04);
-    faces[1].q2 = Vector3d(-0.21, 0.17, 0.26);
-    faces[2].q1 = Vector3d(-0.21, 0.17, 0.26);
-    faces[2].q2 = Vector3d(0.05, -0.30, 0.10);
-    for (auto& f : faces) f.samples = st;
-
-    const double w = 0.7;
-    StencilEnergy3D energy(pot, faces, w, false, true);
-    StencilEnergy3D energy_gn(pot, faces, w, true, true);
-    VectorXd xv(3);
-    xv << 0.21, 0.13, 0.07;
-    const Vector3d x = xv;
-    const double c = pot->target_level();
-
-    // By hand.
-    double P = 0., S = 0.;
-    std::vector<double> A(faces.size());
-    for (size_t i = 0; i < faces.size(); ++i) {
-        const auto& f = faces[i];
-        A[i] = 0.5 * (f.q1 - x).cross(f.q2 - x).norm();
-        double m = 0.;
-        for (const auto& sm : f.samples) {
-            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
-            const double r = (pot->value(q) - c) / c;
-            m += r * r;
-        }
-        m /= double(f.samples.size());
-        P += A[i] * m;
-        S += A[i];
-    }
-    REQUIRE(*std::min_element(A.begin(), A.end()) * 1.5 < *std::max_element(A.begin(), A.end()));
-    CHECK(energy.value(xv) == Catch::Approx(w * P / S).epsilon(1e-12));
-
-    const double h = 1e-6;
-    VectorXd g(3);
-    energy.gradient(xv, g);
-    MatrixXd H, Hgn;
-    energy.hessian(xv, H);
-    energy_gn.hessian(xv, Hgn);
-    // The Gauss-Newton form's missing part: sum_f (A_f / S) w (1/n) sum_i 2 a_i^2 r_i hess Phi/c.
-    Eigen::Matrix3d dropped = Eigen::Matrix3d::Zero();
-    for (size_t i = 0; i < faces.size(); ++i) {
-        const auto& f = faces[i];
-        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
-        for (const auto& sm : f.samples) {
-            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
-            const double r = (pot->value(q) - c) / c;
-            Hf += (2. * sm.a * sm.a * r / c) * pot->hessian(q);
-        }
-        dropped += (A[i] / S) * w * Hf / double(f.samples.size());
-    }
-    for (int k = 0; k < 3; ++k) {
-        VectorXd xp = xv, xm = xv;
-        xp[k] += h;
-        xm[k] -= h;
-        const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-        INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
-        CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
-        VectorXd gp(3), gm(3);
-        energy.gradient(xp, gp);
-        energy.gradient(xm, gm);
-        for (int j = 0; j < 3; ++j) {
-            const double fdh = (gp[j] - gm[j]) / (2. * h);
-            INFO("hess " << j << "," << k << " fd " << fdh << " exact " << H(j, k));
-            CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
-            CHECK(std::abs(fdh - (Hgn(j, k) + dropped(j, k))) <= 1e-4 * std::max(1., H.norm()));
-        }
-    }
-    CHECK((H - H.transpose()).norm() <= 1e-10 * std::max(1., H.norm()));
-}
-
 TEST_CASE("stencil-energy-2d-derivatives", "[offset][potential]")
 {
     // StencilEnergy2D, the 2D front smoother's offset term, against finite differences: the
@@ -1443,6 +1352,194 @@ TEST_CASE("stencil-energy-3d-hessian-fd", "[offset][potential]")
     }
 }
 
+TEST_CASE("stencil-energy-3d-area-weighted", "[offset][potential]")
+{
+    // StencilEnergy3D under set_area_weighted(true): n * sum_f area(f) O(f) / sum_f area(f), the
+    // areas taken at x. A flat regular hexagon of faces around x in the plane x = 0.1, above the
+    // +z face interior of a cube (d = z - 1 there, so r = (d - delta)/delta is affine in z and the
+    // whole ring sits inside the level set: r < 0, the front's error cannot reach 0 by moving in
+    // the plane -- the pressed front's situation, d growing along it).
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    auto env = std::make_shared<SampleEnvelope>();
+    env->use_exact = true;
+    {
+        std::vector<Eigen::Vector3d> verts(size_t(s.V.rows()));
+        for (int i = 0; i < s.V.rows(); ++i) verts[size_t(i)] = s.V.row(i).head<3>();
+        std::vector<Eigen::Vector3i> tris(size_t(s.F.rows()));
+        for (int i = 0; i < s.F.rows(); ++i) {
+            tris[size_t(i)] = Eigen::Vector3i(s.F(i, 0), s.F(i, 1), s.F(i, 2));
+        }
+        env->init(verts, tris, delta);
+    }
+    const auto pot = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+    const std::vector<StencilEnergy3D::Sample> order1 = {
+        {1., 0., 0.},
+        {0., 1., 0.},
+        {0., 0., 1.},
+        {1. / 3., 1. / 3., 1. / 3.}};
+    const double w = 0.9, h = 0.02;
+    const auto ring = [&](const Vector3d& c) {
+        std::vector<StencilEnergy3D::Face> faces(6);
+        for (int k = 0; k < 6; ++k) {
+            const double t0 = M_PI / 3. * k, t1 = M_PI / 3. * (k + 1);
+            faces[size_t(k)].q1 = c + h * Vector3d(0., std::cos(t0), std::sin(t0));
+            faces[size_t(k)].q2 = c + h * Vector3d(0., std::cos(t1), std::sin(t1));
+            faces[size_t(k)].samples = order1;
+        }
+        return faces;
+    };
+    const Vector3d c0(0.1, 0.0, 1.05);
+
+    SECTION("derivatives")
+    {
+        StencilEnergy3D e(pot, ring(c0), w);
+        e.set_area_weighted(true);
+        const VectorXd xv = c0 + Vector3d(0.002, 0.003, 0.004);
+        VectorXd g(3);
+        e.gradient(xv, g);
+        for (int k = 0; k < 3; ++k) {
+            const double dh = 1e-6;
+            VectorXd xp = xv, xm = xv;
+            xp[k] += dh;
+            xm[k] -= dh;
+            const double fd = (e.value(xp) - e.value(xm)) / (2. * dh);
+            INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+        }
+        MatrixXd H(3, 3);
+        e.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            const double dh = 1e-5;
+            VectorXd xp = xv, xm = xv, gp(3), gm(3);
+            xp[k] += dh;
+            xm[k] -= dh;
+            e.gradient(xp, gp);
+            e.gradient(xm, gm);
+            const VectorXd col = (gp - gm) / (2. * dh);
+            for (int j = 0; j < 3; ++j) {
+                INFO("hess " << j << "," << k << " fd " << col[j] << " analytic " << H(j, k));
+                CHECK(std::abs(col[j] - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
+
+    SECTION("equal areas: the plain sum")
+    {
+        StencilEnergy3D plain(pot, ring(c0), w), weighted(pot, ring(c0), w);
+        weighted.set_area_weighted(true);
+        const VectorXd xv = c0;
+        CHECK(weighted.value(xv) == Catch::Approx(plain.value(xv)).epsilon(1e-12));
+    }
+
+    SECTION("no slide at the centre")
+    {
+        // The plain sum slides x toward larger z (r -> 0); the area-weighted one does not move
+        // it within the plane: the offset part of r is integrated exactly and r^2's quadratic
+        // part is symmetric about the centre.
+        StencilEnergy3D plain(pot, ring(c0), w), weighted(pot, ring(c0), w);
+        weighted.set_area_weighted(true);
+        const VectorXd xv = c0;
+        VectorXd gp(3), gw(3);
+        plain.gradient(xv, gp);
+        weighted.gradient(xv, gw);
+        INFO("plain " << gp.transpose() << " | weighted " << gw.transpose());
+        CHECK(gp[2] < 0.);
+        CHECK(std::abs(gw[1]) <= 1e-10 * std::abs(gp[2]));
+        CHECK(std::abs(gw[2]) <= 1e-10 * std::abs(gp[2]));
+    }
+
+    SECTION("the slide does not depend on the error's offset")
+    {
+        // The same ring and the same off-centre x, at two heights: r differs by a constant.
+        // The plain sum's sliding gradient changes with it; the area-weighted one does not --
+        // what is left of it is the stencil's quadrature error on r^2's quadratic part.
+        const Vector3d off(0., 0.004, 0.006), lift(0., 0., 0.01);
+        StencilEnergy3D pa(pot, ring(c0), w), pb(pot, ring(c0 + lift), w);
+        StencilEnergy3D wa(pot, ring(c0), w), wb(pot, ring(c0 + lift), w);
+        wa.set_area_weighted(true);
+        wb.set_area_weighted(true);
+        VectorXd gpa(3), gpb(3), gwa(3), gwb(3);
+        pa.gradient(VectorXd(c0 + off), gpa);
+        pb.gradient(VectorXd(c0 + lift + off), gpb);
+        wa.gradient(VectorXd(c0 + off), gwa);
+        wb.gradient(VectorXd(c0 + lift + off), gwb);
+        INFO(
+            "plain " << gpa.transpose() << " / " << gpb.transpose() << " | weighted "
+                     << gwa.transpose() << " / " << gwb.transpose());
+        CHECK(std::abs(gpa[2] - gpb[2]) > 0.1 * std::abs(gpa[2]));
+        for (int k : {1, 2}) {
+            CHECK(std::abs(gwa[k] - gwb[k]) <= 1e-9 * std::max(std::abs(gpa[2]), 1.));
+        }
+        // and what is left is small beside the plain sum's slide
+        CHECK(std::abs(gwa[2]) < 0.1 * std::abs(gpa[2]));
+    }
+    SECTION("integral mode: derivatives, the plain sum times the area, no slide at the centre")
+    {
+        // EXPERIMENTAL_integral_energy's front term: weight * sum_f area(f) mean_f(r^2), no
+        // division by the ring's area.
+        StencilEnergy3D e(pot, ring(c0), w), plain(pot, ring(c0), w);
+        e.set_area_integral(true);
+        const VectorXd xv = c0 + Vector3d(0.002, 0.003, 0.004);
+        VectorXd g(3);
+        e.gradient(xv, g);
+        MatrixXd H(3, 3);
+        e.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            const double dh = 1e-6;
+            VectorXd xp = xv, xm = xv;
+            xp[k] += dh;
+            xm[k] -= dh;
+            const double fd = (e.value(xp) - e.value(xm)) / (2. * dh);
+            INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1e-3, std::abs(g[k])));
+            VectorXd gp(3), gm(3);
+            const double dh2 = 1e-5;
+            VectorXd yp = xv, ym = xv;
+            yp[k] += dh2;
+            ym[k] -= dh2;
+            e.gradient(yp, gp);
+            e.gradient(ym, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * dh2);
+                INFO("hess " << j << "," << k << " fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1e-3, std::abs(H(j, k))));
+            }
+        }
+        // At the centre every face has the same area A: the sum is A times the plain sum.
+        const double A = 0.5 * h * h * std::sin(M_PI / 3.);
+        CHECK(e.value(VectorXd(c0)) == Catch::Approx(A * plain.value(VectorXd(c0))).epsilon(1e-12));
+        VectorXd gc(3), gpl(3);
+        e.gradient(VectorXd(c0), gc);
+        plain.gradient(VectorXd(c0), gpl);
+        CHECK(std::abs(gc[1]) <= 1e-10 * A * std::abs(gpl[2]));
+        CHECK(std::abs(gc[2]) <= 1e-10 * A * std::abs(gpl[2]));
+    }
+
+    SECTION("with the quadratic stencil weights, no slide anywhere")
+    {
+        // Corners 1, centroid 9 (corners 1/12, centroid 3/4): O(f) is then the face's exact mean
+        // of e^2 for this affine e, so the ring's area-weighted mean is the exact mean of e^2 over
+        // the fixed hexagon and sliding x within it changes nothing -- off the centre too.
+        auto qring = [&](const Vector3d& c) {
+            auto faces = ring(c);
+            for (auto& fc : faces) {
+                for (auto& sm : fc.samples) sm.w = (sm.a == 1. / 3.) ? 9. : 1.;
+            }
+            return faces;
+        };
+        const Vector3d off(0., 0.004, 0.006);
+        StencilEnergy3D plain(pot, ring(c0), w), wq(pot, qring(c0), w);
+        wq.set_area_weighted(true);
+        VectorXd gp(3), gq(3);
+        plain.gradient(VectorXd(c0 + off), gp);
+        wq.gradient(VectorXd(c0 + off), gq);
+        INFO("plain " << gp.transpose() << " | area + quadratic weights " << gq.transpose());
+        CHECK(std::abs(gq[1]) <= 1e-9 * std::abs(gp[2]));
+        CHECK(std::abs(gq[2]) <= 1e-9 * std::abs(gp[2]));
+    }
+}
+
 TEST_CASE("stencil-energy-3d-is-the-mean-squared-relative-error", "[offset][potential]")
 {
     // The value read back from the formula independently: w * sum over faces of the MEAN over
@@ -1549,6 +1646,420 @@ TEST_CASE("stencil-energy-3d-is-the-mean-squared-relative-error", "[offset][pote
         VectorXd gz(3);
         e5.gradient(on, gz);
         CHECK(gz.norm() == Catch::Approx(0.).margin(1e-12));
+    }
+}
+
+TEST_CASE("cubed-amips-energy-3d-volume-weighted", "[offset][potential]")
+{
+    // EXPERIMENTAL_integral_energy's AMIPS part: w sum_t vol(t) AMIPS(t)^3 with the moving vertex
+    // first in each cell. The value against vol and AMIPS computed independently, gradient and
+    // Hessian against finite differences, and a cell volume that cancels in the ring: for equal
+    // AMIPS the ring's volumes sum to a constant, so only the shapes pull.
+    std::vector<std::array<double, 12>> cells;
+    const std::array<std::array<Vector3d, 3>, 3> others = {{
+        {{Vector3d(1., 0.1, 0.), Vector3d(0.2, 1.1, 0.05), Vector3d(0.1, 0.3, 0.9)}},
+        {{Vector3d(-0.9, 0.2, 0.1), Vector3d(-0.1, -0.8, 0.3), Vector3d(0.1, 0.1, -1.)}},
+        {{Vector3d(0.3, -1., 0.2), Vector3d(1., 0.2, -0.4), Vector3d(-0.2, 0.1, 1.1)}},
+    }};
+    for (auto o : others) {
+        if (!wmtk::utils::orient3d(Vector3d::Zero(), o[0], o[1], o[2])) std::swap(o[1], o[2]);
+        std::array<double, 12> c{};
+        for (int k = 0; k < 3; ++k) {
+            for (int j = 0; j < 3; ++j) c[size_t(3 + 3 * k + j)] = o[size_t(k)][j];
+        }
+        cells.push_back(c);
+    }
+    const double w = 0.7;
+    CubedAMIPSEnergy3D energy(cells, w);
+    energy.set_volume_weighted(true);
+    const double h = 1e-6;
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        double want = 0.;
+        for (auto c : cells) {
+            c[0] = x[0];
+            c[1] = x[1];
+            c[2] = x[2];
+            const Vector3d p0(c[0], c[1], c[2]), p1(c[3], c[4], c[5]), p2(c[6], c[7], c[8]),
+                p3(c[9], c[10], c[11]);
+            const double vol = std::abs((p1 - p0).dot((p2 - p0).cross(p3 - p0))) / 6.;
+            const double a = wmtk::AMIPS_energy(c);
+            want += vol * a * a * a;
+        }
+        CHECK(energy.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
+}
+
+TEST_CASE("band-volume-energy-3d", "[offset][potential]")
+{
+    // EXPERIMENTAL_band_volume_energy's front term: w sum_t Vol_t (mean of r over t's corners and
+    // centroid). Cells are the octants of an octahedron around x (corners center +- rad e_i), all
+    // eight (a vertex inside the band) or the four with z below (a front vertex). Near a cube of
+    // half-size 1: above the +z face interior d = z - 1 is affine; beyond the edge x = z = 1 it is
+    // the distance to that edge, curved.
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    auto env = std::make_shared<SampleEnvelope>();
+    env->use_exact = true;
+    {
+        std::vector<Eigen::Vector3d> verts(size_t(s.V.rows()));
+        for (int i = 0; i < s.V.rows(); ++i) verts[size_t(i)] = s.V.row(i).head<3>();
+        std::vector<Eigen::Vector3i> tris(size_t(s.F.rows()));
+        for (int i = 0; i < s.F.rows(); ++i) {
+            tris[size_t(i)] = Eigen::Vector3i(s.F(i, 0), s.F(i, 1), s.F(i, 2));
+        }
+        env->init(verts, tris, delta);
+    }
+    const auto pot = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+    const double c = pot->target_level();
+    const auto octants = [](const Vector3d& ctr, const double rad, const bool lower_only) {
+        std::vector<BandVolumeEnergy3D::Cell> cells;
+        for (const double sx : {-1., 1.}) {
+            for (const double sy : {-1., 1.}) {
+                for (const double sz : {-1., 1.}) {
+                    if (lower_only && sz > 0.) continue;
+                    BandVolumeEnergy3D::Cell cl;
+                    cl.q1 = ctr + sx * rad * Vector3d::UnitX();
+                    cl.q2 = ctr + sy * rad * Vector3d::UnitY();
+                    cl.q3 = ctr + sz * rad * Vector3d::UnitZ();
+                    cells.push_back(cl);
+                }
+            }
+        }
+        return cells;
+    };
+    const double w = 0.8;
+
+    SECTION("value: volume times the five-point mean, which is the centroid value on affine d")
+    {
+        const Vector3d ctr(0.1, 0.2, 1.3);
+        const auto cells = octants(ctr, 0.05, false);
+        BandVolumeEnergy3D energy(pot, cells, ctr, w);
+        const Vector3d x = ctr + Vector3d(0.01, -0.02, 0.015);
+        double want = 0., want_centroid = 0.;
+        for (const auto& cl : cells) {
+            const double vol = std::abs((cl.q1 - x).dot((cl.q2 - x).cross(cl.q3 - x))) / 6.;
+            const Vector3d ctd = 0.25 * (x + cl.q1 + cl.q2 + cl.q3);
+            double m = 0.;
+            for (const Vector3d& q : {x, cl.q1, cl.q2, cl.q3, ctd}) m += (pot->value(q) - c) / c;
+            want += vol * m / 5.;
+            want_centroid += vol * (pot->value(ctd) - c) / c;
+        }
+        const VectorXd xv = x;
+        CHECK(energy.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        CHECK(energy.value(xv) == Catch::Approx(w * want_centroid).epsilon(1e-10));
+        energy.set_centroid_only(true);
+        CHECK(energy.value(xv) == Catch::Approx(w * want_centroid).epsilon(1e-12));
+    }
+
+    SECTION("a vertex inside the band feels nothing where d is affine")
+    {
+        // The eight cells tile a fixed octahedron wherever x is inside it, and the rule is exact
+        // on affine d: the sum is the integral over the octahedron, independent of x.
+        const Vector3d ctr(0.1, 0.2, 1.3);
+        BandVolumeEnergy3D energy(pot, octants(ctr, 0.05, false), ctr, w);
+        const VectorXd x0 = ctr, x1 = ctr + Vector3d(0.012, -0.007, 0.02);
+        CHECK(energy.value(x1) == Catch::Approx(energy.value(x0)).epsilon(1e-10));
+        VectorXd g;
+        energy.gradient(x1, g);
+        CHECK(g.norm() <= 1e-10 * std::max(1., std::abs(energy.value(x1)) / 0.05));
+    }
+
+    SECTION("gradient and Hessian against finite differences, affine and curved d")
+    {
+        struct Case
+        {
+            const char* name;
+            Vector3d ctr;
+            double rad;
+            bool lower_only;
+            Vector3d dx;
+        };
+        const std::vector<Case> cases = {
+            {"front vertex over a face",
+             Vector3d(0.1, 0.2, 1.3),
+             0.05,
+             true,
+             Vector3d(0.004, -0.003, 0.006)},
+            {"front vertex beyond an edge",
+             Vector3d(1.06, 0.0, 1.07),
+             0.03,
+             true,
+             Vector3d(0.002, 0.001, -0.003)},
+            {"band vertex beyond an edge",
+             Vector3d(1.06, 0.0, 1.07),
+             0.03,
+             false,
+             Vector3d(-0.002, 0.003, 0.001)},
+        };
+        const double h = 1e-6;
+        for (const Case& cs : cases)
+            for (const bool centroid_only : {false, true}) {
+                INFO(cs.name << (centroid_only ? ", centroid only" : ", five points"));
+                BandVolumeEnergy3D energy(pot, octants(cs.ctr, cs.rad, cs.lower_only), cs.ctr, w);
+                energy.set_centroid_only(centroid_only);
+                const VectorXd xv = cs.ctr + cs.dx;
+                VectorXd g;
+                energy.gradient(xv, g);
+                MatrixXd H;
+                energy.hessian(xv, H);
+                const double gs = std::max(1e-6, g.norm()), hs = std::max(1e-6, H.norm());
+                for (int k = 0; k < 3; ++k) {
+                    VectorXd xp = xv, xm = xv;
+                    xp[k] += h;
+                    xm[k] -= h;
+                    const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+                    INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+                    CHECK(std::abs(fd - g[k]) <= 1e-6 * gs);
+                    VectorXd gp, gm;
+                    energy.gradient(xp, gp);
+                    energy.gradient(xm, gm);
+                    for (int j = 0; j < 3; ++j) {
+                        const double fdh = (gp[j] - gm[j]) / (2. * h);
+                        INFO("H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                        CHECK(std::abs(fdh - H(j, k)) <= 1e-5 * hs);
+                    }
+                }
+            }
+    }
+}
+
+TEST_CASE("band-volume-corner-bound", "[offset][potential]")
+{
+    // EXPERIMENTAL_band_volume_rule "corner_bound" on a cube of half-size 1: InputTriangles'
+    // nearest triangle and per-triangle distance; the rule Vol * min_P corner mean of
+    // (d_P - delta)/delta is an upper bound on a dense integral; a split never raises it when the
+    // children may use the parent's minimiser; BandVolumeEnergy3D's corner-bound derivatives.
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd V(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
+    Eigen::MatrixXi F = s.F;
+    const auto tris = std::make_shared<const InputTriangles>(V, F);
+    const auto d_all = [&](const Vector3d& p) {
+        double m = std::numeric_limits<double>::infinity();
+        for (size_t t = 0; t < tris->size(); ++t) m = std::min(m, tris->distance(int64_t(t), p));
+        return m;
+    };
+    std::mt19937 rng(7);
+    std::uniform_real_distribution<double> U(-1.4, 1.4);
+
+    SECTION("nearest triangle and the distance's derivatives")
+    {
+        for (int k = 0; k < 200; ++k) {
+            const Vector3d p(U(rng), U(rng), U(rng));
+            const int64_t t = tris->nearest(p);
+            CHECK(tris->distance(t, p) == Catch::Approx(d_all(p)).margin(1e-12));
+        }
+        const double h = 1e-6;
+        // a face region, an edge region and a vertex region of triangle-nearest features
+        for (const Vector3d& p :
+             {Vector3d(0.2, 0.3, 1.25), Vector3d(1.2, 0.1, 1.15), Vector3d(1.1, 1.2, 1.3)}) {
+            const int64_t t = tris->nearest(p);
+            Vector3d g;
+            Eigen::Matrix3d H;
+            tris->distance(t, p, &g, &H);
+            for (int j = 0; j < 3; ++j) {
+                Vector3d pp = p, pm = p;
+                pp[j] += h;
+                pm[j] -= h;
+                CHECK(
+                    std::abs((tris->distance(t, pp) - tris->distance(t, pm)) / (2 * h) - g[j]) <=
+                    1e-6);
+                Vector3d gp, gm;
+                tris->distance(t, pp, &gp);
+                tris->distance(t, pm, &gm);
+                for (int i = 0; i < 3; ++i)
+                    CHECK(std::abs((gp[i] - gm[i]) / (2 * h) - H(i, j)) <= 1e-5);
+            }
+        }
+    }
+
+    // The rule on four corners with an optional extra candidate; returns the value and the
+    // minimiser.
+    const auto rule = [&](const std::array<Vector3d, 4>& q, const int64_t extra, int64_t& best) {
+        const double vol = std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6.;
+        std::vector<int64_t> cand = {extra};
+        for (const Vector3d& p : q) cand.push_back(tris->nearest(p));
+        double m = std::numeric_limits<double>::infinity();
+        best = -1;
+        for (const int64_t P : cand) {
+            if (P < 0) continue;
+            double sum = 0.;
+            for (const Vector3d& p : q) sum += (tris->distance(P, p) - delta) / delta;
+            if (sum / 4. < m) m = sum / 4., best = P;
+        }
+        return vol * m;
+    };
+    const auto dense = [&](const std::array<Vector3d, 4>& q) {
+        const int K = 16;
+        double sum = 0.;
+        int n = 0;
+        for (int a = 0; a <= K; ++a)
+            for (int b = 0; a + b <= K; ++b)
+                for (int c = 0; a + b + c <= K; ++c) {
+                    const int d = K - a - b - c;
+                    const Vector3d p = (a * q[0] + b * q[1] + c * q[2] + d * q[3]) / double(K);
+                    sum += (d_all(p) - delta) / delta;
+                    ++n;
+                }
+        return std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6. * sum / n;
+    };
+
+    SECTION("an upper bound, and a split never raises it")
+    {
+        // Cells outside the cube near an edge and a corner (d curved), and one spanning across
+        // the cube's corner region.
+        std::uniform_real_distribution<double> J(-0.15, 0.15);
+        int checked = 0;
+        for (int k = 0; k < 60; ++k) {
+            const Vector3d c0 = k % 3 == 0   ? Vector3d(1.1, 0.2, 1.1)
+                                : k % 3 == 1 ? Vector3d(1.1, 1.1, 1.1)
+                                             : Vector3d(1.05, 0.0, 1.25);
+            std::array<Vector3d, 4> q;
+            for (auto& p : q) {
+                p = c0 + Vector3d(J(rng), J(rng), J(rng));
+                for (int j = 0; j < 3; ++j) p[j] = std::max(p[j], c0[j] > 1. ? 1.0 + 1e-3 : -1.);
+            }
+            const double vol = std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6.;
+            if (vol < 1e-5) continue;
+            int64_t best = -1;
+            const double u = rule(q, -1, best);
+            INFO("cell " << k << " rule " << u << " dense " << dense(q));
+            CHECK(u >= dense(q) - 1e-9 * std::max(1., std::abs(u)));
+            // split the longest edge at its midpoint into two children
+            int ia = 0, ib = 1;
+            for (int a = 0; a < 4; ++a)
+                for (int b = a + 1; b < 4; ++b)
+                    if ((q[a] - q[b]).norm() > (q[ia] - q[ib]).norm()) ia = a, ib = b;
+            const Vector3d mid = 0.5 * (q[ia] + q[ib]);
+            std::array<Vector3d, 4> c1 = q, c2 = q;
+            c1[ib] = mid;
+            c2[ia] = mid;
+            int64_t b1 = -1, b2 = -1;
+            const double kids = rule(c1, best, b1) + rule(c2, best, b2);
+            INFO("children " << kids);
+            CHECK(kids <= u + 1e-12 * std::max(1., std::abs(u)));
+            ++checked;
+        }
+        CHECK(checked > 40);
+    }
+
+    SECTION("BandVolumeEnergy3D corner bound: value and derivatives")
+    {
+        auto env = std::make_shared<SampleEnvelope>();
+        env->use_exact = true;
+        {
+            std::vector<Eigen::Vector3d> verts(size_t(V.rows()));
+            for (int i = 0; i < V.rows(); ++i) verts[size_t(i)] = V.row(i).transpose();
+            std::vector<Eigen::Vector3i> tv(size_t(F.rows()));
+            for (int i = 0; i < F.rows(); ++i)
+                tv[size_t(i)] = Eigen::Vector3i(F(i, 0), F(i, 1), F(i, 2));
+            env->init(verts, tv, delta);
+        }
+        const auto pot = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+        const Vector3d ctr(1.06, 0.0, 1.07); // beyond the edge x = z = 1
+        const double rad = 0.03, w = 0.7;
+        std::vector<BandVolumeEnergy3D::Cell> cells;
+        std::vector<std::vector<int64_t>> cand;
+        for (const double sx : {-1., 1.})
+            for (const double sy : {-1., 1.})
+                for (const double sz : {-1., 1.}) {
+                    if (sz > 0.) continue;
+                    BandVolumeEnergy3D::Cell cl;
+                    cl.q1 = ctr + sx * rad * Vector3d::UnitX();
+                    cl.q2 = ctr + sy * rad * Vector3d::UnitY();
+                    cl.q3 = ctr + sz * rad * Vector3d::UnitZ();
+                    std::vector<int64_t> cc;
+                    for (const Vector3d& p : {ctr, cl.q1, cl.q2, cl.q3})
+                        cc.push_back(tris->nearest(p));
+                    std::sort(cc.begin(), cc.end());
+                    cc.erase(std::unique(cc.begin(), cc.end()), cc.end());
+                    cells.push_back(cl);
+                    cand.push_back(cc);
+                }
+        const auto cells_copy = cells;
+        BandVolumeEnergy3D energy(pot, cells, ctr, w);
+        energy.set_corner_bound(tris, cand, delta);
+        const VectorXd xv = ctr + Vector3d(0.002, 0.001, -0.003);
+        // value against the rule written out (the constructor may swap q2/q3; the corner mean does
+        // not care)
+        double want = 0.;
+        for (size_t k = 0; k < cells_copy.size(); ++k) {
+            const auto& cl = cells_copy[k];
+            const std::array<Vector3d, 4> q = {Vector3d(xv), cl.q1, cl.q2, cl.q3};
+            double m = std::numeric_limits<double>::infinity();
+            for (const int64_t P : cand[k]) {
+                double sum = 0.;
+                for (const Vector3d& p : q) sum += (tris->distance(P, p) - delta) / delta;
+                m = std::min(m, sum / 4.);
+            }
+            want += std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6. * m;
+        }
+        CHECK(energy.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        const double h = 1e-7, gs = std::max(1e-9, g.norm()), hs = std::max(1e-9, H.norm());
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            CHECK(std::abs((energy.value(xp) - energy.value(xm)) / (2. * h) - g[k]) <= 1e-5 * gs);
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j)
+                CHECK(std::abs((gp[j] - gm[j]) / (2. * h) - H(j, k)) <= 1e-4 * hs);
+        }
+    }
+}
+
+TEST_CASE("cubed-amips-energy-3d-volume-weighted-flattening", "[offset][potential]")
+{
+    // A cell flattening at fixed edge lengths: vol AMIPS^3 grows like 1/height, never collapses
+    // to 0 the way a floating-point determinant of a nearly flat cell can.
+    const Vector3d q1(1., 0., 0.), q2(0.5, 0.9, 0.),
+        q3(0.4, 0.3, 0.); // the face opposite x, in z = 0
+    double prev = 0.;
+    for (const double hgt : {1e-2, 1e-4, 1e-6, 1e-8, 1e-10}) {
+        std::array<double, 12> c{};
+        Vector3d a = q1, b = q2, d = q3;
+        if (!wmtk::utils::orient3d(Vector3d(0.6, 0.4, hgt), a, b, d)) std::swap(b, d);
+        for (int j = 0; j < 3; ++j) {
+            c[size_t(3 + j)] = a[j];
+            c[size_t(6 + j)] = b[j];
+            c[size_t(9 + j)] = d[j];
+        }
+        CubedAMIPSEnergy3D e({c}, 1.);
+        e.set_volume_weighted(true);
+        const double v = e.value(VectorXd(Vector3d(0.6, 0.4, hgt)));
+        INFO("height " << hgt << " value " << v);
+        CHECK(std::isfinite(v));
+        if (prev > 0.) CHECK(v > 50. * prev); // 1/height: x100 per step, allow slack
+        prev = v;
     }
 }
 

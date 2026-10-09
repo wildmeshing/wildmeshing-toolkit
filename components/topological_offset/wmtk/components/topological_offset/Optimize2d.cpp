@@ -4512,6 +4512,22 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
 
     bool front_ok = false;
     std::string floor_fact; // quoted again by throw_on_nonconvergence below
+    std::string quality; // and so is this
+    // As in 3D: the quality half of the verdict is judged only once the front is resolved, and
+    // printing the unjudged defaults read "final quality ok: max AMIPS 0" on every run stopped at
+    // max_rounds.
+    const auto quality_fact = [&](const bool judged) {
+        return judged ? fmt::format(
+                            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
+                            m_quality_converged ? "ok" : "OVER",
+                            m_quality_max_amips,
+                            m_params.stop_energy)
+                      : fmt::format(
+                            "final quality not judged (the front is not resolved): max AMIPS "
+                            "{:.4} now vs stop_energy {}",
+                            std::get<0>(optimization_quality_stats()),
+                            m_params.stop_energy);
+    };
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
@@ -4522,6 +4538,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         front_ok = ec.converged();
         m_converged = front_ok && m_quality_converged;
         floor_fact = ec.sizing_floor_fact();
+        quality = quality_fact(front_ok);
         if (ec.ring_exit) {
             // front_measure "vertex_ring": the ring measure is what was tested; the chord and
             // vertex measures are the diagnostics.
@@ -4532,7 +4549,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 "unmeasurable, {} unmeasurable in all | diagnostic, not tested: {} chords max "
                 "{:.4}x the bar (avg {:.4}x), {} chords over the bar; {} front vertices max {:.4}x "
                 "the bar (avg {:.4}x), {} | vertices to resolve {} (at the sizing floor {}) | "
-                "front_conv {:.4} || final quality {}: max AMIPS {:.4} vs stop_energy {}{}{}",
+                "front_conv {:.4} || {}{}{}",
                 m_converged ? "Converged" : "Optimization did not converge",
                 m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
                                  : "",
@@ -4555,9 +4572,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 ec.refinable_vertices.size(),
                 ec.n_rings_at_floor,
                 m_offset_params.front_conv,
-                m_quality_converged ? "ok" : "OVER",
-                m_quality_max_amips,
-                m_params.stop_energy,
+                quality,
                 floor_fact.empty() ? "" : " || ",
                 floor_fact);
         } else {
@@ -4566,8 +4581,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 "{}{}: front {} -- tested (every chord within the bar, nothing unmeasurable): {} "
                 "chords max {:.4}x the bar (avg {:.4}x), {} unmeasurable | diagnostic, not "
                 "tested: {} front vertices max {:.4}x the bar (avg {:.4}x), {} | chords to "
-                "resolve {} (at the sizing floor {}) | front_conv {:.4} || final quality {}: max "
-                "AMIPS {:.4} vs stop_energy {}{}{}",
+                "resolve {} (at the sizing floor {}) | front_conv {:.4} || {}{}{}",
                 m_converged ? "Converged" : "Optimization did not converge",
                 m_energy_verdict ? " (front measured at convergence, before the finishing pass)"
                                  : "",
@@ -4584,9 +4598,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 ec.refinable.size(),
                 ec.n_at_floor,
                 m_offset_params.front_conv,
-                m_quality_converged ? "ok" : "OVER",
-                m_quality_max_amips,
-                m_params.stop_energy,
+                quality,
                 floor_fact.empty() ? "" : " || ",
                 floor_fact);
         }
@@ -4632,14 +4644,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
             "Optimization did not converge and throw_on_nonconvergence is set: front {} (every "
-            "{} within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
-            "stop_energy {}). Ran {} of {} iterations; see the warnings above.{}{}",
+            "{} within the bar, nothing unmeasurable), {}. Ran {} of {} iterations; see the "
+            "warnings above.{}{}",
             front_ok ? "resolved" : "NOT resolved",
             m_offset_params.front_measure == "vertex_ring" ? "front vertex's ring measure"
                                                            : "chord",
-            m_quality_converged ? "ok" : "OVER",
-            m_quality_max_amips,
-            m_params.stop_energy,
+            quality,
             optimization_metrics.size(),
             m_offset_params.max_iterations,
             floor_fact.empty() ? "" : " ",
