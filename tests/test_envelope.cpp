@@ -27,8 +27,12 @@
 
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/threading/task_group.hpp>
 
+#include <chrono>
 #include <cmath>
+#include <random>
+#include <thread>
 
 using namespace wmtk;
 
@@ -299,4 +303,70 @@ TEST_CASE("envelope_budget", "[envelope]")
         CHECK(optimization_envelope_eps(eps, 1.5 * eps, true, true) == eps);
         CHECK(optimization_envelope_eps(eps, 0.999999 * eps, true, true) > 0);
     }
+}
+
+TEST_CASE("a large sampled triangle query answers the same on several threads", "[envelope]")
+{
+    // Every sample is decided exactly -- within eps2 of some input facet or not -- so however
+    // the samples are split among threads, the triangle is outside exactly when one sample is.
+    // The query triangles are ~10 eps across, thousands of samples each, so with more than one
+    // thread allowed they take the split path.
+    const double eps = 0.1;
+    const int n = 20; // a 20x20 grid of the square [0,10]^2 at z = 0
+    std::vector<Eigen::Vector3d> V;
+    std::vector<Eigen::Vector3i> F;
+    for (int j = 0; j <= n; ++j) {
+        for (int i = 0; i <= n; ++i) V.emplace_back(10.0 * i / n, 10.0 * j / n, 0);
+    }
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            const int a = j * (n + 1) + i;
+            F.emplace_back(a, a + 1, a + n + 2);
+            F.emplace_back(a, a + n + 2, a + n + 1);
+        }
+    }
+    SampleEnvelope serial(false);
+    SampleEnvelope split(false);
+    serial.init(V, F, eps);
+    split.init(V, F, eps);
+    split.set_max_threads(8);
+
+    // Idle workers for the split queries to take: tasks that overlap start one worker each.
+    {
+        threading::task_group tg;
+        for (int i = 0; i < 8; ++i) {
+            tg.run([]() { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+        }
+        tg.wait();
+    }
+
+    using T = std::array<Eigen::Vector3d, 3>;
+    // In the plane, inside the square: inside. One corner lifted well clear of eps, or pushed
+    // out past the square's edge: outside.
+    const T flat = {{Eigen::Vector3d(1, 1, 0), Eigen::Vector3d(9, 1, 0), Eigen::Vector3d(1, 9, 0)}};
+    const T lifted = {
+        {Eigen::Vector3d(1, 1, 0), Eigen::Vector3d(9, 1, 0), Eigen::Vector3d(1, 9, 1)}};
+    const T past_edge = {
+        {Eigen::Vector3d(1, 1, 0), Eigen::Vector3d(10.5, 1, 0), Eigen::Vector3d(1, 9, 0)}};
+    CHECK_FALSE(split.is_outside(flat));
+    CHECK(split.is_outside(lifted));
+    CHECK(split.is_outside(past_edge));
+
+    // Random large triangles near the square, at heights around the acceptance radius, so
+    // that both answers come up and many queries are decided by a single late sample.
+    std::mt19937 rng(7);
+    std::uniform_real_distribution<double> xy(-0.3, 10.3);
+    std::uniform_real_distribution<double> z(-0.06, 0.06);
+    int outside = 0;
+    const int trials = 200;
+    for (int k = 0; k < trials; ++k) {
+        T t;
+        for (auto& p : t) p = Eigen::Vector3d(xy(rng), xy(rng), z(rng));
+        const bool expected = serial.is_outside(t);
+        CHECK(split.is_outside(t) == expected);
+        outside += expected ? 1 : 0;
+    }
+    // Neither answer may be vacuous.
+    CHECK(outside > 0);
+    CHECK(outside < trials);
 }

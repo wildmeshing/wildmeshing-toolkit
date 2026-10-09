@@ -4,11 +4,24 @@
 #include <vector>
 
 #include <wmtk/Types.hpp>
+#include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
+
+#include <algorithm>
+#include <atomic>
 
 namespace wmtk {
 
 namespace {
+// A sampled triangle query splits its samples among idle workers (SampleEnvelope::
+// set_max_threads) from this many samples on, in chunks of kParallelChunk consecutive ones, so
+// that the hinted BVH walk keeps its locality within a chunk. Swept on tetwild's input
+// simplification of a 10-cell EMI surface set at 16 threads: 2048/512 was the best of 1024,
+// 2048 and 4096 against 256 and 512, with 4096 clearly worse. Below 2048 samples a query takes
+// about 0.3 ms, not enough to be worth waking a thread for.
+constexpr size_t kParallelSamples = 2048;
+constexpr size_t kParallelChunk = 512;
+
 // The sample buffers of the sampled envelope queries below are per thread, to save an allocation
 // per query, and a buffer grows to the largest primitive its thread has sampled. The optimizers'
 // threads persist for the whole run (wmtk::threading::task_group runs on a pool), so a few large
@@ -370,6 +383,49 @@ bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
     return is_outside(Vector3d(pts[0], pts[1], 0));
 }
 
+bool SampleEnvelope::samples_outside_parallel(const std::vector<Vector3d>& ps) const
+{
+    // The serial loop below visits the samples from the middle on, wrapping around, so that a
+    // triangle that leaves the envelope tends to be caught early; chunks follow the same order.
+    const size_t n = ps.size();
+    const size_t start = n / 2;
+    std::atomic<bool> outside{false};
+    std::atomic<size_t> next{0};
+    const auto work = [&]() {
+        for (;;) {
+            const size_t begin = next.fetch_add(kParallelChunk, std::memory_order_relaxed);
+            if (begin >= n) return;
+            const size_t end = std::min(n, begin + kParallelChunk);
+            // The serial loop's hinted walk, restarted for each chunk.
+            double sq_dist = std::numeric_limits<double>::max();
+            Vector3d nearest;
+            int prev_facet = -1;
+            for (size_t j = begin; j < end; ++j) {
+                if (outside.load(std::memory_order_relaxed)) return;
+                const Vector3d& p = ps[(start + j) % n];
+                if (prev_facet != -1) {
+                    m_bvh->point_facet_distance(p, prev_facet, nearest, sq_dist);
+                }
+                if (sq_dist > eps2) {
+                    m_bvh->facet_in_envelope_with_hint(p, eps2, prev_facet, nearest, sq_dist);
+                }
+                if (sq_dist > eps2) {
+                    outside.store(true, std::memory_order_relaxed);
+                    return;
+                }
+            }
+        }
+    };
+    threading::task_group tg;
+    const size_t n_chunks = (n + kParallelChunk - 1) / kParallelChunk;
+    for (size_t helpers = 1; helpers < size_t(m_max_threads) && helpers < n_chunks; ++helpers) {
+        if (!tg.try_run(work)) break; // no idle worker left: the rest is this thread's
+    }
+    work();
+    tg.wait();
+    return outside.load(std::memory_order_relaxed);
+}
+
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
     if (disabled) return false;
@@ -387,6 +443,12 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 
 
     sampleTriangle(vs, ps, sampling_dist);
+
+    // Large triangles are few, but each is thousands of BVH queries. In tetwild's input
+    // simplification of a set of EMI cell surfaces, the 2% of queries with 512 or more samples
+    // took almost 40% of the envelope time, and the largest came nearly all from coarsening one
+    // cell's flat faces -- so from two or three partitions, with every other thread done.
+    if (m_max_threads > 1 && ps.size() >= kParallelSamples) return samples_outside_parallel(ps);
 
     size_t num_queries = 0;
     size_t num_samples = ps.size();
