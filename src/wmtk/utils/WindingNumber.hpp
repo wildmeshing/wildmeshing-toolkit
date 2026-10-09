@@ -1,26 +1,25 @@
 #pragma once
 
 // A local copy of libigl's winding-number evaluation, but with the per-query
-// parallelism driven by wmtk's own threading framework (parallel_for)
-// instead of igl::parallel_for. This means the winding number honours the
-// requested `num_threads` (like every other parallel section in wmtk) rather than
-// always grabbing all hardware cores.
+// parallelism driven by wmtk's own threading framework instead of igl::parallel_for.
+// This means the winding number honours the requested `num_threads` (like every other
+// parallel section in wmtk) rather than always grabbing all hardware cores.
 //
-// The actual algorithm is unchanged: it reuses igl::WindingNumberAABB (a
-// header-only hierarchical accelerator) so it stays as fast as igl::winding_number
-// while producing identical results.
+// The 3D algorithm is igl's hierarchy (WindingNumberHierarchy, a deterministic copy of
+// igl::WindingNumberAABB), so it is as fast as igl::winding_number; unlike igl's, its
+// result does not depend on rand() or on the number of threads, to the last bit.
 
 #include <Eigen/Core>
 
+#include <wmtk/utils/WindingNumberHierarchy.hpp>
+
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <igl/winding_number.h>      // must precede WindingNumberAABB.h (its guard needs it)
-#include <igl/WindingNumberAABB.h>
 #include <igl/remove_unreferenced.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <wmtk/threading/parallel_for.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -28,6 +27,9 @@
 #include <vector>
 
 namespace wmtk::utils {
+
+/// Query points per chunk handed to a thread by the winding-number evaluations below.
+inline constexpr size_t kWindingNumberChunk = 256;
 
 namespace detail {
 
@@ -92,8 +94,8 @@ winding_number_2d_point(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, doub
 
 /**
  * @brief Winding number of every query point O.row(i) with respect to the triangle
- * mesh (V, F). Equivalent to igl::winding_number(V, F, O, W), but the query loop is
- * parallelised with threading::parallel_for.
+ * mesh (V, F). igl::winding_number(V, F, O, W), but deterministic (see
+ * WindingNumberHierarchy) and with the query loop parallelised by wmtk.
  */
 inline void winding_number(
     const Eigen::MatrixXd& V,
@@ -105,22 +107,27 @@ inline void winding_number(
     W.setZero(O.rows());
     if (O.rows() == 0 || F.rows() == 0 || V.rows() == 0) return;
 
-    // Build the accelerator once (same as igl::winding_number for triangle meshes).
-    igl::WindingNumberAABB<Eigen::Matrix<double, 1, 3>, Eigen::MatrixXd, Eigen::MatrixXi> hier(
-        V,
-        F);
-    hier.grow();
+    // Build the accelerator once (as igl::winding_number does for triangle meshes).
+    const WindingNumberHierarchy hier(V, F);
 
-    // hier.winding_number(p) is const and used by igl the same way from parallel_for,
-    // so concurrent queries against the shared hierarchy are safe.
-    threading::parallel_for(
-        threading::range(0, static_cast<size_t>(O.rows())),
-        [&](const threading::range& r) {
-            for (int o = r.begin(); o < r.end(); ++o) {
+    // hier.winding_number(p) is const and touches no shared state, so concurrent queries
+    // against the one hierarchy are safe.
+    //
+    // Handed out in chunks on demand rather than one fixed slice per thread: a query costs
+    // far more near the surface, where the hierarchy is descended to its leaves, than away
+    // from it, and the queries of a mesh are not in random order -- the cells of an
+    // arrangement cluster by location -- so fixed slices left most threads waiting on the one
+    // that drew the surface. Each query is evaluated on its own, so W does not depend on the
+    // schedule or the number of threads.
+    threading::dynamic_parallel_for(
+        static_cast<size_t>(O.rows()),
+        std::max(num_threads, 1),
+        kWindingNumberChunk,
+        [&](const size_t begin, const size_t end) {
+            for (size_t o = begin; o < end; ++o) {
                 W(o) = hier.winding_number(O.row(o));
             }
-        },
-        std::max(num_threads, 1));
+        });
 }
 
 /**
@@ -228,15 +235,17 @@ inline void winding_number_2d(
     W.setZero(O.rows());
     if (O.rows() == 0 || E.rows() == 0 || V.rows() == 0) return;
 
-    threading::parallel_for(
-        threading::range(0, static_cast<size_t>(O.rows())),
-        [&](const threading::range& r) {
-            for (size_t o = r.begin(); o < r.end(); ++o) {
+    // In chunks on demand, as the 3D winding_number: see there.
+    threading::dynamic_parallel_for(
+        static_cast<size_t>(O.rows()),
+        std::max(num_threads, 1),
+        kWindingNumberChunk,
+        [&](const size_t begin, const size_t end) {
+            for (size_t o = begin; o < end; ++o) {
                 const Eigen::Index i = static_cast<Eigen::Index>(o);
                 W(i) = winding_number_2d_point(V, E, O(i, 0), O(i, 1));
             }
-        },
-        std::max(num_threads, 1));
+        });
 }
 
 } // namespace wmtk::utils

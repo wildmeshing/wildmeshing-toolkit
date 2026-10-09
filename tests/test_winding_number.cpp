@@ -1,4 +1,7 @@
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
+
+#include <igl/winding_number.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -44,7 +47,100 @@ Eigen::MatrixXd query_grid(int n)
     return O;
 }
 
+/// A UV sphere of radius 1 around the origin, 24 x 48 faces, closed unless `hemisphere`, in
+/// which case only its upper half is kept: open, with the equator as boundary.
+void uv_sphere(Eigen::MatrixXd& V, Eigen::MatrixXi& F, bool hemisphere = false)
+{
+    const int n_lat = 24, n_lon = 48;
+    V.resize((n_lat - 1) * n_lon + 2, 3);
+    V.row(0) << 0, 0, 1;
+    V.row(1) << 0, 0, -1;
+    for (int i = 1; i < n_lat; ++i) {
+        for (int j = 0; j < n_lon; ++j) {
+            const double th = M_PI * i / n_lat, ph = 2 * M_PI * j / n_lon;
+            V.row(2 + (i - 1) * n_lon + j) << std::sin(th) * std::cos(ph),
+                std::sin(th) * std::sin(ph), std::cos(th);
+        }
+    }
+    const auto ring = [&](int i, int j) { return 2 + (i - 1) * n_lon + (j % n_lon); };
+    std::vector<Eigen::RowVector3i> Fs;
+    const int last = hemisphere ? n_lat / 2 : n_lat - 1;
+    for (int j = 0; j < n_lon; ++j) {
+        Fs.emplace_back(0, ring(1, j), ring(1, j + 1));
+        if (!hemisphere) Fs.emplace_back(1, ring(n_lat - 1, j + 1), ring(n_lat - 1, j));
+        for (int i = 1; i < last; ++i) {
+            Fs.emplace_back(ring(i, j), ring(i + 1, j), ring(i + 1, j + 1));
+            Fs.emplace_back(ring(i, j), ring(i + 1, j + 1), ring(i, j + 1));
+        }
+    }
+    F.resize(Fs.size(), 3);
+    for (size_t i = 0; i < Fs.size(); ++i) F.row(i) = Fs[i];
+}
+
+Eigen::MatrixXd random_points(int n, double extent, unsigned seed)
+{
+    Eigen::MatrixXd O(n, 3);
+    std::mt19937 gen(seed);
+    std::uniform_real_distribution<double> d(-extent, extent);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) O.row(i) << d(gen), d(gen), d(gen);
+    return O;
+}
+
 } // namespace
+
+TEST_CASE("WindingNumberHierarchy is igl's winding number", "[winding_number]")
+{
+    // igl's hierarchy, step for step, but for the apex of the fans closing its nodes, which igl
+    // draws with rand(): the values agree to rounding, closed or open, and whatever duplicate
+    // vertices the mesh carries (merged first, as igl does).
+    for (const bool open : {false, true}) {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        uv_sphere(V, F, open);
+        // A duplicated vertex: the first face refers to a copy of vertex 0.
+        V.conservativeResize(V.rows() + 1, 3);
+        V.row(V.rows() - 1) = V.row(0);
+        F(0, 0) = int(V.rows() - 1);
+        const Eigen::MatrixXd O = random_points(5000, 1.5, open ? 5 : 4);
+        Eigen::VectorXd W_igl;
+        igl::winding_number(V, F, O, W_igl);
+        const utils::WindingNumberHierarchy hier(V, F);
+        double max_diff = 0;
+        for (Eigen::Index i = 0; i < O.rows(); ++i) {
+            max_diff = std::max(max_diff, std::abs(hier.winding_number(O.row(i)) - W_igl(i)));
+        }
+        INFO("open " << open);
+        CHECK(max_diff < 1e-12);
+    }
+}
+
+TEST_CASE("WindingNumberHierarchy is reproducible and owns its vertices", "[winding_number]")
+{
+    Eigen::MatrixXd V, V2;
+    Eigen::MatrixXi F, F2;
+    uv_sphere(V, F);
+    uv_sphere(V2, F2);
+    V2.col(0).array() += 0.5; // the same sphere, shifted
+    const Eigen::MatrixXd O = random_points(5000, 1.5, 6);
+
+    const utils::WindingNumberHierarchy a(V, F);
+    Eigen::VectorXd W_a(O.rows());
+    for (Eigen::Index i = 0; i < O.rows(); ++i) W_a(i) = a.winding_number(O.row(i));
+
+    // Two builds of one mesh agree to the last bit: igl's drew each node's fan apex with rand().
+    const utils::WindingNumberHierarchy a2(V, F);
+    // Building another mesh's hierarchy leaves the first one alone: igl kept every tree's
+    // vertices in one static, which the second build overwrote.
+    const utils::WindingNumberHierarchy b(V2, F2);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) {
+        REQUIRE(a2.winding_number(O.row(i)) == W_a(i));
+        REQUIRE(a.winding_number(O.row(i)) == W_a(i));
+    }
+    // And b answers for its own sphere.
+    CHECK(std::abs(b.winding_number(Eigen::RowVector3d(1.3, 0, 0)) - 1) < 1e-9);
+    CHECK(std::abs(a.winding_number(Eigen::RowVector3d(1.3, 0, 0))) < 1e-9);
+}
+
 
 TEST_CASE("winding_number_2d matches igl bit for bit", "[winding_number]")
 {
@@ -127,6 +223,48 @@ TEST_CASE("winding_number_2d honours num_threads", "[winding_number]")
             },
             nt);
         REQUIRE(ids.size() <= static_cast<size_t>(nt));
+    }
+}
+
+TEST_CASE("winding numbers do not depend on the number of threads", "[winding_number]")
+{
+    // The queries are handed out in chunks on demand, so which thread evaluates which query
+    // depends on the schedule. Each query is evaluated on its own, so the values must not:
+    // bit for bit the same on any number of threads.
+    SECTION("3D")
+    {
+        // A closed UV sphere with enough faces for the hierarchy to grow below its root.
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        uv_sphere(V, F);
+
+        const Eigen::MatrixXd O = random_points(20000, 1.5, 3);
+
+        Eigen::VectorXd W1, W3, W8;
+        utils::winding_number(V, F, O, W1, 1);
+        utils::winding_number(V, F, O, W3, 3);
+        utils::winding_number(V, F, O, W8, 8);
+        CHECK(W1 == W3);
+        CHECK(W1 == W8);
+        // And it is a winding number: 1 inside the sphere, 0 outside, away from it.
+        for (Eigen::Index i = 0; i < O.rows(); ++i) {
+            const double r = O.row(i).norm();
+            if (r < 0.9) CHECK(std::abs(W1(i) - 1) < 1e-9);
+            if (r > 1.1) CHECK(std::abs(W1(i)) < 1e-9);
+        }
+    }
+    SECTION("2D")
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi E;
+        two_loops(V, E, 64);
+        const Eigen::MatrixXd O = query_grid(120);
+        Eigen::VectorXd W1, W3, W8;
+        utils::winding_number_2d(V, E, O, W1, 1);
+        utils::winding_number_2d(V, E, O, W3, 3);
+        utils::winding_number_2d(V, E, O, W8, 8);
+        CHECK(W1 == W3);
+        CHECK(W1 == W8);
     }
 }
 
