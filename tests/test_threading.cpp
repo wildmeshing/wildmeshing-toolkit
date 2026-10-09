@@ -376,6 +376,49 @@ TEST_CASE("task_group", "[threading]")
         CHECK(on_used_thread.load() == 4);
     }
 
+    SECTION("try_run takes an idle worker, and never starts one")
+    {
+        auto& pool = threading::detail::worker_pool::instance();
+        // Idle workers to take: a wave of distinct workers leaves them all idle.
+        REQUIRE(run_on_distinct_workers(4, []() {}));
+        {
+            std::atomic<bool> ran{false};
+            threading::task_group tg;
+            CHECK(tg.try_run([&ran]() { ran = true; }));
+            tg.wait();
+            CHECK(ran);
+        }
+
+        // Every worker busy: a task per worker, each holding its worker until released. With
+        // one thread submitting, the pool ends up with exactly one worker per task.
+        const int n = whole_pool();
+        std::atomic<int> started{0};
+        std::atomic<bool> release{false};
+        threading::task_group busy;
+        for (int i = 0; i < n; ++i) {
+            busy.run([&]() {
+                started.fetch_add(1);
+                while (!release.load()) std::this_thread::yield();
+            });
+        }
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+        while (started.load() < n && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::yield();
+        }
+        REQUIRE(started.load() == n);
+        const size_t workers = pool.worker_count();
+        std::atomic<bool> ran{false};
+        threading::task_group tg;
+        const bool queued = tg.try_run([&ran]() { ran = true; });
+        CHECK_FALSE(queued);
+        CHECK(pool.worker_count() == workers);
+        // Refused, so wait() has nothing to wait for.
+        tg.wait();
+        release = true;
+        busy.wait();
+        CHECK_FALSE(ran);
+    }
+
     SECTION("back-to-back groups do not grow the pool")
     {
         // A worker is idle again before its task is reported finished, so a group started as
