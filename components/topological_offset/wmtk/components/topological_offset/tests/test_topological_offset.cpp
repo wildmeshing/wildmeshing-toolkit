@@ -1126,13 +1126,12 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
 }
 
 // ---------------------------------------------------------------------------------------------
-// The per-tet energy (TopoOffsetTetMesh::tet_energy()) and the front smoother's offset term.
+// The per-tet energy E_T (TopoOffsetTetMesh::tet_energy()), the smoother's E_V, and the
+// criterion's face term.
 //
-// Fixtures share one field: the euclidean distance to a large triangle in the plane z = 0, at
-// level delta = 0.5, so relative_residual(q) = (z - 0.5) / 0.5 anywhere above the triangle's
-// interior. front_conv = 0.01 makes front_conv_frac() = 0.02: a face 0.1 off its level set reads
-// r / frac = 10, O = 100 -- far from the AMIPS^3 >= 27 beside it, so a missing or doubled face
-// term cannot hide in the tolerance.
+// Fixtures share one input: a large triangle in the plane z = 0, at delta = 0.5, so the distance
+// is z and relative_residual(q) = (z - 0.5) / 0.5 anywhere above the triangle's interior; D(t)'s
+// one primitive is that triangle. front_conv = 0.01 makes front_conv_frac() = 0.02.
 // ---------------------------------------------------------------------------------------------
 
 namespace {
@@ -1140,6 +1139,29 @@ namespace {
 constexpr double kEnergyDelta = 0.5;
 constexpr double kEnergyConv = 0.01;
 constexpr double kEnergyFrac = kEnergyConv / kEnergyDelta;
+
+/// The fixture's input triangle as D(t)'s primitives.
+std::shared_ptr<InputTriangles> plane_tris()
+{
+    Eigen::MatrixXd V(3, 3);
+    V << -10., -10., 0., 10., -10., 0., 0., 10., 0.;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    return std::make_shared<InputTriangles>(V, F);
+}
+
+/// A tiny triangle at (0, 0, z), for D(t): above it d is (nearly) the distance to that point,
+/// which is convex, so the corner mean over-estimates d's mean over a cell and a swap changes the
+/// band's sum -- unlike plane_tris(), above whose interior d is affine and every swap leaves the
+/// sum of V_t D(t) unchanged.
+std::shared_ptr<InputTriangles> point_tris(const double z)
+{
+    Eigen::MatrixXd V(3, 3);
+    V << 0., 0., z, 1e-3, 0., z, 0., 1e-3, z;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    return std::make_shared<InputTriangles>(V, F);
+}
 
 std::shared_ptr<EuclideanOffsetPotential3D> plane_field()
 {
@@ -1224,58 +1246,12 @@ std::unique_ptr<TopoOffsetTetMesh> energy_mesh(
         mesh->m_tet_attribute[i].label = labels[i];
     }
     mesh->m_offset_potential = pot;
+    mesh->m_band_tris = plane_tris();
+    mesh->m_n_regions = 1;
     return mesh;
 }
 
 } // namespace
-
-TEST_CASE("stencil-energy-3d-is-the-sum-of-face-terms", "[offset][3d]")
-{
-    // The front smoother's offset term at offset_term_weight() is, face by face, the per-tet
-    // energy's O(f): so what the smoother minimises is what the rules compare. Checked against the
-    // definition computed by hand from the same stencil, and against face_offset_term(), at
-    // stencil orders 0 (corners only), 1 and 2, with three faces around the moving vertex placed
-    // above and below the level set.
-    Parameters param;
-    param.target_distance = kEnergyDelta;
-    param.front_conv = kEnergyConv;
-    TopoOffsetTetMesh mesh(param, 0);
-    const auto pot = plane_field();
-    REQUIRE(std::abs(mesh.m_offset_params.front_conv_frac() - kEnergyFrac) <= 1e-15);
-    REQUIRE(mesh.offset_term_weight() == Catch::Approx(1. / (kEnergyFrac * kEnergyFrac)));
-
-    const Vector3d x(0.1, -0.05, 0.53);
-    const std::vector<std::pair<Vector3d, Vector3d>> others = {
-        {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
-        {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
-        {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
-    for (const int k : {0, 1, 2}) {
-        mesh.m_offset_params.stencil_order = k;
-        std::vector<StencilEnergy3D::Face> faces;
-        double by_hand = 0., by_term = 0.;
-        for (const auto& [q1, q2] : others) {
-            StencilEnergy3D::Face f;
-            f.q1 = q1;
-            f.q2 = q2;
-            mesh.for_each_face_sample(
-                x,
-                q1,
-                q2,
-                [&](const Vector3d&, double a, double b, double c) {
-                    f.samples.push_back({a, b, c});
-                });
-            faces.push_back(f);
-            by_hand += face_term_by_hand(mesh, *pot, x, q1, q2);
-            by_term += mesh.face_offset_term(*pot, x, q1, q2);
-        }
-        StencilEnergy3D energy(pot, faces, mesh.offset_term_weight());
-        Eigen::VectorXd xv = x;
-        INFO("stencil_order " << k);
-        CHECK(by_hand > 10.); // the fixture really is off the level set
-        CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
-        CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
-    }
-}
 
 TEST_CASE("face-remainder", "[offset][3d]")
 {
@@ -1339,11 +1315,11 @@ TEST_CASE("face-remainder", "[offset][3d]")
 
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
-    // Four cells around the edge (a, b): 0 and 1 band, 2 background, 3 input complex. The band's
-    // front faces are the ones with background or nothing across: cell 0's two faces on the
-    // domain boundary (cell 3 across (a,b,c0) is the complex, cell 1 across (a,b,c1) is band),
-    // and cell 1's two boundary faces plus (a,b,c2) against the background. Every cell off the
-    // band is its weighted AMIPS^3 alone. Checked at w = 1 and at the default w.
+    // E_T(t) = V_t ( w A(t)^3 / SE^3 + [t in B] (1 - w) D(t) ), against the definition written
+    // out: four cells around the edge (a, b), 0 and 1 band, 2 background, 3 input complex. The
+    // AMIPS part is against the regular tet (no plastic medium here); D(t) is the corner mean of
+    // (z - delta)/delta, the distance to the fixture's one triangle being z. At w = 1, at the
+    // default w and at 0.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1352,30 +1328,45 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
         -0.4, 0., 0.45, // c2
         0., -0.4, 0.5; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-    for (const double w : {1., Parameters().w_amips}) {
+    for (const double w : {1., Parameters().w_amips, 0.}) {
         Parameters param;
         param.w_amips = w;
-        const auto pot = plane_field();
         auto mesh = energy_mesh(
             param,
             V,
             {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
             {2, 2, 0, 1},
-            pot);
-        const auto P = [&](int i) { return Vector3d(V.row(i)); };
-        const auto O = [&](int i, int j, int k) {
-            return face_term_by_hand(*mesh, *pot, P(i), P(j), P(k));
-        };
-        const std::array<double, 4> extra = {
-            {O(a, c0, c1) + O(b, c0, c1), O(a, c1, c2) + O(b, c1, c2) + O(a, b, c2), 0., 0.}};
+            plane_field());
+        const double se = mesh->m_params.stop_energy;
+        REQUIRE(mesh->amips_weight() == Catch::Approx(w / (se * se * se)));
+        REQUIRE(mesh->band_weight() == Catch::Approx(1. - w));
         for (size_t tid = 0; tid < 4; ++tid) {
-            // The engine's cell quality, AMIPS^3 from the positions.
-            const double base = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
-            REQUIRE(base < TetOptimizerMesh::MAX_ENERGY);
+            const auto vs = mesh->oriented_tet_vids(tid);
+            std::array<Vector3d, 4> p;
+            for (int k = 0; k < 4; ++k)
+                p[size_t(k)] = mesh->m_vertex_attribute[vs[size_t(k)]].m_posf;
+            const double vol = (p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0])) / 6.;
+            REQUIRE(vol > 0.);
+            // V A^3, A = ||E R^-1||_F^2 / det(E R^-1)^(2/3) against the regular tet.
+            const Eigen::Matrix3d R = VolAMIPSEnergy3D::regular_rest();
+            Eigen::Matrix3d E;
+            for (int k = 0; k < 3; ++k) E.col(k) = p[size_t(k + 1)] - p[0];
+            const Eigen::Matrix3d F = E * R.inverse();
+            const double A = F.squaredNorm() / std::cbrt(F.determinant() * F.determinant());
+            double want = w / (se * se * se) * vol * A * A * A;
+            if (tid < 2) {
+                double D = 0.;
+                for (const Vector3d& q : p) D += (q.z() - kEnergyDelta) / kEnergyDelta / 4.;
+                want += (1. - w) * vol * D;
+            }
             INFO("w " << w << ", tet " << tid);
-            CHECK(mesh->tet_energy(tid) == Catch::Approx(w * base + extra[tid]).epsilon(1e-12));
-            if (tid < 2) CHECK(extra[tid] > 1.); // the front faces really are off the level set
+            CHECK(mesh->tet_energy(tid) == Catch::Approx(want).epsilon(1e-10));
         }
+        std::vector<size_t> all = {0, 1, 2, 3};
+        double sum = 0.;
+        for (const size_t t : all) sum += mesh->tet_energy(t);
+        CHECK(mesh->energy_sum(all) == Catch::Approx(sum).epsilon(1e-14));
+        CHECK(mesh->total_energy() == Catch::Approx(sum).epsilon(1e-14));
     }
 }
 
@@ -1425,19 +1416,10 @@ TEST_CASE("collapse-cell-sets", "[offset][3d]")
 
 TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
 {
-    // The smoothing objective: at every vertex, what the shared smoother minimises
-    // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
-    // of its own) is w AMIPS^3 over the ring plus, at a front vertex, the SUM of the face
-    // measures (face_offset_term()) over its live front faces -- tet_energy()'s two parts. The
-    // fixture has no plastic medium, so the shape term is equilateral AMIPS^3
-    // (shape_energy()). Checked on the per-tet-energy fixture by moving each vertex (front vertices
-    // a, b, c0, c1, c2; c3 is on no front face) to three nearby positions, against the formula
-    // evaluated from the mesh; and the shared smoother's own per-cell comparison
-    // (smoothing_cell_energy()) is tet_energy(). The w AMIPS^3 part's gradient and Hessian against
-    // central differences too. At w = 1 and at the default w. In the main iterations a vertex off
-    // the front smooths the plain sum (weight 1). Then, with the plastic medium on, the shape term
-    // is w sum pAMIPS^3 over EVERY ring cell, band included, every cell weighing 1: 27 w per cell
-    // at the stamp, its minimum.
+    // E_V: at every vertex, what smooth_vertex() minimises (vertex_energy()) is the sum of
+    // tet_energy() over the vertex's one-ring, evaluated with the vertex moved to x -- elastic,
+    // then with the plastic medium on (background cell 2 against its stamped rest). Gradient and
+    // Hessian against central differences, at w = 1 and at the default w.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1449,192 +1431,65 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
         param.w_amips = w;
-        const auto pot = plane_field();
         auto mesh = energy_mesh(
             param,
             V,
             {{{a, b, c0, c1}}, {{a, b, c1, c2}}, {{a, b, c2, c3}}, {{a, b, c3, c0}}},
             {2, 2, 0, 1},
-            pot);
-        // What label_offset_boundary() sets in a run: a corner of a live front face.
-        for (size_t v = 0; v < 6; ++v) {
-            mesh->m_vertex_extra[v].m_is_on_offset = !mesh->offset_surface_faces_live_at(v).empty();
-        }
-        REQUIRE(!mesh->m_vertex_extra[size_t(c3)].m_is_on_offset);
-        for (size_t v = 0; v < 6; ++v) {
-            const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
-            const bool front = mesh->vertex_carries_offset_term(v);
-            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
-            REQUIRE(front == (v != size_t(c3)));
-            const auto energy = mesh->smoothing_extra_energy(v);
-            const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
-            Eigen::VectorXd xv = x0;
-            // The objective, evaluated from the mesh as it stands.
-            const auto formula = [&]() {
-                double e = 0.;
-                for (const size_t tid : ring) {
-                    e += w * mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
+            plane_field());
+        for (const bool plastic : {false, true}) {
+            mesh->m_plastic_active = plastic;
+            if (plastic) {
+                // Stamp, then move c2 so cell 2's rest differs from its shape.
+                mesh->stamp_plastic_rests();
+                REQUIRE(mesh->cell_is_plastic(2));
+                REQUIRE(!mesh->cell_is_plastic(0));
+                REQUIRE(!mesh->cell_is_plastic(3));
+                mesh->set_vertex_position(
+                    size_t(c2),
+                    mesh->m_vertex_attribute[size_t(c2)].m_posf + Vector3d(-0.03, 0.02, 0.01));
+            }
+            for (size_t v = 0; v < 6; ++v) {
+                INFO("w " << w << ", plastic " << plastic << ", vertex " << v);
+                const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
+                const auto energy = mesh->vertex_energy(v);
+                REQUIRE(energy);
+                const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
+                for (const Vector3d& dx :
+                     {Vector3d(0., 0., 0.),
+                      Vector3d(0.01, 0., 0.),
+                      Vector3d(0., -0.008, 0.005),
+                      Vector3d(-0.004, 0.006, -0.007)}) {
+                    mesh->set_vertex_position(v, x0 + dx);
+                    for (const size_t tid : ring)
+                        REQUIRE(!mesh->is_inverted(mesh->tuple_from_tet(tid)));
+                    const Eigen::VectorXd xv = x0 + dx;
+                    CHECK(
+                        energy->value(xv) == Catch::Approx(mesh->energy_sum(ring)).epsilon(1e-10));
                 }
-                if (front) {
-                    for (const auto& ft : mesh->offset_surface_faces_live_at(v)) {
-                        const auto f = mesh->get_face_vids(ft);
-                        e += mesh->face_offset_term(
-                            *pot,
-                            mesh->m_vertex_attribute[f[0]].m_posf,
-                            mesh->m_vertex_attribute[f[1]].m_posf,
-                            mesh->m_vertex_attribute[f[2]].m_posf);
-                    }
-                }
-                return e;
-            };
-            CHECK(energy->value(xv) == Catch::Approx(formula()).epsilon(1e-9));
-            for (const Vector3d& dx :
-                 {Vector3d(0.01, 0., 0.),
-                  Vector3d(0., -0.008, 0.005),
-                  Vector3d(-0.004, 0.006, -0.007)}) {
-                mesh->set_vertex_position(v, x0 + dx);
-                for (const size_t tid : ring)
-                    REQUIRE(!mesh->is_inverted(mesh->tuple_from_tet(tid)));
-                xv = x0 + dx;
-                CHECK(energy->value(xv) == Catch::Approx(formula()).epsilon(1e-9));
-                // The shared smoother's own per-cell comparison is the same energy.
-                for (const size_t tid : ring) {
-                    const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
-                    CHECK(mesh->smoothing_cell_energy(tid, q) == mesh->tet_energy(tid));
-                }
-            }
-            mesh->set_vertex_position(v, x0);
-
-            // The w AMIPS^3 part's derivatives against central differences.
-            const auto amips = mesh->amips3_energy(v);
-            const double h = 1e-6;
-            Eigen::VectorXd g(3);
-            Eigen::MatrixXd H(3, 3);
-            xv = x0;
-            amips->gradient(xv, g);
-            amips->hessian(xv, H);
-            for (int i = 0; i < 3; ++i) {
-                Eigen::VectorXd xp = xv, xm = xv;
-                xp[i] += h;
-                xm[i] -= h;
-                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
-                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
-                Eigen::VectorXd gp(3), gm(3);
-                amips->gradient(xp, gp);
-                amips->gradient(xm, gm);
-                for (int j = 0; j < 3; ++j) {
-                    const double fdh = (gp[j] - gm[j]) / (2. * h);
-                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
-                }
-            }
-        }
-        // The main iterations: a vertex off the front smooths sum AMIPS^3, weight 1.
-        {
-            mesh->m_main_iterations = true;
-            REQUIRE(mesh->main_iteration_rules());
-            double plain = 0.;
-            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
-                plain += mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
-            }
-            Eigen::VectorXd xv = mesh->m_vertex_attribute[size_t(c3)].m_posf;
-            CHECK(mesh->shape_weight(size_t(c3)) == 1.);
-            CHECK(mesh->shape_weight(size_t(a)) == w);
-            CHECK(
-                mesh->smoothing_extra_energy(size_t(c3))->value(xv) ==
-                Catch::Approx(plain).epsilon(1e-12));
-            mesh->m_main_iterations = false;
-        }
-        // The plastic medium, all or nothing: every cell is plastic, stamped at its current
-        // shape, so each ring cell reads pAMIPS^3 = 27 weighted by w, every cell weighing 1.
-        mesh->m_plastic_active = true;
-        mesh->stamp_plastic_rests();
-        for (size_t v = 0; v < 6; ++v) {
-            INFO("plastic, w " << w << ", vertex " << v);
-            double expected = 0.;
-            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(v)) {
-                REQUIRE(mesh->cell_is_plastic(tid));
-                expected += w * 27.;
-            }
-            const auto shape = mesh->shape_energy(v);
-            REQUIRE(shape);
-            Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf;
-            CHECK(shape->value(xv) == Catch::Approx(expected).epsilon(1e-12));
-            Eigen::VectorXd g(3);
-            shape->gradient(xv, g);
-            CHECK(g.norm() <= 1e-9 * std::max(1., expected));
-        }
-        // The per-tet energy under use_rest_pose: AMIPS^3 against the rest, 27 at the stamp; a
-        // moved corner raises it, and it is no longer the regular-tet AMIPS^3.
-        for (size_t tid = 0; tid < 4; ++tid) {
-            const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
-            CHECK(mesh->cell_amips3(tid, q) == Catch::Approx(27.).epsilon(1e-9));
-        }
-        {
-            const Vector3d x0 = mesh->m_vertex_attribute[size_t(c3)].m_posf;
-            mesh->set_vertex_position(size_t(c3), x0 + Vector3d(0.03, 0.01, -0.02));
-            for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
-                const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
-                const double p3 = mesh->cell_amips3(tid, q);
-                CHECK(p3 > 27.);
-                CHECK(p3 != Catch::Approx(q));
-            }
-            mesh->set_vertex_position(size_t(c3), x0);
-        }
-        // The whole smoothing objective with the plastic medium on -- shape term plus, at a
-        // front vertex, the stencil term -- away from the stamp: gradient and Hessian against
-        // central differences, and front_objective() equal to it where the vertex carries the
-        // offset term.
-        for (size_t v = 0; v < 6; ++v) {
-            INFO("plastic objective, w " << w << ", vertex " << v);
-            const auto obj = mesh->smoothing_extra_energy(v);
-            if (mesh->vertex_carries_offset_term(v)) {
-                const auto fo = mesh->front_objective(v);
-                for (const Vector3d& dx : {Vector3d(0.01, 0., 0.), Vector3d(0., -0.008, 0.005)}) {
-                    Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf + dx;
-                    CHECK(fo->value(xv) == Catch::Approx(obj->value(xv)).epsilon(1e-12));
-                }
-            }
-            const double h = 1e-6;
-            for (const Vector3d& dx : {Vector3d(0.01, 0., 0.), Vector3d(-0.004, 0.006, -0.007)}) {
-                Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf + dx;
+                mesh->set_vertex_position(v, x0);
+                const double h = 1e-6;
+                const Eigen::VectorXd xv = x0 + Vector3d(0.004, -0.003, 0.002);
                 Eigen::VectorXd g(3);
                 Eigen::MatrixXd H(3, 3);
-                obj->gradient(xv, g);
-                obj->hessian(xv, H);
+                energy->gradient(xv, g);
+                energy->hessian(xv, H);
                 REQUIRE(g.allFinite());
                 for (int i = 0; i < 3; ++i) {
                     Eigen::VectorXd xp = xv, xm = xv;
                     xp[i] += h;
                     xm[i] -= h;
-                    const double fd = (obj->value(xp) - obj->value(xm)) / (2. * h);
+                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
                     CHECK(g[i] == Catch::Approx(fd).epsilon(1e-5).margin(1e-7 * g.norm()));
                     Eigen::VectorXd gp(3), gm(3);
-                    obj->gradient(xp, gp);
-                    obj->gradient(xm, gm);
+                    energy->gradient(xp, gp);
+                    energy->gradient(xm, gm);
                     for (int j = 0; j < 3; ++j) {
                         const double fdh = (gp[j] - gm[j]) / (2. * h);
                         CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-4).margin(1e-6 * H.norm()));
                     }
                 }
             }
-        }
-        // Nothing to minimise -- c3 is on no front face and none of its cells has a valid rest:
-        // a well-formed zero objective (an empty EnergySum would read past its end).
-        for (const size_t tid : mesh->get_one_ring_tids_for_vertex(size_t(c3))) {
-            mesh->m_tet_attribute[tid].rest_valid = false;
-        }
-        {
-            const auto obj = mesh->smoothing_extra_energy(size_t(c3));
-            Eigen::VectorXd xv = mesh->m_vertex_attribute[size_t(c3)].m_posf;
-            Eigen::VectorXd g;
-            Eigen::MatrixXd H;
-            CHECK(obj->value(xv) == 0.);
-            obj->gradient(xv, g);
-            obj->hessian(xv, H);
-            CHECK(g.size() == 3);
-            CHECK(g.norm() == 0.);
-            CHECK(H.rows() == 3);
-            CHECK(H.norm() == 0.);
         }
         mesh->m_plastic_active = false;
     }
@@ -1752,6 +1607,13 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
         mesh->m_face_extra[i].label = labels[i];
     }
     mesh->m_offset_potential = pot;
+    // D(t)'s one primitive: line_field()'s segment.
+    MatrixXd SV(2, 2);
+    SV << -10., 0., 10., 0.;
+    MatrixXi SE(1, 2);
+    SE << 0, 1;
+    mesh->m_band_segs = std::make_shared<InputSegments>(SV, SE);
+    mesh->m_n_regions = 1;
     return mesh;
 }
 
@@ -1769,165 +1631,123 @@ Eigen::MatrixXd fan_vertices()
 
 } // namespace
 
-TEST_CASE("stencil-energy-2d-is-the-sum-of-edge-terms", "[offset][2d]")
-{
-    // The 2D front smoother's offset term at offset_term_weight() is, chord by chord, the per-cell
-    // energy's O(e): checked against the definition computed by hand from the same stencil, and
-    // against edge_offset_term(), at stencil orders 0 (ends only), 1 and 2, with three chords
-    // around the moving vertex placed above and below the level set.
-    Parameters param;
-    param.target_distance = kEnergyDelta;
-    param.front_conv = kEnergyConv;
-    TopoOffsetTriMesh mesh(param, 0);
-    const auto pot = line_field();
-    REQUIRE(std::abs(mesh.m_offset_params.front_conv_frac() - kEnergyFrac) <= 1e-15);
-    REQUIRE(mesh.offset_term_weight() == Catch::Approx(1. / (kEnergyFrac * kEnergyFrac)));
-
-    const Vector2d x(0.1, 0.53);
-    const std::vector<Vector2d> others = {{0.4, 0.61}, {-0.25, 0.44}, {0.05, 0.37}};
-    for (const int k : {0, 1, 2}) {
-        mesh.m_offset_params.stencil_order = k;
-        std::vector<StencilEnergy2D::Edge> edges;
-        double by_hand = 0., by_term = 0.;
-        for (const Vector2d& q1 : others) {
-            StencilEnergy2D::Edge e;
-            e.q1 = q1;
-            mesh.for_each_edge_sample(x, q1, [&](const Vector2d&, double a, double b) {
-                e.samples.push_back({a, b});
-            });
-            edges.push_back(e);
-            by_hand += edge_term_by_hand(mesh, *pot, x, q1);
-            by_term += mesh.edge_offset_term(*pot, x, q1);
-        }
-        StencilEnergy2D energy(pot, edges, mesh.offset_term_weight());
-        Eigen::VectorXd xv = x;
-        INFO("stencil_order " << k);
-        CHECK(by_hand > 10.); // the fixture really is off the level set
-        CHECK(energy.value(xv) == Catch::Approx(by_hand).epsilon(1e-12));
-        CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
-    }
-}
-
 TEST_CASE("per-tri-energy", "[offset][2d]")
 {
-    // The 2D twin of per-tet-energy. Four faces around o: f0 = (o, r0, r1) and f1 = (o, r1, r2)
-    // band, f2 = (o, r2, r3) background, f3 = (o, r3, r0) input complex. The band's front chords
-    // are the ones with background or nothing across: f0's (r0, r1) on the domain boundary ((o, r0)
-    // has the complex across, (o, r1) the band), and f1's (r1, r2) on the boundary plus (o, r2)
-    // against the background. Every face off the band is its weighted AMIPS alone. At w = 1 and at
-    // the default w.
+    // The 2D twin of per-tet-energy: E_T(t) = A_t ( w A(t)^2 / SE^2 + [t in B] (1 - w) D(t) )
+    // against the definition written out. Four faces around o: f0, f1 band, f2 background, f3
+    // input complex; AMIPS against the equilateral triangle; D(t) the corner mean of
+    // (|y| - delta)/delta. At w = 1, at the default w and at 0.
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
-    for (const double w : {1., Parameters().w_amips}) {
+    for (const double w : {1., Parameters().w_amips, 0.}) {
         Parameters param;
         param.w_amips = w;
-        const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
             V,
             {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
             {2, 2, 0, 1},
-            pot);
-        const auto P = [&](int i) { return Vector2d(V.row(i)); };
-        const auto O = [&](int i, int j) { return edge_term_by_hand(*mesh, *pot, P(i), P(j)); };
-        const std::array<double, 4> extra = {{O(r0, r1), O(r1, r2) + O(o, r2), 0., 0.}};
+            line_field());
+        const double se = mesh->m_params.stop_energy;
+        REQUIRE(mesh->amips_weight() == Catch::Approx(w / (se * se)));
+        REQUIRE(mesh->band_weight() == Catch::Approx(1. - w));
         for (size_t fid = 0; fid < 4; ++fid) {
-            // The engine's face quality, AMIPS2D from the positions.
-            const double base = mesh->TriOptimizerMesh::get_quality(fid);
-            REQUIRE(base < TriOptimizerMesh::MAX_ENERGY);
+            const auto vs = mesh->oriented_tri_vids(fid);
+            std::array<Vector2d, 3> p;
+            for (int k = 0; k < 3; ++k)
+                p[size_t(k)] = mesh->m_vertex_attribute[vs[size_t(k)]].m_posf;
+            Eigen::Matrix2d E;
+            E.col(0) = p[1] - p[0];
+            E.col(1) = p[2] - p[0];
+            const double area = E.determinant() / 2.;
+            REQUIRE(area > 0.);
+            const Eigen::Matrix2d F = E * VolAMIPSEnergy2D::regular_rest().inverse();
+            const double A = F.squaredNorm() / F.determinant();
+            double want = w / (se * se) * area * A * A;
+            if (fid < 2) {
+                double D = 0.;
+                for (const Vector2d& q : p)
+                    D += (std::abs(q.y()) - kEnergyDelta) / kEnergyDelta / 3.;
+                want += (1. - w) * area * D;
+            }
             INFO("w " << w << ", face " << fid);
-            CHECK(mesh->tri_energy(fid) == Catch::Approx(w * base + extra[fid]).epsilon(1e-12));
-            if (fid < 2) CHECK(extra[fid] > 1.); // the front chords really are off the level set
+            CHECK(mesh->tri_energy(fid) == Catch::Approx(want).epsilon(1e-10));
         }
     }
 }
 
 TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
 {
-    // The 2D twin of smoothing-objective-is-the-ring-energy: at every vertex, the objective the
-    // shared smoother minimises (smoothing_extra_energy(); every caller passes w_amips 0) is the
-    // sum of tri_energy() over the vertex's ring, up to the terms that do not move with the vertex
-    // -- the ring's front chords that do not have it as an end. Checked on the per-tri-energy
-    // fixture by moving each vertex that carries the offset term (or is on no front chord) to three
-    // nearby positions: objective minus ring sum must not change, and the shared smoother's
-    // per-cell comparison (smoothing_cell_energy()) is tri_energy(). The w AMIPS part's gradient
-    // and Hessian against central differences too. At w = 1 and at the default w.
+    // The 2D twin of smoothing-objective-is-the-ring-energy: vertex_energy() is the sum of
+    // tri_energy() over the vertex's one-ring with the vertex moved to x, elastic and then with
+    // the plastic medium on (background face f2 against its stamped rest); gradient and Hessian
+    // against central differences. At w = 1 and at the default w.
     const Eigen::MatrixXd V = fan_vertices();
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
     for (const double w : {1., Parameters().w_amips}) {
         Parameters param;
         param.w_amips = w;
-        const auto pot = line_field();
         auto mesh = energy_mesh_2d(
             param,
             V,
             {{{o, r0, r1}}, {{o, r1, r2}}, {{o, r2, r3}}, {{o, r3, r0}}},
             {2, 2, 0, 1},
-            pot);
-        // What label_offset_boundary() and the operations maintain in a run: an end of a live
-        // front chord.
-        for (size_t v = 0; v < 5; ++v) mesh->refresh_offset_membership(v);
-        REQUIRE(mesh->m_vertex_extra[size_t(o)].m_is_on_offset);
-        REQUIRE(!mesh->m_vertex_extra[size_t(r3)].m_is_on_offset);
-        for (size_t v = 0; v < 5; ++v) {
-            const bool front = mesh->vertex_carries_offset_term(v);
-            // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
-            // tube) carries no offset term, so its chords' terms do move with it and are not in
-            // its objective; the identity is the carrying vertices' and the off-front ones'.
-            if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
-            const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
-            const auto ring_energy = [&]() {
-                double s = 0.;
-                for (const size_t fid : ring) s += mesh->tri_energy(fid);
-                return s;
-            };
-            INFO("w " << w << ", vertex " << v << (front ? " (front)" : ""));
-            const auto energy = mesh->smoothing_extra_energy(v);
-            const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
-            Eigen::VectorXd xv = x0;
-            const double d0 = energy->value(xv) - ring_energy();
-            for (const Vector2d& dx :
-                 {Vector2d(0.01, 0.), Vector2d(0., -0.008), Vector2d(-0.004, 0.006)}) {
-                mesh->set_vertex_position(v, x0 + dx);
-                for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
-                xv = x0 + dx;
-                const double e = energy->value(xv);
-                CHECK(
-                    e - ring_energy() ==
-                    Catch::Approx(d0).margin(1e-9 * std::max(1., std::abs(e))));
-                for (const size_t fid : ring) {
-                    const double q = mesh->get_quality(fid);
-                    CHECK(mesh->smoothing_cell_energy(fid, q) == mesh->tri_energy(fid));
-                }
+            line_field());
+        for (const bool plastic : {false, true}) {
+            mesh->m_plastic_active = plastic;
+            if (plastic) {
+                mesh->stamp_plastic_rests();
+                REQUIRE(mesh->face_is_plastic(2));
+                REQUIRE(!mesh->face_is_plastic(0));
+                REQUIRE(!mesh->face_is_plastic(3));
+                mesh->set_vertex_position(
+                    size_t(r3),
+                    mesh->m_vertex_attribute[size_t(r3)].m_posf + Vector2d(0.02, -0.03));
             }
-            mesh->set_vertex_position(v, x0);
-
-            // The w AMIPS part's derivatives against central differences.
-            const auto amips = mesh->amips_energy(v);
-            const double h = 1e-6;
-            Eigen::VectorXd g(2);
-            Eigen::MatrixXd H(2, 2);
-            xv = x0;
-            amips->gradient(xv, g);
-            amips->hessian(xv, H);
-            for (int i = 0; i < 2; ++i) {
-                Eigen::VectorXd xp = xv, xm = xv;
-                xp[i] += h;
-                xm[i] -= h;
-                const double fd = (amips->value(xp) - amips->value(xm)) / (2. * h);
-                // An absolute floor besides the relative one: at r1 the ring's AMIPS is stationary
-                // (|g| ~ 1e-14, the difference ~ 1e-10 of round-off), where a margin relative to
-                // |g| alone is zero.
-                CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * std::max(g.norm(), w)));
-                Eigen::VectorXd gp(2), gm(2);
-                amips->gradient(xp, gp);
-                amips->gradient(xm, gm);
-                for (int j = 0; j < 2; ++j) {
-                    const double fdh = (gp[j] - gm[j]) / (2. * h);
-                    CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+            for (size_t v = 0; v < 5; ++v) {
+                INFO("w " << w << ", plastic " << plastic << ", vertex " << v);
+                const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
+                const auto energy = mesh->vertex_energy(v);
+                REQUIRE(energy);
+                const Vector2d x0 = mesh->m_vertex_attribute[v].m_posf;
+                for (const Vector2d& dx :
+                     {Vector2d(0., 0.),
+                      Vector2d(0.01, 0.),
+                      Vector2d(0., -0.008),
+                      Vector2d(-0.004, 0.006)}) {
+                    mesh->set_vertex_position(v, x0 + dx);
+                    for (const size_t fid : ring) REQUIRE(!mesh->is_inverted(fid));
+                    const Eigen::VectorXd xv = x0 + dx;
+                    CHECK(
+                        energy->value(xv) == Catch::Approx(mesh->energy_sum(ring)).epsilon(1e-10));
+                }
+                mesh->set_vertex_position(v, x0);
+                const double h = 1e-6;
+                const Eigen::VectorXd xv = x0 + Vector2d(0.004, -0.003);
+                Eigen::VectorXd g(2);
+                Eigen::MatrixXd H(2, 2);
+                energy->gradient(xv, g);
+                energy->hessian(xv, H);
+                REQUIRE(g.allFinite());
+                for (int i = 0; i < 2; ++i) {
+                    Eigen::VectorXd xp = xv, xm = xv;
+                    xp[i] += h;
+                    xm[i] -= h;
+                    const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
+                    CHECK(
+                        g[i] ==
+                        Catch::Approx(fd).epsilon(1e-5).margin(1e-7 * std::max(g.norm(), w)));
+                    Eigen::VectorXd gp(2), gm(2);
+                    energy->gradient(xp, gp);
+                    energy->gradient(xm, gm);
+                    for (int j = 0; j < 2; ++j) {
+                        const double fdh = (gp[j] - gm[j]) / (2. * h);
+                        CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-4).margin(1e-6 * H.norm()));
+                    }
                 }
             }
         }
+        mesh->m_plastic_active = false;
     }
 }
 
@@ -1971,28 +1791,29 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
             std::iota(tids.begin(), tids.end(), size_t(0));
             before(*A, tids);
             std::vector<std::array<size_t, 4>> cells_b;
-            double max_b = 0.;
+            double sum_b = 0.;
             for (size_t tb = 0; tb < TB.size(); ++tb) {
                 const auto vs = B->oriented_tet_vids(tb);
                 const double truth = B->tet_energy(tb);
                 INFO("new cell " << tb);
                 CHECK(A->candidate_energy(vs) == Catch::Approx(truth).epsilon(1e-12));
                 cells_b.push_back(vs);
-                max_b = std::max(max_b, truth);
+                sum_b += truth;
             }
             if (search == 0) return;
             std::vector<std::array<size_t, 4>> cells_a;
-            double max_a = 0.;
+            double sum_a = 0.;
             for (const size_t t : tids) {
                 cells_a.push_back(A->oriented_tet_vids(t));
-                max_a = std::max(max_a, A->tet_energy(t));
+                sum_a += A->tet_energy(t);
             }
             const auto score = [&](const std::vector<std::array<size_t, 4>>& cells, int op_case) {
                 return search == 4 ? A->swap_edge_44_energy(cells, op_case)
                                    : A->swap_edge_56_energy(cells, op_case);
             };
-            CHECK(score(cells_a, 0) == max_a);
-            CHECK(score(cells_b, 1) == Catch::Approx(max_b).epsilon(1e-12));
+            // Both are sums of E_T, what the swap rule compares.
+            CHECK(score(cells_a, 0) == Catch::Approx(sum_a).epsilon(1e-12));
+            CHECK(score(cells_b, 1) == Catch::Approx(sum_b).epsilon(1e-12));
         };
     const std::vector<std::pair<int, int>> sides = {{2, 0}, {0, 2}, {2, 1}, {1, 2}};
 
@@ -2111,14 +1932,16 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
 
 TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
 {
-    // The face swap's gate (TopoOffsetTetMesh::swap_face_before()) scores the per-tet energy, not
-    // AMIPS^3. Two regular tets glued on (a,b,c), which lies 0.1 above the level set: AMIPS^3 is
-    // 27 on both, its minimum, so no new cell can beat it and the engine's AMIPS gate refuses.
-    // With both cells band, every face is a front face on the domain boundary; the cell above
-    // carries three faces far off the level set, and the swap spreads them one to each new cell,
-    // so the energy's max falls and the gate admits it. With both cells background the energy is
-    // AMIPS^3 and the swap is refused. The whole engine swap runs, with perform_sanity_checks, so
-    // swap_after_cells() applies its rule and compares the gate's score with the mesh.
+    // The face swap's gate (TopoOffsetTetMesh::swap_face_before()) compares the sum of E_T, not
+    // max AMIPS. Two regular tets glued on (a,b,c): AMIPS is at its minimum on both, so no new
+    // cell can beat it and the engine's AMIPS gate refuses. The input is a point on the axis d-e
+    // below e (point_tris()), so d is convex and the band's corner bound sum_t V_t D(t) -- the
+    // integral of d's piecewise-linear interpolant -- is lower for the three cells around d-e,
+    // whose interpolant at the centre of (a,b,c) is the mean of d(d) and d(e) rather than the
+    // larger mean over a, b, c. With both cells band that outweighs the AMIPS part and the gate
+    // admits the swap; with both cells background E_T is the AMIPS part alone and the swap is
+    // refused. The whole engine swap runs, with perform_sanity_checks, so swap_after_cells()
+    // applies its rule and compares the gate's score with the mesh.
     const auto pot = plane_field();
     const double L = 0.4, h = L * std::sqrt(2. / 3.), z = 0.6;
     const double R = L / std::sqrt(3.);
@@ -2139,14 +1962,16 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, {x, x}, pot);
         auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
+        A->m_band_tris = point_tris(z - h - 0.05);
+        B->m_band_tris = A->m_band_tris;
         double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0.;
         for (size_t t = 0; t < 2; ++t) {
             amips_a = std::max(amips_a, A->TetOptimizerMesh::get_quality(A->oriented_tet_vids(t)));
-            energy_a = std::max(energy_a, A->tet_energy(t));
+            energy_a += A->tet_energy(t);
         }
         for (size_t t = 0; t < 3; ++t) {
             amips_b = std::max(amips_b, B->TetOptimizerMesh::get_quality(B->oriented_tet_vids(t)));
-            energy_b = std::max(energy_b, B->tet_energy(t));
+            energy_b += B->tet_energy(t);
         }
         // The premises: AMIPS alone refuses this swap, and the energy admits it on the band.
         REQUIRE(amips_a == Catch::Approx(27.).epsilon(1e-9));
@@ -2163,23 +1988,23 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
         if (x != 2) continue;
         REQUIRE(new_tets.size() == 3);
         double energy_new = 0.;
-        for (const auto& t : new_tets) energy_new = std::max(energy_new, A->tet_energy(t.tid(*A)));
+        for (const auto& t : new_tets) energy_new += A->tet_energy(t.tid(*A));
         CHECK(energy_new == Catch::Approx(energy_b).epsilon(1e-12));
     }
 }
 
 TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
 {
-    // The 4-4 case search (TetMesh::swap_edge_44()) scores the per-tet energy through
+    // The 4-4 case search (TetMesh::swap_edge_44()) scores the sum of E_T through
     // TopoOffsetTetMesh::swap_edge_44_energy(), on the record swap_before_interior() filled
     // before it. An octahedron around the edge (a,b), made slightly shorter than the other two
-    // diagonals (c0,c2) and (c1,c3), so both 4-4 cases raise max AMIPS^3 and the engine's AMIPS
-    // search takes neither. The level set passes through c3 and c1 is twice as far off it as
-    // the other corners: the faces at c1 carry most of the front error, each old cell holds one
-    // of them on each side of the edge, and the case (c1,c3) gives each new cell only one, so
-    // with the ring band the energy's max falls under that case alone. The engine then commits
-    // it, the after-hook's rule agrees, and the sanity check compares the case search's score
-    // with the mesh. With the ring background the energy is AMIPS^3 and nothing is taken.
+    // diagonals (c0,c2) and (c1,c3), so both 4-4 cases raise max AMIPS and the engine's AMIPS
+    // search takes neither. The input is a point on the axis c1-c3 below c3 (point_tris()), so
+    // the band's corner bound -- the integral of d's piecewise-linear interpolant -- is lowest
+    // with the diagonal (c1,c3), along which d is smallest at the centre: with the ring band the
+    // sum of E_T falls under that case alone. The engine then commits it, the after-hook's rule
+    // agrees, and the sanity check compares the case search's score with the mesh. With the ring
+    // background E_T is the AMIPS part alone and nothing is taken.
     const auto pot = plane_field();
     const double s = 0.2, z = 0.7;
     Eigen::MatrixXd V(6, 3);
@@ -2188,7 +2013,7 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         0., s, z, // c0
         0., 0., z + s, // c1
         0., -s, z, // c2
-        0., 0., z - s; // c3, on the level set z = 0.5
+        0., 0., z - s; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
     const std::vector<std::array<int, 4>> TA = {
         {{a, b, c0, c1}},
@@ -2213,11 +2038,15 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         auto A = energy_mesh(pa, V, TA, lab, pot);
         auto B02 = energy_mesh(p02, V, T02, lab, pot);
         auto B13 = energy_mesh(p13, V, T13, lab, pot);
+        A->m_band_tris = point_tris(z - s - 0.05);
+        B02->m_band_tris = A->m_band_tris;
+        B13->m_band_tris = A->m_band_tris;
+        // Max AMIPS (the engine's own rule) and the sum of E_T (the offsets' swap rule).
         const auto maxima = [](TopoOffsetTetMesh& m) {
             double amips = 0., energy = 0.;
             for (size_t t = 0; t < 4; ++t) {
                 amips = std::max(amips, m.TetOptimizerMesh::get_quality(m.oriented_tet_vids(t)));
-                energy = std::max(energy, m.tet_energy(t));
+                energy += m.tet_energy(t);
             }
             return std::make_pair(amips, energy);
         };
@@ -2241,7 +2070,7 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         bool has_c1c3 = true;
         for (const auto& t : new_tets) {
             const auto vs = A->oriented_tet_vids(t);
-            energy_new = std::max(energy_new, A->tet_energy(t.tid(*A)));
+            energy_new += A->tet_energy(t.tid(*A));
             has_c1c3 = has_c1c3 && std::count(vs.begin(), vs.end(), size_t(c1)) == 1 &&
                        std::count(vs.begin(), vs.end(), size_t(c3)) == 1;
         }

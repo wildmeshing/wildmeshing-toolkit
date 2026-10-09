@@ -79,14 +79,18 @@ class FaceExtra2d
 public:
     int label = 0;
     /**
-     * Rest shape (deform_others): the face's corners when it last changed topologically, in the
-     * oriented order consolidate_mesh() preserves. Stamped for every deformable face at release
-     * and re-stamped by the operation after-hooks for every face an accepted split / collapse /
-     * swap changed, never by smoothing -- a child left on its parent's rest reads det F ~ 1/2 and
-     * fights to regrow.
+     * Rest shape of a plastic face (TopoOffsetTriMesh::face_is_plastic()): its corners as last
+     * stamped, in the oriented order consolidate_mesh() preserves. Stamped for every face when the
+     * loop starts, before every operation group and every block of smoothing passes, and for a
+     * face a split or a swap creates when it is created; a face a collapse reshapes keeps its
+     * rest. As in 3D.
      */
     bool rest_valid = false;
     std::array<Eigen::Vector2d, 3> rest_pos;
+    /// The input segment this band face's D(t) used when the split pass began, -1 for none; a
+    /// split's children inherit it, which keeps a split from raising the term
+    /// (TopoOffsetTriMesh::band_face_vd()). The 3D twin is TetAttributes::band_tri.
+    int64_t band_seg = -1;
 };
 
 
@@ -158,8 +162,6 @@ public:
      * The offset boundary is the level set Phi = c. Built from the same extraction as
      * m_input_complex_bvh, in the same call, so the two describe the same geometry and the same
      * never-rebuilt rule applies. See OffsetPotential for what Phi is.
-     *
-     * shared_ptr because OffsetEnergy2D holds one per smoothing call.
      */
     std::shared_ptr<OffsetPotential2D> m_offset_potential;
 
@@ -204,7 +206,7 @@ public:
     /// Rebuild m_*_region from the mesh. `log` false suppresses the per-turn "[regions]" line:
     /// write_vtu() re-derives the map for its frame diagnostics and puts the old one back.
     void assign_band_regions(bool log = true);
-    /// Diagnostic: the front objective of one vertex along its normal, offset term vs total.
+    /// Diagnostic: E_V of one vertex along its normal, against its own-point residual.
     void log_front_profile(size_t vid);
     int vertex_region(const size_t vid) const
     {
@@ -356,23 +358,12 @@ public:
     /// no placement satisfies. Called at construction.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
-    /// TriWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// init_optimize loop: it returns on convergence without the frozen-front final pass and
-    /// without deciding the verdict. `refine` false skips the halving. `label` names the loop in
-    /// its log. As in 3D.
-    void optimize_offset_loop(
-        bool final_stage = true,
-        bool refine = true,
-        const std::string& label = std::string());
+    /// TriWild's loop, the front placed inside its smoothing passes, then the frozen-front final
+    /// pass and the verdict. As in 3D.
+    void optimize_offset_loop();
 
-    /// init_optimize: optimize_offset() opens with a stencil_order loop without refinement. Set
-    /// by marching_tris(), only when the target is beyond the maximum marchable distance.
-    bool m_init_optimize = false;
-    /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
-    std::string m_frame_prefix;
-
-    /// Max over the front vertices of ||grad F . n||, F the vertex's front objective
-    /// (front_objective()). Logged as the loop's gradient reference.
+    /// Max over the front vertices of ||grad E_V . n|| (vertex_energy()). Logged as the loop's
+    /// gradient reference.
     double front_gradient_linf();
     /// Its value on the band as constructed, measured once before turn 1.
     double m_front_gradient_reference = 0.;
@@ -435,54 +426,82 @@ public:
 
     ~TopoOffsetTriMesh() override = default;
 
-    /**
-     * @brief THE per-cell energy, read from the mesh as it is -- labels, neighbours and positions,
-     * nothing hypothetical. The 2D twin of TopoOffsetTetMesh::tet_energy().
-     *
-     *     E(t) = w A(t) + [t is band] * sum over the live front chords e of t of O(e)
-     *     O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
-     *
-     * A(t) is the base's TriOptimizerMesh::get_quality(), the AMIPS2D the engine stores as the
-     * face quality (3D stores AMIPS^3 there, which is why its energy reads AMIPS^3); its
-     * MAX_ENERGY (unscoreable) passes through unchanged, and w is w_amips
-     * (weighted_amips()). q_i are the N points of e's stencil_order stencil
-     * (for_each_edge_sample()) on the field of e's band face (potential_for_face()), e's ends
-     * sorted so that a chord's term does not depend on which face or which operation reads it. O is
-     * edge_offset_term(), the squared chord measure in units of the tolerance, 1 at the bar. With
-     * no field yet (m_offset_potential null) E = w A.
-     *
-     * An unmeasurable chord makes the face MAX_ENERGY, the engine's own "unscoreable". THE BAND
-     * SIDE CARRIES THE CHORD: only a band face (face_is_offset_band()) adds terms, and a live front
-     * chord has exactly one band side (edge_is_offset_surface_live()), so every front chord is
-     * counted once.
-     *
-     * WHERE IT IS COMPARED: the collapse rule (collapse_before_vertex() / collapse_edge_after(),
-     * early half collapse_quality_allowed()), the swap rule (swap_edge_before() /
-     * swap_edge_after(), early half swap_quality_allowed()), the smoother's projected step and
-     * veto (smoothing_cell_energy()) and the front and interior vetoes. The engine's stored face
-     * quality stays AMIPS2D and every engine diagnostic reads it unchanged.
-     */
+    // ------- THE ENERGY (the energy spec), one dimension down from 3D -------
+    //
+    //   E_T(t) = A_t ( w A(t)^2 / SE^2 + [t in B] (1 - w) D(t) ),   E(M) = sum_t E_T(t)
+    //
+    // A_t the face's area, A(t) its AMIPS (2D: |F|^2 / det F) against its rest shape when it is
+    // plastic (face_is_plastic()), against the equilateral triangle otherwise; w = w_amips, SE =
+    // stop_energy, B the band (label 2). D(t) is the corner bound over the input's segments
+    // (band_face_vd()). The 3D twin is TopoOffsetTetMesh::tet_energy(), with AMIPS^3 / SE^3. Every
+    // operation guard compares a SUM of E_T over the faces it changes and every vertex is smoothed
+    // on its one-ring's sum (smooth_vertex()). The engine's stored face quality stays AMIPS.
+
+    /// E_T(t), read from the mesh as it is. MAX_ENERGY for a face that is not positively oriented
+    /// in doubles.
     double tri_energy(size_t fid) const;
-    /// tri_energy() with the face's AMIPS given, as the shared smoother has just computed it.
-    double tri_energy(size_t fid, double amips) const;
-    /// The shared smoother's per-face comparison -- its projected step for a vertex held on a
-    /// surface, and its quality veto -- is the per-cell energy, so every smoothing test judges a
-    /// move by the energy the smoother minimises (smoothing_extra_energy()). As in 3D.
-    double smoothing_cell_energy(const size_t fid, const double quality) const override
+    /// The sum of tri_energy() over `fids`: what every operation guard compares.
+    double energy_sum(const std::vector<size_t>& fids) const;
+    /// The swap guard: the sum of E_T after is finite, under MAX_ENERGY, and STRICTLY below the
+    /// sum before (strict, so a swap pass terminates). Finite, because energy_sum() saturates at
+    /// MAX_ENERGY and "MAX <= MAX" would let a ring that holds one non-finite cell gain more. A NaN
+    /// refuses.
+    static bool energy_lowers(const double after, const double before)
     {
-        return tri_energy(fid, quality);
+        return std::isfinite(after) && after < MAX_ENERGY && after < before;
     }
-    /// The AMIPS part of the energy: w_amips times AMIPS, the MAX_ENERGY sentinel
-    /// (unscoreable) passed through unscaled so that it stays the largest value anywhere.
-    double weighted_amips(const double amips) const
+    /// The split, collapse and smoothing guard: as energy_lowers(), but a tie passes (<=).
+    static bool energy_not_raised(const double after, const double before)
     {
-        return amips >= MAX_ENERGY ? amips : m_offset_params.w_amips * amips;
+        return std::isfinite(after) && after < MAX_ENERGY && after <= before;
     }
-    /// Max of tri_energy() over `fids` (0 for none): the number every rule above compares.
-    double max_tri_energy(const std::vector<size_t>& fids) const;
+    /// E(M), the sum of tri_energy() over every live face. Logged per operation group.
+    double total_energy() const;
+    /// E(M)'s two parts, the AMIPS term and the band term (their sum is total_energy() unless a
+    /// cell is at MAX_ENERGY).
+    void energy_parts(double& amips, double& band) const;
+    /// Log-only: "[energy step] turn N <step>: E, AMIPS term, band term", after every operation
+    /// pass and every smoothing pass of the loop, for plotting E step by step.
+    void log_energy_step(const char* step) const;
+    /// The AMIPS term's coefficient w / SE^2.
+    double amips_weight() const
+    {
+        const double se = m_params.stop_energy;
+        return m_offset_params.w_amips / (se * se);
+    }
+    /// The band term's coefficient 1 - w.
+    double band_weight() const { return 1. - m_offset_params.w_amips; }
+    /// A_t A(t)^2 of face `fid`: against its rest when it is plastic and the rest is valid
+    /// (VolAMIPSEnergy2D::value_of()), against the equilateral triangle otherwise
+    /// (area_amips2()); +inf when inverted.
+    double face_vol_amips2(size_t fid) const;
+    /// A A^2 against the equilateral triangle, from the engine's AMIPS (TriOptimizerMesh::
+    /// get_quality()) and the edge lengths, never from a floating-point determinant: AMIPS =
+    /// tr / det(J) gives A = (sqrt3/4) tr / AMIPS, so A AMIPS^2 = (sqrt3/4) tr AMIPS, tr = (2/3)
+    /// sum of the three squared edge lengths. The 2D twin of vol_amips3(). +inf where the engine
+    /// reads MAX_ENERGY.
+    double area_amips2(const std::array<size_t, 3>& vids) const;
+    /// A_t D(t) of a band face with these corners: A_t times min over P in C of (1/3) sum over the
+    /// 3 corners q of (d_P(q) - delta)/delta, d_P the distance to input segment P alone, C the
+    /// nearest segment of each corner plus `stored_seg`. An upper bound on the integral of
+    /// (d - delta)/delta over the face, exact in the limit; no split raises it when a child may
+    /// use its parent's minimiser. One input region and an input complex of segments only.
+    double band_face_vd(
+        const std::array<size_t, 3>& vids,
+        int64_t stored_seg = -1,
+        int64_t* best = nullptr) const;
+    /// The input's segments as convex primitives (init_offset_potential()), for D(t).
+    std::shared_ptr<InputSegments> m_band_segs;
+    /// Store every band face's minimiser (FaceExtra2d::band_seg), at the start of each split
+    /// pass. E does not change.
+    void refresh_band_segs();
+    /// After an accepted smoothing move: store each band face of `fids`' minimiser over its
+    /// current candidates plus `extra` (the moved vertex's nearest segment at its start, which
+    /// E_V's candidates held), so a move E_V accepts never raises E. As in 3D.
+    void store_band_minimisers(const std::vector<size_t>& fids, int64_t extra);
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
-    /// error in units of the tolerance. The weight of the front smoother's offset terms, and the
-    /// scale of edge_offset_term(). As in 3D.
+    /// error in units of the tolerance -- the scale of edge_offset_term(), the exit measure. As in
+    /// 3D.
     double offset_term_weight() const
     {
         const double f = m_offset_params.front_conv_frac();
@@ -643,7 +662,6 @@ public:
     mutable int m_debug_pass = 0;
     mutable int m_debug_last_round = -1;
     mutable char m_debug_last_tag = '?';
-    mutable std::string m_debug_last_prefix = "?";
     /// The run's verdict: the front resolved (EnergyCriterion::converged(): every front chord's
     /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
     /// Read by the report and by throw_on_nonconvergence.
@@ -659,9 +677,10 @@ public:
     /// Operations refused because they would have left an offset-boundary chord over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// The energy rules (see tri_energy()): collapses refused for raising the max energy over
-    /// the survivor's ring, swaps for not strictly lowering it over the faces they make.
-    mutable std::atomic<int> iter_cnt_collapse_energy_reject{0}; // both halves count here
+    /// The E_T guards (see tri_energy()): splits and collapses refused for raising the sum of
+    /// E_T over the faces they change, swaps for not strictly lowering it. As in 3D.
+    mutable std::atomic<int> iter_cnt_split_energy_reject{0};
+    mutable std::atomic<int> iter_cnt_collapse_energy_reject{0};
     mutable std::atomic<int> iter_cnt_swap_energy_reject{0};
     /// Splits of an offset-boundary edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
@@ -673,6 +692,8 @@ public:
     struct OptSplitCache2d
     {
         std::map<size_t, int> face_label;
+        /// The parents' FaceExtra2d::band_seg, keyed like face_label: the children inherit it.
+        std::map<size_t, int64_t> face_band_seg;
         size_t v1_id = 0;
         size_t v2_id = 0;
         /// The endpoints' mask AND, captured before the split (3D's rule at both of its split
@@ -689,6 +710,9 @@ public:
         double parent_flatness = 1.;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
+    /// The split guard's before-half: the sum of tri_energy() over the two faces at the edge,
+    /// taken in split_edge_before() and compared in split_edge_after(). As in 3D.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
 
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
@@ -729,16 +753,17 @@ public:
      * surface or the bbox, which is the right rule for tetwild and simwild but not here: the
      * offset region is a thin band, and a collapse with only one endpoint on the boundary can
      * still pinch its two sides together and make the region non-manifold. The offset asks
-     * unconditionally. The energy rule's before-half is taken in collapse_before_vertex(), which
-     * the base calls before its scoring loop. As in 3D.
+     * unconditionally. The guard's before-half is taken in collapse_before_vertex(). As in 3D.
      */
     bool collapse_edge_before(const Tuple& t) override;
     /**
-     * @brief THE ENERGY RULE for a collapse (see tri_energy()), on the real mesh once the
-     * connectivity is committed, then the base's after-hook, the coarsening bar, the sizing
-     * restore and the rest re-stamp. A refusal returns false, which the engine rolls back.
+     * @brief THE COLLAPSE GUARD (see tri_energy()): the sum of E_T over the after faces finite
+     * and not above the before faces' (CollapseSets, energy_not_raised()), on the real mesh once
+     * the connectivity is committed, then the base's after-hook, the coarsening bar and the sizing
+     * restore. A refusal returns false, which the engine rolls back. A face the collapse reshapes
+     * keeps its rest, as in 3D.
      *
-     * The 3D twin applies the rule in collapse_after_connectivity(), a hook the 2D engine does
+     * The 3D twin applies the guard in collapse_after_connectivity(), a hook the 2D engine does
      * not have; here it runs as the first thing in the after-hook, BEFORE
      * TriOptimizerMesh::collapse_edge_after(), whose last step (collapse_after_vertex()) counts
      * the collapse as done. A collapse moves no vertex, so the energy is read from the mesh as it
@@ -747,7 +772,7 @@ public:
     bool collapse_edge_after(const Tuple& t) override;
 
     /**
-     * @brief Reject a flip whose new edge already exists, and cache the energy rule's
+     * @brief Reject a flip whose new edge already exists, and cache the swap guard's
      * before-half.
      *
      * Flipping (a,b) to (c,d) when c and d are already joined creates a second edge between the
@@ -756,9 +781,9 @@ public:
      */
     bool swap_edge_before(const Tuple& t) override;
 
-    /// THE ENERGY RULE for a swap (see tri_energy()): the max of tri_energy() over the two faces
-    /// the flip made must be STRICTLY below the max over the two it replaced
-    /// (m_swap_energy_before). The 3D twin is swap_after_cells().
+    /// THE SWAP GUARD (see tri_energy()): the sum of E_T over the two faces the flip made must be
+    /// STRICTLY below the sum over the two it replaced (m_swap_energy_before). The 3D twin is
+    /// swap_after_cells().
     bool swap_edge_after(const Tuple& t) override;
     bool collapse_before_vertex(size_t v1, size_t v2) override;
     void collapse_after_vertex(size_t v1, size_t v2) override;
@@ -846,7 +871,7 @@ public:
      *
      * The base's SmoothRejectCounters says why a move was refused; it cannot say what kind of
      * vertex was asking. What is worth counting here is the dispatch: how many attempts were on
-     * the offset boundary (the ones carrying the offset term), how many on another region's
+     * the offset boundary, how many on another region's
      * boundary, and how many were turned away before the smoother saw them at all.
      */
     struct SmoothTrace
@@ -854,9 +879,9 @@ public:
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> offset_attempted{0}; ///< reached the smoother with the offset term
+        std::atomic<int> offset_attempted{0}; ///< reached the smoother, on the front
         std::atomic<int> offset_accepted{0}; ///< ... and the smoother kept the new position
-        std::atomic<int> interior_attempted{0}; ///< reached it without one
+        std::atomic<int> interior_attempted{0}; ///< reached it, off the front
         std::atomic<int> region_attempted{0}; ///< ... of which sat on another region's boundary
 
         void reset()
@@ -875,22 +900,15 @@ public:
     };
     SmoothTrace m_smooth_trace;
 
-    /// How the solves this class makes itself ended, per smoothing pass. Background: every
-    /// smooth_nonfront_vertex() solve -- the 3D engine counts these itself (its m_newton), the
-    /// 2D engine does not, so the component keeps the counter. Front: every front placement.
-    /// Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged and reset by
+    /// How smooth_vertex()'s solves ended, per smoothing pass: every vertex off the front in
+    /// m_newton, front vertices in m_newton_front. Logged and reset by
     /// log_smoothing_pass_accounting().
-    ///
-    /// One difference from 3D, read before comparing the two logs: the 2D engine's smoother
-    /// (optimization::smooth_vertex_2d) catches a solver throw internally and reports nothing,
-    /// so the `threw` count is always 0 here; a solve that threw shows only through its stop
-    /// status (LineSearchFailed, the throw polysolve raises).
     optimization::NewtonCounters m_newton;
     optimization::NewtonCounters m_newton_front;
     /**
      * @brief DEBUG_output only: every front solve since the last debug frame, so the frames
      * show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and
-     * front_newton_status, see write_vtu()). Appended by smooth_front_vertex(), emptied by
+     * front_newton_status, see write_vtu()). Appended by smooth_vertex(), emptied by
      * write_debug_frame() once the frame is written. As in 3D.
      */
     struct FrontSolveRecord
@@ -909,121 +927,16 @@ public:
     /// The thread's shared solver, created with the engine's parameters if needed, with
     /// kSmoothRelGradNormTol applied. Every smoothing path of this component takes it from here.
     polysolve::nonlinear::Solver& smoothing_solver();
-    /// One smooth_vertex_2d() call with its solve recorded in `newton`: the 3D engine's
-    /// smooth_vertex_3d() takes a NewtonCounters and the 2D one does not, so the component
-    /// records the solve itself. A solve runs exactly when the ring is not already inverted in
-    /// floats (smooth_vertex_2d()'s only refusal before solving; two_stage is off on every
-    /// component path), so `solved` reports that, and the solver still holds its state.
-    bool smooth_vertex_2d_counted(
-        const Tuple& t,
-        const optimization::SmoothVertexOptions& opts,
-        optimization::NewtonCounters& newton,
-        bool* solved = nullptr);
-    /// The front veto (smooth_front_vertex()): moves whose Newton solve succeeded and reached
-    /// the veto, and how many it refused for raising the ring's max tri_energy. Reported and
-    /// reset per pass beside the Newton counters.
-    std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
-    /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
-    /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
-    /// untouched.
-    std::shared_ptr<const OffsetPotential2D> m_repulsion_potential;
-    /// Per repulsion pass or round, as m_newton_front and the front veto counters are per loop
-    /// pass.
-    optimization::NewtonCounters m_newton_repulsion;
-    std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
     /// The edges marching_tris() splits: exactly one end in the input complex (label != 0).
     bool is_marched_edge(const size_t a, const size_t b) const
     {
         return (m_vertex_extra[a].label == 0) != (m_vertex_extra[b].label == 0);
     }
-    /// While the repulsion runs: an outer end of a marched edge -- off the complex, with a
-    /// neighbour on it -- that no envelope holds. Asked of the mesh every time, so it follows the
-    /// repulsion rounds' operations. As in 3D.
-    bool is_repulsion_vertex(const size_t vid) const
-    {
-        if (!m_repulsion_potential || m_vertex_extra[vid].label != 0 ||
-            vertex_boundary_mask(vid) != 0) {
-            return false;
-        }
-        for (const size_t u : get_one_ring_vids_for_vertex_duplicate(vid)) {
-            if (m_vertex_extra[u].label != 0) return true;
-        }
-        return false;
-    }
-    /// O(v) = (max(0, 2 delta - d(v)) / front_conv)^2: the Euclidean residual against level
-    /// 2 delta is (d - 2 delta) / (2 delta), so the weight (2 delta / front_conv)^2 =
-    /// 4 offset_term_weight() puts it in units of the tolerance, as the front's terms are. One
-    /// object for the whole repulsion (value() changes nothing in it, so threads share it); set
-    /// with m_repulsion_potential.
-    std::shared_ptr<OffsetEnergy2D> m_repulsion_term;
-    double repulsion_term_at(const size_t vid) const
-    {
-        Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
-        return m_repulsion_term->value(x);
-    }
-    /// THE REPULSION PART OF THE PER-TRI ENERGY, before the march (tri_energy()): a face carries
-    /// O(v) of each of its corners v that is an outer end within it -- off the complex, held by
-    /// no envelope, in a face that has a complex vertex, i.e. joined to the complex by a marched
-    /// edge of this face. These faces are the band the march will make, so this is the
-    /// counterpart of a band face carrying its front chord's term. Reads the face's own three
-    /// vertices only. 0 while the repulsion does not run. As in 3D.
-    double repulsion_cell_term(const std::array<size_t, 3>& vids) const
-    {
-        if (!m_repulsion_potential) return 0.;
-        bool has_complex = false;
-        for (const size_t v : vids) has_complex = has_complex || m_vertex_extra[v].label != 0;
-        if (!has_complex) return 0.;
-        double e = 0.;
-        for (const size_t v : vids) {
-            if (m_vertex_extra[v].label == 0 && vertex_boundary_mask(v) == 0) {
-                e += repulsion_term_at(v);
-            }
-        }
-        return e;
-    }
-    /// How many faces of vid's ring carry its term (repulsion_cell_term()): the smoother's
-    /// objective is the ring's sum of the per-tri energy, so it charges O(v) that many times.
-    size_t repulsion_cells_at(const size_t vid) const
-    {
-        size_t n = 0;
-        for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
-            for (const size_t u : oriented_tri_vids(fid)) {
-                if (m_vertex_extra[u].label != 0) {
-                    ++n;
-                    break;
-                }
-            }
-        }
-        return n;
-    }
-    /// O(v) for vid's smoothing objective, charged once per carrying face.
-    std::shared_ptr<OffsetEnergy2D> repulsion_energy(const size_t vid) const
-    {
-        return std::make_shared<OffsetEnergy2D>(
-            m_repulsion_potential,
-            double(repulsion_cells_at(vid)) * 4. * offset_term_weight(),
-            true,
-            true,
-            /*one_sided=*/true);
-    }
-    /// repulsion_rounds: whether the complex is still simplicially embedded around the faces
-    /// `fids` an operation just made -- no face off the complex has complex vertices spanning an
-    /// edge off the complex (tri_is_simp_emb()'s test, decided from the faces' labels, which the
-    /// operations carry, instead of the edge labels, which they do not). A collapse or a swap
-    /// that breaks it is refused. Defined in TopoOffsetTriMesh.cpp. As in 3D.
-    bool repulsion_embedding_kept(const std::vector<size_t>& fids) const;
-    /// Whether the edge (a, b) is in the input complex, from the faces' labels: an edge of a face
-    /// of the complex, or, for offset_in, a domain-boundary edge of a body face. Single-body
-    /// offset_in or offset_out only, which repulsion_smoothing() checks. The 3D twin also takes a
-    /// face.
-    bool simplex_in_input_complex(size_t a, size_t b) const;
-    std::atomic<size_t> m_repulsion_embed_refused{0};
     /// Diagnostic: where the front solves stop. Per pass, histograms of the final gradient norm
     /// of each front solve (log10 bins, -14..+7) and of its ratio to the solve's first gradient
     /// norm, read from polysolve's Criteria after the solve. As in 3D.
     static constexpr int kGradBins = 22;
     std::array<std::atomic<size_t>, kGradBins> m_front_grad_abs{}, m_front_grad_rel{};
-    optimization::NewtonCounters m_newton_plastic;
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
     /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current
@@ -1109,9 +1022,8 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// The collapse energy rule's before-half: the max of tri_energy() over the collapse's
-    /// before cells (CollapseSets), cached by collapse_before_vertex() and compared by
-    /// collapse_edge_after().
+    /// The collapse guard's before-half: the sum of tri_energy() over the collapse's before faces
+    /// (CollapseSets), cached by collapse_before_vertex() and compared by collapse_edge_after().
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_energy_before;
     /**
      * @brief THE CELL SETS OF A COLLAPSE, and the only ones any collapse check in this component
@@ -1121,7 +1033,7 @@ public:
      * - after: v1's one-ring minus v2's, i.e. the faces of v1's ring that do not hold v2 -- the
      *   faces the collapse reshapes (v1 becomes v2), which keep their slots.
      * Taken by collapse_sets() in collapse_before_vertex() and read by the energy rule (both
-     * halves), the coarsening bar and repulsion_embedding_kept().
+     * halves) and the coarsening bar.
      */
     struct CollapseSets
     {
@@ -1140,11 +1052,9 @@ public:
      * gone by collapse_after_vertex(), which is where the refresh runs. As in 3D.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// The swap energy rule's before-half: the max of tri_energy() over the two faces the flip
-    /// replaces, cached by swap_edge_before() and compared by swap_edge_after() and, early, by
-    /// swap_quality_allowed(). The 3D twin is SwapEnergyBefore, which also carries the band cells
-    /// beyond a 3-2 flip's faces; a 2D flip replaces two faces with two over the same quad, every
-    /// quad edge keeping its outer face, so there is no "outside" to add.
+    /// The swap guard's before-half: the sum of tri_energy() over the two faces the flip
+    /// replaces, cached by swap_edge_before() and compared by swap_edge_after(). A flip changes no
+    /// face outside its quad.
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_energy_before;
     /// The live offset-boundary edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
@@ -1458,33 +1368,22 @@ public:
     }
 
     /**
-     * @brief Placement of a front vertex: the shared smoother with the offset's options. See
-     * FrontSmooth2d.cpp.
+     * @brief THE smoother, for every vertex: minimise E_V(v) = sum of E_T over v's one-ring
+     * (vertex_energy()) by Newton from v's position. As in 3D: a vertex no envelope holds takes
+     * the minimiser; an envelope-held vertex (smoothing_energy_envelope()) is projected back by
+     * smoothing_mode, with the engine's backtracking, and kept only when its tracked edges stay
+     * inside smoothing_containment_envelope(). Every vertex passes THE SMOOTHING VETO: the ring's
+     * sum of E_T finite and not above the sum before (energy_not_raised()). See FrontSmooth2d.cpp.
      */
-    bool smooth_front_vertex(const Tuple& t);
-    /**
-     * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
-     * the shared smoother at the front's options, against the sum of the per-tri energy over its
-     * ring -- w AMIPS, and O(v) once for every ring face that carries it (repulsion_energy(),
-     * repulsion_cell_term()); under offset_front_smooth_veto, the max of the per-tri energy over
-     * its ring may not rise. See FrontSmooth2d.cpp.
-     */
-    bool smooth_repulsion_vertex(const Tuple& t);
-    /**
-     * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
-     * TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises the per-cell
-     * energy -- smoothing_extra_energy(), w AMIPS over the ring, the smoother adding no AMIPS
-     * term of its own -- and the veto compares the max of tri_energy() over the ring, under the
-     * same key (offset_smooth_veto) and on the same vertices as the engine's AMIPS veto it
-     * replaces. See Optimize2d.cpp.
-     */
-    bool smooth_nonfront_vertex(const Tuple& t);
-    /// w AMIPS over vid's one-ring, the per-cell energy's AMIPS part in the smoother's form
-    /// (optimization::AMIPSEnergy2D, the engine's own quality), w = w_amips. The 3D
-    /// twin is amips3_energy(), AMIPS^3 being the 3D engine's quality.
-    std::shared_ptr<polysolve::nonlinear::Problem> amips_energy(size_t vid) const;
-    /// ||grad F|| at front vertex vid along its move direction, F the objective
-    /// smooth_front_vertex() minimises. +inf if unmeasurable.
+    bool smooth_vertex(const Tuple& t);
+    /// E_V at vid: VolAMIPSEnergy2D over the one-ring at amips_weight() plus BandVolumeEnergy2D
+    /// over its band faces at band_weight(). Null when vid has no valid face.
+    std::shared_ptr<polysolve::nonlinear::Problem> vertex_energy(size_t vid) const;
+    /// smooth_vertex()'s held-vertex test, the engine's own: every tracked edge at vid is inside
+    /// smoothing_containment_envelope(vid).
+    bool held_edges_contained(size_t vid) const;
+    /// ||grad E_V|| at front vertex vid along its move direction (vertex_energy()). +inf if
+    /// unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
     /// The line a front vertex is placed along: the field normal, or the boundary tangent where
     /// an input envelope holds it. See the definition.
@@ -1527,52 +1426,6 @@ public:
         const;
     /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector2d front_vertex_normal(size_t vid) const;
-    /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
-    /// places against the offset term (smoothing_extra_energy()): w AMIPS over the one-ring
-    /// (amips_energy()), the rest-shape AMIPS of its plastic faces (rest_energy_for_vertex(),
-    /// null without the plastic medium), and front_energy(). What
-    /// front_vertex_normal_gradient() differentiates. As in 3D, where the AMIPS part is cubed.
-    std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
-    /// Whether the smoother places vid against the offset term: a front vertex, outside the
-    /// frozen-front final pass, that no input envelope also pins.
-    bool vertex_carries_offset_term(const size_t vid) const
-    {
-        return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
-               vertex_boundary_mask(vid) == 0;
-    }
-    /// The AMIPS weight the rest-shape term uses at vid: w_amips for a vertex placed
-    /// against the offset term, the engine's w_amips factor otherwise. As in 3D.
-    double smoother_amips_weight(const size_t vid) const
-    {
-        if (vertex_carries_offset_term(vid)) return m_offset_params.w_amips;
-        return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    }
-    /// THE smoothing objective at vid, for every vertex the shared smoother places: the per-cell
-    /// energy tri_energy() = w AMIPS + O summed over vid's ring, up to the terms that do not
-    /// move with vid. w AMIPS over the ring (amips_energy()) for every vertex -- the smoother adds
-    /// no AMIPS term of its own, every caller passing opts.w_amips 0 -- plus the offset terms of
-    /// the front chords at vid when it is a front vertex the loop places (front_energy(); null in
-    /// the final pass and for a front vertex an input envelope also pins), or, in the passes
-    /// before the march, a repulsion vertex's term once per ring face that carries it
-    /// (repulsion_energy(), repulsion_cell_term()). Under deform_others
-    /// the rest-shape AMIPS of the deformable faces in the ring is added. As in 3D.
-    std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
-        const size_t vid) const override
-    {
-        auto sum = std::make_shared<optimization::EnergySum>();
-        sum->add_energy(amips_energy(vid));
-        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
-        if (is_repulsion_vertex(vid)) {
-            sum->add_energy(repulsion_energy(vid));
-            return sum;
-        }
-        if (vertex_carries_offset_term(vid)) {
-            sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
-        }
-        if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
-        return sum;
-    }
-
     // ------- deform_others: other input regions deform instead of being envelope-held -------
 
     /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
@@ -1595,47 +1448,26 @@ public:
     /// Whether this edge lies on a released region's boundary, by the incident faces' current
     /// tag symmetric difference -- the same test the release freed vertices by.
     bool edge_borders_released_boundary(const Tuple& e) const;
-    /// Under deform_others the same set as face_is_plastic(): every face outside the band.
-    bool face_is_deformable(size_t fid) const;
-    /// Plastic medium: under deform_others every background face -- ambient and the other objects
-    /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
-    /// resists only the increment since the group started and the medium flows instead of behaving
-    /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
-    /// not plastic; element quality in the medium is the operation passes' job.
-    bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
+    /// The plastic medium, set while the loop runs (not in the final pass, which is TriWild's
+    /// equilateral AMIPS). face_is_plastic() of the spec: every face outside the band and the
+    /// input complex (label 0); the band and the complex are elastic. As in 3D.
+    bool m_plastic_active = false;
     bool face_is_plastic(size_t fid) const
     {
-        // Everything outside the band: ambient, the other objects and the input complex's
-        // interior alike -- one material. The complex's boundary is what its tube holds.
-        return m_plastic_active && m_face_extra[fid].label != 2;
+        return m_plastic_active && m_face_extra[fid].label == 0;
     }
-    /// Stamp rest := current for every plastic face; called before every operation group.
+    /// Stamp rest := current for every plastic face; called when the loop starts, before every
+    /// operation group and before every block of smoothing passes.
     void stamp_plastic_rests();
-    /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else -- no
-    /// equilateral term, no quality veto, exact inversion as the only accept test.
-    bool smooth_plastic_vertex(const Tuple& t);
-    /// A band cell that is a released object's material: every non-output tag released, at
-    /// least one present. Read by the front placement objective and the rest stamping only --
-    /// see the definition for why the band's interior smoothing is left equilateral.
-    bool face_is_released_band(size_t fid) const;
-    /// Stamp rest := the face's current corner positions (oriented order). No-op for
-    /// non-deformable faces.
+    /// Stamp rest := the face's current corner positions (oriented order). For the faces a split
+    /// or a swap creates; read only while the face is plastic.
     void stamp_rest_face(size_t fid);
+    /// A block of `k` smoothing passes, with the plastic rests stamped once before it.
+    void smooth_passes(int k);
     /// Drop the released tags' envelopes and stamp every deformable face's rest. Called once
     /// from optimize_offset() when deform_others is set; see the FaceExtra2d::rest_valid doc
     /// for the tracking contract.
     void release_deformable_regions();
-    /// The rest-shape AMIPS over the deformable faces of vid's one-ring, weighted like the
-    /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the
-    /// ring has none.
-    std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
-    /// The offset term for a front vertex, at offset_term_weight(): StencilEnergy2D over its
-    /// incident live front chords, whose value is sum_e O(e), the terms the per-cell energy
-    /// carries. Defined in FrontSmooth2d.cpp.
-    std::shared_ptr<polysolve::nonlinear::Problem> front_energy(
-        size_t vid,
-        const std::shared_ptr<const OffsetPotential2D>& pot) const;
-
     /// Samples per front chord; see for_each_edge_sample().
     int stencil_order() const { return m_offset_params.stencil_order; }
     /// How many points for_each_edge_sample() visits at the configured order: 2 at order 0, and
@@ -1730,9 +1562,8 @@ public:
      * distance to the level set, which at an end is that vertex's own placement error (see
      * edge_offset_term()).
      *
-     * The weights are handed out for the front smoother: with the moving vertex x as p0, a
-     * sample is wa*x + wb*p1, so it moves by wa per unit of x; StencilEnergy2D keeps the weights
-     * fixed while the points slide with x (stencil_edge_at() in FrontSmooth2d.cpp).
+     * The weights are handed out with each point: with p0 as the moving end, a sample is
+     * wa*p0 + wb*p1.
      *
      * Takes positions rather than a Tuple: edge_offset_term() reads a chord's ends in sorted
      * order (see tri_energy()).
@@ -1870,10 +1701,9 @@ public:
         ///
         ///     r_v = sqrt( (1/n_v) sum_e O(e) ),   O(e) = edge_offset_term()
         ///
-        /// every chord weighted equally: the front smoother's own offset term at v
-        /// (StencilEnergy2D at offset_term_weight() is sum_e O(e) = n_v r_v^2), the same chords'
-        /// terms the per-cell energy tri_energy() carries. A vertex with any unmeasurable incident
-        /// chord has no ring measure (n_rings_unmeasurable; the chord itself is already in
+        /// every chord weighted equally. The exit and refinement measure only: the energy
+        /// (tri_energy()) is the band integral D(t), not this. A vertex with any unmeasurable
+        /// incident chord has no ring measure (n_rings_unmeasurable; the chord itself is already in
         /// n_unmeasurable).
         bool ring_exit = false; ///< front_measure "vertex_ring"
         static const char* ring_name() { return "ring measure"; }
@@ -2074,45 +1904,17 @@ public:
      */
     void log_refine_block_census(const std::string& when, double filter_energy) const;
 
-    /**
-     * @brief The energy rule's EARLY half, on the engine's lower bound.
-     *
-     * The engine scores each reshaped face before the collapse exists and hands its AMIPS in as
-     * `q`. tri_energy() of that face is weighted_amips(q) plus a non-negative chord term, so q
-     * alone above the before-maximum (collapse_before_vertex()) already decides: the rule that
-     * collapse_edge_after() applies on the real faces would refuse too. Refusing here costs
-     * nothing; refusing there costs the collapse and its rollback. Same rule, same counter,
-     * applied as soon as it can be. The engine's own `ring_max` (AMIPS over v1's ring) is not
-     * read; TriWild's exemption for an unrounded v1 is kept. Off with offset_collapse_veto. As in
-     * 3D.
-     */
-    bool collapse_quality_allowed(size_t v1, size_t /*v2*/, double q, double /*ring_max*/)
+    /// The engine's early collapse and swap tests: only a degenerate or inverted new face
+    /// (MAX_ENERGY) is refused here. The guards compare sums of E_T, which the engine's per-face
+    /// AMIPS cannot bound: collapse_edge_after(), swap_edge_after(). As in 3D.
+    bool collapse_quality_allowed(size_t /*v1*/, size_t /*v2*/, double q, double /*ring_max*/)
         const override
     {
-        if (!m_offset_params.offset_collapse_veto || !m_vertex_attribute.at(v1).m_is_rounded) {
-            return true;
-        }
-        if (weighted_amips(q) <= m_collapse_energy_before.local()) return true;
-        ++iter_cnt_collapse_energy_reject;
-        return false;
+        return q < MAX_ENERGY;
     }
-
-    /**
-     * @brief The energy rule's EARLY half for a swap, on the engine's lower bound.
-     *
-     * `after` is the largest AMIPS over the two new faces. tri_energy() of a face is
-     * weighted_amips() of its AMIPS plus a non-negative chord term, so `after` not strictly below
-     * the before-maximum (swap_edge_before()) already decides what swap_edge_after() would decide
-     * on the real faces: refused. The engine's `before` (stored AMIPS of the old faces) is not
-     * read. Off with offset_swap_veto. A 2D swap never flips the offset boundary (the engine
-     * refuses every tracked edge), so `is_surface_flip` is always false. As in 3D.
-     */
     bool swap_quality_allowed(double after, double /*before*/, bool) const override
     {
-        if (!m_offset_params.offset_swap_veto) return true;
-        if (weighted_amips(after) < m_swap_energy_before.local()) return true;
-        ++iter_cnt_swap_energy_reject;
-        return false;
+        return after < MAX_ENERGY;
     }
 
     mutable std::atomic<size_t> m_deg_split_created{0};
@@ -2168,32 +1970,26 @@ public:
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
-     * the loop and F in the final pass; led by m_frame_prefix (i during init_optimize). Same
-     * scheme as 3D.
+     * the loop and F in the final pass. Same scheme as 3D.
      */
     void write_smoothing_debug_output(const std::string& path) const override
     {
         const char ph = m_freeze_front ? 'F' : 'S'; // the final pass, or the loop
-        if (m_round != m_debug_last_round || ph != m_debug_last_tag ||
-            m_frame_prefix != m_debug_last_prefix) {
+        if (m_round != m_debug_last_round || ph != m_debug_last_tag) {
             m_debug_last_round = m_round;
             m_debug_last_tag = ph;
-            m_debug_last_prefix = m_frame_prefix;
             m_debug_pass = 0;
         }
         std::string label = path;
-        // The prefix leads, since the loop after the init_optimize loop restarts at turn 1.
-        const std::string& g = m_frame_prefix;
         if (path.rfind("debug_", 0) == 0) {
             label = fmt::format(
-                "{}r{}{}{}{}",
-                g,
+                "r{}{}{}{}",
                 m_round,
                 ph,
                 ++m_debug_pass,
                 m_debug_pass_name.empty() ? std::string() : "_" + m_debug_pass_name);
         } else if (path.rfind("end_", 0) == 0) {
-            label = fmt::format("{}r{}{}_end", g, m_round, ph);
+            label = fmt::format("r{}{}_end", m_round, ph);
         }
         const_cast<TopoOffsetTriMesh*>(this)->write_debug_frame(label);
     }
@@ -2288,7 +2084,7 @@ public:
     //// overriden splits/invariants
 
     /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
-    /// repulsion_smoothing() when asked for, marching_tris() and the offset tagging. The
+    /// marching_tris() and the offset tagging. The
     /// optimization is optimize_offset(), which the driver calls afterwards.
     void construct_offset(const std::filesystem::path& output_file);
 
@@ -2299,15 +2095,6 @@ public:
     /// still touching a complex frontier vertex (the split-off halves) becomes the band
     /// (label 2).
     void marching_tris();
-
-    /// repulsion_smoothing_passes and repulsion_rounds (see the spec): between the simplicial
-    /// embedding and marching_tris(), smoothing passes and then rounds of the loop's operations
-    /// that push the outer ends of the marched edges out to 2 x target_distance, stopping once
-    /// every outer end is beyond target_distance + front_conv. As in 3D.
-    void repulsion_smoothing();
-    /// Every construction label (vertex, edge, face) back to 0, then label_input_complex(): the
-    /// input complex from the region tags, which the operations carry.
-    void relabel_input_complex();
 
     /// Label connected simplicial complex components (simplices labelled 1 or 2) and return
     /// their number. The driver compares the count before and after construction. As in 3D.

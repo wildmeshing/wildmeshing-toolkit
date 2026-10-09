@@ -110,17 +110,9 @@ void topological_offset(nlohmann::json json_params)
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
-        if (!params.growth_targets.empty()) {
-            log_and_throw_error(
-                "EXPERIMENTAL_growth_targets is 3D only; leave it empty for a 2D input");
-        }
         if (params.unreachable_exit) {
             log_and_throw_error(
                 "EXPERIMENTAL_unreachable_exit is 3D only; leave it false for a 2D input");
-        }
-        if (params.visible_distance) {
-            log_and_throw_error(
-                "EXPERIMENTAL_visible_distance is 3D only; leave it false for a 2D input");
         }
         if (params.area_weighted_ring) {
             log_and_throw_error(
@@ -129,14 +121,6 @@ void topological_offset(nlohmann::json json_params)
         if (params.quadratic_stencil) {
             log_and_throw_error(
                 "EXPERIMENTAL_quadratic_stencil is 3D only; leave it false for a 2D input");
-        }
-        if (params.integral_energy) {
-            log_and_throw_error(
-                "EXPERIMENTAL_integral_energy is 3D only; leave it false for a 2D input");
-        }
-        if (params.band_volume_energy) {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_energy is 3D only; leave it false for a 2D input");
         }
         if (params.no_refinement || params.no_exit) {
             log_and_throw_error(

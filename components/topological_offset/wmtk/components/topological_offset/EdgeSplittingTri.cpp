@@ -15,17 +15,12 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     // the split, and the marching path sets its own labels. Entries left from a previous
     // optimization split would be stamped onto marching-created faces.
     m_opt_split_cache.local().face_label.clear();
+    m_opt_split_cache.local().face_band_seg.clear();
 
     // The optimization phase runs wmtk::TriOptimizerMesh's split; everything below is the
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        // repulsion_rounds, before the march: a marched edge is never split -- its midpoint would
-        // be a new outer end nearer the input than the one the rounds push out. As in 3D.
-        if (m_repulsion_potential &&
-            is_marched_edge(t.vid(*this), t.switch_vertex(*this).vid(*this))) {
-            return false;
-        }
         // No edge class is refused here, the domain wall included: a wall edge is a tracked
         // region boundary like any other, so the envelopes hold it. Do not re-add a wall
         // refusal; measured worse -- see git history of this file.
@@ -52,10 +47,16 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         for (const size_t fid : get_incident_fids_for_edge(t)) {
             const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
             c.face_label[apex] = m_face_extra[fid].label;
+            c.face_band_seg[apex] = m_face_extra[fid].band_seg;
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
         }
-        return TriOptimizerMesh::split_edge_before(t);
+        if (!TriOptimizerMesh::split_edge_before(t)) return false;
+        // THE SPLIT GUARD's before-half: the sum of E_T over the faces at the edge, T_b. The
+        // children (T_a, the new vertex's ring) fill exactly their region; split_edge_after()
+        // compares. As in 3D.
+        m_split_energy_before.local() = energy_sum(get_incident_fids_for_edge(t));
+        return true;
     }
     return marching_split_edge_before(t);
 }
@@ -179,6 +180,15 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TriOptimizerMesh::split_edge_after(t)) {
+            return false;
+        }
+        // THE SPLIT GUARD: sum of E_T over the children, the new vertex's ring, finite and not
+        // above the parents' (split_edge_before(), energy_not_raised()). The engine rolls a
+        // refusal back.
+        if (m_offset_params.split_energy_guard && !energy_not_raised(
+                                                      energy_sum(get_one_ring_fids_for_vertex(t)),
+                                                      m_split_energy_before.local())) {
+            ++iter_cnt_split_energy_reject;
             return false;
         }
         // The labels of the faces this split created were carried from their parents by

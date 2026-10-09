@@ -1,5 +1,7 @@
 #include "TopoOffsetTriMesh.h"
 
+#include <wmtk/optimization/EnergySum.hpp>
+#include <wmtk/optimization/EnvelopeEnergy.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -12,80 +14,119 @@
 namespace wmtk::components::topological_offset {
 
 /**
- * Front placement: an offset-front vertex is placed by the shared 2-D smoother with the offset's
- * energy (see smooth_front_vertex()). Everything else is smoothed by Optimize2d.cpp. The 3D twin
- * is FrontSmooth3d.cpp.
+ * THE smoother (smooth_vertex()), for every vertex in every phase: one Newton solve on E_V, the
+ * vertex's one-ring sum of E_T (vertex_energy()). The 3D twin is FrontSmooth3d.cpp.
  */
 
-namespace {
-/// One live front chord at x, as the offset term wants it: the chord's other end, and the
-/// barycentric weights of the chord's stencil_order stencil. Only the weights are frozen -- the
-/// sample points themselves slide with x and the field is read live -- see StencilEnergy2D. The
-/// 3D twin is stencil_face_at().
-template <typename Mesh>
-bool stencil_edge_at(
-    const Mesh& m,
-    const typename Mesh::Tuple& e,
-    const size_t vid,
-    StencilEnergy2D::Edge& out)
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::vertex_energy(
+    const size_t vid) const
 {
-    const auto vs = m.get_edge_vids(e);
-    size_t q = 0;
-    int k = 0;
-    for (const size_t v : vs) {
-        if (v == vid) continue;
-        q = v;
-        ++k;
+    // E_V(x) = sum over vid's one-ring t of E_T(t)(x): VolAMIPSEnergy2D over every face -- against
+    // its rest when it is plastic, the equilateral triangle otherwise, exactly as
+    // face_vol_amips2() reads it -- and BandVolumeEnergy2D over the band faces, D(t)'s candidates
+    // taken from the corners as they are now (the nearest segment of each, and the face's stored
+    // one). As in 3D.
+    const Eigen::Matrix2d R_regular = VolAMIPSEnergy2D::regular_rest();
+    std::vector<VolAMIPSEnergy2D::Cell> amips;
+    std::vector<BandVolumeEnergy2D::Cell> band;
+    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+        const auto orig = oriented_tri_vids(fid);
+        // The moving vertex first: a cyclic rotation, which keeps the winding.
+        int i0 = 0;
+        for (int k = 0; k < 3; ++k) {
+            if (orig[size_t(k)] == vid) i0 = k;
+        }
+        std::array<int, 3> from{};
+        for (int k = 0; k < 3; ++k) from[size_t(k)] = (i0 + k) % 3;
+        std::array<Vector2d, 2> q;
+        for (int k = 1; k < 3; ++k) {
+            q[size_t(k - 1)] = m_vertex_attribute[orig[size_t(from[size_t(k)])]].m_posf;
+        }
+        Eigen::Matrix2d R = R_regular;
+        const FaceExtra2d& fx = m_face_extra[fid];
+        if (face_is_plastic(fid) && fx.rest_valid) {
+            Eigen::Matrix2d Rp;
+            for (int k = 1; k < 3; ++k) {
+                Rp.col(k - 1) = fx.rest_pos[size_t(from[size_t(k)])] - fx.rest_pos[size_t(from[0])];
+            }
+            if (Rp.determinant() > 0.) R = Rp; // a rest that holds no shape: the equilateral one
+        }
+        VolAMIPSEnergy2D::Cell c;
+        if (VolAMIPSEnergy2D::cell(q, R, c)) amips.push_back(c);
+        if (face_is_offset_band(fid) && m_band_segs) {
+            BandVolumeEnergy2D::Cell b;
+            b.q = q;
+            for (const size_t u : orig) {
+                b.candidates.push_back(m_band_segs->nearest(m_vertex_attribute[u].m_posf));
+            }
+            if (fx.band_seg >= 0) b.candidates.push_back(fx.band_seg);
+            std::sort(b.candidates.begin(), b.candidates.end());
+            b.candidates.erase(
+                std::unique(b.candidates.begin(), b.candidates.end()),
+                b.candidates.end());
+            band.push_back(std::move(b));
+        }
     }
-    if (k != 1) return false;
-    const Vector2d x = m.m_vertex_attribute[vid].m_posf;
-    out.q1 = m.m_vertex_attribute[q].m_posf;
-    out.samples.clear();
-    m.for_each_edge_sample(x, out.q1, [&](const Vector2d&, const double wa, const double wb) {
-        StencilEnergy2D::Sample sm;
-        sm.a = wa;
-        sm.b = wb;
-        out.samples.push_back(sm);
-    });
-    return !out.samples.empty();
+    if (amips.empty()) return nullptr;
+    auto sum = std::make_shared<optimization::EnergySum>();
+    sum->add_energy(std::make_shared<VolAMIPSEnergy2D>(std::move(amips), amips_weight()));
+    if (!band.empty()) {
+        sum->add_energy(
+            std::make_shared<BandVolumeEnergy2D>(
+                m_band_segs,
+                std::move(band),
+                m_offset_params.target_distance,
+                band_weight()));
+    }
+    return sum;
 }
-} // namespace
 
-bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
+bool TopoOffsetTriMesh::held_edges_contained(const size_t vid) const
 {
-    // See the header: the shared smoother with the offset's options. The whole objective arrives
-    // through smoothing_extra_energy() -- w AMIPS over the ring and the offset terms at
-    // offset_term_weight(), tri_energy()'s two parts -- and w_amips 0 keeps the smoother from
-    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
-    // term. The smoother holds a front vertex to no envelope (see
-    // smoothing_containment_envelope()), so neither the projected path nor the containment check
-    // applies -- solve, exact inversion test, then the veto on tri_energy() below. As in 3D.
+    // The engine's own containment test: every tracked edge at vid inside the vertex's
+    // containment envelope (smoothing_containment_envelope(), the region tubes alone).
+    const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
+    if (!hold || !m_vertex_attribute[vid].m_is_on_surface) return true;
+    const Vector2d p = m_vertex_attribute[vid].m_posf;
+    const simplex::SimplexCollection es = get_surface_edges_for_vertex(vid);
+    for (const simplex::Edge& e : es.edges()) {
+        const auto& evs = e.vertices();
+        const size_t u = evs[0] != vid ? evs[0] : evs[1];
+        const std::array<Eigen::Vector2d, 2> edge = {{p, m_vertex_attribute[u].m_posf}};
+        if (hold->is_outside(edge)) return false;
+    }
+    return true;
+}
+
+bool TopoOffsetTriMesh::smooth_vertex(const Tuple& t)
+{
+    // See the declaration. A refusal returns false and TriMesh::smooth_vertex() rolls the
+    // position and the ring's stored qualities back; every path below that moved the vertex also
+    // puts it back itself, so the counters and diagnostics read the state the engine restores.
+    // As in 3D.
     const size_t vid = t.vid(*this);
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = 0.;
-    opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
-    opts.s_envelope = m_s_envelope;
-    opts.two_stage = false;
-    // The engine's veto compares AMIPS alone, and a front vertex must be free to worsen its
-    // ring's shape on the way to the level set: off. The veto below is on the energy instead.
-    opts.quality_veto = false;
-    polysolve::nonlinear::Solver& solver = smoothing_solver();
-    // THE FRONT SMOOTHER'S VETO (see tri_energy()): the max of tri_energy() over the vertex's
-    // one-ring may not rise, under offset_front_smooth_veto. A tie passes. Read before the solve
-    // and after it, on the mesh: a smoothing move changes no label and moves one vertex, so the
-    // one-ring holds every face whose energy it can change. Refused, TriMesh::smooth_vertex()
-    // rolls back the position and the ring's stored qualities. The smoother has counted the move
-    // accepted by then; it is recounted as a quality refusal, so the counters still partition the
-    // attempts.
     const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
+    for (const size_t fid : ring) {
+        if (is_inverted_f(fid)) {
+            // A neighbour that is not rounded can leave a face inverted in floats though it is
+            // fine in exact arithmetic: there is nothing to optimise from.
+            ++m_smooth_rejects.already_inverted;
+            return false;
+        }
+    }
+    const auto energy = vertex_energy(vid);
+    if (!energy) return false;
+    const bool front = m_vertex_extra[vid].m_is_on_offset;
+    // Held: an input envelope pulls it (smoothing_energy_envelope()).
+    const std::shared_ptr<SampleEnvelope> pull = smoothing_energy_envelope(vid);
+    const bool held = pull != nullptr;
+    const Vector2d x0 = m_vertex_attribute[vid].m_posf;
+
     // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of every
     // vertex that shares a front chord with it -- before the solve.
     std::vector<size_t> nb;
     std::vector<double> nb_before;
-    if (m_offset_params.debug_crossings) {
+    if (front && m_offset_params.debug_crossings) {
         nb.push_back(vid);
         for (const Tuple& et : offset_surface_edges_live_at(vid)) {
             for (const size_t u : get_edge_vids(et)) nb.push_back(u);
@@ -93,21 +134,58 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
         wmtk::vector_unique(nb);
         for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
     }
-    // The solve is folded into the pass's m_newton_front; under DEBUG_output its outcome is also
-    // pinned to vid (m_front_solve_log). At most one solve (two_stage is off), none when the ring
-    // is already inverted; nothing after the solve touches the solver, so it still holds that
-    // solve's state here.
-    bool solved = false;
-    const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_front, &solved);
-    if (solved && m_offset_params.debug_output) {
+
+    // THE SMOOTHING VETO, for every vertex: the ring's sum of E_T at the new position, finite and
+    // not above the sum before (energy_not_raised()), read on the mesh with the minimisers the
+    // move would store (ring_after()). E_V equals that sum only up to roundoff, which near a
+    // nearly singular plastic rest is not small, so the solve alone does not bound E.
+    const double ring_before = energy_sum(ring);
+    // D(t)'s candidate from the moving corner at its start, which E_V holds and E_T would drop
+    // once the corner's nearest segment changes; see store_band_minimisers().
+    const int64_t nearest_x0 = m_band_segs ? m_band_segs->nearest(x0) : -1;
+    const auto ring_after = [&]() {
+        // The minimisers store_band_minimisers() would keep, tried and put back.
+        std::vector<int64_t> kept;
+        for (const size_t fid : ring) kept.push_back(m_face_extra[fid].band_seg);
+        store_band_minimisers(ring, nearest_x0);
+        const double e = energy_sum(ring);
+        for (size_t i = 0; i < ring.size(); ++i) {
+            const size_t fid = ring[i];
+            m_face_extra[fid].band_seg = kept[i];
+        }
+        return e;
+    };
+    const bool exact = held && m_params.smoothing_mode == "exact";
+
+    // THE SOLVE: E_V from the vertex's position, plus the envelope's exact distance term for a
+    // held vertex in smoothing_mode "exact".
+    std::shared_ptr<polysolve::nonlinear::Problem> objective = energy;
+    if (exact) {
+        auto sum = std::make_shared<optimization::EnergySum>();
+        sum->add_energy(energy);
+        sum->add_energy(
+            std::make_shared<optimization::ExactDistanceEnergy2D>(
+                pull,
+                m_s_envelope * m_params.w_envelope));
+        objective = sum;
+    }
+    polysolve::nonlinear::Solver& solver = smoothing_solver();
+    Eigen::VectorXd xv = x0;
+    bool threw = false;
+    try {
+        solver.minimize(*objective, xv);
+    } catch (const std::exception&) {
+        // polysolve reports a failed line search by throwing; the position it reached is still
+        // the best it found, and the checks below decide whether to keep it.
+        threw = true;
+    }
+    (front ? m_newton_front : m_newton).record(solver, threw);
+    if (front && m_offset_params.debug_output) {
         std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
         m_front_solve_log.push_back(
             {vid, int(solver.current_criteria().iterations), int(solver.status()) + 1});
     }
-    if (!ok) {
-        return false;
-    }
-    {
+    if (front) {
         // Diagnostic: the solve's final gradient norm and its ratio to the first one.
         const auto& cr = solver.current_criteria();
         const auto bin = [](double v, int lo) {
@@ -117,15 +195,83 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
         ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
         ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
     }
-    if (veto) ++m_front_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
-        ++m_front_veto_fired;
-        --m_smooth_rejects.accepted;
-        ++m_smooth_rejects.quality;
+    const Vector2d x = xv.head<2>();
+
+    const auto ring_valid = [&]() {
+        for (const size_t fid : ring) {
+            if (is_inverted(fid)) return false; // exact
+        }
+        return true;
+    };
+    const auto refuse = [&](std::atomic<size_t>& counter) {
+        set_vertex_position(vid, x0);
+        ++counter;
         return false;
+    };
+
+    if (!held) {
+        // The solve's point, kept when the ring stays valid and the veto passes. A failed solve
+        // (a thrown line search, a non-finite iterate) keeps the start.
+        if (!x.allFinite()) return refuse(m_smooth_rejects.quality);
+        set_vertex_position(vid, x);
+        if (!ring_valid()) return refuse(m_smooth_rejects.inverted);
+        if (!energy_not_raised(ring_after(), ring_before)) return refuse(m_smooth_rejects.quality);
+    } else if (!exact) {
+        // Projected: solve in free space, project back onto the envelope, and walk back toward
+        // the start, t = 1, 1/2, 1/4, ..., accepting the first projected candidate whose ring is
+        // valid, whose tracked edges stay inside the containment envelope and whose ring's sum of
+        // E_T passes the veto. Then, if none did, the nested pass: for each candidate, bisect
+        // between the interpolated point and its projection for the longest acceptable step
+        // toward the input. As in 3D.
+        const auto acceptable = [&](const Vector2d& q) {
+            set_vertex_position(vid, q);
+            return ring_valid() && held_edges_contained(vid) &&
+                   energy_not_raised(ring_after(), ring_before);
+        };
+        bool accepted = false;
+        std::vector<Vector2d> interp, proj;
+        if (x.allFinite()) {
+            for (int k = 0; k < m_params.project_line_search_steps && !accepted; ++k) {
+                const Vector2d p = x0 + std::pow(0.5, k) * (x - x0);
+                Vector2d q;
+                pull->nearest_point(p, q);
+                interp.push_back(p);
+                proj.push_back(q);
+                accepted = acceptable(q);
+            }
+            for (size_t k = 0;
+                 k < proj.size() && !accepted && m_params.project_line_search_nested_steps > 0;
+                 ++k) {
+                double lo = 0., hi = 1.;
+                Vector2d best;
+                bool found = false;
+                for (int j = 0; j < m_params.project_line_search_nested_steps; ++j) {
+                    const double mid = 0.5 * (lo + hi);
+                    const Vector2d cand = interp[k] + mid * (proj[k] - interp[k]);
+                    if (acceptable(cand)) {
+                        lo = mid, best = cand, found = true;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                if (found) accepted = acceptable(best);
+            }
+        }
+        if (!accepted) return refuse(m_smooth_rejects.quality);
+    } else {
+        // Exact: the solve already held the vertex near the envelope; the same three tests.
+        if (!x.allFinite()) return refuse(m_smooth_rejects.quality);
+        set_vertex_position(vid, x);
+        if (!ring_valid()) return refuse(m_smooth_rejects.inverted);
+        if (!held_edges_contained(vid)) return refuse(m_smooth_rejects.envelope);
+        if (!energy_not_raised(ring_after(), ring_before)) return refuse(m_smooth_rejects.quality);
     }
+
+    store_band_minimisers(ring, nearest_x0);
+    for (const size_t fid : ring) m_face_attribute[fid].m_quality = get_quality(fid);
+    ++m_smooth_rejects.accepted;
     m_released_tube_dirty.store(true, std::memory_order_release);
-    if (m_offset_params.debug_crossings) {
+    if (front && m_offset_params.debug_crossings) {
         for (size_t k = 0; k < nb.size(); ++k) {
             const double after = ring_measure_at(nb[k]);
             if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
@@ -135,41 +281,6 @@ bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
                 ++m_cross_neighbour;
             }
         }
-    }
-    return true;
-}
-
-bool TopoOffsetTriMesh::smooth_repulsion_vertex(const Tuple& t)
-{
-    // The front's path with the repulsion term in place of the chord terms: the whole objective
-    // arrives through smoothing_extra_energy() -- w AMIPS over the ring and repulsion_energy(vid)
-    // -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own; no engine veto. A
-    // repulsion vertex is never envelope-held (repulsion_smoothing() leaves those to TriWild's
-    // rule), so the solve has no envelope term and no containment check. As in 3D.
-    const size_t vid = t.vid(*this);
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = 0.;
-    opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
-    opts.s_envelope = m_s_envelope;
-    opts.two_stage = false;
-    opts.quality_veto = false;
-    smoothing_solver();
-    // The front veto's rule (see tri_energy()): the max of the per-tri energy over the ring --
-    // which includes the repulsion terms of the faces that carry them, O(v) among them -- may
-    // not rise (a tie passes). Read before the solve and after it; refused,
-    // TriMesh::smooth_vertex() rolls the move back.
-    const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
-    const bool veto = m_offset_params.offset_front_smooth_veto;
-    const double before = veto ? max_tri_energy(ring) : 0.;
-    const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_repulsion);
-    if (!ok) return false;
-    if (veto) ++m_repulsion_veto_asked;
-    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
-        ++m_repulsion_veto_fired;
-        --m_smooth_rejects.accepted;
-        ++m_smooth_rejects.quality;
-        return false;
     }
     return true;
 }
@@ -230,46 +341,6 @@ Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
     const Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
     const double gn = g.norm();
     return (std::isfinite(gn) && gn > 0.) ? Vector2d(g / gn) : Vector2d::Zero();
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_objective(
-    const size_t vid) const
-{
-    // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
-    // term included unconditionally: w AMIPS over the one-ring, the plastic faces' rest-shape
-    // AMIPS, and the offset terms on the vertex's own region's field. As in 3D, where the AMIPS
-    // part is cubed.
-    auto sum = std::make_shared<optimization::EnergySum>();
-    sum->add_energy(amips_energy(vid));
-    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
-    sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
-    return sum;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_energy(
-    const size_t vid,
-    const std::shared_ptr<const OffsetPotential2D>& pot) const
-{
-    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
-    // in units of the tolerance, so the term below is sum_e O(e) -- for the euclidean field the
-    // very terms the per-cell energy tri_energy() carries on these chords' band faces, and the
-    // ring measure's n_v r_v^2. As in 3D.
-    const double w_off = offset_term_weight();
-    auto sum = std::make_shared<optimization::EnergySum>();
-    // THE offset term, and the only one: the mean squared relative error over each incident
-    // chord's stencil, summed over the chords. The stencil contains the chord's ends, so the
-    // moving vertex's own residual is in it once per incident chord. See StencilEnergy2D. Every
-    // chord weighs 1.
-    std::vector<StencilEnergy2D::Edge> stencil_edges;
-    for (const Tuple& e : offset_surface_edges_live_at(vid)) {
-        StencilEnergy2D::Edge se;
-        if (!stencil_edge_at(*this, e, vid, se)) continue;
-        stencil_edges.push_back(std::move(se));
-    }
-    if (!stencil_edges.empty()) {
-        sum->add_energy(std::make_shared<StencilEnergy2D>(pot, std::move(stencil_edges), w_off));
-    }
-    return sum;
 }
 
 } // namespace wmtk::components::topological_offset

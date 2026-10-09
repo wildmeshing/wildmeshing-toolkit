@@ -14,6 +14,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
@@ -403,11 +404,11 @@ using EuclideanOffsetPotential3D = EuclideanOffsetPotential<3>;
 
 
 /**
- * @brief The offset term of the smoothing objective: w * (Phi(x) - c)^2.
+ * @brief A point's squared residual to the level set: w * (Phi(x) - c)^2.
  *
- * A polysolve::nonlinear::Problem in the shape of ExactDistanceEnergy2D/3D, so the shared smoother
- * composes it into its EnergySum beside AMIPS with no special case, which is what lets a front
- * vertex take the same path as every other vertex.
+ * A diagnostic since the 2026-10-09 cleanup -- no smoothing objective reads it (the smoother
+ * minimises E_V, see TopoOffsetTetMesh::vertex_energy()): the placement-gradient split
+ * (gradient_split()) and the front profile (log_front_profile()) evaluate it.
  *
  * The residual form rather than Phi itself: Phi is a barrier, so minimising it would drive the
  * vertex to infinity and maximising it into the complex, while the squared residual has its
@@ -439,13 +440,12 @@ public:
     /// normal, over delta -- what (d - delta)/delta already is for the Euclidean field -- instead
     /// of the value ratio (Phi - c)/c, which for the smooth field is a barrier value and not a
     /// length, and pulls far harder where two fronts are pressed together. Same level set and same
-    /// root either way; only the charge changes. Both dimensions' front placement passes true.
+    /// root either way; only the charge changes.
     ///
     /// one_sided charges only points on the input's side of the level set
     /// (is_inside_offset()): beyond it the term and its derivatives are zero, so the term pushes a
     /// vertex out to the level set and never pulls one in. C^1 at the level set, where the
-    /// residual is zero from both sides. The repulsion passes before the march use it
-    /// (TopoOffsetTetMesh::repulsion_smoothing()).
+    /// residual is zero from both sides.
     OffsetEnergy(
         const std::shared_ptr<const OffsetPotential<DIM>>& potential,
         double weight = 1.,
@@ -477,453 +477,16 @@ using OffsetEnergy2D = OffsetEnergy<2>;
 using OffsetEnergy3D = OffsetEnergy<3>;
 
 /**
- * @brief THE offset term of a front vertex's smoothing objective: the mean squared relative
- * error of the field over the stencil of each incident offset face.
+ * @brief The input complex as convex primitives, for D(t) (see VolAMIPSEnergy, BandVolumeEnergy):
+ * its triangles in 3D (InputTriangles), its segments in 2D (InputSegments).
  *
- *     E(x) = w * sum over the vertex's incident offset faces f of
- *                (1/N_s) * sum over f's N_s stencil points i of  r(q_i(x))^2
- *
- *     r(p) = (Phi(p) - c) / c,      q_i(x) = a_i x + b_i q1 + c_i q2
- *
- * with c the target level and (a_i, b_i, c_i) the barycentric weights of stencil point i, a_i
- * being the MOVING vertex's own weight. The face's other two corners q1, q2 are fixed for the
- * visit. The stencil is TopoOffsetTetMesh::for_each_face_sample, sized by stencil_order.
- *
- * UNITS: the front smoother passes w = 1 / front_conv_frac()^2
- * (TopoOffsetTetMesh::offset_term_weight()), which puts r in units of the tolerance: each face's
- * term is then TopoOffsetTetMesh::face_offset_term(), 1 at the bar, the very term the per-tet
- * energy (TopoOffsetTetMesh::tet_energy()) adds to the face's band cell, and E is the sum of
- * those terms over the vertex's faces. Exactly so for the euclidean field, where r IS
- * relative_residual(); see below for the smooth one.
- *
- * THIS ONE TERM REPLACES BOTH the placement term (OffsetEnergy3D on the vertex alone) and the
- * sag term (SagEnergy3D over the face interiors) that preceded it, because the stencil contains
- * the corners: at order 0 the stencil IS the three corners, so E is exactly the placement
- * residual of the vertex and its neighbours, and every higher order adds interior points that
- * ask the same question between them. There is nothing left for a separate sag measure to say.
- *
- * r IS THE PLAIN RELATIVE ERROR (Phi - c)/c, which for the euclidean field is exactly
- * (d - target_distance)/target_distance -- the same residual OffsetEnergy3D uses there. For the
- * SMOOTH field OffsetEnergy3D instead divides by g_ref * delta to get a monotone length; this
- * class does not, so under `offset_field: "smooth"` the two are scaled differently.
- *
- * NOTE THE PER-FACE MEAN, SUMMED OVER FACES, with no area weighting and no other per-face weight:
- * a vertex with V incident faces contributes its own r(x)^2 with coefficient V/N_s, since it is a
- * stencil point of every one of them. The energy therefore grows with valence, which the AMIPS
- * term beside it does too. The per-tet energy has no area in it, so neither has this, nor the
- * loop's ring measure; the A_f / A_mean face weights front_measure "vertex_ring" put here from
- * 2026-09-25 went on 2026-09-28. (On the units under "smooth": the criterion and the per-tet
- * energy read OffsetPotential::relative_residual(), which there is the distance to the level set
- * over delta, while r here stays the field's own relative error -- the same zero set, about
- * 3.44x the criterion's number at the default offset_dhat_factor.)
- *
- * AREA WEIGHTING (set_area_weighted(), EXPERIMENTAL_area_weighted_ring): the term becomes
- * n * sum_f area(f) O(f) / sum_f area(f), n the number of faces -- n times the ring measure R(v)^2
- * as the loop's exit reads it under the key, so the smoother minimises w AMIPS^3 / n + R(v)^2 up
- * to the constant n. area(f) = |(q1 - x) x (q2 - x)| / 2 is a VARIABLE, differentiated, not a
- * weight frozen at the start of the solve as the 2026-09-25 A_f / A_mean weights were: with
- * frozen weights a vertex sliding within a flat front still moves its samples toward lower error
- * at no cost, which is the slide this removes. Measured (one-slot model, stage 9, the pressed
- * front above and below the plate, where d grows along the front toward its edge): sliding 0.02
- * outward lowered the per-face-mean sum at 514 of 517 failing vertices (median -5.7%), the
- * area-weighted sum at 225 (median +0.3%). Exactly: an affine field is integrated exactly by the
- * stencil, so the force from the front's distance to the level set vanishes; the rest is the
- * stencil's quadrature error on r^2's quadratic part.
- *
- * The derivatives are exact, and so is the Hessian by default: per stencil point
- * 2 a_i^2 (dr dr^T + r hess Phi / c), whose second term is indefinite where r < 0 (inside the
- * level set). `gauss_newton` drops that term, leaving the sum of a_i^2 dr dr^T outer products,
- * PSD by construction -- the form used until 2026-09-28; hessian() says why the default changed.
- */
-class StencilEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-
-    /// One stencil point's barycentric weights. `a` is the moving vertex's, so dq_i/dx = a_i I.
-    struct Sample
-    {
-        double a, b, c;
-        /// The point's quadrature weight in its face's mean (1 = equal weights; see
-        /// TopoOffsetTetMesh::for_each_face_sample(), EXPERIMENTAL_quadratic_stencil).
-        double w = 1.;
-    };
-    /// One incident offset face, the moving vertex implicit.
-    struct Face
-    {
-        Eigen::Vector3d q1, q2;
-        std::vector<Sample> samples;
-    };
-
-    StencilEnergy3D(
-        const std::shared_ptr<const OffsetPotential3D>& potential,
-        std::vector<Face> faces,
-        double weight,
-        bool gauss_newton = false);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-
-    /**
-     * @brief EXPERIMENTAL_visible_distance: read the field at a sample from the mesh instead of
-     * from the potential. Called with the face's index, the sample's barycentric weights (a the
-     * moving vertex's), the moving vertex's iterate x and the sample point p; fills the
-     * potential's value v, gradient g and
-     * Hessian H at p. Returns 1 for a reading, 0 for an unmeasurable sample (dropped, as a
-     * non-finite Phi is), -1 when x itself cannot be scored (the energy is +inf there, so the
-     * line search refuses it).
-     */
-    using SampleReader = std::function<int(
-        size_t face,
-        const Sample& sample,
-        const Eigen::Vector3d& x,
-        const Eigen::Vector3d& p,
-        double& v,
-        Eigen::Vector3d& g,
-        Eigen::Matrix3d& H)>;
-    void set_sample_reader(SampleReader r) { m_reader = std::move(r); }
-
-    /// See AREA WEIGHTING in the class comment.
-    void set_area_weighted(bool on) { m_area_weighted = on; }
-    /// EXPERIMENTAL_integral_energy: the term is weight * sum_f area(f) * mean_f(r^2) -- the
-    /// discrete surface integral of e^2 over the vertex's faces, areas at x and differentiated --
-    /// with no division by the ring's area (AREA WEIGHTING divides; this does not).
-    void set_area_integral(bool on) { m_area_integral = on; }
-
-private:
-    /// One stencil point's r = (Phi - c)/c and dr = grad Phi / c. A sample whose Phi is not
-    /// finite is dropped everywhere, and one whose gradient is not finite from the gradient and
-    /// the Hessian, exactly as the criterion drops it.
-    struct Reading
-    {
-        double r = 0.;
-        Eigen::Vector3d dr = Eigen::Vector3d::Zero();
-        bool r_ok = false;
-        bool dr_ok = false;
-        Eigen::Matrix3d H = Eigen::Matrix3d::Zero(); ///< hess Phi, from the sample reader only
-    };
-
-    /// Every stencil point's reading at x, faces in order and each face's samples in order,
-    /// computed once per x: polysolve asks value, gradient and Hessian at the same x in one
-    /// Newton iteration (and value once more in its gradient check), and the line search's
-    /// accepted point is the next iteration's x. The field is read without its gradient until
-    /// a gradient or Hessian is asked for, then with it in one value_gradient() call.
-    const std::vector<Reading>& readings_at(const Eigen::Vector3d& x, bool need_dr) const;
-
-    std::shared_ptr<const OffsetPotential3D> m_potential;
-    std::vector<Face> m_faces;
-    double m_weight;
-    bool m_gauss_newton;
-    double m_c = 1.; ///< the potential's target level, cached
-
-    mutable std::vector<Reading> m_readings;
-    mutable Eigen::Vector3d m_readings_x;
-    mutable bool m_readings_valid = false;
-    mutable bool m_readings_have_dr = false;
-    SampleReader m_reader;
-    mutable bool m_readings_unscorable = false; ///< the reader refused x (energy +inf)
-    bool m_area_weighted = false;
-    bool m_area_integral = false;
-
-    /// Under area weighting: per face, its O(f) / weight (the mean of r^2 over its readings), the
-    /// gradient and Hessian of that mean in x (need >= 1: gradient, >= 2: Hessian), and the face's
-    /// area with its gradient and Hessian; then the ring's n * sum area O / sum area. Faces with
-    /// no reading are left out of both sums, as the plain sum leaves them out.
-    void area_weighted(
-        const Eigen::Vector3d& x,
-        int need,
-        double& E,
-        Eigen::Vector3d& g,
-        Eigen::Matrix3d& H) const;
-};
-
-/**
- * @brief The 2D twin of StencilEnergy3D: THE offset term of a front vertex's smoothing
- * objective, the mean squared relative error of the field over the stencil of each incident
- * front chord.
- *
- *     E(x) = w * sum over the vertex's incident front chords e of
- *                (1/N_s) * sum over e's N_s stencil points i of  r(q_i(x))^2
- *
- *     r(p) = (Phi(p) - c) / c,      q_i(x) = a_i x + b_i q1
- *
- * with (a_i, b_i) the barycentric weights of stencil point i on the chord, a_i the MOVING vertex's
- * own weight, and q1 the chord's other end, fixed for the visit. The stencil is
- * TopoOffsetTriMesh::for_each_edge_sample, sized by stencil_order. Everything else -- the units
- * (w = 1 / front_conv_frac()^2 makes each chord's term TopoOffsetTriMesh::edge_offset_term(), the
- * term the per-cell energy tri_energy() adds to the chord's band face), the per-chord mean summed
- * over chords with no length weight, the exact Hessian by default and `gauss_newton` -- is
- * StencilEnergy3D's, one dimension down; see there.
- */
-class StencilEnergy2D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-
-    /// One stencil point's barycentric weights. `a` is the moving vertex's, so dq_i/dx = a_i I.
-    struct Sample
-    {
-        double a, b;
-    };
-    /// One incident front chord, the moving vertex implicit.
-    struct Edge
-    {
-        Eigen::Vector2d q1;
-        std::vector<Sample> samples;
-    };
-
-    StencilEnergy2D(
-        const std::shared_ptr<const OffsetPotential2D>& potential,
-        std::vector<Edge> edges,
-        double weight,
-        bool gauss_newton = false);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-
-private:
-    /// As StencilEnergy3D::Reading.
-    struct Reading
-    {
-        double r = 0.;
-        Eigen::Vector2d dr = Eigen::Vector2d::Zero();
-        bool r_ok = false;
-        bool dr_ok = false;
-    };
-
-    /// As StencilEnergy3D::readings_at().
-    const std::vector<Reading>& readings_at(const Eigen::Vector2d& x, bool need_dr) const;
-
-    std::shared_ptr<const OffsetPotential2D> m_potential;
-    std::vector<Edge> m_edges;
-    double m_weight;
-    bool m_gauss_newton;
-    double m_c = 1.; ///< the potential's target level, cached
-
-    mutable std::vector<Reading> m_readings;
-    mutable Eigen::Vector2d m_readings_x;
-    mutable bool m_readings_valid = false;
-    mutable bool m_readings_have_dr = false;
-};
-
-/**
- * @brief AMIPS against a rest shape, for the plastic medium: the smoothing term of a deformable
- * region's faces.
- *
- *     E(x) = w * sum over cells of tr(F^T F) / det F,   F = A(x) * Rinv
- *
- * A(x) = [q1 - x, q2 - x] is the cell's current Jacobian with the moving vertex first (the shared
- * smoother's convention), Rinv the inverse of the cell's rest Jacobian, captured when the face last
- * changed topologically. det F <= 0 is invalid: value NaN and is_step_valid false, so the line
- * search cannot cross an inversion. This follows polyfem's AMIPSEnergy rest-pose convention
- * (assembler/AMIPSEnergy.hpp, use_rest_pose_ true: identity reference, power 1 in 2D); the
- * equilateral quality AMIPS is the special case where R is the unit equilateral triangle. Do not
- * switch to polyfem's non-rest branch: dividing by det^2 in 2D is not scale-invariant and
- * disagrees with TriWild's kernel.
- *
- * F is affine in x (dF/dx_k = -e_k * (row-sum of Rinv)), so gradient and Hessian in x are the
- * exact chain through closed-form d/dF of e/d: no Gauss-Newton truncation needed.
- */
-class RestAMIPSEnergy2D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    struct Cell
-    {
-        Eigen::Vector2d q1, q2; ///< the fixed endpoints, current positions
-        Eigen::Matrix2d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0]^-1, same corner order
-    };
-    RestAMIPSEnergy2D(std::vector<Cell> cells, double weight);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
-private:
-    /// e = tr(F^T F), d = det F at x for one cell; false when d <= 0.
-    bool cell_F(const Eigen::Vector2d& x, const Cell& c, Eigen::Matrix2d& F, double& d) const;
-    std::vector<Cell> m_cells;
-    double m_weight;
-};
-
-/**
- * @brief The 3D twin of RestAMIPSEnergy2D: AMIPS of a tet against its rest shape.
- *
- *     E(x) = w * sum over cells of v_c a_c^p,   a_c = tr(F^T F) / det(F)^(2/3),   F = A(x) * Rinv
- *
- * with p = 1, or p = 3 when `cubed` (gradient 3 a^2 grad a, Hessian 3 a^2 hess a + 6 a grad a
- * grad a^T).
- *
- * A(x) = [q1 - x, q2 - x, q3 - x] with the moving vertex first (the shared smoother's
- * convention), Rinv the inverse rest Jacobian in the same corner order. det^(2/3) is what makes
- * the 3D form scale-invariant, as det^1 does in 2D; the minimum is 3 at F = I, the same scale as
- * the shared AMIPSEnergy3D against the regular tet, so the two terms sum 1:1. det F <= 0 is
- * invalid: value NaN and is_step_valid false. F is affine in x, so gradient and Hessian are the
- * exact chain through the closed-form derivatives of e / d^(2/3) in F.
- */
-class RestAMIPSEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    struct Cell
-    {
-        Eigen::Vector3d q1, q2, q3; ///< the fixed corners, current positions
-        Eigen::Matrix3d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0, r3-r0]^-1
-        /// v_c, the cell's own factor on top of w: 1, or the rest tet's volume at a front vertex
-        /// (rest_energy_for_vertex()).
-        double weight = 1.;
-    };
-    /// `cubed`: each cell's term is pAMIPS^3 instead of pAMIPS -- the form every 3D smoother uses,
-    /// the same power as the per-tet energy's AMIPS^3.
-    RestAMIPSEnergy3D(std::vector<Cell> cells, double weight, bool cubed = false);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
-private:
-    /// F and d = det F at x for one cell; false when d <= 0.
-    bool cell_F(const Eigen::Vector3d& x, const Cell& c, Eigen::Matrix3d& F, double& d) const;
-    /// One cell's pAMIPS a at x with its gradient and (when H is non-null) Hessian in x, first
-    /// power, unweighted; false when the cell is inverted at x.
-    bool cell_amips(
-        const Eigen::Vector3d& x,
-        const Cell& c,
-        double& a,
-        Eigen::Vector3d& g,
-        Eigen::Matrix3d* H) const;
-    std::vector<Cell> m_cells;
-    double m_weight;
-    bool m_cubed;
-};
-
-/// E = 0 at a single 3-D vertex: the smoothing objective of a vertex with nothing to minimise,
-/// so that the solver sees a well-formed problem (EnergySum reads its first term) and stays put.
-class ZeroEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    double value(const TVector&) override { return 0.; }
-    void gradient(const TVector&, TVector& gradv) override { gradv = TVector::Zero(3); }
-    void hessian(const TVector&, THessian&) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector&, MatrixXd& hessian) override { hessian = MatrixXd::Zero(3, 3); }
-    void solution_changed(const TVector&) override {}
-};
-
-/**
- * @brief The per-tet energy's AMIPS part as the smoother minimises it: w * sum over cells of
- * AMIPS^3.
- *
- * tet_energy() charges every cell w * AMIPS^3, so the smoother minimises that same power at that
- * same weight; the engine's AMIPSEnergy3D is AMIPS to the first power. Cells in the shared
- * smoother's convention: 12 doubles with the moving vertex first, its three entries replaced by
- * x. Derivatives by the chain rule from the engine's first-power ones:
- * grad A^3 = 3 A^2 grad A, hess A^3 = 3 A^2 hess A + 6 A grad A grad A^T. A step that inverts a
- * cell is invalid, as for the engine's AMIPSEnergy3D.
- */
-class CubedAMIPSEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    CubedAMIPSEnergy3D(std::vector<std::array<double, 12>> cells, double weight);
-    /// EXPERIMENTAL_integral_energy: each cell's AMIPS^3 times its volume (the discrete volume
-    /// integral of AMIPS^3), as (sqrt2/12) T^(3/2) AMIPS^(3/2) with T = (1/2) sum |e|^2 -- the
-    /// volume never from a determinant (see cubed_amips_vol_term() in the .cpp).
-    void set_volume_weighted(bool on) { m_volume_weighted = on; }
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
-private:
-    std::vector<std::array<double, 12>> m_cells;
-    double m_weight;
-    bool m_volume_weighted = false;
-};
-
-/**
- * @brief EXPERIMENTAL_band_volume_energy: a front vertex's part of the band-volume offset term,
- *
- *     E(x) = w * sum over the vertex's band cells t of  Vol_t(x) * m_t(x),
- *     m_t(x) = (1/n_t) * sum over t's four corners and its centroid of  r(q_i(x)),
- *
- * r = (Phi - c)/c the relative error (for the euclidean field (d - delta)/delta), Vol_t the cell's
- * signed volume, positive on a valid cell, and n_t the number of those five points where Phi is
- * finite (a point where it is not is left out, as StencilEnergy3D leaves it out). The caller
- * passes w = 1 / front_conv_frac(), which makes w Vol r = Vol (d - delta) / front_conv: each cell's
- * term is TopoOffsetTetMesh::band_cell_term(), and E the vertex's part of int_B e dV.
- *
- * The rule per cell is exact wherever d is affine on the cell (one input face nearest): the mean
- * of an affine function over a tetrahedron is its mean over the four corners, and its value at
- * the centroid. Where a kink of d (two faces facing each other across a gap, a concave edge) or
- * its curvature near a convex edge crosses the cell, the error is of order the cell's size
- * relative to the cell's term; such cells lie along a surface, so the band's total error still
- * vanishes under refinement.
- *
- * Vol_t(x) = (q1 - x) . ((q2 - q1) x (q3 - q1)) / 6 is affine in x: its gradient is
- * -(q2 - q1) x (q3 - q1) / 6 and its Hessian zero. The three other corners' r are constants of
- * the visit; the moving vertex's own r and the centroid's move with x (dq/dx = I and I/4). So
- *     grad E_t = m_t grad Vol + Vol grad m_t,
- *     hess E_t = grad Vol grad m_t^T + grad m_t grad Vol^T + Vol hess m_t,
- * grad m_t = (dr(x) + dr(c)/4) / n_t, hess m_t = (hess r(x) + hess r(c)/16) / n_t, exact (hess r
- * = hess Phi / c, the field's own). The outer-product pair is indefinite in general;
- * polysolve's Newton regularises, and the AMIPS term beside it carries the shape.
- */
-/**
- * @brief EXPERIMENTAL_band_volume_rule "corner_bound": the input's triangles as convex primitives.
- *
- * The distance d to the input is the min over its triangles i of d_i, the distance to triangle i
- * alone. Each d_i is convex (the distance to a convex set), which the corner-bound rule needs
- * (TopoOffsetTetMesh::band_cell_term()). nearest() is the triangle nearest to a point (the BVH's
- * nearest facet); distance() is d_i with its gradient (p - foot)/d_i and the Hessian of the
- * distance to the feature the foot lies on: 0 inside the triangle, (I - u u^T - e e^T)/d_i on an
- * edge of direction e, (I - u u^T)/d_i at a vertex (u the unit gradient). At d_i = 0 the gradient
- * and Hessian are reported as 0.
+ * The distance d to the input is the min over its primitives i of d_i, the distance to primitive
+ * i alone, and each d_i is convex (the distance to a convex set) -- which is what makes the corner
+ * mean of d_i an upper bound of d's mean over a simplex. nearest() is the primitive nearest a
+ * point (lowest index on a tie); distance() is d_i with its gradient (p - foot)/d_i and the Hessian
+ * of the distance to the feature the foot lies on: 0 in a triangle's interior (3D) or a segment's
+ * interior (2D), (I - u u^T - e e^T)/d_i on a triangle edge of direction e, (I - u u^T)/d_i at a
+ * vertex (u the unit gradient). At d_i = 0 the gradient and Hessian are reported as 0.
  */
 class InputTriangles
 {
@@ -943,23 +506,135 @@ private:
     SimpleBVH::BVH m_bvh;
 };
 
-class BandVolumeEnergy3D : public polysolve::nonlinear::Problem
+class InputSegments
+{
+public:
+    /// V: #V x 2 (or x 3, the third column ignored), E: #E x 2.
+    InputSegments(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E);
+    int64_t nearest(const Eigen::Vector2d& p) const;
+    double distance(
+        int64_t seg,
+        const Eigen::Vector2d& p,
+        Eigen::Vector2d* grad = nullptr,
+        Eigen::Matrix2d* hess = nullptr) const;
+    size_t size() const { return size_t(m_E.rows()); }
+
+private:
+    Eigen::MatrixXd m_V; ///< #V x 3, z = 0
+    Eigen::MatrixXi m_E;
+    SimpleBVH::BVH m_bvh;
+};
+
+/// The primitive type D(t) reads in each dimension.
+template <int DIM>
+using InputPrimitives = std::conditional_t<DIM == 3, InputTriangles, InputSegments>;
+
+/**
+ * @brief THE AMIPS PART OF THE PER-CELL ENERGY E_T at one moving vertex x (see the energy spec):
+ *
+ *     E(x) = weight * sum over the vertex's cells t of  V_t(x) A_t(x)^DIM
+ *
+ * V_t the cell's volume (3D) or area (2D), A_t its AMIPS against a reference R_t -- the cell's
+ * stamped rest shape when it is plastic, the regular simplex when it is elastic. With E_t the
+ * edge matrix (columns q_k - x, the moving vertex first, positively oriented), F = E_t R_t^-1,
+ * f = |F|_F^2 and g = det E_t:
+ *
+ *     A = f / J^(2/DIM),  J = det F = g / det R,  V = g / DIM!,  so  V A^DIM = c f^DIM / g,
+ *     c = det(R)^2 / DIM!
+ *
+ * -- one closed form for both dimensions and both references, no determinant of F and no
+ * volume taken apart from the AMIPS, so a nearly flat cell reads huge rather than 0 x huge. g is
+ * affine in x (a rank-one update of the edge matrix), so grad g is constant and hess g = 0; f is
+ * quadratic, grad f = -2 F s with s = R^-T 1 and hess f = 2 |s|^2 I. The derivatives are exact:
+ *
+ *     grad = c (k f^(k-1) grad f / g - f^k grad g / g^2)
+ *     hess = c (k(k-1) f^(k-2) grad f grad f^T / g + k f^(k-1) hess f / g
+ *               - k f^(k-1) (grad f grad g^T + grad g grad f^T) / g^2
+ *               + 2 f^k grad g grad g^T / g^3)
+ *
+ * with k = DIM. A cell with g <= 0 makes the energy +inf (the line search refuses the point).
+ * value_of() is the same quantity for one cell from its corners, which tet_energy() /
+ * tri_energy() read, so the guards and the smoother compare one number.
+ */
+template <int DIM>
+class VolAMIPSEnergy : public polysolve::nonlinear::Problem
 {
 public:
     using typename polysolve::nonlinear::Problem::Scalar;
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
-    /// One band cell of the ring: its three other corners, at their current positions.
+    using VecD = Eigen::Matrix<double, DIM, 1>;
+    using MatD = Eigen::Matrix<double, DIM, DIM>;
+    /// One cell at the moving vertex: its other corners in the oriented order after it, and its
+    /// reference (cell()).
     struct Cell
     {
-        Eigen::Vector3d q1, q2, q3;
+        std::array<VecD, DIM> q;
+        MatD rest_inv;
+        VecD s; ///< rest_inv^T 1
+        double c; ///< det(R)^2 / DIM!
     };
-    /// x0: the moving vertex's current position. Each cell's corners are ordered here so that
-    /// its volume at x0 is positive (the ring the smoother starts from is valid).
-    BandVolumeEnergy3D(
-        const std::shared_ptr<const OffsetPotential3D>& potential,
+    /// A cell with reference edge matrix R (columns r_k - r_0, the moving vertex's rest first);
+    /// false when R is not positively oriented.
+    static bool cell(const std::array<VecD, DIM>& q, const MatD& R, Cell& out);
+    /// The regular simplex's edge matrix (unit edges): the elastic reference.
+    static MatD regular_rest();
+    /// V A^DIM of the simplex p[0..DIM] against reference R (regular_rest() for elastic):
+    /// +inf when p is not positively oriented, or when R is not.
+    static double value_of(const std::array<VecD, DIM + 1>& p, const MatD& R);
+
+    VolAMIPSEnergy(std::vector<Cell> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    double eval(const VecD& x, int need, VecD& g, MatD& H) const;
+    std::vector<Cell> m_cells;
+    double m_weight;
+};
+using VolAMIPSEnergy2D = VolAMIPSEnergy<2>;
+using VolAMIPSEnergy3D = VolAMIPSEnergy<3>;
+
+/**
+ * @brief THE BAND PART OF THE PER-CELL ENERGY E_T at one moving vertex x:
+ *
+ *     E(x) = weight * sum over the vertex's band cells t of  V_t(x) D_t(x),
+ *     D_t(x) = min over P in C_t of (1/(DIM+1)) sum over t's corners q of (d_P(q) - delta)/delta
+ *
+ * d_P the distance to input primitive P alone (InputPrimitives), C_t the cell's candidates (the
+ * nearest primitive of each corner and the one the cell inherited at the last split pass). The
+ * other corners' terms are constants of the visit; the moving corner's moves with x. V_t(x) =
+ * det(E_t)/DIM! is affine in x. Gradient and Hessian are the active (minimising) candidate's:
+ *     grad = D grad V + V grad d_P(x) / ((DIM+1) delta),
+ *     hess = grad V grad m^T + grad m grad V^T + V hess d_P(x) / ((DIM+1) delta).
+ */
+template <int DIM>
+class BandVolumeEnergy : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    using VecD = Eigen::Matrix<double, DIM, 1>;
+    using MatD = Eigen::Matrix<double, DIM, DIM>;
+    /// One band cell at the moving vertex: its other corners in the oriented order after it, and
+    /// its candidate primitives.
+    struct Cell
+    {
+        std::array<VecD, DIM> q;
+        std::vector<int64_t> candidates;
+    };
+    BandVolumeEnergy(
+        std::shared_ptr<const InputPrimitives<DIM>> prims,
         std::vector<Cell> cells,
-        const Eigen::Vector3d& x0,
+        double delta,
         double weight);
 
     double value(const TVector& x) override;
@@ -970,40 +645,17 @@ public:
     }
     void hessian(const TVector& x, MatrixXd& hessian) override;
     void solution_changed(const TVector& new_x) override {}
-    /// EXPERIMENTAL_band_volume_rule "centroid": m_t is r at the centroid alone (grad m_t = dr(c)/4,
-    /// hess m_t = hess r(c)/16), the corners left out.
-    void set_centroid_only(bool on) { m_centroid_only = on; }
-    /**
-     * @brief EXPERIMENTAL_band_volume_rule "corner_bound": m_t becomes
-     *     min over the cell's candidate triangles P of (1/4) sum over its 4 corners of r_P(q),
-     *     r_P = (d_P - delta)/delta,
-     * an upper bound on the cell's mean of r for every P (d <= d_P, and the convex d_P lies below
-     * its linear interpolant). `candidates[k]` are cell k's triangles (in the order of the cells
-     * given to the constructor); the three fixed corners' terms are computed here, once. The
-     * gradient and Hessian are the active (minimising) triangle's: grad m_t = grad r_P(x)/4,
-     * hess m_t = hess r_P(x)/4.
-     */
-    void set_corner_bound(
-        std::shared_ptr<const InputTriangles> tris,
-        std::vector<std::vector<int64_t>> candidates,
-        double delta);
 
 private:
-    /// need: 0 value, 1 + gradient, 2 + Hessian.
-    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
-    bool m_centroid_only = false;
-    std::shared_ptr<const InputTriangles> m_tris; ///< corner_bound when set
-    std::vector<std::vector<int64_t>> m_cand;
-    std::vector<std::vector<double>>
-        m_cand_fixed; ///< per cell, per candidate: sum of r_P at q1..q3
-    double m_delta = 1.;
-
-    std::shared_ptr<const OffsetPotential3D> m_potential;
+    double eval(const VecD& x, int need, VecD& g, MatD& H) const;
+    std::shared_ptr<const InputPrimitives<DIM>> m_prims;
     std::vector<Cell> m_cells;
-    std::vector<double> m_fixed_sum; ///< per cell: the sum of r over q1, q2, q3 where finite
-    std::vector<int> m_fixed_n; ///< per cell: how many of q1, q2, q3 are finite
+    std::vector<std::vector<double>>
+        m_fixed; ///< per cell, per candidate: sum over the other corners
+    double m_delta;
     double m_weight;
-    double m_c = 1.;
 };
+using BandVolumeEnergy2D = BandVolumeEnergy<2>;
+using BandVolumeEnergy3D = BandVolumeEnergy<3>;
 
 } // namespace wmtk::components::topological_offset

@@ -658,9 +658,7 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     const VecD r = p - foot;
     const double d = r.norm();
     // On the complex the gradient of d does not exist, since every direction increases it equally.
-    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. The
-    // front smoother excludes input-complex vertices from the offset term and the criterion books
-    // them as pinned, so this case is a backstop.
+    // Zero contributes no offset force; a backstop, since no front vertex sits on the complex.
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }
@@ -726,414 +724,6 @@ template class EuclideanOffsetPotential<2>;
 template class EuclideanOffsetPotential<3>;
 template class OffsetEnergy<2>;
 template class OffsetEnergy<3>;
-
-RestAMIPSEnergy2D::RestAMIPSEnergy2D(std::vector<Cell> cells, const double weight)
-    : m_cells(std::move(cells))
-    , m_weight(weight)
-{}
-
-bool RestAMIPSEnergy2D::cell_F(
-    const Eigen::Vector2d& x,
-    const Cell& c,
-    Eigen::Matrix2d& F,
-    double& d) const
-{
-    Eigen::Matrix2d A;
-    A.col(0) = c.q1 - x;
-    A.col(1) = c.q2 - x;
-    F = A * c.rest_inv;
-    d = F.determinant();
-    return d > 0.;
-}
-
-double RestAMIPSEnergy2D::value(const TVector& x)
-{
-    double E = 0.;
-    Eigen::Matrix2d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(2), c, F, d)) return std::nan("");
-        E += m_weight * F.squaredNorm() / d;
-    }
-    return E;
-}
-
-void RestAMIPSEnergy2D::gradient(const TVector& x, TVector& gradv)
-{
-    // dE/dF = 2F/d - (e/d) F^-T, in closed form for 2x2; dF/dx_k = -e_k * r^T with
-    // r = Rinv^T (1,1)^T, so grad_x = -(dE/dF) r summed over cells.
-    Eigen::Vector2d G = Eigen::Vector2d::Zero();
-    Eigen::Matrix2d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(2), c, F, d)) {
-            gradv = Eigen::Vector2d::Zero(); // invalid point: the line search never accepts it
-            return;
-        }
-        const double e = F.squaredNorm();
-        Eigen::Matrix2d FinvT;
-        FinvT << F(1, 1), -F(1, 0), -F(0, 1), F(0, 0);
-        FinvT /= d;
-        const Eigen::Matrix2d dEdF = 2. / d * F - (e / d) * FinvT;
-        const Eigen::Vector2d r = c.rest_inv.transpose() * Eigen::Vector2d::Ones();
-        G += -m_weight * (dEdF * r);
-    }
-    gradv = G;
-}
-
-void RestAMIPSEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    // F is affine in x, so H_x = M^T H_F M exactly, with M the constant 4x2 dvecF/dx
-    // (column-major vec) and H_F the closed-form Hessian of e/d in F:
-    //   dE = e'/d - e d'/d^2,  d2E = e''/d - (e' d'^T + d' e'^T)/d^2 - e d''/d^2
-    //        + 2 e (d' d'^T)/d^3,
-    // e' = 2 vecF, e'' = 2I, d' = (F11, -F01, -F10, F00), d'' = the constant K.
-    Eigen::Matrix2d Hx = Eigen::Matrix2d::Zero();
-    Eigen::Matrix2d F;
-    double d;
-    Eigen::Matrix4d K = Eigen::Matrix4d::Zero();
-    K(0, 3) = K(3, 0) = 1.;
-    K(1, 2) = K(2, 1) = -1.;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(2), c, F, d)) continue; // invalid point: contribute nothing
-        const double e = F.squaredNorm();
-        Eigen::Vector4d vF(F(0, 0), F(1, 0), F(0, 1), F(1, 1));
-        Eigen::Vector4d dd(F(1, 1), -F(0, 1), -F(1, 0), F(0, 0));
-        const Eigen::Vector4d de = 2. * vF;
-        Eigen::Matrix4d HF = (2. / d) * Eigen::Matrix4d::Identity();
-        HF -= (de * dd.transpose() + dd * de.transpose()) / (d * d);
-        HF += (2. * e / (d * d * d)) * (dd * dd.transpose());
-        HF -= (e / (d * d)) * K;
-        const Eigen::Vector2d r = c.rest_inv.transpose() * Eigen::Vector2d::Ones();
-        Eigen::Matrix<double, 4, 2> M = Eigen::Matrix<double, 4, 2>::Zero();
-        // dF(i,j)/dx_k = -Rinv row-sum of column j when k == i: vec index 2j + i.
-        for (int j = 0; j < 2; ++j) {
-            for (int i = 0; i < 2; ++i) {
-                M(2 * j + i, i) = -r(j);
-            }
-        }
-        Hx += m_weight * (M.transpose() * HF * M);
-    }
-    hessian = Hx;
-}
-
-bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
-{
-    Eigen::Matrix2d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x1.head(2), c, F, d)) return false;
-    }
-    return true;
-}
-
-
-// ---------------------------------------------------------------------------------------------
-// The 3D twin of the 2D rest-shape energy above.
-// ---------------------------------------------------------------------------------------------
-
-RestAMIPSEnergy3D::RestAMIPSEnergy3D(std::vector<Cell> cells, const double weight, const bool cubed)
-    : m_cells(std::move(cells))
-    , m_weight(weight)
-    , m_cubed(cubed)
-{}
-
-bool RestAMIPSEnergy3D::cell_F(
-    const Eigen::Vector3d& x,
-    const Cell& c,
-    Eigen::Matrix3d& F,
-    double& d) const
-{
-    Eigen::Matrix3d A;
-    A.col(0) = c.q1 - x;
-    A.col(1) = c.q2 - x;
-    A.col(2) = c.q3 - x;
-    F = A * c.rest_inv;
-    d = F.determinant();
-    return d > 0.;
-}
-
-namespace {
-/// The cofactor matrix, dE/dF's second term: d det(F) / dF = det(F) F^-T.
-inline Eigen::Matrix3d cofactor3(const Eigen::Matrix3d& F)
-{
-    Eigen::Matrix3d C;
-    C.col(0) = F.col(1).cross(F.col(2));
-    C.col(1) = F.col(2).cross(F.col(0));
-    C.col(2) = F.col(0).cross(F.col(1));
-    return C;
-}
-inline int levi_civita(const int i, const int j, const int k)
-{
-    if (i == j || j == k || i == k) return 0;
-    return ((j - i + 3) % 3 == 1) ? 1 : -1;
-}
-} // namespace
-
-bool RestAMIPSEnergy3D::cell_amips(
-    const Eigen::Vector3d& x,
-    const Cell& c,
-    double& a,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d* H) const
-{
-    // a = e / d^(2/3) with e = |F|^2, d = det F. dE/dF = 2 F d^(-2/3) - (2/3) e d^(-5/3) cof(F).
-    // F = Q Rinv - x r^T with r = Rinv^T (1,1,1)^T, so dF/dx_k = -e_k r^T and
-    // grad_x a = -(dE/dF) r. F is affine in x, so hess_x a = M^T H_F M exactly, with M the
-    // constant 9x3 dvecF/dx and H_F the closed-form Hessian of e / d^(2/3) in F (column-major vec):
-    //   d2E = e'' d^(-2/3) - (2/3) d^(-5/3) (e' d'^T + d' e'^T) + (10/9) e d^(-8/3) d' d'^T
-    //         - (2/3) e d^(-5/3) d''
-    // e' = 2 vecF, e'' = 2 I, d' = vec(cof F), d''_{(ij),(kl)} = eps_ikm eps_jln F_mn.
-    Eigen::Matrix3d F;
-    double d;
-    if (!cell_F(x, c, F, d)) return false;
-    const double e = F.squaredNorm();
-    const double d23 = std::cbrt(d * d);
-    a = e / d23;
-    const Eigen::Matrix3d C = cofactor3(F);
-    const Eigen::Matrix3d dEdF = (2. / d23) * F - (2. / 3.) * (e / (d23 * d)) * C;
-    const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
-    g = -(dEdF * r);
-    if (H == nullptr) return true;
-    const double d53 = d23 * d, d83 = d23 * d * d;
-    Eigen::Matrix<double, 9, 1> vF, dd;
-    for (int j = 0; j < 3; ++j) {
-        for (int i = 0; i < 3; ++i) {
-            vF(3 * j + i) = F(i, j);
-            dd(3 * j + i) = C(i, j);
-        }
-    }
-    const Eigen::Matrix<double, 9, 1> de = 2. * vF;
-    Eigen::Matrix<double, 9, 9> K = Eigen::Matrix<double, 9, 9>::Zero();
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            for (int k = 0; k < 3; ++k)
-                for (int l = 0; l < 3; ++l) {
-                    double v = 0.;
-                    for (int m = 0; m < 3; ++m)
-                        for (int n = 0; n < 3; ++n)
-                            v += levi_civita(i, k, m) * levi_civita(j, l, n) * F(m, n);
-                    K(3 * j + i, 3 * l + k) = v;
-                }
-    Eigen::Matrix<double, 9, 9> HF = (2. / d23) * Eigen::Matrix<double, 9, 9>::Identity();
-    HF -= (2. / 3.) / d53 * (de * dd.transpose() + dd * de.transpose());
-    HF += (10. / 9.) * e / d83 * (dd * dd.transpose());
-    HF -= (2. / 3.) * e / d53 * K;
-    Eigen::Matrix<double, 9, 3> M = Eigen::Matrix<double, 9, 3>::Zero();
-    // dF(i,j)/dx_k = -r_j when k == i: vec index 3j + i.
-    for (int j = 0; j < 3; ++j) {
-        for (int i = 0; i < 3; ++i) {
-            M(3 * j + i, i) = -r(j);
-        }
-    }
-    *H = M.transpose() * HF * M;
-    return true;
-}
-
-double RestAMIPSEnergy3D::value(const TVector& x)
-{
-    double E = 0.;
-    double a;
-    Eigen::Vector3d g;
-    for (const Cell& c : m_cells) {
-        if (!cell_amips(x.head(3), c, a, g, nullptr)) return std::nan("");
-        E += c.weight * (m_cubed ? a * a * a : a);
-    }
-    return m_weight * E;
-}
-
-void RestAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    // Per cell v_c grad a, or v_c 3 a^2 grad a when cubed; summed, times w.
-    Eigen::Vector3d G = Eigen::Vector3d::Zero();
-    double a;
-    Eigen::Vector3d g;
-    for (const Cell& c : m_cells) {
-        if (!cell_amips(x.head(3), c, a, g, nullptr)) {
-            gradv = Eigen::Vector3d::Zero(); // invalid point: the line search never accepts it
-            return;
-        }
-        G += c.weight * (m_cubed ? Eigen::Vector3d(3. * a * a * g) : g);
-    }
-    gradv = m_weight * G;
-}
-
-void RestAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    // Per cell v_c hess a, or v_c (3 a^2 hess a + 6 a grad a grad a^T) when cubed.
-    Eigen::Matrix3d Hx = Eigen::Matrix3d::Zero();
-    double a;
-    Eigen::Vector3d g;
-    Eigen::Matrix3d H;
-    for (const Cell& c : m_cells) {
-        if (!cell_amips(x.head(3), c, a, g, &H)) continue; // invalid point: contribute nothing
-        if (m_cubed) {
-            Hx += c.weight * (3. * a * a * H + 6. * a * g * g.transpose());
-        } else {
-            Hx += c.weight * H;
-        }
-    }
-    hessian = m_weight * Hx;
-}
-
-bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
-{
-    Eigen::Matrix3d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x1.head(3), c, F, d)) return false;
-    }
-    return true;
-}
-
-
-// ---------------------------------------------------------------------------------------------
-// CubedAMIPSEnergy3D
-// ---------------------------------------------------------------------------------------------
-
-CubedAMIPSEnergy3D::CubedAMIPSEnergy3D(
-    std::vector<std::array<double, 12>> cells,
-    const double weight)
-    : m_cells(std::move(cells))
-    , m_weight(weight)
-{}
-
-namespace {
-/// A cell of CubedAMIPSEnergy3D with the moving vertex placed at x.
-std::array<double, 12> cubed_amips_cell_at(std::array<double, 12> c, const Eigen::VectorXd& x)
-{
-    c[0] = x[0];
-    c[1] = x[1];
-    c[2] = x[2];
-    return c;
-}
-} // namespace
-
-namespace {
-/// vol AMIPS^3 of a CubedAMIPSEnergy3D cell (moving vertex x first) with AMIPS a (first power) and
-/// its derivatives ga, ha in x: f = (sqrt2/12) T^(3/2) a^(3/2), T = (1/2) sum over the six edges of
-/// |e|^2, grad T = sum over the three edges at x of (x - p_j), hess T = 3 I. The volume never comes
-/// from a determinant: AMIPS = T / det(J)^(2/3) gives vol = (sqrt2/12) (T/a)^(3/2), and a
-/// floating-point determinant of a nearly flat cell can come out 0 while its AMIPS is huge (see
-/// TopoOffsetTetMesh::cell_amips_term()). need: 0 value, 1 + gradient, 2 + Hessian.
-double cubed_amips_vol_term(
-    const std::array<double, 12>& c,
-    const double a,
-    const Eigen::Vector3d& ga,
-    const Eigen::Matrix3d& ha,
-    const int need,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d& h)
-{
-    const Eigen::Vector3d p[4] = {
-        Eigen::Vector3d(c[0], c[1], c[2]),
-        Eigen::Vector3d(c[3], c[4], c[5]),
-        Eigen::Vector3d(c[6], c[7], c[8]),
-        Eigen::Vector3d(c[9], c[10], c[11])};
-    double T = 0.;
-    for (int i = 0; i < 4; ++i)
-        for (int j = i + 1; j < 4; ++j) T += (p[i] - p[j]).squaredNorm();
-    T *= 0.5;
-    const double k = std::sqrt(2.) / 12.;
-    const double sT = std::sqrt(T), sa = std::sqrt(a);
-    const double f = k * T * sT * a * sa;
-    if (need >= 1) {
-        const Eigen::Vector3d gT = 3. * p[0] - p[1] - p[2] - p[3];
-        g = k * 1.5 * (sT * a * sa * gT + T * sT * sa * ga);
-        if (need >= 2) {
-            h = k * 1.5 *
-                (0.5 / sT * a * sa * gT * gT.transpose() +
-                 1.5 * sT * sa * (gT * ga.transpose() + ga * gT.transpose()) +
-                 3. * sT * a * sa * Eigen::Matrix3d::Identity() +
-                 0.5 * T * sT / sa * ga * ga.transpose() + T * sT * sa * ha);
-        }
-    }
-    return f;
-}
-} // namespace
-
-double CubedAMIPSEnergy3D::value(const TVector& x)
-{
-    double res = 0.;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
-        if (m_volume_weighted) {
-            Eigen::Vector3d g;
-            Eigen::Matrix3d h;
-            res += cubed_amips_vol_term(
-                c,
-                a,
-                Eigen::Vector3d::Zero(),
-                Eigen::Matrix3d::Zero(),
-                0,
-                g,
-                h);
-        } else {
-            res += a * a * a;
-        }
-    }
-    return m_weight * res;
-}
-
-void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    gradv.setZero(3);
-    Eigen::Vector3d g;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
-        wmtk::AMIPS_jacobian(c, g);
-        if (m_volume_weighted) {
-            Eigen::Vector3d gf;
-            Eigen::Matrix3d hf;
-            cubed_amips_vol_term(c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
-            gradv += gf;
-        } else {
-            gradv += 3. * a * a * g;
-        }
-    }
-    gradv *= m_weight;
-}
-
-void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    hessian.setZero(3, 3);
-    Eigen::Vector3d g;
-    Eigen::Matrix3d h;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
-        wmtk::AMIPS_jacobian(c, g);
-        wmtk::AMIPS_hessian(c, h);
-        if (m_volume_weighted) {
-            Eigen::Vector3d gf;
-            Eigen::Matrix3d hf;
-            cubed_amips_vol_term(c, a, g, h, 2, gf, hf);
-            hessian += hf;
-        } else {
-            hessian += 3. * a * a * h + 6. * a * g * g.transpose();
-        }
-    }
-    hessian *= m_weight;
-}
-
-bool CubedAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
-{
-    // The engine's AMIPSEnergy3D::is_step_valid: the moved vertex may not invert a cell.
-    const Eigen::Vector3d p0 = x1.head(3);
-    for (const auto& c : m_cells) {
-        if (!wmtk::utils::orient3d(
-                p0,
-                Eigen::Vector3d(c[3], c[4], c[5]),
-                Eigen::Vector3d(c[6], c[7], c[8]),
-                Eigen::Vector3d(c[9], c[10], c[11]))) {
-            return false;
-        }
-    }
-    return true;
-}
-
 
 // ---------------------------------------------------------------------------------------------
 // InputTriangles
@@ -1219,574 +809,306 @@ double InputTriangles::distance(
 }
 
 // ---------------------------------------------------------------------------------------------
-// BandVolumeEnergy3D
+// InputSegments
 // ---------------------------------------------------------------------------------------------
 
-BandVolumeEnergy3D::BandVolumeEnergy3D(
-    const std::shared_ptr<const OffsetPotential3D>& potential,
-    std::vector<Cell> cells,
-    const Eigen::Vector3d& x0,
-    const double weight)
-    : m_potential(potential)
-    , m_cells(std::move(cells))
-    , m_weight(weight)
-    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
+InputSegments::InputSegments(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E)
+    : m_E(E)
 {
-    m_fixed_sum.assign(m_cells.size(), 0.);
-    m_fixed_n.assign(m_cells.size(), 0);
-    for (size_t k = 0; k < m_cells.size(); ++k) {
-        Cell& c = m_cells[k];
-        if ((c.q1 - x0).dot((c.q2 - c.q1).cross(c.q3 - c.q1)) < 0.) std::swap(c.q2, c.q3);
-        for (const Eigen::Vector3d* q : {&c.q1, &c.q2, &c.q3}) {
-            const double v = m_potential->value(*q);
-            if (!std::isfinite(v)) continue;
-            m_fixed_sum[k] += (v - m_c) / m_c;
-            ++m_fixed_n[k];
-        }
-    }
+    m_V = Eigen::MatrixXd::Zero(V.rows(), 3);
+    m_V.leftCols(std::min<Eigen::Index>(2, V.cols())) =
+        V.leftCols(std::min<Eigen::Index>(2, V.cols()));
+    m_bvh.init(m_V, m_E, 1e-6);
 }
 
-void BandVolumeEnergy3D::set_corner_bound(
-    std::shared_ptr<const InputTriangles> tris,
-    std::vector<std::vector<int64_t>> candidates,
-    const double delta)
+int64_t InputSegments::nearest(const Eigen::Vector2d& p) const
 {
-    m_tris = std::move(tris);
-    m_cand = std::move(candidates);
-    m_delta = delta;
-    m_cand_fixed.assign(m_cells.size(), {});
-    for (size_t k = 0; k < m_cells.size(); ++k) {
-        const Cell& c = m_cells[k];
-        for (const int64_t P : m_cand[k]) {
-            double s = 0.;
-            for (const Eigen::Vector3d* q : {&c.q1, &c.q2, &c.q3}) {
-                s += (m_tris->distance(P, *q) - m_delta) / m_delta;
-            }
-            m_cand_fixed[k].push_back(s);
-        }
+    // As InputTriangles::nearest(): the nearest distance from the BVH, then every segment whose box
+    // reaches within it, the closest of those by distance() (lowest index on a tie).
+    const Eigen::Vector3d p3(p.x(), p.y(), 0.);
+    Eigen::Vector3d q;
+    double sq = 0.;
+    m_bvh.nearest_facet(p3, q, sq);
+    const double r = std::sqrt(sq) * (1. + 1e-12) + 1e-12;
+    std::vector<unsigned int> list;
+    m_bvh.intersect_box(p3 - Eigen::Vector3d::Constant(r), p3 + Eigen::Vector3d::Constant(r), list);
+    int64_t best = -1;
+    double bd = std::numeric_limits<double>::infinity();
+    for (const unsigned int e : list) {
+        const double d = distance(int64_t(e), p);
+        if (d < bd || (d == bd && int64_t(e) < best)) bd = d, best = int64_t(e);
     }
+    return best;
 }
 
-double BandVolumeEnergy3D::eval(
-    const Eigen::Vector3d& x,
-    const int need,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d& H) const
+double InputSegments::distance(
+    const int64_t seg,
+    const Eigen::Vector2d& p,
+    Eigen::Vector2d* grad,
+    Eigen::Matrix2d* hess) const
 {
-    if (m_tris) {
-        // corner_bound: per cell the minimising candidate's corner mean (see set_corner_bound()).
-        double E = 0.;
-        g.setZero();
-        H.setZero();
-        for (size_t k = 0; k < m_cells.size(); ++k) {
-            const Cell& c = m_cells[k];
-            const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
-            const double vol = (c.q1 - x).dot(N) / 6.;
-            const Eigen::Vector3d gvol = -N / 6.;
-            double best = std::numeric_limits<double>::infinity();
-            int64_t bestP = -1;
-            for (size_t i = 0; i < m_cand[k].size(); ++i) {
-                const double m =
-                    (m_cand_fixed[k][i] + (m_tris->distance(m_cand[k][i], x) - m_delta) / m_delta) /
-                    4.;
-                if (m < best) best = m, bestP = int64_t(i);
-            }
-            if (bestP < 0) continue;
-            E += vol * best;
-            if (need >= 1) {
-                Eigen::Vector3d gd;
-                Eigen::Matrix3d hd;
-                m_tris->distance(m_cand[k][size_t(bestP)], x, &gd, need >= 2 ? &hd : nullptr);
-                const Eigen::Vector3d gm = gd / (4. * m_delta);
-                g += best * gvol + vol * gm;
-                if (need >= 2) {
-                    H += gvol * gm.transpose() + gm * gvol.transpose() + vol * hd / (4. * m_delta);
-                }
-            }
-        }
-        E *= m_weight;
-        g *= m_weight;
-        H *= m_weight;
-        return E;
-    }
-    // The moving vertex's own reading, shared by every cell.
-    double vx = 0.;
-    Eigen::Vector3d gx = Eigen::Vector3d::Zero();
-    if (need >= 1) {
-        m_potential->value_gradient(x, vx, gx);
+    const Eigen::Vector2d a = m_V.row(m_E(seg, 0)).head<2>().transpose();
+    const Eigen::Vector2d b = m_V.row(m_E(seg, 1)).head<2>().transpose();
+    const Eigen::Vector2d ab = b - a;
+    const double L2 = ab.squaredNorm();
+    double t = L2 > 0. ? (p - a).dot(ab) / L2 : 0.;
+    bool at_vertex = true;
+    if (t <= 0.) {
+        t = 0.;
+    } else if (t >= 1.) {
+        t = 1.;
     } else {
-        vx = m_potential->value(x);
+        at_vertex = false;
     }
-    const bool x_ok = std::isfinite(vx) && (need < 1 || gx.allFinite());
-    const double rx = (vx - m_c) / m_c;
-    const Eigen::Vector3d drx = gx / m_c;
-    Eigen::Matrix3d Hrx = Eigen::Matrix3d::Zero();
-    if (need >= 2 && x_ok) {
-        const Eigen::Matrix3d h = m_potential->hessian(x);
-        if (h.allFinite()) Hrx = h / m_c;
+    const Eigen::Vector2d foot = a + t * ab;
+    const double d = (p - foot).norm();
+    if (grad) *grad = d > 0. ? Eigen::Vector2d((p - foot) / d) : Eigen::Vector2d::Zero();
+    if (hess) {
+        hess->setZero();
+        // The distance to a line is affine across it: no curvature in a segment's interior.
+        if (d > 0. && at_vertex) {
+            const Eigen::Vector2d u = (p - foot) / d;
+            *hess = (Eigen::Matrix2d::Identity() - u * u.transpose()) / d;
+        }
     }
+    return d;
+}
+
+// ---------------------------------------------------------------------------------------------
+// VolAMIPSEnergy
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+constexpr double factorial(const int n)
+{
+    return n <= 1 ? 1. : double(n) * factorial(n - 1);
+}
+
+/// det(E) and its gradient in x, E's columns q_k - x.
+template <int DIM>
+void det_and_grad(
+    const Eigen::Matrix<double, DIM, DIM>& E,
+    double& g,
+    Eigen::Matrix<double, DIM, 1>& dg)
+{
+    if constexpr (DIM == 3) {
+        const Eigen::Vector3d e0 = E.col(0), e1 = E.col(1), e2 = E.col(2);
+        g = e0.dot(e1.cross(e2));
+        // d det / d e_k is the k-th cofactor column, and every column moves as -x.
+        dg = -(e1.cross(e2) + e2.cross(e0) + e0.cross(e1));
+    } else {
+        g = E(0, 0) * E(1, 1) - E(1, 0) * E(0, 1);
+        const Eigen::Vector2d d0(E(1, 1), -E(0, 1)); // d g / d e0
+        const Eigen::Vector2d d1(-E(1, 0), E(0, 0)); // d g / d e1
+        dg = -(d0 + d1);
+    }
+}
+} // namespace
+
+template <int DIM>
+typename VolAMIPSEnergy<DIM>::MatD VolAMIPSEnergy<DIM>::regular_rest()
+{
+    MatD R;
+    if constexpr (DIM == 3) {
+        R.col(0) = Eigen::Vector3d(1., 0., 0.);
+        R.col(1) = Eigen::Vector3d(0.5, std::sqrt(3.) / 2., 0.);
+        R.col(2) = Eigen::Vector3d(0.5, std::sqrt(3.) / 6., std::sqrt(2. / 3.));
+    } else {
+        R.col(0) = Eigen::Vector2d(1., 0.);
+        R.col(1) = Eigen::Vector2d(0.5, std::sqrt(3.) / 2.);
+    }
+    return R;
+}
+
+template <int DIM>
+bool VolAMIPSEnergy<DIM>::cell(const std::array<VecD, DIM>& q, const MatD& R, Cell& out)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return false;
+    out.q = q;
+    out.rest_inv = R.inverse();
+    out.s = out.rest_inv.transpose() * VecD::Ones();
+    out.c = detR * detR / factorial(DIM);
+    return true;
+}
+
+template <int DIM>
+double VolAMIPSEnergy<DIM>::value_of(const std::array<VecD, DIM + 1>& p, const MatD& R)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return std::numeric_limits<double>::infinity();
+    MatD E;
+    for (int k = 0; k < DIM; ++k) E.col(k) = p[size_t(k + 1)] - p[0];
+    const double g = E.determinant();
+    if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+    const double f = (E * R.inverse()).squaredNorm();
+    const double v = std::pow(f, DIM) * detR * detR / (factorial(DIM) * g);
+    return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+}
+
+template <int DIM>
+VolAMIPSEnergy<DIM>::VolAMIPSEnergy(std::vector<Cell> cells, const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+template <int DIM>
+double VolAMIPSEnergy<DIM>::eval(const VecD& x, const int need, VecD& gr, MatD& H) const
+{
+    constexpr int k = DIM;
     double E = 0.;
-    g.setZero();
+    gr.setZero();
+    H.setZero();
+    for (const Cell& c : m_cells) {
+        MatD Em;
+        for (int j = 0; j < DIM; ++j) Em.col(j) = c.q[size_t(j)] - x;
+        double g;
+        VecD dg;
+        det_and_grad<DIM>(Em, g, dg);
+        if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+        const MatD F = Em * c.rest_inv;
+        const double f = F.squaredNorm();
+        const double fk = std::pow(f, k);
+        E += c.c * fk / g;
+        if (need < 1) continue;
+        const VecD df = -2. * F * c.s;
+        const double fk1 = std::pow(f, k - 1);
+        gr += c.c * (k * fk1 * df / g - fk * dg / (g * g));
+        if (need < 2) continue;
+        const double fk2 = std::pow(f, k - 2);
+        const MatD Hf = 2. * c.s.squaredNorm() * MatD::Identity();
+        H += c.c * (k * (k - 1) * fk2 * (df * df.transpose()) / g + k * fk1 * Hf / g -
+                    k * fk1 * (df * dg.transpose() + dg * df.transpose()) / (g * g) +
+                    2. * fk * (dg * dg.transpose()) / (g * g * g));
+    }
+    E *= m_weight;
+    gr *= m_weight;
+    H *= m_weight;
+    return std::isfinite(E) ? E : std::numeric_limits<double>::infinity();
+}
+
+template <int DIM>
+double VolAMIPSEnergy<DIM>::value(const TVector& xv)
+{
+    VecD g;
+    MatD H;
+    return eval(xv.head(DIM), 0, g, H);
+}
+
+template <int DIM>
+void VolAMIPSEnergy<DIM>::gradient(const TVector& xv, TVector& gradv)
+{
+    VecD g;
+    MatD H;
+    eval(xv.head(DIM), 1, g, H);
+    gradv = g;
+}
+
+template <int DIM>
+void VolAMIPSEnergy<DIM>::hessian(const TVector& xv, MatrixXd& hess)
+{
+    VecD g;
+    MatD H;
+    eval(xv.head(DIM), 2, g, H);
+    hess = H;
+}
+
+template class VolAMIPSEnergy<2>;
+template class VolAMIPSEnergy<3>;
+
+// ---------------------------------------------------------------------------------------------
+// BandVolumeEnergy
+// ---------------------------------------------------------------------------------------------
+
+template <int DIM>
+BandVolumeEnergy<DIM>::BandVolumeEnergy(
+    std::shared_ptr<const InputPrimitives<DIM>> prims,
+    std::vector<Cell> cells,
+    const double delta,
+    const double weight)
+    : m_prims(std::move(prims))
+    , m_cells(std::move(cells))
+    , m_delta(delta)
+    , m_weight(weight)
+{
+    m_fixed.assign(m_cells.size(), {});
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        for (const int64_t P : m_cells[k].candidates) {
+            double sum = 0.;
+            for (const VecD& q : m_cells[k].q) sum += (m_prims->distance(P, q) - m_delta) / m_delta;
+            m_fixed[k].push_back(sum);
+        }
+    }
+}
+
+template <int DIM>
+double BandVolumeEnergy<DIM>::eval(const VecD& x, const int need, VecD& gr, MatD& H) const
+{
+    constexpr double nc = double(DIM + 1);
+    double E = 0.;
+    gr.setZero();
     H.setZero();
     for (size_t k = 0; k < m_cells.size(); ++k) {
         const Cell& c = m_cells[k];
-        const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
-        const double vol = (c.q1 - x).dot(N) / 6.;
-        const Eigen::Vector3d gvol = -N / 6.;
-        const Eigen::Vector3d ctr = 0.25 * (x + c.q1 + c.q2 + c.q3);
-        double vc = 0.;
-        Eigen::Vector3d gc = Eigen::Vector3d::Zero();
-        if (need >= 1) {
-            m_potential->value_gradient(ctr, vc, gc);
-        } else {
-            vc = m_potential->value(ctr);
+        MatD Em;
+        for (int j = 0; j < DIM; ++j) Em.col(j) = c.q[size_t(j)] - x;
+        double g;
+        VecD dg;
+        det_and_grad<DIM>(Em, g, dg);
+        const double vol = g / factorial(DIM);
+        const VecD gvol = dg / factorial(DIM);
+        double best = std::numeric_limits<double>::infinity();
+        int64_t best_i = -1;
+        for (size_t i = 0; i < c.candidates.size(); ++i) {
+            const double m =
+                (m_fixed[k][i] + (m_prims->distance(c.candidates[i], x) - m_delta) / m_delta) / nc;
+            if (m < best) best = m, best_i = int64_t(i);
         }
-        const bool c_ok = std::isfinite(vc) && (need < 1 || gc.allFinite());
-        double sum = m_centroid_only ? 0. : m_fixed_sum[k];
-        int n = m_centroid_only ? 0 : m_fixed_n[k];
-        Eigen::Vector3d gsum = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d hsum = Eigen::Matrix3d::Zero();
-        if (x_ok && !m_centroid_only) {
-            sum += rx;
-            ++n;
-            gsum += drx;
-            hsum += Hrx;
-        }
-        if (c_ok) {
-            sum += (vc - m_c) / m_c;
-            ++n;
-            gsum += 0.25 * gc / m_c;
-            if (need >= 2) {
-                const Eigen::Matrix3d h = m_potential->hessian(ctr);
-                if (h.allFinite()) hsum += h / (16. * m_c);
-            }
-        }
-        if (n == 0) continue;
-        const double m = sum / n;
-        E += vol * m;
-        if (need >= 1) {
-            const Eigen::Vector3d gm = gsum / n;
-            g += m * gvol + vol * gm;
-            if (need >= 2) {
-                H += gvol * gm.transpose() + gm * gvol.transpose() + vol * (hsum / n);
-            }
+        if (best_i < 0) continue;
+        E += vol * best;
+        if (need < 1) continue;
+        VecD gd;
+        MatD hd;
+        m_prims->distance(c.candidates[size_t(best_i)], x, &gd, need >= 2 ? &hd : nullptr);
+        const VecD gm = gd / (nc * m_delta);
+        gr += best * gvol + vol * gm;
+        if (need >= 2) {
+            H += gvol * gm.transpose() + gm * gvol.transpose() + vol * hd / (nc * m_delta);
         }
     }
     E *= m_weight;
-    g *= m_weight;
+    gr *= m_weight;
     H *= m_weight;
     return E;
 }
 
-double BandVolumeEnergy3D::value(const TVector& xv)
+template <int DIM>
+double BandVolumeEnergy<DIM>::value(const TVector& xv)
 {
-    Eigen::Vector3d g;
-    Eigen::Matrix3d H;
-    return eval(xv.head(3), 0, g, H);
+    VecD g;
+    MatD H;
+    return eval(xv.head(DIM), 0, g, H);
 }
 
-void BandVolumeEnergy3D::gradient(const TVector& xv, TVector& gradv)
+template <int DIM>
+void BandVolumeEnergy<DIM>::gradient(const TVector& xv, TVector& gradv)
 {
-    Eigen::Vector3d g;
-    Eigen::Matrix3d H;
-    eval(xv.head(3), 1, g, H);
+    VecD g;
+    MatD H;
+    eval(xv.head(DIM), 1, g, H);
     gradv = g;
 }
 
-void BandVolumeEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+template <int DIM>
+void BandVolumeEnergy<DIM>::hessian(const TVector& xv, MatrixXd& hess)
 {
-    Eigen::Vector3d g;
-    Eigen::Matrix3d H;
-    eval(xv.head(3), 2, g, H);
+    VecD g;
+    MatD H;
+    eval(xv.head(DIM), 2, g, H);
     hess = H;
 }
 
-// ---------------------------------------------------------------------------------------------
-// StencilEnergy3D
-// ---------------------------------------------------------------------------------------------
-
-StencilEnergy3D::StencilEnergy3D(
-    const std::shared_ptr<const OffsetPotential3D>& potential,
-    std::vector<Face> faces,
-    const double weight,
-    const bool gauss_newton)
-    : m_potential(potential)
-    , m_faces(std::move(faces))
-    , m_weight(weight)
-    , m_gauss_newton(gauss_newton)
-    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
-{}
-
-const std::vector<StencilEnergy3D::Reading>& StencilEnergy3D::readings_at(
-    const Eigen::Vector3d& x,
-    const bool need_dr) const
-{
-    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
-        return m_readings;
-    }
-    m_readings.clear();
-    m_readings_unscorable = false;
-    for (size_t fi = 0; fi < m_faces.size(); ++fi) {
-        const Face& f = m_faces[fi];
-        for (size_t si = 0; si < f.samples.size(); ++si) {
-            const Sample& sm = f.samples[si];
-            const Eigen::Vector3d p = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
-            Reading rd;
-            double v;
-            Eigen::Vector3d g;
-            if (m_reader) {
-                Eigen::Matrix3d H;
-                const int st = m_reader(fi, sm, x, p, v, g, H);
-                if (st < 0) m_readings_unscorable = true;
-                if (st > 0 && std::isfinite(v)) {
-                    rd.r = (v - m_c) / m_c;
-                    rd.r_ok = true;
-                    if (g.allFinite()) {
-                        rd.dr = g / m_c;
-                        rd.dr_ok = true;
-                    }
-                    rd.H = H;
-                }
-                m_readings.push_back(rd);
-                continue;
-            }
-            if (need_dr) {
-                m_potential->value_gradient(p, v, g);
-            } else {
-                v = m_potential->value(p);
-            }
-            if (std::isfinite(v)) {
-                rd.r = (v - m_c) / m_c;
-                rd.r_ok = true;
-                if (need_dr && g.allFinite()) {
-                    rd.dr = g / m_c;
-                    rd.dr_ok = true;
-                }
-            }
-            m_readings.push_back(rd);
-        }
-    }
-    m_readings_x = x;
-    m_readings_valid = true;
-    // A reader's readings carry the gradient whether or not it was asked for, so value() followed
-    // by gradient() at the same x reads once (under EXPERIMENTAL_visible_distance each reading is
-    // a visibility query).
-    m_readings_have_dr = need_dr || bool(m_reader);
-    return m_readings;
-}
-
-double StencilEnergy3D::value(const TVector& xv)
-{
-    const Eigen::Vector3d x = xv.head(3);
-    if (m_area_weighted || m_area_integral) {
-        double E;
-        Eigen::Vector3d g;
-        Eigen::Matrix3d H;
-        area_weighted(x, 0, E, g, H);
-        return m_readings_unscorable ? std::numeric_limits<double>::infinity() : E;
-    }
-    const std::vector<Reading>& rds = readings_at(x, false);
-    if (m_readings_unscorable) return std::numeric_limits<double>::infinity();
-    double E = 0.;
-    size_t k = 0;
-    for (const Face& f : m_faces) {
-        double s = 0., nw = 0.;
-        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok) continue;
-            s += f.samples[i].w * rd.r * rd.r;
-            nw += f.samples[i].w;
-        }
-        if (nw > 0.) E += s / nw;
-    }
-    return m_weight * E;
-}
-
-void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
-{
-    const Eigen::Vector3d x = xv.head(3);
-    if (m_area_weighted || m_area_integral) {
-        double E;
-        Eigen::Vector3d g;
-        Eigen::Matrix3d H;
-        area_weighted(x, 1, E, g, H);
-        gradv = g;
-        return;
-    }
-    const std::vector<Reading>& rds = readings_at(x, true);
-    gradv = Eigen::VectorXd::Zero(3);
-    Eigen::Vector3d g = Eigen::Vector3d::Zero();
-    size_t k = 0;
-    for (const Face& f : m_faces) {
-        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
-        // barycentric weight is the whole chain rule. A corner sample of another vertex has
-        // a_i = 0 and so contributes to the value but not to the gradient.
-        Eigen::Vector3d gf = Eigen::Vector3d::Zero();
-        double nw = 0.;
-        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            gf += (f.samples[i].w * 2. * f.samples[i].a * rd.r) * rd.dr;
-            nw += f.samples[i].w;
-        }
-        if (nw > 0.) g += gf / nw;
-    }
-    gradv = m_weight * g;
-}
-
-void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
-{
-    const Eigen::Vector3d x = xv.head(3);
-    if (m_area_weighted || m_area_integral) {
-        double E;
-        Eigen::Vector3d g;
-        Eigen::Matrix3d H;
-        area_weighted(x, 2, E, g, H);
-        hess = H;
-        return;
-    }
-    const std::vector<Reading>& rds = readings_at(x, true);
-    Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
-    size_t k = 0;
-    for (const Face& f : m_faces) {
-        // EXACT Hessian of r^2 unless gauss_newton: 2 a_i^2 (dr dr^T + r hess Phi / c). Until
-        // 2026-09-28 the second term was dropped (Gauss-Newton, PSD by construction; kept as
-        // gauss_newton = true, which the tests check) and 28-30% of the front solves on
-        // the cube (target 1e-2, tolerance 1e-4) converged only linearly -- |grad|/|grad_0| at
-        // 1e-2..1e-5 after the 10-iteration cap -- near its rounded edges, where r is still large
-        // and hess Phi is the offset surface's curvature. With the term: 2% at the cap, mean 2.8
-        // iterations instead of 4.6, 98% stopped on the relative gradient tolerance, smoothing
-        // time unchanged (0.40 s vs 0.39 s over a 2-turn probe), placement unchanged. The term is
-        // indefinite where r < 0 (inside the level set); polysolve's Newton regularises there.
-        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
-        double nw = 0.;
-        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            const Sample& sm = f.samples[i];
-            const double a = sm.a;
-            Hf += (sm.w * 2. * a * a) * (rd.dr * rd.dr.transpose());
-            if (!m_gauss_newton) {
-                const Eigen::Vector3d p = a * x + sm.b * f.q1 + sm.c * f.q2;
-                const Eigen::Matrix3d Hphi = m_reader ? rd.H : m_potential->hessian(p);
-                if (Hphi.allFinite()) Hf += (sm.w * 2. * a * a * rd.r / m_c) * Hphi;
-            }
-            nw += sm.w;
-        }
-        if (nw > 0.) H += Hf / nw;
-    }
-    hess = m_weight * H;
-}
-
-void StencilEnergy3D::area_weighted(
-    const Eigen::Vector3d& x,
-    const int need,
-    double& E,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d& H) const
-{
-    // E = k N / D with k = weight * n, N = sum_f area(f) O(f), D = sum_f area(f); O(f) and its
-    // derivatives exactly as value(), gradient() and hessian() form them, area(f) and its
-    // derivatives from n(x) = (q1 - x) x (q2 - x) = q1 x q2 + e x x, e = q2 - q1, affine in x:
-    // grad area = [e]x^T u / 2 and hess area = [e]x^T (I - u u^T) [e]x / (2 |n|), u = n / |n|.
-    const std::vector<Reading>& rds = readings_at(x, need >= 1);
-    double N = 0., D = 0.;
-    Eigen::Vector3d gN = Eigen::Vector3d::Zero(), gD = Eigen::Vector3d::Zero();
-    Eigen::Matrix3d HN = Eigen::Matrix3d::Zero(), HD = Eigen::Matrix3d::Zero();
-    size_t k = 0;
-    for (const Face& f : m_faces) {
-        double s = 0., nr = 0., ng = 0.;
-        Eigen::Vector3d gf = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
-        for (size_t i = 0; i < f.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok) continue;
-            const Sample& sm = f.samples[i];
-            s += sm.w * rd.r * rd.r;
-            nr += sm.w;
-            if (need < 1 || !rd.dr_ok) continue;
-            const double a = sm.a;
-            gf += (sm.w * 2. * a * rd.r) * rd.dr;
-            if (need >= 2) {
-                Hf += (sm.w * 2. * a * a) * (rd.dr * rd.dr.transpose());
-                if (!m_gauss_newton) {
-                    const Eigen::Vector3d p = a * x + sm.b * f.q1 + sm.c * f.q2;
-                    const Eigen::Matrix3d Hphi = m_reader ? rd.H : m_potential->hessian(p);
-                    if (Hphi.allFinite()) Hf += (sm.w * 2. * a * a * rd.r / m_c) * Hphi;
-                }
-            }
-            ng += sm.w;
-        }
-        if (!(nr > 0.)) continue;
-        const double O = s / nr;
-        const Eigen::Vector3d nv = (f.q1 - x).cross(f.q2 - x);
-        const double nn = nv.norm();
-        const double A = 0.5 * nn;
-        N += A * O;
-        D += A;
-        if (need < 1) continue;
-        const Eigen::Vector3d e = f.q2 - f.q1;
-        Eigen::Matrix3d Ex;
-        Ex << 0., -e.z(), e.y(), e.z(), 0., -e.x(), -e.y(), e.x(), 0.;
-        Eigen::Vector3d gA = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d HA = Eigen::Matrix3d::Zero();
-        if (nn > 0.) {
-            const Eigen::Vector3d u = nv / nn;
-            gA = 0.5 * (Ex.transpose() * u);
-            if (need >= 2) {
-                HA = (0.5 / nn) *
-                     (Ex.transpose() * (Eigen::Matrix3d::Identity() - u * u.transpose()) * Ex);
-            }
-        }
-        const Eigen::Vector3d gO = ng > 0. ? Eigen::Vector3d(gf / ng) : Eigen::Vector3d::Zero();
-        gN += O * gA + A * gO;
-        gD += gA;
-        if (need >= 2) {
-            const Eigen::Matrix3d HO = ng > 0. ? Eigen::Matrix3d(Hf / ng) : Eigen::Matrix3d::Zero();
-            HN += O * HA + gA * gO.transpose() + gO * gA.transpose() + A * HO;
-            HD += HA;
-        }
-    }
-    g.setZero();
-    H.setZero();
-    if (m_area_integral) {
-        // EXPERIMENTAL_integral_energy: the sum itself, sum_f area(f) O(f) / weight.
-        E = m_weight * N;
-        if (need >= 1) g = m_weight * gN;
-        if (need >= 2) H = m_weight * HN;
-        return;
-    }
-    if (!(D > 0.)) {
-        E = std::numeric_limits<double>::infinity(); // every face flat: nothing to weigh by
-        return;
-    }
-    const double kw = m_weight * double(m_faces.size());
-    E = kw * N / D;
-    if (need >= 1) g = kw * (gN / D - (N / (D * D)) * gD);
-    if (need >= 2) {
-        H = kw * (HN / D - (gN * gD.transpose() + gD * gN.transpose()) / (D * D) -
-                  (N / (D * D)) * HD + (2. * N / (D * D * D)) * (gD * gD.transpose()));
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
-// StencilEnergy2D -- StencilEnergy3D one dimension down; see there for every choice made here.
-// ---------------------------------------------------------------------------------------------
-
-StencilEnergy2D::StencilEnergy2D(
-    const std::shared_ptr<const OffsetPotential2D>& potential,
-    std::vector<Edge> edges,
-    const double weight,
-    const bool gauss_newton)
-    : m_potential(potential)
-    , m_edges(std::move(edges))
-    , m_weight(weight)
-    , m_gauss_newton(gauss_newton)
-    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
-{}
-
-const std::vector<StencilEnergy2D::Reading>& StencilEnergy2D::readings_at(
-    const Eigen::Vector2d& x,
-    const bool need_dr) const
-{
-    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
-        return m_readings;
-    }
-    m_readings.clear();
-    for (const Edge& e : m_edges) {
-        for (const Sample& sm : e.samples) {
-            const Eigen::Vector2d p = sm.a * x + sm.b * e.q1;
-            Reading rd;
-            double v;
-            Eigen::Vector2d g;
-            if (need_dr) {
-                m_potential->value_gradient(p, v, g);
-            } else {
-                v = m_potential->value(p);
-            }
-            if (std::isfinite(v)) {
-                rd.r = (v - m_c) / m_c;
-                rd.r_ok = true;
-                if (need_dr && g.allFinite()) {
-                    rd.dr = g / m_c;
-                    rd.dr_ok = true;
-                }
-            }
-            m_readings.push_back(rd);
-        }
-    }
-    m_readings_x = x;
-    m_readings_valid = true;
-    m_readings_have_dr = need_dr;
-    return m_readings;
-}
-
-double StencilEnergy2D::value(const TVector& xv)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, false);
-    double E = 0.;
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        double s = 0.;
-        size_t n = 0;
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok) continue;
-            s += rd.r * rd.r;
-            ++n;
-        }
-        if (n > 0) E += s / double(n);
-    }
-    return m_weight * E;
-}
-
-void StencilEnergy2D::gradient(const TVector& xv, TVector& gradv)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, true);
-    gradv = Eigen::VectorXd::Zero(2);
-    Eigen::Vector2d g = Eigen::Vector2d::Zero();
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        Eigen::Vector2d ge = Eigen::Vector2d::Zero();
-        size_t n = 0;
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            ge += (2. * e.samples[i].a * rd.r) * rd.dr;
-            ++n;
-        }
-        if (n > 0) g += ge / double(n);
-    }
-    gradv = m_weight * g;
-}
-
-void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
-{
-    const Eigen::Vector2d x = xv.head(2);
-    const std::vector<Reading>& rds = readings_at(x, true);
-    Eigen::Matrix2d H = Eigen::Matrix2d::Zero();
-    size_t k = 0;
-    for (const Edge& e : m_edges) {
-        Eigen::Matrix2d He = Eigen::Matrix2d::Zero();
-        size_t n = 0;
-        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
-            const Reading& rd = rds[k];
-            if (!rd.r_ok || !rd.dr_ok) continue;
-            const Sample& sm = e.samples[i];
-            const double a = sm.a;
-            He += (2. * a * a) * (rd.dr * rd.dr.transpose());
-            if (!m_gauss_newton) {
-                const Eigen::Vector2d p = a * x + sm.b * e.q1;
-                const Eigen::Matrix2d Hphi = m_potential->hessian(p);
-                if (Hphi.allFinite()) He += (2. * a * a * rd.r / m_c) * Hphi;
-            }
-            ++n;
-        }
-        if (n > 0) H += He / double(n);
-    }
-    hess = m_weight * H;
-}
+template class BandVolumeEnergy<2>;
+template class BandVolumeEnergy<3>;
 
 } // namespace wmtk::components::topological_offset

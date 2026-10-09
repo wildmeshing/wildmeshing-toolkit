@@ -811,6 +811,19 @@ void TopoOffsetTriMesh::init_offset_potential()
     if (m_phi_V.rows() == 0 || !m_input_complex_bvh) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
+    // D(t)'s primitives (band_face_vd()), whichever field the exit measure reads: the input's
+    // segments as the convex pieces of d. An isolated point would be a piece D(t) does not have.
+    // As in 3D, where the pieces are triangles.
+    if (!m_band_segs) {
+        if (m_phi_E.rows() == 0 || !m_phi_P.empty()) {
+            log_and_throw_error(
+                "the energy's D(t) needs an input complex of segments only ({} segments, {} "
+                "points)",
+                m_phi_E.rows(),
+                m_phi_P.size());
+        }
+        m_band_segs = std::make_shared<InputSegments>(m_phi_V, m_phi_E);
+    }
     // Which field defines the offset; see OffsetPotential.hpp and the offset_field parameter.
     // Both are built from the same extraction (m_phi_V/E/P), so whichever is chosen measures the
     // same geometry the diagnostics do. The euclidean one queries m_input_complex_bvh, the only
@@ -961,8 +974,6 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
         write_debug_frame("simplicial_embedding");
     }
 
-    // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
-    repulsion_smoothing();
 
     // initialize offset
     logger().info("Initializing offset...");
@@ -1014,277 +1025,6 @@ size_t TopoOffsetTriMesh::flood_fill()
     }
     return current_id;
 }
-
-void TopoOffsetTriMesh::relabel_input_complex()
-{
-    // label_input_complex() only ever sets labels to 1; every label goes back to 0 first, so a
-    // simplex an operation moved out of the complex is not left marked. As in 3D.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
-    for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
-    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
-    label_input_complex();
-}
-
-void TopoOffsetTriMesh::repulsion_smoothing()
-{
-    // The march traces every marched edge to target_distance only if every outer end is farther
-    // than it (the maximum marchable distance, see marching_tris()); otherwise it falls back to
-    // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first, under one per-tri energy: w AMIPS plus, for each corner v of the face that
-    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
-    // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
-    // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
-    // the maximum marchable distance" run backwards). The smoother minimises its sum over a
-    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
-    // loop. An outer end that an envelope holds carries no term. First up to
-    // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
-    // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
-    // outside the tolerance band. As in 3D.
-    const int n_passes = m_offset_params.repulsion_smoothing_passes;
-    const int n_rounds = m_offset_params.repulsion_rounds;
-    if (n_passes <= 0 && n_rounds <= 0) return;
-    const double delta = m_offset_params.target_distance;
-    const double stop = delta + m_offset_params.front_conv;
-
-    // The outer ends exactly as marching_tris() picks its edges: the two ends differ in "label
-    // 0". Recomputed at every report: the rounds' operations change the set. n_held: those an
-    // envelope holds, which is_repulsion_vertex() leaves to TriWild's rule.
-    std::vector<size_t> outer;
-    size_t n_held = 0;
-    const auto collect_outer = [&]() {
-        outer.clear();
-        n_held = 0;
-        std::vector<char> seen(vert_capacity(), 0);
-        for (const Tuple& e : get_edges()) {
-            const size_t v1 = e.vid(*this);
-            const size_t v2 = e.switch_vertex(*this).vid(*this);
-            if (!is_marched_edge(v1, v2)) continue;
-            const size_t v_out = m_vertex_extra[v1].label == 0 ? v1 : v2;
-            if (!seen[v_out]) {
-                seen[v_out] = 1;
-                outer.push_back(v_out);
-                if (vertex_boundary_mask(v_out) != 0) ++n_held;
-            }
-        }
-    };
-    collect_outer();
-    if (outer.empty()) {
-        logger().info("\t[repulsion] no edge to march, no pass");
-        return;
-    }
-    // The march's own distance (the input-complex BVH it traces with), at level 2 delta.
-    // Non-null switches the repulsion on (is_repulsion_vertex()).
-    m_repulsion_potential =
-        std::make_shared<EuclideanOffsetPotential2D>(m_input_complex_bvh, 2. * delta);
-    m_repulsion_term = std::make_shared<OffsetEnergy2D>(
-        m_repulsion_potential,
-        4. * offset_term_weight(),
-        true,
-        true,
-        /*one_sided=*/true);
-
-    // Logs the state and says whether every outer end is beyond delta + front_conv.
-    const auto report = [&](const std::string& when) {
-        collect_outer();
-        double d_min = std::numeric_limits<double>::infinity();
-        size_t n_stop = 0, n_delta = 0, n_2delta = 0;
-        double ring_max = 0.;
-        for (const size_t v : outer) {
-            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
-            d_min = std::min(d_min, d);
-            if (d <= stop) ++n_stop;
-            if (d <= delta) ++n_delta;
-            if (d < 2. * delta) ++n_2delta;
-            for (const size_t fid : get_one_ring_fids_for_vertex(v)) {
-                ring_max = std::max(ring_max, get_quality(fid));
-            }
-        }
-        double mesh_max = 0.;
-        for (const Tuple& f : get_faces()) mesh_max = std::max(mesh_max, get_quality(f));
-        logger().info(
-            "\t[repulsion] {}: maximum marchable distance {:.6g} ({:.4g}x target_distance) | "
-            "outer ends {} ({} held by an envelope): within delta + front_conv {}, within delta "
-            "{}, below 2 delta {} | max AMIPS around them {:.6g}, whole mesh {:.6g}",
-            when,
-            d_min,
-            d_min / delta,
-            outer.size(),
-            n_held,
-            n_stop,
-            n_delta,
-            n_2delta,
-            ring_max,
-            mesh_max);
-        return n_stop == 0;
-    };
-    const auto log_newton = [&](const std::string& what) {
-        const size_t refused = m_repulsion_embed_refused.exchange(0);
-        logger().info(
-            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
-            what,
-            m_newton_repulsion.to_string(),
-            m_repulsion_veto_fired.exchange(0),
-            m_repulsion_veto_asked.exchange(0),
-            n_rounds > 0
-                ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
-                : std::string());
-        m_newton_repulsion.reset();
-    };
-
-    logger().info(
-        "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
-        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
-        "most {} pass(es)",
-        outer.size() - n_held,
-        2. * delta,
-        stop,
-        n_passes);
-    bool done = report("before");
-    // The engine's per-pass frames are the loop's numbered series; these passes write their own.
-    // m_params and m_offset_params are one object, so the flag is read before it is switched off.
-    const bool frames = m_params.debug_output;
-    m_params.debug_output = false;
-    int k = 0;
-    while (!done && k < n_passes) {
-        ++k;
-        smooth_all_vertices(1);
-        log_newton(fmt::format("pass {}", k));
-        done = report(fmt::format("after pass {}", k));
-        if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
-    }
-    if (n_passes > 0) {
-        if (done) {
-            logger().info(
-                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
-                "pass(es)",
-                k);
-        } else {
-            logger().info(
-                "\t[repulsion] {} pass(es), the cap: some outer end is still within "
-                "target_distance + front_conv",
-                k);
-        }
-    }
-
-    // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
-    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
-    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
-    // every operation aims at the base edge length) and no split of a marched edge
-    // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
-    // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
-    int r = 0;
-    if (!done && n_rounds > 0) {
-        // simplex_in_input_complex() reads the complex off the faces' labels, which is exact
-        // when the complex is a body's faces (offset_out) or the faces outside a body (offset_in).
-        // The curve group is 2D's surface group: the complex is edges, not faces.
-        if (!m_singlebody || m_single_tag == m_curve_tag ||
-            m_offset_params.offset_in == m_offset_params.offset_out) {
-            log_and_throw_error(
-                "repulsion_rounds: supported for a single body offset inward or outward only "
-                "(not a curve group, an expression, or both directions)");
-        }
-        m_edge_split_mode = EdgeSplitMode::Optimization;
-        partition_mesh_morton(); // optimize_offset() recomputes it
-        const bool interleaved = m_params.interleaved_smoothing;
-        const int ks = std::max(
-            1,
-            interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
-        const std::vector<std::array<int, 4>> groups =
-            interleaved
-                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
-                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
-        logger().info(
-            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
-            "marched-edge split",
-            n_rounds,
-            interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
-                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
-        while (!done && r < n_rounds) {
-            ++r;
-            for (const auto& g : groups) {
-                // The operations, then the labels from the tags, then the smoothing: the loop's
-                // operations carry the faces' tags and labels but not the construction labels of
-                // vertices and edges, which say what the input complex is and so which vertices
-                // the smoothing pushes.
-                local_operations({{g[0], g[1], g[2], 0}});
-                relabel_input_complex();
-                // A collapse or a swap may have joined two complex vertices by an edge off the
-                // complex. The march needs the complex simplicially embedded, so it is embedded
-                // here, before the smoothing: the embedding's midpoints are new outer ends, and
-                // the smoothing and the stop test must see the mesh the march will get.
-                if (!is_simplicially_embedded()) {
-                    m_edge_split_mode = EdgeSplitMode::Midpoint;
-                    simplicial_embedding();
-                    bool dummy = is_simplicially_embedded();
-                    m_edge_split_mode = EdgeSplitMode::Optimization;
-                    partition_mesh_morton();
-                }
-                local_operations({{0, 0, 0, g[3]}});
-            }
-            // The 2D engine has no [ops accounting] / [swap reject] counters; the embedding
-            // guard's refusals are on the newton line.
-            log_newton(fmt::format("round {}", r));
-            done = report(fmt::format("after round {}", r));
-            if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
-        }
-        // Every group above leaves the complex embedded and smoothing changes no topology, so
-        // this finds nothing; it stays as the guard the march relies on.
-        m_edge_split_mode = EdgeSplitMode::Midpoint;
-        if (!is_simplicially_embedded()) {
-            logger().warn(
-                "\t[repulsion] the complex is not simplicially embedded after the rounds; "
-                "embedding it before the march");
-            simplicial_embedding();
-            bool dummy = is_simplicially_embedded();
-        }
-        consolidate_mesh();
-        if (done) {
-            logger().info(
-                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
-                "round(s)",
-                r);
-        } else {
-            logger().info(
-                "\t[repulsion] {} round(s), the cap: some outer end is still within "
-                "target_distance + front_conv",
-                r);
-        }
-    }
-    m_params.debug_output = frames;
-    m_repulsion_potential.reset();
-    m_repulsion_term.reset();
-}
-
-bool TopoOffsetTriMesh::simplex_in_input_complex(const size_t a, const size_t b) const
-{
-    // An edge of a face of the complex (label 1: a body face for offset_out, a face outside the
-    // body for offset_in), as label_input_complex() labels them; for offset_in also a
-    // domain-boundary edge of a body face, which label_input_complex() adds to the complex.
-    const std::vector<size_t> faces = get_incident_fids_for_edge(a, b);
-    for (const size_t fid : faces) {
-        if (m_face_extra[fid].label != 0) return true;
-    }
-    if (!m_offset_params.offset_in || faces.size() != 1) return false;
-    return m_face_attribute[faces[0]].tags.count(m_single_tag) != 0;
-}
-
-bool TopoOffsetTriMesh::repulsion_embedding_kept(const std::vector<size_t>& fids) const
-{
-    // tri_is_simp_emb() on each face, with the spanned edge judged by
-    // simplex_in_input_complex(): vertex and face labels are exact during an operation pass, the
-    // edge labels of new edges are not. As in 3D.
-    for (const size_t fid : fids) {
-        if (m_face_extra[fid].label != 0) continue;
-        std::vector<size_t> in;
-        for (const size_t v : oriented_tri_vids(fid)) {
-            if (m_vertex_extra[v].label != 0) in.push_back(v);
-        }
-        if (in.size() <= 1) continue;
-        if (in.size() == 3 || !simplex_in_input_complex(in[0], in[1])) return false;
-    }
-    return true;
-}
-
 
 bool TopoOffsetTriMesh::is_simplicially_embedded() const
 {
@@ -1483,24 +1223,6 @@ void TopoOffsetTriMesh::marching_tris()
         }
     }
 
-    // init_optimize, only when the target is not below the maximum marchable distance:
-    // optimize_offset() opens with a loop without refinement. A target below it is marched to and
-    // the run is the ordinary one. As in 3D.
-    if (m_offset_params.init_optimize && !e_to_split.empty()) {
-        if (!reachable) {
-            m_init_optimize = true;
-            logger().info(
-                "\t[init_optimize] target_distance is not below the maximum marchable distance, so "
-                "the loop opens with a stencil_order {} loop without refinement, then the same "
-                "stencil with refinement",
-                m_offset_params.stencil_order);
-        } else {
-            logger().info(
-                "\t[init_optimize] not done: target_distance is below the maximum marchable "
-                "distance; the offset is marched to the target and the loop runs with refinement "
-                "as usual");
-        }
-    }
 
     // actually split edges
     std::vector<Tuple> garbage;
