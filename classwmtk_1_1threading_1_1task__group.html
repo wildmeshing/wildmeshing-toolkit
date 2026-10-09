@@ -101,6 +101,10 @@ Public Member Functions</h2></td></tr>
 template&lt;typename F &gt; </td></tr>
 <tr class="memitem:add2647582b12ec5540f6a12a0b7dfc06"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>run</b> (F &amp;&amp;f)</td></tr>
 <tr class="separator:add2647582b12ec5540f6a12a0b7dfc06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a64cbef1e88bf8a79dd34dad055fb0f" id="r_a9a64cbef1e88bf8a79dd34dad055fb0f"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a9a64cbef1e88bf8a79dd34dad055fb0f"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1task__group.html#a9a64cbef1e88bf8a79dd34dad055fb0f">try_run</a> (F &amp;&amp;f)</td></tr>
+<tr class="memdesc:a9a64cbef1e88bf8a79dd34dad055fb0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">As run(), but only on a worker of the pool that is idle right now. Returns false, having run nothing, if there is none; it never starts a thread.  <br /></td></tr>
+<tr class="separator:a9a64cbef1e88bf8a79dd34dad055fb0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbdb250d72b6b38690ec7797730162af" id="r_afbdb250d72b6b38690ec7797730162af"><td class="memItemLeft" align="right" valign="top"><a id="afbdb250d72b6b38690ec7797730162af" name="afbdb250d72b6b38690ec7797730162af"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>wait</b> ()</td></tr>
 <tr class="separator:afbdb250d72b6b38690ec7797730162af"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,6 +133,38 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_pending</b> = 0</
 std::exception_ptr&#160;</td><td class="memItemRight" valign="bottom"><b>m_eptr</b></td></tr>
 <tr class="separator:aebac11eefe180ea10274bec70a088eec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a9a64cbef1e88bf8a79dd34dad055fb0f" name="a9a64cbef1e88bf8a79dd34dad055fb0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a64cbef1e88bf8a79dd34dad055fb0f">&#9670;&#160;</a></span>try_run()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::threading::task_group::try_run </td>
+          <td>(</td>
+          <td class="paramtype">F &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>As run(), but only on a worker of the pool that is idle right now. Returns false, having run nothing, if there is none; it never starts a thread. </p>
+<p>For optional help: work the caller would do alone anyway, split up only if threads are sitting idle, where starting a thread for it would cost more than the split saves. Call wait() either way. See SampleEnvelope::is_outside() for the use it was written for. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/threading/<a class="el" href="task__group_8hpp_source.html">task_group.hpp</a></li>
 </ul>

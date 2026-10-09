@@ -95,6 +95,8 @@ Public Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>submit</b> (std::unique_ptr&lt; <a class="el" href="structwmtk_1_1threading_1_1detail_1_1job.html">job</a> &gt; j)</td></tr>
 <tr class="memdesc:a756ce261ed1ac8ac36b1eaea6436c6b4"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_run.html">Run</a> <code>job</code> on a worker. Throws (and queues nothing) if a needed worker cannot be started. <br /></td></tr>
 <tr class="separator:a756ce261ed1ac8ac36b1eaea6436c6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81eb24ecfb7360cfa058956d6a150316" id="r_a81eb24ecfb7360cfa058956d6a150316"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1threading_1_1detail_1_1worker__pool.html#a81eb24ecfb7360cfa058956d6a150316">try_submit</a> (std::unique_ptr&lt; <a class="el" href="structwmtk_1_1threading_1_1detail_1_1job.html">job</a> &gt; &amp;j)</td></tr>
+<tr class="separator:a81eb24ecfb7360cfa058956d6a150316"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9340145b077a0b29bd9a7e459be78c27" id="r_a9340145b077a0b29bd9a7e459be78c27"><td class="memItemLeft" align="right" valign="top"><a id="a9340145b077a0b29bd9a7e459be78c27" name="a9340145b077a0b29bd9a7e459be78c27"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worker_count</b> ()</td></tr>
 <tr class="memdesc:a9340145b077a0b29bd9a7e459be78c27"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many workers the pool has started. For tests. <br /></td></tr>
@@ -150,7 +152,35 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_workers</b> = 0</
 <p>A worker counts as idle again before its task is reported finished, so a caller that starts its next group as soon as wait() returns finds every worker of the last one free. With one thread submitting &ndash; every caller in this repository &ndash; the pool therefore never grows past the largest number of tasks that were outstanding at once, which is NUM_THREADS.</p>
 <p>The workers are never joined: they block on the condition variable for the life of the process, and the pool is deliberately leaked so that nothing in it is destroyed while a detached worker could still touch it.</p>
 <p>A forked child (POSIX) inherits the pool's memory but none of its threads, and possibly its mutex in a locked state. The child therefore abandons it and starts a fresh pool on its first task &ndash; as it would have started fresh threads before the pool existed. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a81eb24ecfb7360cfa058956d6a150316" name="a81eb24ecfb7360cfa058956d6a150316"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81eb24ecfb7360cfa058956d6a150316">&#9670;&#160;</a></span>try_submit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::threading::detail::worker_pool::try_submit </td>
+          <td>(</td>
+          <td class="paramtype">std::unique_ptr&lt; <a class="el" href="structwmtk_1_1threading_1_1detail_1_1job.html">job</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>j</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Queue <code>j</code> on a worker that is idle right now, as <a class="el" href="classwmtk_1_1threading_1_1detail_1_1worker__pool.html#a756ce261ed1ac8ac36b1eaea6436c6b4" title="Run job on a worker. Throws (and queues nothing) if a needed worker cannot be started.">submit()</a> would, and return true; or, if every idle worker is already owed to a queued job, return false with <code>j</code> left untouched. It never starts a worker. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/threading/<a class="el" href="task__group_8hpp_source.html">task_group.hpp</a></li>
 </ul>
 </div><!-- contents -->

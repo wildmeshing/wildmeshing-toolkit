@@ -109,6 +109,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adce207ce707be3c6b4388ed185a9478f" id="r_adce207ce707be3c6b4388ed185a9478f"><td class="memItemLeft" align="right" valign="top"><a id="adce207ce707be3c6b4388ed185a9478f" name="adce207ce707be3c6b4388ed185a9478f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>SampleEnvelope</b> (bool exact=false)</td></tr>
 <tr class="separator:adce207ce707be3c6b4388ed185a9478f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6955a5286b376ea049773bdccad5d451" id="r_a6955a5286b376ea049773bdccad5d451"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a6955a5286b376ea049773bdccad5d451">set_max_threads</a> (int n)</td></tr>
+<tr class="memdesc:a6955a5286b376ea049773bdccad5d451"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread.  <br /></td></tr>
+<tr class="separator:a6955a5286b376ea049773bdccad5d451"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aefc94500d5ea8555afc5c14c7cb0f821" id="r_aefc94500d5ea8555afc5c14c7cb0f821"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#aefc94500d5ea8555afc5c14c7cb0f821">init</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector3i &gt; &amp;m_faces, const double)</td></tr>
 <tr class="separator:aefc94500d5ea8555afc5c14c7cb0f821"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6967a18651db1ec941e3b153c3217a52" id="r_a6967a18651db1ec941e3b153c3217a52"><td class="memItemLeft" align="right" valign="top"><a id="a6967a18651db1ec941e3b153c3217a52" name="a6967a18651db1ec941e3b153c3217a52"></a>
@@ -182,6 +185,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>require_exact_built</
 <tr class="memitem:a2421c380fd791e278b86cede703bd971" id="r_a2421c380fd791e278b86cede703bd971"><td class="memTemplParams" colspan="2">template&lt;typename VertexList &gt; </td></tr>
 <tr class="memitem:a2421c380fd791e278b86cede703bd971"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a2421c380fd791e278b86cede703bd971">init_exact_edges</a> (const VertexList &amp;V, const std::vector&lt; Eigen::Vector2i &gt; &amp;F, const double _eps)</td></tr>
 <tr class="separator:a2421c380fd791e278b86cede703bd971"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac986c74e5029822f10713ebf9847542" id="r_aac986c74e5029822f10713ebf9847542"><td class="memItemLeft" align="right" valign="top"><a id="aac986c74e5029822f10713ebf9847542" name="aac986c74e5029822f10713ebf9847542"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>samples_outside_parallel</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;ps) const</td></tr>
+<tr class="memdesc:aac986c74e5029822f10713ebf9847542"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sampled triangle query's loop over <code>ps</code>, split among idle workers. <br /></td></tr>
+<tr class="separator:aac986c74e5029822f10713ebf9847542"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -223,6 +230,8 @@ fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom">
 <tr class="separator:a4a60a9c1ffd571f5b398c6a41c00fb23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e03e8de3782e45bcff76f8005497186" id="r_a2e03e8de3782e45bcff76f8005497186"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a2e03e8de3782e45bcff76f8005497186">m_exact_built</a> = false</td></tr>
 <tr class="separator:a2e03e8de3782e45bcff76f8005497186"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f96aed37db74f6d14e88b185a096e4e" id="r_a6f96aed37db74f6d14e88b185a096e4e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a6f96aed37db74f6d14e88b185a096e4e">m_max_threads</a> = 1</td></tr>
+<tr class="separator:a6f96aed37db74f6d14e88b185a096e4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="ac634e11dc6345cf581e3149c03acbea9" name="ac634e11dc6345cf581e3149c03acbea9"></a>
@@ -625,6 +634,35 @@ feature change". </p>
 
 </div>
 </div>
+<a id="a6955a5286b376ea049773bdccad5d451" name="a6955a5286b376ea049773bdccad5d451"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6955a5286b376ea049773bdccad5d451">&#9670;&#160;</a></span>set_max_threads()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::set_max_threads </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread. </p>
+<p>A triangle many times longer than eps samples to thousands of points, and its query costs milliseconds. Above n = 1, such a query splits its samples among idle workers of the thread pool, up to n threads in all, counting the caller. It takes only workers that are idle at that moment and waits for none, so in a parallel pass that keeps every thread busy nothing changes; the queries left running at the end get the threads that ran out of work. The answer is the same either way. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a02b553658ee2d7a77bbdc652321f7191" name="a02b553658ee2d7a77bbdc652321f7191"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02b553658ee2d7a77bbdc652321f7191">&#9670;&#160;</a></span>disabled</h2>
@@ -698,6 +736,29 @@ r + sampling_dist/2"; for that to imply containment in eps, </p><pre class="frag
 </table>
 </div><div class="memdoc">
 <p>Whether the edge/2D exact structure was actually built. Always false for Triangles3d, which builds its exact envelope unconditionally and is checked by kind alone. </p>
+
+</div>
+</div>
+<a id="a6f96aed37db74f6d14e88b185a096e4e" name="a6f96aed37db74f6d14e88b185a096e4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f96aed37db74f6d14e88b185a096e4e">&#9670;&#160;</a></span>m_max_threads</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::SampleEnvelope::m_max_threads = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>see <a class="el" href="classwmtk_1_1_sample_envelope.html#a6955a5286b376ea049773bdccad5d451" title="How many threads one triangle query may use. 1, the default: every sample is checked on the calling t...">set_max_threads()</a> </p>
 
 </div>
 </div>

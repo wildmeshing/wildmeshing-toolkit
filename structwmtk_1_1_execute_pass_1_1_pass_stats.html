@@ -135,7 +135,7 @@ template&lt;class AppMesh &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Busy time of the longest- and shortest-running task. A wide gap means the partition split the work unevenly, and since tasks never steal, the tail is one thread. </p>
+<p>Busy time of the longest- and shortest-running task. A wide gap means the partitions split the work unevenly: a task drains a partition alone, so with one partition per thread the tail is one thread (cut the mesh finer to balance it). </p>
 
 </div>
 </div>
