@@ -436,6 +436,7 @@ InputData read_mesh(
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
+    const double simplify_max_edge_ratio = json_params["simplify_max_edge_ratio"];
     const double order2_envelope_ratio = json_params["order2_envelope_ratio"];
     const std::vector<std::string> input_names = json_params["input_names"];
 
@@ -489,7 +490,17 @@ InputData read_mesh(
             logger().info("simplification freezes the open boundary");
         }
 
-        image_mesh.simplify_surface(eps_simplify, NUM_THREADS, boundary_eps);
+        // As tetwild: see its simplify_max_edge_ratio. The target length as Parameters reads it.
+        const double length = json_params["length"];
+        const double length_rel = json_params["length_rel"];
+        const double target_length = length > 0 ? length : length_rel * diag;
+        const double max_edge_length =
+            simplify_max_edge_ratio > 0 ? simplify_max_edge_ratio * target_length : 0;
+        if (max_edge_length > 0) {
+            logger().info("simplification may not stretch an edge past {:.4}", max_edge_length);
+        }
+
+        image_mesh.simplify_surface(eps_simplify, NUM_THREADS, boundary_eps, max_edge_length);
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");

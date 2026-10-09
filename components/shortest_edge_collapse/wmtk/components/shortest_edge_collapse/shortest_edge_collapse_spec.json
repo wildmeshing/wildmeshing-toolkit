@@ -14,7 +14,8 @@
       "use_sample_envelope",
       "throw_on_fail",
       "use_link_condition",
-      "remove_duplicate_eps"
+      "remove_duplicate_eps",
+      "max_edge_length_rel"
     ]
   },
   {
@@ -87,5 +88,11 @@
     "type": "float",
     "default": -1,
     "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. Needed for formats that carry no connectivity, such as STL, which otherwise arrive as a disconnected triangle soup."
+  },
+  {
+    "pointer": "/max_edge_length_rel",
+    "type": "float",
+    "default": 0.2,
+    "doc": "Refuse a collapse that would stretch an edge past this fraction of the bounding box diagonal (edges of the input already longer than it are not held to it). Flat regions otherwise coarsen into triangles as large as the region, whose sampled envelope checks cost their area in eps^2 and serialize the end of the pass. 0.2 is four times the default target edge length of tetwild and simwild (length_rel 0.05). 0 or negative: no limit."
   }
 ]
