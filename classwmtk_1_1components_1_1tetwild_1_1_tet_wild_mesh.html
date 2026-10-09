@@ -209,15 +209,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>output_mesh</b> (std:
 <tr class="memitem:aec391ff83dc66d14ec5abeec0776dc08" id="r_aec391ff83dc66d14ec5abeec0776dc08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08">mesh_improvement_legacy</a> (int max_its=80)</td></tr>
 <tr class="memdesc:aec391ff83dc66d14ec5abeec0776dc08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call the original TetWild code.  <br /></td></tr>
 <tr class="separator:aec391ff83dc66d14ec5abeec0776dc08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a331477af4f425730aa58c9c17680057f" id="r_a331477af4f425730aa58c9c17680057f"><td class="memItemLeft" align="right" valign="top">Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a331477af4f425730aa58c9c17680057f">tet_barycenters</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets) const</td></tr>
-<tr class="memdesc:a331477af4f425730aa58c9c17680057f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the winding number.  <br /></td></tr>
+<tr class="memitem:a331477af4f425730aa58c9c17680057f" id="r_a331477af4f425730aa58c9c17680057f"><td class="memItemLeft" align="right" valign="top"><a id="a331477af4f425730aa58c9c17680057f" name="a331477af4f425730aa58c9c17680057f"></a>
+Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>tet_barycenters</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets) const</td></tr>
+<tr class="memdesc:a331477af4f425730aa58c9c17680057f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Barycenter (row per tet) of each tet in <code>tets</code>. Computed once and passed to the winding-number passes so they do not each rebuild it. <br /></td></tr>
 <tr class="separator:a331477af4f425730aa58c9c17680057f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8f4dd0e0e0148791813ae25a2d5d8aa" id="r_af8f4dd0e0e0148791813ae25a2d5d8aa"><td class="memItemLeft" align="right" valign="top"><a id="af8f4dd0e0e0148791813ae25a2d5d8aa" name="af8f4dd0e0e0148791813ae25a2d5d8aa"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_winding_number</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const Eigen::MatrixXd &amp;barycenters, const std::vector&lt; Vector3d &gt; &amp;vertices={}, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;faces={})</td></tr>
+<tr class="memitem:af8f4dd0e0e0148791813ae25a2d5d8aa" id="r_af8f4dd0e0e0148791813ae25a2d5d8aa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#af8f4dd0e0e0148791813ae25a2d5d8aa">compute_winding_number</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const Eigen::MatrixXd &amp;barycenters, const std::vector&lt; Vector3d &gt; &amp;vertices={}, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;faces={})</td></tr>
+<tr class="memdesc:af8f4dd0e0e0148791813ae25a2d5d8aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the winding number.  <br /></td></tr>
 <tr class="separator:af8f4dd0e0e0148791813ae25a2d5d8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ca17e78cb64374d8dadc1a1e38fbc12" id="r_a4ca17e78cb64374d8dadc1a1e38fbc12"><td class="memItemLeft" align="right" valign="top"><a id="a4ca17e78cb64374d8dadc1a1e38fbc12" name="a4ca17e78cb64374d8dadc1a1e38fbc12"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_winding_numbers</b> (const std::vector&lt; std::string &gt; &amp;input_paths, const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const Eigen::MatrixXd &amp;barycenters, const std::vector&lt; Vector3d &gt; &amp;in_vertices={}, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;in_faces={})</td></tr>
-<tr class="separator:a4ca17e78cb64374d8dadc1a1e38fbc12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03efb26bbf917b865028ed0974c01647" id="r_a03efb26bbf917b865028ed0974c01647"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a03efb26bbf917b865028ed0974c01647">compute_input_winding_numbers</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const Eigen::MatrixXd &amp;barycenters, const std::vector&lt; Vector3d &gt; &amp;vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;faces, const std::vector&lt; int &gt; &amp;face_input, int n_inputs)</td></tr>
+<tr class="memdesc:a03efb26bbf917b865028ed0974c01647"><td class="mdescLeft">&#160;</td><td class="mdescRight">The winding numbers of the input: with respect to each input surface (m_winding_number_per_input) and to all of them together (m_winding_number_input).  <br /></td></tr>
+<tr class="separator:a03efb26bbf917b865028ed0974c01647"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab71f1dc583780abee345388533af2483" id="r_ab71f1dc583780abee345388533af2483"><td class="memItemLeft" align="right" valign="top"><a id="ab71f1dc583780abee345388533af2483" name="ab71f1dc583780abee345388533af2483"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_input_surface_winding_number</b> ()</td></tr>
 <tr class="separator:ab71f1dc583780abee345388533af2483"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -867,6 +868,14 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ad885c1a1b4a77963391ca91cf4e06c7c" id="r_ad885c1a1b4a77963391ca91cf4e06c7c"><td class="memItemLeft" align="right" valign="top"><a id="ad885c1a1b4a77963391ca91cf4e06c7c" name="ad885c1a1b4a77963391ca91cf4e06c7c"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">TetAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_attribute</b></td></tr>
 <tr class="separator:ad885c1a1b4a77963391ca91cf4e06c7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebae0c0dfa99b9d016121046fa8603e6" id="r_aebae0c0dfa99b9d016121046fa8603e6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aebae0c0dfa99b9d016121046fa8603e6">m_has_input_winding_number</a> = false</td></tr>
+<tr class="separator:aebae0c0dfa99b9d016121046fa8603e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52e13eedf5d585aee4503df0c81eb63c" id="r_a52e13eedf5d585aee4503df0c81eb63c"><td class="memItemLeft" align="right" valign="top"><a id="a52e13eedf5d585aee4503df0c81eb63c" name="a52e13eedf5d585aee4503df0c81eb63c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_tracked_winding_number</b> = false</td></tr>
+<tr class="separator:a52e13eedf5d585aee4503df0c81eb63c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a38e409dbf9506d9a74c0d98a9983a8" id="r_a5a38e409dbf9506d9a74c0d98a9983a8"><td class="memItemLeft" align="right" valign="top"><a id="a5a38e409dbf9506d9a74c0d98a9983a8" name="a5a38e409dbf9506d9a74c0d98a9983a8"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_parts</b> = false</td></tr>
+<tr class="separator:a5a38e409dbf9506d9a74c0d98a9983a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1acddac0eab1d4361316d6b01d4190f" id="r_ac1acddac0eab1d4361316d6b01d4190f"><td class="memItemLeft" align="right" valign="top"><a id="ac1acddac0eab1d4361316d6b01d4190f" name="ac1acddac0eab1d4361316d6b01d4190f"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_split</b> = 0</td></tr>
 <tr class="separator:ac1acddac0eab1d4361316d6b01d4190f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1538,6 +1547,105 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a03efb26bbf917b865028ed0974c01647" name="a03efb26bbf917b865028ed0974c01647"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03efb26bbf917b865028ed0974c01647">&#9670;&#160;</a></span>compute_input_winding_numbers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::tetwild::TetWildMesh::compute_input_winding_numbers </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tets</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>barycenters</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Vector3d &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>faces</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
+          <td class="paramname"><em>face_input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n_inputs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The winding numbers of the input: with respect to each input surface (m_winding_number_per_input) and to all of them together (m_winding_number_input). </p>
+<p><code>face_input[f]</code> is the input in [0, n_inputs) that face f of the loaded input came from (io::read_triangle_mesh's face_input). The whole input's winding number is the sum of the per-input ones, so it costs nothing on top of them &ndash; evaluated on its own it was the most expensive step of the finalization.</p>
+<p>Each input is oriented on its own the way compute_winding_number orients the whole: when none of the tets is inside it (winding number above 1/2) it is taken as inside out and its winding number negated. The whole input's is the sum of the per-input ones AS GIVEN, oriented as a whole the same way &ndash; an input that is a cavity of another, oriented inward, still subtracts. </p>
+
+</div>
+</div>
+<a id="af8f4dd0e0e0148791813ae25a2d5d8aa" name="af8f4dd0e0e0148791813ae25a2d5d8aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8f4dd0e0e0148791813ae25a2d5d8aa">&#9670;&#160;</a></span>compute_winding_number()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::tetwild::TetWildMesh::compute_winding_number </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tets</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>barycenters</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Vector3d &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertices</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>faces</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compute the winding number. </p>
+<p>If <code>vertices</code> and <code>faces</code> are empty, compute the winding number for the tracked surface. Otherwise, compute the winding number for the input surface given by <code>vertices</code> and <code>faces</code>. </p>
+
+</div>
+</div>
 <a id="a1a82cccd447e956f9bc5bcfafc609bac" name="a1a82cccd447e956f9bc5bcfafc609bac"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1a82cccd447e956f9bc5bcfafc609bac">&#9670;&#160;</a></span>init_from_delaunay_box_mesh()</h2>
 
@@ -1859,28 +1967,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a331477af4f425730aa58c9c17680057f" name="a331477af4f425730aa58c9c17680057f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a331477af4f425730aa58c9c17680057f">&#9670;&#160;</a></span>tet_barycenters()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Eigen::MatrixXd wmtk::components::tetwild::TetWildMesh::tet_barycenters </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tets</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Compute the winding number. </p>
-<p>If <code>vertices</code> and <code>faces</code> are empty, compute the winding number for the tracked surface. Otherwise, compute the winding number for the input surface given by <code>vertices</code> and <code>faces</code>.</p>
-<p>Barycenter (row per tet) of each tet in <code>tets</code>. Computed once and passed to the winding-number passes so they do not each rebuild it. </p>
-
-</div>
-</div>
 <a id="a136766286f3e7a43c82e7001c6e10563" name="a136766286f3e7a43c82e7001c6e10563"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a136766286f3e7a43c82e7001c6e10563">&#9670;&#160;</a></span>write_optimization_debug_output()</h2>
 
@@ -1910,6 +1996,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aebae0c0dfa99b9d016121046fa8603e6" name="aebae0c0dfa99b9d016121046fa8603e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebae0c0dfa99b9d016121046fa8603e6">&#9670;&#160;</a></span>m_has_input_winding_number</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::tetwild::TetWildMesh::m_has_input_winding_number = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Which of the finalization's per-tet fields were computed, so that the writers leave out the ones that were not rather than writing their defaults as if they were values. </p>
+
+</div>
+</div>
 <a id="a8063005bfb61ba0b4baba33950db2d46" name="a8063005bfb61ba0b4baba33950db2d46"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8063005bfb61ba0b4baba33950db2d46">&#9670;&#160;</a></span>m_input_names</h2>
 
