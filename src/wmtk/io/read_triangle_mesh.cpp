@@ -9,6 +9,7 @@
 #include <igl/remove_unreferenced.h>
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cctype>
 #include <cstdint>
 #include <cstring>
@@ -32,9 +33,17 @@ namespace wmtk::io {
  * @param tol_abs Absolute tolerance for identifying duplicated vertices. If non-negative, vertices
  * that are within this distance will be considered duplicates and merged. If negative, no vertex
  * merging will be performed.
+ * @param face_tags If not null, one value per face of F, kept in step with F: the entries of the
+ * removed degenerate faces are removed with them.
  */
-void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double tol_abs = -1)
+void clean_triangle_mesh(
+    MatrixXd& V,
+    MatrixXi& F,
+    double tol_rel = -1,
+    double tol_abs = -1,
+    std::vector<int>* face_tags = nullptr)
 {
+    assert(face_tags == nullptr || face_tags->size() == size_t(F.rows()));
     if (tol_abs >= 0 && tol_rel >= 0) {
         log_and_throw_error(
             "Only one of tol_abs and tol_rel can be non-negative. Got abs = {} and rel = {}",
@@ -83,11 +92,14 @@ void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double t
                 F.rows());
             std::vector<Vector3i> valid_tris;
             valid_tris.reserve(F.rows());
+            std::vector<int> valid_tags;
             for (int i = 0; i < F.rows(); i++) {
                 if (valid_face[i]) {
                     valid_tris.push_back(F.row(i));
+                    if (face_tags) valid_tags.push_back((*face_tags)[i]);
                 }
             }
+            if (face_tags) face_tags->swap(valid_tags);
             F.resize(valid_tris.size(), 3);
             for (int i = 0; i < valid_tris.size(); i++) {
                 F.row(i) = valid_tris[i];
@@ -168,11 +180,14 @@ void read_triangle_mesh(
     Eigen::MatrixXd& V,
     Eigen::MatrixXi& F,
     double tol_rel,
-    double tol_abs)
+    double tol_abs,
+    std::vector<int>* face_input)
 {
     V.resize(0, 3);
     F.resize(0, 3);
-    for (const std::string& p : paths) {
+    if (face_input) face_input->clear();
+    for (size_t input = 0; input < paths.size(); ++input) {
+        const std::string& p = paths[input];
         if (!std::filesystem::exists(p)) {
             log_and_throw_error("File {} does not exist", p);
         }
@@ -197,9 +212,10 @@ void read_triangle_mesh(
         F_single.array() += nV_old;
         F.conservativeResize(F.rows() + F_single.rows(), 3);
         F.block(nF_old, 0, F_single.rows(), 3) = F_single;
+        if (face_input) face_input->resize(F.rows(), int(input));
     }
 
-    clean_triangle_mesh(V, F, tol_rel, tol_abs);
+    clean_triangle_mesh(V, F, tol_rel, tol_abs, face_input);
 
     if (F.rows() == 0) {
         std::string joined;

@@ -125,10 +125,12 @@ public:
         }
     }
 
-    /// One partition per thread, as the optimizers partition their meshes.
+    /// Partitions per thread: 1, as the optimizers partition their meshes, or more, as the
+    /// input simplification does (ShortestEdgeCollapse::partition_mesh).
+    size_t parts_per_thread = 1;
     size_t get_partition_id(const Tuple& t) const
     {
-        return t.vid(*this) % size_t(std::max(1, NUM_THREADS));
+        return t.vid(*this) % (size_t(std::max(1, NUM_THREADS)) * parts_per_thread);
     }
 
     double len2(const Tuple& e) const
@@ -350,4 +352,33 @@ TEST_CASE("a screened pass ends when its operations can only wait", "[screening]
     CHECK(ex->get_cnt_success() == 0);
     CHECK(size_t(ex->get_cnt_fail()) == due);
     CHECK(ex->wait_defects() == due);
+}
+
+TEST_CASE("a pass over more partitions than threads splits everything", "[screening]")
+{
+    // Tasks take partitions one after another, and carry the operations a lost lock race set
+    // aside into the next one they take. Partitions by vid modulo their count interleave
+    // everywhere, so nearly every ring crosses partitions and races are lost all the time.
+    // Nothing set aside may be lost on the way, screened or not.
+    for (const bool screened : {true, false}) {
+        for (const int threads : {2, 8}) {
+            SplitMesh m;
+            m.build(40, 11);
+            m.threshold2 = 0.6 * 0.6;
+            m.NUM_THREADS = threads;
+            m.parts_per_thread = 4;
+            auto ex = split_executor(threads);
+            ex->screen_before_commit = screened;
+            const size_t verts_before = m.get_vertices().size();
+            LogCapture log;
+            REQUIRE((*ex)(m, all_edges(m)));
+
+            CHECK(size_t(ex->get_cnt_success()) == m.get_vertices().size() - verts_before);
+            CHECK(ex->get_cnt_success() > 0);
+            for (const auto& e : m.get_edges()) CHECK(m.len2(e) <= m.threshold2);
+            CHECK(m.check_mesh_connectivity_validity());
+            CHECK(ex->wait_defects() == 0);
+            CHECK(log.text.str().find("queue_key bookkeeping") == std::string::npos);
+        }
+    }
 }

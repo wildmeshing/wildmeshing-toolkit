@@ -549,32 +549,25 @@ void TriWildMesh::compute_winding_numbers(
         // The inputs were already read (and their x,y extracted) when the initial mesh was
         // built; reuse them instead of parsing every file a second time.
         const MatrixXd& V = Vs[input_idx];
-        MatrixXi E = Es[input_idx];
+        const MatrixXi& E = Es[input_idx];
         assert(V.cols() == 2);
         assert(E.cols() == 2);
 
         Eigen::VectorXd W;
         utils::winding_number_2d(V, E, C, W, NUM_THREADS);
 
-        if (W.maxCoeff() <= 0.5) {
-            // all removed, let's invert.
-            logger().info("Correcting winding number");
-            for (auto i = 0; i < E.rows(); i++) {
-                auto temp = E(i, 0);
-                E(i, 0) = E(i, 1);
-                E(i, 1) = temp;
-            }
-            utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+        // Nothing is inside: take the curve as wound the other way.
+        if (utils::orient_winding_number(W)) {
+            logger().info("Correcting winding number for input {}", input_idx);
         }
-
-        if (W.maxCoeff() <= 0.5) {
+        if (!utils::any_winding_number_inside(W)) {
             logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
         // store winding number in mesh
         for (int i = 0; i < faces.size(); ++i) {
             const size_t fid = faces[i].fid(*this);
-            if (W(i) > 0.5) {
+            if (utils::winding_number_inside(W(i))) {
                 m_face_attribute[fid].tags.insert(input_idx);
             }
         }
@@ -608,12 +601,10 @@ void TriWildMesh::compute_tracked_winding_number()
 
     Eigen::VectorXd W;
     utils::winding_number_2d(V, E, C, W, NUM_THREADS);
-    if (W.size() > 0 && W.maxCoeff() <= 0.5) {
+    if (utils::orient_winding_number(W)) {
         logger().info("Correcting tracked winding number");
-        E.col(0).swap(E.col(1));
-        utils::winding_number_2d(V, E, C, W, NUM_THREADS);
     }
-    if (W.size() == 0 || W.maxCoeff() <= 0.5) {
+    if (!utils::any_winding_number_inside(W)) {
         logger().warn("No tracked winding number above 0.5");
     }
     for (size_t i = 0; i < faces.size(); ++i) {
@@ -626,7 +617,7 @@ void TriWildMesh::filter_with_tracked_winding_number()
     std::vector<size_t> rm_fids;
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
-        if (m_face_attribute[fid].m_winding_number <= 0.5) {
+        if (!utils::winding_number_inside(m_face_attribute[fid].m_winding_number)) {
             rm_fids.emplace_back(fid);
         }
     }
@@ -783,6 +774,7 @@ int TriWildMesh::flood_fill()
 
         current_id++;
     }
+    m_has_parts = true;
     return current_id;
 }
 
@@ -934,7 +926,7 @@ void TriWildMesh::write_vtu(const std::string& path) const
         writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer.add_cell_field("quality", amips);
-    writer.add_cell_field("flood_fill", flood_fill);
+    if (m_has_parts) writer.add_cell_field("flood_fill", flood_fill);
     writer.add_field("sizing_field", v_sizing_field);
     writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 

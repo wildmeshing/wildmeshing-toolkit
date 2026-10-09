@@ -532,22 +532,11 @@ void TetWildMesh::compute_winding_number(
     }
 
     // `tets` and their `barycenters` are precomputed once by the caller and shared
-    // across the winding-number passes (input / tracked / per-input).
+    // across the winding-number passes (input / tracked).
     Eigen::VectorXd W;
     wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
-
-    if (W.maxCoeff() <= 0.5) {
-        // all removed, let's invert.
-        logger().info("Correcting winding number");
-        for (auto i = 0; i < F.rows(); i++) {
-            auto temp = F(i, 0);
-            F(i, 0) = F(i, 1);
-            F(i, 1) = temp;
-        }
-        wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
-    }
-
-    if (W.maxCoeff() <= 0.5) {
+    if (wmtk::utils::orient_winding_number(W)) logger().info("Correcting winding number");
+    if (!wmtk::utils::any_winding_number_inside(W)) {
         logger().critical("Still Inverting..., Empty Output");
         return;
     }
@@ -559,83 +548,69 @@ void TetWildMesh::compute_winding_number(
             const size_t tid = tets[i].tid(*this);
             tet_finalize(tid).m_winding_number_tracked = W(i);
         }
+        m_has_tracked_winding_number = true;
     } else {
         // from input surface
         for (int i = 0; i < tets.size(); ++i) {
             const size_t tid = tets[i].tid(*this);
             tet_finalize(tid).m_winding_number_input = W(i);
         }
+        m_has_input_winding_number = true;
     }
 }
 
-void TetWildMesh::compute_winding_numbers(
-    const std::vector<std::string>& input_paths,
+void TetWildMesh::compute_input_winding_numbers(
     const std::vector<Tuple>& tets,
     const Eigen::MatrixXd& barycenters,
-    const std::vector<Vector3d>& in_vertices,
-    const std::vector<std::array<size_t, 3>>& in_faces)
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces,
+    const std::vector<int>& face_input,
+    const int n_inputs)
 {
-    // Single-input fast path: with one input surface, the per-input winding number is
-    // evaluated from exactly the same surface (in_vertices/in_faces) and the same query
-    // barycenters as the input-surface winding number that compute_winding_number(...)
-    // has already computed and stored in m_winding_number_input. Recomputing it here
-    // repeats the full winding-number evaluation (the dominant cost of the finalize
-    // phase on large meshes) for an identical result, so reuse the stored value.
-    //
-    // Precondition: compute_winding_number(tets, barycenters, in_vertices, in_faces) has
-    // run before this call (as tetwild does), so m_winding_number_input is populated.
-    // Reusing it also sidesteps a stale/racy value that igl's WindingNumberAABB static
-    // cache can return on a second, independent evaluation of the same surface.
-    if (input_paths.size() == 1 && !in_vertices.empty() && !in_faces.empty()) {
-        for (int i = 0; i < (int)tets.size(); ++i) {
-            const size_t tid = tets[i].tid(*this);
-            tet_finalize(tid).m_winding_number_per_input.assign(
-                1,
-                tet_finalize(tid).m_winding_number_input);
-        }
-        return;
+    assert(faces.size() == face_input.size());
+    Eigen::MatrixXd V(vertices.size(), 3);
+    for (size_t i = 0; i < vertices.size(); ++i) V.row(i) = vertices[i];
+    Eigen::MatrixXi F(faces.size(), 3);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        F.row(i) << int(faces[i][0]), int(faces[i][1]), int(faces[i][2]);
     }
 
-    // Multiple inputs: evaluate each input surface's winding number independently,
-    // reading every file from disk (the in-memory surface is only the merged input).
-    for (size_t p = 0; p < input_paths.size(); ++p) {
-        MatrixXd V;
-        MatrixXi F;
-        {
-            MatrixXd inV;
-            MatrixXi inF;
-            igl::read_triangle_mesh(input_paths[p], inV, inF);
-            VectorXi _I;
-            igl::remove_unreferenced(inV, inF, V, F, _I);
-        }
-        assert(V.cols() == 3);
-        assert(F.cols() == 3);
+    // Raw: as each input is oriented in its file.
+    Eigen::MatrixXd W_per_input;
+    wmtk::utils::winding_number_by_group(
+        V,
+        F,
+        face_input,
+        n_inputs,
+        barycenters,
+        W_per_input,
+        NUM_THREADS);
+    Eigen::VectorXd W = W_per_input.rowwise().sum();
 
-        // compute winding number for V,F using the shared barycenters
-        Eigen::VectorXd W;
-        wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
-
-        if (W.maxCoeff() <= 0.5) {
-            // all removed, let's invert.
-            logger().info("Correcting winding number");
-            for (auto i = 0; i < F.rows(); i++) {
-                auto temp = F(i, 0);
-                F(i, 0) = F(i, 1);
-                F(i, 1) = temp;
-            }
-            wmtk::utils::winding_number(V, F, barycenters, W, NUM_THREADS);
+    for (int p = 0; p < n_inputs; ++p) {
+        Eigen::VectorXd w = W_per_input.col(p);
+        if (wmtk::utils::orient_winding_number(w)) {
+            logger().info("Correcting winding number for input {}", p);
         }
-
-        if (W.maxCoeff() <= 0.5) {
-            logger().warn("No winding number above 0.5 for input_path {}", input_paths[p]);
+        if (!wmtk::utils::any_winding_number_inside(w)) {
+            logger().warn("No winding number above 0.5 for input {}", p);
         }
-
-        // store winding number in mesh
-        for (int i = 0; i < (int)tets.size(); ++i) {
-            const size_t tid = tets[i].tid(*this);
-            tet_finalize(tid).m_winding_number_per_input.push_back(W(i));
-        }
+        W_per_input.col(p) = w;
     }
+    if (wmtk::utils::orient_winding_number(W)) logger().info("Correcting winding number");
+    const bool whole_inside = wmtk::utils::any_winding_number_inside(W);
+    if (!whole_inside) {
+        logger().critical("Still Inverting..., Empty Output");
+    }
+
+    for (size_t i = 0; i < tets.size(); ++i) {
+        auto& a = tet_finalize(tets[i].tid(*this));
+        a.m_winding_number_per_input.resize(n_inputs);
+        for (int p = 0; p < n_inputs; ++p) a.m_winding_number_per_input[p] = W_per_input(i, p);
+        // Left at its default when no tet is inside, as compute_winding_number leaves it.
+        if (whole_inside) a.m_winding_number_input = W(i);
+    }
+    m_has_input_winding_number = whole_inside;
 }
 
 void TetWildMesh::filter_with_input_surface_winding_number()
@@ -643,7 +618,7 @@ void TetWildMesh::filter_with_input_surface_winding_number()
     std::vector<size_t> rm_tids;
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
-        if (tet_finalize(tid).m_winding_number_input <= 0.5) {
+        if (!wmtk::utils::winding_number_inside(tet_finalize(tid).m_winding_number_input)) {
             rm_tids.emplace_back(tid);
         }
     }
@@ -656,7 +631,7 @@ void TetWildMesh::filter_with_tracked_surface_winding_number()
     std::vector<size_t> rm_tids;
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
-        if (tet_finalize(tid).m_winding_number_tracked <= 0.5) {
+        if (!wmtk::utils::winding_number_inside(tet_finalize(tid).m_winding_number_tracked)) {
             rm_tids.emplace_back(tid);
         }
     }
@@ -748,13 +723,20 @@ void TetWildMesh::output_mesh(std::string file)
     // turns it back into the energy the logs and the vtu report. A winding number and a
     // flood-fill id are neither cubed nor continuous, so cube-rooting them just corrupts the
     // value. write_vtu writes all four raw, and it is the one that was right.
-    msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
-        return tet_finalize(i).m_winding_number_input;
-    });
-    msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
-        return tet_finalize(i).m_winding_number_tracked;
-    });
-    msh.add_tet_attribute<1>("part", [&](size_t i) { return double(tet_finalize(i).part_id); });
+    // Only the fields the finalization computed: the others would be their defaults.
+    if (m_has_input_winding_number) {
+        msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
+            return tet_finalize(i).m_winding_number_input;
+        });
+    }
+    if (m_has_tracked_winding_number) {
+        msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
+            return tet_finalize(i).m_winding_number_tracked;
+        });
+    }
+    if (m_has_parts) {
+        msh.add_tet_attribute<1>("part", [&](size_t i) { return double(tet_finalize(i).part_id); });
+    }
 
     // per input winding number
     if (!tets.empty()) {
@@ -942,6 +924,7 @@ int TetWildMesh::flood_fill()
 
         current_id++;
     }
+    m_has_parts = true;
     return current_id;
 }
 
@@ -976,7 +959,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     if (!tets.empty()) {
         wn_per_input.resize(tet_finalize(tets[0].tid(*this)).m_winding_number_per_input.size());
         for (VectorXd& wn : wn_per_input) {
-            wn.resize(tet_capacity());
+            wn.setZero(tet_capacity());
         }
     }
 
@@ -1036,9 +1019,10 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
 
     const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
 
-    writer->add_cell_field("part", parts);
-    writer->add_cell_field("winding_number_input", wn_input);
-    writer->add_cell_field("winding_number_tracked", wn_tracked);
+    // Only the fields the finalization computed: the others would be their defaults.
+    if (m_has_parts) writer->add_cell_field("part", parts);
+    if (m_has_input_winding_number) writer->add_cell_field("winding_number_input", wn_input);
+    if (m_has_tracked_winding_number) writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->add_cell_field("t_energy", t_energy);
     for (size_t i = 0; i < wn_per_input.size(); ++i) {
         // Named after the input when the caller supplied input_names, as in triwild's MSH
@@ -1214,7 +1198,7 @@ TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
     e.t_amips.resize(tet_capacity(), 1);
     e.t_amips.setZero();
     if (!tets.empty()) {
-        e.t_winding_number_per_input.resize(
+        e.t_winding_number_per_input.setZero(
             tet_capacity(),
             tet_finalize(tets[0].tid(*this)).m_winding_number_per_input.size());
     }

@@ -19,6 +19,9 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
 {
     NUM_THREADS = (num_threads);
     m_envelope.use_exact = use_exact_envelope;
+    // A large envelope check may take the threads that have run out of work; see
+    // SampleEnvelope::set_max_threads.
+    m_envelope.set_max_threads(NUM_THREADS);
     p_vertex_attrs = &vertex_attrs;
 
     vertex_attrs.resize(_m_vertex_positions.size());
@@ -74,7 +77,17 @@ void ShortestEdgeCollapse::create_mesh(
 
 void ShortestEdgeCollapse::partition_mesh()
 {
-    auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
+    // Several partitions per thread, which the scheduler's tasks take one after another until
+    // none is left. Partitions with the same number of vertices can hold very different amounts
+    // of work -- a flat region coarsening into large triangles costs far more envelope checks
+    // than a curved one -- and with one per thread, the run waited on the heaviest. On tetwild's
+    // simplification of a set of EMI cell surfaces at 16 threads, 4 per thread was best (5.4,
+    // 4.5, 5.1, 5.8 s for 1, 4, 8, 16); more cuts more rings across partitions and loses more
+    // lock races.
+    constexpr int kPartitionsPerThread = 4;
+    auto m_vertex_partition_id = partition_TriMesh(
+        *this,
+        NUM_THREADS > 1 ? NUM_THREADS * kPartitionsPerThread : NUM_THREADS);
     for (auto i = 0; i < m_vertex_partition_id.size(); i++)
         vertex_attrs[i].partition_id = m_vertex_partition_id[i];
 }

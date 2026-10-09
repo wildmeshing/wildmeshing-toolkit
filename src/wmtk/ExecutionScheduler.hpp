@@ -1103,7 +1103,15 @@ private:
         //
         // `budget`: the slots a parallel task may still take this round (see the round loop
         // below); null when the task may grow the storage instead.
-        auto run_single_queue = [&](auto& Q, int task_id, const bool serial, SlotBudget* budget) {
+        //
+        // `carry`: where the deferred operations go when Q runs dry, for a task that has more
+        // partitions to take (see the tasks below); null to retry them here until they succeed
+        // or overflow.
+        auto run_single_queue = [&](auto& Q,
+                                    int task_id,
+                                    const bool serial,
+                                    SlotBudget* budget,
+                                    std::vector<Elem>* carry) {
             CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
@@ -1135,6 +1143,14 @@ private:
                 }
                 if (!Q.try_pop(ele_in_queue)) {
                     if (second_chance.empty()) {
+                        break;
+                    }
+                    if (carry != nullptr) {
+                        // Retried after the task's next partition rather than right away: a
+                        // conflict that has had a whole partition's work to clear rarely
+                        // remains, where back-to-back retries send it to final_queue.
+                        for (auto& e : second_chance) carry->push_back(std::move(e));
+                        second_chance.clear();
                         break;
                     }
                     // Queue exhausted: the deferred operations have now had everything else
@@ -1287,7 +1303,7 @@ private:
                 track(k);
                 final_queue.emplace(priority(m, op, e), id_of(op), e, 0, k);
             });
-            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr, nullptr);
         } else {
             seed([&](const Op& op, const Tuple& e, const uint64_t counted) {
                 if (!e.is_valid(m)) {
@@ -1298,7 +1314,11 @@ private:
                 // key it hands over; anything else is counted here.
                 const uint64_t k = sink ? counted : key_of(op, e);
                 if (!sink) track(k);
-                queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0, k);
+                // A mesh may cut itself into more partitions than there are threads; see the
+                // tasks below.
+                const size_t part = get_partition_id(m, e);
+                if (part >= queues.size()) queues.resize(part + 1);
+                queues[part].emplace(priority(m, op, e), id_of(op), e, 0, k);
             });
             // Comment out parallel: work on serial first.
             using clock = std::chrono::steady_clock;
@@ -1313,7 +1333,15 @@ private:
             // A task that ends a round without having run anything had a single operation
             // larger than its share; its share doubles until it fits, so every round but the
             // last makes progress and the loop terminates.
-            const size_t n_tasks = queues.size();
+            //
+            // A task does not own a partition: it takes the next one no task has taken yet and
+            // drains it, then the next, until none is left (or its budget runs out). With one
+            // partition per thread that is the one-to-one assignment it always was. A mesh cut
+            // into more partitions than threads (ShortestEdgeCollapse::partition_mesh) is
+            // balanced by it: partitions of equal size can hold very different amounts of work,
+            // and a task that drew light ones goes on to take more.
+            const size_t n_tasks = size_t(std::max(1, num_threads));
+            std::atomic<size_t> next_queue{0};
             std::vector<SlotBudget> budgets(n_tasks);
             std::vector<unsigned> boost(n_tasks, 0);
             wmtk::threading::task_group tg;
@@ -1334,14 +1362,47 @@ private:
                     verts += budgets[t].verts;
                 }
                 m.reserve_free_slots(cells, verts);
+                // Every round goes through all the partitions again: an emptied one is passed
+                // over at once, and one a task left for want of slots is taken up again.
+                next_queue.store(0, std::memory_order_relaxed);
                 for (int task_id = 0; task_id < n_tasks; task_id++) {
-                    tg.run([&run_single_queue, &queues, &task_seconds, &budgets, task_id] {
+                    tg.run([&, task_id] {
                         const auto t0 = clock::now();
-                        run_single_queue(
-                            queues[task_id],
-                            task_id,
-                            /*serial=*/false,
-                            &budgets[task_id]);
+                        SlotBudget& budget = budgets[task_id];
+                        const auto done_for_round = [&] {
+                            return budget.stopped || stop.load(std::memory_order_acquire);
+                        };
+                        // Operations deferred in one partition are retried in the next one this
+                        // task takes, after its own operations; see run_single_queue.
+                        std::vector<Elem> carry;
+                        size_t last = 0;
+                        for (size_t part; (part = next_queue.fetch_add(1)) < queues.size();) {
+                            for (auto& e : carry) queues[part].emplace(std::move(e));
+                            carry.clear();
+                            last = part;
+                            run_single_queue(
+                                queues[part],
+                                task_id,
+                                /*serial=*/false,
+                                &budget,
+                                &carry);
+                            if (done_for_round()) break;
+                        }
+                        // None left to take: retry the deferred operations here, until they
+                        // succeed or overflow to final_queue. The partition is this task's for the
+                        // round, and the next round finds there whatever this one leaves.
+                        if (!carry.empty()) {
+                            for (auto& e : carry) queues[last].emplace(std::move(e));
+                            carry.clear();
+                            if (!done_for_round()) {
+                                run_single_queue(
+                                    queues[last],
+                                    task_id,
+                                    /*serial=*/false,
+                                    &budget,
+                                    nullptr);
+                            }
+                        }
                         // Each task writes only its own slot.
                         task_seconds[task_id] +=
                             std::chrono::duration<double>(clock::now() - t0).count();
@@ -1363,7 +1424,7 @@ private:
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
 
             const auto t_tail = clock::now();
-            run_single_queue(final_queue, 0, /*serial=*/true, nullptr);
+            run_single_queue(final_queue, 0, /*serial=*/true, nullptr, nullptr);
             st.serial_tail_seconds = std::chrono::duration<double>(clock::now() - t_tail).count();
         }
 
@@ -1443,8 +1504,9 @@ public:
         /// pass is billed as "parallel" in the driver's log line, but it is the sum of these.
         double parallel_seconds = 0.;
         double serial_tail_seconds = 0.;
-        /// Busy time of the longest- and shortest-running task. A wide gap means the partition
-        /// split the work unevenly, and since tasks never steal, the tail is one thread.
+        /// Busy time of the longest- and shortest-running task. A wide gap means the partitions
+        /// split the work unevenly: a task drains a partition alone, so with one partition per
+        /// thread the tail is one thread (cut the mesh finer to balance it).
         double busiest_task_seconds = 0.;
         double idlest_task_seconds = 0.;
         /// Rounds the parallel region took: more than one when the tasks ran through their

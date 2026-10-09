@@ -126,6 +126,19 @@ public:
         m_cv.notify_one();
     }
 
+    /// Queue @p j on a worker that is idle right now, as submit() would, and return true; or, if
+    /// every idle worker is already owed to a queued job, return false with @p j left untouched.
+    /// It never starts a worker.
+    bool try_submit(std::unique_ptr<job>& j)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        if (m_jobs.size() + m_spawning >= m_idle) return false;
+        m_jobs.push_back(std::move(j));
+        lock.unlock();
+        m_cv.notify_one();
+        return true;
+    }
+
     /// How many workers the pool has started. For tests.
     size_t worker_count()
     {
@@ -224,6 +237,30 @@ public:
             --m_pending;
             throw;
         }
+    }
+
+    /**
+     * @brief As run(), but only on a worker of the pool that is idle right now. Returns false,
+     * having run nothing, if there is none; it never starts a thread.
+     *
+     * For optional help: work the caller would do alone anyway, split up only if threads are
+     * sitting idle, where starting a thread for it would cost more than the split saves. Call
+     * wait() either way. See SampleEnvelope::is_outside() for the use it was written for.
+     */
+    template <typename F>
+    bool try_run(F&& f)
+    {
+        std::unique_ptr<detail::job> j =
+            std::make_unique<task_job<std::decay_t<F>>>(*this, std::forward<F>(f));
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            ++m_pending;
+        }
+        if (detail::worker_pool::instance().try_submit(j)) return true;
+        // Not queued, so nothing will report it finished.
+        std::lock_guard<std::mutex> lock(m_mutex);
+        --m_pending;
+        return false;
     }
 
     void wait()
