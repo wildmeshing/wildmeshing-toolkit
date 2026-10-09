@@ -3908,6 +3908,19 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
     return result;
 }
 
+std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::considered_offset_faces_at(
+    const size_t vid) const
+{
+    std::vector<Tuple> result = offset_surface_faces_live_at(vid);
+    result.erase(
+        std::remove_if(
+            result.begin(),
+            result.end(),
+            [&](const Tuple& f) { return !f.switch_tetrahedron(*this).has_value(); }),
+        result.end());
+    return result;
+}
+
 bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
 {
     // Reads vid's own tet list and the tets in it, nothing else. Every face through vid is shared

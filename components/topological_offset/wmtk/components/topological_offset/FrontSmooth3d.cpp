@@ -321,10 +321,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     // THE offset term, and the only one: the mean squared relative error over each incident
     // face's stencil, averaged over the ring. The stencil contains the face's corners, so the
     // moving vertex's own residual is in it. See StencilEnergy3D. The same average as the ring
-    // exit test and the main iterations' collapse and swap rules (vertex_ms()). Null when the
-    // vertex has no live front face to carry a term.
+    // exit test and the main iterations' collapse and swap rules (vertex_ms()). Summed over the
+    // considered faces (considered_offset_faces_at()): the vertex's live front faces minus those
+    // on the mesh boundary. Null when the vertex has no considered face to carry a term.
     std::vector<StencilEnergy3D::Face> stencil_faces;
-    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+    for (const Tuple& f : considered_offset_faces_at(vid)) {
         StencilEnergy3D::Face sf;
         if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
         stencil_faces.push_back(std::move(sf));

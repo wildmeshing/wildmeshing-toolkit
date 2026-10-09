@@ -602,6 +602,11 @@ public:
     std::vector<std::array<size_t, 3>> offset_surface_faces() const;
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
+    /// THE CONSIDERED FACES of front vertex vid: the offset faces its smoothing energy sums over
+    /// (front_energy()). offset_surface_faces_live_at(vid) minus the faces on the mesh boundary
+    /// (no cell beyond them): such a face is band clipped by the domain, so it can never reach
+    /// the level set, and only a vertex on both the offset and the mesh boundary has one.
+    std::vector<Tuple> considered_offset_faces_at(size_t vid) const;
     /// Whether ANY live offset-surface face is incident to vid. The same question
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.

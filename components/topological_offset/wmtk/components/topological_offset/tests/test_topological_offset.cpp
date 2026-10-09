@@ -1327,15 +1327,17 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // The smoothing objective of ENERGIES.md: at every vertex, what the shared smoother minimises
     // (smoothing_extra_energy(); every caller passes w_amips 0, so the smoother adds no AMIPS term
     // of its own) is w AMIPS^3 over the ring plus, at a front vertex, (1 - w) times the MEAN of
-    // the face measures (face_offset_term()) over its live front faces. The fixture has no
-    // plastic medium, so the shape term is equilateral AMIPS^3 (shape_energy()). Checked on the
-    // per-tet-energy fixture by moving each vertex (front vertices a, b, c0, c1, c2; c3 is on no
-    // front face) to three nearby positions, against the formula evaluated from the mesh; and the
-    // shared smoother's own per-cell comparison (smoothing_cell_energy()) is tet_energy(). The
-    // w AMIPS^3 part's gradient and Hessian against central differences too. At w = 1 and at the
-    // default w. In the main iterations a vertex off the front smooths the plain sum (weight 1).
-    // Then, with the plastic medium on, the shape term is w sum pAMIPS^3 over EVERY ring cell,
-    // band included, every cell weighing 1: 27 w per cell at the stamp, its minimum.
+    // the face measures (face_offset_term()) over its considered faces
+    // (considered_offset_faces_at(): its live front faces minus those on the mesh boundary), none
+    // if it has none. The fixture has no plastic medium, so the shape term is equilateral AMIPS^3
+    // (shape_energy()). Checked on the per-tet-energy fixture by moving each vertex (front vertices
+    // a, b, c0, c1, c2; c3 is on no front face) to three nearby positions, against the formula
+    // evaluated from the mesh; and the shared smoother's own per-cell comparison
+    // (smoothing_cell_energy()) is tet_energy(). The w AMIPS^3 part's gradient and Hessian against
+    // central differences too. At w = 1 and at the default w. In the main iterations a vertex off
+    // the front smooths the plain sum (weight 1). Then, with the plastic medium on, the shape term
+    // is w sum pAMIPS^3 over EVERY ring cell, band included, every cell weighing 1: 27 w per cell
+    // at the stamp, its minimum.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.12, // a
         0., 0., 0.88, // b
@@ -1359,6 +1361,22 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
             mesh->m_vertex_extra[v].m_is_on_offset = !mesh->offset_surface_faces_live_at(v).empty();
         }
         REQUIRE(!mesh->m_vertex_extra[size_t(c3)].m_is_on_offset);
+        // The considered faces: the live front faces minus those on the mesh boundary. Here the
+        // only interior front face is (a, b, c2), between band cell 1 and background cell 2;
+        // every other live front face is a band face on the boundary, so c0 and c1 consider none.
+        for (size_t v = 0; v < 6; ++v) {
+            const auto considered = mesh->considered_offset_faces_at(v);
+            const bool on_abc2 = v == size_t(a) || v == size_t(b) || v == size_t(c2);
+            INFO("w " << w << ", considered faces at vertex " << v);
+            REQUIRE(considered.size() == (on_abc2 ? 1u : 0u));
+            for (const auto& ft : considered) {
+                CHECK(ft.switch_tetrahedron(*mesh).has_value());
+                auto f = mesh->get_face_vids(ft);
+                std::sort(f.begin(), f.end());
+                CHECK(f == std::array<size_t, 3>{{size_t(a), size_t(b), size_t(c2)}});
+            }
+        }
+        REQUIRE(!mesh->offset_surface_faces_live_at(size_t(c1)).empty());
         for (size_t v = 0; v < 6; ++v) {
             const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
             const bool front = mesh->vertex_carries_offset_term(v);
@@ -1373,9 +1391,9 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 for (const size_t tid : ring) {
                     e += w * mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(tid));
                 }
-                if (front) {
+                const auto faces = mesh->considered_offset_faces_at(v);
+                if (front && !faces.empty()) {
                     double s = 0.;
-                    const auto faces = mesh->offset_surface_faces_live_at(v);
                     for (const auto& ft : faces) {
                         const auto f = mesh->get_face_vids(ft);
                         s += mesh->face_offset_term(
