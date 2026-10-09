@@ -346,21 +346,17 @@ void EmbedCurves::tag_from_winding_number()
     m_F_tags.resize(m_F_emb.rows(), m_Vs.size());
     for (size_t input_idx = 0; input_idx < m_Vs.size(); ++input_idx) {
         const MatrixXd& V = m_Vs[input_idx];
-        MatrixXi E = m_Es[input_idx];
+        const MatrixXi& E = m_Es[input_idx];
 
         VectorXd W;
         utils::winding_number_2d(V, E, C, W, m_num_threads);
 
-        if (W.size() > 0 && W.maxCoeff() <= 0.5) {
-            // Nothing is inside, which for a closed curve means it is wound the other way.
-            // triwild does the same, and so does the 3D EmbedSurface::tag_from_winding_number.
+        // Nothing is inside, which for a closed curve means it is wound the other way.
+        // triwild does the same, and so does the 3D EmbedSurface::tag_from_winding_number.
+        if (utils::orient_winding_number(W)) {
             logger().info("Correcting winding number for input {}", input_idx);
-            for (int i = 0; i < E.rows(); ++i) {
-                std::swap(E(i, 0), E(i, 1));
-            }
-            utils::winding_number_2d(V, E, C, W, m_num_threads);
         }
-        if (W.size() == 0 || W.maxCoeff() <= 0.5) {
+        if (!utils::any_winding_number_inside(W)) {
             logger().warn(
                 "No winding number above 0.5 for input {}: it tags no face. An open polyline "
                 "encloses nothing, so it cannot define a material.",
@@ -368,7 +364,7 @@ void EmbedCurves::tag_from_winding_number()
         }
 
         for (int i = 0; i < W.size(); ++i) {
-            if (W(i) > 0.5) {
+            if (utils::winding_number_inside(W(i))) {
                 m_F_tags.coeffRef(i, int(input_idx)) = 1;
             }
         }

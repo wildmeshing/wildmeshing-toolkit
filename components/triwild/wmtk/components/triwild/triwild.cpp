@@ -483,10 +483,16 @@ void triwild(nlohmann::json json_params)
         logger().error("Not all vertices rounded!");
     }
 
-    // Flood-fill part ids and per-input winding-number tags. Both are needed to filter the
-    // outside region (filter != "none"); the tags additionally drive the MSH groups. When
-    // nothing needs them, skip_winding_number lets a caller opt out -- at the cost of the
-    // output groups, since without the tags every face lands in the untagged group.
+    // The finalization's per-face annotations, each computed only when something uses it:
+    //
+    //   per-input winding-number tags  filter "input", and the MSH groups. Always, unless
+    //                                  skip_winding_number opts out where no filter needs them
+    //                                  -- at the cost of the output groups, since without the
+    //                                  tags every face lands in the untagged group.
+    //   tracked winding number         filter "tracked" (below).
+    //   flood-fill parts               filter "flood", or compute_flood_fill (the VTU field).
+    //
+    // As in tetwild, the flood fill used to run on every call just to fill its output field.
     const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
     if (json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
@@ -494,14 +500,28 @@ void triwild(nlohmann::json json_params)
             "computing it anyway.",
             filter_option);
     }
-    if (!skip_winding) {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-        mesh.compute_winding_numbers(Vs, Es);
-    } else {
-        logger().info(
-            "Skipping winding-number and flood-fill computation (skip_winding_number). The "
-            "output groups will be empty.");
+    {
+        igl::Timer step_timer;
+        if (!skip_winding) {
+            step_timer.start();
+            mesh.compute_winding_numbers(Vs, Es);
+            logger().info(
+                "finalize: input winding numbers ({} inputs) {:.4}s",
+                Vs.size(),
+                step_timer.getElapsedTime());
+        } else {
+            logger().info(
+                "Skipping the input winding numbers (skip_winding_number). The output groups "
+                "will be empty.");
+        }
+        if (filter_option == "flood" || json_params["compute_flood_fill"]) {
+            step_timer.start();
+            const int num_parts = mesh.flood_fill();
+            logger().info(
+                "finalize: flood fill, {} parts {:.4}s",
+                num_parts,
+                step_timer.getElapsedTime());
+        }
     }
 
     if (filter_option == "input") {

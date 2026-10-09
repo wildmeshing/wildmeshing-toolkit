@@ -156,6 +156,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
+    std::vector<int> tri_input; // the input each of `tris` came from
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
     // --- phase timing (TETWILD_PHASES) ---
@@ -172,7 +173,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
-        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
+        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -629,12 +630,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         wmtk::logger().error("Not all vertices rounded!");
     }
 
-    // Winding-number / flood-fill annotations. They are required to filter the outside
-    // region (filter != "none") and are otherwise written only as output annotation
-    // fields. On large meshes the three winding-number evaluations dominate the finalize
-    // phase, so skip_winding_number lets a caller that does not filter and does not need
-    // the annotations opt out of them. When filtering is requested the flag is ignored
-    // (the winding number is needed), with a warning.
+    // The finalization's per-tet annotations, each computed only when something uses it:
+    //
+    //   input winding numbers  the whole input's, which filter "input" uses, and each input's
+    //                          (the wn_<i> output fields). Always, unless skip_winding_number
+    //                          opts out where no filter needs them.
+    //   tracked winding number filter "tracked", or compute_tracked_winding_number.
+    //   flood-fill parts       filter "flood", or compute_flood_fill. A serial BFS over every
+    //                          tet: ~1-2 min on 765k tets / 6600 parts.
+    //
+    // The two last ones used to run on every call just to fill their output fields.
     const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
     if (json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
@@ -642,26 +647,48 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             "computing it anyway.",
             filter_option);
     }
-    if (!skip_winding) {
-        // Precompute the tets and their barycenters once; all winding-number passes
-        // below reuse them (they used to each rebuild get_tets() + the barycenters).
-        const auto finalize_tets = mesh_new.get_tets();
-        const Eigen::MatrixXd finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
-
-        // apply input winding number
-        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
-        // apply tracked surface winding number
-        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
-        // apply flood fill
-        {
-            int num_parts = mesh_new.flood_fill();
-            logger().info("flood fill parts {}", num_parts);
+    const bool need_tracked =
+        filter_option == "tracked" || json_params["compute_tracked_winding_number"];
+    const bool need_parts = filter_option == "flood" || json_params["compute_flood_fill"];
+    {
+        igl::Timer step_timer;
+        // Precompute the tets and their barycenters once; every winding-number pass reuses
+        // them.
+        std::vector<TetWildMesh::Tuple> finalize_tets;
+        Eigen::MatrixXd finalize_barycenters;
+        if (!skip_winding || need_tracked) {
+            finalize_tets = mesh_new.get_tets();
+            finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
         }
-        // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
-        mesh_new
-            .compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
-    } else {
-        logger().info("Skipping winding-number and flood-fill computation (skip_winding_number)");
+        if (!skip_winding) {
+            step_timer.start();
+            mesh_new.compute_input_winding_numbers(
+                finalize_tets,
+                finalize_barycenters,
+                verts,
+                tris,
+                tri_input,
+                int(input_paths.size()));
+            logger().info(
+                "finalize: input winding numbers ({} inputs) {:.4}s",
+                input_paths.size(),
+                step_timer.getElapsedTime());
+        } else {
+            logger().info("Skipping the input winding numbers (skip_winding_number)");
+        }
+        if (need_tracked) {
+            step_timer.start();
+            mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
+            logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
+        }
+        if (need_parts) {
+            step_timer.start();
+            const int num_parts = mesh_new.flood_fill();
+            logger().info(
+                "finalize: flood fill, {} parts {:.4}s",
+                num_parts,
+                step_timer.getElapsedTime());
+        }
     }
 
     // ////winding number
@@ -670,13 +697,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else if (filter_option == "tracked") {
         mesh_new.filter_with_tracked_surface_winding_number();
     } else if (filter_option == "flood") {
-        // Flood fill (a serial BFS over all tets) is only needed to identify the
-        // outside connected component for this filter. It used to run
-        // unconditionally just to color the output part_id field, which is a very
-        // expensive no-op on large multi-component meshes (e.g. ~1-2 min of
-        // serial BFS on 765k tets / 6600 parts). Only run it when it is used.
-        const int num_parts = mesh_new.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
         mesh_new.filter_with_flood_fill();
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);

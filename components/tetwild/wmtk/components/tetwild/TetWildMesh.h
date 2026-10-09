@@ -243,31 +243,51 @@ public:
     void mesh_improvement_legacy(int max_its = 80);
 
     /**
-     * @brief Compute the winding number.
-     *
-     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
-     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
-     */
-    /**
      * @brief Barycenter (row per tet) of each tet in `tets`. Computed once and
      * passed to the winding-number passes so they do not each rebuild it.
      */
     Eigen::MatrixXd tet_barycenters(const std::vector<Tuple>& tets) const;
 
+    /**
+     * @brief Compute the winding number.
+     *
+     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
+     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     */
     void compute_winding_number(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {});
 
-    // `in_vertices`/`in_faces` let the single-input case reuse the already-loaded
-    // surface instead of re-reading it from disk.
-    void compute_winding_numbers(
-        const std::vector<std::string>& input_paths,
+    /**
+     * @brief The winding numbers of the input: with respect to each input surface
+     * (m_winding_number_per_input) and to all of them together (m_winding_number_input).
+     *
+     * `face_input[f]` is the input in [0, n_inputs) that face f of the loaded input came from
+     * (io::read_triangle_mesh's face_input). The whole input's winding number is the sum of the
+     * per-input ones, so it costs nothing on top of them -- evaluated on its own it was the most
+     * expensive step of the finalization.
+     *
+     * Each input is oriented on its own the way compute_winding_number orients the whole: when
+     * none of the tets is inside it (winding number above 1/2) it is taken as inside out and its
+     * winding number negated. The whole input's is the sum of the per-input ones AS GIVEN,
+     * oriented as a whole the same way -- an input that is a cavity of another, oriented inward,
+     * still subtracts.
+     */
+    void compute_input_winding_numbers(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
-        const std::vector<Vector3d>& in_vertices = {},
-        const std::vector<std::array<size_t, 3>>& in_faces = {});
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<int>& face_input,
+        int n_inputs);
+
+    /// Which of the finalization's per-tet fields were computed, so that the writers leave
+    /// out the ones that were not rather than writing their defaults as if they were values.
+    bool m_has_input_winding_number = false;
+    bool m_has_tracked_winding_number = false;
+    bool m_has_parts = false;
 
     void filter_with_input_surface_winding_number();
     void filter_with_tracked_surface_winding_number();
@@ -371,7 +391,8 @@ public:
         MatrixXi T;
         // tracked surface
         MatrixXi F;
-        // attributes
+        // attributes; the ones the finalization did not compute (see m_has_parts and the
+        // m_has_*_winding_number flags) hold their defaults: 0, and -1 for the part
         VectorXd t_amips;
         VectorXd t_winding_number_input;
         VectorXd t_winding_number_tracked;
