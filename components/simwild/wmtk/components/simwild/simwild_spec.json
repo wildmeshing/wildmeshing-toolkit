@@ -23,7 +23,6 @@
       "optimize_envelope_around_simplified",
       "eps_simplify",
       "simplify_boundary_envelope",
-      "simplify_max_edge_ratio",
       "remove_duplicate_eps",
       "order2_envelope_ratio",
       "length",
@@ -236,12 +235,6 @@
     "type": "bool",
     "default": true,
     "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * eps_simplify of the input's boundary edges (the same scaling tetwild uses). When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex. Boundary that the simplification opens away from the input's is not judged by the tube. Only affects the simplification before insertion, which runs only when preserve_topology is false and skip_simplify is false; under preserve_topology the surface is simplified after insertion against the order-2 envelope instead."
-  },
-  {
-    "pointer": "/simplify_max_edge_ratio",
-    "type": "float",
-    "default": 4,
-    "doc": "Refuse a collapse of the input simplification that would stretch an edge past this many target edge lengths (length, or length_rel * bounding box diagonal); edges of the input already longer are not held to it. Without a limit, flat regions coarsen into triangles as large as the region, whose sampled envelope checks cost their area in eps^2 and serialize the end of the pass. The same limit as tetwild's simplify_max_edge_ratio. Only affects the simplification before insertion. 0 or negative: no limit."
   },
   {
     "pointer": "/remove_duplicate_eps",

@@ -4,7 +4,6 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
-#include <algorithm>
 #include <chrono>
 
 #include <Eigen/Core>
@@ -197,26 +196,6 @@ bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 
     cache.v1p = vertex_attrs[v1].pos;
     cache.v2p = vertex_attrs[v2].pos;
-
-    cache.ring_len2.clear();
-    if (max_edge_length > 0) {
-        for (const size_t v : {v1, v2}) {
-            get_one_ring_vids_for_vertex_duplicate(v, cache.one_ring);
-            for (const size_t w : cache.one_ring) {
-                if (w == v1 || w == v2) continue;
-                const double l2 = (vertex_attrs[w].pos - vertex_attrs[v].pos).squaredNorm();
-                auto it = std::find_if(
-                    cache.ring_len2.begin(),
-                    cache.ring_len2.end(),
-                    [w](const auto& r) { return r.first == w; });
-                if (it == cache.ring_len2.end()) {
-                    cache.ring_len2.emplace_back(w, l2);
-                } else {
-                    it->second = std::max(it->second, l2);
-                }
-            }
-        }
-    }
     return true;
 }
 
@@ -240,16 +219,6 @@ bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
                               : cache.v2_on_boundary && !cache.v1_on_boundary
                                   ? cache.v2p
                                   : (cache.v1p + cache.v2p) / 2.0;
-
-    // See max_edge_length. Checked here, before the envelope, which is far more expensive.
-    if (max_edge_length > 0) {
-        const double max2 = max_edge_length * max_edge_length;
-        for (const auto& [w, before2] : cache.ring_len2) {
-            const double after2 = (p - vertex_attrs[w].pos).squaredNorm();
-            if (after2 > max2 && before2 <= max2) return false;
-        }
-    }
-
     const size_t vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
     // The survivor now stands exactly where the frozen vertex stood, so it takes over its

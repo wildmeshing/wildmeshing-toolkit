@@ -15,7 +15,6 @@
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
       "simplify_boundary_envelope",
-      "simplify_max_edge_ratio",
       "optimize_envelope_around_simplified",
       "order2_envelope_ratio",
       "use_sample_envelope",
@@ -144,12 +143,6 @@
     "type": "float",
     "default": 0.5,
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
-  },
-  {
-    "pointer": "/simplify_max_edge_ratio",
-    "type": "float",
-    "default": 4,
-    "doc": "Refuse a simplification collapse that would stretch an edge past this many target edge lengths (length_rel * bounding box diagonal); edges of the input already longer are not held to it. Without a limit, flat regions coarsen into triangles as large as the region, whose sampled envelope checks cost their area in eps^2 and serialize the end of the pass: on a set of EMI cell surfaces clipped by their bounding box, 4 took the simplification from 11 to 2.3 s at 64 threads and from 46 to 35 s at 1, for 18 more vertices out of 87k. 0 or negative: no limit."
   },
   {
     "pointer": "/simplify_boundary_envelope",

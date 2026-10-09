@@ -17,8 +17,6 @@
 #include <atomic>
 #include <memory>
 #include <queue>
-#include <utility>
-#include <vector>
 
 #include <wmtk/envelope/BoundaryEnvelope.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -48,24 +46,6 @@ public:
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 
     int retry_limit = 10;
-
-    /**
-     * @brief The length a collapse may not stretch an edge past; 0 for no limit.
-     *
-     * Without one, a flat region coarsens until its triangles are about as large as the region
-     * itself, since the envelope has no objection to them. But a sampled envelope check costs
-     * the triangle's area in eps^2: on a set of EMI cell surfaces clipped by their bounding box
-     * (eps 9), one cell's flat faces turned into triangles up to 7000 long, each check took
-     * milliseconds, and the chain of collapses producing them dominated the pass on many
-     * threads. The applications set this from their target edge length.
-     *
-     * A collapse is refused only if it takes an edge from at most this long to longer.
-     * Edges already longer -- the input's own -- may change like any other, so they do not
-     * hold up the collapses around them: placing the merged vertex at a midpoint lengthens a
-     * neighbouring edge a little, and refusing that would freeze every vertex next to one.
-     */
-    double max_edge_length = 0;
-
     ShortestEdgeCollapse(
         std::vector<Eigen::Vector3d> _m_vertex_positions,
         int num_threads = 1,
@@ -126,10 +106,6 @@ private:
         // envelope; with a frozen boundary they stay false.
         bool v1_on_boundary = false;
         bool v2_on_boundary = false;
-        // With max_edge_length: each vertex the survivor will be joined to, and the squared
-        // length of the longer of its edges to v1 and v2 before the collapse.
-        std::vector<std::pair<size_t, double>> ring_len2;
-        std::vector<size_t> one_ring; // scratch
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 

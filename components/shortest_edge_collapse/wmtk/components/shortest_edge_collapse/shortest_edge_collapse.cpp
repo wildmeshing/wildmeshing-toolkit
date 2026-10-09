@@ -69,7 +69,6 @@ void shortest_edge_collapse(nlohmann::json json_params)
     const int num_threads = json_params["num_threads"];
     const bool use_link_condition = json_params["use_link_condition"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
-    const double max_edge_length_rel = json_params["max_edge_length_rel"];
 
     MatrixXd V;
     MatrixXi F;
@@ -104,10 +103,6 @@ void shortest_edge_collapse(nlohmann::json json_params)
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
     m.create_mesh(v.size(), tri, modified_v, envelope_size, boundary_envelope_size);
-    if (max_edge_length_rel > 0) {
-        m.max_edge_length = max_edge_length_rel * diag;
-        logger().info("collapses may not stretch an edge past {:.6}", m.max_edge_length);
-    }
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid!");
     }

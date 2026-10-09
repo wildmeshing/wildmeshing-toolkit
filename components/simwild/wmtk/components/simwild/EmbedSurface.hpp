@@ -92,14 +92,9 @@ public:
      * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
      *        within a tube of this radius around the input's boundary edges. See
      *        ShortestEdgeCollapse::create_mesh.
-     * @param max_edge_length The length past which a collapse may not lengthen an edge; 0 for
-     *        no limit. See ShortestEdgeCollapse::max_edge_length.
      */
-    void simplify_surface(
-        const double eps,
-        const int num_threads = 0,
-        const double boundary_eps = 0,
-        const double max_edge_length = 0);
+    void
+    simplify_surface(const double eps, const int num_threads = 0, const double boundary_eps = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.

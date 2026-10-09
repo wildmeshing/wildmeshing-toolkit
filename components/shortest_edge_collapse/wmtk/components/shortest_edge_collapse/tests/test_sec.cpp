@@ -6,7 +6,6 @@
 #include <igl/read_triangle_mesh.h>
 
 #include <Eigen/Core>
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
@@ -327,87 +326,5 @@ TEST_CASE("metis_test_bigmesh", "[test_sec][.slow]")
         m.collapse_shortest(20);
         time = timer.getElapsedTimeInMilliSec();
         timecost.push_back(time);
-    }
-}
-
-namespace {
-/// An n x n grid of vertices over [0,w] x [0,h] at z = 0, two triangles per square.
-void flat_grid(
-    const size_t n,
-    const double w,
-    const double h,
-    std::vector<Eigen::Vector3d>& v,
-    std::vector<std::array<size_t, 3>>& tris)
-{
-    v.clear();
-    tris.clear();
-    for (size_t j = 0; j < n; ++j) {
-        for (size_t i = 0; i < n; ++i) v.emplace_back(w * i / (n - 1), h * j / (n - 1), 0);
-    }
-    for (size_t j = 0; j + 1 < n; ++j) {
-        for (size_t i = 0; i + 1 < n; ++i) {
-            const size_t a = j * n + i;
-            tris.push_back({{a, a + 1, a + n + 1}});
-            tris.push_back({{a, a + n + 1, a + n}});
-        }
-    }
-}
-
-double longest_edge(const ShortestEdgeCollapse& m)
-{
-    double l = 0;
-    for (const auto& e : m.get_edges()) {
-        l = std::max(
-            l,
-            (m.vertex_attrs[e.vid(m)].pos - m.vertex_attrs[e.switch_vertex(m).vid(m)].pos).norm());
-    }
-    return l;
-}
-} // namespace
-
-TEST_CASE("shortest_edge_collapse_max_edge_length", "[test_sec]")
-{
-    // A flat region is all inside the envelope, so without a limit it coarsens into triangles
-    // as large as the region itself. Serial and on threads: the scheduler's partitioned path
-    // and the split envelope checks must keep to the limit too. The input is flat, so a coarse
-    // eps changes nothing but the number of samples per check.
-    const double eps = 0.02;
-    for (const int threads : {0, 4}) {
-        DYNAMIC_SECTION("a flat square coarsens up to the limit and no further, " << threads)
-        {
-            std::vector<Eigen::Vector3d> v;
-            std::vector<std::array<size_t, 3>> tris;
-            flat_grid(21, 1, 1, v, tris); // edges 0.05
-            const double limit = 0.2;
-
-            ShortestEdgeCollapse free(v, threads, false);
-            free.create_mesh(v.size(), tris, {}, eps);
-            REQUIRE(free.collapse_shortest(0));
-            CHECK(longest_edge(free) > 2 * limit);
-
-            ShortestEdgeCollapse capped(v, threads, false);
-            capped.create_mesh(v.size(), tris, {}, eps);
-            capped.max_edge_length = limit;
-            REQUIRE(capped.collapse_shortest(0));
-            CHECK(longest_edge(capped) <= limit);
-            CHECK(capped.get_vertices().size() < v.size() / 2);
-            CHECK(capped.get_vertices().size() > free.get_vertices().size());
-            CHECK(capped.check_mesh_connectivity_validity());
-        }
-        DYNAMIC_SECTION(
-            "input edges longer than the limit do not stop the collapses around them, " << threads)
-        {
-            // 20 x 1 squares, 0.5 x 0.05 each: every collapse moves a vertex beside an edge
-            // already longer than the limit.
-            std::vector<Eigen::Vector3d> v;
-            std::vector<std::array<size_t, 3>> tris;
-            flat_grid(21, 10, 1, v, tris);
-            ShortestEdgeCollapse m(v, threads, false);
-            m.create_mesh(v.size(), tris, {}, eps);
-            m.max_edge_length = 0.2;
-            REQUIRE(m.collapse_shortest(0));
-            CHECK(m.get_vertices().size() < v.size() / 2);
-            CHECK(m.check_mesh_connectivity_validity());
-        }
     }
 }

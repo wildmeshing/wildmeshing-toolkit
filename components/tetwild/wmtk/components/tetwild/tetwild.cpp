@@ -104,7 +104,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
-    const double simplify_max_edge_ratio = json_params["simplify_max_edge_ratio"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -272,15 +271,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         simplify_eps,
         simplify_boundary_eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
-    // Edges far longer than the target length buy nothing -- the optimizer splits them -- and
-    // are what makes the simplification's envelope checks expensive. See max_edge_length.
-    if (simplify_max_edge_ratio > 0) {
-        surf_mesh.max_edge_length = simplify_max_edge_ratio * params.lr * diag;
-        logger().info(
-            "simplification may not stretch an edge past {:.6} ({} target lengths)",
-            surf_mesh.max_edge_length,
-            simplify_max_edge_ratio);
-    }
 
     if (skip_simplify == false) {
         logger().info("input {} simplification", input_paths);
