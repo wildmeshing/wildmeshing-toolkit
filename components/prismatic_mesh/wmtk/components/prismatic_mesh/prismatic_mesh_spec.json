@@ -11,8 +11,21 @@
             "input_dir",
             "thicknessratio",
             "iterations",
+            "keep_background_mesh",
+            "prism_dominant",
+            "export_input_and_shell",
             "min_tet_volume",
-            "smoothing_max_backtracks"
+            "smoothing_max_backtracks",
+            "jacobian_smoothing_iterations",
+            "jacobian_target",
+            "jacobian_position_weight",
+            "jacobian_max_step_ratio",
+            "jacobian_max_displacement_ratio",
+            "background_remeshing",
+            "background_remeshing_passes",
+            "background_quality_threshold",
+            "background_remeshing_max_operations",
+            "background_remeshing_max_attempts"
         ]
     },
     {
@@ -25,12 +38,12 @@
     {
         "pointer": "/input",
         "type": "string",
-        "doc": "Construction VTU with labels, vid, corr_input_vid, tag_0 and offset_tag."
+        "doc": "Construction .vtu or Gmsh 4.1 .msh with corr_input_vid. MSH can derive labels and cell tags from the tag_0/offset/ambient physical groups; explicit PRISM fields are also supported."
     },
     {
         "pointer": "/output",
         "type": "string",
-        "doc": "Output VTU filename, relative to the JSON directory. A missing extension becomes .vtu."
+        "doc": "Output .vtu or .msh (Gmsh 4.1 ASCII) filename, relative to the JSON directory. A missing extension becomes .vtu."
     },
     {
         "pointer": "/input_dir",
@@ -51,15 +64,93 @@
         "doc": "Number of collapse/smoothing iterations; 0 computes targets without optimization."
     },
     {
+        "pointer": "/keep_background_mesh",
+        "type": "bool",
+        "default": false,
+        "doc": "Keep exterior background tetrahedra during optimization/output. Background must remain strictly positive. Without background_remeshing only offset vertices move. Targets are computed from the band alone."
+    },
+    {
+        "pointer": "/prism_dominant",
+        "type": "bool",
+        "default": false,
+        "doc": "After optimization, reconstruct the band as conforming prisms, input-apex pyramids and tetrahedra. Select compatible prism reference triangulations, preserve fixed input/background cells, and expand retained tet regions when direction or geometry constraints conflict."
+    },
+    {
+        "pointer": "/export_input_and_shell",
+        "type": "bool",
+        "default": false,
+        "doc": "Additionally export the union of input volume and offset band as <output_stem>_input_shell.msh and .vtu, using the same final coordinates, hybrid cells and attributes while omitting background cells."
+    },
+    {
         "pointer": "/min_tet_volume",
         "type": "float",
         "default": 1e-12,
-        "doc": "Nonnegative strict lower bound on signed tetrahedron volume, in coordinate units cubed."
+        "doc": "Nonnegative acceptance floor for new or modified shell tetrahedra during local operations, reconstruction and candidate pyramid decompositions, in coordinate units cubed. Background tetrahedra only require strictly positive volume. Existing positive cells below the floor may be retained; they do not terminate the pipeline."
     },
     {
         "pointer": "/smoothing_max_backtracks",
         "type": "int",
         "default": 40,
         "doc": "Maximum smoothing step halvings after the full target step; between 0 and 60."
+    },
+    {
+        "pointer": "/jacobian_smoothing_iterations",
+        "type": "int",
+        "default": 0,
+        "doc": "Optional prism Jacobian smoothing rounds after tet optimization. Zero disables this stage. Only offset vertices move; input, correspondence and connectivity remain fixed."
+    },
+    {
+        "pointer": "/jacobian_target",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Positive target det(J), normalized by twice input triangle area times initial mean column length."
+    },
+    {
+        "pointer": "/jacobian_position_weight",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Positive quadratic weight on displacement from the position before Jacobian smoothing, normalized by target thickness (initial column length if unavailable)."
+    },
+    {
+        "pointer": "/jacobian_max_step_ratio",
+        "type": "float",
+        "default": 0.25,
+        "doc": "Positive per-move displacement bound relative to thickness. Implemented with an inscribed axis-aligned box."
+    },
+    {
+        "pointer": "/jacobian_max_displacement_ratio",
+        "type": "float",
+        "default": 0.5,
+        "doc": "Positive total displacement bound from the position before Jacobian smoothing, relative to thickness. Implemented with an inscribed axis-aligned box."
+    },
+    {
+        "pointer": "/background_remeshing",
+        "type": "bool",
+        "default": false,
+        "doc": "Enable adaptive background 2-3/3-2 swaps and interior relaxation after each tet iteration, then retry collapse. Requires keep_background_mesh=true. Input/offset vertices and exterior boundary are fixed during remeshing."
+    },
+    {
+        "pointer": "/background_remeshing_passes",
+        "type": "int",
+        "default": 2,
+        "doc": "Local remeshing passes per tet iteration; positive."
+    },
+    {
+        "pointer": "/background_quality_threshold",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Trigger on background mean ratio below this threshold in (0,1]; 1 is a regular tet, 0 is degenerate. Background-blocked collapses are also repair targets."
+    },
+    {
+        "pointer": "/background_remeshing_max_operations",
+        "type": "int",
+        "default": 500,
+        "doc": "Maximum accepted background swaps/moves per tet iteration; positive."
+    },
+    {
+        "pointer": "/background_remeshing_max_attempts",
+        "type": "int",
+        "default": 20000,
+        "doc": "Maximum attempted background swaps/moves per tet iteration; positive."
     }
 ]

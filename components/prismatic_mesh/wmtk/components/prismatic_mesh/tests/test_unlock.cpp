@@ -163,6 +163,57 @@ TEST_CASE("rejected unlock rolls back the split including topology and all metad
     check_mesh(data, floor);
 }
 
+TEST_CASE("unlock applies the volume floor only to shell split and collapse cells")
+{
+    auto data = fixture();
+    data.vertices.row(4) << -0.1, 0, 0;
+    data.offset_tet_tags = {1, -1, -1, -1};
+    double floor = 0.1;
+    bool accepted = true;
+    SECTION("small positive background children and retained cells are accepted") {}
+    SECTION("small shell children still reject the split")
+    {
+        data.offset_tet_tags[1] = 1;
+        accepted = false;
+    }
+    SECTION("inverted background still rejects the collapse")
+    {
+        data.vertices.row(4) << -0.1, 0.1, 0;
+        data.vertices.row(5) << -1, -1, 0;
+        floor = 1e-6;
+        accepted = false;
+    }
+    SECTION("zero-volume background still rejects the collapse")
+    {
+        data.vertices.row(4) << -0.25, 0.5, 0;
+        data.vertices.row(5) << -1, -1, 0;
+        floor = 1e-6;
+        accepted = false;
+    }
+    const auto vertices = data.vertices;
+    const auto cells = data.tetrahedra;
+    const auto tags = data.offset_tet_tags;
+    REQUIRE(try_unlock_tau22(data, 0, 0, floor) == accepted);
+    REQUIRE(data.vertices == vertices);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    if (!accepted) {
+        REQUIRE(data.tetrahedra == cells);
+        REQUIRE(data.offset_tet_tags == tags);
+        return;
+    }
+    size_t small_background = 0;
+    for (const auto& t : data.mesh->get_tets()) {
+        REQUIRE_FALSE(classify_tau22(data, t.tid(*data.mesh)));
+        const auto tet = data.mesh->oriented_tet_vids(t);
+        REQUIRE(tet_volume_above_threshold(data.vertices, tet, 0));
+        if (data.offset_tet_tags.at(t.tid(*data.mesh)) == 1)
+            REQUIRE(tet_volume_above_threshold(data.vertices, tet, floor));
+        else
+            small_background += !tet_volume_above_threshold(data.vertices, tet, floor);
+    }
+    REQUIRE(small_background > 0);
+}
+
 TEST_CASE("optimization runs unlock before smoothing and records remaining tau22")
 {
     auto data = fixture();

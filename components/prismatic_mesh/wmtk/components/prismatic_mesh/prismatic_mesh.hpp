@@ -20,11 +20,33 @@ struct OffsetComponent
     std::string singular_reason;
 };
 
+struct JacobianSmoothingOptions
+{
+    int iterations = 0; // opt-in postprocess, after tet optimization and before hybrid conversion
+    double target = 0.01; // det(J) / (twice input area * initial mean column length)
+    double position_weight = 1e-3;
+    double max_step_ratio = 0.25; // Euclidean bound relative to target/initial column thickness
+    double max_displacement_ratio = 0.5; // total displacement from the post-tet-optimization mesh
+};
+
+struct BackgroundRemeshingOptions
+{
+    bool enabled = false;
+    int passes = 2;
+    double quality_threshold = 0.1; // mean ratio: 1 regular, 0 degenerate
+    int max_operations = 500; // accepted swaps/moves per optimization iteration
+    int max_attempts = 20000; // bounds work even when no operation is admissible
+};
+
 struct OptimizationOptions
 {
     int iterations = 5;
+    // Acceptance floor for new/modified shell tets. Background only requires positive volume.
     double min_tet_volume = 1e-12; // absolute signed volume, in coordinate units cubed
     int smoothing_max_backtracks = 40; // try alpha=1, then halve at most this many times
+    bool keep_background_mesh = false; // include exterior tets in optimization validity checks
+    JacobianSmoothingOptions jacobian_smoothing;
+    BackgroundRemeshingOptions background_remeshing;
 };
 
 struct Tau22Element
@@ -54,7 +76,8 @@ struct OptimizationIteration
 
 // Row indices address the loaded mesh. Source IDs are preserved separately and need not
 // equal row indices. The optimizer preserves vertex rows and synchronizes cell arrays
-// after accepted collapses; direct external WMTK edits require equivalent synchronization.
+// after accepted collapses. Deleted cell rows are -1 inside a collapse pass and compacted
+// before returning; direct external WMTK edits require equivalent synchronization.
 struct PrismaticMeshInput
 {
     std::unique_ptr<TetMesh> mesh;
@@ -69,6 +92,9 @@ struct PrismaticMeshInput
     std::vector<std::vector<size_t>> input_to_offset_vertices; // indexed by mesh row
     std::vector<int> input_cells; // tag_0
     std::vector<int> offset_tet_tags; // 1: offset band, -1: other; derived from VTU offset_tag
+    // Without background remeshing, far background cells live outside mesh. A marked vertex
+    // has a static incident cell even if its entire active one-ring disappears in a collapse.
+    std::vector<bool> fixed_background_vertices;
     // Indexed by face.fid(*mesh). -1: non-offset; 1: three distinct correspondence IDs;
     // 2: exactly two equal; 3: all equal. Recompute after topology/correspondence changes.
     std::vector<int> offset_face_tags;
@@ -81,12 +107,60 @@ struct PrismaticMeshInput
     double input_average_edge_length = 0; // unique edges of the input surface in the band
     double target_thickness = 0;
     std::vector<OptimizationIteration> optimization_iterations;
+    nlohmann::json jacobian_smoothing_report;
+    nlohmann::json background_remeshing_report;
 };
 
-// Single-piece tetrahedral VTU, ASCII or uncompressed inline base64 binary.
+enum class HybridCellType : int { Tetrahedron = 10, Prism = 13, Pyramid = 14 };
+
+struct HybridCell
+{
+    HybridCellType type = HybridCellType::Tetrahedron;
+    std::vector<size_t> vertices; // VTK corner ordering; rows in PrismaticMeshInput::vertices
+    std::vector<size_t> source_tets; // exact partition of the final reference tetrahedral mesh
+    int64_t prism_candidate = -1;
+};
+
+struct PrismDominantMesh
+{
+    std::vector<HybridCell> cells;
+    std::vector<size_t> source_tet_to_cell;
+    nlohmann::json report;
+};
+
+// Matched, nonoverlapping six-corner band columns, including geometrically invalid prisms.
+std::vector<HybridCell> prism_candidates_for_smoothing(const PrismaticMeshInput& input);
+void smooth_prism_jacobians(
+    PrismaticMeshInput& input,
+    double min_tet_volume,
+    const JacobianSmoothingOptions& options);
+
+// Reconstruct the band, with input-apex pyramids and compatible prism triangulations.
+// Updates band tetrahedra to the chosen reference splits, retaining vertex rows/attributes
+// and fixed input/background cells. The report records every changed three-tet region.
+// Prisms require positive Jacobians at 21 samples and all side-edge quadratic minima;
+// unused bad tet splits do not reject the prism. The interface solve admits positive splits,
+// requiring newly introduced tets to exceed the operation floor. Existing tets need only positive
+// volume. Pyramids still require both base-diagonal decompositions to exceed the volume floor.
+PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double min_tet_volume);
+// Throws on invalid geometry, incomplete/overlapping source ownership or nonconforming faces.
+void validate_prism_dominant_mesh(
+    const PrismaticMeshInput& input,
+    const PrismDominantMesh& hybrid,
+    double min_tet_volume);
+
+// Tetrahedral VTU (ASCII/uncompressed inline binary) or Gmsh 4.1 MSH (ASCII/binary).
 PrismaticMeshInput load_prismatic_mesh(const std::filesystem::path& path);
-// Export active vertices and tetrahedra, preserving source IDs and correspondence.
-void write_prismatic_mesh(const PrismaticMeshInput& input, const std::filesystem::path& path);
+// Export tetrahedra or validated hybrid cells as VTU or Gmsh 4.1 ASCII (.msh),
+// plus all input vertices and a companion offset-face VTU.
+// Hybrid output includes oriented reference decompositions and a companion _hybrid.json report.
+// include_background=false exports the union of input volume and offset band only,
+// retaining reference tet IDs in the full reconstructed mesh.
+void write_prismatic_mesh(
+    const PrismaticMeshInput& input,
+    const std::filesystem::path& path,
+    const PrismDominantMesh* hybrid = nullptr,
+    bool include_background = true);
 // Keep band tetrahedra in their original order and filter cell attributes with them.
 // Vertex arrays/IDs stay unchanged; unused vertices are inactive in the rebuilt TetMesh.
 void keep_offset_band(PrismaticMeshInput& input);
@@ -120,7 +194,9 @@ std::optional<Tau22Element> classify_tau22(const PrismaticMeshInput& input, size
 bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double min_tet_volume);
 // One pass over the starting tau22 candidates; newly created tau22s wait for the next round.
 UnlockStatistics unlock_tau22(PrismaticMeshInput& input, double min_tet_volume);
-// Main algorithm pipeline, operating on the loaded mesh in place.
+// Compute targets on the band, optionally include offset-incident background in optimization,
+// then reattach fixed background/input volume for output. Background remeshing, when enabled,
+// retains all background stars and can move their interior vertices and swap interior faces/edges.
 void prism_main(
     PrismaticMeshInput& input,
     double thicknessratio = 0.1,

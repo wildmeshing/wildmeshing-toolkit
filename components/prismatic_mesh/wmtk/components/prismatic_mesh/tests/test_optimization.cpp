@@ -135,6 +135,28 @@ TEST_CASE("collapse preserves component correspondence tags fixed targets and sy
     check_synced(data, 1e-6);
 }
 
+TEST_CASE("collapse updates incident background connectivity and preserves region tags")
+{
+    auto data = collapse_fixture();
+    data.vertex_tags[4] = -1;
+    data.offset_tet_tags = {-1, -1, 1, 1, -1, -1};
+    const auto vertices = data.vertices;
+    REQUIRE(try_collapse_offset_edge(data, 3, 5, 1e-6));
+    REQUIRE(data.vertices == vertices);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    REQUIRE(data.tetrahedra.rows() == 3);
+    REQUIRE(std::count(data.offset_tet_tags.begin(), data.offset_tet_tags.end(), -1) == 2);
+    REQUIRE(std::count(data.offset_tet_tags.begin(), data.offset_tet_tags.end(), 1) == 1);
+    for (const auto& t : data.mesh->get_tets()) {
+        const auto tet = data.mesh->oriented_tet_vids(t);
+        REQUIRE(std::find(tet.begin(), tet.end(), 3) == tet.end());
+        REQUIRE(std::find(tet.begin(), tet.end(), 5) != tet.end());
+        REQUIRE(tet_volume_above_threshold(data.vertices, tet, 1e-6));
+        if (data.offset_tet_tags[t.tid(*data.mesh)] == -1)
+            REQUIRE(std::find(tet.begin(), tet.end(), 4) != tet.end());
+    }
+}
+
 TEST_CASE("collapse rejects inversion and low positive candidate volumes without changing state")
 {
     double y = 2, threshold = 1e-6;
@@ -161,6 +183,52 @@ TEST_CASE("collapse rejects inversion and low positive candidate volumes without
     check_synced(data, threshold);
 }
 
+TEST_CASE("collapse accepts small positive background cells but rejects their degeneration")
+{
+    double y = 0.9;
+    bool accepted = true, shell_floor = false;
+    SECTION("modified background can be below the shell floor") {}
+    SECTION("the same small cells in the shell still block collapse")
+    {
+        shell_floor = true;
+        accepted = false;
+    }
+    SECTION("zero-volume background blocks collapse")
+    {
+        y = 1;
+        accepted = false;
+    }
+    SECTION("inverted background blocks collapse")
+    {
+        y = 2;
+        accepted = false;
+    }
+    auto data = collapse_fixture(y);
+    data.offset_tet_tags = {-1, -1, y < 1 ? 1 : -1, 1, -1, -1};
+    if (shell_floor) data.offset_tet_tags[0] = 1;
+    const auto vertices = data.vertices;
+    const auto tets = data.tetrahedra;
+    const auto tags = data.offset_tet_tags;
+    REQUIRE(try_collapse_offset_edge(data, 3, 5, 0.025) == accepted);
+    REQUIRE(data.vertices == vertices);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    if (!accepted) {
+        REQUIRE(data.tetrahedra == tets);
+        REQUIRE(data.offset_tet_tags == tags);
+        return;
+    }
+    size_t small_background = 0;
+    for (const auto& t : data.mesh->get_tets()) {
+        const auto tet = data.mesh->oriented_tet_vids(t);
+        REQUIRE(tet_volume_above_threshold(data.vertices, tet, 0));
+        if (data.offset_tet_tags.at(t.tid(*data.mesh)) == 1)
+            REQUIRE(tet_volume_above_threshold(data.vertices, tet, 0.025));
+        else
+            small_background += !tet_volume_above_threshold(data.vertices, tet, 0.025);
+    }
+    REQUIRE(small_background == 2);
+}
+
 TEST_CASE("collapse rejects different components input vertices and failed link conditions")
 {
     auto data = collapse_fixture();
@@ -175,6 +243,69 @@ TEST_CASE("collapse rejects different components input vertices and failed link 
     REQUIRE_FALSE(single.mesh->link_condition(single.mesh->tuple_from_edge({1, 3})));
     REQUIRE_FALSE(try_collapse_offset_edge(single, 1, 3, 0));
     REQUIRE(single.mesh->get_tets().size() == 1);
+}
+
+TEST_CASE("collapse can delete small tets and preserve unchanged small survivor tets")
+{
+    auto data = collapse_fixture();
+    SECTION("small disappearing cells")
+    {
+        data.vertices(5, 1) = -1e-6;
+    }
+    SECTION("small unchanged survivor cells")
+    {
+        data.vertices(4, 0) = 1 + 1e-6;
+    }
+    const auto vertices = data.vertices;
+    const auto small_tet = data.mesh->oriented_tet_vids(5);
+    REQUIRE(tet_volume_above_threshold(data.vertices, small_tet, 0));
+    REQUIRE_FALSE(tet_volume_above_threshold(data.vertices, small_tet, 0.01));
+    REQUIRE(try_collapse_offset_edge(data, 5, 3, 0.01));
+    REQUIRE(data.tetrahedra.rows() == 3);
+    REQUIRE(data.vertices == vertices);
+    check_synced(data, 0);
+}
+
+TEST_CASE("smoothing may raise an existing small positive tet above the operation floor")
+{
+    auto data = smooth_fixture(Vector3d(0, 0, 1));
+    data.vertices(3, 2) = 0.01;
+    REQUIRE_FALSE(tet_volume_above_threshold(data.vertices, {0, 1, 2, 3}, 0.05));
+    REQUIRE(smooth_offset_vertex(data, 3, 0.05, 8) == 1);
+    REQUIRE(data.vertices(3, 2) == 1);
+    check_synced(data, 0.05);
+}
+
+TEST_CASE("smoothing uses only positive-volume checks for incident background cells")
+{
+    double target_y = -0.94, expected_alpha = 1;
+    bool shell = false;
+    SECTION("small positive background allows a full step") {}
+    SECTION("the same small shell cell requires backtracking")
+    {
+        shell = true;
+        expected_alpha = 0.5;
+    }
+    SECTION("zero-volume background requires backtracking")
+    {
+        target_y = -1;
+        expected_alpha = 0.5;
+    }
+    SECTION("inverted background requires backtracking")
+    {
+        target_y = -2;
+        expected_alpha = 0.25;
+    }
+    auto data = smooth_fixture(Vector3d(0, target_y, 1), true);
+    data.offset_tet_tags[1] = shell ? 1 : -1;
+    REQUIRE(smooth_offset_vertex(data, 3, 0.05, 8) == expected_alpha);
+    REQUIRE(tet_volume_above_threshold(data.vertices, data.mesh->oriented_tet_vids(0), 0.05));
+    const auto second = data.mesh->oriented_tet_vids(1);
+    REQUIRE(tet_volume_above_threshold(data.vertices, second, 0));
+    if (expected_alpha == 1)
+        REQUIRE_FALSE(tet_volume_above_threshold(data.vertices, second, 0.05));
+    else
+        REQUIRE(tet_volume_above_threshold(data.vertices, second, 0.05));
 }
 
 TEST_CASE("smoothing halves towards the target and checks every incident tet")
@@ -248,5 +379,88 @@ TEST_CASE("optimization executes configured iterations and keeps the original ta
     REQUIRE_THROWS(optimize_prismatic_mesh(data, options));
     options.iterations = 1;
     options.min_tet_volume = 100;
+    REQUIRE_NOTHROW(optimize_prismatic_mesh(data, options));
+    REQUIRE(data.vertices == vertices);
+    check_synced(data, 0);
+}
+
+TEST_CASE("optimization skips a below-floor operation and continues elsewhere")
+{
+    MatrixXd vertices(8, 3);
+    vertices << 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 2, 1, 0, 2, 0, 1, 2, 0, 0, 3;
+    auto data = make_mesh(vertices, {{0, 1, 2, 3}, {4, 5, 6, 7}}, {3, 7}, 0, Vector3d(0, 0, 4));
+    OptimizationOptions options;
+    options.iterations = 1;
+    options.min_tet_volume = 0.05;
+    REQUIRE_NOTHROW(optimize_prismatic_mesh(data, options));
+    REQUIRE(data.optimization_iterations.size() == 1);
+    REQUIRE(data.optimization_iterations[0].smoothed_vertices == 1);
+    REQUIRE(data.optimization_iterations[0].smoothing_failures == 1);
+    REQUIRE(data.vertices.row(3) == vertices.row(3));
+    REQUIRE(data.vertices(7, 2) == 4);
+    REQUIRE_FALSE(tet_volume_above_threshold(data.vertices, {0, 1, 2, 3}, options.min_tet_volume));
+    REQUIRE(tet_volume_above_threshold(data.vertices, {4, 5, 6, 7}, options.min_tet_volume));
+    check_synced(data, 0);
+}
+
+TEST_CASE("initial optimization cells must still have positive volume")
+{
+    auto data = smooth_fixture(Vector3d(0, 0, 1));
+    SECTION("zero volume")
+    {
+        data.vertices(3, 2) = 0;
+    }
+    SECTION("negative volume")
+    {
+        data.vertices(3, 2) = -1;
+    }
+    OptimizationOptions options;
+    options.iterations = 1;
     REQUIRE_THROWS(optimize_prismatic_mesh(data, options));
+}
+
+TEST_CASE("a collapse pass preserves cell attributes across multiple local updates")
+{
+    const auto fixture = collapse_fixture();
+    MatrixXd vertices(12, 3);
+    vertices.topRows(6) = fixture.vertices;
+    vertices.bottomRows(6) = fixture.vertices.rowwise() + Vector3d(10, 0, 0).transpose();
+    std::vector<std::array<size_t, 4>> tets;
+    for (size_t shift : {0, 6}) {
+        for (Eigen::Index i = 0; i < fixture.tetrahedra.rows(); ++i) {
+            std::array<size_t, 4> tet;
+            for (int j = 0; j < 4; ++j) tet[j] = fixture.tetrahedra(i, j) + shift;
+            tets.push_back(tet);
+        }
+    }
+    auto prepare = [&]() {
+        auto data = make_mesh(vertices, tets, {3, 5, 9, 11}, 0, Vector3d::Zero());
+        data.offset_components[0].singular = true; // Test collapse without smoothing.
+        for (size_t v : data.offset_vertices) data.singular_vertex_tags[v] = 1;
+        data.offset_tet_tags = {-1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1};
+        return data;
+    };
+    auto reference = prepare();
+    REQUIRE(try_collapse_offset_edge(reference, 5, 3, 1e-6));
+    REQUIRE(try_collapse_offset_edge(reference, 11, 9, 1e-6));
+    auto local = prepare();
+    OptimizationOptions options;
+    options.iterations = 1;
+    options.min_tet_volume = 1e-6;
+    optimize_prismatic_mesh(local, options);
+    REQUIRE(local.optimization_iterations[0].collapses == 2);
+    REQUIRE(local.tetrahedra == reference.tetrahedra);
+    REQUIRE(local.vertices == reference.vertices);
+    REQUIRE(local.input_cells == reference.input_cells);
+    REQUIRE(local.offset_tet_tags == reference.offset_tet_tags);
+    REQUIRE(local.offset_vertices == reference.offset_vertices);
+    REQUIRE(local.input_to_offset_vertices == reference.input_to_offset_vertices);
+    REQUIRE(local.vertex_component_ids == reference.vertex_component_ids);
+    REQUIRE(local.mesh->check_mesh_connectivity_validity());
+    REQUIRE(local.tetrahedra.rows() == local.mesh->get_tets().size());
+    for (const auto& t : local.mesh->get_tets()) {
+        const auto tet = local.mesh->oriented_tet_vids(t);
+        for (int j = 0; j < 4; ++j) REQUIRE(local.tetrahedra(t.tid(*local.mesh), j) == tet[j]);
+        REQUIRE(tet_volume_above_threshold(local.vertices, tet, options.min_tet_volume));
+    }
 }

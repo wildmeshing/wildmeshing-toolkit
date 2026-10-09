@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <set>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::prismatic_mesh {
@@ -95,7 +96,7 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
         for (int j = 0; j < 4; ++j) candidate.tetrahedra(i, j) = static_cast<int>(tet[j]);
         if (std::find(tet.begin(), tet.end(), u) != tet.end() &&
             std::find(tet.begin(), tet.end(), v) != tet.end() &&
-            !tet_volume_above_threshold(input.vertices, tet, min_tet_volume))
+            !tet_volume_above_threshold(input.vertices, tet, 0))
             return false;
     }
     // x must be the newly allocated slot, not a pre-existing isolated vertex.
@@ -116,12 +117,18 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
         const auto tet = candidate.mesh->oriented_tet_vids(split_tets[i]);
         Tet parent = tet;
         const auto new_vertex = std::find(parent.begin(), parent.end(), x);
-        if (new_vertex != parent.end()) {
-            if (!tet_volume_above_threshold(candidate.vertices, tet, min_tet_volume)) return false;
+        const bool split_child = new_vertex != parent.end();
+        if (split_child) {
             *new_vertex = std::find(tet.begin(), tet.end(), u) != tet.end() ? v : u;
         }
         const auto original = parents.find(sorted(parent));
         if (original == parents.end()) return false;
+        if (split_child &&
+            !tet_volume_above_threshold(
+                candidate.vertices,
+                tet,
+                input.offset_tet_tags.at(original->second) == 1 ? min_tet_volume : 0))
+            return false;
         candidate.input_cells.push_back(input.input_cells.at(original->second));
         candidate.offset_tet_tags.push_back(input.offset_tet_tags.at(original->second));
         for (int j = 0; j < 4; ++j) cells(i, j) = static_cast<int>(tet[j]);
@@ -143,6 +150,9 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
     candidate.corr_input_vertex.push_back(static_cast<int64_t>(u));
     candidate.singular_vertex_tags = input.singular_vertex_tags;
     candidate.singular_vertex_tags.push_back(input.singular_vertex_tags.at(destination));
+    candidate.fixed_background_vertices = input.fixed_background_vertices;
+    if (!candidate.fixed_background_vertices.empty())
+        candidate.fixed_background_vertices.push_back(false);
     candidate.offset_components = input.offset_components;
     candidate.offset_components[cid].vertices.push_back(x);
     candidate.offset_vertices = input.offset_vertices;
@@ -174,36 +184,44 @@ UnlockStatistics unlock_tau22(PrismaticMeshInput& input, double min_tet_volume)
 {
     validate_threshold(min_tet_volume);
     UnlockStatistics stats;
+    auto offset_tets = [&]() {
+        std::set<size_t> ids;
+        for (size_t v : input.offset_vertices) {
+            if (v >= input.mesh->vert_capacity()) continue;
+            const auto& star = input.mesh->get_one_ring_tids_for_vertex(v);
+            ids.insert(star.begin(), star.end());
+        }
+        return ids;
+    };
     std::vector<Tet> candidates;
-    for (const auto& t : input.mesh->get_tets()) {
-        if (classify_tau22(input, t.tid(*input.mesh))) {
-            candidates.push_back(sorted(input.mesh->oriented_tet_vids(t)));
+    for (size_t tid : offset_tets()) {
+        if (classify_tau22(input, tid)) {
+            candidates.push_back(sorted(input.mesh->oriented_tet_vids(tid)));
         }
     }
     stats.candidates = candidates.size();
-    // Store vertex keys, never stale tet IDs/tuples across successful unlocks.
-    std::map<Tet, size_t> current;
-    auto refresh = [&]() {
-        current.clear();
-        for (const auto& t : input.mesh->get_tets()) {
-            current.emplace(sorted(input.mesh->oriented_tet_vids(t)), t.tid(*input.mesh));
+    if (candidates.empty()) return stats;
+    // Reacquire a candidate through one vertex's star after edits, without rebuilding
+    // a lookup over every background cell after each successful unlock.
+    auto find_tet = [&](const Tet& key) -> std::optional<size_t> {
+        for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(key[0])) {
+            if (sorted(input.mesh->oriented_tet_vids(tid)) == key) return tid;
         }
+        return std::nullopt;
     };
-    refresh();
     for (const auto& key : candidates) {
-        const auto found = current.find(key);
-        if (found == current.end()) continue;
-        const size_t tid = found->second;
+        const auto found = find_tet(key);
+        if (!found) continue;
+        const size_t tid = *found;
         if (!classify_tau22(input, tid)) continue;
         ++stats.attempted;
         if (try_unlock_tau22(input, tid, 0, min_tet_volume) ||
             try_unlock_tau22(input, tid, 1, min_tet_volume)) {
             ++stats.unlocked;
-            refresh();
         }
     }
-    for (const auto& t : input.mesh->get_tets()) {
-        if (classify_tau22(input, t.tid(*input.mesh))) ++stats.remaining;
+    for (size_t tid : offset_tets()) {
+        if (classify_tau22(input, tid)) ++stats.remaining;
     }
     return stats;
 }

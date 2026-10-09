@@ -1,4 +1,4 @@
-#include "prismatic_mesh.hpp"
+#include "read_mesh.hpp"
 
 #include <tinyxml2.h>
 #include <algorithm>
@@ -145,7 +145,7 @@ int64_t integer(long double v, int64_t min, int64_t max, const char* name)
 }
 } // namespace
 
-PrismaticMeshInput load_prismatic_mesh(const std::filesystem::path& path)
+PrismaticMeshInput detail::load_prismatic_vtu(const std::filesystem::path& path)
 {
     require(path.extension() == ".vtu", "input must be a .vtu file");
     tinyxml2::XMLDocument doc;
@@ -239,7 +239,7 @@ PrismaticMeshInput load_prismatic_mesh(const std::filesystem::path& path)
         result.offset_tet_tags.push_back(band == 1 ? 1 : -1);
     }
     result.mesh = std::make_unique<TetMesh>();
-    result.mesh->init(n, tets);
+    result.mesh->init_with_isolated_vertices(n, tets);
     return result;
 }
 } // namespace wmtk::components::prismatic_mesh

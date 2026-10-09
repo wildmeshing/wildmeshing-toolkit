@@ -1,3 +1,4 @@
+#include "background_remeshing.hpp"
 #include "prismatic_mesh.hpp"
 
 #include <algorithm>
@@ -64,33 +65,46 @@ bool contains(const std::array<size_t, 4>& tet, size_t v)
 
 void rebuild_mesh(PrismaticMeshInput& input)
 {
-    std::vector<std::array<size_t, 4>> tets(input.tetrahedra.rows());
-    for (size_t i = 0; i < tets.size(); ++i) {
-        for (int j = 0; j < 4; ++j) tets[i][j] = static_cast<size_t>(input.tetrahedra(i, j));
+    // Compact once per collapse pass (or for an explicit standalone operation), rather
+    // than rebuilding the whole domain for every accepted edge. Negative rows are holes.
+    std::vector<std::array<size_t, 4>> tets;
+    std::vector<int> input_cells, offset_tags;
+    for (Eigen::Index i = 0; i < input.tetrahedra.rows(); ++i) {
+        if (input.tetrahedra(i, 0) < 0) continue;
+        std::array<size_t, 4> tet;
+        for (int j = 0; j < 4; ++j) tet[j] = static_cast<size_t>(input.tetrahedra(i, j));
+        tets.push_back(tet);
+        input_cells.push_back(input.input_cells[i]);
+        offset_tags.push_back(input.offset_tet_tags[i]);
     }
+    input.tetrahedra.resize(tets.size(), 4);
+    for (size_t i = 0; i < tets.size(); ++i)
+        for (int j = 0; j < 4; ++j) input.tetrahedra(i, j) = static_cast<int>(tets[i][j]);
+    input.input_cells = std::move(input_cells);
+    input.offset_tet_tags = std::move(offset_tags);
     auto mesh = std::make_unique<TetMesh>();
     mesh->init_with_isolated_vertices(input.vertices.rows(), tets);
     input.mesh = std::move(mesh);
 }
 
-void synchronize_after_collapse(PrismaticMeshInput& input, size_t removed)
+void synchronize_after_collapse(
+    PrismaticMeshInput& input,
+    size_t removed,
+    const std::set<size_t>& affected,
+    bool compact)
 {
-    const auto live = input.mesh->get_tets();
-    MatrixXi tetrahedra(live.size(), 4);
-    std::vector<int> input_cells, offset_tags;
-    for (size_t i = 0; i < live.size(); ++i) {
-        const size_t tid = live[i].tid(*input.mesh);
-        const auto tet = input.mesh->oriented_tet_vids(tid);
-        for (int j = 0; j < 4; ++j) tetrahedra(i, j) = static_cast<int>(tet[j]);
-        input_cells.push_back(input.input_cells.at(tid));
-        offset_tags.push_back(input.offset_tet_tags.at(tid));
+    // WMTK collapse preserves the tet IDs of retained cells and allocates no new cells.
+    // Synchronize just the two endpoint stars; region tags stay in their original slots.
+    for (size_t tid : affected) {
+        const auto tuple = input.mesh->tuple_from_tet(tid);
+        if (!tuple.is_valid(*input.mesh)) {
+            input.tetrahedra.row(tid).setConstant(-1);
+            continue;
+        }
+        const auto tet = input.mesh->oriented_tet_vids(tuple);
+        for (int j = 0; j < 4; ++j) input.tetrahedra(tid, j) = static_cast<int>(tet[j]);
     }
-    input.tetrahedra = std::move(tetrahedra);
-    input.input_cells = std::move(input_cells);
-    input.offset_tet_tags = std::move(offset_tags);
-    // Compact tet IDs only. Vertex row indices, source IDs, component IDs and fixed targets
-    // are never renumbered, so cross-references remain valid without a consolidate_mesh().
-    rebuild_mesh(input);
+    if (compact) rebuild_mesh(input);
     const auto cid = input.vertex_component_ids[removed];
     const auto parent = input.corr_input_vertex[removed];
     auto erase = [removed](auto& list) {
@@ -114,37 +128,60 @@ bool tet_volume_above_threshold(
     return volume_above(vertices, tet, threshold);
 }
 
-bool try_collapse_offset_edge(
-    PrismaticMeshInput& input,
+namespace {
+struct CollapsePreflight
+{
+    std::set<size_t> affected, modified;
+    size_t background_blockers = 0;
+};
+
+std::optional<CollapsePreflight> collapse_preflight(
+    const PrismaticMeshInput& input,
     size_t removed,
     size_t survivor,
-    double min_tet_volume)
+    double min_tet_volume,
+    bool collect_background)
 {
     validate_threshold(min_tet_volume);
-    if (!same_component(input, removed, survivor)) return false;
+    if (!same_component(input, removed, survivor)) return std::nullopt;
     const auto& star = input.mesh->get_one_ring_tids_for_vertex(removed);
     bool is_edge = false;
-    std::set<size_t> affected(star.begin(), star.end());
+    CollapsePreflight result;
+    auto& affected = result.affected;
+    affected.insert(star.begin(), star.end());
     for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(survivor)) affected.insert(tid);
     std::set<size_t> disappearing;
+    auto& modified = result.modified;
     std::set<size_t> affected_vertices;
     for (size_t tid : affected) {
         auto tet = input.mesh->oriented_tet_vids(tid);
-        if (!volume_above(input.vertices, tet, min_tet_volume)) return false;
+        if (!volume_above(input.vertices, tet, 0)) return std::nullopt;
         affected_vertices.insert(tet.begin(), tet.end());
         if (contains(tet, removed) && contains(tet, survivor)) {
             is_edge = true;
             disappearing.insert(tid);
             continue; // edge-incident tets are deleted, not retained as zero-volume cells
         }
+        // Existing small cells may be deleted or left unchanged. Only modified shell
+        // cells must meet the operation's floor; background only needs positive volume.
+        if (!contains(tet, removed)) continue;
+        modified.insert(tid);
         for (auto& v : tet)
             if (v == removed) v = survivor;
-        if (!volume_above(input.vertices, tet, min_tet_volume)) return false;
+        const double floor = input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0;
+        if (!volume_above(input.vertices, tet, floor)) {
+            if (!collect_background || input.offset_tet_tags.at(tid) == 1 ||
+                input.input_cells.at(tid) == 1)
+                return std::nullopt;
+            ++result.background_blockers;
+        }
     }
-    if (!is_edge) return false;
+    if (!is_edge) return std::nullopt;
     // A collapse must not strand an input vertex or erase a component of the volume mesh.
     for (size_t v : affected_vertices) {
         if (v == removed) continue;
+        if (v < input.fixed_background_vertices.size() && input.fixed_background_vertices[v])
+            continue;
         bool retained = false;
         for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(v)) {
             if (!disappearing.count(tid)) {
@@ -159,23 +196,78 @@ bool try_collapse_offset_edge(
                     break;
                 }
         }
-        if (!retained) return false;
+        if (!retained) return std::nullopt;
     }
     auto edge = input.mesh->tuple_from_edge({removed, survivor});
     if (edge.vid(*input.mesh) != removed) edge = edge.switch_vertex(*input.mesh);
-    if (!input.mesh->link_condition(edge)) return false;
+    if (!input.mesh->link_condition(edge)) return std::nullopt;
+    return result;
+}
+
+bool try_collapse_offset_edge_impl(
+    PrismaticMeshInput& input,
+    size_t removed,
+    size_t survivor,
+    double min_tet_volume,
+    bool compact)
+{
+    const auto preflight = collapse_preflight(input, removed, survivor, min_tet_volume, false);
+    if (!preflight) return false;
+    const auto& affected = preflight->affected;
+    const auto& modified = preflight->modified;
+    auto edge = input.mesh->tuple_from_edge({removed, survivor});
+    if (edge.vid(*input.mesh) != removed) edge = edge.switch_vertex(*input.mesh);
     std::vector<TetMesh::Tuple> new_edges;
     if (!input.mesh->collapse_edge(edge, new_edges)) return false;
     // Check the actual result before changing external attributes. If a core connectivity
     // change ever differs from the preflight prediction, restore the original snapshot.
     for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(survivor)) {
-        if (!volume_above(input.vertices, input.mesh->oriented_tet_vids(tid), min_tet_volume)) {
+        if (!volume_above(
+                input.vertices,
+                input.mesh->oriented_tet_vids(tid),
+                modified.count(tid) && input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0)) {
             rebuild_mesh(input);
             return false;
         }
     }
-    synchronize_after_collapse(input, removed);
+    synchronize_after_collapse(input, removed, affected, compact);
     return true;
+}
+} // namespace
+
+std::vector<BackgroundCollapseGoal> background_blocked_collapses(
+    const PrismaticMeshInput& input,
+    double min_tet_volume)
+{
+    std::set<std::array<size_t, 2>> edges;
+    for (size_t v : input.offset_vertices) {
+        if (!active(input, v)) continue;
+        for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(v))
+            for (size_t w : input.mesh->oriented_tet_vids(tid))
+                if (v < w && same_component(input, v, w)) edges.insert({v, w});
+    }
+    std::vector<BackgroundCollapseGoal> result;
+    for (const auto& edge : edges)
+        for (int direction = 0; direction < 2; ++direction) {
+            const auto check = collapse_preflight(
+                input,
+                edge[direction],
+                edge[1 - direction],
+                min_tet_volume,
+                true);
+            if (check && check->background_blockers > 0)
+                result.push_back({edge[direction], edge[1 - direction]});
+        }
+    return result;
+}
+
+bool try_collapse_offset_edge(
+    PrismaticMeshInput& input,
+    size_t removed,
+    size_t survivor,
+    double min_tet_volume)
+{
+    return try_collapse_offset_edge_impl(input, removed, survivor, min_tet_volume, true);
 }
 
 double smooth_offset_vertex(
@@ -198,8 +290,7 @@ double smooth_offset_vertex(
     if (!start.allFinite() || !target.allFinite() || start == target) return 0;
     const auto& star = input.mesh->get_one_ring_tids_for_vertex(vertex);
     for (size_t tid : star) {
-        if (!volume_above(input.vertices, input.mesh->oriented_tet_vids(tid), min_tet_volume))
-            return 0;
+        if (!volume_above(input.vertices, input.mesh->oriented_tet_vids(tid), 0)) return 0;
     }
     double alpha = 1;
     for (int backtrack = 0; backtrack <= max_backtracks; ++backtrack, alpha *= 0.5) {
@@ -210,7 +301,7 @@ double smooth_offset_vertex(
             if (!volume_above(
                     input.vertices,
                     input.mesh->oriented_tet_vids(tid),
-                    min_tet_volume,
+                    input.offset_tet_tags.at(tid) == 1 ? min_tet_volume : 0,
                     vertex,
                     candidate)) {
                 valid = false;
@@ -220,7 +311,8 @@ double smooth_offset_vertex(
         if (!valid) continue;
         // Topology is unchanged, so all existing link relations are unchanged. A tet's
         // determinant is affine along this single-vertex segment: valid endpoints also
-        // ensure no inversion/threshold violation along the accepted straight-line move.
+        // ensure no inversion along the accepted straight-line move. Shell endpoints must
+        // exceed the operation's floor; background endpoints only need positive volume.
         input.vertices.row(vertex) = candidate.transpose();
         return alpha;
     }
@@ -234,33 +326,44 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
     if (options.smoothing_max_backtracks < 0 || options.smoothing_max_backtracks > 60) {
         log_and_throw_error("smoothing_max_backtracks must be between 0 and 60.");
     }
+    validate_background_remeshing_options(options.background_remeshing);
     input.optimization_iterations.clear();
+    input.background_remeshing_report = nullptr;
+    if (options.background_remeshing.enabled) {
+        input.background_remeshing_report = {
+            {"enabled", true},
+            {"quality_metric", "tet_mean_ratio"},
+            {"quality_threshold", options.background_remeshing.quality_threshold},
+            {"passes_per_iteration", options.background_remeshing.passes},
+            {"max_operations_per_iteration", options.background_remeshing.max_operations},
+            {"max_attempts_per_iteration", options.background_remeshing.max_attempts},
+            {"iterations", nlohmann::json::array()}};
+    }
     if (options.iterations == 0) return;
     if (input.vertex_component_ids.size() != static_cast<size_t>(input.vertices.rows())) {
         log_and_throw_error("Compute components and target positions before optimization.");
     }
     for (const auto& tet : input.mesh->get_tets()) {
-        if (!volume_above(
-                input.vertices,
-                input.mesh->oriented_tet_vids(tet),
-                options.min_tet_volume)) {
+        if (!volume_above(input.vertices, input.mesh->oriented_tet_vids(tet), 0)) {
             log_and_throw_error(
-                "Initial band tetrahedron {} has nonpositive volume or volume <= min_tet_volume "
-                "({}).",
-                tet.tid(*input.mesh),
-                options.min_tet_volume);
+                "Initial optimization mesh tetrahedron {} has nonpositive or nonfinite volume.",
+                tet.tid(*input.mesh));
         }
     }
-    for (int iteration = 0; iteration < options.iterations; ++iteration) {
-        OptimizationIteration stats;
+    auto collapse_pass = [&](OptimizationIteration& stats,
+                             std::set<std::array<size_t, 2>>* accepted = nullptr) {
+        const size_t starting_collapses = stats.collapses;
         std::set<std::array<size_t, 2>> pending;
         auto enqueue = [&](size_t a, size_t b) {
             if (!same_component(input, a, b)) return;
             if (a > b) std::swap(a, b);
             pending.insert({a, b});
         };
-        for (const auto& e : input.mesh->get_edges()) {
-            enqueue(e.vid(*input.mesh), e.switch_vertex(*input.mesh).vid(*input.mesh));
+        // Enumerate candidates through the offset vertices, not all background edges.
+        for (size_t v : input.offset_vertices) {
+            if (!active(input, v) || input.vertex_component_ids[v] < 0) continue;
+            for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(v))
+                for (size_t w : input.mesh->oriented_tet_vids(tid)) enqueue(v, w);
         }
         while (!pending.empty()) {
             auto endpoints = *pending.begin();
@@ -279,12 +382,23 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
                 std::swap(survivor, removed);
             }
             ++stats.collapse_attempts;
-            if (!try_collapse_offset_edge(input, removed, survivor, options.min_tet_volume)) {
+            if (!try_collapse_offset_edge_impl(
+                    input,
+                    removed,
+                    survivor,
+                    options.min_tet_volume,
+                    false)) {
                 std::swap(survivor, removed);
-                if (!try_collapse_offset_edge(input, removed, survivor, options.min_tet_volume))
+                if (!try_collapse_offset_edge_impl(
+                        input,
+                        removed,
+                        survivor,
+                        options.min_tet_volume,
+                        false))
                     continue;
             }
             ++stats.collapses;
+            if (accepted) accepted->insert({removed, survivor});
             // Every candidate is reacquired by stable vertex IDs after topology changes.
             for (size_t tid : input.mesh->get_one_ring_tids_for_vertex(survivor)) {
                 const auto tet = input.mesh->oriented_tet_vids(tid);
@@ -292,10 +406,17 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
                     for (int b = a + 1; b < 4; ++b) enqueue(tet[a], tet[b]);
             }
         }
+        if (stats.collapses > starting_collapses) rebuild_mesh(input);
+    };
+    for (int iteration = 0; iteration < options.iterations; ++iteration) {
+        OptimizationIteration stats;
+        collapse_pass(stats);
         stats.unlock = unlock_tau22(input, options.min_tet_volume);
-        for (const auto& vertex : input.mesh->get_vertices()) {
-            const size_t v = vertex.vid(*input.mesh);
-            if (input.vertex_tags[v] != 2) continue;
+        auto offset_vertices = input.offset_vertices;
+        std::sort(offset_vertices.begin(), offset_vertices.end());
+        for (size_t v : offset_vertices) {
+            if (!active(input, v)) continue;
+            if (input.vertex_tags[v] != 2 || input.vertex_component_ids[v] < 0) continue;
             if (input.singular_vertex_tags[v] == 1) {
                 ++stats.singular_skipped;
                 continue;
@@ -310,6 +431,34 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
                 ++stats.smoothed_vertices;
             } else
                 ++stats.smoothing_failures;
+        }
+        if (options.background_remeshing.enabled) {
+            std::vector<BackgroundCollapseGoal> goals;
+            auto report = remesh_background(
+                input,
+                options.min_tet_volume,
+                options.background_remeshing,
+                &goals);
+            std::set<std::array<size_t, 2>> accepted;
+            if (report["accepted_operations"].get<size_t>() > 0) collapse_pass(stats, &accepted);
+            size_t rescued = 0;
+            for (const auto& goal : goals) rescued += accepted.count({goal.removed, goal.survivor});
+            report["additional_collapses_after_remesh"] = accepted.size();
+            report["rescued_background_blocked_collapses"] = rescued;
+            input.background_remeshing_report["iterations"].push_back(report);
+            logger().info(
+                "Background remeshing: {} 2-3 swaps, {} 3-2 swaps, {} interior moves; "
+                "{} additional collapses ({} previously background-blocked); quality below {}: {} "
+                "-> {}; budget exhausted={}",
+                report["face_swaps_2_to_3"].get<size_t>(),
+                report["edge_swaps_3_to_2"].get<size_t>(),
+                report["vertex_moves"].get<size_t>(),
+                accepted.size(),
+                rescued,
+                options.background_remeshing.quality_threshold,
+                report["quality_before"]["below_threshold"].get<size_t>(),
+                report["quality_after"]["below_threshold"].get<size_t>(),
+                report["budget_exhausted"].get<bool>());
         }
         input.optimization_iterations.push_back(stats);
         logger().info(

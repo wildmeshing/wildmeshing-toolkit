@@ -202,6 +202,23 @@ void evaluate_target_positions(PrismaticMeshInput& input, double thicknessratio)
         log_and_throw_error("thicknessratio must be finite and positive.");
     }
     build_components(input);
+    size_t represented_input = 0, missing_input = 0, multiple_components = 0;
+    for (const auto& vertex : input.mesh->get_vertices()) {
+        const size_t v = vertex.vid(*input.mesh);
+        if (input.vertex_tags.at(v) != 1) continue;
+        const size_t count = input.input_to_components.at(v).size();
+        if (count == 0)
+            ++missing_input;
+        else
+            ++represented_input;
+        if (count > 1) ++multiple_components;
+    }
+    logger().info(
+        "Component coverage: {} active input vertices with components, {} without; "
+        "{} with multiple components",
+        represented_input,
+        missing_input,
+        multiple_components);
     input.singular_vertex_tags.assign(input.vertices.rows(), -1);
     input.optimal_normals = MatrixXd::Zero(input.vertices.rows(), 3);
     input.target_positions = input.vertices;
