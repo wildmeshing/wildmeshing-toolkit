@@ -21,9 +21,11 @@ var searchData=
   ['needle_5fscan_18',['needle_scan',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adeb56a2211cfa384fb3d40eec58b17e1',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::needle_scan()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1bd5bb8b3e0be27cbb5c1180debb62dc',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::needle_scan()']]],
   ['newtoncounters_19',['NewtonCounters',['../structwmtk_1_1optimization_1_1_newton_counters.html',1,'wmtk::optimization']]],
   ['no_5fowner_20',['no_owner',['../classwmtk_1_1threading_1_1_vertex_mutex.html#a19cc31e14132dc14208338e27d7223dd',1,'wmtk::threading::VertexMutex']]],
-  ['normalize_5fselection_21',['normalize_selection',['../namespacesimwild_1_1polyfem__ops_1_1mesh__core.html#a6f02bc44bb9b9a576a7e9ee44911375f',1,'simwild::polyfem_ops::mesh_core']]],
-  ['notexpr_22',['NotExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_not_expr.html',1,'wmtk::components::simwild::expression_parser']]],
-  ['num_5fsmoothing_5fpasses_23',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]],
-  ['num_5fthreads_24',['num_threads',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a0c7b87023ce71690fb274bca2a3b8154',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['numbers_25',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md58',1,'']]]
+  ['node_21',['Node',['../structwmtk_1_1utils_1_1_winding_number_hierarchy_1_1_node.html',1,'wmtk::utils::WindingNumberHierarchy']]],
+  ['node_5fwinding_5fnumber_22',['node_winding_number',['../classwmtk_1_1utils_1_1_winding_number_hierarchy.html#a73c9645d7417274a1ec5eaebe7f7c522',1,'wmtk::utils::WindingNumberHierarchy']]],
+  ['normalize_5fselection_23',['normalize_selection',['../namespacesimwild_1_1polyfem__ops_1_1mesh__core.html#a6f02bc44bb9b9a576a7e9ee44911375f',1,'simwild::polyfem_ops::mesh_core']]],
+  ['notexpr_24',['NotExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_not_expr.html',1,'wmtk::components::simwild::expression_parser']]],
+  ['num_5fsmoothing_5fpasses_25',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]],
+  ['num_5fthreads_26',['num_threads',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a0c7b87023ce71690fb274bca2a3b8154',1,'wmtk::utils::EmbedTrianglesOptions']]],
+  ['numbers_27',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md58',1,'']]]
 ];
