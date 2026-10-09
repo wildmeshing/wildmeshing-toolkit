@@ -1071,7 +1071,9 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+    // EXPERIMENTAL_no_collapse_length_gate lifts it: the energy rule alone judges the collapse.
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset &&
+        !m_offset_params.no_collapse_length_gate) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
@@ -4115,13 +4117,17 @@ bool TopoOffsetTetMesh::optimize_offset_loop()
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
+                local_operations(
+                    {{groups[gi][0], groups[gi][1], groups[gi][2], 0}},
+                    !m_offset_params.no_collapse_length_gate);
                 energy_after_ops = total_energy();
                 log_energy_step(group_names[gi]);
                 smooth_group_to_convergence(group_names[gi]);
             } else {
                 // The group's operations, then its k smoothing passes, each stamped first.
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
+                local_operations(
+                    {{groups[gi][0], groups[gi][1], groups[gi][2], 0}},
+                    !m_offset_params.no_collapse_length_gate);
                 energy_after_ops = total_energy();
                 log_energy_step(group_names[gi]);
                 smooth_passes(groups[gi][3]);

@@ -37,6 +37,7 @@
       "EXPERIMENTAL_area_weighted_ring",
       "EXPERIMENTAL_quadratic_stencil",
       "EXPERIMENTAL_no_refinement",
+      "EXPERIMENTAL_no_collapse_length_gate",
       "EXPERIMENTAL_no_exit",
       "check_manifoldness",
       "save_vtu",
@@ -278,6 +279,12 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL (2026-10-08), 3D, a diagnostic. The offset loop halves no sizing scalar: the exit criterion's refinable vertices or faces are logged and left as they are. false (the default) = refinement as configured."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_no_collapse_length_gate",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-09), 3D. true: the offset loop's collapse passes are not length-gated -- every edge is offered to the collapse pass whatever its length against the sizing field, front edges included (the front's own rule that refuses an unlimited collapse of a front vertex is lifted too), and a collapse is judged by the energy rule and the topological rules alone. false (the default): the shared pass's length gate (collapsing_l2 scaled by the endpoints' sizing scalars) applies."
   },
   {
     "pointer": "/EXPERIMENTAL_no_exit",
