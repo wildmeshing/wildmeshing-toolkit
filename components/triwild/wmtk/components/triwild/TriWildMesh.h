@@ -243,6 +243,9 @@ public:
     void filter_with_flood_fill();
 
     int flood_fill();
+    /// Whether flood_fill ran, so that the writers leave the part ids out rather than writing
+    /// their defaults as if they were parts.
+    bool m_has_parts = false;
 
 protected:
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }

@@ -16,6 +16,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <map>
@@ -263,5 +264,36 @@ TEST_CASE("orientation-configurations", "[tetwild][orientation]")
         INFO(r.name);
         CHECK(std::abs(vt - r.expected) < 0.02 * r.expected);
         if (r.input_consistent) CHECK(std::abs(vi - r.expected) < 0.02 * r.expected);
+    }
+
+    // The finalization takes the whole input's winding number as the sum of the per-input ones,
+    // with every box an input of its own here -- the inside-out one included, which as an input
+    // of its own is oriented on its own, but still subtracts from the whole. It must be the one
+    // evaluated on the whole input above, tet by tet (but the flat ones, whose barycenter is on
+    // the surface).
+    {
+        const auto ts = mesh.get_tets();
+        const Eigen::MatrixXd c = mesh.tet_barycenters(ts);
+        std::vector<double> whole(ts.size());
+        for (size_t i = 0; i < ts.size(); ++i) {
+            whole[i] = mesh.tet_finalize(ts[i].tid(mesh)).m_winding_number_input;
+        }
+        const int n_inputs = int(s.f.size() / 12); // the duplicated triangle joins the last box
+        std::vector<int> face_input(s.f.size());
+        for (size_t f = 0; f < s.f.size(); ++f) face_input[f] = std::min(int(f / 12), n_inputs - 1);
+        mesh.compute_input_winding_numbers(ts, c, s.v, s.f, face_input, n_inputs);
+        double max_diff = 0;
+        for (size_t i = 0; i < ts.size(); ++i) {
+            const auto vs = mesh.oriented_tet_vids(ts[i]);
+            const auto& p = mesh.m_vertex_attribute;
+            const double vol = (p[vs[1]].m_posf - p[vs[0]].m_posf)
+                                   .cross(p[vs[2]].m_posf - p[vs[0]].m_posf)
+                                   .dot(p[vs[3]].m_posf - p[vs[0]].m_posf);
+            if (std::abs(vol) < 1e-12) continue;
+            const auto& a = mesh.tet_finalize(ts[i].tid(mesh));
+            REQUIRE(a.m_winding_number_per_input.size() == size_t(n_inputs));
+            max_diff = std::max(max_diff, std::abs(a.m_winding_number_input - whole[i]));
+        }
+        CHECK(max_diff < 1e-9);
     }
 }

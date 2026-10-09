@@ -147,3 +147,36 @@ TEST_CASE("read_triangle_mesh_names_the_file_it_could_not_parse", "[io][read_tri
 
     fs::remove(path);
 }
+
+TEST_CASE("read_triangle_mesh_reports_the_input_of_each_face", "[io][read_triangle_mesh]")
+{
+    // tetwild's finalization evaluates the winding number of each input on its own, from the
+    // merged mesh this returns, so face_input has to follow the cleaning: each file has a
+    // degenerate face, which is removed, and every face after it moves up.
+    const fs::path dir = fs::temp_directory_path();
+    const fs::path a = dir / "wmtk_test_face_input_a.obj";
+    const fs::path b = dir / "wmtk_test_face_input_b.obj";
+    {
+        std::ofstream f(a);
+        f << "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+          << "f 1 3 2\nf 1 1 2\nf 1 2 4\nf 2 3 4\nf 1 4 3\n";
+    }
+    {
+        std::ofstream f(b);
+        f << "v 5 0 0\nv 6 0 0\nv 5 1 0\nv 5 0 1\n"
+          << "f 1 3 2\nf 1 2 4\nf 2 2 3\nf 2 3 4\n";
+    }
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    std::vector<int> face_input;
+    wmtk::io::read_triangle_mesh({a.string(), b.string()}, V, F, -1, -1, &face_input);
+
+    REQUIRE(F.rows() == 7);
+    CHECK(face_input == std::vector<int>{0, 0, 0, 0, 1, 1, 1});
+    // The faces themselves are each file's, in order: the first of b starts at its vertex 5.
+    CHECK(V.row(F(4, 0)).isApprox(Eigen::RowVector3d(5, 0, 0)));
+
+    fs::remove(a);
+    fs::remove(b);
+}
