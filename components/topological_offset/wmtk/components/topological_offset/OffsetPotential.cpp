@@ -1200,11 +1200,10 @@ double InputTriangles::min_mean_distance(
         s /= n;
         if (s < m || (s == m && t < best)) m = s, best = t;
     };
-    if (hint >= 0) {
-        offer(hint);
-    } else {
-        for (int i = 0; i < n; ++i) offer(nearest(p[i]));
-    }
+    // A hint seeds the bound; without one the walk starts unbounded. The result does not depend on
+    // the seed (see the walk below). MEASURED 2026-10-09, serial cube, 3 turns: seeding with each
+    // point's nearest triangle (n tree queries) took 24.3 s against 20.6 s unseeded, same output.
+    if (hint >= 0) offer(hint);
     if (m_nodes.empty()) return m;
     const auto lower = [&](const Node& nd) {
         double s = 0.;
