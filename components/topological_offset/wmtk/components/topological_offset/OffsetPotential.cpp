@@ -3,6 +3,7 @@
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <Eigen/Eigenvalues>
 
@@ -13,6 +14,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <map>
 #include <set>
@@ -1123,6 +1125,203 @@ InputTriangles::InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& 
     , m_F(F)
 {
     m_bvh.init(m_V, m_F, 1e-6);
+    // min_mean_distance()'s tree, median split on the longest axis of the triangles' centroids.
+    const int nf = int(m_F.rows());
+    if (nf == 0) return;
+    std::vector<Eigen::Vector3d> centroid(static_cast<size_t>(nf));
+    for (int f = 0; f < nf; ++f) {
+        centroid[size_t(f)] =
+            (m_V.row(m_F(f, 0)) + m_V.row(m_F(f, 1)) + m_V.row(m_F(f, 2))).head<3>().transpose() /
+            3.;
+    }
+    const Eigen::Vector3d lo = m_V.leftCols<3>().colwise().minCoeff().transpose();
+    const Eigen::Vector3d hi = m_V.leftCols<3>().colwise().maxCoeff().transpose();
+    m_order.resize(size_t(nf));
+    for (int f = 0; f < nf; ++f) m_order[size_t(f)] = f;
+    m_nodes.reserve(size_t(2 * nf));
+    m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
+    build_node(0, nf, centroid, m_pad);
+}
+
+int InputTriangles::build_node(
+    const int begin,
+    const int end,
+    const std::vector<Eigen::Vector3d>& centroid,
+    const double pad)
+{
+    const int id = int(m_nodes.size());
+    m_nodes.emplace_back();
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Eigen::Vector3d hi = -lo, clo = lo, chi = -lo;
+    for (int j = begin; j < end; ++j) {
+        const int f = m_order[size_t(j)];
+        for (int c = 0; c < 3; ++c) {
+            const Eigen::Vector3d v = m_V.row(m_F(f, c)).head<3>().transpose();
+            lo = lo.cwiseMin(v);
+            hi = hi.cwiseMax(v);
+        }
+        clo = clo.cwiseMin(centroid[size_t(f)]);
+        chi = chi.cwiseMax(centroid[size_t(f)]);
+    }
+    m_nodes[size_t(id)].lo = lo - Eigen::Vector3d::Constant(pad);
+    m_nodes[size_t(id)].hi = hi + Eigen::Vector3d::Constant(pad);
+    m_nodes[size_t(id)].begin = begin;
+    m_nodes[size_t(id)].end = end;
+    if (end - begin <= 4) return id;
+    int axis = 0;
+    (chi - clo).maxCoeff(&axis);
+    const int mid = (begin + end) / 2;
+    std::nth_element(
+        m_order.begin() + begin,
+        m_order.begin() + mid,
+        m_order.begin() + end,
+        [&](const int a, const int b) {
+            return centroid[size_t(a)][axis] < centroid[size_t(b)][axis] ||
+                   (centroid[size_t(a)][axis] == centroid[size_t(b)][axis] && a < b);
+        });
+    const int left = build_node(begin, mid, centroid, pad);
+    const int right = build_node(mid, end, centroid, pad);
+    m_nodes[size_t(id)].left = left;
+    m_nodes[size_t(id)].right = right;
+    return id;
+}
+
+double InputTriangles::min_mean_distance(
+    const Eigen::Vector3d* p,
+    const int n,
+    int64_t& best,
+    const int64_t hint) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    best = -1;
+    const auto offer = [&](const int64_t t) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) s += distance(t, p[i]);
+        s /= n;
+        if (s < m || (s == m && t < best)) m = s, best = t;
+    };
+    if (hint >= 0) {
+        offer(hint);
+    } else {
+        for (int i = 0; i < n; ++i) offer(nearest(p[i]));
+    }
+    if (m_nodes.empty()) return m;
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) {
+            s += (nd.lo - p[i]).cwiseMax(p[i] - nd.hi).cwiseMax(0.).norm();
+        }
+        return s / n;
+    };
+    // Depth first, the nearer child first; a node whose bound EXCEEDS the best is skipped (equal is
+    // visited, so that the lowest index wins a tie whatever the starting point).
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) offer(m_order[size_t(j)]);
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
+}
+
+void InputTriangles::ball_candidates(
+    const Eigen::Vector3d& c,
+    const double r,
+    const std::array<Eigen::Vector3d, 3>& q,
+    std::vector<BallCandidate>& out) const
+{
+    // f_P(x) = (1/4)[d_P(x) + d_P(q1) + d_P(q2) + d_P(q3)], the mean min_mean_distance() takes of
+    // {x, q1, q2, q3}, summed in that order. For |x - c| <= R, d_P being 1-Lipschitz,
+    //     LB_P = (1/4)[max(0, d_P(c) - R) + d_P(q1) + d_P(q2) + d_P(q3)] <= f_P(x),
+    //     f_Q(x) <= (1/4)[d_Q(c) + R + d_Q(q1) + d_Q(q2) + d_Q(q3)] = UB_Q   for every Q.
+    // So with U = min over Q of UB_Q, a triangle P with LB_P > U has f_P(x) > U >= min_Q f_Q(x):
+    // it is neither the minimiser nor tied with it. Every other triangle is kept, so the min over
+    // the kept ones, scanned in increasing index with min_mean_distance()'s comparison, is its
+    // min and its minimiser, the lowest index on a tie -- at every x of the ball.
+    // In floating point: each bound is summed in f_P's order, its terms no larger (LB) or no
+    // smaller (UB) than f_P's own, and rounding is monotone, so LB_P <= f_P(x) <= UB_P hold for
+    // the computed values as long as the computed d_P moves by at most R between c and x. Hence
+    // R = r (1 + 1e-9) + 2 pad: the computed (x - c).norm() <= r leaves the true |x - c| within a
+    // few ulps of r, far below 1e-9 r, and the computed d_P is within pad of the exact one at
+    // either point -- the allowance the boxes already rest on (a box distance never exceeds a
+    // triangle distance). A triangle whose distance at c is NaN (degenerate) is kept: nothing is
+    // certified about it.
+    // The search is min_mean_distance()'s: a node's bound, LB with its box in place of P, is at
+    // most f_P(x) for every P inside and every x of the ball (a box distance is 1-Lipschitz too,
+    // and at most d_P), so a node whose bound exceeds the smallest UB_Q so far holds no minimiser
+    // and is skipped.
+    out.clear();
+    if (m_nodes.empty()) return;
+    const double R = r * (1. + 1e-9) + 2. * m_pad;
+    const auto box = [](const Node& nd, const Eigen::Vector3d& p) {
+        return (nd.lo - p).cwiseMax(p - nd.hi).cwiseMax(0.).norm();
+    };
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        s += std::max(0., box(nd, c) - R);
+        for (const Eigen::Vector3d& p : q) s += box(nd, p);
+        return s / 4;
+    };
+    double U = std::numeric_limits<double>::infinity();
+    std::vector<std::pair<double, BallCandidate>> kept; // LB_P, P
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > U) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) {
+                BallCandidate cd;
+                cd.tri = m_order[size_t(j)];
+                const double d0 = distance(cd.tri, c);
+                cd.d1 = distance(cd.tri, q[0]);
+                cd.d2 = distance(cd.tri, q[1]);
+                cd.d3 = distance(cd.tri, q[2]);
+                double lo = 0., hi = 0.;
+                lo += std::isnan(d0) ? d0 : std::max(0., d0 - R);
+                lo += cd.d1;
+                lo += cd.d2;
+                lo += cd.d3;
+                lo /= 4;
+                hi += d0 + R;
+                hi += cd.d1;
+                hi += cd.d2;
+                hi += cd.d3;
+                hi /= 4;
+                if (hi < U) U = hi;
+                if (!(lo > U)) kept.push_back({lo, cd});
+            }
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    for (const auto& [lo, cd] : kept) {
+        if (!(lo > U)) out.push_back(cd);
+    }
+    std::sort(out.begin(), out.end(), [](const BallCandidate& a, const BallCandidate& b) {
+        return a.tri < b.tri;
+    });
 }
 
 int64_t InputTriangles::nearest(const Eigen::Vector3d& p) const
@@ -1145,19 +1344,22 @@ int64_t InputTriangles::nearest(const Eigen::Vector3d& p) const
     return best;
 }
 
-double InputTriangles::distance(
-    const int64_t tri,
+namespace {
+
+/// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
+/// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.
+Eigen::Vector3d triangle_foot(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
     const Eigen::Vector3d& p,
-    Eigen::Vector3d* grad,
-    Eigen::Matrix3d* hess) const
+    int& kind,
+    Eigen::Vector3d& edge)
 {
-    // The closest point and the feature it lies on (Ericson, Real-Time Collision Detection 5.1.5).
-    const Eigen::Vector3d a = m_V.row(m_F(tri, 0)).head<3>().transpose();
-    const Eigen::Vector3d b = m_V.row(m_F(tri, 1)).head<3>().transpose();
-    const Eigen::Vector3d c = m_V.row(m_F(tri, 2)).head<3>().transpose();
     const Eigen::Vector3d ab = b - a, ac = c - a, ap = p - a;
-    Eigen::Vector3d foot, edge = Eigen::Vector3d::Zero();
-    int kind = 2; // 0 vertex, 1 edge (direction `edge`), 2 interior
+    Eigen::Vector3d foot;
+    kind = 2;
+    edge = Eigen::Vector3d::Zero();
     const double d1 = ab.dot(ap), d2 = ac.dot(ap);
     const Eigen::Vector3d bp = p - b;
     const double d3 = ab.dot(bp), d4 = ac.dot(bp);
@@ -1180,6 +1382,78 @@ double InputTriangles::distance(
         const double den = 1. / (va + vb + vc);
         foot = a + ab * (vb * den) + ac * (vc * den);
     }
+    return foot;
+}
+
+/// The distance between segments p1 q1 and p2 q2: the closest pair of their lines clamped to
+/// both segments (Ericson, Real-Time Collision Detection 5.1.9). A zero-length segment is its
+/// point; parallel segments (a e - b^2 = 0, or below 0 by rounding) start from s = 0, and the
+/// clamping then finds the pair at an endpoint, where parallel segments attain their distance.
+double segment_distance(
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& q1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& q2)
+{
+    const Eigen::Vector3d d1 = q1 - p1, d2 = q2 - p2, r = p1 - p2;
+    const double a = d1.squaredNorm(), e = d2.squaredNorm(), f = d2.dot(r);
+    if (a == 0. && e == 0.) return r.norm();
+    double s = 0., t = 0.;
+    if (a == 0.) {
+        t = std::clamp(f / e, 0., 1.);
+    } else {
+        const double c = d1.dot(r);
+        if (e == 0.) {
+            s = std::clamp(-c / a, 0., 1.);
+        } else {
+            const double b = d1.dot(d2), denom = a * e - b * b;
+            if (denom > 0.) s = std::clamp((b * f - c * e) / denom, 0., 1.);
+            t = (b * s + f) / e;
+            if (t < 0.) {
+                t = 0.;
+                s = std::clamp(-c / a, 0., 1.);
+            } else if (t > 1.) {
+                t = 1.;
+                s = std::clamp((b - c) / a, 0., 1.);
+            }
+        }
+    }
+    return ((p1 + s * d1) - (p2 + t * d2)).norm();
+}
+
+/// Whether segment pq crosses triangle abc: p and q strictly on opposite sides of its plane, and
+/// the line pq through the closed triangle (the three orientations of pq against its edges of
+/// one sign or 0). Exact signs: a crossing is never decided on rounding. A contact with p or q on
+/// the plane is not a crossing here; it is a corner-to-triangle distance at 0.
+bool segment_crosses_triangle(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& q,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+    using wmtk::utils::predicates::orient3d;
+    const int sp = int(orient3d(a, b, c, p)), sq = int(orient3d(a, b, c, q));
+    if (sp * sq >= 0) return false;
+    const int s1 = int(orient3d(p, q, a, b)), s2 = int(orient3d(p, q, b, c)),
+              s3 = int(orient3d(p, q, c, a));
+    return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+}
+
+} // namespace
+
+double InputTriangles::distance(
+    const int64_t tri,
+    const Eigen::Vector3d& p,
+    Eigen::Vector3d* grad,
+    Eigen::Matrix3d* hess) const
+{
+    const Eigen::Vector3d a = m_V.row(m_F(tri, 0)).head<3>().transpose();
+    const Eigen::Vector3d b = m_V.row(m_F(tri, 1)).head<3>().transpose();
+    const Eigen::Vector3d c = m_V.row(m_F(tri, 2)).head<3>().transpose();
+    int kind = 2; // 0 vertex, 1 edge (direction `edge`), 2 interior
+    Eigen::Vector3d edge;
+    const Eigen::Vector3d foot = triangle_foot(a, b, c, p, kind, edge);
     const double d = (p - foot).norm();
     if (grad) *grad = d > 0. ? Eigen::Vector3d((p - foot) / d) : Eigen::Vector3d::Zero();
     if (hess) {
@@ -1195,6 +1469,122 @@ double InputTriangles::distance(
         }
     }
     return d;
+}
+
+double InputTriangles::triangle_distance(
+    const int64_t P,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c) const
+{
+    const std::array<Eigen::Vector3d, 3> A = {
+        {m_V.row(m_F(P, 0)).head<3>().transpose(),
+         m_V.row(m_F(P, 1)).head<3>().transpose(),
+         m_V.row(m_F(P, 2)).head<3>().transpose()}};
+    const std::array<Eigen::Vector3d, 3> B = {{a, b, c}};
+    for (int i = 0; i < 3; ++i) {
+        const int j = (i + 1) % 3;
+        if (segment_crosses_triangle(A[size_t(i)], A[size_t(j)], a, b, c) ||
+            segment_crosses_triangle(B[size_t(i)], B[size_t(j)], A[0], A[1], A[2])) {
+            return 0.;
+        }
+    }
+    double m = std::numeric_limits<double>::infinity();
+    int kind = 2;
+    Eigen::Vector3d edge;
+    for (int i = 0; i < 3; ++i) {
+        m = std::min(m, distance(P, B[size_t(i)]));
+        m = std::min(m, (A[size_t(i)] - triangle_foot(a, b, c, A[size_t(i)], kind, edge)).norm());
+        for (int k = 0; k < 3; ++k) {
+            m = std::min(
+                m,
+                segment_distance(
+                    A[size_t(i)],
+                    A[size_t((i + 1) % 3)],
+                    B[size_t(k)],
+                    B[size_t((k + 1) % 3)]));
+        }
+    }
+    return m;
+}
+
+double InputTriangles::min_triangle_distance(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    for (const Eigen::Vector3d* q : {&a, &b, &c}) m = std::min(m, distance(nearest(*q), *q));
+    if (m_nodes.empty()) return m;
+    // The distance between abc's box and a node's: a lower bound on triangle_distance() for every
+    // triangle inside the node, abc lying in its own box.
+    const Eigen::Vector3d lo = a.cwiseMin(b).cwiseMin(c), hi = a.cwiseMax(b).cwiseMax(c);
+    const auto lower = [&](const Node& nd) {
+        return (nd.lo - hi).cwiseMax(lo - nd.hi).cwiseMax(0.).norm();
+    };
+    // Depth first, the nearer child first; a node whose bound exceeds the best is skipped.
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) {
+                m = std::min(m, triangle_distance(m_order[size_t(j)], a, b, c));
+            }
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
+}
+
+double InputTriangles::min_max_corner_distance(const Eigen::Vector3d* p, const int n) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    const auto offer = [&](const int64_t t) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) s = std::max(s, distance(t, p[i]));
+        m = std::min(m, s);
+    };
+    for (int i = 0; i < n; ++i) offer(nearest(p[i]));
+    if (m_nodes.empty()) return m;
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) {
+            s = std::max(s, (nd.lo - p[i]).cwiseMax(p[i] - nd.hi).cwiseMax(0.).norm());
+        }
+        return s;
+    };
+    // Depth first, the nearer child first; a node whose bound exceeds the best is skipped.
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) offer(m_order[size_t(j)]);
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1246,12 +1636,111 @@ void BandVolumeEnergy3D::set_corner_bound(
     }
 }
 
+void BandVolumeEnergy3D::set_exact_corner_bound(
+    std::shared_ptr<const InputTriangles> tris,
+    const double delta)
+{
+    m_tris = std::move(tris);
+    m_delta = delta;
+    m_exact = true;
+    m_hint.assign(m_cells.size(), -1);
+    m_min_set = false;
+    m_min_md.assign(m_cells.size(), 0.);
+    m_min_tri.assign(m_cells.size(), -1);
+    m_ball_r = -1.;
+    m_ball_cand.assign(m_cells.size(), {});
+}
+
+bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
+{
+    // r = the distance from x to the nearest plane through a cell's three fixed corners, each
+    // cell's volume being positive while x stays on its side of that plane.
+    double r = std::numeric_limits<double>::infinity();
+    for (const Cell& c : m_cells) {
+        const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+        const double h = (c.q1 - x).dot(N) / N.norm();
+        if (!(h > 0.)) return false;
+        r = std::min(r, h);
+    }
+    if (!std::isfinite(r)) return false;
+    m_ball_c = x;
+    m_ball_r = r;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        m_tris->ball_candidates(x, r, {{c.q1, c.q2, c.q3}}, m_ball_cand[k]);
+    }
+    return true;
+}
+
+void BandVolumeEnergy3D::exact_minima(const Eigen::Vector3d& x) const
+{
+    if (m_min_set && std::memcmp(x.data(), m_min_x.data(), 3 * sizeof(double)) == 0) return;
+    const bool listed = (m_ball_r > 0. && (x - m_ball_c).norm() <= m_ball_r) || certify_ball(x);
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        int64_t P = -1;
+        double md = std::numeric_limits<double>::infinity();
+        if (listed) {
+            // min_mean_distance()'s sum, order and comparison over the certified candidates.
+            for (const InputTriangles::BallCandidate& cd : m_ball_cand[k]) {
+                double s = 0.;
+                s += m_tris->distance(cd.tri, x);
+                s += cd.d1;
+                s += cd.d2;
+                s += cd.d3;
+                s /= 4;
+                if (s < md || (s == md && cd.tri < P)) md = s, P = cd.tri;
+            }
+        } else {
+            const std::array<Eigen::Vector3d, 4> pts = {{x, c.q1, c.q2, c.q3}};
+            md = m_tris->min_mean_distance(pts.data(), 4, P, m_hint[k]);
+        }
+        if (P >= 0) m_hint[k] = P;
+        m_min_md[k] = md;
+        m_min_tri[k] = P;
+    }
+    m_min_x = x;
+    m_min_set = true;
+}
+
 double BandVolumeEnergy3D::eval(
     const Eigen::Vector3d& x,
     const int need,
     Eigen::Vector3d& g,
     Eigen::Matrix3d& H) const
 {
+    if (m_tris && m_exact) {
+        // EXPERIMENTAL_band_volume_exact_min: per cell the min over all triangles of the corner
+        // mean of r_P, the four corners being x and the cell's three fixed ones.
+        exact_minima(x);
+        double E = 0.;
+        g.setZero();
+        H.setZero();
+        for (size_t k = 0; k < m_cells.size(); ++k) {
+            const Cell& c = m_cells[k];
+            const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+            const double vol = (c.q1 - x).dot(N) / 6.;
+            const Eigen::Vector3d gvol = -N / 6.;
+            const int64_t P = m_min_tri[k];
+            if (P < 0) continue;
+            const double best = (m_min_md[k] - m_delta) / m_delta;
+            E += vol * best;
+            if (need >= 1) {
+                Eigen::Vector3d gd;
+                Eigen::Matrix3d hd;
+                m_tris->distance(P, x, &gd, need >= 2 ? &hd : nullptr);
+                const Eigen::Vector3d gm = gd / (4. * m_delta);
+                g += best * gvol + vol * gm;
+                if (need >= 2) {
+                    H += gvol * gm.transpose() + gm * gvol.transpose() + vol * hd / (4. * m_delta);
+                }
+            }
+        }
+        E *= m_weight;
+        g *= m_weight;
+        H *= m_weight;
+        return E;
+    }
     if (m_tris) {
         // corner_bound: per cell the minimising candidate's corner mean (see set_corner_bound()).
         double E = 0.;

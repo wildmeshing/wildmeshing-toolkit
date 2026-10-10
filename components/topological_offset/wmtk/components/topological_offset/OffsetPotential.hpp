@@ -900,12 +900,106 @@ public:
         const Eigen::Vector3d& p,
         Eigen::Vector3d* grad = nullptr,
         Eigen::Matrix3d* hess = nullptr) const;
+    /// EXPERIMENTAL_edge_excess_refinement: (d_P(a) + d_P(b))/2 - d(m), m = (a + b)/2, d the
+    /// distance to the nearest triangle -- how far the corner bound's linear interpolant of d_P
+    /// lies above the true distance at the edge's midpoint. Never negative: d(m) <= d_P(m) <=
+    /// (d_P(a) + d_P(b))/2, d_P being convex. 0 where d_P is affine along the edge and P is
+    /// nearest at m; the chord sag of d_P where it curves; more where another triangle is nearer.
+    double edge_excess(int64_t P, const Eigen::Vector3d& a, const Eigen::Vector3d& b) const
+    {
+        const Eigen::Vector3d m = 0.5 * (a + b);
+        return 0.5 * (distance(P, a) + distance(P, b)) - distance(nearest(m), m);
+    }
     size_t size() const { return size_t(m_F.rows()); }
+    /// EXPERIMENTAL_settle_mark "rms": the mean over triangle abc of (d - delta)^2 (n . grad d),
+    /// n the face's unit normal (pointing out of the band), by the 3-edge-midpoint rule (weights
+    /// 1/3, exact for quadratic integrands): exact over a face whose points all have one input
+    /// face's interior as nearest feature (d affine, grad d constant there).
+    double face_mean_sq_cos(
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c,
+        const Eigen::Vector3d& n,
+        double delta) const
+    {
+        double q = 0.;
+        for (const auto& [u, v] : {std::pair{&a, &b}, std::pair{&b, &c}, std::pair{&c, &a}}) {
+            const Eigen::Vector3d m = 0.5 * (*u + *v);
+            Eigen::Vector3d g;
+            const double dm = distance(nearest(m), m, &g);
+            q += (dm - delta) * (dm - delta) * n.dot(g) / 3.;
+        }
+        return q;
+    }
+    /// EXPERIMENTAL_band_volume_exact_min: min over ALL triangles P of (1/n) sum_i d_P(p_i), n
+    /// points (the cell's corners), and the minimiser in `best` (the lowest index on a tie). An
+    /// exact search of an AABB tree over the triangles: a node is skipped when (1/n) sum_i
+    /// dist(p_i, its box), a lower bound on every triangle inside it, exceeds the best so far.
+    /// Starts from `hint` when >= 0 (else from the points' nearest triangles), which changes only
+    /// the speed. Measured on the last frames of the cube (24 triangles) and 100026 (1736): over
+    /// 2000 sampled band cells with a front vertex each, no triangle outside the corners' nearest
+    /// (ties included) had a smaller mean, so the search visits boxes only.
+    double min_mean_distance(const Eigen::Vector3d* p, int n, int64_t& best, int64_t hint = -1)
+        const;
+    /// EXPERIMENTAL_band_volume_exact_min: a triangle and its distances to three fixed points.
+    struct BallCandidate
+    {
+        int64_t tri = -1;
+        double d1 = 0., d2 = 0., d3 = 0.;
+    };
+    /// EXPERIMENTAL_band_volume_exact_min: every triangle that is min_mean_distance()'s minimiser
+    /// of the four points {x, q[0], q[1], q[2]} (x first), or tied with it, for some x with
+    /// (x - c).norm() <= r; ascending index, each with its distances to q. So the minimum over
+    /// `out` of that mean, summed in min_mean_distance()'s order and scanned with its comparison,
+    /// is min_mean_distance() bit for bit at every such x (proof in the .cpp).
+    void ball_candidates(
+        const Eigen::Vector3d& c,
+        double r,
+        const std::array<Eigen::Vector3d, 3>& q,
+        std::vector<BallCandidate>& out) const;
+    /// EXPERIMENTAL_settle_refinement: the distance between triangle P and the triangle abc. 0
+    /// when an edge of one crosses the other, its endpoints strictly on the two sides of the
+    /// other's plane (exact orientation signs); otherwise the min of the 6 corner-to-other-triangle
+    /// distances (distance()'s closest point) and the 9 edge-edge distances (Ericson, Real-Time
+    /// Collision Detection 5.1.9): two disjoint triangles' closest pair has a corner of one or a
+    /// point on an edge of each, and two that meet without such a crossing (a corner on the
+    /// other's plane, or coplanar) have one of those 15 at 0.
+    double triangle_distance(
+        int64_t P,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c) const;
+    /// EXPERIMENTAL_settle_refinement: min over ALL triangles P of triangle_distance(P, a, b, c),
+    /// i.e. min over the triangle abc of d. An exact search of min_mean_distance()'s tree: it
+    /// starts from min over the corners of d (an upper bound on the min over the triangle) and
+    /// skips a node whose box is farther from the box of abc than the best so far.
+    double min_triangle_distance(
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c) const;
+    /// EXPERIMENTAL_settle_refinement: min over ALL triangles P of max_i d_P(p_i), n points. With
+    /// p the corners of a triangle, an upper bound on max over the triangle of d: d_P is convex,
+    /// so its max over the triangle is at a corner, and d <= d_P. The same tree search: it starts
+    /// from the points' nearest triangles and skips a node when max_i dist(p_i, its box), a lower
+    /// bound on every triangle inside it, exceeds the best so far.
+    double min_max_corner_distance(const Eigen::Vector3d* p, int n) const;
 
 private:
     Eigen::MatrixXd m_V;
     Eigen::MatrixXi m_F;
     SimpleBVH::BVH m_bvh;
+    /// min_mean_distance()'s tree: a node's box holds triangles m_order[begin, end); a leaf has
+    /// left < 0. Boxes padded by 1e-9 of the input's diagonal, so a box distance never exceeds a
+    /// triangle distance by rounding.
+    struct Node
+    {
+        Eigen::Vector3d lo, hi;
+        int left = -1, right = -1, begin = 0, end = 0;
+    };
+    std::vector<Node> m_nodes;
+    std::vector<int> m_order;
+    double m_pad = 0.; ///< the boxes' padding
+    int build_node(int begin, int end, const std::vector<Eigen::Vector3d>& centroid, double pad);
 };
 
 class BandVolumeEnergy3D : public polysolve::nonlinear::Problem
@@ -952,16 +1046,57 @@ public:
         std::shared_ptr<const InputTriangles> tris,
         std::vector<std::vector<int64_t>> candidates,
         double delta);
+    /// EXPERIMENTAL_band_volume_exact_min: as set_corner_bound(), with m_t the min over ALL
+    /// triangles (InputTriangles::min_mean_distance()) at every evaluation, so the solve descends
+    /// exactly the cell terms E sums. Gradient and Hessian: the minimiser's, as set_corner_bound().
+    /// Every value, gradient and Hessian equals, bit for bit, that of a min_mean_distance() call
+    /// per cell and evaluation; the work behind them is cut twice (exact_minima()):
+    ///  - the last point's minima are kept, so value, gradient and Hessian at one x (polysolve
+    ///    asks for each separately, and again in its line search) search once;
+    ///  - each cell searches only its certified candidates (InputTriangles::ball_candidates()),
+    ///    valid at every x in a ball around the point they were built at. r, the ball's radius,
+    ///    is the distance from that point to the nearest plane through a cell's three fixed
+    ///    corners: the largest ball around it in which none of these cells can invert. The
+    ///    solver evaluates only points where no ring cell is inverted (polysolve tests
+    ///    is_step_valid() before each trial value), so it leaves this ball only away from the
+    ///    nearest face. Correctness does not depend on r, only the speed. Outside the ball the
+    ///    candidates are rebuilt around the new point; where no ball can be certified there
+    ///    (r <= 0 or not finite), that evaluation searches the whole tree.
+    /// Measured on the cube (cube_on, 3 turns, serial): 7.45M evaluations, 57% at the last point;
+    /// of the rest 96% inside the ball, with 1.37 candidates per cell; the whole tree 8 times.
+    /// Smoothing 68 s -> 15 s, the run 76 s -> 23 s, the output bit-identical.
+    void set_exact_corner_bound(std::shared_ptr<const InputTriangles> tris, double delta);
+    /// EXPERIMENTAL_band_volume_exact_min: the current certified ball, its centre and radius
+    /// (radius < 0: none yet). For the tests.
+    std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
 private:
     /// need: 0 value, 1 + gradient, 2 + Hessian.
     double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    /// EXPERIMENTAL_band_volume_exact_min: m_min_md and m_min_tri at x (see
+    /// set_exact_corner_bound()).
+    void exact_minima(const Eigen::Vector3d& x) const;
+    /// EXPERIMENTAL_band_volume_exact_min: centre the certified ball at x, when its radius there
+    /// is positive and finite; false (the old ball kept) otherwise.
+    bool certify_ball(const Eigen::Vector3d& x) const;
     bool m_centroid_only = false;
     std::shared_ptr<const InputTriangles> m_tris; ///< corner_bound when set
     std::vector<std::vector<int64_t>> m_cand;
     std::vector<std::vector<double>>
         m_cand_fixed; ///< per cell, per candidate: sum of r_P at q1..q3
     double m_delta = 1.;
+    bool m_exact = false; ///< set_exact_corner_bound()
+    mutable std::vector<int64_t> m_hint; ///< per cell: the last minimiser (search start only)
+    /// exact_minima(): per cell min_mean_distance() and its minimiser at m_min_x (bitwise), the
+    /// last point evaluated; valid once m_min_set.
+    mutable bool m_min_set = false;
+    mutable Eigen::Vector3d m_min_x = Eigen::Vector3d::Zero();
+    mutable std::vector<double> m_min_md;
+    mutable std::vector<int64_t> m_min_tri;
+    /// certify_ball(): the ball's centre and radius (< 0: none), and per cell its candidates.
+    mutable Eigen::Vector3d m_ball_c = Eigen::Vector3d::Zero();
+    mutable double m_ball_r = -1.;
+    mutable std::vector<std::vector<InputTriangles::BallCandidate>> m_ball_cand;
 
     std::shared_ptr<const OffsetPotential3D> m_potential;
     std::vector<Cell> m_cells;

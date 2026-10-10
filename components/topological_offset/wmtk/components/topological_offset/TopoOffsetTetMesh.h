@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <future>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -681,6 +682,12 @@ public:
         std::array<Vector3d, 4> p;
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
         const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
+        if (m_offset_params.band_volume_exact_min) {
+            // EXPERIMENTAL_band_volume_exact_min: the min over ALL triangles, a function of the
+            // corners alone; `stored_tri` is not read.
+            const double md = m_band_tris->min_mean_distance(p.data(), 4, best);
+            return vol * ((md - delta) / delta) * band_volume_factor();
+        }
         std::array<int64_t, 5> cand;
         for (int j = 0; j < 4; ++j) cand[size_t(j)] = m_band_tris->nearest(p[size_t(j)]);
         cand[4] = stored_tri;
@@ -750,6 +757,10 @@ public:
     /// EXPERIMENTAL_band_volume_energy: collapses and swaps refused because the volume sum over
     /// the changed band cells rose (the AMIPS max having passed), per operation group.
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
+    /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of E's terms (taken in
+    /// split_before_cells()), and the splits refused for not lowering it, per operation group.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
+    mutable std::atomic<int> m_volume_reject_split{0};
 
     /// Max of tet_energy() over `tids` (0 for none): the number every rule above compares.
     double max_tet_energy(const std::vector<size_t>& tids) const;
@@ -974,14 +985,32 @@ public:
     mutable size_t m_debug_seq = 0;
     /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
     /// companion suffix, the frame indices that actually produced one. Both exist only to write
-    /// the ParaView collections -- see write_debug_pvd(). Same in 2D.
-    mutable std::vector<std::string> m_debug_frame_labels;
-    mutable std::map<std::string, std::vector<size_t>> m_debug_pvd_series;
-    /// DEBUG_output: rewrite <output>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
+    /// the ParaView collections -- see write_debug_pvd(). Same in 2D, where they are two plain
+    /// members; one struct here because the frame writer takes them over while a frame's files
+    /// are in flight (m_debug_frame_write).
+    struct DebugTimeline
+    {
+        std::vector<std::string> labels;
+        std::map<std::string, std::vector<size_t>> pvd_series;
+    };
+    DebugTimeline m_debug_timeline;
+    /// DEBUG_output: the frame whose files a background thread is encoding and writing, if any
+    /// (write_debug_frame()). Moved into it, m_debug_timeline belongs to that thread until
+    /// wait_debug_frame_write() takes it back, so the two threads never share it; the frame's
+    /// arrays are its own snapshot. A std::async future, so destroying it waits for the write: a
+    /// run that throws still finishes the frame in flight.
+    std::future<DebugTimeline> m_debug_frame_write;
+    /// DEBUG_output: rewrite <out>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
     /// series over the debug frames. Needed because ParaView only groups a file series when the
     /// index is immediately before the extension, which is false for every companion
-    /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens.
-    void write_debug_pvd() const;
+    /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens. Static:
+    /// it runs on the frame writer's thread and reads only what it is given.
+    static void write_debug_pvd(const std::string& out, const DebugTimeline& timeline);
+    /// DEBUG_output: wait for the frame in flight, if any, and take m_debug_timeline back;
+    /// rethrows what the writer threw. Called before the next frame is handed over, before a
+    /// growth stage resets the timeline, and once the run writes no more frames
+    /// (topological_offset.cpp), so every frame is complete on disk before anything reads it.
+    void wait_debug_frame_write();
     /// Pass index within the current turn, and the (turn, loop-or-final-pass tag) it belongs to --
     /// when those change the index restarts. All three exist only to name frames.
     mutable int m_debug_pass = 0;
@@ -2106,6 +2135,15 @@ public:
         double max_unsettled_change = 0.; ///< max own-error change over the unsettled, in bars
         size_t n_rings_unsolved = 0; ///< of the unsettled: no front solve in the latest group
         Vector3d worst_unsettled_pos = Vector3d::Zero();
+        /// EXPERIMENTAL_edge_excess_refinement: the refinement is the edge test alone and
+        /// refinable_vertices are the endpoints of the edges over the bar; the ring measure only
+        /// gates the exit. Counts are of distinct edges; the excess is a ratio to the bar.
+        bool edge_rule = false;
+        size_t n_edge_cells = 0; ///< band cells with a front vertex, whose edges were tested
+        size_t n_edges_over = 0; ///< distinct edges with the excess over the bar (block the exit)
+        size_t n_edges_at_floor = 0; ///< of those, both endpoints at the sizing floor
+        double max_edge_excess = 0.;
+        Vector3d worst_edge_mid = Vector3d::Zero();
         bool rings_ok() const
         {
             return unreachable_exit ? n_rings_over == n_rings_unreached : max_ring <= bar;
@@ -2144,7 +2182,8 @@ public:
         /// rings_ok().
         bool converged() const
         {
-            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0;
+            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0 &&
+                   n_edges_over == 0;
         }
         /// The n_at_floor faces as one sentence, for the turn's line (a warning when some have
         /// their corners at the sizing floor), the verdict and the throw_on_nonconvergence
@@ -2178,6 +2217,14 @@ public:
     /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
     /// the bar.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
+    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when E fell by
+    /// less than the bar energy b = band_volume_factor() front_conv^2 A / (2 target_distance)
+    /// since `e_prev` (E at the end of the previous turn, turn 1: before its first group; set to
+    /// E now). Only a settled turn tests the front faces (InputTriangles::min_triangle_distance()
+    /// and min_max_corner_distance()) and halves the corners of those more than front_conv from
+    /// the level set, when `refine_now`. Logs the turn's [settle] line. Returns settled and no
+    /// face marked: the loop's exit. See the spec doc.
+    bool settle_refinement_turn(int turn, double& e_prev, bool refine_now);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -2395,9 +2442,6 @@ public:
     /// label connected simplicial complex components (simplices labelled 1 or 2)
     size_t flood_fill();
 
-    std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond) const;
-
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
@@ -2448,7 +2492,33 @@ public:
     void write_phi_grid(const std::string& path, int n) const;
 
     void write_input_complex(const std::string& path);
+    /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)).
     void write_vtu(const std::string& path);
+    /**
+     * @brief Everything write_vtu() writes, as arrays: the mesh is read once, by
+     * gather_vtu_frame(), and write_vtu_frame() reads this and nothing else -- so a debug frame's
+     * encoding and writing can run on another thread while the loop goes on (write_debug_frame()).
+     * Point arrays are vert_capacity() rows, indexed by vid; see gather_vtu_frame() for what
+     * each field is. tags[i] is named tag_names[i]; the last entry of tags is offset_tag.
+     */
+    struct VtuFrame
+    {
+        std::string path;
+        MatrixXd V;
+        MatrixXi T, F_in, F_off, E;
+        VectorXd amips;
+        std::vector<MatrixXd> tags;
+        std::vector<std::string> tag_names;
+        VectorXd labels, order, vid, sizing, target;
+        VectorXd conv, resid, grad, align, cdist, fold, newton_it, front_change, newton_st;
+        VectorXd f_err, f_len, ring; // the _off file's: per offset face, and the ring measure
+    };
+    /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
+    /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
+    /// Does not change the mesh (the band-region map it re-derives is put back).
+    VtuFrame gather_vtu_frame(const std::string& path);
+    /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
+    static void write_vtu_frame(const VtuFrame& frame);
     void write_msh_groups(const std::string& file);
     //// output stuff
 

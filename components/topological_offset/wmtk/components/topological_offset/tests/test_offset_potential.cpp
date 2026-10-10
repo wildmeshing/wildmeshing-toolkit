@@ -12,8 +12,10 @@
 #include <Eigen/Eigenvalues>
 
 #include <cmath>
+#include <cstring>
 #include <random>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -2034,6 +2036,711 @@ TEST_CASE("band-volume-corner-bound", "[offset][potential]")
             for (int j = 0; j < 3; ++j)
                 CHECK(std::abs((gp[j] - gm[j]) / (2. * h) - H(j, k)) <= 1e-4 * hs);
         }
+    }
+}
+
+TEST_CASE("band-volume-exact-min", "[offset][potential]")
+{
+    // EXPERIMENTAL_band_volume_exact_min: InputTriangles::min_mean_distance() is the min over ALL
+    // triangles of the corner mean of d_P (brute force, lowest index on a tie, whatever the
+    // starting point), on a cube and on a random soup; the cell term built on it is an upper bound
+    // on a dense integral, no split raises it without any stored triangle, and
+    // BandVolumeEnergy3D's exact mode has its value and derivatives.
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd Vc(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) Vc.row(i) = s.V.row(i).head<3>();
+    const Eigen::MatrixXi Fc = s.F;
+    std::mt19937 rng(23);
+    std::uniform_real_distribution<double> U(-1.4, 1.4), J(-0.15, 0.15);
+    Eigen::MatrixXd Vr(3 * 300, 3);
+    Eigen::MatrixXi Fr(300, 3);
+    for (int f = 0; f < 300; ++f) {
+        const Vector3d c(U(rng), U(rng), U(rng));
+        for (int k = 0; k < 3; ++k) {
+            Vr.row(3 * f + k) = (c + Vector3d(J(rng), J(rng), J(rng))).transpose();
+            Fr(f, k) = 3 * f + k;
+        }
+    }
+    for (const auto& [V, F, name] :
+         {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
+        INFO(name);
+        const InputTriangles tris(V, F);
+        for (int k = 0; k < 300; ++k) {
+            const Vector3d c(U(rng), U(rng), U(rng));
+            std::array<Vector3d, 4> q;
+            for (auto& p : q) p = c + 2. * Vector3d(J(rng), J(rng), J(rng));
+            double want = std::numeric_limits<double>::infinity();
+            int64_t wbest = -1;
+            for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
+                double sum = 0.;
+                for (const Vector3d& p : q) sum += tris.distance(t, p);
+                sum /= 4;
+                if (sum < want) want = sum, wbest = t;
+            }
+            for (const int64_t hint : {int64_t(-1), int64_t(k % int(tris.size()))}) {
+                int64_t best = -1;
+                const double got = tris.min_mean_distance(q.data(), 4, best, hint);
+                CHECK(got == want);
+                CHECK(best == wbest);
+            }
+        }
+    }
+
+    const auto tris = std::make_shared<const InputTriangles>(Vc, Fc);
+    const auto rule = [&](const std::array<Vector3d, 4>& q) {
+        int64_t best = -1;
+        const double md = tris->min_mean_distance(q.data(), 4, best);
+        return std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6. *
+               ((md - delta) / delta);
+    };
+    const auto d_all = [&](const Vector3d& p) {
+        double m = std::numeric_limits<double>::infinity();
+        for (size_t t = 0; t < tris->size(); ++t) m = std::min(m, tris->distance(int64_t(t), p));
+        return m;
+    };
+    SECTION("an upper bound, and no split raises it, with nothing stored")
+    {
+        int checked = 0;
+        for (int k = 0; k < 60; ++k) {
+            const Vector3d c0 = k % 3 == 0   ? Vector3d(1.1, 0.2, 1.1)
+                                : k % 3 == 1 ? Vector3d(1.1, 1.1, 1.1)
+                                             : Vector3d(1.05, 0.0, 1.25);
+            std::array<Vector3d, 4> q;
+            for (auto& p : q) {
+                p = c0 + Vector3d(J(rng), J(rng), J(rng));
+                for (int j = 0; j < 3; ++j) p[j] = std::max(p[j], c0[j] > 1. ? 1.0 + 1e-3 : -1.);
+            }
+            const double vol = std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6.;
+            if (vol < 1e-5) continue;
+            const int K = 16;
+            double sum = 0.;
+            int n = 0;
+            for (int a = 0; a <= K; ++a)
+                for (int b = 0; a + b <= K; ++b)
+                    for (int cc = 0; a + b + cc <= K; ++cc) {
+                        const int d = K - a - b - cc;
+                        sum += (d_all((a * q[0] + b * q[1] + cc * q[2] + d * q[3]) / double(K)) -
+                                delta) /
+                               delta;
+                        ++n;
+                    }
+            const double u = rule(q);
+            CHECK(u >= vol * sum / n - 1e-9 * std::max(1., std::abs(u)));
+            for (int ia = 0; ia < 4; ++ia)
+                for (int ib = ia + 1; ib < 4; ++ib) {
+                    const Vector3d mid = 0.5 * (q[ia] + q[ib]);
+                    std::array<Vector3d, 4> c1 = q, c2 = q;
+                    c1[size_t(ib)] = mid;
+                    c2[size_t(ia)] = mid;
+                    CHECK(rule(c1) + rule(c2) <= u + 1e-12 * std::max(1., std::abs(u)));
+                }
+            ++checked;
+        }
+        CHECK(checked > 40);
+    }
+    SECTION("BandVolumeEnergy3D exact mode: value and derivatives")
+    {
+        auto env = std::make_shared<SampleEnvelope>();
+        env->use_exact = true;
+        {
+            std::vector<Eigen::Vector3d> verts(size_t(Vc.rows()));
+            for (int i = 0; i < Vc.rows(); ++i) verts[size_t(i)] = Vc.row(i).transpose();
+            std::vector<Eigen::Vector3i> tv(size_t(Fc.rows()));
+            for (int i = 0; i < Fc.rows(); ++i)
+                tv[size_t(i)] = Eigen::Vector3i(Fc(i, 0), Fc(i, 1), Fc(i, 2));
+            env->init(verts, tv, delta);
+        }
+        const auto pot = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+        const Vector3d ctr(1.06, 0.0, 1.07); // beyond the edge x = z = 1
+        const double rad = 0.03, w = 0.7;
+        std::vector<BandVolumeEnergy3D::Cell> cells;
+        for (const double sx : {-1., 1.})
+            for (const double sy : {-1., 1.})
+                for (const double sz : {-1., 1.}) {
+                    if (sz > 0.) continue;
+                    BandVolumeEnergy3D::Cell cl;
+                    cl.q1 = ctr + sx * rad * Vector3d::UnitX();
+                    cl.q2 = ctr + sy * rad * Vector3d::UnitY();
+                    cl.q3 = ctr + sz * rad * Vector3d::UnitZ();
+                    cells.push_back(cl);
+                }
+        const auto cells_copy = cells;
+        BandVolumeEnergy3D energy(pot, cells, ctr, w);
+        energy.set_exact_corner_bound(tris, delta);
+        const VectorXd xv = ctr + Vector3d(0.002, 0.001, -0.003);
+        double want = 0.;
+        for (const auto& cl : cells_copy) want += rule({Vector3d(xv), cl.q1, cl.q2, cl.q3});
+        CHECK(energy.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        const double h = 1e-7, gs = std::max(1e-9, g.norm()), hs = std::max(1e-9, H.norm());
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            CHECK(std::abs((energy.value(xp) - energy.value(xm)) / (2. * h) - g[k]) <= 1e-5 * gs);
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j)
+                CHECK(std::abs((gp[j] - gm[j]) / (2. * h) - H(j, k)) <= 1e-4 * hs);
+        }
+    }
+}
+
+TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
+{
+    // EXPERIMENTAL_band_volume_exact_min: BandVolumeEnergy3D's exact mode keeps the last point's
+    // minima and scans each cell's certified candidates (InputTriangles::ball_candidates()). Its
+    // value, gradient and Hessian equal, bit for bit, the rule without either -- one
+    // min_mean_distance() call per cell and evaluation -- inside the certified ball, exactly on
+    // its boundary, outside it (rebuilt there, or the whole tree where no ball exists), around the
+    // rebuilt ball, and on repeated and alternating calls; on a cube (exact ties between a face's
+    // two triangles, at dyadic rings) and on a random soup.
+    const double delta = 0.1, w = 0.7;
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd Vc(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) Vc.row(i) = s.V.row(i).head<3>();
+    const Eigen::MatrixXi Fc = s.F;
+    std::mt19937 rng(31);
+    std::uniform_real_distribution<double> U(-1.4, 1.4), J(-0.15, 0.15), A(0.05, 0.25),
+        N01(-1., 1.);
+    Eigen::MatrixXd Vr(3 * 300, 3);
+    Eigen::MatrixXi Fr(300, 3);
+    for (int f = 0; f < 300; ++f) {
+        const Vector3d c(U(rng), U(rng), U(rng));
+        for (int k = 0; k < 3; ++k) {
+            Vr.row(3 * f + k) = (c + Vector3d(J(rng), J(rng), J(rng))).transpose();
+            Fr(f, k) = 3 * f + k;
+        }
+    }
+    // Exact mode does not read the field; the cube's serves both soups.
+    auto env = std::make_shared<SampleEnvelope>();
+    env->use_exact = true;
+    {
+        std::vector<Eigen::Vector3d> verts(size_t(Vc.rows()));
+        for (int i = 0; i < Vc.rows(); ++i) verts[size_t(i)] = Vc.row(i).transpose();
+        std::vector<Eigen::Vector3i> tv(size_t(Fc.rows()));
+        for (int i = 0; i < Fc.rows(); ++i)
+            tv[size_t(i)] = Eigen::Vector3i(Fc(i, 0), Fc(i, 1), Fc(i, 2));
+        env->init(verts, tv, delta);
+    }
+    const auto pot = std::make_shared<const EuclideanOffsetPotential3D>(env, delta);
+    const auto same = [](const double* a, const double* b, const int n) {
+        return std::memcmp(a, b, sizeof(double) * size_t(n)) == 0;
+    };
+    const auto unit = [&]() {
+        Vector3d u;
+        do u = Vector3d(N01(rng), N01(rng), N01(rng));
+        while (u.norm() < 0.1 || u.norm() > 1.);
+        return Vector3d(u.normalized());
+    };
+
+    for (const auto& [V, F, name] :
+         {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
+        INFO(name);
+        const auto tris = std::make_shared<const InputTriangles>(V, F);
+        // The rule before the cache, verbatim (BandVolumeEnergy3D's constructor orients each cell
+        // positive at x0); `P` gets each cell's minimiser, `ties` counts cells whose minimum two
+        // triangles share.
+        const auto reference = [&](std::vector<BandVolumeEnergy3D::Cell> cells,
+                                   const Vector3d& x0,
+                                   const Vector3d& x,
+                                   const int need,
+                                   Vector3d& g,
+                                   Eigen::Matrix3d& H,
+                                   std::vector<int64_t>* P_out,
+                                   int* ties) {
+            double E = 0.;
+            g.setZero();
+            H.setZero();
+            if (P_out) P_out->clear();
+            for (auto& c : cells) {
+                if ((c.q1 - x0).dot((c.q2 - c.q1).cross(c.q3 - c.q1)) < 0.) std::swap(c.q2, c.q3);
+                const Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+                const double vol = (c.q1 - x).dot(N) / 6.;
+                const Vector3d gvol = -N / 6.;
+                const std::array<Vector3d, 4> pts = {{x, c.q1, c.q2, c.q3}};
+                int64_t P = -1;
+                const double md = tris->min_mean_distance(pts.data(), 4, P);
+                if (P_out) P_out->push_back(P);
+                if (ties) {
+                    int n = 0;
+                    for (int64_t t = 0; t < int64_t(tris->size()); ++t) {
+                        double sm = 0.;
+                        for (const Vector3d& p : pts) sm += tris->distance(t, p);
+                        sm /= 4;
+                        if (sm == md) ++n;
+                    }
+                    if (n > 1) ++*ties;
+                }
+                if (P < 0) continue;
+                const double best = (md - delta) / delta;
+                E += vol * best;
+                if (need >= 1) {
+                    Vector3d gd;
+                    Eigen::Matrix3d hd;
+                    tris->distance(P, x, &gd, need >= 2 ? &hd : nullptr);
+                    const Vector3d gm = gd / (4. * delta);
+                    g += best * gvol + vol * gm;
+                    if (need >= 2) {
+                        H +=
+                            gvol * gm.transpose() + gm * gvol.transpose() + vol * hd / (4. * delta);
+                    }
+                }
+            }
+            E *= w;
+            g *= w;
+            H *= w;
+            return E;
+        };
+
+        int n_inside = 0, n_on = 0, n_out_rebuilt = 0, n_out_full = 0, n_around_rebuilt = 0,
+            n_switched = 0, n_ties = 0, n_evals = 0;
+        for (int ring = 0; ring < 40; ++ring) {
+            // An octahedral star of 8 cells around x0: random and jittered, or (cube, every
+            // fourth ring) dyadic and symmetric about the diagonal x = y of the face z = 1, so
+            // that a face's two triangles tie exactly.
+            const bool dyadic = std::string(name) == "cube" && ring % 4 == 0;
+            Vector3d x0;
+            std::array<Vector3d, 6> arm; // +x, -x, +y, -y, +z, -z
+            if (dyadic) {
+                const double a = 0.125 * (1 + ring % 3);
+                x0 = Vector3d(0.25 - 0.125 * (ring % 5), 0.25 - 0.125 * (ring % 5), 1.125);
+                for (int j = 0; j < 6; ++j) {
+                    arm[size_t(j)] = x0 + (j % 2 ? -a : a) * Vector3d::Unit(j / 2);
+                }
+            } else {
+                x0 = Vector3d(U(rng), U(rng), U(rng));
+                for (int j = 0; j < 6; ++j) {
+                    arm[size_t(j)] = x0 + (j % 2 ? -A(rng) : A(rng)) * Vector3d::Unit(j / 2) +
+                                     0.2 * Vector3d(J(rng), J(rng), J(rng));
+                }
+            }
+            std::vector<BandVolumeEnergy3D::Cell> cells;
+            for (int sx = 0; sx < 2; ++sx)
+                for (int sy = 0; sy < 2; ++sy)
+                    for (int sz = 0; sz < 2; ++sz) {
+                        BandVolumeEnergy3D::Cell cl;
+                        cl.q1 = arm[size_t(sx)];
+                        cl.q2 = arm[size_t(2 + sy)];
+                        cl.q3 = arm[size_t(4 + sz)];
+                        cells.push_back(cl);
+                    }
+            BandVolumeEnergy3D energy(pot, cells, x0, w);
+            energy.set_exact_corner_bound(tris, delta);
+
+            // value, gradient and Hessian at x in the order `order` (repeats included), each
+            // against the reference.
+            std::vector<int64_t> P0;
+            const auto check = [&](const Vector3d& x, const std::vector<int>& order) {
+                std::vector<int64_t> Px;
+                Vector3d g_ref;
+                Eigen::Matrix3d H_ref;
+                const double E_ref = reference(cells, x0, x, 2, g_ref, H_ref, &Px, &n_ties);
+                for (size_t k = 0; k < Px.size() && k < P0.size(); ++k) {
+                    if (Px[k] != P0[k]) ++n_switched;
+                }
+                const VectorXd xv = x;
+                for (const int need : order) {
+                    ++n_evals;
+                    if (need == 0) {
+                        const double E = energy.value(xv);
+                        CHECK(same(&E, &E_ref, 1));
+                    } else if (need == 1) {
+                        VectorXd g;
+                        energy.gradient(xv, g);
+                        REQUIRE(g.size() == 3);
+                        CHECK(same(g.data(), g_ref.data(), 3));
+                    } else {
+                        MatrixXd H;
+                        energy.hessian(xv, H);
+                        REQUIRE((H.rows() == 3 && H.cols() == 3));
+                        CHECK(same(H.data(), H_ref.data(), 9));
+                    }
+                }
+                return Px;
+            };
+            const std::vector<std::vector<int>> orders = {
+                {0, 1, 2},
+                {2, 0, 1, 1},
+                {1, 2, 0, 0, 2},
+                {0, 0, 2, 1}};
+            int oi = 0;
+            const auto next_order = [&]() { return orders[size_t(oi++ % int(orders.size()))]; };
+
+            P0 = check(x0, next_order());
+            const auto [c0, r] = energy.certified_ball();
+            REQUIRE(r > 0.);
+            REQUIRE(same(c0.data(), x0.data(), 3));
+            const auto centre_is = [&](const Vector3d& c) {
+                const Vector3d cc = energy.certified_ball().first;
+                return same(cc.data(), c.data(), 3);
+            };
+
+            // inside: the lists, the ball unmoved
+            for (int j = 0; j < 8; ++j) {
+                const Vector3d u = unit();
+                for (const double t : {0.3, 0.7, 0.95, 0.999999}) {
+                    check(x0 + t * r * u, next_order());
+                    CHECK(centre_is(x0));
+                    ++n_inside;
+                }
+            }
+            // alternating between two inside points: every call misses the one-point memo
+            for (int j = 0; j < 3; ++j) {
+                const Vector3d a = x0 + 0.6 * r * unit(), b = x0 + 0.9 * r * unit();
+                for (int k = 0; k < 4; ++k) check(k % 2 ? b : a, {k % 3});
+                CHECK(centre_is(x0));
+            }
+            // exactly on the boundary, (x - x0).norm() == r as computed: still the lists
+            for (int j = 0; j < 6; ++j) {
+                const Vector3d base = x0 + r * unit();
+                bool found = false;
+                Vector3d x;
+                for (int a = -3; a <= 3 && !found; ++a)
+                    for (int b = -3; b <= 3 && !found; ++b)
+                        for (int c = -3; c <= 3 && !found; ++c) {
+                            x = base;
+                            const int st[3] = {a, b, c};
+                            for (int i = 0; i < 3; ++i) {
+                                for (int n = 0; n < std::abs(st[i]); ++n) {
+                                    x[i] = std::nextafter(x[i], st[i] > 0 ? 1e300 : -1e300);
+                                }
+                            }
+                            found = (x - x0).norm() == r;
+                        }
+                if (!found) continue;
+                check(x, next_order());
+                CHECK(centre_is(x0));
+                ++n_on;
+            }
+            // outside, the ball rebuilt there (or not, where it cannot be): then around it
+            for (int j = 0; j < 4; ++j) {
+                const Vector3d x = x0 + (j == 0 ? 1. + 1e-9 : 1.5 + j) * r * unit();
+                const auto [cb, rb] = energy.certified_ball();
+                check(x, next_order());
+                if (centre_is(x)) {
+                    ++n_out_rebuilt;
+                    const double r1 = energy.certified_ball().second;
+                    for (int k = 0; k < 4; ++k) {
+                        check(x + 0.8 * r1 * unit(), next_order());
+                        CHECK(centre_is(x));
+                        ++n_around_rebuilt;
+                    }
+                } else {
+                    ++n_out_full;
+                    CHECK(centre_is(cb));
+                }
+            }
+            // beyond the plane of the cell nearest x0: no ball there, the whole tree
+            {
+                double hmin = std::numeric_limits<double>::infinity();
+                Vector3d nmin = Vector3d::Zero();
+                for (auto c : cells) {
+                    if ((c.q1 - x0).dot((c.q2 - c.q1).cross(c.q3 - c.q1)) < 0.) {
+                        std::swap(c.q2, c.q3);
+                    }
+                    const Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+                    const double h = (c.q1 - x0).dot(N) / N.norm();
+                    if (h < hmin) hmin = h, nmin = N.normalized();
+                }
+                const auto before = energy.certified_ball();
+                const Vector3d x = x0 + 2. * hmin * nmin;
+                check(x, next_order());
+                CHECK(centre_is(before.first));
+                CHECK(energy.certified_ball().second == before.second);
+                ++n_out_full;
+            }
+        }
+        INFO(
+            "inside " << n_inside << " on " << n_on << " outside rebuilt " << n_out_rebuilt
+                      << " outside full " << n_out_full << " around rebuilt " << n_around_rebuilt
+                      << " minimiser switched " << n_switched << " ties " << n_ties
+                      << " evaluations " << n_evals);
+        CHECK(n_on >= 40);
+        CHECK(n_out_rebuilt > 20);
+        CHECK(n_out_full >= 40);
+        CHECK(n_switched > 100);
+        if (std::string(name) == "cube") CHECK(n_ties > 20);
+    }
+}
+
+TEST_CASE("face-mean-sq-cos", "[offset][potential]")
+{
+    // EXPERIMENTAL_settle_mark "rms": InputTriangles::face_mean_sq_cos() against a dense lattice
+    // mean of (d - delta)^2 (n . grad d) over the face, on a cube of half-size 1. Over the top
+    // face's interior (d = z - 1 affine, grad d = +z) the 3-edge-midpoint rule is exact, level or
+    // tilted; across the rounded region around the edge x = z = 1 it is close.
+    const double delta = 0.1;
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd V(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
+    const InputTriangles tris(V, s.F);
+    const auto dense =
+        [&](const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& n) {
+            const int K = 60;
+            double sum = 0.;
+            int cnt = 0;
+            for (int i = 0; i <= K; ++i)
+                for (int j = 0; i + j <= K; ++j) {
+                    const Vector3d q = a + (b - a) * (double(i) / K) + (c - a) * (double(j) / K);
+                    Vector3d g;
+                    const double d = tris.distance(tris.nearest(q), q, &g);
+                    sum += (d - delta) * (d - delta) * n.dot(g);
+                    ++cnt;
+                }
+            return sum / cnt;
+        };
+    SECTION("exact over a flat part, level and tilted")
+    {
+        for (const double tilt : {0.0, 0.05, 0.15}) {
+            const Vector3d a(-0.3, -0.2, 1.13), b(0.25, -0.1, 1.13 + tilt), c(0.0, 0.3, 1.08);
+            const Vector3d n = (b - a).cross(c - a).normalized();
+            // the exact mean of a quadratic over a triangle: (1/3) sum of its values at the edge
+            // midpoints; here with d = z - 1 and grad d = (0, 0, 1), written out
+            double want = 0.;
+            for (const auto& [u, v] : {std::pair{a, b}, std::pair{b, c}, std::pair{c, a}}) {
+                const double z = 0.5 * (u.z() + v.z());
+                want += (z - 1. - delta) * (z - 1. - delta) * n.z() / 3.;
+            }
+            const double got = tris.face_mean_sq_cos(a, b, c, n, delta);
+            CHECK(got == Catch::Approx(want).epsilon(1e-12));
+            // and the lattice mean converges to it (lattice error ~ 1/K)
+            CHECK(dense(a, b, c, n) == Catch::Approx(got).epsilon(5e-2));
+        }
+    }
+    SECTION("across the rounded region of an edge")
+    {
+        // A face across the cylinder of radius rho around the edge x = z = 1: two corners at
+        // angle t0 (y = -L/2, L/2), one at t1 = t0 + L/rho. Measured (2026-10-09, dense means):
+        // corners on the level set, the rule's mean is 1.25x the dense one at every size (the
+        // integrand is quartic, the rule exact for quadratics); corners 1 bar off, it converges
+        // (1.002x at edge 0.01).
+        const double eps = delta / 100;
+        const auto face = [&](const double rho, const double L) {
+            const double t0 = 0.785 - 0.5 * L / rho, t1 = 0.785 + 0.5 * L / rho;
+            const auto P = [&](const double t, const double y) {
+                return Vector3d(1. + rho * std::cos(t), y, 1. + rho * std::sin(t));
+            };
+            const Vector3d a = P(t0, -0.5 * L), b = P(t0, 0.5 * L), c = P(t1, 0.);
+            Vector3d n = (b - a).cross(c - a).normalized();
+            if (n.dot(Vector3d(1, 0, 1)) < 0.) n = -n;
+            return std::pair{tris.face_mean_sq_cos(a, b, c, n, delta), dense(a, b, c, n)};
+        };
+        const auto [on_got, on_ref] = face(delta, 0.04);
+        CHECK(on_got / on_ref == Catch::Approx(1.25).margin(0.03));
+        const auto [off_got, off_ref] = face(delta + eps, 0.01);
+        CHECK(off_got / off_ref == Catch::Approx(1.0).margin(0.01));
+    }
+}
+
+TEST_CASE("edge-excess", "[offset][potential]")
+{
+    // EXPERIMENTAL_edge_excess_refinement's measure on a cube of half-size 1:
+    // InputTriangles::edge_excess(P, a, b) = (d_P(a) + d_P(b))/2 - d(m). Zero over one face's
+    // triangle (d_P affine); the chord sag rho (1 - cos(dtheta/2)) around a cube edge (d_P the
+    // distance to the edge line); never below the sag of d_P alone, the difference being
+    // d_P(m) - d(m).
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd V(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
+    const InputTriangles tris(V, s.F);
+
+    SECTION("zero where d_P is affine")
+    {
+        const Vector3d a(0.2, 0.3, 1.25), b(0.25, 0.32, 1.1);
+        const int64_t P = tris.nearest(a);
+        REQUIRE(tris.nearest(b) == P);
+        CHECK(std::abs(tris.edge_excess(P, a, b)) <= 1e-12);
+    }
+    SECTION("the chord sag around an input edge")
+    {
+        // the edge x = 1, z = 1; both points and the midpoint in its region (x > 1, z > 1)
+        const double rho = 0.3, t1 = 0.3, t2 = 1.2;
+        const Vector3d a(1. + rho * std::cos(t1), 0.1, 1. + rho * std::sin(t1));
+        const Vector3d b(1. + rho * std::cos(t2), 0.1, 1. + rho * std::sin(t2));
+        const int64_t P = tris.nearest(a);
+        CHECK(
+            tris.edge_excess(P, a, b) ==
+            Catch::Approx(rho * (1. - std::cos(0.5 * (t2 - t1)))).margin(1e-12));
+    }
+    SECTION("at least the sag of d_P, never negative")
+    {
+        std::mt19937 rng(11);
+        std::uniform_real_distribution<double> U(-1.5, 1.5);
+        int n = 0;
+        for (int k = 0; k < 400; ++k) {
+            const Vector3d a(U(rng), U(rng), U(rng)), b(U(rng), U(rng), U(rng));
+            if (a.cwiseAbs().maxCoeff() < 1. || b.cwiseAbs().maxCoeff() < 1.) continue; // outside
+            const int64_t P = tris.nearest(a);
+            const Vector3d m = 0.5 * (a + b);
+            const double sag =
+                0.5 * (tris.distance(P, a) + tris.distance(P, b)) - tris.distance(P, m);
+            const double x = tris.edge_excess(P, a, b);
+            CHECK(sag >= -1e-12);
+            CHECK(x >= sag - 1e-12);
+            CHECK(
+                x == Catch::Approx(sag + tris.distance(P, m) - tris.distance(tris.nearest(m), m))
+                         .margin(1e-12));
+            ++n;
+        }
+        CHECK(n > 100);
+    }
+}
+
+TEST_CASE("front-face-max-distance", "[offset][potential]")
+{
+    // EXPERIMENTAL_settle_refinement's face test. InputTriangles::min_triangle_distance() is the
+    // min over ALL triangles of triangle_distance(), and min_max_corner_distance() the min over
+    // ALL triangles of the max corner distance (brute force, on a cube and on a random soup);
+    // triangle_distance() is the distance between two triangles: h for parallel ones h apart, 0
+    // for crossing ones, never above a dense sampling of both and within a few percent of it.
+    const TriSoup s = cube(1.0);
+    Eigen::MatrixXd Vc(s.V.rows(), 3);
+    for (int i = 0; i < s.V.rows(); ++i) Vc.row(i) = s.V.row(i).head<3>();
+    const Eigen::MatrixXi Fc = s.F;
+    std::mt19937 rng(29);
+    std::uniform_real_distribution<double> U(-1.4, 1.4), J(-0.15, 0.15), W(0., 1.);
+    Eigen::MatrixXd Vr(3 * 300, 3);
+    Eigen::MatrixXi Fr(300, 3);
+    for (int f = 0; f < 300; ++f) {
+        const Vector3d c(U(rng), U(rng), U(rng));
+        for (int k = 0; k < 3; ++k) {
+            Vr.row(3 * f + k) = (c + Vector3d(J(rng), J(rng), J(rng))).transpose();
+            Fr(f, k) = 3 * f + k;
+        }
+    }
+    const auto one_triangle = [](const Vector3d& a, const Vector3d& b, const Vector3d& c) {
+        Eigen::MatrixXd V(3, 3);
+        V.row(0) = a.transpose();
+        V.row(1) = b.transpose();
+        V.row(2) = c.transpose();
+        Eigen::MatrixXi F(1, 3);
+        F << 0, 1, 2;
+        return InputTriangles(V, F);
+    };
+
+    SECTION("the pruned searches are the brute force")
+    {
+        for (const auto& [V, F, name] :
+             {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
+            INFO(name);
+            const InputTriangles tris(V, F);
+            int n_zero = 0, n_positive = 0;
+            for (int k = 0; k < 300; ++k) {
+                // Query triangles from the soup's size to ten times it.
+                const double scale = k % 3 == 0 ? 1. : (k % 3 == 1 ? 3. : 10.);
+                const Vector3d c(U(rng), U(rng), U(rng));
+                std::array<Vector3d, 3> q;
+                for (auto& p : q) p = c + scale * Vector3d(J(rng), J(rng), J(rng));
+                double want_min = std::numeric_limits<double>::infinity();
+                double want_max = std::numeric_limits<double>::infinity();
+                for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
+                    want_min = std::min(want_min, tris.triangle_distance(t, q[0], q[1], q[2]));
+                    double m = 0.;
+                    for (const Vector3d& p : q) m = std::max(m, tris.distance(t, p));
+                    want_max = std::min(want_max, m);
+                }
+                CHECK(tris.min_triangle_distance(q[0], q[1], q[2]) == want_min);
+                CHECK(tris.min_max_corner_distance(q.data(), 3) == want_max);
+                (want_min == 0. ? n_zero : n_positive) += 1;
+            }
+            // Both kinds of query: some cross the input, some do not.
+            CHECK(n_zero > 10);
+            CHECK(n_positive > 10);
+        }
+    }
+    SECTION("triangle-to-triangle distance")
+    {
+        const Vector3d a(0., 0., 0.), b(1., 0., 0.), c(0., 1., 0.);
+        const InputTriangles one = one_triangle(a, b, c);
+        for (const double h : {1e-3, 0.1, 0.7}) {
+            for (const double side : {-1., 1.}) {
+                const Vector3d up(0., 0., side * h);
+                CHECK(
+                    one.triangle_distance(0, a + up, b + up, c + up) ==
+                    Catch::Approx(h).margin(1e-15));
+                CHECK(
+                    one.triangle_distance(
+                        0,
+                        Vector3d(0.1, 0.1, 0.) + up,
+                        Vector3d(0.6, 0.1, 0.) + up,
+                        Vector3d(0.1, 0.6, 0.) + up) == Catch::Approx(h).margin(1e-15));
+            }
+        }
+        // An edge of the query through the triangle's interior, and the triangle's edges through
+        // the query's interior (the query's own edges miss the triangle).
+        CHECK(
+            one.triangle_distance(
+                0,
+                Vector3d(0.2, 0.2, -0.5),
+                Vector3d(0.3, 0.2, 0.5),
+                Vector3d(0.2, 0.3, 0.5)) == 0.);
+        CHECK(
+            one.triangle_distance(
+                0,
+                Vector3d(0.5, -1., -1.),
+                Vector3d(0.5, 2., -1.),
+                Vector3d(0.5, 0.25, 2.)) == 0.);
+
+        const auto random_point = [&]() { return Vector3d(W(rng), W(rng), W(rng)); };
+        int n_crossing = 0, n_far = 0;
+        for (int k = 0; k < 200; ++k) {
+            // Crossing: the query's edge x - u .. x + u passes through x, inside P, transversally.
+            const Vector3d p0 = random_point(), p1 = random_point(), p2 = random_point();
+            const Vector3d n = (p1 - p0).cross(p2 - p0);
+            if (n.norm() < 0.05) continue;
+            double w0 = 0.1 + 0.8 * W(rng), w1 = 0.1 + 0.8 * W(rng), w2 = 0.1 + 0.8 * W(rng);
+            const double ws = w0 + w1 + w2;
+            const Vector3d x = (w0 * p0 + w1 * p1 + w2 * p2) / ws;
+            Vector3d u = random_point() - Vector3d::Constant(0.5);
+            if (std::abs(u.normalized().dot(n.normalized())) < 0.3) continue;
+            u *= 0.5 / u.norm();
+            const Vector3d w = x + random_point() - Vector3d::Constant(0.5);
+            CHECK(one_triangle(p0, p1, p2).triangle_distance(0, x - u, x + u, w) == 0.);
+            CHECK(one_triangle(x - u, x + u, w).triangle_distance(0, p0, p1, p2) == 0.);
+            ++n_crossing;
+        }
+        CHECK(n_crossing > 50);
+        for (int k = 0; k < 200; ++k) {
+            // Random pairs, the query moved off by up to 1.5: the exact distance against the min
+            // over K-lattices on both triangles, which can only be larger, by at most (L_P + L_Q)
+            // / K (every point of a triangle lies within a lattice cell's longest edge of its
+            // corners); in general by much less, the distance being stationary along the
+            // features the closest pair lies on.
+            const std::array<Vector3d, 3> P = {{random_point(), random_point(), random_point()}};
+            const Vector3d off =
+                1.5 * W(rng) * (random_point() - Vector3d::Constant(0.5)).normalized();
+            const std::array<Vector3d, 3> Q = {
+                {random_point() + off, random_point() + off, random_point() + off}};
+            const double exact =
+                one_triangle(P[0], P[1], P[2]).triangle_distance(0, Q[0], Q[1], Q[2]);
+            const int K = 24;
+            std::vector<Vector3d> sp, sq;
+            for (int i = 0; i <= K; ++i)
+                for (int j = 0; i + j <= K; ++j) {
+                    const int l = K - i - j;
+                    sp.push_back((i * P[0] + j * P[1] + l * P[2]) / double(K));
+                    sq.push_back((i * Q[0] + j * Q[1] + l * Q[2]) / double(K));
+                }
+            double sampled = std::numeric_limits<double>::infinity();
+            for (const Vector3d& x : sp)
+                for (const Vector3d& y : sq) sampled = std::min(sampled, (x - y).norm());
+            const auto longest = [](const std::array<Vector3d, 3>& T) {
+                return std::max({(T[1] - T[0]).norm(), (T[2] - T[1]).norm(), (T[0] - T[2]).norm()});
+            };
+            CHECK(sampled >= exact - 1e-12);
+            CHECK(sampled <= exact + (longest(P) + longest(Q)) / K);
+            if (exact > 0.1) {
+                CHECK(sampled <= 1.03 * exact);
+                ++n_far;
+            }
+        }
+        CHECK(n_far > 50);
     }
 }
 

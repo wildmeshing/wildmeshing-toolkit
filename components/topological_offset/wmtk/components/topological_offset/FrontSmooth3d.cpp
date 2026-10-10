@@ -449,8 +449,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         m_vertex_attribute[vid].m_posf,
         band_volume_factor());
     e->set_centroid_only(m_offset_params.band_volume_rule == "centroid");
-    if (corner_bound)
+    if (corner_bound && m_offset_params.band_volume_exact_min) {
+        e->set_exact_corner_bound(m_band_tris, m_offset_params.target_distance);
+    } else if (corner_bound) {
         e->set_corner_bound(m_band_tris, std::move(cand), m_offset_params.target_distance);
+    }
     return e;
 }
 

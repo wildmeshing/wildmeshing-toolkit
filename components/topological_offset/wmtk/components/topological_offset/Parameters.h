@@ -231,6 +231,57 @@ struct Parameters : public wmtk::OptimizerParameters
     /// objective is its part of E, the band-volume term included for vertices off the front.
     /// Splits stay independent of the energy.
     bool ops_global_energy = false;
+    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_ops_global_energy. Every loop split is
+    /// committed only if E, summed over the cells it changes, strictly falls -- judged right after
+    /// the split, before any smoothing.
+    bool split_energy_gate = false;
+    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_unreachable_exit. A front vertex's remainder
+    /// W is the largest remainder among its faces instead of their mean, so one face that cannot
+    /// follow the level set is not diluted by the vertex's other faces.
+    bool remainder_max = false;
+    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_unreachable_exit. A front vertex over the bar
+    /// passes as out of reach only when the field says so: the probe point x - r delta grad/|grad|
+    /// (where the vertex's target lies along the field gradient) is itself more than the bar off
+    /// the level set. A reachable one is refined when its remainder W is over the bar, and
+    /// otherwise blocks the exit (never passes). Replaces the settledness test.
+    bool reach_probe = false;
+    /// EXPERIMENTAL (2026-10-09), under EXPERIMENTAL_band_volume_rule "corner_bound", without
+    /// EXPERIMENTAL_unreachable_exit. The refinement is the edge test alone: every edge (a, b) of a
+    /// band cell with a front vertex whose excess (d_P(a) + d_P(b))/2 - d(m) is over front_conv
+    /// (P the cell's minimising triangle, m the midpoint; InputTriangles::edge_excess()) has the
+    /// sizing scalar halved at a and b. The ring measure R(v) refines nothing and only gates the
+    /// exit: exit = no edge over the bar and every R(v) within it. See the spec doc.
+    bool edge_excess_refinement = false;
+    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_edge_excess_refinement. An edge inside the
+    /// length band its sizing controls, L_min = sqrt(collapsing_l2) * mean scalar <= L, is judged at
+    /// the band's top L_max = sqrt(splitting_l2) * mean scalar: excess * max(1, (L_max / L)^2), the
+    /// excess of a curved d growing as L^2; a shorter edge at its own length. Flags a strip whose
+    /// sizing admits edges over the bar before smoothing drifts them over. See the spec doc.
+    bool edge_excess_window = false;
+    /// EXPERIMENTAL (2026-10-09), under EXPERIMENTAL_band_volume_rule "corner_bound". A band cell's
+    /// term takes the min over ALL input triangles (InputTriangles::min_mean_distance()) instead of
+    /// over its corners' nearest plus the triangle stored on the cell: a function of the cell's
+    /// corners alone, never above the candidate rule, and no split raises it (each child's min
+    /// includes the parent's minimiser). The smoother evaluates the same min. See the spec doc.
+    bool band_volume_exact_min = false;
+    /// EXPERIMENTAL (2026-10-09), 3D, under EXPERIMENTAL_band_volume_rule "corner_bound", without
+    /// EXPERIMENTAL_unreachable_exit and EXPERIMENTAL_edge_excess_refinement. Refinement and exit
+    /// wait for the front to settle: a turn is settled when E fell by less than the bar energy
+    /// b = band_volume_factor() front_conv^2 A / (2 target_distance), A the front's area -- the
+    /// offset term's excess for a front lying front_conv off the level set. On a settled turn
+    /// every front face whose exact distance bound from the level set (the face's min of d, and
+    /// min over P of the max of d_P at its corners) exceeds front_conv has its corners halved;
+    /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
+    /// See the spec doc.
+    bool settle_refinement = false;
+    /// EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled
+    /// turn. "max" (the default): the face's exact bound on max |d - target_distance| exceeds
+    /// front_conv. "rms": the face's share of the offset excess exceeds its bar energy,
+    /// X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA > front_conv^2 area(f) / (2 delta),
+    /// i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the
+    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. See the
+    /// spec doc.
+    std::string settle_mark = "max";
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -372,6 +423,57 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         amips_over_stop = json_params["EXPERIMENTAL_amips_over_stop"];
         ops_global_energy = json_params["EXPERIMENTAL_ops_global_energy"];
+        split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
+        remainder_max = json_params["EXPERIMENTAL_remainder_max"];
+        reach_probe = json_params["EXPERIMENTAL_reach_probe"];
+        if (reach_probe && !unreachable_exit) {
+            log_and_throw_error("EXPERIMENTAL_reach_probe needs EXPERIMENTAL_unreachable_exit");
+        }
+        if (remainder_max && !unreachable_exit) {
+            log_and_throw_error("EXPERIMENTAL_remainder_max needs EXPERIMENTAL_unreachable_exit");
+        }
+        edge_excess_refinement = json_params["EXPERIMENTAL_edge_excess_refinement"];
+        if (edge_excess_refinement && (!band_volume_energy || band_volume_rule != "corner_bound" ||
+                                       unreachable_exit || front_measure != "vertex_ring")) {
+            log_and_throw_error(
+                "EXPERIMENTAL_edge_excess_refinement needs EXPERIMENTAL_band_volume_energy with "
+                "EXPERIMENTAL_band_volume_rule \"corner_bound\", front_measure \"vertex_ring\" "
+                "and EXPERIMENTAL_unreachable_exit false");
+        }
+        band_volume_exact_min = json_params["EXPERIMENTAL_band_volume_exact_min"];
+        if (band_volume_exact_min && band_volume_rule != "corner_bound") {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_exact_min needs EXPERIMENTAL_band_volume_rule "
+                "\"corner_bound\"");
+        }
+        edge_excess_window = json_params["EXPERIMENTAL_edge_excess_window"];
+        if (edge_excess_window && !edge_excess_refinement) {
+            log_and_throw_error(
+                "EXPERIMENTAL_edge_excess_window needs EXPERIMENTAL_edge_excess_refinement");
+        }
+        settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
+        settle_mark = json_params["EXPERIMENTAL_settle_mark"];
+        if (settle_mark != "max" && settle_mark != "rms") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_mark is \"max\" or \"rms\", not \"{}\"",
+                settle_mark);
+        }
+        if (settle_mark != "max" && !settle_refinement) {
+            log_and_throw_error("EXPERIMENTAL_settle_mark needs EXPERIMENTAL_settle_refinement");
+        }
+        if (settle_refinement && (!band_volume_energy || band_volume_rule != "corner_bound" ||
+                                  unreachable_exit || edge_excess_refinement)) {
+            // corner_bound: the face test reads the input's triangles (InputTriangles), which
+            // only that rule builds, from an input complex of triangles only.
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_refinement needs EXPERIMENTAL_band_volume_energy with "
+                "EXPERIMENTAL_band_volume_rule \"corner_bound\", and EXPERIMENTAL_unreachable_exit "
+                "and EXPERIMENTAL_edge_excess_refinement false");
+        }
+        if (split_energy_gate && !ops_global_energy) {
+            log_and_throw_error(
+                "EXPERIMENTAL_split_energy_gate needs EXPERIMENTAL_ops_global_energy");
+        }
         if (band_volume_divisor != "front_conv" && band_volume_divisor != "target_distance") {
             log_and_throw_error(
                 "EXPERIMENTAL_band_volume_divisor is \"front_conv\" or \"target_distance\", not "
@@ -502,6 +604,17 @@ struct Parameters : public wmtk::OptimizerParameters
             json_params["offset_smooth_veto"]; // the engine's field, this component's key
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
+        // The plastic medium's rest-shape AMIPS (deform_others) is not part of the band-volume
+        // energy E, and it is dimensionless (about 3 per cell) while E's offset term is a volume:
+        // added to a front vertex's objective it outweighs E. Measured (cube outward, target 1e-2,
+        // tolerance 1e-4, turn 3): objective 12-24 from the rest term against a band-volume
+        // gradient of ~3e-5, so each Newton step moved the vertex ~1e-10 (1e-7 tolerances) and
+        // fronts stayed 7-15 tolerances inside the level set.
+        if (band_volume_energy && deform_others) {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_energy needs deform_others false: the plastic medium's "
+                "rest-shape term is not part of the energy and outweighs it");
+        }
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)

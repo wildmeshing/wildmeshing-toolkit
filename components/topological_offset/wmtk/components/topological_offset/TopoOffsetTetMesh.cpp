@@ -1190,22 +1190,6 @@ void TopoOffsetTetMesh::init_vertex_order()
     logger().info("Vertex order count (0,1,2,3): {}", count);
 }
 
-std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
-    std::function<bool(const FaceAttributes&)> cond) const
-{
-    auto res = std::vector<std::array<size_t, 3>>();
-    for (auto f : get_faces()) {
-        auto fid = f.fid(*this);
-        if (cond(m_face_attribute[fid])) {
-            auto verts = get_face_vertices(f);
-            res.emplace_back( //
-                std::array<size_t, 3>{
-                    {verts[0].vid(*this), verts[1].vid(*this), verts[2].vid(*this)}});
-        }
-    }
-    return res;
-}
-
 double TopoOffsetTetMesh::max_band_vertex_distance() const
 {
     // How far the offset surface ended up from the input complex, as a length. Exact (BVH
@@ -2230,52 +2214,81 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 
 void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {
+    write_vtu_frame(gather_vtu_frame(path));
+}
+
+TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::string& path)
+{
     logger().info("Write {}.vtu (tag for offset is included)", path);
+    VtuFrame fr;
+    fr.path = path;
 
     // Writing debug output must not change the mesh, so never consolidate here. Only the output
     // is compacted, locally: point arrays stay capacity-sized and slot-indexed, so every vid
     // stays valid and dead slots are unreferenced points; the cell arrays are packed.
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
-    const auto faces_in = get_faces_by_condition(
-        [](auto& f) { return f.m_is_surface_fs && f.m_surface_class != OFFSET_SURFACE_CLASS; });
-    const auto faces_off = get_faces_by_condition(
-        [](auto& f) { return f.m_is_surface_fs && f.m_surface_class == OFFSET_SURFACE_CLASS; });
-    std::vector<simplex::Edge> edges;
-    for (const Tuple& t : get_edges()) {
-        simplex::Edge e = simplex_from_edge(t);
-        if (is_order_2_edge(e.vertices())) {
-            edges.push_back(e);
+    // The two surfaces' faces and the order-2 edges, from ONE pass over the faces, so each face's
+    // canonical-id lookup (TetMesh::Tuple::fid(), a scan of a vertex's tet fan) is made once.
+    // get_faces_by_condition() twice and get_edges() with is_order_2_edge() per edge made it
+    // about 12 times per face, plus a face lookup per incident face of every surface edge:
+    // MEASURED 2026-10-09 on the cube (22k tets), 23 of the 40 ms the frame spent reading the
+    // mesh. The arrays are the same: faces in get_faces() order with get_face_vertices()' vertex
+    // order, as get_faces_by_condition() lists them; an edge is listed when get_order_of_edge()
+    // makes it order 2 -- both ends vertex_is_on_surface() and a count of face_is_on_surface()
+    // faces other than 0 and 2 -- in get_edges()' order, by (min vid, max vid).
+    std::vector<std::array<size_t, 3>> faces_in, faces_off;
+    std::vector<std::array<size_t, 2>> surface_edges; // per surface face, its three edges
+    for (const Tuple& t : tets) {
+        const size_t tid = t.tid(*this);
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const size_t fid = f.fid(*this);
+            if (fid != 4 * tid + j) continue; // a lower-numbered tet lists this face
+            const FaceAttributes& fa = m_face_attribute[fid];
+            const bool in = fa.m_is_surface_fs && fa.m_surface_class != OFFSET_SURFACE_CLASS;
+            const bool off = fa.m_is_surface_fs && fa.m_surface_class == OFFSET_SURFACE_CLASS;
+            const bool surf = face_is_on_surface(fid);
+            if (!in && !off && !surf) continue;
+            const auto fv = get_face_vertices(f);
+            const std::array<size_t, 3> v{{fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this)}};
+            if (in) faces_in.push_back(v);
+            if (off) faces_off.push_back(v);
+            if (!surf) continue;
+            for (int k = 0; k < 3; ++k) {
+                const size_t a = v[k], b = v[(k + 1) % 3];
+                surface_edges.push_back({{std::min(a, b), std::max(a, b)}});
+            }
         }
     }
+    std::sort(surface_edges.begin(), surface_edges.end());
+    std::vector<std::array<size_t, 2>> edges;
+    for (size_t i = 0; i < surface_edges.size();) {
+        size_t n = 1; // the edge's surface faces: equal entries are adjacent once sorted
+        while (i + n < surface_edges.size() && surface_edges[i + n] == surface_edges[i]) ++n;
+        const std::array<size_t, 2>& e = surface_edges[i];
+        if (n != 2 && vertex_is_on_surface(e[0]) && vertex_is_on_surface(e[1])) {
+            edges.push_back(e);
+        }
+        i += n;
+    }
 
-    MatrixXd V(vert_capacity(), 3);
-    MatrixXi T(tets.size(), 4);
-    MatrixXi F_in(faces_in.size(), 3);
-    MatrixXi F_off(faces_off.size(), 3);
-    MatrixXi E(edges.size(), 2);
-
-    V.setZero();
-    T.setZero();
-    F_in.setZero();
-    F_off.setZero();
-    E.setZero();
+    fr.V = MatrixXd::Zero(vert_capacity(), 3);
+    fr.T = MatrixXi::Zero(tets.size(), 4);
+    fr.F_in = MatrixXi::Zero(faces_in.size(), 3);
+    fr.F_off = MatrixXi::Zero(faces_off.size(), 3);
+    fr.E = MatrixXi::Zero(edges.size(), 2);
 
     // last matrix is offset
-    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tets.size(), 1));
-    VectorXd amips(tets.size());
-    VectorXd labels(vert_capacity());
-    labels.setZero();
-    VectorXd v_order(vert_capacity());
-    v_order.setZero();
-    VectorXd v_id(vert_capacity());
-    v_id.setZero();
+    fr.tags.assign(m_tags_count + 1, MatrixXd(tets.size(), 1));
+    fr.amips.resize(tets.size());
+    fr.labels = VectorXd::Zero(vert_capacity());
+    fr.order = VectorXd::Zero(vert_capacity());
+    fr.vid = VectorXd::Zero(vert_capacity());
     // The sizing field, as point data: it drives every split and collapse gate. Two forms, as
     // in 2D: the raw scalar, and the target edge length l * scalar it means.
-    VectorXd v_sizing(vert_capacity());
-    v_sizing.setZero();
-    VectorXd v_target(vert_capacity());
-    v_target.setZero();
+    fr.sizing = VectorXd::Zero(vert_capacity());
+    fr.target = VectorXd::Zero(vert_capacity());
     // Front convergence diagnostics, as point data: the vertex measure the loop reports next to
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
@@ -2311,25 +2324,22 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // geometry left. -1 marks a vertex that is not on the front, -2 a
     // value that is not finite. Costs one objective build per front vertex per frame, which is
     // the same work energy_criterion() does once a turn; debug output only.
-    VectorXd v_conv(vert_capacity()), v_resid(vert_capacity()), v_grad(vert_capacity()),
-        v_align(vert_capacity()), v_cdist(vert_capacity());
-    v_conv.setConstant(-1.);
-    v_resid.setConstant(-1.);
-    v_grad.setConstant(-1.);
-    v_align.setConstant(-1.);
-    v_cdist.setConstant(-1.);
+    fr.conv = VectorXd::Constant(vert_capacity(), -1.);
+    fr.resid = VectorXd::Constant(vert_capacity(), -1.);
+    fr.grad = VectorXd::Constant(vert_capacity(), -1.);
+    fr.align = VectorXd::Constant(vert_capacity(), -1.);
+    fr.cdist = VectorXd::Constant(vert_capacity(), -1.);
 
     // Collapsed-foldover flag, as point data: 1 where the vertex is an endpoint of an offset
     // surface edge whose two faces have folded back onto each other (outer angle over the
     // threshold), 0 elsewhere. DEBUG ONLY -- computed only under debug_output, so a plain
     // save_vtu run writes it as all 0 rather than paying for the surface walk.
     // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
-    VectorXd v_fold(vert_capacity());
-    v_fold.setZero();
+    fr.fold = VectorXd::Zero(vert_capacity());
     if (m_offset_params.debug_output) {
         const std::vector<char> fold = offset_surface_foldover_labels();
-        for (size_t vid = 0; vid < fold.size() && vid < size_t(v_fold.size()); ++vid) {
-            v_fold[int(vid)] = fold[vid] ? 1. : 0.;
+        for (size_t vid = 0; vid < fold.size() && vid < size_t(fr.fold.size()); ++vid) {
+            fr.fold[int(vid)] = fold[vid] ? 1. : 0.;
         }
     }
 
@@ -2340,56 +2350,58 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                        7 RelGradNormTolerance, 12 LineSearchFailed.
     // -1 where the vertex was not solved since the last frame: not on the front, refused before
     // its solve, or the frame closes an operation pass. DEBUG ONLY, as the log is.
-    VectorXd v_newton_it(vert_capacity()), v_newton_st(vert_capacity());
-    v_newton_it.setConstant(-1.);
-    v_newton_st.setConstant(-1.);
+    fr.newton_it = VectorXd::Constant(vert_capacity(), -1.);
+    fr.newton_st = VectorXd::Constant(vert_capacity(), -1.);
     for (const FrontSolveRecord& r : m_front_solve_log) {
         if (r.vid >= vert_capacity()) continue;
-        v_newton_it[int(r.vid)] = r.iterations;
-        v_newton_st[int(r.vid)] = r.status;
+        fr.newton_it[int(r.vid)] = r.iterations;
+        fr.newton_st[int(r.vid)] = r.status;
     }
     //   front_last_change    VertexExtra::m_front_change when recorded in the latest operation
     //                        group (EXPERIMENTAL_unreachable_exit reads exactly this), else -1.
-    VectorXd v_front_change(vert_capacity());
-    v_front_change.setConstant(-1.);
+    fr.front_change = VectorXd::Constant(vert_capacity(), -1.);
     for (size_t vid = 0; vid < vert_capacity(); ++vid) {
         const VertexExtra& ve = m_vertex_extra[vid];
-        if (ve.m_front_change_group == m_smooth_group) v_front_change[int(vid)] = ve.m_front_change;
+        if (ve.m_front_change_group == m_smooth_group)
+            fr.front_change[int(vid)] = ve.m_front_change;
     }
 
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
-            tags[i](k, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
+            fr.tags[i](k, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
         }
-        tags[m_tags_count](k, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
-        amips[k] = m_tet_attribute[t_id].m_quality;
+        fr.tags[m_tags_count](k, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
+        fr.amips[k] = m_tet_attribute[t_id].m_quality;
+    }
+    for (int64_t i = 0; i < m_tags_count; i++) {
+        fr.tag_names.push_back(m_tag_id_to_name[i]);
     }
 
     for (size_t i = 0; i < faces_in.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F_in(i, j) = faces_in[i][j];
+            fr.F_in(i, j) = faces_in[i][j];
         }
     }
 
     for (size_t i = 0; i < faces_off.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F_off(i, j) = faces_off[i][j];
+            fr.F_off(i, j) = faces_off[i][j];
         }
     }
 
     for (size_t i = 0; i < edges.size(); ++i) {
-        E(i, 0) = edges[i].vertices()[0];
-        E(i, 1) = edges[i].vertices()[1];
+        fr.E(i, 0) = edges[i][0];
+        fr.E(i, 1) = edges[i][1];
     }
 
     for (const Tuple& v : vs) {
         size_t vid = v.vid(*this);
-        labels[vid] = m_vertex_extra[vid].label;
-        v_order[vid] = m_vertex_attribute[vid].m_order;
-        v_id[vid] = vid;
-        v_sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
-        v_target[vid] = m_params.l * v_sizing[vid];
+        fr.labels[vid] = m_vertex_extra[vid].label;
+        fr.order[vid] = m_vertex_attribute[vid].m_order;
+        fr.vid[vid] = vid;
+        fr.sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+        fr.target[vid] = m_params.l * fr.sizing[vid];
     }
 
     // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP, as in 2D. Every one of these reads the
@@ -2421,15 +2433,15 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
                 continue;
             }
             const Vector3d p = m_vertex_attribute[vid].m_posf;
-            v_conv[vid] = finite_or(front_vertex_conv_ratio(vid));
+            fr.conv[vid] = finite_or(front_vertex_conv_ratio(vid));
             // RELATIVE to the one bar, so < 1 reads as placed at a glance. front_conv is
             // a length and residual_length() is a length, so the quotient is the same
             // test the criterion makes, in the criterion's own units.
-            v_resid[vid] = finite_or(
+            fr.resid[vid] = finite_or(
                 front_vertex_residual_length(vid) / std::max(m_offset_params.front_conv, 1e-300));
-            v_grad[vid] = finite_or(front_vertex_field_gradient(vid).norm());
-            v_align[vid] = finite_or(front_move_alignment(vid));
-            v_cdist[vid] =
+            fr.grad[vid] = finite_or(front_vertex_field_gradient(vid).norm());
+            fr.align[vid] = finite_or(front_move_alignment(vid));
+            fr.cdist[vid] =
                 m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
     }
@@ -2437,50 +2449,19 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     for (size_t k = 0; k < tets.size(); ++k) {
         const auto& loc_vs = oriented_tet_vertices(tets[k]);
         for (int j = 0; j < 4; j++) {
-            T(k, j) = loc_vs[j].vid(*this);
+            fr.T(k, j) = loc_vs[j].vid(*this);
         }
     }
 
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
-        V.row(vid) = m_vertex_attribute[vid].m_posf;
+        fr.V.row(vid) = m_vertex_attribute[vid].m_posf;
     }
-
-    paraviewo::VTUWriter writer;
-    writer.add_cell_field("amips", amips);
-    for (int64_t i = 0; i < m_tags_count; i++) {
-        writer.add_cell_field(m_tag_id_to_name[i], tags[i]);
-    }
-    writer.add_cell_field("offset_tag", tags[m_tags_count]);
-    writer.add_field("labels", labels);
-    writer.add_field("order", v_order);
-    writer.add_field("vid", v_id);
-    writer.add_field("sizing_scalar", v_sizing);
-    writer.add_field("target_edge_length", v_target);
-    writer.add_field("front_conv_ratio", v_conv);
-    writer.add_field("front_residual_rel", v_resid);
-    writer.add_field("front_grad_norm", v_grad);
-    writer.add_field("front_move_align", v_align);
-    writer.add_field("front_complex_distance", v_cdist);
-    writer.add_field("offset_foldover", v_fold);
-    writer.add_field("front_newton_iters", v_newton_it);
-    writer.add_field("front_last_change", v_front_change);
-    writer.add_field("front_newton_status", v_newton_st);
-    writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
-    const std::string surf_out_path = path + "_surf.vtu";
-    {
-        paraviewo::VTUWriter surf_writer;
-        surf_writer.add_field("order", v_order);
-        surf_writer.add_field("vid", v_id);
-        surf_writer.add_field("sizing_scalar", v_sizing);
-        logger().info("Write {}", surf_out_path);
-        surf_writer.write_mesh(surf_out_path, V, F_in, paraviewo::CellType::Triangle);
-    }
+    logger().info("Write {}", path + "_surf.vtu");
 
     // offset faces
-    const std::string off_out_path = path + "_off.vtu";
     {
         // The front's per-FACE convergence measure, which since 2026-09-24 is THE convergence
         // test rather than the resolution half of it, and which has nowhere to live on the tet
@@ -2507,7 +2488,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         //                    (EnergyCriterion::ring_exit), with energy_criterion()'s rules: a
         //                    vertex with an unmeasurable incident face has none. NaN where there
         //                    is no ring measure.
-        VectorXd f_err(faces_off.size()), f_len(faces_off.size());
+        fr.f_err.resize(faces_off.size());
+        fr.f_len.resize(faces_off.size());
         VectorXd v_ring_sum(vert_capacity()), v_ring_n(vert_capacity());
         v_ring_sum.setZero();
         v_ring_n.setZero();
@@ -2519,10 +2501,10 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
             const bool all_front = front(a) && front(b) && front(c);
             const double term = all_front ? face_offset_term(a, b, c) : -1.;
-            f_err[i] = term < 0. ? -1. : std::sqrt(term);
+            fr.f_err[i] = term < 0. ? -1. : std::sqrt(term);
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
-            f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
+            fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
             if (all_front) {
                 for (const size_t u : {a, b, c}) {
                     if (term < 0.) {
@@ -2535,30 +2517,12 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
                 }
             }
         }
-        VectorXd v_ring(vert_capacity());
-        v_ring.setConstant(std::numeric_limits<double>::quiet_NaN());
+        fr.ring = VectorXd::Constant(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
             if (ring_bad[vid] || !(v_ring_n[int(vid)] > 0.)) continue;
-            v_ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
+            fr.ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
         }
-        paraviewo::VTUWriter off_writer;
-        off_writer.add_cell_field("front_err_ratio", f_err);
-        off_writer.add_cell_field("chord_length", f_len);
-        off_writer.add_field("order", v_order);
-        off_writer.add_field("vid", v_id);
-        off_writer.add_field("sizing_scalar", v_sizing);
-        off_writer.add_field("front_conv_ratio", v_conv);
-        off_writer.add_field("front_ring_ratio", v_ring);
-        off_writer.add_field("front_residual_rel", v_resid);
-        off_writer.add_field("front_grad_norm", v_grad);
-        off_writer.add_field("front_move_align", v_align);
-        off_writer.add_field("front_complex_distance", v_cdist);
-        off_writer.add_field("offset_foldover", v_fold);
-        off_writer.add_field("front_newton_iters", v_newton_it);
-        off_writer.add_field("front_last_change", v_front_change);
-        off_writer.add_field("front_newton_status", v_newton_st);
-        logger().info("Write {}", off_out_path);
-        off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
+        logger().info("Write {}", path + "_off.vtu");
     }
 
     // The band-region map back exactly as the run left it (see the frame diagnostics above).
@@ -2567,14 +2531,74 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         m_vertex_region.swap(saved_vertex_region);
     }
     // edges
-    const std::string edge_out_path = path + "_edge.vtu";
+    logger().info("Write {}", path + "_edge.vtu");
+    return fr;
+}
+
+void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
+{
+    const std::string& path = fr.path;
+    {
+        paraviewo::VTUWriter writer;
+        writer.add_cell_field("amips", fr.amips);
+        for (size_t i = 0; i < fr.tag_names.size(); i++) {
+            writer.add_cell_field(fr.tag_names[i], fr.tags[i]);
+        }
+        writer.add_cell_field("offset_tag", fr.tags.back());
+        writer.add_field("labels", fr.labels);
+        writer.add_field("order", fr.order);
+        writer.add_field("vid", fr.vid);
+        writer.add_field("sizing_scalar", fr.sizing);
+        writer.add_field("target_edge_length", fr.target);
+        writer.add_field("front_conv_ratio", fr.conv);
+        writer.add_field("front_residual_rel", fr.resid);
+        writer.add_field("front_grad_norm", fr.grad);
+        writer.add_field("front_move_align", fr.align);
+        writer.add_field("front_complex_distance", fr.cdist);
+        writer.add_field("offset_foldover", fr.fold);
+        writer.add_field("front_newton_iters", fr.newton_it);
+        writer.add_field("front_last_change", fr.front_change);
+        writer.add_field("front_newton_status", fr.newton_st);
+        writer.write_mesh(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
+    }
+
+    // surface
+    {
+        paraviewo::VTUWriter surf_writer;
+        surf_writer.add_field("order", fr.order);
+        surf_writer.add_field("vid", fr.vid);
+        surf_writer.add_field("sizing_scalar", fr.sizing);
+        surf_writer.write_mesh(path + "_surf.vtu", fr.V, fr.F_in, paraviewo::CellType::Triangle);
+    }
+
+    // offset faces
+    {
+        paraviewo::VTUWriter off_writer;
+        off_writer.add_cell_field("front_err_ratio", fr.f_err);
+        off_writer.add_cell_field("chord_length", fr.f_len);
+        off_writer.add_field("order", fr.order);
+        off_writer.add_field("vid", fr.vid);
+        off_writer.add_field("sizing_scalar", fr.sizing);
+        off_writer.add_field("front_conv_ratio", fr.conv);
+        off_writer.add_field("front_ring_ratio", fr.ring);
+        off_writer.add_field("front_residual_rel", fr.resid);
+        off_writer.add_field("front_grad_norm", fr.grad);
+        off_writer.add_field("front_move_align", fr.align);
+        off_writer.add_field("front_complex_distance", fr.cdist);
+        off_writer.add_field("offset_foldover", fr.fold);
+        off_writer.add_field("front_newton_iters", fr.newton_it);
+        off_writer.add_field("front_last_change", fr.front_change);
+        off_writer.add_field("front_newton_status", fr.newton_st);
+        off_writer.write_mesh(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
+    }
+
+    // edges
     {
         paraviewo::VTUWriter edge_writer;
-        edge_writer.add_field("order", v_order);
-        edge_writer.add_field("vid", v_id);
-        edge_writer.add_field("sizing_scalar", v_sizing);
-        logger().info("Write {}", edge_out_path);
-        edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
+        edge_writer.add_field("order", fr.order);
+        edge_writer.add_field("vid", fr.vid);
+        edge_writer.add_field("sizing_scalar", fr.sizing);
+        edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
     }
 }
 

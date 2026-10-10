@@ -517,6 +517,9 @@ void topological_offset(nlohmann::json json_params)
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
         }
+        // The last debug frame is written in the background (write_debug_frame()); no frame
+        // follows, so the run waits for it here.
+        mesh.wait_debug_frame_write();
 
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
