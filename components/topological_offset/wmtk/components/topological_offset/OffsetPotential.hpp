@@ -846,9 +846,20 @@ public:
     bool is_step_valid(const TVector& x0, const TVector& x1) override;
 
 private:
+    /// Makes x (bitwise) the cached point: each cell's AMIPS there, and the value and gradient
+    /// once computed (see the .cpp).
+    void at_point(const TVector& x);
+
     std::vector<std::array<double, 12>> m_cells;
     double m_weight;
     bool m_volume_weighted = false;
+    bool m_x_set = false;
+    Eigen::Vector3d m_x = Eigen::Vector3d::Zero();
+    std::vector<double> m_a; ///< per cell: AMIPS at m_x
+    bool m_value_set = false;
+    double m_value = 0.;
+    bool m_grad_set = false;
+    TVector m_grad;
 };
 
 /**

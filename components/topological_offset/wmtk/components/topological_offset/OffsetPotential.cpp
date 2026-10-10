@@ -1033,12 +1033,30 @@ double cubed_amips_vol_term(
 }
 } // namespace
 
+void CubedAMIPSEnergy3D::at_point(const TVector& x)
+{
+    // polysolve evaluates the same point several times per Newton step: the solver takes the value
+    // and gradient at x, the line search takes both again before its first trial, and the
+    // accepted trial is the next step's x. A call at the bitwise-same point reuses what was
+    // computed there -- the same operations in the same order, so the same bits.
+    if (m_x_set && std::memcmp(x.data(), m_x.data(), 3 * sizeof(double)) == 0) return;
+    m_x = x.head<3>();
+    m_x_set = true;
+    m_value_set = m_grad_set = false;
+    m_a.resize(m_cells.size());
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        m_a[k] = wmtk::AMIPS_energy(cubed_amips_cell_at(m_cells[k], x));
+    }
+}
+
 double CubedAMIPSEnergy3D::value(const TVector& x)
 {
+    at_point(x);
+    if (m_value_set) return m_value;
     double res = 0.;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
         if (m_volume_weighted) {
             Eigen::Vector3d g;
             Eigen::Matrix3d h;
@@ -1054,16 +1072,23 @@ double CubedAMIPSEnergy3D::value(const TVector& x)
             res += a * a * a;
         }
     }
-    return m_weight * res;
+    m_value = m_weight * res;
+    m_value_set = true;
+    return m_value;
 }
 
 void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
+    at_point(x);
+    if (m_grad_set) {
+        gradv = m_grad;
+        return;
+    }
     gradv.setZero(3);
     Eigen::Vector3d g;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
         wmtk::AMIPS_jacobian(c, g);
         if (m_volume_weighted) {
             Eigen::Vector3d gf;
@@ -1075,16 +1100,19 @@ void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
         }
     }
     gradv *= m_weight;
+    m_grad = gradv;
+    m_grad_set = true;
 }
 
 void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
+    at_point(x);
     hessian.setZero(3, 3);
     Eigen::Vector3d g;
     Eigen::Matrix3d h;
-    for (const auto& c0 : m_cells) {
-        const auto c = cubed_amips_cell_at(c0, x);
-        const double a = wmtk::AMIPS_energy(c);
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
         wmtk::AMIPS_jacobian(c, g);
         wmtk::AMIPS_hessian(c, h);
         if (m_volume_weighted) {
