@@ -1803,8 +1803,16 @@ public:
         }
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
-        } else if (m_offset_params.ops_global_energy) {
-            // EXPERIMENTAL_ops_global_energy: E's band-volume term moves with this vertex too.
+        } else if (m_offset_params.ops_global_energy && !vertex_is_held(vid)) {
+            // EXPERIMENTAL_ops_global_energy: E's band-volume term moves with this vertex too --
+            // except a vertex held on the input. There d = 0 at the vertex and d has a kink: the
+            // term's slope along the input's normal jumps across the surface, and its curvature
+            // there is 0 (or ~1e10 near an input edge), so the Newton step along the normal is
+            // set by AMIPS alone and lands far off; the projected step then discards the normal
+            // motion anyway. MEASURED 2026-10-09, cube, serial, 3 turns: with the term these
+            // solves took 24.6 Newton iterations and ~20 line-search trials per iteration (72%
+            // of the smoother's value calls), without it 3.9 and 1; 19.3 s -> 11.3 s. E still
+            // guards the move: smooth_nonfront_vertex() vetoes on the ring's sum of E's terms.
             if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
         if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
