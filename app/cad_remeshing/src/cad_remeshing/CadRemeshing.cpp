@@ -1123,8 +1123,7 @@ bool CadRemeshing::write_triangle_mesh(std::string path)
     return manifold;
 }
 
-double CadRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
-    const
+double CadRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2) const
 {
     const Eigen::Vector3d a = (p1 - p0);
     const Eigen::Vector3d b = (p2 - p1);
