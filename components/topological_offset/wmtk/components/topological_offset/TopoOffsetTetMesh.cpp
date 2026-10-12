@@ -854,40 +854,21 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     // tet. Outside the region, the only place an offset exists, distance to the region and
     // distance to its boundary are the same number.
     std::map<simplex::Face, int> boundary_count;
-    // EXPERIMENTAL_visible_distance: a boundary face's solid side, from the vertex of its one
-    // complex tet that is not on it.
-    std::map<simplex::Face, size_t> boundary_opposite;
     for (const simplex::Tet& t_simp : complex_tets) {
-        for (const simplex::Face& f : t_simp.faces()) {
-            ++boundary_count[f];
-            const auto tv = t_simp.vertices();
-            const auto fv = f.vertices();
-            for (const auto v : tv) {
-                if (v != fv[0] && v != fv[1] && v != fv[2]) boundary_opposite[f] = size_t(v);
-            }
-        }
+        for (const simplex::Face& f : t_simp.faces()) ++boundary_count[f];
     }
 
     std::vector<Vector3i> phi_tris;
     std::vector<int64_t> phi_face_region;
-    m_phi_F_inner.clear();
     for (const auto& [f_simp, count] : boundary_count) {
         if (count != 1) continue; // interior to the complex: carries no boundary geometry
         const auto vs = f_simp.vertices();
         phi_tris.emplace_back(v_id_map[vs[0]], v_id_map[vs[1]], v_id_map[vs[2]]);
         phi_face_region.push_back(comp_of[size_t(phi_tris.back()[0])]);
-        const Vector3d o = V.row(v_id_map[boundary_opposite.at(f_simp)]).head<3>().transpose();
-        m_phi_F_inner.push_back(int8_t(
-            wmtk::utils::predicates::orient3d(
-                Vector3d(V.row(v_id_map[vs[0]]).head<3>().transpose()),
-                Vector3d(V.row(v_id_map[vs[1]]).head<3>().transpose()),
-                Vector3d(V.row(v_id_map[vs[2]]).head<3>().transpose()),
-                o)));
     }
     for (int i = 0; i < F.rows(); ++i) { // isolated triangles of the complex
         phi_tris.emplace_back(F(i, 0), F(i, 1), F(i, 2));
         phi_face_region.push_back(comp_of[size_t(F(i, 0))]);
-        m_phi_F_inner.push_back(0); // bounds no solid: reachable from both sides
     }
 
     // The edge list must be complete: ipc derives faces_to_edges from it and throws if a
@@ -1009,30 +990,6 @@ void TopoOffsetTetMesh::init_offset_potential()
                     m_n_regions);
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
-        }
-        if (m_offset_params.visible_distance) {
-            // EXPERIMENTAL_visible_distance: the same triangles, with the side each one bounds.
-            if (m_n_regions > 1) {
-                log_and_throw_error(
-                    "EXPERIMENTAL_visible_distance: one input region only (this input has {})",
-                    m_n_regions);
-            }
-            if (m_phi_F.rows() == 0) {
-                log_and_throw_error(
-                    "EXPERIMENTAL_visible_distance: the input complex has no triangles");
-            }
-            std::vector<Eigen::Vector3d> vv(size_t(m_phi_V.rows()));
-            for (int i = 0; i < m_phi_V.rows(); ++i)
-                vv[size_t(i)] = m_phi_V.row(i).head<3>().transpose();
-            std::vector<Eigen::Vector3i> ff(size_t(m_phi_F.rows()));
-            for (int i = 0; i < m_phi_F.rows(); ++i) {
-                ff[size_t(i)] = Eigen::Vector3i(m_phi_F(i, 0), m_phi_F(i, 1), m_phi_F(i, 2));
-            }
-            m_visible_field = std::make_shared<VisibleField>(
-                std::move(vv),
-                std::move(ff),
-                m_phi_F_inner,
-                m_offset_params.target_distance);
         }
         return;
     }

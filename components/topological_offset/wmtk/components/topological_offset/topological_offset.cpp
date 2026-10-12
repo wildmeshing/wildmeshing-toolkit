@@ -123,10 +123,6 @@ void topological_offset(nlohmann::json json_params)
             log_and_throw_error(
                 "EXPERIMENTAL_unreachable_exit is 3D only; leave it false for a 2D input");
         }
-        if (params.visible_distance) {
-            log_and_throw_error(
-                "EXPERIMENTAL_visible_distance is 3D only; leave it false for a 2D input");
-        }
         if (params.no_refinement || params.no_exit) {
             log_and_throw_error(
                 "EXPERIMENTAL_no_refinement and EXPERIMENTAL_no_exit are 3D only; leave them false "

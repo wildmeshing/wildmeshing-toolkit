@@ -49,7 +49,6 @@
       "EXPERIMENTAL_edge_excess_window",
       "EXPERIMENTAL_settle_refinement",
       "EXPERIMENTAL_settle_mark",
-      "EXPERIMENTAL_visible_distance",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -375,12 +374,6 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL (2026-10-07), 3D, front_measure \"vertex_ring\" and stencil_order >= 1 only (refused otherwise). With e = (d - target_distance) / front_conv at the stencil samples, a front face's remainder is the mean over its samples of (e - L)^2, L the least-squares function linear on the face (order 1: (3/16) b^2, b the centroid's e minus the mean of the corners'), and W(v) is the mean over v's faces. Per front vertex v, in order: R(v) <= 1 passes; W(v) > 1 fails and halves v's sizing scalar; otherwise v passes when its front solve in the turn's last operation group (the last smoothing passes) changed its own e by at most 1, a refused move counting as no change (the level set is out of reach there), else it fails without refinement and is left to smoothing. Why: for target_distance above half a slot's width the loop keeps the slot's hole open, so the front in the slot stays (target_distance - width/2) / front_conv over the bar on any mesh, and refining on R or on the variance of e over the ring refines a planar front where only the distance rising along it varies (slot_small, width 2.5, target 1.35: 86-99.5% of that variance linear). false (the default) = the ring measure alone."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_visible_distance",
-    "type": "bool",
-    "default": false,
-    "doc": "EXPERIMENTAL (2026-10-07), 3D. Refused: the energy's band term reads the euclidean distance (see offset_amips_weight). What it did: euclidean field, front_measure \"vertex_ring\", serial (num_threads 0), one input region, an input with triangles (refused otherwise). From the first loop turn on (the march keeps the euclidean distance), every reading of the field at a point of the front -- the face terms of the per-tet energy (as it was then) and the exit, the front smoother, the vertex measures, the frames -- uses d_vis: the distance to the nearest input point q such that the segment from the point to q lies in closed band cells, except that it may end in input cells (the mesh's input cells stand off the input triangles by up to the input envelope) and must reach a triangle bounding the solid from its outer side. Where the segment to the nearest input point stays in the band, d_vis is the euclidean distance. Where it does not -- a front vertex of one side of a slot past the slot's midline is nearest the other wall through cells that are not band -- d_vis measures to the wall the point's band is attached to, so the pull no longer reverses at the midline. Exact: orientation predicates and rationals on the positions as given. Two assumptions, each counted per turn in the log ([visible distance]): a point that sees no input point takes the euclidean distance; a triangle closer than every point proven visible whose nearest point among the directions into the band is hidden further along the segment (part of it may still be visible) gives that point's distance, a lower bound of d_vis -- the log reports the largest gap to the nearest point proven visible, the most the value can be off. Derivatives at a foot found through the directions into the band ignore the motion of those directions with a moving vertex. A walk that cannot be completed stops the run with a message. The operations keep their local rule (the energy over the cells they change), although a face's d_vis also depends on the cells its segments pass through, so an operation can change the energy of a face outside them. false (the default) = the euclidean distance."
   },
   {
     "pointer": "/EXPERIMENTAL_growth_targets/*",

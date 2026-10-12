@@ -25,7 +25,6 @@
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
-#include "VisibleField.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -181,88 +180,10 @@ public:
      */
     std::shared_ptr<OffsetPotential3D> m_offset_potential;
 
-    /**
-     * @brief EXPERIMENTAL_visible_distance (see VisibleField and the spec doc).
-     *
-     * Built by init_offset_potential() over the same triangles as the euclidean field; ACTIVE
-     * from the first loop turn (set at the top of optimize_offset()), when the band exists. While
-     * active, every reading of the field at a point of the front goes through it: the face
-     * measure face_offset_term() (given the face's band cell), the vertex measures
-     * front_vertex_relative_residual() and friends, and the frames. Readings at
-     * points that are not on the front (the field grids, the front profile along the normal, the
-     * needle diagnostics) stay euclidean: there is no band cell to start from.
-     *
-     * THE OPERATIONS' RULE STAYS LOCAL. A face's d_vis depends on the cells its segments pass
-     * through, not only on its band cell, so a collapse, swap or smoothing move can change the
-     * energy of a face outside the cells it changed, which the rule (over those cells) does not
-     * see. Refused since the energy became the band term, which reads the euclidean distance
-     * (Parameters). Decided 2026-10-07: the exhaustive rule would evaluate every face within
-     * distance d of the changed cells, 100-1000 faces per operation.
-     */
-    std::shared_ptr<VisibleField> m_visible_field;
-    bool m_visible_active = false;
-
-    /**
-     * @brief The mesh as VisibleField's walk reads it: cells, positions, kinds (band = label 2,
-     * input = label 1), neighbours. Optionally one vertex at a trial position (the front
-     * smoother's Newton iterates), and optionally a swap's candidate cells in place of the cells
-     * it would replace (ids from tet_capacity() up), labelled as swap_after_cells() would.
-     */
-    class MeshCells : public VisibilityCells
-    {
-    public:
-        explicit MeshCells(const TopoOffsetTetMesh& m)
-            : m_mesh(m)
-        {}
-        int64_t moved_vid = -1;
-        Vector3d moved_pos = Vector3d::Zero();
-        const std::vector<size_t>* removed = nullptr; ///< sorted
-        const std::vector<std::array<size_t, 4>>* added = nullptr;
-        std::vector<int> added_label;
-
-        std::array<int64_t, 4> vertices(int64_t cell) const override;
-        Vector3d position(int64_t vertex) const override;
-        Kind kind(int64_t cell) const override;
-        int64_t neighbor(int64_t cell, int j) const override;
-        void cells_around_edge(int64_t a, int64_t b, std::vector<int64_t>& out) const override;
-        void cells_around_vertex(int64_t v, std::vector<int64_t>& out) const override;
-        /// The added cell with these vertices, as a cell id; -1 if none.
-        int64_t added_id(const std::array<size_t, 4>& vids) const;
-
-    private:
-        bool is_removed(size_t tid) const;
-        /// Cells (real, not removed, then added) containing all of vs.
-        void cells_containing(const std::array<int64_t, 3>& vs, int n, std::vector<int64_t>& out)
-            const;
-        const TopoOffsetTetMesh& m_mesh;
-    };
-    /// A front face for face_offset_term(): its vertices in the order of the positions passed,
-    /// its band cell, and the mesh view to walk.
-    struct FaceCtx
-    {
-        std::array<size_t, 3> v;
-        int64_t band_cell = -1;
-        const MeshCells* cells = nullptr;
-    };
-    /// The band cells a point of front face f (vertices v, barycentric weights w, band cell
-    /// band_cell) lies on, with their faces through it: f's band cell for an interior point, the
-    /// band cells around an edge or a vertex the point is on.
-    VisibleStart visible_start(
-        const std::array<size_t, 3>& v,
-        const std::array<double, 3>& w,
-        int64_t band_cell,
-        const MeshCells& cells) const;
-    VisibleStart visible_vertex_start(size_t vid, const MeshCells& cells) const;
-    /// d_vis's feature at p; a Stop throws (the run stops) unless allow_stop, which returns it.
-    VisibleField::Feature visible_feature(
-        const Vector3d& p,
-        const VisibleStart& start,
-        const MeshCells& cells,
-        bool allow_stop = false) const;
     /// The band cell of front face (a, b, c), -1 if neither side is band.
     int64_t front_face_band_cell(size_t a, size_t b, size_t c) const;
-    /// The field at front vertex vid, through d_vis while it is active, else potential_for(vid):
-    /// relative_residual(), residual_length() and gradient() at the vertex's position.
+    /// The field at front vertex vid, potential_for(vid): relative_residual(), residual_length()
+    /// and gradient() at the vertex's position.
     double front_vertex_relative_residual(size_t vid) const;
     double front_vertex_residual_length(size_t vid) const;
     Vector3d front_vertex_field_gradient(size_t vid) const;
@@ -1633,8 +1554,7 @@ public:
         const Vector3d& pb,
         const Vector3d& pc,
         double* mean_error = nullptr,
-        double* remainder = nullptr,
-        const FaceCtx* ctx = nullptr) const;
+        double* remainder = nullptr) const;
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
@@ -2270,9 +2190,6 @@ public:
     MatrixXd m_phi_V;
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
-    /// Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds,
-    /// 0 for an isolated triangle. EXPERIMENTAL_visible_distance's side test.
-    std::vector<int8_t> m_phi_F_inner;
     std::vector<int> m_phi_P;
 
     /// label connected simplicial complex components (simplices labelled 1 or 2)
@@ -2499,30 +2416,20 @@ private:
         /// the cells it gets. Not set for a 3-2, which scores nothing before it exists.
         bool scored = false;
         double scored_energy = std::numeric_limits<double>::max();
-        /// The cells the swap replaces (sorted), and whether it is a surface flip: a candidate's
-        /// label is the ring's for an interior swap and a side of the flip for a flip
-        /// (candidate_energy(), candidate_cells()).
-        std::vector<size_t> tids;
+        /// Whether the swap is a surface flip: a candidate's label is the ring's for an interior
+        /// swap and a side of the flip for a flip (candidate_energy()).
         bool flip = false;
         void clear()
         {
-            tids.clear();
             flip = false;
             scored = false;
             scored_energy = std::numeric_limits<double>::max();
         }
     };
     mutable wmtk::threading::enumerable_thread_specific<SwapRecord> m_swap_record;
-    /// The record over the cells `tids` a swap replaces; `flip` for a surface flip, whose sides
+    /// A fresh record for the swap in flight; `flip` for a surface flip, whose sides
     /// swap_capture_surface_sides() has captured first. See SwapRecord.
-    void swap_record_fill(const std::vector<size_t>& tids, bool flip);
-    /// EXPERIMENTAL_visible_distance: the mesh with the candidate cells `tets` in place of the
-    /// swap's cells, each labelled as swap_after_cells() would label it (the ring's label for an
-    /// interior swap, the side of a ring vertex it contains for a flip, -1 if none), pointed at by
-    /// m_candidate_cells while the candidates are scored. No reader since the energy lost its
-    /// face term; EXPERIMENTAL_visible_distance is refused (Parameters).
-    void candidate_cells(const std::vector<std::array<size_t, 4>>& tets, MeshCells& out);
-    mutable const MeshCells* m_candidate_cells = nullptr;
+    void swap_record_fill(bool flip);
     /// perform_sanity_checks, from swap_after_cells() once the new cells are labelled: the
     /// record's scored_energy against tet_energy_sum(tids), counted in m_swap_scoring_*.
     void swap_scoring_check(const std::vector<size_t>& tids, double after);

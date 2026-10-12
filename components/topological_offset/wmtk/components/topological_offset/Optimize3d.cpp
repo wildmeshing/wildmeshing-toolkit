@@ -217,8 +217,7 @@ double TopoOffsetTetMesh::face_offset_term(
     const Vector3d& pb,
     const Vector3d& pc,
     double* mean_error,
-    double* remainder,
-    const FaceCtx* ctx) const
+    double* remainder) const
 {
     // THE face measure, and since 2026-09-24 the only one: the MEAN over the face's stencil of
     // the squared relative error, in units of the tolerance. At every stencil point q of
@@ -248,12 +247,6 @@ double TopoOffsetTetMesh::face_offset_term(
     // still (value - c)/c, so that path is unchanged bit for bit.
     const double level = pot.target_level();
     if (!(level > 0.)) return -1.;
-    // EXPERIMENTAL_visible_distance: every sample reads d_vis from the face's band cell. A
-    // caller that does not say which cell that is was missed when the key was wired in.
-    if (m_visible_active && (ctx == nullptr || ctx->cells == nullptr || ctx->band_cell < 0)) {
-        log_and_throw_error(
-            "face_offset_term: EXPERIMENTAL_visible_distance needs the face's band cell");
-    }
     double sum = 0., sum1 = 0.;
     size_t n = 0;
     bool unmeasurable = false;
@@ -263,17 +256,7 @@ double TopoOffsetTetMesh::face_offset_term(
     Vector3d lam_r = Vector3d::Zero();
     for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double wa, double wb, double wc) {
         if (unmeasurable) return;
-        double r;
-        if (m_visible_active) {
-            const VisibleStart st =
-                visible_start(ctx->v, {{wa, wb, wc}}, ctx->band_cell, *ctx->cells);
-            const VisibleField::Feature f = visible_feature(q, st, *ctx->cells);
-            r = f.status == VisibleField::Feature::Status::Found
-                    ? m_visible_field->relative_residual(q, f)
-                    : std::numeric_limits<double>::quiet_NaN();
-        } else {
-            r = pot.relative_residual(q);
-        }
+        const double r = pot.relative_residual(q);
         if (!std::isfinite(r)) {
             unmeasurable = true;
             return;
@@ -309,18 +292,6 @@ double TopoOffsetTetMesh::face_offset_term(
     double* mean_error,
     double* remainder) const
 {
-    if (m_visible_active) {
-        const MeshCells cells(*this);
-        const FaceCtx ctx{{{a, b, c}}, front_face_band_cell(a, b, c), &cells};
-        return face_offset_term(
-            potential_for_edge(a, b),
-            m_vertex_attribute[a].m_posf,
-            m_vertex_attribute[b].m_posf,
-            m_vertex_attribute[c].m_posf,
-            mean_error,
-            remainder,
-            &ctx);
-    }
     return face_offset_term(
         potential_for_edge(a, b),
         m_vertex_attribute[a].m_posf,
@@ -357,9 +328,8 @@ double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids) const
 
 double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
 {
-    // The candidate's label as swap_after_cells() will write it (and candidate_cells() takes it):
-    // the ring's single label for an interior swap, the side of a ring vertex it contains for a
-    // surface flip.
+    // The candidate's label as swap_after_cells() will write it: the ring's single label for an
+    // interior swap, the side of a ring vertex it contains for a surface flip.
     const SwapRecord& rec = m_swap_record.local();
     int label = -1;
     if (!rec.flip) {
@@ -377,37 +347,11 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
     return cell_energy(vids, get_quality(vids), label == 2);
 }
 
-void TopoOffsetTetMesh::candidate_cells(
-    const std::vector<std::array<size_t, 4>>& tets,
-    MeshCells& out)
-{
-    const SwapRecord& rec = m_swap_record.local();
-    out.removed = &rec.tids;
-    out.added = &tets;
-    out.added_label.assign(tets.size(), -1);
-    for (size_t k = 0; k < tets.size(); ++k) {
-        if (!rec.flip) {
-            out.added_label[k] = m_swap_label.local();
-            continue;
-        }
-        const SwapSurfaceSides& sides = m_swap_sides.local();
-        for (const size_t v : tets[k]) {
-            const auto it = sides.by_vertex.find(v);
-            if (it != sides.by_vertex.end()) {
-                out.added_label[k] = it->second.second;
-                break;
-            }
-        }
-    }
-}
-
-void TopoOffsetTetMesh::swap_record_fill(const std::vector<size_t>& tids, const bool flip)
+void TopoOffsetTetMesh::swap_record_fill(const bool flip)
 {
     // See SwapRecord: what the candidates' labels are read from.
     SwapRecord& rec = m_swap_record.local();
     rec.clear();
-    rec.tids = tids;
-    std::sort(rec.tids.begin(), rec.tids.end());
     rec.flip = flip;
 }
 
@@ -489,7 +433,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     // see SwapRecord. After the capture, whose single label every new cell takes.
     // A 3-2 has no case search and no gate on cells that do not exist yet: the rule judges it
     // on the real cells in swap_after_cells(), so it needs no record.
-    if (current_op_kind() != OpKind::swap_32) swap_record_fill(tids, false);
+    if (current_op_kind() != OpKind::swap_32) swap_record_fill(false);
     return true;
 }
 
@@ -572,7 +516,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // What the 4-4 / 5-6 case search reads candidate cells' labels from; see SwapRecord. After
     // swap_capture_surface_sides(), whose sides the new cells take.
     if (current_op_kind() != OpKind::swap_32)
-        swap_record_fill(tids, true); // as in swap_before_interior()
+        swap_record_fill(true); // as in swap_before_interior()
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
     // triangles with surface_triangle_is_outside(), which holds a held face to m_envelope, and
@@ -779,16 +723,8 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
         // old_tets_conn), so the score is read, not recomputed: one evaluation per operation.
         e = m_swap_energy_before.local();
     } else {
-        MeshCells overlay(*this);
-        if (m_visible_active) {
-            candidate_cells(tets, overlay);
-            m_candidate_cells = &overlay;
-        }
-        // Every candidate cell's inversion test before any candidate's energy, the engine's order
-        // in smooth_vertex_3d(): under EXPERIMENTAL_visible_distance a candidate's front face is
-        // read through the other candidate cells (the overlay), which must all be valid then.
-        // Measured: a 5-6 swap on the one-slot model (stage 2) walked into a later candidate,
-        // inverted, before its test, and stopped the run.
+        // Every candidate cell's inversion test before any candidate's energy: a case with an
+        // inverted cell scores double::max(), as the base scores it.
         bool inverted = false;
         for (const std::array<size_t, 4>& vids : tets) {
             if (is_inverted(vids)) {
@@ -802,7 +738,6 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
             e = 0.; // the candidates' sum
             for (const std::array<size_t, 4>& vids : tets) e += candidate_energy(vids);
         }
-        m_candidate_cells = nullptr;
     }
     if (op_case >= 1) {
         // The engine takes the strictly lowest candidate and does not say which: the lowest is
@@ -899,17 +834,11 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
             new_tets[i] = t1_vids;
             wmtk::array_replace_inline(new_tets[i], tri[i], v3);
         }
-        MeshCells overlay(*this);
-        if (m_visible_active) {
-            candidate_cells(new_tets, overlay);
-            m_candidate_cells = &overlay;
-        }
         // CHANGED: every new cell's inversion test before any new cell's energy (the base tests
         // and scores cell by cell), as in swap_edge_44_energy(); an inverted cell now reports
         // face_inverted even when an earlier cell would have reported face_not_better.
         for (const std::array<size_t, 4>& new_tet : new_tets) {
             if (is_inverted(new_tet)) {
-                m_candidate_cells = nullptr;
                 return swap_reject_kind_only(SwapReject::face_inverted);
             }
         }
@@ -917,10 +846,8 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
         scored = 0.;
         for (const std::array<size_t, 4>& new_tet : new_tets) scored += candidate_energy(new_tet);
         if (!(scored < m_swap_energy_before.local())) {
-            m_candidate_cells = nullptr;
             return swap_reject_kind_only(SwapReject::face_not_better);
         }
-        m_candidate_cells = nullptr;
     }
     // perform_sanity_checks: the sum over the three cells is what swap_after_cells() must read.
     SwapRecord& rec = m_swap_record.local();
@@ -2468,20 +2395,8 @@ TopoOffsetTetMesh::FaceSamples TopoOffsetTetMesh::offset_face_samples(const Tupl
         if (!band_vertex_is_reachable(v)) return s;
     }
     const OffsetPotential3D& pot = potential_for_face(f);
-    const auto fv = get_face_vids(f);
-    const MeshCells cells(*this);
-    const int64_t band = m_visible_active ? front_face_band_cell(fv[0], fv[1], fv[2]) : -1;
-    for_each_offset_face_sample(f, [&](const Vector3d& q, double wa, double wb, double wc) {
-        double r;
-        if (m_visible_active) {
-            const VisibleField::Feature vf =
-                visible_feature(q, visible_start(fv, {{wa, wb, wc}}, band, cells), cells);
-            r = vf.status == VisibleField::Feature::Status::Found
-                    ? std::abs(vf.d - m_visible_field->delta())
-                    : std::numeric_limits<double>::quiet_NaN();
-        } else {
-            r = pot.residual_length(q);
-        }
+    for_each_offset_face_sample(f, [&](const Vector3d& q, double, double, double) {
+        const double r = pot.residual_length(q);
         s.max = std::max(s.max, r);
         s.sum += r;
         ++s.n;
@@ -3070,178 +2985,8 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
 }
 
 // ---------------------------------------------------------------------------------------------
-// EXPERIMENTAL_visible_distance: the mesh as VisibleField reads it, and the front readings.
+// The front readings: a front face's band cell, and the field at a front vertex.
 // ---------------------------------------------------------------------------------------------
-
-std::array<int64_t, 4> TopoOffsetTetMesh::MeshCells::vertices(const int64_t cell) const
-{
-    const int64_t cap = int64_t(m_mesh.tet_capacity());
-    if (added != nullptr && cell >= cap) {
-        const auto& t = (*added)[size_t(cell - cap)];
-        return {{int64_t(t[0]), int64_t(t[1]), int64_t(t[2]), int64_t(t[3])}};
-    }
-    const auto t = m_mesh.oriented_tet_vids(size_t(cell));
-    return {{int64_t(t[0]), int64_t(t[1]), int64_t(t[2]), int64_t(t[3])}};
-}
-
-Vector3d TopoOffsetTetMesh::MeshCells::position(const int64_t vertex) const
-{
-    return vertex == moved_vid ? moved_pos : m_mesh.m_vertex_attribute[size_t(vertex)].m_posf;
-}
-
-VisibilityCells::Kind TopoOffsetTetMesh::MeshCells::kind(const int64_t cell) const
-{
-    const int64_t cap = int64_t(m_mesh.tet_capacity());
-    const int label = (added != nullptr && cell >= cap)
-                          ? added_label[size_t(cell - cap)]
-                          : m_mesh.m_tet_attribute[size_t(cell)].label;
-    return label == 2 ? Kind::Band : (label == 1 ? Kind::Input : Kind::Other);
-}
-
-bool TopoOffsetTetMesh::MeshCells::is_removed(const size_t tid) const
-{
-    return removed != nullptr && std::binary_search(removed->begin(), removed->end(), tid);
-}
-
-void TopoOffsetTetMesh::MeshCells::cells_containing(
-    const std::array<int64_t, 3>& vs,
-    const int n,
-    std::vector<int64_t>& out) const
-{
-    out.clear();
-    for (const size_t tid : m_mesh.get_one_ring_tids_for_vertex(size_t(vs[0]))) {
-        if (is_removed(tid)) continue;
-        const auto t = m_mesh.oriented_tet_vids(tid);
-        bool all = true;
-        for (int k = 1; k < n && all; ++k) {
-            all = std::find(t.begin(), t.end(), size_t(vs[size_t(k)])) != t.end();
-        }
-        if (all) out.push_back(int64_t(tid));
-    }
-    if (added == nullptr) return;
-    const int64_t cap = int64_t(m_mesh.tet_capacity());
-    for (size_t k = 0; k < added->size(); ++k) {
-        const auto& t = (*added)[k];
-        bool all = true;
-        for (int i = 0; i < n && all; ++i) {
-            all = std::find(t.begin(), t.end(), size_t(vs[size_t(i)])) != t.end();
-        }
-        if (all) out.push_back(cap + int64_t(k));
-    }
-}
-
-int64_t TopoOffsetTetMesh::MeshCells::neighbor(const int64_t cell, const int j) const
-{
-    const auto v = vertices(cell);
-    std::array<int64_t, 3> f{};
-    int n = 0;
-    for (int i = 0; i < 4; ++i) {
-        if (i != j) f[size_t(n++)] = v[size_t(i)];
-    }
-    std::vector<int64_t> c;
-    cells_containing(f, 3, c);
-    for (const int64_t o : c) {
-        if (o != cell) return o;
-    }
-    return -1;
-}
-
-void TopoOffsetTetMesh::MeshCells::cells_around_edge(
-    const int64_t a,
-    const int64_t b,
-    std::vector<int64_t>& out) const
-{
-    cells_containing({{a, b, -1}}, 2, out);
-}
-
-void TopoOffsetTetMesh::MeshCells::cells_around_vertex(const int64_t v, std::vector<int64_t>& out)
-    const
-{
-    cells_containing({{v, -1, -1}}, 1, out);
-}
-
-int64_t TopoOffsetTetMesh::MeshCells::added_id(const std::array<size_t, 4>& vids) const
-{
-    if (added == nullptr) return -1;
-    std::array<size_t, 4> s = vids;
-    std::sort(s.begin(), s.end());
-    for (size_t k = 0; k < added->size(); ++k) {
-        std::array<size_t, 4> t = (*added)[k];
-        std::sort(t.begin(), t.end());
-        if (t == s) return int64_t(m_mesh.tet_capacity()) + int64_t(k);
-    }
-    return -1;
-}
-
-VisibleStart TopoOffsetTetMesh::visible_start(
-    const std::array<size_t, 3>& v,
-    const std::array<double, 3>& w,
-    const int64_t band_cell,
-    const MeshCells& cells) const
-{
-    // The support of the point is exact: the stencil's weights are exact zeros on edges and at
-    // corners.
-    std::array<int64_t, 3> on{};
-    int n = 0;
-    VisibleStart st;
-    for (int i = 0; i < 3; ++i) {
-        if (w[size_t(i)] != 0.) {
-            on[size_t(n++)] = int64_t(v[size_t(i)]);
-            st.support.push_back({int64_t(v[size_t(i)]), w[size_t(i)]});
-        }
-    }
-    const auto add = [&](const int64_t c) {
-        if (cells.kind(c) != VisibilityCells::Kind::Band) return;
-        const auto cv = cells.vertices(c);
-        uint8_t mask = 0;
-        for (int j = 0; j < 4; ++j) {
-            // Face j (opposite local vertex j) contains the point's support when its opposite
-            // vertex is not on the support.
-            bool opp_on = false;
-            for (int k = 0; k < n; ++k) opp_on = opp_on || cv[size_t(j)] == on[size_t(k)];
-            if (!opp_on) mask |= uint8_t(1u << j);
-        }
-        st.cells.push_back({c, mask});
-    };
-    if (n == 3) {
-        add(band_cell);
-        return st;
-    }
-    std::vector<int64_t> around;
-    if (n == 2) {
-        cells.cells_around_edge(on[0], on[1], around);
-    } else {
-        cells.cells_around_vertex(on[0], around);
-    }
-    for (const int64_t c : around) add(c);
-    return st;
-}
-
-VisibleStart TopoOffsetTetMesh::visible_vertex_start(const size_t vid, const MeshCells& cells) const
-{
-    return visible_start({{vid, vid, vid}}, {{1., 0., 0.}}, -1, cells);
-}
-
-VisibleField::Feature TopoOffsetTetMesh::visible_feature(
-    const Vector3d& p,
-    const VisibleStart& start,
-    const MeshCells& cells,
-    const bool allow_stop) const
-{
-    const VisibleField::Feature f = m_visible_field->nearest(p, start, cells);
-    if (f.status == VisibleField::Feature::Status::Stop && !allow_stop) {
-        log_and_throw_error(
-            "EXPERIMENTAL_visible_distance: the walk from ({}, {}, {}) toward input triangle {} "
-            "(at distance {:.6g}, closer than every point proven visible) found no exit face on "
-            "exact rationals; stopping.",
-            p.x(),
-            p.y(),
-            p.z(),
-            f.tri,
-            f.d);
-    }
-    return f;
-}
 
 int64_t TopoOffsetTetMesh::front_face_band_cell(const size_t a, const size_t b, const size_t c)
     const
@@ -3259,35 +3004,17 @@ int64_t TopoOffsetTetMesh::front_face_band_cell(const size_t a, const size_t b, 
 
 double TopoOffsetTetMesh::front_vertex_relative_residual(const size_t vid) const
 {
-    const Vector3d& p = m_vertex_attribute[vid].m_posf;
-    if (!m_visible_active) return potential_for(vid).relative_residual(p);
-    const MeshCells cells(*this);
-    const VisibleField::Feature f = visible_feature(p, visible_vertex_start(vid, cells), cells);
-    if (f.status != VisibleField::Feature::Status::Found) {
-        return std::numeric_limits<double>::quiet_NaN();
-    }
-    return m_visible_field->relative_residual(p, f);
+    return potential_for(vid).relative_residual(m_vertex_attribute[vid].m_posf);
 }
 
 double TopoOffsetTetMesh::front_vertex_residual_length(const size_t vid) const
 {
-    const Vector3d& p = m_vertex_attribute[vid].m_posf;
-    if (!m_visible_active) return potential_for(vid).residual_length(p);
-    // |d - delta|, as EuclideanOffsetPotential::residual_length() is for the nearest point.
-    const double r = front_vertex_relative_residual(vid);
-    return std::abs(r) * m_visible_field->delta();
+    return potential_for(vid).residual_length(m_vertex_attribute[vid].m_posf);
 }
 
 Vector3d TopoOffsetTetMesh::front_vertex_field_gradient(const size_t vid) const
 {
-    const Vector3d& p = m_vertex_attribute[vid].m_posf;
-    if (!m_visible_active) return potential_for(vid).gradient(p);
-    const MeshCells cells(*this);
-    const VisibleField::Feature f = visible_feature(p, visible_vertex_start(vid, cells), cells);
-    if (f.status != VisibleField::Feature::Status::Found) {
-        return Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
-    }
-    return m_visible_field->gradient(p, f);
+    return potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
 }
 
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
@@ -4918,28 +4645,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     ec.worst_unsettled_pos.z(),
                     ec.n_rings_unsolved);
             }
-            if (m_visible_active) {
-                // EXPERIMENTAL_visible_distance's queries this turn: those whose nearest point
-                // was hidden at the first step and resolved among the directions into the band,
-                // and the two assumptions of VisibleField.hpp as they fired -- no input point
-                // seen (euclidean distance), and hidden further along (lower bound, with the
-                // largest gap to the nearest point proven visible, the most the value can be off).
-                const VisibleField::Counts vc = m_visible_field->counts();
-                logger().info(
-                    "\t[visible distance] turn {}: {} queries, {} resolved at the first step | "
-                    "assumptions: {} saw no input point (euclidean distance used), {} hidden "
-                    "further along (lower bound used; gap to the nearest point proven visible max "
-                    "{:.4g} = {:.3g}x front_conv, {} with none proven visible)",
-                    it + 1,
-                    vc.queries,
-                    vc.first_step,
-                    vc.none_visible,
-                    vc.hidden_further,
-                    vc.hidden_further_max_gap,
-                    vc.hidden_further_max_gap / m_offset_params.front_conv,
-                    vc.hidden_further_unbounded);
-                m_visible_field->reset_counts();
-            }
         } else {
             logger().info(
                 "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
@@ -5290,18 +4995,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // label the offset surface, and with it the vertices the optimization places
     logger().info("\tLabel offset faces...");
     label_offset_boundary();
-    // EXPERIMENTAL_visible_distance: from here on the band exists, and every reading of the
-    // field at a point of the front goes through d_vis (see m_visible_field).
-    if (m_offset_params.visible_distance) {
-        if (!m_visible_field) {
-            log_and_throw_error("EXPERIMENTAL_visible_distance: the field was not built");
-        }
-        m_visible_active = true;
-        logger().info(
-            "\tEXPERIMENTAL_visible_distance: the front measures its distance to the nearest input "
-            "point it sees through the band ({} input triangles)",
-            m_visible_field->n_triangles());
-    }
     // The baseline the propagation has to hold from here on. label_offset_boundary() marks the
     // flag from m_face_extra's construction labels; this asks the live cell-label test the same
     // question, so a disagreement at turn 0 would mean the two disagree about what the offset

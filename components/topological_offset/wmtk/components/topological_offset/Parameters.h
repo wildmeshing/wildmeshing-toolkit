@@ -183,9 +183,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// by at most the bar (smoothing no longer moves it). See the spec doc and
     /// EnergyCriterion::unreachable_exit.
     bool unreachable_exit = false;
-    /// EXPERIMENTAL (2026-10-07), 3D. Front points measure their distance to the nearest input
-    /// point they see through the band (VisibleField). See the spec doc.
-    bool visible_distance = false;
     /// EXPERIMENTAL (2026-10-08), 3D, diagnostics. no_refinement: the loop halves no sizing
     /// scalar. no_exit: the loop does not exit on its criterion and runs max_rounds turns, the
     /// criterion's numbers still logged. (Every debug frame appends E's two parts to
@@ -394,19 +391,6 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_settle_refinement needs EXPERIMENTAL_unreachable_exit and "
                 "EXPERIMENTAL_edge_excess_refinement false");
         }
-        visible_distance = json_params["EXPERIMENTAL_visible_distance"];
-        if (visible_distance && front_measure != "vertex_ring") {
-            log_and_throw_error(
-                "EXPERIMENTAL_visible_distance needs front_measure \"vertex_ring\"");
-        }
-        if (visible_distance) {
-            log_and_throw_error(
-                "the energy's band term reads the euclidean distance; leave "
-                "EXPERIMENTAL_visible_distance false");
-        }
-        if (visible_distance && offset_field != "euclidean") {
-            log_and_throw_error("EXPERIMENTAL_visible_distance needs offset_field \"euclidean\"");
-        }
         if (unreachable_exit && stencil_order < 1) {
             // At order 0 a face's three samples are its corners, which a linear function on the
             // face always matches: every remainder is 0 and nothing would ever be refined.
@@ -427,10 +411,6 @@ struct Parameters : public wmtk::OptimizerParameters
         phi_grid_resolution = json_params["phi_grid_resolution"];
 
         num_threads = json_params["num_threads"];
-        if (visible_distance && num_threads > 0) {
-            // Its walks read cells beyond the vertex a thread has locked.
-            log_and_throw_error("EXPERIMENTAL_visible_distance is serial only (num_threads 0)");
-        }
         max_iterations = json_params["max_iterations"];
         offset_envelope = json_params["offset_envelope"];
         offset_envelope_rel = json_params["offset_envelope_rel"];

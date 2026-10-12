@@ -10,7 +10,6 @@ add_component_test(${COMPONENT_NAME})
 set(SRC_FILES
     test_topological_offset.cpp
     test_offset_potential.cpp
-    test_visible_field.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

@@ -29,8 +29,6 @@ set(SRC_FILES
 
 	OffsetPotential.hpp
 	OffsetPotential.cpp
-	VisibleField.hpp
-	VisibleField.cpp
 
 	topological_offset.hpp
 	topological_offset.cpp
