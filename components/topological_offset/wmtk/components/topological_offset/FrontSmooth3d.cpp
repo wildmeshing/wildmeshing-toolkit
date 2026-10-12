@@ -51,8 +51,8 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     // TetMesh::smooth_vertex() rolls back the position and the ring's stored qualities.
     // smooth_vertex_3d() has counted the move accepted by then; it is recounted as a quality
     // refusal, so the counters still partition the attempts.
-    // EXPERIMENTAL_unreachable_exit: the change this solve makes to the vertex's own error, 0 when
-    // the move is refused and rolled back (see VertexExtra::m_front_change).
+    // The change this solve makes to the vertex's own error, 0 when the move is refused and
+    // rolled back (see VertexExtra::m_front_change).
     const double r_before = front_vertex_relative_residual(vid);
     const auto record_change = [&](const bool moved) {
         VertexExtra& ve = m_vertex_extra[vid];

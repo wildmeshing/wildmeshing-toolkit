@@ -132,26 +132,13 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. See marching_tris() / marching_tets().
     std::string construction_mode = "max_marchable_fallback";
     double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
-    /// EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can
-    /// never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the
-    /// endpoints' sizing scalars); the split fires at r > 4/3 and the collapse at r < 4/5, so an
-    /// edge with 4/3 < r < 8/5 splits into halves with r/2 < 4/5, which the collapse pass merges
-    /// straight back. With this on, splitting_l2 becomes (8/5 l)^2 -- twice the collapse gate --
-    /// and collapsing_l2 is untouched, so every half a split produces is at or above the collapse
-    /// gate. A split is still never refused on quality; this is a length rule alone. Measured on
-    /// the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, alignment off: 81%
-    /// of the split candidates at the end of turn 7 (29068 of 35865) were inside that band, and
-    /// turns 6-8 each ran ~36k splits and ~29k collapses while refinement touched 0 vertices.
-    /// With it on: last-turn operations 66826 -> 19263, 8 -> 7 turns, 223 -> 126 s, final max
-    /// AMIPS 8.69 -> 10.64, front faces 25816 -> 21042 under the same bar. Off by default until
-    /// more runs confirm it; false keeps the TetWild gates.
-    bool experimental_nonoverlapping_gates = false;
     /// Default true. Only when the target is not below the maximum marchable distance (marched
     /// as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
     bool init_optimize = true;
-    /// EXPERIMENTAL (2026-10-02). The stencil_order of the init_optimize loop alone; -1 (the
-    /// default) uses stencil_order there too. See the spec doc.
+    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
+    // with 3D. No JSON key; the default its key had. The stencil_order of the 2D init_optimize
+    // loop alone; -1 uses stencil_order there too.
     int init_optimize_stencil_order = -1;
     /// Smoothing passes before the march that push the outer ends of the marched edges out to
     /// 2 x target_distance; they stop early once every outer end is beyond target_distance +
@@ -166,57 +153,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// front the march would cut fails the loop's face measure, and the rounds do not collapse.
     /// See the spec doc.
     bool repulsion_refine = false;
-    /// EXPERIMENTAL (2026-10-06), 3D only. Fractions of target_distance, increasing, the last 1:
-    /// construction marches to the first, and the loop runs at each in turn, each to convergence
-    /// under the same front_conv. Empty (the default) = off. See the spec doc.
-    std::vector<double> growth_targets;
-    /// EXPERIMENTAL (2026-10-07), with growth_targets. The construction target as a fraction of
-    /// target_distance, at most the first growth target; 0 (the default) = the first growth
-    /// target. See the spec doc.
-    double growth_construction = 0.;
-    /// EXPERIMENTAL (2026-10-07), with growth_targets. Smoothing passes alone, no operation,
-    /// from the construction to the first growth target before stage 1. See the spec doc.
-    bool growth_push = false;
-    /// EXPERIMENTAL (2026-10-07), front_measure "vertex_ring" and stencil_order >= 1 only. Refine a
-    /// vertex over the bar only where its remainder W (face_offset_term()) is over the bar, and let
-    /// one with W within the bar pass when the turn's last smoothing passes changed its own error
-    /// by at most the bar (smoothing no longer moves it). See the spec doc and
-    /// EnergyCriterion::unreachable_exit.
-    bool unreachable_exit = false;
-    /// EXPERIMENTAL (2026-10-08), 3D, diagnostics. no_refinement: the loop halves no sizing
-    /// scalar. no_exit: the loop does not exit on its criterion and runs max_rounds turns, the
-    /// criterion's numbers still logged. (Every debug frame appends E's two parts to
-    /// <output>_energy.txt, either way.)
-    bool no_refinement = false;
-    bool no_exit = false;
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_unreachable_exit. A front vertex's remainder
-    /// W is the largest remainder among its faces instead of their mean, so one face that cannot
-    /// follow the level set is not diluted by the vertex's other faces.
-    bool remainder_max = false;
-    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_unreachable_exit. A front vertex over the bar
-    /// passes as out of reach only when the field says so: the probe point x - r delta grad/|grad|
-    /// (where the vertex's target lies along the field gradient) is itself more than the bar off
-    /// the level set. A reachable one is refined when its remainder W is over the bar, and
-    /// otherwise blocks the exit (never passes). Replaces the settledness test.
-    bool reach_probe = false;
-    /// EXPERIMENTAL (2026-10-09), 3D, without EXPERIMENTAL_unreachable_exit. The refinement is the
-    /// edge test alone: every edge (a, b) of a
-    /// band cell with a front vertex whose excess (d_P(a) + d_P(b))/2 - d(m) is over front_conv
-    /// (P the cell's minimising triangle, m the midpoint; InputTriangles::edge_excess()) has the
-    /// sizing scalar halved at a and b. The ring measure R(v) refines nothing and only gates the
-    /// exit: exit = no edge over the bar and every R(v) within it. See the spec doc.
-    bool edge_excess_refinement = false;
-    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_edge_excess_refinement. An edge inside the
-    /// length band its sizing controls, L_min = sqrt(collapsing_l2) * mean scalar <= L, is judged at
-    /// the band's top L_max = sqrt(splitting_l2) * mean scalar: excess * max(1, (L_max / L)^2), the
-    /// excess of a curved d growing as L^2; a shorter edge at its own length. Flags a strip whose
-    /// sizing admits edges over the bar before smoothing drifts them over. See the spec doc.
-    bool edge_excess_window = false;
-    /// EXPERIMENTAL (2026-10-09), 3D, without EXPERIMENTAL_unreachable_exit and
-    /// EXPERIMENTAL_edge_excess_refinement. Refinement and exit wait for the front to settle: a
+    /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when E fell by less than the bar energy
     /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
     /// offset term's excess for a front lying front_conv off the level set. On a settled turn
@@ -328,54 +268,14 @@ struct Parameters : public wmtk::OptimizerParameters
         sorted_marching = json_params["sorted_marching"];
         construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
-        experimental_nonoverlapping_gates = json_params["EXPERIMENTAL_nonoverlapping_gates"];
         init_optimize = json_params["init_optimize"];
-        init_optimize_stencil_order = json_params["EXPERIMENTAL_init_optimize_stencil_order"];
         repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         repulsion_rounds = json_params["repulsion_rounds"];
         repulsion_refine = json_params["EXPERIMENTAL_repulsion_refine"];
         if (repulsion_refine && repulsion_rounds <= 0) {
             log_and_throw_error("EXPERIMENTAL_repulsion_refine needs repulsion_rounds > 0");
         }
-        growth_targets = json_params["EXPERIMENTAL_growth_targets"].get<std::vector<double>>();
-        for (size_t k = 0; k < growth_targets.size(); ++k) {
-            const double prev = k == 0 ? 0. : growth_targets[k - 1];
-            if (!(growth_targets[k] > prev) || growth_targets[k] > 1. ||
-                (k + 1 == growth_targets.size() && growth_targets[k] != 1.)) {
-                log_and_throw_error(
-                    "EXPERIMENTAL_growth_targets must be fractions of target_distance, strictly "
-                    "increasing, in (0, 1], the last exactly 1");
-            }
-        }
-        growth_construction = json_params["EXPERIMENTAL_growth_construction"];
-        growth_push = json_params["EXPERIMENTAL_growth_push"];
-        unreachable_exit = json_params["EXPERIMENTAL_unreachable_exit"];
-        if (unreachable_exit && front_measure != "vertex_ring") {
-            log_and_throw_error(
-                "EXPERIMENTAL_unreachable_exit needs front_measure \"vertex_ring\"");
-        }
-        no_refinement = json_params["EXPERIMENTAL_no_refinement"];
-        no_exit = json_params["EXPERIMENTAL_no_exit"];
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
-        remainder_max = json_params["EXPERIMENTAL_remainder_max"];
-        reach_probe = json_params["EXPERIMENTAL_reach_probe"];
-        if (reach_probe && !unreachable_exit) {
-            log_and_throw_error("EXPERIMENTAL_reach_probe needs EXPERIMENTAL_unreachable_exit");
-        }
-        if (remainder_max && !unreachable_exit) {
-            log_and_throw_error("EXPERIMENTAL_remainder_max needs EXPERIMENTAL_unreachable_exit");
-        }
-        edge_excess_refinement = json_params["EXPERIMENTAL_edge_excess_refinement"];
-        if (edge_excess_refinement && (unreachable_exit || front_measure != "vertex_ring")) {
-            log_and_throw_error(
-                "EXPERIMENTAL_edge_excess_refinement needs front_measure \"vertex_ring\" and "
-                "EXPERIMENTAL_unreachable_exit false");
-        }
-        edge_excess_window = json_params["EXPERIMENTAL_edge_excess_window"];
-        if (edge_excess_window && !edge_excess_refinement) {
-            log_and_throw_error(
-                "EXPERIMENTAL_edge_excess_window needs EXPERIMENTAL_edge_excess_refinement");
-        }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
@@ -385,26 +285,6 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         if (settle_mark != "max" && !settle_refinement) {
             log_and_throw_error("EXPERIMENTAL_settle_mark needs EXPERIMENTAL_settle_refinement");
-        }
-        if (settle_refinement && (unreachable_exit || edge_excess_refinement)) {
-            log_and_throw_error(
-                "EXPERIMENTAL_settle_refinement needs EXPERIMENTAL_unreachable_exit and "
-                "EXPERIMENTAL_edge_excess_refinement false");
-        }
-        if (unreachable_exit && stencil_order < 1) {
-            // At order 0 a face's three samples are its corners, which a linear function on the
-            // face always matches: every remainder is 0 and nothing would ever be refined.
-            log_and_throw_error("EXPERIMENTAL_unreachable_exit needs stencil_order >= 1");
-        }
-        if ((growth_construction != 0. || growth_push) && growth_targets.empty()) {
-            log_and_throw_error(
-                "EXPERIMENTAL_growth_construction and EXPERIMENTAL_growth_push need "
-                "EXPERIMENTAL_growth_targets");
-        }
-        if (growth_construction != 0. &&
-            !(growth_construction > 0. && growth_construction <= growth_targets.front())) {
-            log_and_throw_error(
-                "EXPERIMENTAL_growth_construction must be in (0, the first growth target]");
         }
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
@@ -485,14 +365,6 @@ struct Parameters : public wmtk::OptimizerParameters
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2. It also derives eps from epsr,
         // which the offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
         init_lengths_from_diagonal((max_ - min_).norm());
-
-        // The split gate moved out to twice the collapse gate, so no half a split produces is a
-        // collapse candidate: splitting_l2 = (8/5 l)^2 against collapsing_l2 = (4/5 l)^2, which
-        // is left where it is. The overlapping TetWild gates (4/3 and 4/5), still the default, let
-        // the passes trade the same edges every turn -- see the declaration for the measurement.
-        if (experimental_nonoverlapping_gates) {
-            splitting_l2 = l * l * (64 / 25.);
-        }
 
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;

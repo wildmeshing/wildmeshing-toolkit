@@ -695,16 +695,6 @@ public:
         const Eigen::Vector3d& p,
         Eigen::Vector3d* grad = nullptr,
         Eigen::Matrix3d* hess = nullptr) const;
-    /// EXPERIMENTAL_edge_excess_refinement: (d_P(a) + d_P(b))/2 - d(m), m = (a + b)/2, d the
-    /// distance to the nearest triangle -- how far the corner bound's linear interpolant of d_P
-    /// lies above the true distance at the edge's midpoint. Never negative: d(m) <= d_P(m) <=
-    /// (d_P(a) + d_P(b))/2, d_P being convex. 0 where d_P is affine along the edge and P is
-    /// nearest at m; the chord sag of d_P where it curves; more where another triangle is nearer.
-    double edge_excess(int64_t P, const Eigen::Vector3d& a, const Eigen::Vector3d& b) const
-    {
-        const Eigen::Vector3d m = 0.5 * (a + b);
-        return 0.5 * (distance(P, a) + distance(P, b)) - distance(nearest(m), m);
-    }
     size_t size() const { return size_t(m_F.rows()); }
     /// EXPERIMENTAL_settle_mark "rms": the mean over triangle abc of (d - delta)^2 (n . grad d),
     /// n the face's unit normal (pointing out of the band), by the 3-edge-midpoint rule (weights

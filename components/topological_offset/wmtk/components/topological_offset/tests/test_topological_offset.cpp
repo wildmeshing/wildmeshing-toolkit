@@ -1295,66 +1295,6 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     }
 }
 
-TEST_CASE("face-remainder", "[offset][3d]")
-{
-    // face_offset_term()'s remainder, EXPERIMENTAL_unreachable_exit's refinement measure: the mean
-    // over the stencil of (e - L)^2, L the least-squares function linear on the face. On a face
-    // over the triangle's interior the distance is linear on the face and the remainder is 0; past
-    // the triangle's vertex (0, 10, 0) the distance is the distance to that point, not linear, and
-    // the remainder is (3/16) b^2 at order 1 (b = the centroid's e minus the mean of the corners')
-    // and the least-squares residual computed here by hand at order 2.
-    Parameters param;
-    param.target_distance = kEnergyDelta;
-    param.front_conv = kEnergyConv;
-    TopoOffsetTetMesh mesh(param, 0);
-    const auto pot = plane_field();
-    const double frac = mesh.m_offset_params.front_conv_frac();
-    const auto e_at = [&](const Vector3d& q) { return pot->relative_residual(q) / frac; };
-    for (const int k : {1, 2}) {
-        mesh.m_offset_params.stencil_order = k;
-        double rem = -1.;
-        mesh.face_offset_term(
-            *pot,
-            Vector3d(0.1, -0.05, 0.53),
-            Vector3d(0.4, 0.1, 0.61),
-            Vector3d(0.2, 0.35, 0.44),
-            nullptr,
-            &rem);
-        INFO("flat, stencil_order " << k);
-        CHECK(std::abs(rem) <= 1e-9);
-    }
-    const Vector3d a(0.0, 11.0, 0.5), b(0.6, 11.4, 0.9), c(-0.5, 11.8, 0.3);
-    {
-        mesh.m_offset_params.stencil_order = 1;
-        double rem = -1.;
-        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
-        const double bend = e_at((a + b + c) / 3.) - (e_at(a) + e_at(b) + e_at(c)) / 3.;
-        CHECK(std::abs(bend) > 1.); // the fixture really bends
-        CHECK(rem == Catch::Approx(3. / 16. * bend * bend).epsilon(1e-10));
-    }
-    {
-        mesh.m_offset_params.stencil_order = 2;
-        double rem = -1.;
-        mesh.face_offset_term(*pot, a, b, c, nullptr, &rem);
-        std::vector<Vector3d> lam;
-        std::vector<double> ev;
-        mesh.for_each_face_sample(a, b, c, [&](const Vector3d& q, double wa, double wb, double wc) {
-            lam.push_back(Vector3d(wa, wb, wc));
-            ev.push_back(e_at(q));
-        });
-        Eigen::MatrixXd A(lam.size(), 3);
-        Eigen::VectorXd y(lam.size());
-        for (size_t i = 0; i < lam.size(); ++i) {
-            A.row(Eigen::Index(i)) = lam[i].transpose();
-            y[Eigen::Index(i)] = ev[i];
-        }
-        const Eigen::VectorXd coef = A.colPivHouseholderQr().solve(y);
-        const double by_hand = (y - A * coef).squaredNorm() / double(lam.size());
-        CHECK(by_hand > 1e-3);
-        CHECK(rem == Catch::Approx(by_hand).epsilon(1e-8));
-    }
-}
-
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
     // tet_energy() against its definition computed by hand: (w / s^3) vol AMIPS^3 for every

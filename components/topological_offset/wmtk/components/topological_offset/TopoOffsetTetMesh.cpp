@@ -1178,24 +1178,6 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
     build_envelopes();
 
-    // EXPERIMENTAL_growth_targets: everything from here to the first stage runs at the first
-    // target -- repulsion, the march and its fallback read target_distance, as does the field
-    // built after construction. optimize_offset() raises it stage by stage back to delta.
-    if (!m_offset_params.growth_targets.empty()) {
-        m_growth_delta = m_offset_params.target_distance;
-        set_growth_stage(1);
-        // EXPERIMENTAL_growth_construction: below the first target; optimize_offset() sets the
-        // first target before stage 1 (and before the push, when there is one).
-        if (m_offset_params.growth_construction > 0.) {
-            m_offset_params.target_distance = m_offset_params.growth_construction * m_growth_delta;
-        }
-        logger().info(
-            "[growth] {} stage(s) to target_distance {:.6g}: construction at {:.6g}",
-            m_offset_params.growth_targets.size(),
-            m_growth_delta,
-            m_offset_params.target_distance);
-    }
-
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
 
@@ -1220,14 +1202,6 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     }
 
     assert(ambient_assert());
-}
-
-void TopoOffsetTetMesh::set_growth_stage(const int k)
-{
-    const int n = int(m_offset_params.growth_targets.size());
-    // The last stage restores the configured value exactly rather than 1 x it.
-    m_offset_params.target_distance =
-        k == n ? m_growth_delta : m_offset_params.growth_targets[size_t(k - 1)] * m_growth_delta;
 }
 
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
@@ -2317,7 +2291,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         fr.newton_st[int(r.vid)] = r.status;
     }
     //   front_last_change    VertexExtra::m_front_change when recorded in the latest operation
-    //                        group (EXPERIMENTAL_unreachable_exit reads exactly this), else -1.
+    //                        group, else -1.
     fr.front_change = VectorXd::Constant(vert_capacity(), -1.);
     for (size_t vid = 0; vid < vert_capacity(); ++vid) {
         const VertexExtra& ve = m_vertex_extra[vid];

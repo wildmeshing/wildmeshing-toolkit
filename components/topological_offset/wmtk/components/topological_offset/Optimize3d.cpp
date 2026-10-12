@@ -22,7 +22,6 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace wmtk {
@@ -185,9 +184,7 @@ double TopoOffsetTetMesh::face_offset_term(
     const OffsetPotential3D& pot,
     const Vector3d& pa,
     const Vector3d& pb,
-    const Vector3d& pc,
-    double* mean_error,
-    double* remainder) const
+    const Vector3d& pc) const
 {
     // THE face measure, and since 2026-09-24 the only one: the MEAN over the face's stencil of
     // the squared relative error, in units of the tolerance. At every stencil point q of
@@ -217,14 +214,10 @@ double TopoOffsetTetMesh::face_offset_term(
     // still (value - c)/c, so that path is unchanged bit for bit.
     const double level = pot.target_level();
     if (!(level > 0.)) return -1.;
-    double sum = 0., sum1 = 0.;
+    double sum = 0.;
     size_t n = 0;
     bool unmeasurable = false;
-    // For the remainder: the normal equations of the least-squares fit r ~ c . (wa, wb, wc), the
-    // function linear on the face, in the samples' barycentric coordinates.
-    Eigen::Matrix3d lam_lam = Eigen::Matrix3d::Zero();
-    Vector3d lam_r = Vector3d::Zero();
-    for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double wa, double wb, double wc) {
+    for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double, double, double) {
         if (unmeasurable) return;
         const double r = pot.relative_residual(q);
         if (!std::isfinite(r)) {
@@ -232,43 +225,23 @@ double TopoOffsetTetMesh::face_offset_term(
             return;
         }
         sum += r * r;
-        sum1 += r;
         ++n;
-        if (remainder) {
-            const Vector3d lam(wa, wb, wc);
-            lam_lam += lam * lam.transpose();
-            lam_r += r * lam;
-        }
     });
     // n == 0 only when stencil_order < 0, which the spec's min refuses; an unmeasurable sample
     // reads the whole face unmeasurable.
     if (unmeasurable || n == 0) return -1.;
     if (!(m_offset_params.front_conv_frac() > 0.)) return std::numeric_limits<double>::infinity();
     const double dn = double(n);
-    if (mean_error) *mean_error = (sum1 / dn) / m_offset_params.front_conv_frac();
-    if (remainder) {
-        // The corners are among the samples, so lam_lam >= I and the fit is unique. Residual sum
-        // of squares = sum r^2 - lam_r . c; clamped at 0 against round-off.
-        const Vector3d c = lam_lam.ldlt().solve(lam_r);
-        *remainder = offset_term_weight() * std::max(sum - lam_r.dot(c), 0.) / dn;
-    }
     return offset_term_weight() * (sum / dn);
 }
 
-double TopoOffsetTetMesh::face_offset_term(
-    const size_t a,
-    const size_t b,
-    const size_t c,
-    double* mean_error,
-    double* remainder) const
+double TopoOffsetTetMesh::face_offset_term(const size_t a, const size_t b, const size_t c) const
 {
     return face_offset_term(
         potential_for_edge(a, b),
         m_vertex_attribute[a].m_posf,
         m_vertex_attribute[b].m_posf,
-        m_vertex_attribute[c].m_posf,
-        mean_error,
-        remainder);
+        m_vertex_attribute[c].m_posf);
 }
 
 double TopoOffsetTetMesh::tet_energy(const size_t tid) const
@@ -2390,15 +2363,6 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     // loop's own face_offset_term() calls below, so it judges exactly the face numbers the face
     // mode does, every face weighted equally. See EnergyCriterion::ring_exit.
     s.ring_exit = m_offset_params.front_measure == "vertex_ring";
-    s.unreachable_exit = s.ring_exit && m_offset_params.unreachable_exit;
-    s.edge_rule = s.ring_exit && m_offset_params.edge_excess_refinement;
-    // EXPERIMENTAL_unreachable_exit: sums over the ring of the faces' mean errors and remainders.
-    std::vector<double> ring_mean, ring_rem, ring_rem_max;
-    if (s.unreachable_exit) {
-        ring_mean.assign(vert_capacity(), 0.);
-        ring_rem.assign(vert_capacity(), 0.);
-        ring_rem_max.assign(vert_capacity(), 0.); // EXPERIMENTAL_remainder_max
-    }
     // ring_n: the faces summed at each vertex, the denominator of every ring mean.
     std::vector<double> ring_sum;
     std::vector<size_t> ring_n;
@@ -2444,13 +2408,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         // see converged()) AND what decides which faces the refinement is handed. Under
         // front_measure "vertex_ring" it feeds both through the ring measure instead. gn is
         // the root of the face term, the figure the logs print.
-        double mean_e = 0., rem = 0.;
-        const double term = face_offset_term(
-            va,
-            vb,
-            vc,
-            s.unreachable_exit ? &mean_e : nullptr,
-            s.unreachable_exit ? &rem : nullptr);
+        const double term = face_offset_term(va, vb, vc);
         const double gn = term < 0. ? -1. : std::sqrt(term); // the sag / the tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
@@ -2465,11 +2423,6 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             for (const size_t u : {va, vb, vc}) {
                 ring_sum[u] += term;
                 ++ring_n[u];
-                if (s.unreachable_exit) {
-                    ring_mean[u] += mean_e;
-                    ring_rem[u] += rem;
-                    ring_rem_max[u] = std::max(ring_rem_max[u], rem);
-                }
             }
         }
         // The longest edge is the chord the target is derived from.
@@ -2576,78 +2529,6 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             }
             if (!(r > s.bar)) continue;
             ++s.n_rings_over;
-            // EXPERIMENTAL_edge_excess_refinement: over the bar blocks the exit (rings_ok()) and
-            // is left to smoothing; the edge test below is the only refinement.
-            if (s.edge_rule) continue;
-            if (s.unreachable_exit) {
-                // W, the mean over the ring's faces of their remainders: the part of the error's
-                // variation over each face that no linear function on the face matches, the part
-                // a finer front can follow. A linear variation is either a tilt smoothing removes
-                // or, where the level set is out of reach, the distance rising along a front that
-                // cannot follow it; refining only shrinks the rings there (slot_small, target
-                // 1.35, the channel above the plate: 86-99.5% of the variance was linear, and the
-                // variance rule refined 177, 371, 882, 2184 vertices in turns 1-4 where W refines
-                // 111, 134, 25, 0 on the same frames). A vertex whose W is within the bar is not
-                // refined, and passes when smoothing no longer moves it: its solve in the turn's
-                // last smoothing passes (the latest operation group) changed its own error by at
-                // most the bar. With no front solve in that group there is nothing to judge, and
-                // it does not pass.
-                const double mean = ring_mean[vid] / double(ring_n[vid]);
-                if (m_offset_params.reach_probe) {
-                    // EXPERIMENTAL_reach_probe: out of reach only when the field says so -- the
-                    // vertex's target along the gradient, x - r delta grad/|grad|, is itself off
-                    // the level set by more than the bar. Every other vertex over the bar is
-                    // refined, below.
-                    const OffsetPotential3D& pot = potential_for(vid);
-                    const Vector3d& x = m_vertex_attribute[vid].m_posf;
-                    double val = 0.;
-                    Vector3d grad;
-                    pot.value_gradient(x, val, grad);
-                    const double r_x = pot.relative_residual(x);
-                    const double gn = grad.norm();
-                    if (std::isfinite(r_x) && std::isfinite(gn) && gn > 0.) {
-                        const Vector3d xt = x - r_x * m_offset_params.target_distance * grad / gn;
-                        const double rt = pot.relative_residual(xt);
-                        if (!(std::abs(rt) / m_offset_params.front_conv_frac() <= s.bar)) {
-                            ++s.n_rings_unreached;
-                            s.max_unreached_mean = std::max(s.max_unreached_mean, std::abs(mean));
-                            continue;
-                        }
-                    }
-                }
-                const double w_rem = m_offset_params.remainder_max
-                                         ? ring_rem_max[vid]
-                                         : ring_rem[vid] / double(ring_n[vid]);
-                if (m_offset_params.reach_probe && !(w_rem > s.bar * s.bar)) {
-                    // EXPERIMENTAL_reach_probe: reachable, and no face of it too coarse for the
-                    // level set: refining cannot help and it may not pass. It blocks the exit and
-                    // is counted with the vertices that still move.
-                    ++s.n_rings_unsettled;
-                    if (s.n_rings_unsettled == 1 || std::abs(mean) > s.max_unsettled_change) {
-                        s.max_unsettled_change = std::abs(mean);
-                        s.worst_unsettled_pos = m_vertex_attribute[vid].m_posf;
-                    }
-                    continue;
-                }
-                if (!m_offset_params.reach_probe && !(w_rem > s.bar * s.bar)) {
-                    const VertexExtra& ve = m_vertex_extra[vid];
-                    const bool solved = ve.m_front_change_group == m_smooth_group;
-                    if (!solved) ++s.n_rings_unsolved;
-                    const double change =
-                        solved ? ve.m_front_change : std::numeric_limits<double>::infinity();
-                    if (change <= s.bar) {
-                        ++s.n_rings_unreached;
-                        s.max_unreached_mean = std::max(s.max_unreached_mean, std::abs(mean));
-                    } else {
-                        ++s.n_rings_unsettled;
-                        if (s.n_rings_unsettled == 1 || change > s.max_unsettled_change) {
-                            s.max_unsettled_change = change;
-                            s.worst_unsettled_pos = m_vertex_attribute[vid].m_posf;
-                        }
-                    }
-                    continue;
-                }
-            }
             const double have = m_vertex_attribute[vid].m_sizing_scalar;
             if (have > s_floor) {
                 s.refinable_vertices.push_back(vid);
@@ -2663,83 +2544,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             }
         }
     }
-    if (s.edge_rule) {
-        // EXPERIMENTAL_edge_excess_refinement: every edge of a band cell with a front vertex,
-        // judged with that cell's minimising triangle P (InputTriangles::edge_excess()). Only
-        // these cells: the band integral depends on the front alone, and a front vertex's
-        // smoothing sums over the cells it is a corner of. An edge over the bar in any of its
-        // cells has both endpoints halved; with both at the floor it blocks the exit for good.
-        const double l = std::max(m_params.l, 1e-300);
-        const double s_floor =
-            std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-        s.floor_scalar = s_floor; // for the turn's [edge excess] line
-        std::vector<char> marked(vert_capacity(), 0);
-        std::unordered_set<uint64_t> over;
-        for (const Tuple& t : get_tets()) {
-            const size_t tid = t.tid(*this);
-            if (!cell_is_offset_band(tid)) continue;
-            const auto vids = oriented_tet_vids(tid);
-            if (!front(vids[0]) && !front(vids[1]) && !front(vids[2]) && !front(vids[3])) continue;
-            int64_t P = -1;
-            band_cell_corner_bound(vids, P);
-            if (P < 0) continue;
-            ++s.n_edge_cells;
-            for (int i = 0; i < 4; ++i) {
-                for (int j = i + 1; j < 4; ++j) {
-                    const size_t a = vids[size_t(i)], b = vids[size_t(j)];
-                    const Vector3d& pa = m_vertex_attribute[a].m_posf;
-                    const Vector3d& pb = m_vertex_attribute[b].m_posf;
-                    double x = m_band_tris->edge_excess(P, pa, pb) / s.tube;
-                    if (m_offset_params.edge_excess_window) {
-                        // EXPERIMENTAL_edge_excess_window: an edge inside the length band the
-                        // sizing controls (collapsing_l2 to splitting_l2, times the mean scalar
-                        // squared) is judged at the band's top, the sag of a curved d scaling as
-                        // L^2; a shorter edge, which the sizing does not lengthen, at its own
-                        // length; never below the edge's own excess.
-                        const double sc = 0.5 * (m_vertex_attribute[a].m_sizing_scalar +
-                                                 m_vertex_attribute[b].m_sizing_scalar);
-                        const double len2 = (pa - pb).squaredNorm();
-                        if (len2 >= m_params.collapsing_l2 * sc * sc) {
-                            x *= std::max(1., m_params.splitting_l2 * sc * sc / len2);
-                        }
-                    }
-                    if (x > s.max_edge_excess) {
-                        s.max_edge_excess = x;
-                        s.worst_edge_mid = 0.5 * (pa + pb);
-                    }
-                    if (!(x > s.bar)) continue;
-                    if (!over.insert((uint64_t(std::min(a, b)) << 32) | uint64_t(std::max(a, b)))
-                             .second) {
-                        continue;
-                    }
-                    const bool fa = m_vertex_attribute[a].m_sizing_scalar > s_floor;
-                    const bool fb = m_vertex_attribute[b].m_sizing_scalar > s_floor;
-                    if (!fa && !fb) {
-                        ++s.n_edges_at_floor;
-                        s.floor_from_min_edge_length =
-                            m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
-                    }
-                    for (const auto& [v, ok] : {std::pair{a, fa}, std::pair{b, fb}}) {
-                        if (ok && !marked[v]) {
-                            marked[v] = 1;
-                            s.refinable_vertices.push_back(v);
-                        }
-                    }
-                }
-            }
-        }
-        s.n_edges_over = over.size();
-    }
     return s;
-}
-
-std::string TopoOffsetTetMesh::EnergyCriterion::unreached_fact() const
-{
-    if (!unreachable_exit || n_rings_unreached == 0) return "";
-    return fmt::format(
-        " or, at {} vertex(es) over it, the level set out of reach (mean error up to {:.4} bars)",
-        n_rings_unreached,
-        max_unreached_mean);
 }
 
 std::string TopoOffsetTetMesh::EnergyCriterion::sizing_floor_fact() const
@@ -4222,56 +4027,6 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
     }
 }
 
-bool TopoOffsetTetMesh::growth_push()
-{
-    // EXPERIMENTAL_growth_push: smoothing passes alone -- no split, collapse or swap, no
-    // refinement -- so the cells stay the ones construction made while the front moves from the
-    // construction target to the first growth target. Each block is the one every operation
-    // group of the loop is followed by (k passes, or adaptive), as pre_smooth runs it. Stops once
-    // every front vertex is placed (front_placed_by_ratio(): its own distance to the level set
-    // within front_conv) and none is unmeasurable; at most max_rounds blocks. The reason for no
-    // operation: on Thingi10K 100026 the cells that cover a slot's mid-plane at its ends reach 3.6
-    // x the construction target along the slot (0.36 at 0.1 delta, 1.77 at 0.5 delta), so
-    // constructing low and moving the front keeps them short.
-    const bool interleaved = m_params.interleaved_smoothing;
-    const int k = std::max(
-        1,
-        interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
-    const int budget = std::max(1, m_offset_params.max_rounds);
-    compute_vertex_partition_morton();
-    for (int r = 1; r <= budget; ++r) {
-        m_round = r;
-        if (m_offset_params.adaptive_smoothing) {
-            smooth_group_to_convergence("push");
-        } else {
-            local_operations({{0, 0, 0, k}});
-        }
-        consolidate_mesh();
-        assign_band_regions();
-        const EnergyCriterion ec = energy_criterion();
-        logger().info(
-            "======== [push] block {} / {}: front vertices max {:.4}x the bar (avg {:.4}x), {} "
-            "not placed of {}, {} unmeasurable (the push test) | diagnostic: {} max {:.4}x, "
-            "faces max {:.4}x | max AMIPS {:.4} ========",
-            r,
-            budget,
-            ec.max_vertex,
-            ec.avg_vertex(),
-            ec.n_unplaced,
-            ec.n_vertices,
-            ec.n_unmeasurable,
-            ec.ring_exit ? std::string(ec.ring_name()) : std::string("ring"),
-            ec.max_ring,
-            ec.max_face,
-            std::get<0>(optimization_quality_stats()));
-        if (m_offset_params.debug_output) {
-            write_optimization_debug_output(fmt::format("end_{}S", r));
-        }
-        if (ec.vertices_ok() && ec.n_unmeasurable == 0) return true;
-    }
-    return false;
-}
-
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4375,7 +4130,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_round = it + 1;
         m_iterations_used = it + 1;
         for (size_t gi = 0; gi < groups.size(); ++gi) {
-            ++m_smooth_group; // EXPERIMENTAL_unreachable_exit: see VertexExtra::m_front_change
+            ++m_smooth_group; // see VertexExtra::m_front_change
             // E before and after each group, the descent check (a collapse or swap group may not
             // raise it; a split group may).
             const double energy_before_group = global_energy();
@@ -4460,30 +4215,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 ec.n_rings_over,
                 ec.refinable_vertices.size(),
                 ec.n_rings_at_floor);
-            if (ec.unreachable_exit) {
-                logger().info(
-                    "\t[unreachable exit] turn {}: of {} front vertices over the bar, {} with the "
-                    "remainder over the bar ({} refinable, {} at the sizing floor); {} with the "
-                    "remainder "
-                    "within it pass, the level set out of reach (mean error up to {:.4} bars); {} "
-                    "with the remainder within it still move and block the exit (own-error change "
-                    "in "
-                    "the last smoothing passes up to {:.4} bars, worst at ({:.4}, {:.4}, {:.4}); "
-                    "{} of them not solved in those passes)",
-                    it + 1,
-                    ec.n_rings_over,
-                    ec.refinable_vertices.size() + ec.n_rings_at_floor,
-                    ec.refinable_vertices.size(),
-                    ec.n_rings_at_floor,
-                    ec.n_rings_unreached,
-                    ec.max_unreached_mean,
-                    ec.n_rings_unsettled,
-                    ec.max_unsettled_change,
-                    ec.worst_unsettled_pos.x(),
-                    ec.worst_unsettled_pos.y(),
-                    ec.worst_unsettled_pos.z(),
-                    ec.n_rings_unsolved);
-            }
         } else {
             logger().info(
                 "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
@@ -4594,10 +4325,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 checked,
                 bad > 8 ? fmt::format(" ({} not listed)", bad - 8) : std::string());
         }
-        // EXPERIMENTAL_no_refinement: no halving below; EXPERIMENTAL_no_exit: no exit after it.
-        const bool refine_now = refine && !m_offset_params.no_refinement;
-        const bool exit_now = !m_offset_params.no_exit;
-        if (!settle && !refine_now &&
+        if (!settle && !refine &&
             (!ec.refinable.empty() || (ec.ring_exit && ec.n_rings_over > 0))) {
             logger().info(
                 "\t[resolution] turn {}: {} -- no refinement ({} front vertex(es) / {} face(s) "
@@ -4607,7 +4335,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 ec.n_rings_over,
                 ec.refinable.size());
         }
-        if (!settle && refine_now && !ec.refinable.empty()) {
+        if (!settle && refine && !ec.refinable.empty()) {
             // Refinement is the halving, and only the halving: every refinable face has the
             // sizing scalar at its corners halved.
             const size_t n = refine_front_by_halving(ec.refinable);
@@ -4625,44 +4353,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 ec.worst_placed_centroid.z(),
                 n);
         }
-        // Under EXPERIMENTAL_unreachable_exit only the vertices whose remainder is over the bar are
-        // refinable; the rest of those over the bar are on the [unreachable exit] line.
-        if (ec.edge_rule) {
-            // EXPERIMENTAL_edge_excess_refinement: the turn's edge test, and what the exit still
-            // waits for. Then the halving of the edges' endpoints alone.
-            logger().log(
-                ec.n_edges_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
-                "\t[edge excess] turn {}: {} of the edges of {} band cells with a front vertex "
-                "over the bar{} (max {:.4}x at ({:.4}, {:.4}, {:.4})), {} with both endpoints at "
-                "the "
-                "sizing floor {:.4g}; {} front vertices with R(v) over the bar (not refined: the "
-                "exit waits for them)",
-                it + 1,
-                ec.n_edges_over,
-                ec.n_edge_cells,
-                m_offset_params.edge_excess_window ? " judged at the longest unsplit length" : "",
-                ec.max_edge_excess,
-                ec.worst_edge_mid.x(),
-                ec.worst_edge_mid.y(),
-                ec.worst_edge_mid.z(),
-                ec.n_edges_at_floor,
-                ec.floor_scalar,
-                ec.n_rings_over);
-            if (refine_now && !ec.refinable_vertices.empty()) {
-                const size_t n = refine_front_by_halving(ec.refinable_vertices);
-                logger().info(
-                    "\t[resolution] turn {}: the endpoints of {} edge(s) over the bar -> sizing "
-                    "scalar halved at {} vertices",
-                    it + 1,
-                    ec.n_edges_over - ec.n_edges_at_floor,
-                    n);
-            }
-        }
-        const size_t n_to_refine = ec.edge_rule ? 0
-                                   : ec.unreachable_exit
-                                       ? ec.refinable_vertices.size() + ec.n_rings_at_floor
-                                       : ec.n_rings_over;
-        if (!settle && refine_now && ec.ring_exit && n_to_refine > 0) {
+        if (!settle && refine && ec.ring_exit && ec.n_rings_over > 0) {
             // front_measure "vertex_ring": the halving takes each vertex over the bar, that
             // vertex alone. refinable is empty in this mode, so the face line above is silent.
             const size_t n = refine_front_by_halving(ec.refinable_vertices);
@@ -4672,7 +4363,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 "bar, {} of them at the sizing floor (worst {:.4}x) -> sizing scalar halved at {} "
                 "vertices",
                 it + 1,
-                n_to_refine,
+                ec.n_rings_over,
                 ec.ring_name(),
                 ec.n_rings_at_floor,
                 ec.max_ring,
@@ -4680,8 +4371,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         }
         // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
         // when the loop may exit, which then replaces EnergyCriterion::converged() below.
-        const bool settle_exit =
-            settle && settle_refinement_turn(it + 1, settle_e_prev, refine_now);
+        const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
@@ -4709,7 +4399,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
         const bool resolved = settle ? settle_exit : ec.converged();
-        if (exit_now && resolved && !final_stage) {
+        if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
             logger().info(
@@ -4727,7 +4417,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 amips);
             return true;
         }
-        if (exit_now && resolved) {
+        if (resolved) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
@@ -4750,12 +4440,11 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             } else if (ec.ring_exit) {
                 logger().info(
                     "The front is resolved after {} iteration(s): every front "
-                    "vertex's {} within the bar{} (rings max {:.4}x), nothing unmeasurable; offset "
+                    "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; offset "
                     "faces max {:.4}x with {} over the bar (diagnostic); front vertices max {:.4}x "
                     "(diagnostic); max AMIPS {:.4} against stop {:.4}",
                     it + 1,
                     ec.ring_name(),
-                    ec.unreached_fact(),
                     ec.max_ring / ec.bar,
                     ec.max_face / ec.bar,
                     ec.n_faces_over,
@@ -4892,20 +4581,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // without the final pass or the verdict; then the ordinary loop below, with its
         // refinement. target_distance is not touched.
         m_frame_prefix = "i";
-        // EXPERIMENTAL_init_optimize_stencil_order >= 0: this loop alone runs at that order
-        // (smoothing energy, energy rules, exit test), restored for the loop below. Switched
-        // here, between the loops, where no pass is running.
-        const int stencil_order = m_offset_params.stencil_order;
-        if (m_offset_params.init_optimize_stencil_order >= 0) {
-            m_offset_params.stencil_order = m_offset_params.init_optimize_stencil_order;
-        }
         logger().info(
             "======== [init_optimize] target_distance {:.6g}, stencil_order {}, no "
             "refinement ========",
             m_offset_params.target_distance,
             m_offset_params.stencil_order);
         optimize_offset_loop(/*final_stage=*/false, /*refine=*/false, "init_optimize");
-        m_offset_params.stencil_order = stencil_order;
         m_frame_prefix.clear();
         m_converged = false;
         m_energy_verdict.reset();
@@ -4916,98 +4597,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.stencil_order);
     }
 
-    // EXPERIMENTAL_growth_targets (N fractions of delta): construction ran at the first, or at
-    // EXPERIMENTAL_growth_construction below it; then, under EXPERIMENTAL_growth_push, smoothing
-    // alone carries the front to the first target (growth_push()). Stage k = 1..N runs the loop at
-    // target growth_targets[k - 1] x delta (set_growth_stage()) under the configured front_conv, an
-    // absolute length, at every stage; stencil_order and refinement as configured. Stages 1..N-1
-    // run to convergence without the final pass or the verdict; stage N is the ordinary loop.
-    // Between stages the field is rebuilt at the new level (init_offset_potential() reads
-    // target_distance); every other length was fixed from delta when the parameters were read. A
-    // stage that does not converge stops the run there, and the verdict reports that mesh. With
-    // debug_output each stage's frames are a series of their own
-    // in stage_<k>/ beside the output, opening with the stage's starting mesh.
-    if (m_growth_delta > 0.) {
-        const int n = int(m_offset_params.growth_targets.size());
-        const std::filesystem::path out(m_offset_params.output_path);
-        // With debug_output, the frames from here on go to a series of their own in `name`/.
-        const auto frames_into = [&](const std::string& name) {
-            if (!m_offset_params.debug_output) return;
-            const std::filesystem::path dir = out.parent_path() / name;
-            std::filesystem::create_directories(dir);
-            m_offset_params.output_path = (dir / out.filename()).string();
-            wait_debug_frame_write(); // the timeline back before it is reset
-            m_debug_seq = 0;
-            m_debug_timeline = {};
-            write_debug_frame("stage_start");
-        };
-        // Construction ran below the first target: stage 1's level, for the push and stage 1.
-        if (m_offset_params.growth_construction > 0.) {
-            set_growth_stage(1);
-            init_offset_potential();
-        }
-        bool grown = true;
-        if (m_offset_params.growth_push) {
-            frames_into("push");
-            m_frame_prefix = "p";
-            logger().info(
-                "======== [growth] push: smoothing passes alone to target_distance {:.6g}, "
-                "front_conv {:.6g}, stencil_order {} ========",
-                m_offset_params.target_distance,
-                m_offset_params.front_conv,
-                m_offset_params.stencil_order);
-            grown = growth_push();
-            if (!grown) {
-                logger().warn(
-                    "[growth] push to target_distance {:.6g}: front vertices not all placed after "
-                    "max_rounds {} smoothing blocks; the run stops here, stages 1..{} not run",
-                    m_offset_params.target_distance,
-                    m_offset_params.max_rounds,
-                    n);
-            }
-        }
-        for (int k = 1; k <= n && grown; ++k) {
-            if (k > 1) {
-                set_growth_stage(k);
-                init_offset_potential();
-            }
-            frames_into(fmt::format("stage_{:02d}", k));
-            m_frame_prefix = k < n ? fmt::format("g{}", k) : std::string();
-            logger().info(
-                "======== [growth] stage {} / {}: target_distance {:.6g}, front_conv {:.6g}, "
-                "stencil_order {}{} ========",
-                k,
-                n,
-                m_offset_params.target_distance,
-                m_offset_params.front_conv,
-                m_offset_params.stencil_order,
-                k < n ? "" : ", the ordinary loop");
-            if (k == n) {
-                optimize_offset_loop();
-                break;
-            }
-            grown = optimize_offset_loop(
-                /*final_stage=*/false,
-                /*refine=*/true,
-                fmt::format("growth stage {} / {}", k, n));
-            m_converged = false;
-            m_energy_verdict.reset();
-            if (!grown) {
-                logger().warn(
-                    "[growth] stage {} / {} at target_distance {:.6g} did not converge in "
-                    "max_rounds {} turns; the run stops here, stages {}..{} not run",
-                    k,
-                    n,
-                    m_offset_params.target_distance,
-                    m_offset_params.max_rounds,
-                    k + 1,
-                    n);
-            }
-        }
-        m_frame_prefix.clear();
-    } else {
-        optimize_offset_loop();
-    }
+    optimize_offset_loop();
 
     log_smooth_trace();
     logger().info(
@@ -5113,7 +4703,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             // over the bar at the verdict.
             logger().log(
                 m_converged ? spdlog::level::info : spdlog::level::warn,
-                "{}{}: front {} -- tested (every front vertex's {} within the bar{}, nothing "
+                "{}{}: front {} -- tested (every front vertex's {} within the bar, nothing "
                 "unmeasurable): {} rings max {:.4}x the bar (avg {:.4}x), {} rings "
                 "unmeasurable, {} unmeasurable in all | diagnostic, not tested: {} faces max "
                 "{:.4}x the bar (avg {:.4}x), {} faces over the bar; {} front vertices max {:.4}x "
@@ -5124,7 +4714,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                                  : "",
                 front_ok ? "resolved" : "NOT resolved",
                 ec.ring_name(),
-                ec.unreached_fact(),
                 ec.n_rings,
                 ec.max_ring,
                 ec.avg_ring(),

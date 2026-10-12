@@ -65,10 +65,10 @@ public:
     /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
     uint32_t m_born_epoch = 0;
 
-    /// EXPERIMENTAL_unreachable_exit: how much the vertex's latest front solve changed its own
-    /// error, |r(after) - r(before)| / front_conv_frac() (r = relative_residual()), in bars -- 0
-    /// for a move that was refused and rolled back -- and the operation group that solve ran in
-    /// (TopoOffsetTetMesh::m_smooth_group; -1 = none yet).
+    /// How much the vertex's latest front solve changed its own error,
+    /// |r(after) - r(before)| / front_conv_frac() (r = relative_residual()), in bars -- 0 for a
+    /// move that was refused and rolled back -- and the operation group that solve ran in
+    /// (TopoOffsetTetMesh::m_smooth_group; -1 = none yet). The debug frames' front_last_change.
     double m_front_change = 0.;
     int m_front_change_group = -1;
 };
@@ -294,8 +294,8 @@ public:
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// init_optimize loop and the EXPERIMENTAL_growth_targets stages before the last: it returns on
-    /// convergence without the frozen-front final pass and without deciding the verdict.
+    /// init_optimize loop: it returns on convergence without the frozen-front final pass and
+    /// without deciding the verdict.
     /// `refine` false skips the halving. `label` names the loop in its log. Returns whether the
     /// loop converged within max_rounds.
     bool optimize_offset_loop(
@@ -307,19 +307,8 @@ public:
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
     /// marchable distance.
     bool m_init_optimize = false;
-    /// Leads every debug frame label: i during the init_optimize loop, g<k> during growth stage
-    /// k < N, empty otherwise.
+    /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
     std::string m_frame_prefix;
-    /// EXPERIMENTAL_growth_targets: the configured target_distance, kept here by
-    /// construct_offset() while m_offset_params.target_distance holds the current stage's
-    /// target. 0 when the key is off.
-    double m_growth_delta = 0.;
-    /// Stage k of N (1-based): target_distance = growth_targets[k - 1] x delta; stage N restores
-    /// delta exactly. front_conv stays the configured absolute length at every stage.
-    void set_growth_stage(int k);
-    /// EXPERIMENTAL_growth_push: smoothing blocks alone until every front vertex is placed at the
-    /// current target; false when max_rounds blocks did not get there.
-    bool growth_push();
 
     /// Max over the front vertices of ||grad F . n||, F the vertex's front objective
     /// (front_objective()). Logged as the loop's gradient reference.
@@ -816,8 +805,8 @@ public:
     /// it runs on the frame writer's thread and reads only what it is given.
     static void write_debug_pvd(const std::string& out, const DebugTimeline& timeline);
     /// DEBUG_output: wait for the frame in flight, if any, and take m_debug_timeline back;
-    /// rethrows what the writer threw. Called before the next frame is handed over, before a
-    /// growth stage resets the timeline, and once the run writes no more frames
+    /// rethrows what the writer threw. Called before the next frame is handed over, and once the
+    /// run writes no more frames
     /// (topological_offset.cpp), so every frame is complete on disk before anything reads it.
     void wait_debug_frame_write();
     /// Pass index within the current turn, and the (turn, loop-or-final-pass tag) it belongs to --
@@ -1487,8 +1476,8 @@ public:
     /// face term's order-0 stencil at one corner. Infinite when unmeasurable. As in 2D.
     double front_vertex_conv_ratio(size_t vid) const;
     /// Counts the loop's operation groups (each split, collapse or swap pass with the smoothing
-    /// passes that follow it); EXPERIMENTAL_unreachable_exit reads a vertex's
-    /// VertexExtra::m_front_change only when it was recorded in the latest group.
+    /// passes that follow it); the debug frames show a vertex's VertexExtra::m_front_change only
+    /// when it was recorded in the latest group.
     int m_smooth_group = 0;
     /**
      * @brief THE definition of "placed" for a vertex on the offset surface, applied to its
@@ -1515,28 +1504,12 @@ public:
      * The (a, b, c) form reads the field of the face's edge (a, b) (potential_for_edge()), as the
      * face measure always has.
      */
-    double face_offset_term(
-        size_t a,
-        size_t b,
-        size_t c,
-        double* mean_error = nullptr,
-        double* remainder = nullptr) const;
-    /// @param mean_error when given and the face is measurable, set to the MEAN of r over the
-    /// same stencil (signed, in units of the tolerance), for EXPERIMENTAL_unreachable_exit's
-    /// report of how far a vertex is from an out-of-reach level set.
-    /// @param remainder when given and the face is measurable, set to the face's REMAINDER: the
-    /// mean over the stencil of (r - L)^2, L the least-squares function linear on the face (in the
-    /// samples' barycentric coordinates) -- the part of the error's variation over the face that
-    /// no linear function on the face matches, in units of the tolerance squared. 0 at order 0
-    /// (three samples, three coefficients); (3/16) b^2 at order 1, b the centroid's r minus the
-    /// mean of the corners'. EXPERIMENTAL_unreachable_exit's refinement measure.
+    double face_offset_term(size_t a, size_t b, size_t c) const;
     double face_offset_term(
         const OffsetPotential3D& pot,
         const Vector3d& pa,
         const Vector3d& pb,
-        const Vector3d& pc,
-        double* mean_error = nullptr,
-        double* remainder = nullptr) const;
+        const Vector3d& pc) const;
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
@@ -1657,9 +1630,6 @@ public:
      * counts are 3, 4, 10, 31, 109 for k = 0..4 (stencil_points_per_face()). The corners are in
      * it on purpose: the quantity sampled is a distance to the level set, which at a corner is
      * that vertex's own placement error (see face_offset_term()).
-     *
-     * The weights are handed out with each point: face_offset_term()'s remainder fits a function
-     * linear in them.
      *
      * Takes positions rather than a Tuple, so a face can be read at any positions. The 2D twin is
      * for_each_offset_edge_sample().
@@ -1836,31 +1806,7 @@ public:
         size_t n_rings_at_floor = 0;
         double max_ring_at_floor = 0.; ///< the worst of them, as a ratio to the bar
         Vector3d worst_ring_at_floor_pos = Vector3d::Zero();
-        /// EXPERIMENTAL_unreachable_exit. Of the n_rings_over vertices, those whose remainder
-        /// W(v) (the mean over the ring's faces of face_offset_term()'s remainder) is within the
-        /// bar are not refined, and split by the change the turn's last smoothing passes made to
-        /// their own error (VertexExtra::m_front_change): within the bar,
-        /// `unreached` (passes: the level set is out of reach there), over it `unsettled`
-        /// (blocks the exit, left to smoothing).
-        bool unreachable_exit = false;
-        size_t n_rings_unreached = 0, n_rings_unsettled = 0;
-        double max_unreached_mean = 0.; ///< max |mean error| over the unreached, in bars
-        double max_unsettled_change = 0.; ///< max own-error change over the unsettled, in bars
-        size_t n_rings_unsolved = 0; ///< of the unsettled: no front solve in the latest group
-        Vector3d worst_unsettled_pos = Vector3d::Zero();
-        /// EXPERIMENTAL_edge_excess_refinement: the refinement is the edge test alone and
-        /// refinable_vertices are the endpoints of the edges over the bar; the ring measure only
-        /// gates the exit. Counts are of distinct edges; the excess is a ratio to the bar.
-        bool edge_rule = false;
-        size_t n_edge_cells = 0; ///< band cells with a front vertex, whose edges were tested
-        size_t n_edges_over = 0; ///< distinct edges with the excess over the bar (block the exit)
-        size_t n_edges_at_floor = 0; ///< of those, both endpoints at the sizing floor
-        double max_edge_excess = 0.;
-        Vector3d worst_edge_mid = Vector3d::Zero();
-        bool rings_ok() const
-        {
-            return unreachable_exit ? n_rings_over == n_rings_unreached : max_ring <= bar;
-        }
+        bool rings_ok() const { return max_ring <= bar; }
         double avg_ring() const { return n_rings ? sum_ring / double(n_rings) : 0.; }
         /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
         /// front_placed_by_ratio() rather than re-derived from max_vertex, so the reported count
@@ -1895,8 +1841,7 @@ public:
         /// rings_ok().
         bool converged() const
         {
-            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0 &&
-                   n_edges_over == 0;
+            return (ring_exit ? rings_ok() : faces_ok()) && n_unmeasurable == 0;
         }
         /// The n_at_floor faces as one sentence, for the turn's line (a warning when some have
         /// their corners at the sizing floor), the verdict and the throw_on_nonconvergence
@@ -1904,9 +1849,6 @@ public:
         /// front_measure "vertex_ring" the same three places get the n_rings_at_floor vertices
         /// instead, empty when there are none.
         std::string sizing_floor_fact() const;
-        /// EXPERIMENTAL_unreachable_exit: the vertices that passed over the bar, as a clause for
-        /// the "within the bar" sentences of the resolved line and the verdict; empty when none.
-        std::string unreached_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
         /// Means over the measurable front vertices / offset faces; 0 when there are none.
         double avg_vertex() const { return n_vertices ? sum_vertex / double(n_vertices) : 0.; }

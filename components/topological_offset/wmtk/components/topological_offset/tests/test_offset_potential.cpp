@@ -1665,60 +1665,6 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
     }
 }
 
-TEST_CASE("edge-excess", "[offset][potential]")
-{
-    // EXPERIMENTAL_edge_excess_refinement's measure on a cube of half-size 1:
-    // InputTriangles::edge_excess(P, a, b) = (d_P(a) + d_P(b))/2 - d(m). Zero over one face's
-    // triangle (d_P affine); the chord sag rho (1 - cos(dtheta/2)) around a cube edge (d_P the
-    // distance to the edge line); never below the sag of d_P alone, the difference being
-    // d_P(m) - d(m).
-    const TriSoup s = cube(1.0);
-    Eigen::MatrixXd V(s.V.rows(), 3);
-    for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
-    const InputTriangles tris(V, s.F);
-
-    SECTION("zero where d_P is affine")
-    {
-        const Vector3d a(0.2, 0.3, 1.25), b(0.25, 0.32, 1.1);
-        const int64_t P = tris.nearest(a);
-        REQUIRE(tris.nearest(b) == P);
-        CHECK(std::abs(tris.edge_excess(P, a, b)) <= 1e-12);
-    }
-    SECTION("the chord sag around an input edge")
-    {
-        // the edge x = 1, z = 1; both points and the midpoint in its region (x > 1, z > 1)
-        const double rho = 0.3, t1 = 0.3, t2 = 1.2;
-        const Vector3d a(1. + rho * std::cos(t1), 0.1, 1. + rho * std::sin(t1));
-        const Vector3d b(1. + rho * std::cos(t2), 0.1, 1. + rho * std::sin(t2));
-        const int64_t P = tris.nearest(a);
-        CHECK(
-            tris.edge_excess(P, a, b) ==
-            Catch::Approx(rho * (1. - std::cos(0.5 * (t2 - t1)))).margin(1e-12));
-    }
-    SECTION("at least the sag of d_P, never negative")
-    {
-        std::mt19937 rng(11);
-        std::uniform_real_distribution<double> U(-1.5, 1.5);
-        int n = 0;
-        for (int k = 0; k < 400; ++k) {
-            const Vector3d a(U(rng), U(rng), U(rng)), b(U(rng), U(rng), U(rng));
-            if (a.cwiseAbs().maxCoeff() < 1. || b.cwiseAbs().maxCoeff() < 1.) continue; // outside
-            const int64_t P = tris.nearest(a);
-            const Vector3d m = 0.5 * (a + b);
-            const double sag =
-                0.5 * (tris.distance(P, a) + tris.distance(P, b)) - tris.distance(P, m);
-            const double x = tris.edge_excess(P, a, b);
-            CHECK(sag >= -1e-12);
-            CHECK(x >= sag - 1e-12);
-            CHECK(
-                x == Catch::Approx(sag + tris.distance(P, m) - tris.distance(tris.nearest(m), m))
-                         .margin(1e-12));
-            ++n;
-        }
-        CHECK(n > 100);
-    }
-}
-
 TEST_CASE("front-face-max-distance", "[offset][potential]")
 {
     // EXPERIMENTAL_settle_refinement's face test. InputTriangles::min_triangle_distance() is the

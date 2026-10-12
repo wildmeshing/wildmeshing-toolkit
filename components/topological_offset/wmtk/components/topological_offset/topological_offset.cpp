@@ -115,20 +115,6 @@ void topological_offset(nlohmann::json json_params)
         log_and_throw_error(
             "2D input refused: the 2D offset is not up to date and is being brought into "
             "lock-step with 3D");
-        if (!params.growth_targets.empty()) {
-            log_and_throw_error(
-                "EXPERIMENTAL_growth_targets is 3D only; leave it empty for a 2D input");
-        }
-        if (params.unreachable_exit) {
-            log_and_throw_error(
-                "EXPERIMENTAL_unreachable_exit is 3D only; leave it false for a 2D input");
-        }
-        if (params.no_refinement || params.no_exit) {
-            log_and_throw_error(
-                "EXPERIMENTAL_no_refinement and EXPERIMENTAL_no_exit are 3D only; leave them false "
-                "for a "
-                "2D input");
-        }
 
         // front_conv is the accuracy -- one bar for placement and resolution alike -- and
         // offset_envelope_rel is only the leash on the operation passes.
