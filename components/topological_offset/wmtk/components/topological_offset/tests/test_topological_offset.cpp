@@ -444,6 +444,58 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
 }
 
 
+// A face or tet split reuses the split tet's slot, so a new interior face must be written whole,
+// not just labelled: otherwise it keeps the surface tags its slot held. Measured on the Geneva
+// base, where the simplicial embedding's face split left an input face's tag on an interior face
+// 0.48 delta off the input and held the march's vertices on it.
+TEST_CASE("split_new_interior_faces_untracked_3d", "[split_op][3d]")
+{
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+
+    // every face of the tet tracked, as an input tet's faces would be
+    const std::array<std::array<size_t, 3>, 4> outer = {
+        {{{0, 1, 2}}, {{0, 1, 3}}, {{0, 2, 3}}, {{1, 2, 3}}}};
+    for (const auto& f : outer) {
+        mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face(f))].m_is_surface_fs = true;
+    }
+    const auto tracked = [&](size_t a, size_t b, size_t c) {
+        return bool(
+            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{a, b, c}}))].m_is_surface_fs);
+    };
+    std::vector<TetMesh::Tuple> garbage;
+
+    SECTION("face split")
+    {
+        auto [ftup, _] = mesh.tuple_from_face({{1, 2, 3}});
+        REQUIRE(mesh.split_face(ftup, garbage));
+        // the three faces through the new vertex 4 and the opposite vertex 0 are interior
+        for (size_t v : {1, 2, 3}) REQUIRE_FALSE(tracked(0, v, 4));
+        for (int i = 0; i < 3; i++) REQUIRE(tracked(outer[i][0], outer[i][1], outer[i][2]));
+    }
+    SECTION("tet split")
+    {
+        REQUIRE(mesh.split_tet(mesh.tuple_from_tet(0), garbage));
+        // the six faces through the new vertex 4 are interior
+        for (size_t a = 0; a < 4; a++) {
+            for (size_t b = a + 1; b < 4; b++) REQUIRE_FALSE(tracked(a, b, 4));
+        }
+        for (const auto& f : outer) REQUIRE(tracked(f[0], f[1], f[2]));
+    }
+}
+
+
 TEST_CASE("invariant_3d", "[3d]")
 {
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);

@@ -544,9 +544,16 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
             Tuple tet = tuple_from_vids(v_id, opp_vid, curr_v1_id, curr_v2_id);
             m_tet_attribute[tet.tid(*this)] = pair.second;
 
-            // new face
+            // new face: a fresh snapshot carrying the tet's label alone, as split_edge_after()
+            // writes its interior faces and the 2D face split resets its new edges
+            // (EdgeSplittingTri.cpp). Writing only the label left whatever surface tags the
+            // reused slot held. Measured on the Geneva base (simplicial embedding): an input
+            // face's tracked tag landed on a new interior face whose new vertex lies 0.48 delta
+            // off the input, and that face held the march's vertices on it.
+            FaceSnapshot new_f;
+            new_f.extra.label = pair.second.label;
             auto [_, glob_fid] = tuple_from_face({{v_id, curr_v1_id, opp_vid}});
-            m_face_extra[glob_fid].label = pair.second.label;
+            restore_face(glob_fid, new_f);
 
             // existing face
             auto [_2, glob_fid2] = tuple_from_face({{opp_vid, curr_v1_id, curr_v2_id}});
@@ -646,9 +653,11 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
             size_t glob_eid = tuple_from_edge({{v1, v2}}).eid(*this);
             m_edge_attribute[glob_eid] = cache.existing_e[simplex::Edge(v1, v2)];
 
-            // new face
+            // new face: a fresh snapshot carrying the tet's label alone (see split_face_after())
+            FaceSnapshot new_f;
+            new_f.extra.label = tet_label;
             auto [_, glob_fid] = tuple_from_face({{v1, v2, v_id}});
-            m_face_extra[glob_fid].label = tet_label;
+            restore_face(glob_fid, new_f);
         }
     }
 
