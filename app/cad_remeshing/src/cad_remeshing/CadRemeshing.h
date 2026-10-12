@@ -22,7 +22,7 @@
 #include <memory>
 #include <queue>
 #include <wmtk/Types.hpp>
-namespace app::remeshing {
+namespace app::cad_remeshing {
 
 struct VertexAttributes
 {
@@ -45,7 +45,7 @@ struct FaceAttributes
     double quality = -1;
 };
 
-class UniformRemeshing : public wmtk::TriMesh
+class CadRemeshing : public wmtk::TriMesh
 {
 public:
     wmtk::SampleEnvelope m_envelope;
@@ -62,12 +62,12 @@ public:
     FaceAttCol face_attrs;
 
     int retry_limit = 10;
-    UniformRemeshing(
+    CadRemeshing(
         std::vector<Eigen::Vector3d> _m_vertex_positions,
         int num_threads = 1,
         bool use_exact = true);
 
-    ~UniformRemeshing() {}
+    ~CadRemeshing() {}
 
     void create_mesh(
         size_t n_vertices,
@@ -248,4 +248,4 @@ private:
     std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;
 };
 
-} // namespace app::remeshing
+} // namespace app::cad_remeshing

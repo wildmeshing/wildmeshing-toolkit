@@ -63,7 +63,7 @@ CONVERT_SCRIPT = os.path.join(
     "remeshing",
     "wildmeshing-toolkit",
     "app",
-    "remeshing",
+    "cad_remeshing",
     "convert_pkl_to_wmtk.py",
 )
 
@@ -73,7 +73,7 @@ REMESH_APP = os.path.join(
     "wildmeshing-toolkit",
     "build_stable",
     "app",
-    "remeshing_app",
+    "cad_remeshing_app",
 )
 
 POST_PROCESS_APP = os.path.join(
@@ -117,7 +117,7 @@ if not os.path.exists(REMESH_JSON):
     raise RuntimeError("Failed to generate remesh.json")
 
 # -------------------------
-# Stage 2: remeshing_app
+# Stage 2: cad_remeshing_app
 # -------------------------
 if not os.path.exists(REMESH_DONE):
     run([

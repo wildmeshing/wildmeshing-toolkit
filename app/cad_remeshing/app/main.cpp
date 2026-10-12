@@ -1,4 +1,4 @@
-#include <remeshing/UniformRemeshing.h>
+#include <cad_remeshing/CadRemeshing.h>
 
 #include <CLI/CLI.hpp>
 
@@ -15,18 +15,18 @@
 #include <iostream>
 
 using namespace wmtk;
-using namespace app::remeshing;
+using namespace app::cad_remeshing;
 using namespace std::chrono;
 
 #include <wmtk/utils/getRSS.h>
 
-#include <remeshing_spec.hpp>
+#include <cad_remeshing_spec.hpp>
 
 void run_remeshing(
     std::string input,
     std::string output,
     std::string report_file,
-    UniformRemeshing& m,
+    CadRemeshing& m,
     int itrs,
     bool debug_output = false)
 {
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
     // verify input and inject defaults
     {
-        const auto& spec = jse::embed::wmtk_remeshing_app_spec::remeshing_spec::spec();
+        const auto& spec = jse::embed::wmtk_cad_remeshing_app_spec::cad_remeshing_spec::spec();
         jse::JSE spec_engine;
         bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
@@ -260,7 +260,7 @@ int main(int argc, char** argv)
 
     wmtk::logger().info("Total frozen vertices: {}", fixed_vertices.size());
 
-    UniformRemeshing m(verts, num_threads, !sample_envelope);
+    CadRemeshing m(verts, num_threads, !sample_envelope);
     m.set_feature_edges(feature_edge_list);
     // m.set_feature_vertices(feature_vertices);
     m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, eps);

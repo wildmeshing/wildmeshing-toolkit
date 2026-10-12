@@ -1,4 +1,4 @@
-#include "UniformRemeshing.h"
+#include "CadRemeshing.h"
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
 #include <igl/predicates/predicates.h>
@@ -32,10 +32,10 @@ auto edge_locker = [](auto& m, const auto& e, int task_id) {
 static int debug_print_counter = 0;
 } // namespace
 
-namespace app::remeshing {
+namespace app::cad_remeshing {
 
 
-UniformRemeshing::UniformRemeshing(
+CadRemeshing::CadRemeshing(
     std::vector<Eigen::Vector3d> _m_vertex_positions,
     int num_threads,
     bool use_exact)
@@ -53,7 +53,7 @@ UniformRemeshing::UniformRemeshing(
         vertex_attrs[i] = {_m_vertex_positions[i], 0};
 }
 
-void UniformRemeshing::create_mesh(
+void CadRemeshing::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::pair<size_t, int>>& frozen_verts,
@@ -81,7 +81,7 @@ void UniformRemeshing::create_mesh(
     initialize_feature_edges();
 }
 
-bool UniformRemeshing::cache_edge_positions(const Tuple& t)
+bool CadRemeshing::cache_edge_positions(const Tuple& t)
 {
     auto& cache = collapse_info_cache.local();
     cache.link_vertices.clear();
@@ -135,7 +135,7 @@ bool UniformRemeshing::cache_edge_positions(const Tuple& t)
     return true;
 }
 
-std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
+std::vector<std::array<size_t, 2>> CadRemeshing::get_edges_by_condition(
     std::function<bool(const EdgeAttributes&)> cond) const
 {
     std::vector<std::array<size_t, 2>> res;
@@ -150,7 +150,7 @@ std::vector<std::array<size_t, 2>> UniformRemeshing::get_edges_by_condition(
     return res;
 }
 
-bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
+bool CadRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
     for (const Tuple& t : new_tris) {
         const double q = get_quality(t);
@@ -181,7 +181,7 @@ bool UniformRemeshing::invariants(const std::vector<Tuple>& new_tris)
 }
 
 // TODO: this should not be here
-void UniformRemeshing::partition_mesh()
+void CadRemeshing::partition_mesh()
 {
     auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
     for (auto i = 0; i < m_vertex_partition_id.size(); i++)
@@ -189,7 +189,7 @@ void UniformRemeshing::partition_mesh()
 }
 
 // TODO: morton should not be here, but inside wmtk
-void UniformRemeshing::partition_mesh_morton()
+void CadRemeshing::partition_mesh_morton()
 {
     if (NUM_THREADS == 0) {
         return;
@@ -208,7 +208,7 @@ void UniformRemeshing::partition_mesh_morton()
     }
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
+std::vector<TriMesh::Tuple> CadRemeshing::new_edges_after(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     std::vector<TriMesh::Tuple> new_edges;
@@ -222,7 +222,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after(
     return new_edges;
 }
 
-bool UniformRemeshing::swap_edge_before(const Tuple& t)
+bool CadRemeshing::swap_edge_before(const Tuple& t)
 {
     // Do not swap feature edges
     if (is_feature_edge(t)) {
@@ -311,7 +311,7 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
 }
 
 
-// bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
+// bool CadRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 // {
 //     const auto& cache = swap_info_cache.local();
 
@@ -321,7 +321,7 @@ bool UniformRemeshing::swap_edge_before(const Tuple& t)
 //     return true;
 // }
 
-bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
+bool CadRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = swap_info_cache.local();
 
@@ -338,7 +338,7 @@ bool UniformRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 }
 
 
-std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
+std::vector<TriMesh::Tuple> CadRemeshing::replace_edges_after_split(
     const std::vector<TriMesh::Tuple>& tris,
     const size_t vid_threshold) const
 {
@@ -355,7 +355,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::replace_edges_after_split(
     return new_edges;
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
+std::vector<TriMesh::Tuple> CadRemeshing::new_sub_edges_after_split(
     const std::vector<TriMesh::Tuple>& tris) const
 {
     // only push back the renewed original edges
@@ -372,7 +372,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_sub_edges_after_split(
 }
 
 
-bool UniformRemeshing::collapse_edge_before(const Tuple& t)
+bool CadRemeshing::collapse_edge_before(const Tuple& t)
 {
     size_t v0 = t.vid(*this);
     size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -435,7 +435,7 @@ bool UniformRemeshing::collapse_edge_before(const Tuple& t)
 }
 
 
-bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
+bool CadRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = collapse_info_cache.local();
 
@@ -494,7 +494,7 @@ bool UniformRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 }
 
 
-bool UniformRemeshing::split_edge_before(const Tuple& t)
+bool CadRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) {
         return false;
@@ -539,7 +539,7 @@ bool UniformRemeshing::split_edge_before(const Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
+bool CadRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = split_info_cache.local();
 
@@ -592,7 +592,7 @@ bool UniformRemeshing::split_edge_after(const TriMesh::Tuple& t)
 }
 
 
-bool UniformRemeshing::smooth_before(const Tuple& t)
+bool CadRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].corner_id >= 0) return false;
     if (vertex_attrs[t.vid(*this)].is_feature) return false;
@@ -600,7 +600,7 @@ bool UniformRemeshing::smooth_before(const Tuple& t)
     return true;
 }
 
-bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
+bool CadRemeshing::smooth_after(const TriMesh::Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     if (one_ring_tris.size() <= 2) {
@@ -650,7 +650,7 @@ bool UniformRemeshing::smooth_after(const TriMesh::Tuple& t)
     return true;
 }
 
-double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t) const
+double CadRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t) const
 {
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -664,7 +664,7 @@ double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t) con
     }
     return -1;
 }
-double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t) const
+double CadRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t) const
 {
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
@@ -679,7 +679,7 @@ double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t) const
     return -1;
 }
 
-double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
+double CadRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
 {
     std::vector<std::pair<TriMesh::Tuple, int>> valences(3);
     valences[0] = std::make_pair(t, get_valence_for_vertex(t));
@@ -718,7 +718,7 @@ double UniformRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
     return (double)(cost_before_swap - cost_after_swap);
 }
 
-double UniformRemeshing::compute_swap_energy(const Tuple& t) const
+double CadRemeshing::compute_swap_energy(const Tuple& t) const
 {
     const auto t_opps = t.switch_faces(*this);
     if (t_opps.size() != 1) {
@@ -741,7 +741,7 @@ double UniformRemeshing::compute_swap_energy(const Tuple& t) const
 
     return before_swap - after_swap;
 }
-std::vector<double> UniformRemeshing::average_len_valen()
+std::vector<double> CadRemeshing::average_len_valen()
 {
     double average_len = 0.0;
     double average_valen = 0.0;
@@ -772,7 +772,7 @@ std::vector<double> UniformRemeshing::average_len_valen()
     return rtn;
 }
 
-std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
+std::vector<TriMesh::Tuple> CadRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
 {
     std::vector<TriMesh::Tuple> new_edges;
 
@@ -783,7 +783,7 @@ std::vector<TriMesh::Tuple> UniformRemeshing::new_edges_after_swap(const TriMesh
     return new_edges;
 }
 
-bool UniformRemeshing::collapse_remeshing()
+bool CadRemeshing::collapse_remeshing()
 {
     igl::Timer timer;
     timer.start();
@@ -824,17 +824,17 @@ bool UniformRemeshing::collapse_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kPartition);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kSeq);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
     return true;
 }
-bool UniformRemeshing::split_remeshing()
+bool CadRemeshing::split_remeshing()
 {
     igl::Timer timer;
     timer.start();
@@ -893,18 +893,18 @@ bool UniformRemeshing::split_remeshing()
     };
 
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kPartition);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kSeq);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
     return true;
 }
 
-bool UniformRemeshing::smooth_all_vertices()
+bool CadRemeshing::smooth_all_vertices()
 {
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("vertex_smooth", loc);
@@ -915,20 +915,20 @@ bool UniformRemeshing::smooth_all_vertices()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kPartition);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = [](auto& m, const auto& e, int task_id) {
             return m.try_set_vertex_mutex_one_ring(e, task_id);
         };
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kSeq);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
     return true;
 }
 
-bool UniformRemeshing::swap_remeshing()
+bool CadRemeshing::swap_remeshing()
 {
     igl::Timer timer;
     timer.start();
@@ -962,17 +962,17 @@ bool UniformRemeshing::swap_remeshing()
         executor(*this, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kPartition);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kPartition);
         executor.lock_vertices = edge_locker;
         setup_and_execute(executor);
     } else {
-        auto executor = wmtk::ExecutePass<UniformRemeshing>(ExecutionPolicy::kSeq);
+        auto executor = wmtk::ExecutePass<CadRemeshing>(ExecutionPolicy::kSeq);
         setup_and_execute(executor);
     }
 
     return true;
 }
-double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
+double area(CadRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
                 .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
@@ -980,14 +980,14 @@ double area(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
            2.0;
 }
 
-Eigen::Vector3d normal(UniformRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
+Eigen::Vector3d normal(CadRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
 {
     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
                 .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
         .normalized();
 }
 
-Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
+Eigen::Vector3d CadRemeshing::smooth(const TriMesh::Tuple& t)
 {
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
     if (one_ring_edges.size() < 3) return vertex_attrs[t.vid(*this)].pos;
@@ -1010,7 +1010,7 @@ Eigen::Vector3d UniformRemeshing::smooth(const TriMesh::Tuple& t)
     return after_smooth;
 }
 
-Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
+Eigen::Vector3d CadRemeshing::tangential_smooth(const Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     if (one_ring_tris.size() < 2) return vertex_attrs[t.vid(*this)].pos;
@@ -1047,7 +1047,7 @@ Eigen::Vector3d UniformRemeshing::tangential_smooth(const Tuple& t)
 }
 
 
-bool UniformRemeshing::uniform_remeshing(int iterations, bool debug_output)
+bool CadRemeshing::uniform_remeshing(int iterations, bool debug_output)
 {
     if (debug_output) {
         update_qualities();
@@ -1099,7 +1099,7 @@ bool UniformRemeshing::uniform_remeshing(int iterations, bool debug_output)
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
 }
-bool UniformRemeshing::write_triangle_mesh(std::string path)
+bool CadRemeshing::write_triangle_mesh(std::string path)
 {
     // write the collapsed mesh into a obj and assert the mesh is manifold
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
@@ -1123,7 +1123,7 @@ bool UniformRemeshing::write_triangle_mesh(std::string path)
     return manifold;
 }
 
-double UniformRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
+double CadRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
     const
 {
     const Eigen::Vector3d a = (p1 - p0);
@@ -1140,17 +1140,17 @@ double UniformRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, c
     return quality;
 }
 
-double UniformRemeshing::get_quality(const std::array<size_t, 3>& vs) const
+double CadRemeshing::get_quality(const std::array<size_t, 3>& vs) const
 {
     return shape_quality(vertex_attrs[vs[0]].pos, vertex_attrs[vs[1]].pos, vertex_attrs[vs[2]].pos);
 }
-double UniformRemeshing::get_quality(const Tuple& t) const
+double CadRemeshing::get_quality(const Tuple& t) const
 {
     const auto vs = oriented_tri_vids(t);
     return get_quality(vs);
 }
 
-void UniformRemeshing::update_qualities()
+void CadRemeshing::update_qualities()
 {
     double min_q = std::numeric_limits<double>::max();
     double avg_q = 0;
@@ -1165,7 +1165,7 @@ void UniformRemeshing::update_qualities()
     logger().info("Quality min = {:.2}, avg = {:.2}", min_q, avg_q);
 }
 
-void UniformRemeshing::set_feature_vertices(const std::vector<size_t>& feature_vertices)
+void CadRemeshing::set_feature_vertices(const std::vector<size_t>& feature_vertices)
 {
     for (size_t i = 0; i < vertex_attrs.size(); ++i) {
         vertex_attrs[i].is_feature = false;
@@ -1182,23 +1182,23 @@ void UniformRemeshing::set_feature_vertices(const std::vector<size_t>& feature_v
     wmtk::logger().info("Marked {} feature vertices", feature_vertices.size());
 }
 
-bool UniformRemeshing::is_feature_vertex(size_t vid) const
+bool CadRemeshing::is_feature_vertex(size_t vid) const
 {
     return vid < vertex_attrs.size() && vertex_attrs[vid].is_feature;
 }
 
-bool UniformRemeshing::is_feature_edge(const Tuple& t) const
+bool CadRemeshing::is_feature_edge(const Tuple& t) const
 {
     return edge_attrs[t.eid(*this)].is_feature > 0;
 }
 
-void UniformRemeshing::set_feature_edges(
+void CadRemeshing::set_feature_edges(
     const std::vector<std::pair<std::array<size_t, 2>, int>>& feature_edges)
 {
     m_input_feature_edges = feature_edges;
 }
 
-void UniformRemeshing::set_patch_ids(const std::vector<size_t>& patch_ids)
+void CadRemeshing::set_patch_ids(const std::vector<size_t>& patch_ids)
 {
     if (patch_ids.size() != tri_capacity()) {
         log_and_throw_error(
@@ -1212,7 +1212,7 @@ void UniformRemeshing::set_patch_ids(const std::vector<size_t>& patch_ids)
     }
 }
 
-void UniformRemeshing::initialize_feature_edges()
+void CadRemeshing::initialize_feature_edges()
 {
     logger().info("Init feature edges");
     std::map<simplex::Edge, int> feature_edges;
@@ -1282,14 +1282,14 @@ void UniformRemeshing::initialize_feature_edges()
 }
 
 
-void UniformRemeshing::set_target_edge_length(const double tal)
+void CadRemeshing::set_target_edge_length(const double tal)
 {
     for (const Tuple& t : get_vertices()) {
         vertex_attrs[t.vid(*this)].tal = tal;
     }
 }
 
-void UniformRemeshing::set_per_patch_target_edge_length(const double factor)
+void CadRemeshing::set_per_patch_target_edge_length(const double factor)
 {
     assert(factor > 0);
 
@@ -1357,7 +1357,7 @@ void UniformRemeshing::set_per_patch_target_edge_length(const double factor)
     }
 }
 
-bool UniformRemeshing::write_feature_vertices_obj(const std::string& path) const
+bool CadRemeshing::write_feature_vertices_obj(const std::string& path) const
 {
     std::ofstream out(path);
     if (!out.is_open()) return false;
@@ -1379,7 +1379,7 @@ bool UniformRemeshing::write_feature_vertices_obj(const std::string& path) const
     return true;
 }
 
-void UniformRemeshing::write_vtu(const std::string& path, const std::string& report_file) const
+void CadRemeshing::write_vtu(const std::string& path, const std::string& report_file) const
 {
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -1518,4 +1518,4 @@ void UniformRemeshing::write_vtu(const std::string& path, const std::string& rep
         edge_writer->write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 }
-} // namespace app::remeshing
+} // namespace app::cad_remeshing
