@@ -86,7 +86,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
     /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
     /// tri_energy = w AMIPS + the offset terms. See the spec.
-    double offset_amips_weight = 1e-4;
+    double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -132,10 +132,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. See marching_tris() / marching_tets().
     std::string construction_mode = "max_marchable_fallback";
     double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
-    /// Default true. Only when the target is not below the maximum marchable distance (marched
+    /// Default false. Only when the target is not below the maximum marchable distance (marched
     /// as construction_mode says): the loop first converges under stencil_order without
     /// refinement, then under stencil_order with refinement. See the spec doc.
-    bool init_optimize = true;
+    bool init_optimize = false;
     // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
     // with 3D. No JSON key; the default its key had. The stencil_order of the 2D init_optimize
     // loop alone; -1 uses stencil_order there too.
@@ -164,16 +164,17 @@ struct Parameters : public wmtk::OptimizerParameters
     /// min over P of the max of d_P at its corners) exceeds front_conv has its corners halved;
     /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
     /// See the spec doc.
-    bool settle_refinement = false;
+    bool settle_refinement = true;
     /// EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled
-    /// turn. "max" (the default): the face's exact bound on max |d - target_distance| exceeds
+    /// turn, read only under settle_refinement. "max": the face's exact bound on max |d - target_distance| exceeds
     /// front_conv. "rms": the face's share of the offset excess exceeds its bar energy,
     /// X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA > front_conv^2 area(f) / (2 delta),
     /// i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the
-    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. "vertex":
+    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule; the
+    /// default. "vertex":
     /// a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. See the
     /// spec doc.
-    std::string settle_mark = "max";
+    std::string settle_mark = "rms";
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -282,9 +283,6 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error(
                 "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
                 settle_mark);
-        }
-        if (settle_mark != "max" && !settle_refinement) {
-            log_and_throw_error("EXPERIMENTAL_settle_mark needs EXPERIMENTAL_settle_refinement");
         }
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
