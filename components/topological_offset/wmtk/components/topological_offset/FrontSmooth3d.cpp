@@ -254,11 +254,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objectiv
     const size_t vid) const
 {
     // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
-    // term included unconditionally: the AMIPS term over the one-ring, the plastic cells'
-    // rest-shape AMIPS, and the band term (front_energy()).
+    // term included unconditionally: the AMIPS term over the one-ring and the band term
+    // (front_energy()).
     auto sum = std::make_shared<optimization::EnergySum>();
     sum->add_energy(amips3_energy(vid));
-    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
     sum->add_energy(front_energy(vid));
     return sum;
 }

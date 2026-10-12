@@ -60,36 +60,6 @@ inline std::array<size_t, 3> face_corners_from(
 }
 } // namespace
 
-namespace {
-/// The rest-shape cell of tet `tid` at the moving vertex `vid`, with the same corner
-/// permutation the shared smoother applies (vid first, winding preserved). False when the rest
-/// is degenerate or inverted -- a rest that holds no shape to preserve.
-template <typename Mesh>
-bool rest_cell_at(const Mesh& m, const size_t tid, const size_t vid, RestAMIPSEnergy3D::Cell& c)
-{
-    const auto& ta = m.m_tet_attribute[tid];
-    if (!ta.rest_valid) return false;
-    const std::array<size_t, 4> orig = m.oriented_tet_vids(tid);
-    const std::array<size_t, 4> vs = wmtk::orient_preserve_tet_reorder(orig, vid);
-    std::array<int, 4> from{};
-    for (int k = 0; k < 4; ++k) {
-        for (int j = 0; j < 4; ++j) {
-            if (orig[size_t(j)] == vs[size_t(k)]) from[size_t(k)] = j;
-        }
-    }
-    Eigen::Matrix3d R;
-    for (int k = 1; k < 4; ++k) {
-        R.col(k - 1) = ta.rest_pos[size_t(from[size_t(k)])] - ta.rest_pos[size_t(from[0])];
-    }
-    if (!(R.determinant() > 0.)) return false;
-    c.q1 = m.m_vertex_attribute[vs[1]].m_posf;
-    c.q2 = m.m_vertex_attribute[vs[2]].m_posf;
-    c.q3 = m.m_vertex_attribute[vs[3]].m_posf;
-    c.rest_inv = R.inverse();
-    return true;
-}
-} // namespace
-
 bool TopoOffsetTetMesh::is_edge_on_region(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
@@ -559,77 +529,6 @@ void TopoOffsetTetMesh::warn_if_offset_reaches_domain_boundary() const
         m_offset_params.target_distance);
 }
 
-void TopoOffsetTetMesh::stamp_rest_cell(const size_t tid)
-{
-    if (!cell_is_plastic(tid)) return;
-    const auto vs = oriented_tet_vids(tid);
-    TetAttributes& x = m_tet_attribute[tid];
-    for (int i = 0; i < 4; ++i) x.rest_pos[size_t(i)] = m_vertex_attribute[vs[size_t(i)]].m_posf;
-    x.rest_valid = true;
-}
-
-void TopoOffsetTetMesh::stamp_plastic_rests()
-{
-    if (!m_plastic_active) return;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (!cell_is_plastic(tid)) continue;
-        const auto vs = oriented_tet_vids(tid);
-        TetAttributes& x = m_tet_attribute[tid];
-        for (int i = 0; i < 4; ++i) {
-            x.rest_pos[size_t(i)] = m_vertex_attribute[vs[size_t(i)]].m_posf;
-        }
-        x.rest_valid = true;
-    }
-}
-
-bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
-{
-    // The plastic medium's smoothing: rest-shape AMIPS over the one-ring and nothing else. Rest
-    // is the shape at the group's start (stamp_plastic_rests), so the term resists only the
-    // increment. No regular-tet term, no quality veto. Accept on exact inversion of the ring.
-    const size_t vid = t.vid(*this);
-    const std::vector<Tuple> ring = get_one_ring_tets_for_vertex(t);
-    for (const Tuple& loc : ring) {
-        if (is_inverted_f(loc)) {
-            ++m_smooth_rejects.already_inverted;
-            return false;
-        }
-    }
-    std::vector<RestAMIPSEnergy3D::Cell> cells;
-    for (const Tuple& loc : ring) {
-        const size_t tid = loc.tid(*this);
-        if (!cell_is_plastic(tid)) continue;
-        RestAMIPSEnergy3D::Cell c;
-        if (rest_cell_at(*this, tid, vid, c)) cells.push_back(c);
-    }
-    if (cells.empty()) return false;
-    auto energy = std::make_shared<RestAMIPSEnergy3D>(std::move(cells), 1.0);
-    auto& solver =
-        m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
-    smoothing_solver();
-    const Vector3d x0 = m_vertex_attribute[vid].m_posf;
-    Eigen::VectorXd x = x0;
-    bool threw = false;
-    try {
-        solver->minimize(*energy, x);
-    } catch (const std::exception&) {
-        threw = true;
-    }
-    m_newton_plastic.record(*solver, threw);
-    set_vertex_position(vid, Vector3d(x));
-    for (const Tuple& loc : ring) {
-        if (is_inverted(loc)) {
-            set_vertex_position(vid, x0);
-            ++m_smooth_rejects.inverted;
-            return false;
-        }
-    }
-    for (const Tuple& loc : ring) set_cell_quality(loc.tid(*this), get_quality(loc));
-    ++m_smooth_rejects.accepted;
-    return true;
-}
-
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
     const size_t vid) const
 {
@@ -688,25 +587,6 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         return false;
     }
     return true;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_for_vertex(
-    const size_t vid) const
-{
-    // Off with the plastic medium: the final pass minimises regular-tet AMIPS alone.
-    if (!m_plastic_active) return nullptr;
-    std::vector<RestAMIPSEnergy3D::Cell> cells;
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-        if (!cell_is_plastic(tid)) continue;
-        RestAMIPSEnergy3D::Cell c;
-        if (rest_cell_at(*this, tid, vid, c)) cells.push_back(c);
-    }
-    if (cells.empty()) return nullptr;
-    // The shared smoother's own AMIPS factor at this vertex, so the rest term and the regular-tet
-    // quality term it sums with sit at 1:1: 1 at a vertex placed against the offset term, the
-    // engine's w_amips elsewhere.
-    const double w = smoother_amips_weight(vid);
-    return std::make_shared<RestAMIPSEnergy3D>(std::move(cells), w);
 }
 
 double TopoOffsetTetMesh::swap_edge_44_energy(
@@ -961,8 +841,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         for (const size_t t : tids) {
             m_tet_attribute[t].tag = tag;
             m_tet_attribute[t].label = label;
-            // deform_others: a swap rewires exactly these cells; their rest is stale.
-            stamp_rest_cell(t);
         }
         if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
             ++m_repulsion_embed_refused;
@@ -998,7 +876,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         if (side == nullptr) return swap_reject(SwapReject::app_after_no_side);
         m_tet_attribute[t].tag = side->first;
         m_tet_attribute[t].label = side->second;
-        stamp_rest_cell(t);
     }
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
@@ -1038,11 +915,6 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
     // which says why there); a collapse that reaches this line has passed it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
-    }
-    // deform_others: every surviving cell at the survivor changed shape (v1 became v2); their
-    // rest is stale.
-    for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
-        stamp_rest_cell(tid);
     }
     return true;
 }
@@ -1257,13 +1129,6 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
         if (q >= kNeedleQuality) report_needle("SPLIT", tid, parent_q);
         record_flatness("SPLIT", cache.parent_flatness, tid);
     }
-
-    // deform_others: every cell at the midpoint was created by this split and the snapshot copy
-    // gave each the parent's rest -- re-stamp, or a child measures itself against a tet twice
-    // its size (see TetAttributes::rest_valid).
-    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
-        stamp_rest_cell(tid);
-    }
 }
 
 bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
@@ -1374,23 +1239,6 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
 
     // The repulsion passes before the march (repulsion_smoothing()); false at every other time.
     if (is_repulsion_vertex(vid)) return smooth_repulsion_vertex(t);
-
-    // The plastic medium: a vertex whose whole ring is plastic and which no envelope holds flows
-    // under rest-shape AMIPS alone (see smooth_plastic_vertex). As in 2D.
-    if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
-        bool all_plastic = true;
-        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-            if (!cell_is_plastic(tid)) {
-                all_plastic = false;
-                break;
-            }
-        }
-        if (all_plastic) {
-            const bool okp = smooth_plastic_vertex(t);
-            ++m_smooth_trace.interior_attempted;
-            return okp;
-        }
-    }
 
     // A front vertex goes through the shared smoother -- same solver, line search and accept
     // tests as every other vertex -- with the offset's options: its objective carries the offset
@@ -1644,8 +1492,7 @@ void TopoOffsetTetMesh::update_attributes()
 
 void TopoOffsetTetMesh::log_smoothing_pass_accounting()
 {
-    // Per pass, after the base's own "newton, smooth_after" line (the background). The plastic
-    // line only when the plastic medium solved anything, which it does only under deform_others.
+    // Per pass, after the base's own "newton, smooth_after" line (the background).
     logger().info("\tnewton, front: {}", m_newton_front.to_string());
     logger().info(
         "\tfront veto: fired {} of {} front moves that reached it (ring sum of tet_energy rose)",
@@ -1672,11 +1519,7 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         line("|grad|", m_front_grad_abs, -14);
         line("|grad|/|grad_0|", m_front_grad_rel, -14);
     }
-    if (m_newton_plastic.solves() > 0) {
-        logger().info("\tnewton, plastic: {}", m_newton_plastic.to_string());
-    }
     m_newton_front.reset();
-    m_newton_plastic.reset();
     if (m_offset_params.debug_crossings && m_round > 0) crossing_snapshot("smooth", true, false);
 }
 
@@ -4384,12 +4227,12 @@ bool TopoOffsetTetMesh::growth_push()
     // EXPERIMENTAL_growth_push: smoothing passes alone -- no split, collapse or swap, no
     // refinement -- so the cells stay the ones construction made while the front moves from the
     // construction target to the first growth target. Each block is the one every operation
-    // group of the loop is followed by (k passes, or adaptive), plastic rests stamped before it,
-    // as pre_smooth runs it. Stops once every front vertex is placed (front_placed_by_ratio():
-    // its own distance to the level set within front_conv) and none is unmeasurable; at most
-    // max_rounds blocks. The reason for no operation: on Thingi10K 100026 the cells that cover
-    // a slot's mid-plane at its ends reach 3.6 x the construction target along the slot (0.36 at
-    // 0.1 delta, 1.77 at 0.5 delta), so constructing low and moving the front keeps them short.
+    // group of the loop is followed by (k passes, or adaptive), as pre_smooth runs it. Stops once
+    // every front vertex is placed (front_placed_by_ratio(): its own distance to the level set
+    // within front_conv) and none is unmeasurable; at most max_rounds blocks. The reason for no
+    // operation: on Thingi10K 100026 the cells that cover a slot's mid-plane at its ends reach 3.6
+    // x the construction target along the slot (0.36 at 0.1 delta, 1.77 at 0.5 delta), so
+    // constructing low and moving the front keeps them short.
     const bool interleaved = m_params.interleaved_smoothing;
     const int k = std::max(
         1,
@@ -4398,7 +4241,6 @@ bool TopoOffsetTetMesh::growth_push()
     compute_vertex_partition_morton();
     for (int r = 1; r <= budget; ++r) {
         m_round = r;
-        stamp_plastic_rests();
         if (m_offset_params.adaptive_smoothing) {
             smooth_group_to_convergence("push");
         } else {
@@ -4475,8 +4317,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // passes per turn only the first after the split moved the front from turn 5 on; the other five
     // never moved a vertex across the bar, moved the background under 2% of its target edge length,
     // and cost 63% of the turn (43 of 68 s). What the combined group changes, to be measured and
-    // not argued: the plastic rests are stamped once per turn, and the collapse and swap energy
-    // rules judge a front the split pass has not been placed since.
+    // not argued: the collapse and swap energy rules judge a front the split pass has not been
+    // placed since.
     const bool interleaved = m_params.interleaved_smoothing;
     const int k = std::max(
         1,
@@ -4506,10 +4348,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // that realizes them does not run until the NEXT turn.
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
-        // block every operation group is followed by, with the same bookkeeping around it
-        // (plastic rests stamped before). Frames are r0S*.
+        // block every operation group is followed by. Frames are r0S*.
         m_round = 0;
-        stamp_plastic_rests();
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {}",
             m_offset_params.adaptive_smoothing
@@ -4542,7 +4382,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             if (settle && it == 0 && gi == 0) settle_e_prev = energy_before_group;
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
-            stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             if (m_offset_params.adaptive_smoothing) {
@@ -4943,18 +4782,14 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 m_round = it + 2;
                 // The whole envelope setup rebuilt fresh from the mesh as placement left it --
                 // the front's tube, held for the entire pass beside m_envelope, which holds what it
-                // always held; regular-tet AMIPS alone: the plastic vertex path and the rest-shape
-                // term are both off.
+                // always held.
                 build_offset_envelope();
                 m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
                 mesh_improvement(a_iters);
                 logger().info(
                     "\t[split order] final pass: waited {} | committed off the longest edge {}",
                     m_split_order_waits.exchange(0),
                     m_split_off_longest.exchange(0));
-                m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
@@ -5003,17 +4838,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     report_offset_face_lookup_misses("construction");
 
     init_vertex_order();
-
-    // deform_others: the medium outside the band is plastic (cell_is_plastic()); the envelope
-    // build_envelopes() made at construction already holds only the complex boundary and the
-    // wall.
-    if (m_offset_params.deform_others) {
-        m_plastic_active = true;
-        stamp_plastic_rests();
-        logger().info(
-            "[deform_others] every cell outside the band is plastic; held: the domain wall and "
-            "the input complex boundary");
-    }
 
     // The front as constructed must already be inside the potential's support.
     check_offset_within_support("Offset as constructed");

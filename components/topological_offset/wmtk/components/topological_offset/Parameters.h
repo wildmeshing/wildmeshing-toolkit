@@ -36,8 +36,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
-    // Half-width of the envelope that holds the held surfaces (3D: the input complex boundary and
-    // the domain wall, plus every region boundary when deform_others is false; see the spec doc).
+    // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
+    // input complex's included, and the domain wall; see the spec doc).
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;

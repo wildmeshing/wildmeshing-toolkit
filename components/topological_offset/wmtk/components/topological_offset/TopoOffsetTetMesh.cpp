@@ -248,25 +248,12 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
-bool TopoOffsetTetMesh::face_is_complex_boundary(const Tuple& f) const
-{
-    const bool a = m_tet_attribute[f.tid(*this)].label == 1;
-    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-    const bool b = opp ? (m_tet_attribute[opp->tid(*this)].label == 1) : false;
-    if (a != b) return true; // a cell of the complex on exactly one side
-    if (a && b) return false; // interior to the complex
-    // No complex cell on either side: the face is itself a piece of the complex (a sheet
-    // selection, or a face the selection expression labelled), or it is not on it at all.
-    return m_face_extra[f.fid(*this)].label == 1;
-}
-
 bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 {
     // See the declaration. The caller has a tracked face (m_is_surface_fs); the offset surface
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
     if (!f.switch_tetrahedron(*this)) return true; // the domain wall
-    if (face_is_offset_surface_live(f)) return false;
-    return !m_offset_params.deform_others || face_is_complex_boundary(f);
+    return !face_is_offset_surface_live(f); // every region boundary, the complex's included
 }
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
@@ -311,14 +298,11 @@ void TopoOffsetTetMesh::build_envelopes()
         m_envelope->init(verts, tris, m_envelope_eps);
     }
     logger().info(
-        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; deform_others {}: {}), "
-        "eps {:.6g}, {}",
+        "\t[envelope] {} of {} tracked faces held ({} on the domain wall; every region boundary "
+        "and the wall), eps {:.6g}, {}",
         tris.size(),
         n_tracked,
         n_wall,
-        m_offset_params.deform_others,
-        m_offset_params.deform_others ? "the input complex boundary and the wall"
-                                      : "every region boundary and the wall",
         m_envelope_eps,
         exact_ok ? "EXACT" : "sampled (no valid eps)");
 }

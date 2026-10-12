@@ -630,48 +630,6 @@ private:
 };
 
 /**
- * @brief The 3D twin of RestAMIPSEnergy2D: AMIPS of a tet against its rest shape.
- *
- *     E(x) = w * sum over cells of tr(F^T F) / det(F)^(2/3),   F = A(x) * Rinv
- *
- * A(x) = [q1 - x, q2 - x, q3 - x] with the moving vertex first (the shared smoother's
- * convention), Rinv the inverse rest Jacobian in the same corner order. det^(2/3) is what makes
- * the 3D form scale-invariant, as det^1 does in 2D; the minimum is 3 at F = I, the same scale as
- * the shared AMIPSEnergy3D against the regular tet, so the two terms sum 1:1. det F <= 0 is
- * invalid: value NaN and is_step_valid false. F is affine in x, so gradient and Hessian are the
- * exact chain through the closed-form derivatives of e / d^(2/3) in F.
- */
-class RestAMIPSEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    struct Cell
-    {
-        Eigen::Vector3d q1, q2, q3; ///< the fixed corners, current positions
-        Eigen::Matrix3d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0, r3-r0]^-1
-    };
-    RestAMIPSEnergy3D(std::vector<Cell> cells, double weight);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
-private:
-    /// F and d = det F at x for one cell; false when d <= 0.
-    bool cell_F(const Eigen::Vector3d& x, const Cell& c, Eigen::Matrix3d& F, double& d) const;
-    std::vector<Cell> m_cells;
-    double m_weight;
-};
-
-/**
  * @brief The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of
  * vol AMIPS^3 (TopoOffsetTetMesh::tet_energy(), whose caller passes w = offset_amips_weight /
  * stop_energy^3).

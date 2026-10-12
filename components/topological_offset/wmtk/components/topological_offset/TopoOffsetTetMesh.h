@@ -101,14 +101,6 @@ public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     CellTag tag;
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
-    /**
-     * Rest shape (deform_others): the tet's corners when it last changed topologically, in the
-     * oriented order. Stamped for every plastic cell at optimize_offset() and re-stamped by the
-     * operation after-hooks for every cell an accepted split / collapse / swap changed, never by
-     * smoothing -- a child left on its parent's rest reads det F ~ 1/2 and fights to regrow.
-     */
-    bool rest_valid = false;
-    std::array<Vector3d, 4> rest_pos;
 };
 
 
@@ -269,23 +261,15 @@ public:
      * nothing in the loop; only the frozen-front final pass holds it, to m_offset_envelope.
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
-     * labels it reads), never stored:
-     * - a domain-wall face (no opposite tet), always;
-     * - deform_others false: every other tracked face that is not the offset surface, i.e.
-     *   every region boundary, the input complex's included;
-     * - deform_others true: the input complex's boundary only (face_is_complex_boundary()).
-     *   The other regions' boundaries stay tracked faces -- the operations preserve their
-     *   topology -- but no envelope holds them: they deform with the plastic medium.
-     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is
-     * kept within eps of their union, not pinned to the junction curve.
+     * labels it reads), never stored: a domain-wall face (no opposite tet), and every other
+     * tracked face that is not the offset surface, i.e. every region boundary, the input
+     * complex's included. One envelope for all of them, as TetWild's: where two held surfaces meet,
+     * a vertex is kept within eps of their union, not pinned to the junction curve.
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
     /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
     bool vertex_is_held(size_t vid) const;
-    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
-    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
-    bool face_is_complex_boundary(const Tuple& f) const;
     /// Build m_envelope from the held faces. Called once, from construct_offset(), after the
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
@@ -1104,8 +1088,7 @@ public:
     /// How the solves this class makes itself ended, per smoothing pass, beside the base's
     /// m_newton (the background, through TetOptimizerMesh::smooth_after()). Front: every front
     /// placement -- the 1-D solve along the field normal and the 3-D
-    /// solve it falls back to. Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged
-    /// and reset by log_smoothing_pass_accounting().
+    /// solve it falls back to. Logged and reset by log_smoothing_pass_accounting().
     optimization::NewtonCounters m_newton_front;
     /**
      * @brief DEBUG_output only: every front solve since the last debug frame, so the frames
@@ -1132,7 +1115,7 @@ public:
     /**
      * @brief The Newton stopping rule every smoother of this component runs with, set on the
      * thread's shared solver (the engine's m_solver slot) by smoothing_solver() at the start of
-     * every visit -- front, plastic-medium and interior alike, so the settings do not depend on
+     * every visit -- front and interior alike, so the settings do not depend on
      * which path first ran on a thread.
      *
      * Relative gradient tolerance 1e-6, beside the engine's absolute 1e-10 (which stays). The
@@ -1274,7 +1257,6 @@ public:
     /// tolerance-unit objective while the interior solves stop on the same absolute tolerance.
     static constexpr int kGradBins = 22;
     std::array<std::atomic<size_t>, kGradBins> m_front_grad_abs{}, m_front_grad_rel{};
-    optimization::NewtonCounters m_newton_plastic;
     void log_smoothing_pass_accounting() override;
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
@@ -1481,7 +1463,7 @@ public:
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
-     * @brief Every vertex off the front (and off the plastic medium): the shared smoother with
+     * @brief Every vertex off the front: the shared smoother with
      * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises the vertex's
      * part of the energy (smoothing_extra_energy(); the smoother adds no AMIPS term of its own) and
      * the engine's AMIPS^3 veto is replaced by the energy's: the sum of tet_energy() over the ring
@@ -1559,9 +1541,7 @@ public:
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
     /// places against the offset term (smoothing_extra_energy()): the AMIPS term over the one-ring
-    /// (amips3_energy()), the rest-shape AMIPS of its plastic cells (rest_energy_for_vertex(),
-    /// null without the plastic medium), and front_energy(). What
-    /// front_vertex_normal_gradient() differentiates.
+    /// (amips3_energy()) and front_energy(). What front_vertex_normal_gradient() differentiates.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
     /// frozen-front final pass, that no envelope also holds (vertex_is_held()).
@@ -1570,15 +1550,6 @@ public:
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                !vertex_is_held(vid);
     }
-    /// The AMIPS weight the shared smoother uses at vid, amips_w in smooth_vertex_3d(): 1 for a
-    /// vertex it places against the offset term, whose objective is the per-tet energy's two
-    /// parts at 1:1 (AMIPS, and the offset term in units of the tolerance); w_amips otherwise,
-    /// the engine's own balance against the input-surface envelope term.
-    double smoother_amips_weight(const size_t vid) const
-    {
-        if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
-        return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    }
     /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
     /// the energy E, the sum of tet_energy() over vid's ring up to the terms that do not move with
     /// vid. The AMIPS term over the ring (amips3_energy()) for every vertex -- the smoother adds no
@@ -1586,14 +1557,13 @@ public:
     /// ring's band cells (band_volume_energy_at(); through front_energy() for a front vertex the
     /// loop places) unless an input envelope holds vid, or, in the passes before the march, a
     /// repulsion vertex's term once per ring cell that carries it (repulsion_energy(),
-    /// repulsion_cell_term()). Under deform_others the rest-shape AMIPS of the plastic cells in the
-    /// ring is added, as before.
+    /// repulsion_cell_term()).
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
         auto sum = std::make_shared<optimization::EnergySum>();
         sum->add_energy(amips3_energy(vid));
-        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
+        // Before the march (repulsion_smoothing()) there is no front.
         if (is_repulsion_vertex(vid)) {
             sum->add_energy(repulsion_energy(vid));
             return sum;
@@ -1612,35 +1582,9 @@ public:
             // smooth_nonfront_vertex() vetoes on the ring's sum of tet_energy().
             if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
-        if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
         return sum;
     }
 
-    // ------- deform_others: the medium outside the band deforms -------
-
-    /// Plastic medium: under deform_others every background cell -- ambient and the other objects
-    /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
-    /// resists only the increment since the group started and the medium flows instead of behaving
-    /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
-    /// not plastic; element quality in the medium is the operation passes' job.
-    bool m_plastic_active = false; ///< deform_others, outside the final pass
-    bool cell_is_plastic(size_t tid) const
-    {
-        // Everything outside the band: ambient, the other objects and the input complex's
-        // interior alike -- one material. The complex's boundary is what its tube holds.
-        return m_plastic_active && m_tet_attribute[tid].label != 2;
-    }
-    /// Stamp rest := current for every plastic cell; called before every operation group.
-    void stamp_plastic_rests();
-    /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else.
-    bool smooth_plastic_vertex(const Tuple& t);
-    /// Stamp rest := the cell's current corner positions (oriented order). No-op for
-    /// non-plastic cells.
-    void stamp_rest_cell(size_t tid);
-    /// The rest-shape AMIPS over the plastic cells of vid's one-ring, weighted like the
-    /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the ring
-    /// has none.
-    std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The offset term for a front vertex: the band term of its band cells
     /// (band_volume_energy_at()), in an EnergySum, empty when it has none. Defined in
     /// FrontSmooth3d.cpp.

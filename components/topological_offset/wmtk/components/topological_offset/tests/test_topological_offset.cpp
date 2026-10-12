@@ -156,9 +156,9 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
-    // are HELD depends on deform_others and on the input complex, read live off the cells, and
-    // one envelope holds them all.
+    // boundary, every outer face a domain-wall face. Every one of them is a tracked face and
+    // HELD (every region boundary and the wall), read live off the cells, and one envelope holds
+    // them all.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -183,8 +183,7 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // deform_others false: every tracked face is held, the a/b boundary and the wall alike.
-    param.deform_others = false;
+    // Every tracked face is held, the a/b boundary and the wall alike.
     mesh.build_envelopes();
     REQUIRE(mesh.m_envelope != nullptr);
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
@@ -197,21 +196,6 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-
-    // deform_others true, no input complex: the a/b boundary stays a tracked face but nothing
-    // holds it; the wall is held either way.
-    param.deform_others = true;
-    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
-    mesh.build_envelopes();
-    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
-    REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
-    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
-
-    // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
-    mesh.m_tet_attribute[0].label = 1;
-    REQUIRE(mesh.face_is_complex_boundary(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
 }
 
 
