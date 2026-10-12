@@ -127,22 +127,6 @@ void topological_offset(nlohmann::json json_params)
             log_and_throw_error(
                 "EXPERIMENTAL_visible_distance is 3D only; leave it false for a 2D input");
         }
-        if (params.area_weighted_ring) {
-            log_and_throw_error(
-                "EXPERIMENTAL_area_weighted_ring is 3D only; leave it false for a 2D input");
-        }
-        if (params.quadratic_stencil) {
-            log_and_throw_error(
-                "EXPERIMENTAL_quadratic_stencil is 3D only; leave it false for a 2D input");
-        }
-        if (params.integral_energy) {
-            log_and_throw_error(
-                "EXPERIMENTAL_integral_energy is 3D only; leave it false for a 2D input");
-        }
-        if (params.band_volume_energy) {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_energy is 3D only; leave it false for a 2D input");
-        }
         if (params.no_refinement || params.no_exit) {
             log_and_throw_error(
                 "EXPERIMENTAL_no_refinement and EXPERIMENTAL_no_exit are 3D only; leave them false "
@@ -386,8 +370,12 @@ void topological_offset(nlohmann::json json_params)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        // The plastic medium's rest-shape term is not part of the energy and outweighs it; see
-        // Parameters, where EXPERIMENTAL_band_volume_energy refuses it with the measurement.
+        // The plastic medium's rest-shape AMIPS is not part of the energy E
+        // (TopoOffsetTetMesh::tet_energy()), and it is dimensionless (about 3 per cell) while E's
+        // band term is a volume: added to a front vertex's objective it outweighs E. Measured
+        // (cube outward, target 1e-2, tolerance 1e-4, turn 3): objective 12-24 from the rest term
+        // against a band-volume gradient of ~3e-5, so each Newton step moved the vertex ~1e-10
+        // (1e-7 tolerances) and fronts stayed 7-15 tolerances inside the level set.
         if (params.deform_others) {
             log_and_throw_error(
                 "deform_others is not available in 3D: the plastic medium's rest-shape term is "

@@ -974,11 +974,11 @@ void TopoOffsetTetMesh::init_offset_potential()
             m_input_complex_envelope,
             m_offset_params.target_distance);
         init_region_potentials(m_offset_params.target_distance, 0.);
-        if (m_offset_params.band_volume_energy &&
-            m_offset_params.band_volume_rule == "corner_bound" && !m_band_tris) {
-            // The input's triangles as the convex pieces of d (see band_cell_corner_bound()). A
-            // segment that is an edge of a triangle adds nothing to d; an isolated one, or an
-            // isolated point, would be a piece this rule does not have.
+        if (!m_band_tris) {
+            // The input's triangles as the convex pieces of d, which the energy's band term takes
+            // its min over (see band_cell_term()). A segment that is an edge of a triangle adds
+            // nothing to d; an isolated one, or an isolated point, would be a piece the term does
+            // not have.
             std::set<std::pair<int, int>> tri_edges;
             for (int f = 0; f < m_phi_F.rows(); ++f) {
                 for (int j = 0; j < 3; ++j) {
@@ -993,11 +993,20 @@ void TopoOffsetTetMesh::init_offset_potential()
             }
             if (m_phi_F.rows() == 0 || isolated > 0 || !m_phi_P.empty()) {
                 log_and_throw_error(
-                    "EXPERIMENTAL_band_volume_rule \"corner_bound\" needs an input complex of "
-                    "triangles only ({} triangles, {} segments not on a triangle, {} points)",
+                    "the energy's band term needs an input complex of triangles only ({} "
+                    "triangles, {} segments not on a triangle, {} points)",
                     m_phi_F.rows(),
                     isolated,
                     m_phi_P.size());
+            }
+            // The band term reads one distance, to the whole input; with several connected
+            // pieces each has a field of its own, and the term does not choose between them.
+            // Refused here, before the loop, rather than at the term's first evaluation.
+            if (m_n_regions > 1) {
+                log_and_throw_error(
+                    "the energy's band term reads one field, and this input complex has {} "
+                    "connected pieces",
+                    m_n_regions);
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
         }
@@ -1438,13 +1447,14 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
-    // ends out first, under one per-tet energy: w AMIPS^3 plus, for each corner v of the cell that
-    // is an outer end within it (repulsion_cell_term()), O(v) = (max(0, 2 delta - d(v)) /
-    // front_conv)^2 -- one-sided, so an outer end already beyond 2 delta is left to AMIPS, and
-    // 2 delta so that the march at delta splits each edge with room to spare (the fallback's "half
-    // the maximum marchable distance" run backwards). The smoother minimises its sum over a
-    // vertex's ring, the vetoes and the rounds' collapses and swaps compare its max, as in the
-    // loop. An outer end that an envelope holds carries no term. First up to
+    // ends out first, under the per-tet energy (tet_energy()): its AMIPS term plus, for each
+    // corner v of the cell that is an outer end within it (repulsion_cell_term()), O(v) =
+    // (max(0, 2 delta - d(v)) / front_conv)^2 -- one-sided, so an outer end already beyond
+    // 2 delta is left to AMIPS, and 2 delta so that the march at delta splits each edge with room
+    // to spare (the fallback's "half the maximum marchable distance" run backwards). The smoother
+    // minimises its sum over a vertex's ring, and the vetoes and the rounds' collapses and swaps
+    // compare its sum over the cells they change, as in the loop. An outer end that an envelope
+    // holds carries no term. First up to
     // repulsion_smoothing_passes smoothing passes, then up to repulsion_rounds rounds of the
     // loop's operations (see below); both stop once every outer end is beyond delta + front_conv,
     // outside the tolerance band.
@@ -2518,9 +2528,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                     if (term < 0.) {
                         ring_bad[u] = 1;
                     } else {
-                        const double wf = ring_face_weight(a, b, c);
-                        v_ring_sum[int(u)] += wf * term;
-                        v_ring_n[int(u)] += wf;
+                        v_ring_sum[int(u)] += term;
+                        v_ring_n[int(u)] += 1.;
                     }
                 }
             }

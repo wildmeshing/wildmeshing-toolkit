@@ -297,11 +297,11 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
-        // EXPERIMENTAL_split_energy_gate: the children -- every cell at the new vertex, labels and
-        // band triangles inherited -- must sum strictly below the parents (a NaN refuses). The
+        // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
+        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
         // engine rolls a refused split back.
         if (m_offset_params.split_energy_gate &&
-            !(global_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
+            !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;
             return false;
@@ -695,12 +695,12 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     for (const Tuple& tt : parents) {
         cache.tets[simplex_from_tet(tt).opposite_edge(e)] = m_tet_attribute.at(tt.tid(*this));
     }
-    // EXPERIMENTAL_split_energy_gate: the parents' sum of E's terms, which split_edge_after()
+    // EXPERIMENTAL_split_energy_gate: the parents' sum of tet_energy(), which split_edge_after()
     // compares the children's against.
     if (m_offset_params.split_energy_gate) {
         std::vector<size_t> tids;
         for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
-        m_split_energy_before.local() = global_sum(tids);
+        m_split_energy_before.local() = tet_energy_sum(tids);
     }
     return true;
 }

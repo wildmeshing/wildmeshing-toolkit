@@ -74,19 +74,19 @@ struct Parameters : public wmtk::OptimizerParameters
     /// sides -- so which form the code uses is a matter of where the division sits, not of what
     /// is being asked.
     double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
-    /// The energy rule of collapses and swaps (see the spec); false is a debugging switch.
+    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
+    // with 3D. No JSON key; each keeps the default its key had. The 2D energy rule of collapses
+    // and swaps, the 2D front vertices' smoothing veto, and the 2D collapse rule over the changed
+    // cells (TopoOffsetTriMesh). The 2D non-front veto reads the engine's smooth_quality_veto,
+    // which keeps the engine's default, true, the default of the key offset_smooth_veto that set
+    // it. 3D's rules are always on and read none of these (TopoOffsetTetMesh::tet_energy()).
     bool offset_collapse_veto = true, offset_swap_veto = true;
-    /// The front vertices' smoothing veto on the per-cell energy (see the spec); the engine's
-    /// smooth_quality_veto field is the interior vertices' (key offset_smooth_veto).
     bool offset_front_smooth_veto = false;
-    /// The weight w of AMIPS in the per-cell energy and in the front smoother's objective:
-    /// tet_energy = w AMIPS^3 + the offset terms in 3D, tri_energy = w AMIPS + the offset terms in
-    /// 2D -- the engine's own cell quality in each (see the spec). 1 is the 1:1 energy of
-    /// 2026-09-28.
-    double offset_amips_weight = 1e-4;
-    /// The collapse energy rule compares only the cells whose energy the collapse changes (see the
-    /// spec); false compares the whole rings of v1 and v2 before against the survivor's after.
     bool offset_collapse_changed_cells = true;
+    /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
+    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
+    /// tri_energy = w AMIPS + the offset terms. See the spec.
+    double offset_amips_weight = 1e-4;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -111,16 +111,16 @@ struct Parameters : public wmtk::OptimizerParameters
     //   piece, i.e. 3, 5, 9, 17, ...
     // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
     // the quantity measured is a distance to the level set rather than an interpolation error and
-    // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
-    // the operations' energy rules (TopoOffsetTetMesh::tet_energy(),
-    // TopoOffsetTriMesh::tri_energy()) as well as in energy_criterion() and every smoothing solve.
+    // so is not identically zero there. Raising it costs a Phi value per sample in
+    // energy_criterion() and the frames, and in 2D also in the operations' energy rules
+    // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     int stencil_order;
     /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
     /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D
     /// of the chord measures (edge_offset_term()) of its front chords -- every simplex weighted
-    /// equally as in the per-cell energy. The loop exits when every ring measure is within the
+    /// equally. The loop exits when every ring measure is within the
     /// bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone.
     /// "face": every offset face (2D: chord) within the bar and the halving at the corners of
     /// every face over it -- the rule of 2026-09-25, kept for comparison.
@@ -186,54 +186,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-07), 3D. Front points measure their distance to the nearest input
     /// point they see through the band (VisibleField). See the spec doc.
     bool visible_distance = false;
-    /// EXPERIMENTAL (2026-10-08), 3D, front_measure "vertex_ring". The ring measure R(v)^2 and
-    /// W(v) are means over v's faces weighted by their areas, and the front smoother minimises
-    /// w AMIPS^3 / n + R(v)^2 (n the faces at v) with the areas as variables. See the spec doc,
-    /// StencilEnergy3D (AREA WEIGHTING) and TopoOffsetTetMesh::ring_face_weight().
-    bool area_weighted_ring = false;
-    /// EXPERIMENTAL (2026-10-08), 3D, stencil_order >= 1. O(f) weighs its stencil points by the
-    /// rule exact for quadratics on each sub-triangle (corners 1/12, centroid 3/4) instead of
-    /// equally. See TopoOffsetTetMesh::for_each_face_sample() and the spec doc.
-    bool quadratic_stencil = false;
-    /// EXPERIMENTAL (2026-10-08), 3D, front_measure "vertex_ring". One global energy,
-    /// E' = sum_f area(f) O(f) + (w/eps) sum_t vol(t) AMIPS(t)^3 (w = offset_amips_weight,
-    /// eps = front_conv), which the smoother descends vertex by vertex and every collapse and
-    /// swap descends by its SUM over the cells it changes. See the spec doc.
-    bool integral_energy = false;
-    /// EXPERIMENTAL (2026-10-08), 3D, one input region, euclidean field. The front's offset term
-    /// becomes the band-volume integral, E = int_B e dV + w sum_t vol(t) AMIPS(t)^3 (e = (d -
-    /// delta) / front_conv, w = offset_amips_weight), int_B e dV evaluated per band cell as Vol
-    /// times the mean of e over its four corners and its centroid. Collapse and swap: the AMIPS
-    /// max rule as before and the volume sum over the changed band cells may not rise. See the
-    /// spec doc and TopoOffsetTetMesh::band_cell_term().
-    bool band_volume_energy = false;
     /// EXPERIMENTAL (2026-10-08), 3D, diagnostics. no_refinement: the loop halves no sizing
     /// scalar. no_exit: the loop does not exit on its criterion and runs max_rounds turns, the
-    /// criterion's numbers still logged. (Under EXPERIMENTAL_band_volume_energy every debug frame
-    /// appends E's two parts to <output>_energy.txt, either way.)
+    /// criterion's numbers still logged. (Every debug frame appends E's two parts to
+    /// <output>_energy.txt, either way.)
     bool no_refinement = false;
     bool no_exit = false;
-    /// EXPERIMENTAL (2026-10-08), under EXPERIMENTAL_band_volume_energy. The band-volume integrand's
-    /// divisor: "front_conv" (int_B (d - delta) / front_conv dV, the default) or "target_distance"
-    /// (int_B (d - delta) / delta dV).
-    std::string band_volume_divisor = "front_conv";
-    /// EXPERIMENTAL (2026-10-08), under EXPERIMENTAL_band_volume_energy. The cell rule Q_t:
-    /// "five_point" (the mean over the 4 corners and the centroid), "centroid" (the centroid alone),
-    /// or "corner_bound" (min over candidate input triangles P of the corner mean of d_P: an upper
-    /// bound that no split raises; see TopoOffsetTetMesh::band_cell_term()).
-    std::string band_volume_rule = "five_point";
-    /// EXPERIMENTAL (2026-10-08), under EXPERIMENTAL_band_volume_energy. The AMIPS term is
-    /// w sum vol (AMIPS / stop_energy)^3 instead of w sum vol AMIPS^3.
-    bool amips_over_stop = false;
-    /// EXPERIMENTAL (2026-10-08), under EXPERIMENTAL_band_volume_energy. Every operation judges by
-    /// the global energy E alone: a collapse when the sum of E's per-cell terms over the cells it
-    /// changes does not rise, a swap when it strictly falls (no max rule); every vertex's smoothing
-    /// objective is its part of E, the band-volume term included for vertices off the front.
-    /// Splits stay independent of the energy.
-    bool ops_global_energy = false;
-    /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_ops_global_energy. Every loop split is
-    /// committed only if E, summed over the cells it changes, strictly falls -- judged right after
-    /// the split, before any smoothing.
+    /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
+    /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
     /// EXPERIMENTAL (2026-10-09), needs EXPERIMENTAL_unreachable_exit. A front vertex's remainder
     /// W is the largest remainder among its faces instead of their mean, so one face that cannot
@@ -245,8 +205,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the level set. A reachable one is refined when its remainder W is over the bar, and
     /// otherwise blocks the exit (never passes). Replaces the settledness test.
     bool reach_probe = false;
-    /// EXPERIMENTAL (2026-10-09), under EXPERIMENTAL_band_volume_rule "corner_bound", without
-    /// EXPERIMENTAL_unreachable_exit. The refinement is the edge test alone: every edge (a, b) of a
+    /// EXPERIMENTAL (2026-10-09), 3D, without EXPERIMENTAL_unreachable_exit. The refinement is the
+    /// edge test alone: every edge (a, b) of a
     /// band cell with a front vertex whose excess (d_P(a) + d_P(b))/2 - d(m) is over front_conv
     /// (P the cell's minimising triangle, m the midpoint; InputTriangles::edge_excess()) has the
     /// sizing scalar halved at a and b. The ring measure R(v) refines nothing and only gates the
@@ -258,16 +218,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// excess of a curved d growing as L^2; a shorter edge at its own length. Flags a strip whose
     /// sizing admits edges over the bar before smoothing drifts them over. See the spec doc.
     bool edge_excess_window = false;
-    /// EXPERIMENTAL (2026-10-09), under EXPERIMENTAL_band_volume_rule "corner_bound". A band cell's
-    /// term takes the min over ALL input triangles (InputTriangles::min_mean_distance()) instead of
-    /// over its corners' nearest plus the triangle stored on the cell: a function of the cell's
-    /// corners alone, never above the candidate rule, and no split raises it (each child's min
-    /// includes the parent's minimiser). The smoother evaluates the same min. See the spec doc.
-    bool band_volume_exact_min = false;
-    /// EXPERIMENTAL (2026-10-09), 3D, under EXPERIMENTAL_band_volume_rule "corner_bound", without
-    /// EXPERIMENTAL_unreachable_exit and EXPERIMENTAL_edge_excess_refinement. Refinement and exit
-    /// wait for the front to settle: a turn is settled when E fell by less than the bar energy
-    /// b = band_volume_factor() front_conv^2 A / (2 target_distance), A the front's area -- the
+    /// EXPERIMENTAL (2026-10-09), 3D, without EXPERIMENTAL_unreachable_exit and
+    /// EXPERIMENTAL_edge_excess_refinement. Refinement and exit wait for the front to settle: a
+    /// turn is settled when E fell by less than the bar energy
+    /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
     /// offset term's excess for a front lying front_conv off the level set. On a settled turn
     /// every front face whose exact distance bound from the level set (the face's min of d, and
     /// min over P of the max of d_P at its corners) exceeds front_conv has its corners halved;
@@ -403,27 +357,8 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error(
                 "EXPERIMENTAL_unreachable_exit needs front_measure \"vertex_ring\"");
         }
-        area_weighted_ring = json_params["EXPERIMENTAL_area_weighted_ring"];
-        quadratic_stencil = json_params["EXPERIMENTAL_quadratic_stencil"];
-        integral_energy = json_params["EXPERIMENTAL_integral_energy"];
-        if (integral_energy && front_measure != "vertex_ring") {
-            log_and_throw_error("EXPERIMENTAL_integral_energy needs front_measure \"vertex_ring\"");
-        }
-        band_volume_energy = json_params["EXPERIMENTAL_band_volume_energy"];
         no_refinement = json_params["EXPERIMENTAL_no_refinement"];
         no_exit = json_params["EXPERIMENTAL_no_exit"];
-        band_volume_divisor = json_params["EXPERIMENTAL_band_volume_divisor"];
-        band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
-        if (band_volume_rule != "five_point" && band_volume_rule != "centroid" &&
-            band_volume_rule != "corner_bound") {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_rule is \"five_point\", \"centroid\" or "
-                "\"corner_bound\", "
-                "not \"{}\"",
-                band_volume_rule);
-        }
-        amips_over_stop = json_params["EXPERIMENTAL_amips_over_stop"];
-        ops_global_energy = json_params["EXPERIMENTAL_ops_global_energy"];
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         remainder_max = json_params["EXPERIMENTAL_remainder_max"];
         reach_probe = json_params["EXPERIMENTAL_reach_probe"];
@@ -434,18 +369,10 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error("EXPERIMENTAL_remainder_max needs EXPERIMENTAL_unreachable_exit");
         }
         edge_excess_refinement = json_params["EXPERIMENTAL_edge_excess_refinement"];
-        if (edge_excess_refinement && (!band_volume_energy || band_volume_rule != "corner_bound" ||
-                                       unreachable_exit || front_measure != "vertex_ring")) {
+        if (edge_excess_refinement && (unreachable_exit || front_measure != "vertex_ring")) {
             log_and_throw_error(
-                "EXPERIMENTAL_edge_excess_refinement needs EXPERIMENTAL_band_volume_energy with "
-                "EXPERIMENTAL_band_volume_rule \"corner_bound\", front_measure \"vertex_ring\" "
-                "and EXPERIMENTAL_unreachable_exit false");
-        }
-        band_volume_exact_min = json_params["EXPERIMENTAL_band_volume_exact_min"];
-        if (band_volume_exact_min && band_volume_rule != "corner_bound") {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_exact_min needs EXPERIMENTAL_band_volume_rule "
-                "\"corner_bound\"");
+                "EXPERIMENTAL_edge_excess_refinement needs front_measure \"vertex_ring\" and "
+                "EXPERIMENTAL_unreachable_exit false");
         }
         edge_excess_window = json_params["EXPERIMENTAL_edge_excess_window"];
         if (edge_excess_window && !edge_excess_refinement) {
@@ -462,61 +389,23 @@ struct Parameters : public wmtk::OptimizerParameters
         if (settle_mark != "max" && !settle_refinement) {
             log_and_throw_error("EXPERIMENTAL_settle_mark needs EXPERIMENTAL_settle_refinement");
         }
-        if (settle_refinement && (!band_volume_energy || band_volume_rule != "corner_bound" ||
-                                  unreachable_exit || edge_excess_refinement)) {
-            // corner_bound: the face test reads the input's triangles (InputTriangles), which
-            // only that rule builds, from an input complex of triangles only.
+        if (settle_refinement && (unreachable_exit || edge_excess_refinement)) {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_refinement needs EXPERIMENTAL_band_volume_energy with "
-                "EXPERIMENTAL_band_volume_rule \"corner_bound\", and EXPERIMENTAL_unreachable_exit "
-                "and EXPERIMENTAL_edge_excess_refinement false");
-        }
-        if (split_energy_gate && !ops_global_energy) {
-            log_and_throw_error(
-                "EXPERIMENTAL_split_energy_gate needs EXPERIMENTAL_ops_global_energy");
-        }
-        if (band_volume_divisor != "front_conv" && band_volume_divisor != "target_distance") {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_divisor is \"front_conv\" or \"target_distance\", not "
-                "\"{}\"",
-                band_volume_divisor);
-        }
-        if (!band_volume_energy &&
-            (amips_over_stop || ops_global_energy || band_volume_divisor != "front_conv" ||
-             band_volume_rule != "five_point")) {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_divisor, EXPERIMENTAL_amips_over_stop and "
-                "EXPERIMENTAL_ops_global_energy need EXPERIMENTAL_band_volume_energy");
-        }
-        if (band_volume_energy && (integral_energy || area_weighted_ring || quadratic_stencil)) {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_energy replaces the front's face term; leave "
-                "EXPERIMENTAL_integral_energy, EXPERIMENTAL_area_weighted_ring and "
-                "EXPERIMENTAL_quadratic_stencil false with it");
-        }
-        if (band_volume_energy && offset_field != "euclidean") {
-            log_and_throw_error("EXPERIMENTAL_band_volume_energy needs offset_field \"euclidean\"");
-        }
-        if (area_weighted_ring && front_measure != "vertex_ring") {
-            log_and_throw_error(
-                "EXPERIMENTAL_area_weighted_ring needs front_measure \"vertex_ring\"");
+                "EXPERIMENTAL_settle_refinement needs EXPERIMENTAL_unreachable_exit and "
+                "EXPERIMENTAL_edge_excess_refinement false");
         }
         visible_distance = json_params["EXPERIMENTAL_visible_distance"];
         if (visible_distance && front_measure != "vertex_ring") {
             log_and_throw_error(
                 "EXPERIMENTAL_visible_distance needs front_measure \"vertex_ring\"");
         }
-        if (visible_distance && band_volume_energy) {
+        if (visible_distance) {
             log_and_throw_error(
-                "EXPERIMENTAL_band_volume_energy reads the euclidean distance; leave "
-                "EXPERIMENTAL_visible_distance false with it");
+                "the energy's band term reads the euclidean distance; leave "
+                "EXPERIMENTAL_visible_distance false");
         }
         if (visible_distance && offset_field != "euclidean") {
             log_and_throw_error("EXPERIMENTAL_visible_distance needs offset_field \"euclidean\"");
-        }
-        if (quadratic_stencil && stencil_order < 1) {
-            // The three corners alone integrate no quadratic exactly.
-            log_and_throw_error("EXPERIMENTAL_quadratic_stencil needs stencil_order >= 1");
         }
         if (unreachable_exit && stencil_order < 1) {
             // At order 0 a face's three samples are its corners, which a linear function on the
@@ -589,11 +478,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        offset_collapse_veto = json_params["offset_collapse_veto"];
-        offset_swap_veto = json_params["offset_swap_veto"];
-        offset_front_smooth_veto = json_params["offset_front_smooth_veto"];
         offset_amips_weight = json_params["offset_amips_weight"];
-        offset_collapse_changed_cells = json_params["offset_collapse_changed_cells"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
@@ -602,21 +487,8 @@ struct Parameters : public wmtk::OptimizerParameters
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
-        smooth_quality_veto =
-            json_params["offset_smooth_veto"]; // the engine's field, this component's key
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
-        // The plastic medium's rest-shape AMIPS (deform_others) is not part of the band-volume
-        // energy E, and it is dimensionless (about 3 per cell) while E's offset term is a volume:
-        // added to a front vertex's objective it outweighs E. Measured (cube outward, target 1e-2,
-        // tolerance 1e-4, turn 3): objective 12-24 from the rest term against a band-volume
-        // gradient of ~3e-5, so each Newton step moved the vertex ~1e-10 (1e-7 tolerances) and
-        // fronts stayed 7-15 tolerances inside the level set.
-        if (band_volume_energy && deform_others) {
-            log_and_throw_error(
-                "EXPERIMENTAL_band_volume_energy needs deform_others false: the plastic medium's "
-                "rest-shape term is not part of the energy and outweighs it");
-        }
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
