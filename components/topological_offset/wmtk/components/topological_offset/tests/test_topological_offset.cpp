@@ -1358,8 +1358,8 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // per-tet-energy one (front vertices a, b, c0, c1, c2; c3 on no front face and in no band
     // cell), and a star of eight band cells around a vertex inside the band, which is on no front
     // face but carries the band term of all eight. Each vertex is moved to three nearby positions;
-    // the objective's gradient and Hessian against central differences. The engine's per-cell
-    // hook (smoothing_cell_energy()) stays w AMIPS^3.
+    // the objective's gradient and Hessian against central differences. The engine's ring hook
+    // (smoothing_ring_energy(), the projected step's test) is the same ring sum.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1448,11 +1448,11 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                     CHECK(
                         e - ring_energy() ==
                         Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
-                    // The engine's per-cell hook is not the energy yet: w AMIPS^3.
-                    for (const size_t tid : ring) {
-                        const double q = mesh->get_quality(mesh->tuple_from_tet(tid));
-                        CHECK(mesh->smoothing_cell_energy(tid, q) == w * q);
-                    }
+                    // The projected step's test is the same ring sum, before and at a candidate.
+                    std::vector<TetMesh::Tuple> ring_t;
+                    for (const size_t tid : ring) ring_t.push_back(mesh->tuple_from_tet(tid));
+                    CHECK(mesh->smoothing_ring_energy(ring_t, false) == ring_energy());
+                    CHECK(mesh->smoothing_ring_energy(ring_t, true) == ring_energy());
                 }
                 mesh->set_vertex_position(v, x0);
 

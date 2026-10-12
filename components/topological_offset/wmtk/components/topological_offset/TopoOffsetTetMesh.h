@@ -447,36 +447,34 @@ public:
      * THE SMOOTHER minimises the vertex's part of E (smoothing_extra_energy()): the AMIPS term
      * over its ring (amips3_energy()) and, unless an input envelope holds the vertex, the band
      * term of its band cells (band_volume_energy_at()) -- the held-vertex exception is measured
-     * there. The engine's per-cell hook smoothing_cell_energy() is not this energy yet; see there.
+     * there. Every move is then judged by the ring's sum of this energy: a vertex held on a
+     * surface through the engine's projected step, which takes the first projected position where
+     * that sum drops (smoothing_ring_energy()); every other vertex through the veto after its
+     * solve (smooth_front_vertex(), smooth_nonfront_vertex()).
      *
      * The front's face measure (face_offset_term()) is not part of E: the exit, the refinement and
      * the frames read it.
      */
     double tet_energy(size_t tid) const;
     /**
-     * @brief The shared smoother's per-cell value -- what its projected step for a vertex held on
-     * a surface compares (the max over the ring) and what its quality veto would:
-     * offset_amips_weight times AMIPS^3 (weighted_amips()), plus repulsion_cell_term() before the
-     * march.
+     * @brief What the shared smoother's projected step compares for a vertex held on a surface:
+     * the sum of tet_energy() over the one-ring, the rule every other move answers to. The step
+     * takes the first projected position where it is strictly below the sum before the move.
      *
-     * NOT tet_energy() yet; a later step switches it. Decided: the engine stays unchanged for now,
-     * still comparing the ring MAX of this value in its projected step, and the component's veto
-     * on the ring's SUM of tet_energy() judges every move after the solve
-     * (smooth_nonfront_vertex(), smooth_front_vertex()).
+     * Read on the mesh as it is in both calls: the engine asks for the value before the move
+     * (`stored`) before its solve moves the vertex, and a candidate's after the candidate is
+     * placed. Until this hook the step took the first position where the ring's MAX of
+     * offset_amips_weight AMIPS^3 dropped, and the veto after it refused a move that raised the
+     * sum -- measured on the cube (target 1e-2, bar 1e-4, serial, 7 turns): 5,270 such refusals
+     * of 21,687 held moves, 2,964 of them moves whose AMIPS part fell and whose band part rose.
+     * Now the step looks on along its shorter steps for a position E accepts.
      */
-    double smoothing_cell_energy(const size_t tid, const double quality) const override
+    double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool /*stored*/)
+        const override
     {
-        const double a = weighted_amips(quality);
-        if (m_repulsion_potential && quality < MAX_ENERGY) {
-            return std::min(a + repulsion_cell_term(oriented_tet_vids(tid)), MAX_ENERGY);
-        }
-        return a;
-    }
-    /// offset_amips_weight times AMIPS^3, the MAX_ENERGY sentinel (unscoreable) passed through
-    /// unscaled so that it stays the largest value anywhere. smoothing_cell_energy()'s.
-    double weighted_amips(const double amips3) const
-    {
-        return amips3 >= MAX_ENERGY ? amips3 : m_offset_params.offset_amips_weight * amips3;
+        double s = 0.;
+        for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
+        return s;
     }
     /// vol AMIPS^3 of a valid cell from its AMIPS^3 and edge lengths, never from a determinant:
     /// AMIPS = tr / det(J)^(2/3) gives vol = (sqrt2/12) (tr/AMIPS)^(3/2), so vol AMIPS^3 =

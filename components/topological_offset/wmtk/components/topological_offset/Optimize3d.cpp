@@ -539,12 +539,16 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
-    // The veto is E itself: the sum of tet_energy() over the ring may not rise. The solve descends
-    // exactly that sum, but a vertex held on the input takes the engine's projected step, which
-    // accepts on the worst cell's smoothing_cell_energy() and can raise E (measured: one input
-    // vertex at a slot-end rim raised E by 0.0505 in one pass, the pass's whole rise).
+    // The rule is E itself: the sum of tet_energy() over the ring may not rise. A vertex held on a
+    // surface takes the engine's projected step, whose acceptance is that rule already
+    // (smoothing_ring_energy(): strictly below), so it needs no veto here. Every other vertex is
+    // vetoed after its solve: the solve descends the vertex's part of E, but a vertex held on the
+    // input descends only the AMIPS part (see smoothing_extra_energy()).
+    const bool projected =
+        opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
+        m_vertex_attribute[vid].m_is_on_surface && smoothing_energy_envelope(vid) != nullptr;
     const std::vector<size_t> ring = get_one_ring_tids_for_vertex(vid);
-    const double before = tet_energy_sum(ring);
+    const double before = projected ? 0. : tet_energy_sum(ring);
     if (!optimization::smooth_vertex_3d(
             *this,
             t,
@@ -554,6 +558,7 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
+    if (projected) return true;
     if (!(tet_energy_sum(ring) <= before)) { // a NaN refuses; a tie passes
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
