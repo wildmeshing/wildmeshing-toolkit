@@ -20,7 +20,7 @@ using namespace std::chrono;
 
 #include <wmtk/utils/getRSS.h>
 
-#include "remeshing_spec.hpp"
+#include <remeshing_spec.hpp>
 
 void run_remeshing(
     std::string input,
@@ -85,12 +85,13 @@ int main(int argc, char** argv)
 
     // verify input and inject defaults
     {
+        const auto& spec = jse::embed::wmtk_remeshing_app_spec::remeshing_spec::spec();
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, remeshing_spec);
+        bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
         }
-        json_params = spec_engine.inject_defaults(json_params, remeshing_spec);
+        json_params = spec_engine.inject_defaults(json_params, spec);
     }
 
 
