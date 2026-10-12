@@ -110,6 +110,11 @@ void topological_offset(nlohmann::json json_params)
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
+        // The 3D energy (TopoOffsetTetMesh::tet_energy()) has no 2D twin yet. The 2D pipeline
+        // below is kept, unrun, until it is brought into lock-step with 3D.
+        log_and_throw_error(
+            "2D input refused: the 2D offset is not up to date and is being brought into "
+            "lock-step with 3D");
         if (!params.growth_targets.empty()) {
             log_and_throw_error(
                 "EXPERIMENTAL_growth_targets is 3D only; leave it empty for a 2D input");
@@ -373,6 +378,21 @@ void topological_offset(nlohmann::json json_params)
         wmtk::logger().info("======= finish =========");
     } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
+        // The energy's band term reads the euclidean distance to the input's triangles; the
+        // smooth field has no band term of its own yet.
+        if (params.offset_field != "euclidean") {
+            log_and_throw_error(
+                "offset_field \"{}\" is not available in 3D: the energy's band term reads the "
+                "euclidean distance to the input, and this field has no band term yet",
+                params.offset_field);
+        }
+        // The plastic medium's rest-shape term is not part of the energy and outweighs it; see
+        // Parameters, where EXPERIMENTAL_band_volume_energy refuses it with the measurement.
+        if (params.deform_others) {
+            log_and_throw_error(
+                "deform_others is not available in 3D: the plastic medium's rest-shape term is "
+                "not part of the energy");
+        }
 
         // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
         check_envelope_leash(params);

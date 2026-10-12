@@ -94,8 +94,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
     /// The medium outside the band deforms (plastic, against its rest shape), and only the input
-    /// complex boundary and the domain wall are envelope-held. See the spec doc.
-    bool deform_others = true;
+    /// complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc.
+    bool deform_others = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
