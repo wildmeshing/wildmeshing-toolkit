@@ -14,6 +14,7 @@
       "simplify_use_link_condition",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
+      "simplify_boundary_envelope",
       "optimize_envelope_around_simplified",
       "order2_envelope_ratio",
       "use_sample_envelope",
@@ -33,6 +34,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "colored_smoothing",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -62,7 +64,9 @@
       "stuck_refine_force_split",
       "skip_good_regions",
       "skip_good_regions_margin",
-      "skip_winding_number"
+      "skip_winding_number",
+      "compute_tracked_winding_number",
+      "compute_flood_fill"
     ]
   },
   {
@@ -143,6 +147,12 @@
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
   },
   {
+    "pointer": "/simplify_boundary_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen."
+  },
+  {
     "pointer": "/optimize_envelope_around_simplified",
     "type": "bool",
     "default": false,
@@ -183,13 +193,25 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
   },
   {
     "pointer": "/skip_winding_number",
     "type": "bool",
     "default": false,
-    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-tet quantities are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields; the (three) winding-number evaluations dominate the finalize phase on large meshes. When set, they are skipped and the corresponding output fields are left at their defaults. Ignored (with a warning) when filter != 'none', which requires them."
+    "doc": "Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>). They are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields, which are then left out. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
+    "pointer": "/compute_tracked_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Compute the winding number with respect to the tracked surface and write it (winding_number_tracked) even when filter is not 'tracked', which computes it anyway. Left out of the output otherwise."
+  },
+  {
+    "pointer": "/compute_flood_fill",
+    "type": "bool",
+    "default": false,
+    "doc": "Compute the flood-fill parts -- the regions the tracked surface separates -- and write them (part) even when filter is not 'flood', which computes them anyway. A serial pass over every tet; left out of the output otherwise."
   },
   {
     "pointer": "/eps_rel",
@@ -257,6 +279,12 @@
     "type": "int",
     "default": 1,
     "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
     "pointer": "/preserve_topology",

@@ -491,13 +491,13 @@ public:
     /**
      * @brief Place a vertex, keeping its exact and rounded coordinates in step.
      *
-     * As in 3D: the offset works in doubles, so every vertex it places is rounded, but m_pos must
-     * still be filled because the shared split's exact-midpoint fallback reads it.
+     * As in 3D: the offset works in doubles, so every vertex it places is rounded and its exact
+     * position is its double one (set_pos_to_posf).
      */
     void set_vertex_position(const size_t vid, const Vector2d& p)
     {
         m_vertex_attribute[vid].m_posf = p;
-        m_vertex_attribute[vid].m_pos = to_rational(p);
+        m_vertex_attribute[vid].set_pos_to_posf();
         m_vertex_attribute[vid].m_is_rounded = true;
     }
 
@@ -662,7 +662,8 @@ public:
     /// the survivor's ring, swaps for not strictly lowering it over the faces they make.
     mutable std::atomic<int> iter_cnt_collapse_energy_reject{0}; // both halves count here
     mutable std::atomic<int> iter_cnt_swap_energy_reject{0};
-    /// Splits of an offset-boundary edge: offered, accepted.
+    /// Splits of an offset-boundary edge: offered, accepted. Real attempts only: a screened
+    /// pass's dry runs are not counted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
     /// Parent face labels for an optimization split, keyed by the apex vertex opposite the split

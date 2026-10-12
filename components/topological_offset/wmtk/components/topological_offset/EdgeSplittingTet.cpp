@@ -25,7 +25,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         if (repulsion_split_makes_close_outer_end(t.vid(*this), switch_vertex(t).vid(*this))) {
             return false;
         }
-        if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
+        if (is_edge_on_offset(t) && !dry_run()) ++iter_cnt_split_offset_before;
         // Longest-edge order: a split waits while one of the tets incident to its edge has a
         // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
         // edge than its longest flattens it; its edges stay over the gate and it is bisected

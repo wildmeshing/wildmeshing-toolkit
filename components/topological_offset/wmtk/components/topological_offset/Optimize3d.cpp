@@ -791,8 +791,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
-        ++funnel_offered;
-        if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
+        // The funnel follows real attempts: a screened pass's dry run (see TetMesh::dry_run())
+        // is followed by the real attempt, which counts the flip itself.
+        if (!dry_run()) {
+            ++funnel_offered;
+            if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
+        }
     }
 
     // The energy rule's before-half (see swap_after_cells()): the max of tet_energy() over the
@@ -1092,7 +1096,7 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
         rec.scored_energy = std::min(rec.scored_energy, e);
     }
     SwapSurfaceSides& sides = m_swap_sides.local();
-    if (!sides.worthwhile) return e;
+    if (!sides.worthwhile || dry_run()) return e; // the funnel follows real attempts
     if (op_case == 0) {
         sides.case0_energy = e; // the current cells: the score every case has to beat
         return e;

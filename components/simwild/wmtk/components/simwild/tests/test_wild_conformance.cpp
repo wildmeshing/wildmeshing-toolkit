@@ -36,7 +36,7 @@ void init_homogeneous_quad(Mesh& mesh)
     for (size_t vid = 0; vid < kQuadVertices.size(); ++vid) {
         auto& attr = mesh.m_vertex_attribute[vid];
         attr.m_posf = kQuadVertices[vid];
-        attr.m_pos = wmtk::to_rational(attr.m_posf);
+        attr.set_pos_to_posf();
         attr.m_is_rounded = true;
         attr.m_is_on_surface = false;
         attr.m_sizing_scalar = 1.;
@@ -90,7 +90,7 @@ void check_vertex_positions(const OracleMesh& oracle, const SimMesh& sim)
         CHECK(
             (sim.m_vertex_attribute[vid].m_posf - oracle.m_vertex_attribute[vid].m_posf)
                 .squaredNorm() == 0.);
-        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == oracle.m_vertex_attribute[vid].m_pos));
+        CHECK(bool(sim.m_vertex_attribute[vid].pos() == oracle.m_vertex_attribute[vid].pos()));
     }
 }
 
@@ -134,7 +134,7 @@ TEST_CASE(
         CHECK(
             (sim.m_vertex_attribute[vid].m_posf - tri.m_vertex_attribute[vid].m_posf)
                 .squaredNorm() == 0.);
-        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == tri.m_vertex_attribute[vid].m_pos));
+        CHECK(bool(sim.m_vertex_attribute[vid].pos() == tri.m_vertex_attribute[vid].pos()));
     }
     for (const auto& f : sim.get_faces()) {
         CHECK(sim.m_face_attribute[f.fid(sim)].tags == kHomogeneousTag);
@@ -171,7 +171,7 @@ TEST_CASE(
     CHECK(
         (sim.m_vertex_attribute[sim_mid].m_posf - tri.m_vertex_attribute[tri_mid].m_posf)
             .squaredNorm() == 0.);
-    CHECK(bool(sim.m_vertex_attribute[sim_mid].m_pos == tri.m_vertex_attribute[tri_mid].m_pos));
+    CHECK(bool(sim.m_vertex_attribute[sim_mid].pos() == tri.m_vertex_attribute[tri_mid].pos()));
     for (const auto& f : sim.get_faces()) {
         CHECK(sim.m_face_attribute[f.fid(sim)].tags == kHomogeneousTag);
     }
@@ -216,7 +216,7 @@ void init_homogeneous_tet_ring(Mesh& mesh)
     for (size_t vid = 0; vid < kTetRingVertices.size(); ++vid) {
         auto& attr = mesh.m_vertex_attribute[vid];
         attr.m_posf = kTetRingVertices[vid];
-        attr.m_pos = wmtk::to_rational(attr.m_posf);
+        attr.set_pos_to_posf();
         attr.m_is_rounded = true;
         attr.m_is_on_surface = false;
         attr.m_order = 0;
@@ -255,7 +255,7 @@ void init_regular_tet_ring(
     }
     for (size_t vid = 0; vid < size_t(n + 2); ++vid) {
         auto& attr = mesh.m_vertex_attribute[vid];
-        attr.m_pos = wmtk::to_rational(attr.m_posf);
+        attr.set_pos_to_posf();
         attr.m_is_rounded = true;
         attr.m_is_on_surface = false;
         attr.m_order = 0;
@@ -283,7 +283,7 @@ void init_two_tet_bipyramid(Mesh& mesh)
     for (size_t vid = 0; vid < vertices.size(); ++vid) {
         auto& attr = mesh.m_vertex_attribute[vid];
         attr.m_posf = vertices[vid];
-        attr.m_pos = wmtk::to_rational(attr.m_posf);
+        attr.set_pos_to_posf();
         attr.m_is_rounded = true;
         attr.m_is_on_surface = false;
         attr.m_order = 0;
@@ -421,7 +421,7 @@ TEST_CASE(
         CHECK(
             (sim.m_vertex_attribute[vid].m_posf - tet.m_vertex_attribute[vid].m_posf)
                 .squaredNorm() == 0.);
-        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == tet.m_vertex_attribute[vid].m_pos));
+        CHECK(bool(sim.m_vertex_attribute[vid].pos() == tet.m_vertex_attribute[vid].pos()));
     }
     for (const auto& t : sim.get_tets()) {
         CHECK(sim.m_tet_attribute[t.tid(sim)].tags == kHomogeneousTag);
@@ -517,7 +517,7 @@ TEST_CASE(
         CHECK(
             (sim.m_vertex_attribute[vid].m_posf - tri.m_vertex_attribute[vid].m_posf)
                 .squaredNorm() == 0.);
-        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == tri.m_vertex_attribute[vid].m_pos));
+        CHECK(bool(sim.m_vertex_attribute[vid].pos() == tri.m_vertex_attribute[vid].pos()));
     }
     for (const auto& f : sim.get_faces()) {
         CHECK(sim.m_face_attribute[f.fid(sim)].tags == kHomogeneousTag);
@@ -617,7 +617,7 @@ TEST_CASE(
     CHECK(
         (sim.m_vertex_attribute[sim_mid].m_posf - tet.m_vertex_attribute[tet_mid].m_posf)
             .squaredNorm() == 0.);
-    CHECK(bool(sim.m_vertex_attribute[sim_mid].m_pos == tet.m_vertex_attribute[tet_mid].m_pos));
+    CHECK(bool(sim.m_vertex_attribute[sim_mid].pos() == tet.m_vertex_attribute[tet_mid].pos()));
     // This is the behavior that used to differ: SimWild now takes the exact TetWild edge
     // order for the new vertex instead of assigning its own 1/2 heuristic.
     CHECK(sim.m_vertex_attribute[sim_mid].m_order == tet.m_vertex_attribute[tet_mid].m_order);
@@ -755,7 +755,7 @@ TEST_CASE(
         CHECK(
             (sim.m_vertex_attribute[vid].m_posf - tet.m_vertex_attribute[vid].m_posf)
                 .squaredNorm() == 0.);
-        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == tet.m_vertex_attribute[vid].m_pos));
+        CHECK(bool(sim.m_vertex_attribute[vid].pos() == tet.m_vertex_attribute[vid].pos()));
     }
     for (const auto& t : sim.get_tets()) {
         CHECK(sim.m_tet_attribute[t.tid(sim)].tags == kHomogeneousTag);

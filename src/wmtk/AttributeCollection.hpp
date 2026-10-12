@@ -28,6 +28,10 @@ public:
     virtual void rollback() = 0;
     virtual void begin_protect() = 0;
     virtual void end_protect() = 0;
+    /// Appends to `out` the index of every entry this thread has recorded since begin_protect():
+    /// every entry the operation reached through non-const access, which rollback() would write
+    /// back. Lets a caller check that an operation stayed within the simplices it owns.
+    virtual void append_recorded(std::vector<size_t>& out) {}
 };
 
 
@@ -85,6 +89,10 @@ struct AttributeCollection : public AbstractAttributeContainer
     {
         m_rollback_list.local().clear();
         recording.local() = false;
+    }
+    void append_recorded(std::vector<size_t>& out) override
+    {
+        for (const auto& kv : m_rollback_list.local()) out.push_back(kv.first);
     }
 
     const T& at(size_t i) const { return m_attributes[i]; }
@@ -156,6 +164,10 @@ public:
     void end_protect() override
     {
         for (auto* c : m_children) c->end_protect();
+    }
+    void append_recorded(std::vector<size_t>& out) override
+    {
+        for (auto* c : m_children) c->append_recorded(out);
     }
 
 private:

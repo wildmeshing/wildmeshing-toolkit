@@ -3,6 +3,7 @@
 #include <igl/is_vertex_manifold.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
+#include <utility>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -1362,6 +1363,7 @@ void TopoOffsetTriMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2]);
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_face(t, garbage)) {
             log_and_throw_error("face split failed! (simplicial_embedding)");
         }
@@ -1386,6 +1388,7 @@ void TopoOffsetTriMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = get_tuple_from_edge(e);
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_edge(t, garbage)) {
             log_and_throw_error("edge split failed! (simplicial_embedding)");
         }
@@ -1515,6 +1518,7 @@ void TopoOffsetTriMesh::marching_tris()
         // split edge
         garbage.clear();
         Tuple t = get_tuple_from_edge(e);
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (split_edge(t, garbage)) { // this should never fail
             frontier_verts.push_back(v_in);
         } else {
@@ -1653,13 +1657,14 @@ bool TopoOffsetTriMesh::offset_is_manifold()
 bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 {
     wmtk::utils::predicates::exactinit();
+    // Const: smoothing runs this too, on a ring of neighbours a non-const read would record and a
+    // rejected smooth write back -- see TriOptimizerMesh::smooth_after().
+    const auto& VA = std::as_const(m_vertex_attribute);
     for (const Tuple& t : tris) {
         auto vs = oriented_tri_vids(t);
 
-        auto res = wmtk::utils::predicates::orient2d(
-            m_vertex_attribute[vs[0]].m_posf,
-            m_vertex_attribute[vs[1]].m_posf,
-            m_vertex_attribute[vs[2]].m_posf);
+        auto res =
+            wmtk::utils::predicates::orient2d(VA[vs[0]].m_posf, VA[vs[1]].m_posf, VA[vs[2]].m_posf);
         if (res != wmtk::utils::predicates::Orientation::POSITIVE) {
             return false;
         }

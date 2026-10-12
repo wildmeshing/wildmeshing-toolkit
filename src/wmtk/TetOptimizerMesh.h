@@ -4,6 +4,7 @@
 #include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -47,7 +48,6 @@ class TetOptimizerMesh : public wmtk::TetMesh, public wmtk::RationalPositions
 public:
     struct VertexAttributes
     {
-        Vector3r m_pos; // exact position in rational
         Vector3d m_posf; // position as double
         /**
          * If a vertex cannot be rounded without inverting a tet, the exact position must be
@@ -72,6 +72,25 @@ public:
         /// Required for multi-threading.
         size_t partition_id = 0;
 
+        /**
+         * @name Exact position
+         *
+         * Stored only while it differs from m_posf; see ExactPosition. Read it with pos() (or
+         * pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely
+         * exact value, or set_pos_to_posf() when it is m_posf -- a rounded vertex, or one
+         * placed at a double position.
+         * @{
+         */
+        Vector3r pos() const { return m_exact.value(m_posf); }
+        bool pos_coord_equals(int k, const Rational& r) const
+        {
+            return m_exact.coord_equals(k, m_posf, r);
+        }
+        void set_pos(const Vector3r& p) { m_exact.store(p); }
+        void set_pos_to_posf() { m_exact.clear(); }
+        ExactPosition<Vector3r, Vector3d> m_exact;
+        /** @} */
+
         VertexAttributes() {}
         VertexAttributes(const Vector3r& p);
     };
@@ -83,6 +102,48 @@ public:
 
     VertAttCol m_vertex_attribute;
     FaceAttCol m_face_attribute;
+
+    /**
+     * @brief The application set FaceAttributes::m_orientation at insertion, so the tracked
+     * surface carries the input's orientation and the operations keep it.
+     *
+     * The operations maintain the orientation whether or not this is set (it is 0 everywhere on
+     * a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See
+     * tracked_surface_boundary() for the invariant it obeys. The orientation never changes
+     * which operations run: it only feeds the tracked winding number.
+     */
+    bool m_tracks_orientation = false;
+
+    /**
+     * @brief Surface flips that joined two faces not oriented alike (a fold of the tracked
+     * surface, or unequal multiplicities).
+     *
+     * The flip runs anyway -- orientation must not change the operations -- so the oriented
+     * surface no longer has the input's boundary there, and the tracked winding number is not
+     * an integer near the flipped faces. Nonzero only on a tracked surface that was folded or
+     * inconsistently oriented to begin with.
+     */
+    std::atomic<size_t> m_inconsistent_orientation_flips = 0;
+
+    /**
+     * @brief The tracked surface as an oriented soup: each tracked face emitted |m_orientation|
+     * times, in the orientation the input gave it. Faces whose sheets cancel are left out.
+     * Vertex ids index m_vertex_attribute.
+     */
+    std::vector<std::array<size_t, 3>> oriented_tracked_faces() const;
+
+    /**
+     * @brief Mesh edges where the oriented tracked surface has a boundary.
+     *
+     * The tracked surface is an integer 2-chain, and every operation preserves its boundary --
+     * except a surface flip of two faces not oriented alike, which is counted in
+     * m_inconsistent_orientation_flips: a closed input stays a cycle (signed sum of incident
+     * oriented tracked faces is 0 on every edge), and an open one keeps its boundary on the
+     * input's open boundary. Returns the edges
+     * with a nonzero sum, each with that sum, for the caller to compare with what the input
+     * allows. One pass over every face, then a map over the tracked faces' edges.
+     */
+    std::vector<std::pair<std::array<size_t, 2>, int>> tracked_surface_boundary() const;
 
     /**
      * @brief What p_vertex_attrs points at, so a derived class can register more.
@@ -164,6 +225,29 @@ public:
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
 
+    /// Every pass grows the storage at its serial points -- between operations when serial,
+    /// between rounds when parallel (see ExecutePass) -- so the optimizer only keeps a small
+    /// slack instead of the preallocation factor.
+    bool storage_grows_on_demand() const override { return true; }
+
+protected:
+    /// The high-valence claims are indexed by vertex id and sized to the storage at the start
+    /// of a split pass; a split pass that grows the storage has to grow them with it, or the
+    /// vertices it creates would fall outside the gate. Existing claims are kept.
+    void on_slot_storage_grown() override
+    {
+        if (!m_high_valence_claim) return;
+        const size_t n = std::max(vert_capacity(), m_vertex_attribute.size());
+        if (n <= m_high_valence_claim_size) return;
+        auto grown = std::make_unique<std::atomic<int>[]>(n);
+        for (size_t i = 0; i < m_high_valence_claim_size; ++i) {
+            grown[i].store(m_high_valence_claim[i].load(std::memory_order_relaxed));
+        }
+        m_high_valence_claim = std::move(grown);
+        m_high_valence_claim_size = n;
+    }
+
+public:
     /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
     /// sizing scalars, or a force-split edge.
     bool split_edge_is_due(const Tuple& e) const;
@@ -490,9 +574,25 @@ public:
         return quality;
     }
 
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access,
+     * e.g. `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}
@@ -649,12 +749,17 @@ protected:
     /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
     /// entered the surface branch at all, so "the surface never even presents a candidate" is
     /// distinguishable from "candidates are presented and refused".
+    ///
+    /// In a screened pass (ExecutePass::screen_before_commit) the stages up to before_pass are
+    /// counted by the dry run as well as by the real attempt. `screened` counts the dry runs
+    /// that passed every check, i.e. the before_pass counts a real attempt repeats.
     enum class SwapStage : int {
         attempt,
         surface_attempt,
         before_pass,
         after_enter,
         accepted,
+        screened,
         COUNT
     };
 
@@ -731,6 +836,11 @@ protected:
     {
         if (e == OpEvent::attempt) current_op_kind() = k;
         m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+        // The edge swaps whose hooks count SwapStage; see swap_reject_report().
+        if (e == OpEvent::screened &&
+            (k == OpKind::swap_32 || k == OpKind::swap_44 || k == OpKind::swap_56)) {
+            swap_stage(SwapStage::screened);
+        }
     }
     /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
     /// can be charged to the right kind without passing the kind through every hook. COUNT
@@ -803,6 +913,10 @@ protected:
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
+        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
+        int sf_orientation = 0;
+        /// The pair's two faces were not oriented alike; see prepare_surface_flip.
+        bool sf_orientation_mismatch = false;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -825,6 +939,10 @@ protected:
         double edge_length = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         std::vector<std::array<size_t, 3>> surface_faces;
+        /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
+        /// the orientation measured along that order. Their attribute stays in its slot, so
+        /// without this the value would be read against the wrong vertex set.
+        std::vector<std::pair<std::array<size_t, 3>, int>> renamed_orientations;
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;

@@ -31,7 +31,7 @@ void build_one_tri(TriWildMesh& mesh, const std::array<Vector2d, 3>& p)
     for (int i = 0; i < 3; ++i) {
         auto& va = mesh.m_vertex_attribute[i];
         va.m_posf = p[i];
-        va.m_pos = to_rational(p[i]);
+        va.set_pos_to_posf();
         va.m_is_rounded = true;
     }
 }

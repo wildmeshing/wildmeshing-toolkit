@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/OperationDryRun.hpp>
 #include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -80,6 +81,9 @@ public:
          * the tet id can't be -1
          */
         bool is_valid(const TetMesh& m) const;
+        /// is_valid() for a check made without holding the tet's ring; see
+        /// TriMesh::Tuple::is_valid_unlocked(). The 3D is_valid() has no debug-only checks.
+        bool is_valid_unlocked(const TetMesh& m) const { return is_valid(m); }
         /**
          * Check if the current tuple the refers to an edge is on the boundary
          *
@@ -286,8 +290,12 @@ public:
          * that it is stale. Only ever compared for equality against a Tuple's cached copy --
          * no code reads the value itself, and the rollback path decrements it, which is why it
          * is unsigned: the wrap at 0 is defined, where signed underflow would not be.
+         *
+         * 32 bits, packed next to m_is_removed: the struct is 40 bytes instead of 48, and there
+         * are six of them per live tet in the preallocated storage. A slot would have to be
+         * modified 2^32 times between a Tuple being minted and checked for that to alias.
          */
-        size_t hash = 0;
+        uint32_t hash = 0;
 
         size_t& operator[](size_t index)
         {
@@ -379,6 +387,7 @@ public:
     static constexpr int EDGES_PER_CELL = 6;
     static constexpr int FACES_PER_CELL = 4;
     size_t cell_capacity() const { return tet_capacity(); }
+    size_t cell_storage_capacity() const { return m_tet_connectivity.capacity(); }
     Tuple tuple_from_cell(size_t cid) const { return tuple_from_tet(cid); }
     /** @} */
 
@@ -543,6 +552,21 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+    /**
+     * @brief While true, smooth_vertex() checks that the smooth recorded nothing outside the
+     * vertex's star -- the vertex itself and the edges, faces and cells incident to it -- and
+     * throws if it did.
+     *
+     * Set by a pass that smooths several vertices at once without locks (colored smoothing, see
+     * TetOptimizerMesh::smooth_vertices_colored). Two vertices it runs together share no simplex of
+     * their stars, but they can share a neighbour. A smoothing hook that reaches an attribute entry
+     * through non-const access records it, and a rejected smooth writes every recorded entry
+     * back -- so an entry outside the star, such as a neighbour read as `m_vertex_attribute[u]`
+     * instead of through a const view, would be written by two threads at once. Hooks must read
+     * everything outside the star through const access; this turns a hook that does not into an
+     * error on its first such read, instead of a rare race.
+     */
+    bool m_check_smoothing_stays_in_star = false;
 
     /**
      * @brief Split a tet in 4 tets.
@@ -710,6 +734,56 @@ public:
     size_t request_tet_slots(size_t n);
     size_t request_vert_slots(size_t n);
 
+    /**
+     * @name Growing the storage at serial points
+     *
+     * The storage cannot grow while operations run in parallel -- growing reallocates it out
+     * from under concurrent readers -- which is why it is preallocated. A serial pass has no
+     * concurrent readers, and between two of its operations nothing holds a reference into the
+     * storage either: so it can grow there, and only there, with no synchronisation at all.
+     *
+     * The scheduler does exactly that: before each operation of a serial pass it reserves
+     * cell_slot_bound() cells and one vertex. Every local operation creates its cells inside
+     * the stars of the vertices of its tuple's cell and adds at most one vertex, so the
+     * reservation covers whatever the operation requests, and a serial pass never refuses
+     * an operation for want of slots. The ids handed out are unchanged -- the same counter, in
+     * the same order -- so the result is the one an unbounded preallocation would give.
+     *
+     * With that in place a serial mesh only needs a small slack at init/consolidate, instead
+     * of the preallocation factor (see storage_grows_on_demand()).
+     * @{
+     */
+    /// Upper bound on the fresh cell slots one local operation on `t` can take: the sum of the
+    /// star sizes of the vertices of t's cell. `t` must be valid.
+    size_t cell_slot_bound(const Tuple& t) const;
+    /// Serial points only: make `cells` fresh cell slots and `verts` fresh vertex slots
+    /// available, growing the storage (connectivity and attributes) by at least half if not.
+    void reserve_free_slots(size_t cells, size_t verts);
+    /// Whether this mesh's passes run serially and so grow the storage on demand; if so,
+    /// init/consolidate reserve a small slack instead of the preallocation factor.
+    virtual bool storage_grows_on_demand() const { return false; }
+
+    /// Cell and vertex slots this thread has taken from meshes of this type, ever; see
+    /// SlotPool::taken_by_this_thread. Differences measure what an operation consumed.
+    struct SlotUsage
+    {
+        size_t cells = 0;
+        size_t verts = 0;
+    };
+    static SlotUsage slot_usage_of_this_thread()
+    {
+        return {
+            SlotPool<TetrahedronConnectivity>::taken_by_this_thread(),
+            SlotPool<VertexConnectivity>::taken_by_this_thread()};
+    }
+    /** @} */
+
+protected:
+    /// Called after reserve_free_slots() grew the storage, for derived classes that keep
+    /// per-slot side arrays.
+    virtual void on_slot_storage_grown() {}
+
+public:
     // Construction/insertion helpers (single-threaded ONLY): guarantee at least
     // `extra` free tet/vertex slots beyond the current used count, growing the
     // storage geometrically if necessary. Unlike request_*_slots these never fail;
@@ -740,7 +814,9 @@ private:
     size_t reserved_capacity(size_t live_count) const
     {
         const size_t floor = 64;
-        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        // A mesh that grows on demand only needs room for the passes not to grow at once.
+        const double factor = storage_grows_on_demand() ? 1.25 : m_preallocation_factor;
+        double c = std::ceil(factor * static_cast<double>(live_count));
         size_t capacity = static_cast<size_t>(c);
         if (capacity < live_count) capacity = live_count;
         return capacity < floor ? floor : capacity;
@@ -809,6 +885,7 @@ public:
         after_hook, // the application's *_after said no, so the operation was rolled back
         invariants, // invariants() said no after the after-hook passed; rolled back
         committed,
+        screened, // a dry run passed every check that precedes the change (see dry_run())
         COUNT
     };
     virtual void op_event(OpKind, OpEvent) const {}
@@ -817,6 +894,15 @@ public:
     {
         op_event(k, e);
         return false;
+    }
+
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
+    /// The end of a dry run that would have gone on to change the mesh: true, and counted.
+    bool op_screened(const OpKind k) const
+    {
+        op_event(k, OpEvent::screened);
+        return true;
     }
 
 protected:
@@ -1407,6 +1493,9 @@ private:
 
     /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
     bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);
+
+    /// See m_check_smoothing_stays_in_star; throws, after dropping the record, if the check fails.
+    void check_smoothing_stayed_in_star(size_t vid);
 
 protected:
     void resize_vertex_mutex(size_t v)

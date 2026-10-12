@@ -2,10 +2,12 @@
 
 #include <VolumeRemesher/2d/embed2d.h>
 
+#include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/orient_by_majority.hpp>
 
 #include <array>
 #include <bitset>
@@ -105,6 +107,63 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
     }
 }
 
+/**
+ * Make the oriented curves consistent patch by patch, each keeping the direction most of its
+ * length has -- the 2D counterpart of orient_facet_patches in EmbedTriangles.cpp, which see.
+ * The edges of orientation +-1 are linked at every vertex exactly two of them share and no
+ * other edge of nonzero orientation touches.
+ */
+void orient_curve_patches(const MatrixXd& V_out, const MatrixXi& E_out, std::vector<int>& o)
+{
+    constexpr uint32_t not_unit = UINT32_MAX;
+    std::vector<uint32_t> unit; // edge of each element
+    std::vector<uint32_t> elem(o.size(), not_unit);
+    struct End
+    {
+        uint32_t v;
+        uint32_t elem; // not_unit for an edge of larger multiplicity
+        bool leaves; // the edge's direction leaves v
+    };
+    std::vector<End> ends;
+    for (size_t i = 0; i < o.size(); ++i) {
+        if (o[i] == 0) continue;
+        if (o[i] == 1 || o[i] == -1) {
+            elem[i] = uint32_t(unit.size());
+            unit.push_back(uint32_t(i));
+        }
+        // E_out rows are (min, max) and o is measured along them.
+        ends.push_back({uint32_t(E_out(i, 0)), elem[i], o[i] > 0});
+        ends.push_back({uint32_t(E_out(i, 1)), elem[i], o[i] < 0});
+    }
+    std::sort(ends.begin(), ends.end(), [](const End& a, const End& b) {
+        return a.v != b.v ? a.v < b.v : a.elem < b.elem;
+    });
+    std::vector<OrientationLink> links;
+    for (size_t s = 0; s < ends.size();) {
+        size_t e = s + 1;
+        while (e < ends.size() && ends[e].v == ends[s].v) ++e;
+        if (e - s == 2 && ends[s].elem != not_unit && ends[s + 1].elem != not_unit) {
+            links.push_back({ends[s].elem, ends[s + 1].elem, ends[s].leaves != ends[s + 1].leaves});
+        }
+        s = e;
+    }
+    std::vector<double> length(unit.size());
+    for (size_t k = 0; k < unit.size(); ++k) {
+        length[k] = (V_out.row(E_out(unit[k], 1)) - V_out.row(E_out(unit[k], 0))).norm();
+    }
+    const OrientationRepair rep = orient_by_majority(unit.size(), links, length);
+    for (size_t k = 0; k < unit.size(); ++k) {
+        if (rep.turn[k]) o[unit[k]] = -o[unit[k]];
+    }
+    if (rep.n_turned > 0 || rep.n_non_orientable > 0) {
+        logger().info(
+            "tracked curves: the input is not consistently oriented -- {} edges reversed to agree "
+            "with their curve, {} non-orientable patches left as they are",
+            rep.n_turned,
+            rep.n_non_orientable);
+    }
+}
+
 } // namespace
 
 void embed_segments(
@@ -114,7 +173,8 @@ void embed_segments(
     std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out,
-    std::vector<std::vector<int>>* E_out_sources)
+    std::vector<std::vector<int>>* E_out_sources,
+    std::vector<int>* E_out_orientation)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -200,14 +260,43 @@ void embed_segments(
     // keeps the result reproducible. The value is which input segments produced
     // the edge -- the provenance the caller would otherwise have to guess back
     // geometrically, and cannot where two inputs overlap.
+    //
+    // The remesher orders each segment's provenance from its first endpoint to its second, with
+    // {triangle, v0, v1} and v0 the nearer the first endpoint: v0 -> v1 is the input's direction,
+    // and the sort below would discard it, so count it first.
+    //
+    // An input segment repeated -- the same two endpoint positions, either way round -- is one
+    // sheet, as a coplanar group of triangles is in 3D (see embed_triangles_in_tets): its copies
+    // count once, by the sign of their net direction, carried by the first of them. Distinct
+    // segments overlapping still add.
+    std::vector<int> seg_weight(E.rows(), 0);
+    if (E_out_orientation != nullptr) {
+        using Key = std::array<double, 4>; // the endpoints, lexicographically ascending
+        std::map<Key, std::pair<int, int>> copies; // -> (first copy, net direction along key)
+        std::vector<int> along(E.rows());
+        for (int i = 0; i < E.rows(); ++i) {
+            const std::array<double, 2> p{{V(E(i, 0), 0), V(E(i, 0), 1)}};
+            const std::array<double, 2> q{{V(E(i, 1), 0), V(E(i, 1), 1)}};
+            along[i] = p < q ? 1 : -1;
+            const Key k = p < q ? Key{{p[0], p[1], q[0], q[1]}} : Key{{q[0], q[1], p[0], p[1]}};
+            copies.try_emplace(k, i, 0).first->second.second += along[i];
+        }
+        for (const auto& [k, c] : copies) {
+            const int net = c.second;
+            seg_weight[c.first] = ((net > 0) - (net < 0)) * along[c.first];
+        }
+    }
     std::map<std::pair<int, int>, std::vector<int>> constrained_edges;
+    std::map<std::pair<int, int>, int> orientation; // along (min, max)
     for (size_t s = 0; s < segment_provenance.size(); ++s) {
         for (const auto& e : segment_provenance[s]) {
             int a = int(e[1]);
             int b = int(e[2]);
+            const int dir = a < b ? 1 : -1;
             if (a > b) {
                 std::swap(a, b);
             }
+            orientation[{a, b}] += dir * seg_weight[s];
             auto& src = constrained_edges[{a, b}];
             if (src.empty() || src.back() != int(s)) {
                 src.push_back(int(s)); // s ascends, so this keeps it sorted and unique
@@ -219,6 +308,9 @@ void embed_segments(
     if (E_out_sources != nullptr) {
         E_out_sources->assign(constrained_edges.size(), {});
     }
+    if (E_out_orientation != nullptr) {
+        E_out_orientation->assign(constrained_edges.size(), 0);
+    }
     {
         int idx = 0;
         for (const auto& [edge, src] : constrained_edges) {
@@ -227,8 +319,14 @@ void embed_segments(
             if (E_out_sources != nullptr) {
                 (*E_out_sources)[idx] = src;
             }
+            if (E_out_orientation != nullptr) {
+                (*E_out_orientation)[idx] = orientation[edge];
+            }
             ++idx;
         }
+    }
+    if (E_out_orientation != nullptr) {
+        orient_curve_patches(V_out, E_out, *E_out_orientation);
     }
 
     logger().info(

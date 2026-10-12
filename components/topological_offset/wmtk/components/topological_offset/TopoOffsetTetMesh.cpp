@@ -21,6 +21,7 @@
 #include <limits>
 #include <queue>
 #include <unordered_map>
+#include <utility>
 
 
 namespace wmtk::components::topological_offset {
@@ -1355,6 +1356,7 @@ void TopoOffsetTetMesh::simplicial_embedding()
         const auto& vs = tet.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2], vs[3]);
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_tet(t, garbage)) {
             log_and_throw_error("tet split failed! (simplicial_embedding)");
         }
@@ -1388,6 +1390,7 @@ void TopoOffsetTetMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         auto [t, _] = tuple_from_face({{vs[0], vs[1], vs[2]}});
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_face(t, garbage)) {
             log_and_throw_error("face split failed! (simplicial_embedding)");
         }
@@ -1411,6 +1414,7 @@ void TopoOffsetTetMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = tuple_from_edge(e.vertices());
         std::vector<Tuple> garbage;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (!split_edge(t, garbage)) {
             log_and_throw_error("edge split failed! (simplicial_embedding)");
         }
@@ -1990,6 +1994,7 @@ void TopoOffsetTetMesh::marching_tets()
         // split edge
         garbage.clear();
         Tuple t = tuple_from_edge(e.vertices());
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         if (split_edge(t, garbage)) { // should never fail
             frontier_verts.push_back(v_in);
         } else {
@@ -2123,13 +2128,16 @@ bool TopoOffsetTetMesh::offset_is_manifold()
 bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 {
     wmtk::utils::predicates::exactinit();
+    // Const: smoothing runs this too, on a ring of neighbours a non-const read would record and a
+    // rejected smooth write back -- see TetOptimizerMesh::smooth_after().
+    const auto& VA = std::as_const(m_vertex_attribute);
     for (const Tuple& t : tets) {
         auto vs = oriented_tet_vids(t);
         auto res = wmtk::utils::predicates::orient3d(
-            m_vertex_attribute[vs[0]].m_posf,
-            m_vertex_attribute[vs[1]].m_posf,
-            m_vertex_attribute[vs[2]].m_posf,
-            m_vertex_attribute[vs[3]].m_posf);
+            VA[vs[0]].m_posf,
+            VA[vs[1]].m_posf,
+            VA[vs[2]].m_posf,
+            VA[vs[3]].m_posf);
 
         if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
             return false;

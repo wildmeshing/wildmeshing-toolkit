@@ -381,6 +381,7 @@ void SimWildMesh::seal_connected_components(
         for (const simplex::Edge& e : split_edges) {
             const Tuple t = tuple_from_edge(e.vertices());
 
+            reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
             if (!split_edge(t, new_edges)) {
                 continue;
             }

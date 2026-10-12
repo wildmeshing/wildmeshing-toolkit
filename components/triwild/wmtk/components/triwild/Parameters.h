@@ -100,6 +100,7 @@ struct Parameters : public wmtk::OptimizerParameters
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+        colored_smoothing = json_params["colored_smoothing"];
 
         // Coarsening pass.
         coarsen_pass = json_params["coarsen_pass"];

@@ -11,6 +11,7 @@
       "num_threads",
       "max_iterations",
       "eps_rel",
+      "boundary_eps_rel",
       "length_rel",
       "length_abs",
       "freeze_boundary",
@@ -68,6 +69,12 @@
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
+    "pointer": "/boundary_eps_rel",
+    "type": "float",
+    "default": -1,
+    "doc": "Thickness of a tube around the open boundary of the input, relative to the bounding box diagonal. When positive, the boundary is not frozen (freeze_boundary then only freezes the vertices the caller lists, of which the application has none): splits, collapses, swaps and smoothing may move it, as long as every boundary edge that descends from the input's boundary stays within this distance of the input's boundary edges. A collapse between a boundary vertex and an interior one keeps the boundary vertex where it is, and a vertex splitting a boundary edge carries the lineage on. Holes and slits narrower than the tube can close when use_link_condition is false. Boundary that an operation opens away from the input's is not judged. Negative (the default): freeze_boundary decides."
+  },
+  {
     "pointer": "/length_rel",
     "type": "float",
     "default": -1,
@@ -83,7 +90,7 @@
     "pointer": "/freeze_boundary",
     "type": "bool",
     "default": true,
-    "doc": "Freeze boundary."
+    "doc": "Freeze the vertices of the input's open boundary. Ignored for the boundary when boundary_eps_rel is positive, which replaces the freezing with a tube."
   },
   {
     "pointer": "/log_file",

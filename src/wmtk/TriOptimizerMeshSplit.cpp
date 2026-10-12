@@ -100,7 +100,7 @@ void TriOptimizerMesh::split_all_edges()
             };
             // Retry a failed split only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
             m_split_order_waits = executor.waits();
             m_split_order_wait_defects = executor.wait_defects();
         });
@@ -187,8 +187,11 @@ bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
         }
         // Claim only once the whole link is known to be free, so a refusal late in the loop
         // does not burn the budget of a vertex found earlier.
-        for (const size_t vid : to_claim) {
-            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        // A dry run only checks: claiming here would make the real attempt refuse itself.
+        if (!dry_run()) {
+            for (const size_t vid : to_claim) {
+                m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+            }
         }
     }
 
@@ -237,7 +240,7 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(p);
+    m_vertex_attribute[v_id].set_pos_to_posf();
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
@@ -253,7 +256,8 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // at the EXACT rational midpoint of the two endpoints instead. That midpoint lies on
         // the shared edge, so it can never invert a previously-valid incident triangle: the
         // split always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
+        // it.
         //
         // This used to apply only when an endpoint was already rational, to stop a split
         // between two rounded endpoints from reintroducing exact coordinates into a
@@ -269,12 +273,12 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // smoothing never do), the post-optimization pass is collapse-only, and
         // mesh_improvement does not stop until every vertex is rounded as well as the energy
         // target being met.
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].set_pos(
+            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
         // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
         // itself un-rounded, the rounded midpoint of the two *approximations* is a worse
         // approximation of the exact midpoint than rounding the exact midpoint once.
-        p = to_double(m_vertex_attribute[v_id].m_pos);
+        p = to_double(m_vertex_attribute[v_id].pos());
         // Guard against a pre-existing inverted incident triangle: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path). This check
         // was missing, so a split could leave an inverted triangle behind.
@@ -350,6 +354,10 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
 
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
+        // (v1,v2) -> (v1,v) + (v,v2), each carrying the parent's direction.
+        const int o = cache.old_e_attrs.orientation_along(std::array<size_t, 2>{{v1_id, v2_id}});
+        m_edge_attribute[eid1].set_orientation_along(std::array<size_t, 2>{{v1_id, v_id}}, o);
+        m_edge_attribute[eid2].set_orientation_along(std::array<size_t, 2>{{v_id, v2_id}}, o);
         for (const auto& [vid, _] : cache.faces) {
             const auto [_tup, eid] = tuple_from_edge({{v_id, vid}});
             m_edge_attribute[eid].reset();
