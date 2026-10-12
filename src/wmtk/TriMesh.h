@@ -347,6 +347,7 @@ public:
     Tuple tuple_from_edge(size_t vid1, size_t vid2, size_t fid) const;
 
     Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const;
+    size_t eid_from_vids(size_t vid0, size_t vid1) const;
 
     simplex::Vertex simplex_from_vertex(const Tuple& t) const;
     simplex::Edge simplex_from_edge(const Tuple& t) const;
@@ -915,12 +916,16 @@ public:
     /**
      * @brief Count the number of the one ring tris for a vertex
      *
-     * @param t tuple pointing to a vertex
+     * @param t tuple pointing to a vertex or vertex ID
      * @return one-ring tris number
      */
+    size_t get_valence_for_vertex(const size_t vid) const
+    {
+        return m_vertex_connectivity[vid].m_conn_tris.size();
+    }
     size_t get_valence_for_vertex(const Tuple& t) const
     {
-        return m_vertex_connectivity[t.vid(*this)].m_conn_tris.size();
+        return get_valence_for_vertex(t.vid(*this));
     }
 
     /**

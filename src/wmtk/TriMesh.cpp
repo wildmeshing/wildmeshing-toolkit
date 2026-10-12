@@ -2321,6 +2321,35 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t v
     return Tuple();
 }
 
+size_t TriMesh::eid_from_vids(size_t vid0, size_t vid1) const
+{
+    const std::vector<size_t>& fids = m_vertex_connectivity[vid0].m_conn_tris;
+
+    // find face that contain m_vid and v_opp
+    for (const size_t f : fids) {
+        const auto& f_vids = m_tri_connectivity[f].m_indices;
+
+        int local_v0 = -1;
+        int local_v1 = -1;
+        for (size_t i = 0; i < f_vids.size(); ++i) {
+            if (f_vids[i] == vid0) {
+                local_v0 = i;
+            } else if (f_vids[i] == vid1) {
+                local_v1 = i;
+            }
+        }
+        if (local_v1 == -1) {
+            continue;
+        }
+        assert(local_v0 != -1);
+        size_t local_eid = 3 - (local_v0 + local_v1);
+        // fids are sorted --> return smallest fid
+        return 3 * f + local_eid;
+    }
+
+    log_and_throw_error("Could not find edge id for vertices ({},{})", vid0, vid1);
+}
+
 simplex::Vertex wmtk::TriMesh::simplex_from_vertex(const Tuple& t) const
 {
     return simplex::Vertex(t.vid(*this));
