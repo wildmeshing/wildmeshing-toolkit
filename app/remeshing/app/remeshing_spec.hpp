@@ -7,7 +7,7 @@ nlohmann::json remeshing_spec = R"(
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input"],
+    "required": ["input", "patches"],
     "optional": [
       "output",
       "use_sample_envelope",
@@ -32,8 +32,13 @@ nlohmann::json remeshing_spec = R"(
   {
     "pointer": "/output",
     "type": "string",
-    "default": "out.obj",
-    "doc": "Output file name."
+    "default": "out",
+    "doc": "Output file name without extension. The surface is written to <output>.vtu and the feature edges to <output>_edges.vtu."
+  },
+  {
+    "pointer": "/patches",
+    "type": "string",
+    "doc": "JSON file containing the patch ID per face (fid2patch), the feature edges (edge2seg), and the corner vertices (corner_vids)."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -86,7 +91,7 @@ nlohmann::json remeshing_spec = R"(
   {
     "pointer": "/freeze_boundary",
     "type": "bool",
-    "default": true,
+    "default": false,
     "doc": "Freeze boundary."
   },
   {

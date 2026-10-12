@@ -236,7 +236,13 @@ public:
     bool is_feature_edge(const Tuple& t) const;
     bool write_feature_vertices_obj(const std::string& path) const;
 
-    void write_vtu(const std::string& path) const;
+    /**
+     * @brief Write the mesh to <path>.vtu and the feature edges to <path>_edges.vtu.
+     *
+     * If report_file is not empty, the "after" angle and double-area statistics are added to the
+     * JSON report stored in that file.
+     */
+    void write_vtu(const std::string& path, const std::string& report_file = "") const;
 
 private:
     std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;

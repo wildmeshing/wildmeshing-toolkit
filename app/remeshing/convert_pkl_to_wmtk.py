@@ -154,7 +154,7 @@ if __name__ == "__main__":
         "output": args.output_dir + "/remeshed",
         "patches": patches_path,
         "log_file": "",
-        "report": "",
+        "report": args.output_dir + "/remeshed_report.json",
         "num_threads": 0,
         "max_iterations": 3,
         "eps_rel": 0.001,

@@ -25,6 +25,7 @@ using namespace std::chrono;
 void run_remeshing(
     std::string input,
     std::string output,
+    std::string report_file,
     UniformRemeshing& m,
     int itrs,
     bool debug_output = false)
@@ -44,7 +45,7 @@ void run_remeshing(
 
     std::filesystem::path outp(output);
     std::string base = outp.replace_extension("").string();
-    m.write_vtu(output);
+    m.write_vtu(output, report_file);
 
     // m.write_triangle_mesh(output);
     // m.write_feature_vertices_obj(output + ".feature_vertices.obj");
@@ -99,56 +100,52 @@ int main(int argc, char** argv)
     std::vector<size_t> face_patch_ids;
 
     try {
-        if (json_params.contains("patches")) {
-            std::string patches_path = json_params["patches"];
-            logger().info("Loading patches info file: {}", patches_path);
+        const std::string patches_path = json_params["patches"];
+        logger().info("Loading patches info file: {}", patches_path);
 
+        nlohmann::json patches_json;
+        std::ifstream cifs(patches_path);
+        if (!cifs.is_open()) {
+            log_and_throw_error("Cannot open patches file {}", patches_path);
+        }
+        cifs >> patches_json;
 
-            nlohmann::json patches_json;
-            std::ifstream cifs(patches_path);
-            if (!cifs.is_open()) {
-                logger().error("Cannot open patches file {}", patches_path);
-            } else {
-                cifs >> patches_json;
+        const auto& corners = patches_json["corner_vids"];
+        fixed_vertices.reserve(corners.size());
+
+        for (const auto& [key, val] : corners.items()) {
+            const int corner_ids = std::stoi(key) + 1; // add 1 so 0 means "not frozen"
+            const size_t vid = val.get<size_t>();
+
+            fixed_vertices.emplace_back(vid, corner_ids);
+        }
+        logger().info("Loaded {} fixed (corner) vertices.", fixed_vertices.size());
+
+        const auto& feature_edges = patches_json["edge2seg"];
+        feature_edge_list.reserve(feature_edges.size());
+
+        for (const auto& [key, val] : feature_edges.items()) {
+            const auto comma_pos = key.find(',');
+            if (comma_pos == std::string::npos) {
+                logger().error("Invalid feature edge key (no comma): {}", key);
+                continue;
             }
 
-            const auto& corners = patches_json["corner_vids"];
-            fixed_vertices.reserve(corners.size());
+            const size_t v0 = std::stoul(key.substr(0, comma_pos));
+            const size_t v1 = std::stoul(key.substr(comma_pos + 1));
 
-            for (const auto& [key, val] : corners.items()) {
-                const int corner_ids = std::stoi(key) + 1; // add 1 so 0 means "not frozen"
-                const size_t vid = val.get<size_t>();
+            const int seg_id_plus1 = val.get<int>() + 1; // <-- THIS is the id (+1)
 
-                fixed_vertices.emplace_back(vid, corner_ids);
-            }
-            logger().info("Loaded {} fixed (corner) vertices.", fixed_vertices.size());
+            feature_edge_list.push_back({{{v0, v1}}, seg_id_plus1});
+        }
 
-            const auto& feature_edges = patches_json["edge2seg"];
-            feature_edge_list.reserve(feature_edges.size());
+        logger().info("Loaded {} feature edges.", feature_edge_list.size());
 
-            for (const auto& [key, val] : feature_edges.items()) {
-                const auto comma_pos = key.find(',');
-                if (comma_pos == std::string::npos) {
-                    logger().error("Invalid feature edge key (no comma): {}", key);
-                    continue;
-                }
-
-                const size_t v0 = std::stoul(key.substr(0, comma_pos));
-                const size_t v1 = std::stoul(key.substr(comma_pos + 1));
-
-                const int seg_id_plus1 = val.get<int>() + 1; // <-- THIS is the id (+1)
-
-                feature_edge_list.push_back({{{v0, v1}}, seg_id_plus1});
-            }
-
-            logger().info("Loaded {} feature edges.", feature_edge_list.size());
-
-            const auto& pids = patches_json["fid2patch"];
-            face_patch_ids.resize(pids.size());
-            for (const auto& [key, pid] : pids.items()) {
-                const size_t fid = std::stoul(key);
-                face_patch_ids[fid] = pid;
-            }
+        const auto& pids = patches_json["fid2patch"];
+        face_patch_ids.resize(pids.size());
+        for (const auto& [key, pid] : pids.items()) {
+            const size_t fid = std::stoul(key);
+            face_patch_ids[fid] = pid;
         }
     } catch (const std::exception& e) {
         log_and_throw_error("Error reading corner vertices: {}", e.what());
@@ -189,11 +186,10 @@ int main(int argc, char** argv)
 
     wmtk::logger().info("remeshing on {}", input_path);
     wmtk::logger().info("freeze bnd {}", freeze_boundary);
-    // create report file
-    auto report_file = output + "_report.json";
+    const std::string report_file = json_params["report"];
 
     // Avoid confusion: if the report already exists, delete it and write a fresh one.
-    if (std::filesystem::exists(report_file)) {
+    if (!report_file.empty() && std::filesystem::exists(report_file)) {
         std::filesystem::remove(report_file);
     }
 
@@ -335,14 +331,18 @@ int main(int argc, char** argv)
     }
     // Write an initial report so downstream code (e.g. write_vtu inside run_remeshing)
     // can update/append fields like after min/max angle and double-area.
-    {
+    if (!report_file.empty()) {
         std::ofstream fout(report_file);
         fout << std::setw(4) << report;
     }
 
     timer.start();
-    run_remeshing(input_path, output, m, itrs, debug_output);
+    run_remeshing(input_path, output, report_file, m, itrs, debug_output);
     timer.stop();
+
+    if (report_file.empty()) {
+        return 0;
+    }
 
     // Reload report in case downstream code (e.g. write_vtu) has updated it.
     try {

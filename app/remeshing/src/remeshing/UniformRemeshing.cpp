@@ -655,7 +655,7 @@ double UniformRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t) con
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    const double tal = 0.5 * (vertex_attrs.at(v0).tal + vertex_attrs.at(v0).tal);
+    const double tal = 0.5 * (vertex_attrs.at(v0).tal + vertex_attrs.at(v1).tal);
 
     double l = (vertex_attrs.at(v0).pos - vertex_attrs.at(v1).pos).norm();
 
@@ -669,7 +669,7 @@ double UniformRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t) const
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    const double tal = 0.5 * (vertex_attrs.at(v0).tal + vertex_attrs.at(v0).tal);
+    const double tal = 0.5 * (vertex_attrs.at(v0).tal + vertex_attrs.at(v1).tal);
 
     double l = (vertex_attrs.at(v0).pos - vertex_attrs.at(v1).pos).norm();
 
@@ -933,7 +933,6 @@ bool UniformRemeshing::swap_remeshing()
     igl::Timer timer;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    logger().info("size for edges to swap is {}", collect_all_ops.size());
 
     {
         auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
@@ -945,6 +944,7 @@ bool UniformRemeshing::swap_remeshing()
         }
     }
     logger().info("***** swap get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
+    logger().info("size for edges to swap is {}", collect_all_ops.size());
 
 
     auto setup_and_execute = [&](auto& executor) {
@@ -1379,7 +1379,7 @@ bool UniformRemeshing::write_feature_vertices_obj(const std::string& path) const
     return true;
 }
 
-void UniformRemeshing::write_vtu(const std::string& path) const
+void UniformRemeshing::write_vtu(const std::string& path, const std::string& report_file) const
 {
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -1455,54 +1455,52 @@ void UniformRemeshing::write_vtu(const std::string& path) const
     writer->add_cell_field("quality", f_quality);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
-    // Update report file (if present) without having to pass JSON around.
-    // Contract: main writes report to `${output}_report.json` where `output` is
-    // the string passed to `write_vtu(output)`.
-    const std::string report_file = path + "_report.json";
-
-    nlohmann::json report = nlohmann::json::object();
-    if (std::filesystem::exists(report_file)) {
-        std::ifstream fin(report_file);
-        if (fin) {
-            fin >> report;
+    // Update the report file written by main.
+    if (!report_file.empty()) {
+        nlohmann::json report = nlohmann::json::object();
+        if (std::filesystem::exists(report_file)) {
+            std::ifstream fin(report_file);
+            if (fin) {
+                fin >> report;
+            }
         }
-    }
-    if (!report.is_object()) {
-        report = nlohmann::json::object();
-    }
-    if (!report.contains("after") || !report["after"].is_object()) {
-        report["after"] = nlohmann::json::object();
-    }
+        if (!report.is_object()) {
+            report = nlohmann::json::object();
+        }
+        if (!report.contains("after") || !report["after"].is_object()) {
+            report["after"] = nlohmann::json::object();
+        }
 
-    // min/max internal angle
-    {
-        Eigen::MatrixXd angles;
-        igl::internal_angles(V, F, angles);
-        const auto min_angle = angles.minCoeff();
-        const auto max_angle = angles.maxCoeff();
-        report["after"]["min_angle"] = min_angle;
-        report["after"]["max_angle"] = max_angle;
-        const auto avg_angle = angles.mean();
-        report["after"]["avg_angle"] = avg_angle;
-    }
+        // min/max internal angle
+        {
+            Eigen::MatrixXd angles;
+            igl::internal_angles(V, F, angles);
+            const auto min_angle = angles.minCoeff();
+            const auto max_angle = angles.maxCoeff();
+            report["after"]["min_angle"] = min_angle;
+            report["after"]["max_angle"] = max_angle;
+            const auto avg_angle = angles.mean();
+            report["after"]["avg_angle"] = avg_angle;
+        }
 
-    // min/max doublearea
-    {
-        Eigen::VectorXd double_areas;
-        igl::doublearea(V, F, double_areas);
-        const auto min_da = double_areas.minCoeff();
-        const auto max_da = double_areas.maxCoeff();
-        report["after"]["min_da"] = min_da;
-        report["after"]["max_da"] = max_da;
-        // avg double area
-        const auto avg_da = double_areas.mean();
-        report["after"]["avg_da"] = avg_da;
-    }
+        // min/max doublearea
+        {
+            Eigen::VectorXd double_areas;
+            igl::doublearea(V, F, double_areas);
+            const auto min_da = double_areas.minCoeff();
+            const auto max_da = double_areas.maxCoeff();
+            report["after"]["min_da"] = min_da;
+            report["after"]["max_da"] = max_da;
+            // avg double area
+            const auto avg_da = double_areas.mean();
+            report["after"]["avg_da"] = avg_da;
+        }
 
-    // Persist updated report
-    {
-        std::ofstream fout(report_file);
-        fout << std::setw(4) << report;
+        // Persist updated report
+        {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
 
     // feature edges
