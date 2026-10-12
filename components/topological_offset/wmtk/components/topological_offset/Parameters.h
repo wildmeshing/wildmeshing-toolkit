@@ -279,7 +279,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// front_conv. "rms": the face's share of the offset excess exceeds its bar energy,
     /// X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA > front_conv^2 area(f) / (2 delta),
     /// i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the
-    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. See the
+    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. "vertex":
+    /// a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. See the
     /// spec doc.
     std::string settle_mark = "max";
     std::string output_path; // no extension
@@ -453,9 +454,9 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
-        if (settle_mark != "max" && settle_mark != "rms") {
+        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\" or \"rms\", not \"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
                 settle_mark);
         }
         if (settle_mark != "max" && !settle_refinement) {

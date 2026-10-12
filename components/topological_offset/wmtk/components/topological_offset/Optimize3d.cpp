@@ -3938,9 +3938,11 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     size_t n_marked = 0, n_floor = 0, n_halved = 0, n_over_max = 0, n_over_rms = 0;
+    size_t n_over_vertex = 0, n_front_vertices = 0;
     double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
-    double max_rms = 0.;
+    double max_rms = 0., max_vertex = 0.;
     const bool rms_mode = m_offset_params.settle_mark == "rms";
+    const bool vertex_mode = m_offset_params.settle_mark == "vertex";
     if (settled) {
         // Per front face f, an exact bound on how far a point of f lies from the level set:
         // inside_f = delta - min over f of d, exact (min over P of the triangle-triangle
@@ -3976,7 +3978,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
             n_over_max += over_max;
             n_over_rms += over_rms;
-            if (!(rms_mode ? over_rms : over_max)) continue;
+            if (vertex_mode || !(rms_mode ? over_rms : over_max)) continue;
             ++n_marked;
             bool at_floor = true;
             for (const size_t v : f) {
@@ -3984,6 +3986,24 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
             }
             if (at_floor) ++n_floor;
+        }
+        // EXPERIMENTAL_settle_mark "vertex": a front vertex whose own distance from the level set,
+        // |d(v) - delta|, exceeds front_conv (d over all input triangles, exact at the vertex). It
+        // says nothing about the points of a face between its corners.
+        std::vector<size_t> front_vids;
+        for (const auto& f : faces) front_vids.insert(front_vids.end(), f.begin(), f.end());
+        wmtk::vector_unique(front_vids);
+        n_front_vertices = front_vids.size();
+        for (const size_t v : front_vids) {
+            const Vector3d& x = m_vertex_attribute[v].m_posf;
+            const double err = std::abs(m_band_tris->distance(m_band_tris->nearest(x), x) - delta);
+            max_vertex = std::max(max_vertex, err / eps);
+            if (!(err > eps)) continue;
+            ++n_over_vertex;
+            if (!vertex_mode) continue;
+            ++n_marked;
+            corners.push_back(v);
+            if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
         }
         if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
     }
@@ -4000,21 +4020,26 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         area,
         settled ? "yes" : "no",
         settled ? fmt::format(
-                      " | marked faces {} of {} by the {} test (max test: {} faces over, max "
+                      " | marked {} {} of {} by the {} test (max test: {} faces over, max "
                       "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
-                      "{:.4} bars), {}, {} marked faces with every corner at the sizing floor "
-                      "{:.4g}{}",
+                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars), {}, {} marked "
+                      "{} at the sizing floor {:.4g}{}",
                       n_marked,
-                      faces.size(),
+                      vertex_mode ? "vertices" : "faces",
+                      vertex_mode ? fmt::format("{} front vertices", n_front_vertices)
+                                  : fmt::format("{}", faces.size()),
                       m_offset_params.settle_mark,
                       n_over_max,
                       max_inside,
                       max_outside,
                       n_over_rms,
                       max_rms,
+                      n_over_vertex,
+                      max_vertex,
                       refine_now ? fmt::format("halved {} vertices", n_halved)
                                  : std::string("no halving (this loop does not refine)"),
                       n_floor,
+                      vertex_mode ? "vertices" : "faces with every corner",
                       s_floor,
                       n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
                 : std::string(" -- no face test, no refinement, no exit: the front still moves"));
