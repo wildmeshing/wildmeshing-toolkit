@@ -172,6 +172,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
     /// See the spec doc.
     bool settle_refinement = true;
+    /// EXPERIMENTAL (2026-10-10), with EXPERIMENTAL_settle_refinement: on a settled turn a band
+    /// cell with a front corner is also refined (its corners halved) when md - d(centroid) >
+    /// front_conv, md the corner mean of the bounding triangle's distance (the corner bound's own
+    /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
+    /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
+    bool gap_refinement = false;
     /// EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled
     /// turn, read only under settle_refinement. "max": the face's max of |d - target_distance|
     /// exceeds front_conv (exact up to rounding; an upper bound on rule-(a) pieces, see
@@ -293,6 +299,10 @@ struct Parameters : public wmtk::OptimizerParameters
                 band_volume_rule);
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
+        gap_refinement = json_params["EXPERIMENTAL_gap_refinement"];
+        if (gap_refinement && !settle_refinement) {
+            log_and_throw_error("EXPERIMENTAL_gap_refinement needs EXPERIMENTAL_settle_refinement");
+        }
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(
