@@ -26,10 +26,12 @@ var searchData=
   ['trackedvertexinfo_23',['TrackedVertexInfo',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh_1_1_tracked_vertex_info.html',1,'wmtk::components::c1_simplification::MMSurfaceMesh']]],
   ['triangleconnectivity_24',['TriangleConnectivity',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html',1,'wmtk::TriMesh']]],
   ['triangleinsertionlocalinfocache_25',['TriangleInsertionLocalInfoCache',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_triangle_insertion_local_info_cache.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['trimesh_26',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
-  ['trimeshvf_27',['TriMeshVF',['../structwmtk_1_1utils_1_1examples_1_1tri_1_1_tri_mesh_v_f.html',1,'wmtk::utils::examples::tri']]],
-  ['trioptimizermesh_28',['TriOptimizerMesh',['../classwmtk_1_1_tri_optimizer_mesh.html',1,'wmtk']]],
-  ['trivtuwriter_29',['TriVTUWriter',['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html',1,'wmtk::io']]],
-  ['triwildmesh_30',['TriWildMesh',['../classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html',1,'wmtk::components::triwild']]],
-  ['tuple_31',['tuple',['../classwmtk_1_1_tet_mesh_1_1_tuple.html',1,'wmtk::TetMesh::Tuple'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html',1,'wmtk::TriMesh::Tuple']]]
+  ['tricell_26',['TriCell',['../structexact__band__data_1_1_tri_cell.html',1,'exact_band_data']]],
+  ['trimesh_27',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
+  ['trimeshvf_28',['TriMeshVF',['../structwmtk_1_1utils_1_1examples_1_1tri_1_1_tri_mesh_v_f.html',1,'wmtk::utils::examples::tri']]],
+  ['trioptimizermesh_29',['TriOptimizerMesh',['../classwmtk_1_1_tri_optimizer_mesh.html',1,'wmtk']]],
+  ['trivtuwriter_30',['TriVTUWriter',['../classwmtk_1_1io_1_1_tri_v_t_u_writer.html',1,'wmtk::io']]],
+  ['triwildmesh_31',['TriWildMesh',['../classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html',1,'wmtk::components::triwild']]],
+  ['triwork_32',['TriWork',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_tri_work.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
+  ['tuple_33',['tuple',['../classwmtk_1_1_tet_mesh_1_1_tuple.html',1,'wmtk::TetMesh::Tuple'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html',1,'wmtk::TriMesh::Tuple']]]
 ];

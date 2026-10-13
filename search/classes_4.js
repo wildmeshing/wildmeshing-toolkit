@@ -87,13 +87,14 @@ var searchData=
   ['enumerable_5fthread_5fspecific_3c_20wmtk_3a_3atrioptimizermesh_3a_3aswapinfocache_20_3e_84',['enumerable_thread_specific&lt; wmtk::TriOptimizerMesh::SwapInfoCache &gt;',['../classwmtk_1_1threading_1_1enumerable__thread__specific.html',1,'wmtk::threading']]],
   ['envelope_85',['Envelope',['../classwmtk_1_1_envelope.html',1,'wmtk']]],
   ['euclideanoffsetpotential_86',['EuclideanOffsetPotential',['../classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html',1,'wmtk::components::topological_offset']]],
-  ['exactdistanceenergy2d_87',['ExactDistanceEnergy2D',['../classwmtk_1_1optimization_1_1_exact_distance_energy2_d.html',1,'wmtk::optimization']]],
-  ['exactdistanceenergy3d_88',['ExactDistanceEnergy3D',['../classwmtk_1_1optimization_1_1_exact_distance_energy3_d.html',1,'wmtk::optimization']]],
-  ['exactenvelope_89',['ExactEnvelope',['../classwmtk_1_1_exact_envelope.html',1,'wmtk']]],
-  ['exactposition_90',['ExactPosition',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['exactposition_3c_20vector2r_2c_20vector2d_20_3e_91',['ExactPosition&lt; Vector2r, Vector2d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['exactposition_3c_20vector3r_2c_20vector3d_20_3e_92',['ExactPosition&lt; Vector3r, Vector3d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['executepass_93',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
-  ['exportstruct_94',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['expression_95',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
+  ['exactbandintegral_87',['ExactBandIntegral',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html',1,'wmtk::components::topological_offset']]],
+  ['exactdistanceenergy2d_88',['ExactDistanceEnergy2D',['../classwmtk_1_1optimization_1_1_exact_distance_energy2_d.html',1,'wmtk::optimization']]],
+  ['exactdistanceenergy3d_89',['ExactDistanceEnergy3D',['../classwmtk_1_1optimization_1_1_exact_distance_energy3_d.html',1,'wmtk::optimization']]],
+  ['exactenvelope_90',['ExactEnvelope',['../classwmtk_1_1_exact_envelope.html',1,'wmtk']]],
+  ['exactposition_91',['ExactPosition',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['exactposition_3c_20vector2r_2c_20vector2d_20_3e_92',['ExactPosition&lt; Vector2r, Vector2d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['exactposition_3c_20vector3r_2c_20vector3d_20_3e_93',['ExactPosition&lt; Vector3r, Vector3d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['executepass_94',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
+  ['exportstruct_95',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['expression_96',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
 ];

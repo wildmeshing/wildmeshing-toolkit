@@ -1498,6 +1498,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="separator:a71fe48f398c3cf45060625ece3cef789"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d7a774785cab451bec47a5245834070" id="r_a7d7a774785cab451bec47a5245834070"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html">InputTriangles</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7d7a774785cab451bec47a5245834070">m_band_tris</a></td></tr>
 <tr class="separator:a7d7a774785cab451bec47a5245834070"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f2f1d42d22eee339fd91fcf1d73f831" id="r_a1f2f1d42d22eee339fd91fcf1d73f831"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1f2f1d42d22eee339fd91fcf1d73f831">m_band_exact</a></td></tr>
+<tr class="separator:a1f2f1d42d22eee339fd91fcf1d73f831"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af445d39e560f91961e639073416e7ecc" id="r_af445d39e560f91961e639073416e7ecc"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af445d39e560f91961e639073416e7ecc">m_volume_reject_collapse</a> {0}</td></tr>
 <tr class="separator:af445d39e560f91961e639073416e7ecc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c271158e88528b0de7b5af91fab693f" id="r_a8c271158e88528b0de7b5af91fab693f"><td class="memItemLeft" align="right" valign="top"><a id="a8c271158e88528b0de7b5af91fab693f" name="a8c271158e88528b0de7b5af91fab693f"></a>
@@ -1745,6 +1747,8 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_phi_E</b></td><
 <tr class="memitem:a2def56bb2768fa293a32b6f51965d276" id="r_a2def56bb2768fa293a32b6f51965d276"><td class="memItemLeft" align="right" valign="top"><a id="a2def56bb2768fa293a32b6f51965d276" name="a2def56bb2768fa293a32b6f51965d276"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_phi_F</b></td></tr>
 <tr class="separator:a2def56bb2768fa293a32b6f51965d276"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a071d25e6fec9aea545b19f8bb7f12e80" id="r_a071d25e6fec9aea545b19f8bb7f12e80"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a071d25e6fec9aea545b19f8bb7f12e80">m_phi_F_inner</a></td></tr>
+<tr class="separator:a071d25e6fec9aea545b19f8bb7f12e80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f0f3bce6aef20f7e63cbc695a79b5e3" id="r_a0f0f3bce6aef20f7e63cbc695a79b5e3"><td class="memItemLeft" align="right" valign="top"><a id="a0f0f3bce6aef20f7e63cbc695a79b5e3" name="a0f0f3bce6aef20f7e63cbc695a79b5e3"></a>
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_phi_P</b></td></tr>
 <tr class="separator:a0f0f3bce6aef20f7e63cbc695a79b5e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2328,7 +2332,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <pre class="fragment">vol * min over ALL input triangles P of (1/4) sum over the 4 corners q of
       (d_P(q) - delta) / delta,
 </pre><p> d_P the distance to input triangle P alone, delta = target_distance, vol the cell's unsigned volume (the cell is valid wherever this is read). An upper bound on the exact vol * mean of (d - delta)/delta for every P: d &lt;= d_P, and the convex d_P lies below its linear interpolant. A function of the four corners alone, and no split raises it: each child's min includes the parent's minimiser, whose finer interpolant lies lower. Exact where one triangle's distance is affine on the cell. Signed: about -vol for a cell at the input, positive beyond the level set. A volume, as vol AMIPS^3 is. One input region only (the triangles are the whole input's): refused otherwise.</p>
-<p>Why the corner bound rather than a quadrature of d over the cell: corners on the input read (d - delta)/delta = -1 whatever the cell's interior is, so the mean over the four corners and the centroid read a band tet with all four corners on the input as -1.57 against a dense +4.83, and the whole band as -41.0 against a dense +13.1 (one-slot model, stage 1, cells about 10x target_distance). Why the min over ALL triangles rather than over each corner's nearest plus a triangle stored on the cell at the last split pass: over 2000 band cells with a front vertex on the last frames of the cube (24 triangles) and 100026 (1736), the corners' nearest missed the min in 0.1% and 4.5% of the cells, by up to 23 and 70 bars &ndash; corners lie on input edges and vertices, where triangles tie &ndash; and the term depended on how the cell was made. No triangle outside the corners' nearest (ties included) had a smaller mean, so the exact search (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a3ad617ccc8dfc7618cf5b939bf1d6056">InputTriangles::min_mean_distance()</a>) visits boxes only. </p>
+<p>Why the corner bound rather than a quadrature of d over the cell: corners on the input read (d - delta)/delta = -1 whatever the cell's interior is, so the mean over the four corners and the centroid read a band tet with all four corners on the input as -1.57 against a dense +4.83, and the whole band as -41.0 against a dense +13.1 (one-slot model, stage 1, cells about 10x target_distance). Why the min over ALL triangles rather than over each corner's nearest plus a triangle stored on the cell at the last split pass: over 2000 band cells with a front vertex on the last frames of the cube (24 triangles) and 100026 (1736), the corners' nearest missed the min in 0.1% and 4.5% of the cells, by up to 23 and 70 bars &ndash; corners lie on input edges and vertices, where triangles tie &ndash; and the term depended on how the cell was made. No triangle outside the corners' nearest (ties included) had a smaller mean, so the exact search (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a3ad617ccc8dfc7618cf5b939bf1d6056">InputTriangles::min_mean_distance()</a>) visits boxes only.</p>
+<p>That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is J_t / delta, J_t = int_t (d - delta) dV in closed form (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea">ExactBandIntegral::value()</a>): exact up to rounding, and an upper bound only on the pieces of t where two features' regions meet on a curved border (rule (a)). See the spec doc. </p>
 
 </div>
 </div>
@@ -4434,7 +4439,7 @@ template&lt;typename Visit &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when E fell by less than the bar energy b = front_conv^2 A / (2 target_distance) since <code>e_prev</code> (E at the end of the previous turn, turn 1: before its first group; set to E now). Only a settled turn tests the front faces (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#aa548e946017bcc659bd575ccd27e42c4">InputTriangles::min_triangle_distance()</a> and min_max_corner_distance()) and halves the corners of those more than front_conv from the level set, when <code>refine_now</code>. Logs the turn's [settle] line. Returns settled and no face marked: the loop's exit. See the spec doc. </p>
+<p>EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when E fell by less than the bar energy b = front_conv^2 A / (2 target_distance) since <code>e_prev</code> (E at the end of the previous turn, turn 1: before its first group; set to E now). Only a settled turn tests the front faces (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#aa548e946017bcc659bd575ccd27e42c4">InputTriangles::min_triangle_distance()</a> and, settle_mark "max", <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">ExactBandIntegral::max_distance()</a>) and halves the corners of those more than front_conv from the level set, when <code>refine_now</code>. Logs the turn's [settle] line. Returns settled and no face marked: the loop's exit. See the spec doc. </p>
 
 </div>
 </div>
@@ -6174,6 +6179,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="a1f2f1d42d22eee339fd91fcf1d73f831" name="a1f2f1d42d22eee339fd91fcf1d73f831"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f2f1d42d22eee339fd91fcf1d73f831">&#9670;&#160;</a></span>m_band_exact</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a>&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_band_exact</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL_band_volume_rule "exact", or EXPERIMENTAL_settle_refinement with settle_mark "max" (its exact max over a front face): the input's triangles for the exact integral, built once beside m_band_tris (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b09d70be55f32e4dd935084dbefafa3" title="Build the smooth offset potential from the extraction init_input_complex_bvh() kept.">init_offset_potential()</a>). </p>
+
+</div>
+</div>
 <a id="a7d7a774785cab451bec47a5245834070" name="a7d7a774785cab451bec47a5245834070"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d7a774785cab451bec47a5245834070">&#9670;&#160;</a></span>m_band_tris</h2>
 
@@ -6542,6 +6562,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 <p>The smooth offset potential, and with it the definition of the offset itself. </p>
 <p>The offset surface is the level set Phi = c. Built from the same extraction as m_input_complex_bvh, so the two describe the same geometry and the same never-rebuilt rule applies. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html" title="The offset potential: the scalar field on space whose level set the front is placed on.">OffsetPotential</a> for what Phi is. shared_ptr because OffsetEnergy3D holds one per smoothing call. </p>
+
+</div>
+</div>
+<a id="a071d25e6fec9aea545b19f8bb7f12e80" name="a071d25e6fec9aea545b19f8bb7f12e80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a071d25e6fec9aea545b19f8bb7f12e80">&#9670;&#160;</a></span>m_phi_F_inner</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int8_t&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_phi_F_inner</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1: the row's normal (b - a) x (c - a) points out of the label-1 region), 0 for an isolated triangle. The exact rule's offset side (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>) reads it. </p>
 
 </div>
 </div>

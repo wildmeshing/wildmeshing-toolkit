@@ -11,5 +11,7 @@ var searchData=
   ['rest_5finv_8',['rest_inv',['../structwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d_1_1_cell.html#a0fbac9bf52147fd65b785b7836065a8c',1,'wmtk::components::topological_offset::RestAMIPSEnergy2D::Cell']]],
   ['rest_5fvalid_9',['rest_valid',['../classwmtk_1_1components_1_1topological__offset_1_1_face_extra2d.html#a943d871f78f615454105b23404aa29b5',1,'wmtk::components::topological_offset::FaceExtra2d']]],
   ['ring_5fexit_10',['ring_exit',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#a25ece35634ab57883d62a798c0ae70d6',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::EnergyCriterion::ring_exit'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a19c79444f6372cc519039f3baaba643a',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::ring_exit']]],
-  ['rounds_11',['rounds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#af46c7823db686132bbed984a2a986457',1,'wmtk::ExecutePass::PassStats']]]
+  ['rounds_11',['rounds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#af46c7823db686132bbed984a2a986457',1,'wmtk::ExecutePass::PassStats']]],
+  ['rule_5fa_12',['rule_a',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html#ace79ed1fd424c8112c019df10bc9908a',1,'wmtk::components::topological_offset::ExactBandIntegral::MaxInfo']]],
+  ['rule_5fa_5fvol_13',['rule_a_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a4098ff5e8a458bb5b2f1a12459b98623',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]]
 ];

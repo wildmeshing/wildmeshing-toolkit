@@ -206,8 +206,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>init_optimize_stencil_
 <tr class="separator:a5accc8d824e52531debdf3868f1d3970"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20e107852db5dcb7ef1de3912d5013d0" id="r_a20e107852db5dcb7ef1de3912d5013d0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a20e107852db5dcb7ef1de3912d5013d0">split_energy_gate</a> = false</td></tr>
 <tr class="separator:a20e107852db5dcb7ef1de3912d5013d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afedb687ef8a8f83aad21429efe27d3cd" id="r_afedb687ef8a8f83aad21429efe27d3cd"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#afedb687ef8a8f83aad21429efe27d3cd">band_volume_rule</a> = &quot;corner_bound&quot;</td></tr>
+<tr class="separator:afedb687ef8a8f83aad21429efe27d3cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3e4baf9a3fe479b460f12ec7acd6e23" id="r_ac3e4baf9a3fe479b460f12ec7acd6e23"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac3e4baf9a3fe479b460f12ec7acd6e23">settle_refinement</a> = true</td></tr>
 <tr class="separator:ac3e4baf9a3fe479b460f12ec7acd6e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a139a66d3260a8fccfcf5df4aa9e30cd7" id="r_a139a66d3260a8fccfcf5df4aa9e30cd7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a139a66d3260a8fccfcf5df4aa9e30cd7">gap_refinement</a> = false</td></tr>
+<tr class="separator:a139a66d3260a8fccfcf5df4aa9e30cd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9803e8d0d7a4a4ec76877a51cd166acd" id="r_a9803e8d0d7a4a4ec76877a51cd166acd"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a9803e8d0d7a4a4ec76877a51cd166acd">settle_mark</a> = &quot;vertex&quot;</td></tr>
 <tr class="separator:a9803e8d0d7a4a4ec76877a51cd166acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a4f261f3043247d7743058781a2b84d" id="r_a5a4f261f3043247d7743058781a2b84d"><td class="memItemLeft" align="right" valign="top"><a id="a5a4f261f3043247d7743058781a2b84d" name="a5a4f261f3043247d7743058781a2b84d"></a>
@@ -446,6 +450,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="afedb687ef8a8f83aad21429efe27d3cd" name="afedb687ef8a8f83aad21429efe27d3cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afedb687ef8a8f83aad21429efe27d3cd">&#9670;&#160;</a></span>band_volume_rule</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::components::topological_offset::Parameters::band_volume_rule = &quot;corner_bound&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a734829ed5e88856707d81f4eb629f926" title="b(t), one band cell&#39;s part of int_B (d - delta) / delta dV, as an upper bound:">TopoOffsetTetMesh::band_cell_term()</a>). "corner_bound" (the default): vol times the min over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on the cell's part of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta, J_t = int_t (d - delta) dV in closed form (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>); an upper bound only on its rule-(a) pieces. See the spec doc. </p>
+
+</div>
+</div>
 <a id="ae70592da646fdbc27aa5508af006c6a5" name="ae70592da646fdbc27aa5508af006c6a5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae70592da646fdbc27aa5508af006c6a5">&#9670;&#160;</a></span>construction_mode</h2>
 
@@ -488,6 +507,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>Which measure the loop exits on and refines by, in 3D and in 2D; see the spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean square of the face measures (face_offset_term()) of its incident offset faces &ndash; in 2D of the chord measures (edge_offset_term()) of its front chords &ndash; every simplex weighted equally. The loop exits when every ring measure is within the bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone. "face": every offset face (2D: chord) within the bar and the halving at the corners of every face over it &ndash; the rule of 2026-09-25, kept for comparison. </p>
+
+</div>
+</div>
+<a id="a139a66d3260a8fccfcf5df4aa9e30cd7" name="a139a66d3260a8fccfcf5df4aa9e30cd7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a139a66d3260a8fccfcf5df4aa9e30cd7">&#9670;&#160;</a></span>gap_refinement</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::gap_refinement = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-10), with EXPERIMENTAL_settle_refinement: on a settled turn a band cell with a front corner is also refined (its corners halved) when md - d(centroid) &gt; front_conv, md the corner mean of the bounding triangle's distance (the corner bound's own min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc. </p>
 
 </div>
 </div>
@@ -637,7 +671,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. "max": a face's exact bound on max |d - target_distance| exceeds front_conv. "rms": a face's share of the offset excess exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA &gt; front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. See the spec doc. </p>
+<p>EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. "max": a face's max of |d - target_distance| exceeds front_conv (exact up to rounding; an upper bound on rule-(a) pieces, see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">ExactBandIntegral::max_distance()</a>). "rms": a face's share of the offset excess exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA &gt; front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule. See the spec doc. </p>
 
 </div>
 </div>
@@ -652,7 +686,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a turn is settled when E fell by less than the bar energy b = front_conv^2 A / (2 target_distance), A the front's area &ndash; the offset term's excess for a front lying front_conv off the level set. On a settled turn every front face whose exact distance bound from the level set (the face's min of d, and min over P of the max of d_P at its corners) exceeds front_conv has its corners halved; exit = settled and no face over. The energy criterion's own refinement and exit are off. See the spec doc. </p>
+<p>EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a turn is settled when E fell by less than the bar energy b = front_conv^2 A / (2 target_distance), A the front's area &ndash; the offset term's excess for a front lying front_conv off the level set. On a settled turn every front face whose distance from the level set (the face's min of d, and its max of d, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">ExactBandIntegral::max_distance()</a>) exceeds front_conv has its corners halved; exit = settled and no face over. The energy criterion's own refinement and exit are off. See the spec doc. </p>
 
 </div>
 </div>
