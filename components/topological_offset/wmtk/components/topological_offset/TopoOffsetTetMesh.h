@@ -104,7 +104,7 @@ public:
     /**
      * Rest shape of a plastic cell (TopoOffsetTetMesh::cell_is_plastic(), use_rest_pose): the
      * tet's corners as last stamped, in the oriented order. Stamped for every plastic cell when
-     * the loop starts and after every smoothing pass (log_smoothing_pass_accounting()), and, in
+     * the loop starts and after every smoothing pass (smoothing_pass_done()), and, in
      * the operations, for every cell a split or a swap creates or a collapse changes, at the
      * change and before the operation's energy rule reads it -- so every rule reads up-to-date
      * rests. Read only while the cell is plastic.
@@ -710,8 +710,7 @@ public:
     /// rest holds no shape (det <= 0) -- the cell is then measured against the regular tet.
     bool plastic_rest(const size_t tid, Eigen::Matrix3d& R) const;
     /// Stamp rest := current for every plastic cell; called when the loop starts and after every
-    /// smoothing pass (log_smoothing_pass_accounting(), which the engine calls after each pass).
-    /// A no-op while the plastic medium is off.
+    /// smoothing pass (smoothing_pass_done()). A no-op while the plastic medium is off.
     void stamp_plastic_rests();
     /// Stamp one cell's rest := its current corners (oriented order). For the cells a split or a
     /// swap creates and a collapse changes, before the operation's energy rule; a no-op unless
@@ -1328,6 +1327,15 @@ public:
     static constexpr int kGradBins = 22;
     std::array<std::atomic<size_t>, kGradBins> m_front_grad_abs{}, m_front_grad_rel{};
     void log_smoothing_pass_accounting() override;
+    /**
+     * @brief The engine's end-of-pass hook (TetOptimizerMesh::smooth_all_vertices() calls it after
+     * EVERY smoothing pass, in every path: a group's passes and pre_smooth): use_rest_pose
+     * restamps the plastic rests here -- between passes and after the last, never before the
+     * first. With the operations stamping the cells they make or change, every rule reads rests
+     * that are up to date. A no-op while the plastic medium is off (the final pass, coarsening,
+     * the repulsion passes).
+     */
+    void smoothing_pass_done() override { stamp_plastic_rests(); }
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
     /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current

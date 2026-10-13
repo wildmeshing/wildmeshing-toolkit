@@ -1659,12 +1659,6 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
     }
     m_newton_front.reset();
     if (m_offset_params.debug_crossings && m_round > 0) crossing_snapshot("smooth", true, false);
-    // use_rest_pose: the engine calls this after EVERY smoothing pass, in every path (a group's
-    // passes, pre_smooth), so this is where the plastic rests are restamped:
-    // between passes and after the last one, never before the first. With the operations
-    // stamping the cells they make or change, every rule reads rests that are up to date. A
-    // no-op while the plastic medium is off (the final pass, coarsening, the repulsion passes).
-    stamp_plastic_rests();
 }
 
 void TopoOffsetTetMesh::log_smooth_trace() const

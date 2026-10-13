@@ -409,6 +409,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
         log_smoothing_pass_accounting();
+        smoothing_pass_done();
 
         if (m_params.debug_output) {
             write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
