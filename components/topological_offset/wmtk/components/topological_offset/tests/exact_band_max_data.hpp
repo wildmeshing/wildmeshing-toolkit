@@ -3,6 +3,9 @@
 // Do not edit; regenerate. Hex floats: bit exact.
 #pragma once
 
+// Generated tables, kept one entry per line as the generator writes them: not reformatted.
+// clang-format off
+
 namespace exact_band_max_data {
 
 /// A face P and exact_mesh.max_on_triangle(P, mesh) on the FULL input (equal, bit for bit, on the
@@ -233,3 +236,4 @@ inline const MaxCase max_cases[] = {
 };
 
 } // namespace exact_band_max_data
+// clang-format on

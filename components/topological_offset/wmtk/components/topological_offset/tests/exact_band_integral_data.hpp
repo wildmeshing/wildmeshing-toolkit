@@ -2,6 +2,9 @@
 // exact_integral/exact_tri.py and exact_mesh.py. Do not edit; regenerate. Hex floats: bit exact.
 #pragma once
 
+// Generated tables, kept one entry per line as the generator writes them: not reformatted.
+// clang-format off
+
 namespace exact_band_data {
 
 /// One triangle P, one cell T: Ix = exact_tri.integrate(T, P), Im = exact_mesh.integrate_mesh on
@@ -297,3 +300,4 @@ inline const RealCase real_cases[] = {
 };
 
 } // namespace exact_band_data
+// clang-format on

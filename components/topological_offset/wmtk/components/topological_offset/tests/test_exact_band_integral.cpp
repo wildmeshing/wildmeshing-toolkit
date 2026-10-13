@@ -81,7 +81,8 @@ std::array<Tet, 8> red_children(const Tet& T)
     k[3] = {T[3], M(0, 3), M(1, 3), M(2, 3)};
     const Vec3 a = M(0, 2), b = M(1, 3);
     const std::array<Vec3, 4> ring = {M(0, 1), M(1, 2), M(2, 3), M(0, 3)};
-    for (int i = 0; i < 4; ++i) k[size_t(4 + i)] = {a, b, ring[size_t(i)], ring[size_t((i + 1) % 4)]};
+    for (int i = 0; i < 4; ++i)
+        k[size_t(4 + i)] = {a, b, ring[size_t(i)], ring[size_t((i + 1) % 4)]};
     return k;
 }
 
@@ -131,8 +132,10 @@ TEST_CASE("exact-band-integral-one-triangle", "[offset][exact_band]")
         w[2] = std::max(w[2], rel(sum, I));
         w[3] += double(series(st));
     }
-    std::printf("exact-band-integral-one-triangle: max relative error per configuration (%lld clip results"
-                " checked closed)\n", (long long)n_closed);
+    std::printf(
+        "exact-band-integral-one-triangle: max relative error per configuration (%lld clip results"
+        " checked closed)\n",
+        (long long)n_closed);
     std::printf("  %-30s %9s %9s %9s %7s\n", "", "vs mesh", "vs tri", "additiv.", "series");
     for (const auto& [k, w] : worst) {
         std::printf("  %-30s %9.1e %9.1e %9.1e %7.0f\n", k.c_str(), w[0], w[1], w[2], w[3]);
@@ -187,7 +190,8 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
             ++n_add;
         }
         std::printf(
-            "  %-13s %2d cells (%d with rule (a)): max %.1e; additivity on %d exact families: max %.1e\n",
+            "  %-13s %2d cells (%d with rule (a)): max %.1e; additivity on %d exact families: max "
+            "%.1e\n",
             c.name,
             c.ncells,
             n_rule_a,
@@ -220,7 +224,10 @@ TEST_CASE("exact-band-integral-flat", "[offset][exact_band]")
         {p, q, Vec3(0.5 * (p + q)), r}, // 3 collinear + 1
         {p, p, q, r}, // two coincident vertices
         {p, p, p, p}, // all coincident
-        {Vec3(0.1, 0.1, 0), Vec3(0.9, 0.05, 0), Vec3(0.3, 0.7, 0), Vec3(0.4, 0.3, 0)}, // on P's plane
+        {Vec3(0.1, 0.1, 0),
+         Vec3(0.9, 0.05, 0),
+         Vec3(0.3, 0.7, 0),
+         Vec3(0.4, 0.3, 0)}, // on P's plane
     };
     for (const Tet& T : flats) {
         CHECK(eb.value(T, 0.) == 0.);
@@ -258,8 +265,9 @@ std::array<double, 3> deriv_parity(
     return {
         std::abs(J - r.J) / (std::abs(r.J) + delta * vol),
         rel_vec(G, Gr),
-        rel_vec(Eigen::Map<const Eigen::VectorXd>(H.data(), 9),
-                Eigen::Map<const Eigen::VectorXd>(Eigen::Matrix3d(Hr).data(), 9))};
+        rel_vec(
+            Eigen::Map<const Eigen::VectorXd>(H.data(), 9),
+            Eigen::Map<const Eigen::VectorXd>(Eigen::Matrix3d(Hr).data(), 9))};
 }
 
 /// test_exact_mesh_derivs.fd(): relative errors of the gradient and Hessian against central
@@ -384,11 +392,25 @@ TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]")
         }
         std::printf(
             "  one triangle: parity J %.1e G %.1e H %.1e (far away: %.1e %.1e %.1e)\n",
-            worst[0], worst[1], worst[2], worst_far[0], worst_far[1], worst_far[2]);
+            worst[0],
+            worst[1],
+            worst[2],
+            worst_far[0],
+            worst_far[1],
+            worst_far[2]);
         std::printf(
-            "  one triangle, all corners: %d smooth: FD min over h, max: gradient %.1e Hessian %.1e; "
-            "%d kink corners: inward one-sided (h=1e-6) max %.1e | far away, %d corners: %.1e %.1e\n",
-            fs.smooth, fs.grad, fs.hess, fs.kinks, fs.inward, fs_far.smooth, fs_far.grad, fs_far.hess);
+            "  one triangle, all corners: %d smooth: FD min over h, max: gradient %.1e Hessian "
+            "%.1e; "
+            "%d kink corners: inward one-sided (h=1e-6) max %.1e | far away, %d corners: %.1e "
+            "%.1e\n",
+            fs.smooth,
+            fs.grad,
+            fs.hess,
+            fs.kinks,
+            fs.inward,
+            fs_far.smooth,
+            fs_far.grad,
+            fs_far.hess);
         CHECK(fs.grad <= 1e-7);
         CHECK(fs.hess <= 1e-4);
         CHECK(fs.inward <= 2e-2);
@@ -415,7 +437,15 @@ TEST_CASE("exact-band-integral-derivatives", "[offset][exact_band]")
         std::printf(
             "  %-13s parity (%d cells) J %.1e G %.1e H %.1e | FD, %d smooth corners: gradient %.1e "
             "Hessian %.1e; %d kink corners: inward %.1e\n",
-            c.name, c.nderivs, worst[0], worst[1], worst[2], fs.smooth, fs.grad, fs.hess, fs.kinks,
+            c.name,
+            c.nderivs,
+            worst[0],
+            worst[1],
+            worst[2],
+            fs.smooth,
+            fs.grad,
+            fs.hess,
+            fs.kinks,
             fs.inward);
         CHECK(fs.grad <= 1e-7);
         CHECK(fs.hess <= 1e-4);
@@ -514,7 +544,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
         in.read(reinterpret_cast<char*>(hdr), sizeof(hdr));
         in.read(reinterpret_cast<char*>(&delta), sizeof(delta));
         const int nV = hdr[0], nF = hdr[1], nS = hdr[2], nR = hdr[3];
-        std::vector<double> Vb(static_cast<size_t>(3 * nV)), Ts(static_cast<size_t>(12 * nS)), Is(static_cast<size_t>(nS)), Tr(static_cast<size_t>(12 * nR)),
+        std::vector<double> Vb(static_cast<size_t>(3 * nV)), Ts(static_cast<size_t>(12 * nS)),
+            Is(static_cast<size_t>(nS)), Tr(static_cast<size_t>(12 * nR)),
             Ir(static_cast<size_t>(nR));
         std::vector<int32_t> Fb(static_cast<size_t>(3 * nF)), cat(static_cast<size_t>(nS));
         const auto rd = [&](auto& v) {
@@ -530,21 +561,31 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
         REQUIRE(in.good());
         Eigen::MatrixXd V(nV, 3);
         Eigen::MatrixXi F(nF, 3);
-        for (int i = 0; i < nV; ++i) V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
-        for (int i = 0; i < nF; ++i) F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
+        for (int i = 0; i < nV; ++i)
+            V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
+        for (int i = 0; i < nF; ++i)
+            F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
         auto t0 = clk::now();
         const ExactBandIntegral eb(V, F);
         const double t_build = std::chrono::duration<double>(clk::now() - t0).count();
         const auto tris = std::make_shared<InputTriangles>(V, F);
 
-        std::printf("== %s: %d triangles (build %.2f ms), delta %.6g\n", name, nF, 1e3 * t_build, delta);
+        std::printf(
+            "== %s: %d triangles (build %.2f ms), delta %.6g\n",
+            name,
+            nF,
+            1e3 * t_build,
+            delta);
         // parity
         double worst_cat[4] = {0., 0., 0., 0.}, worst_r = 0.;
         int ncat[4] = {0, 0, 0, 0};
         int worst_i = -1;
         for (int i = 0; i < nS; ++i) {
             const double I = eb.value(tet_of(&Ts[size_t(12 * i)]), 0.);
-            if (worst_i < 0 || rel(I, Is[size_t(i)]) > rel(eb.value(tet_of(&Ts[size_t(12 * worst_i)]), 0.), Is[size_t(worst_i)])) worst_i = i;
+            if (worst_i < 0 ||
+                rel(I, Is[size_t(i)]) >
+                    rel(eb.value(tet_of(&Ts[size_t(12 * worst_i)]), 0.), Is[size_t(worst_i)]))
+                worst_i = i;
             worst_cat[cat[size_t(i)]] = std::max(worst_cat[cat[size_t(i)]], rel(I, Is[size_t(i)]));
             ++ncat[cat[size_t(i)]];
         }
@@ -559,7 +600,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
             worst_r = std::max(worst_r, rel(I, Ir[size_t(i)]));
             if (rel(I, Ir[size_t(i)]) > 3e-13) {
                 std::printf(
-                    "   random cell %d: %.17g vs the Python %.17g (rel %.1e), rule-(a) volume %.3g of %.3g\n",
+                    "   random cell %d: %.17g vs the Python %.17g (rel %.1e), rule-(a) volume %.3g "
+                    "of %.3g\n",
                     i,
                     I,
                     Ir[size_t(i)],
@@ -572,8 +614,12 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
         for (int c = 0; c < 4; ++c) {
             if (ncat[c]) std::printf("  %s (%d) %.1e", cats[c], ncat[c], worst_cat[c]);
         }
-        std::printf("  | %d random band cells %.1e | clip results checked closed %lld, open %lld\n", nR, worst_r,
-                    (long long)n_checked, (long long)n_open);
+        std::printf(
+            "  | %d random band cells %.1e | clip results checked closed %lld, open %lld\n",
+            nR,
+            worst_r,
+            (long long)n_checked,
+            (long long)n_open);
         CHECK(n_open == 0);
 
         // derivatives: parity with exact_mesh.value_grad_hess (every sample cell at its 4 corners,
@@ -584,35 +630,60 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
             int32_t dh[2];
             dn.read(reinterpret_cast<char*>(dh), sizeof(dh));
             std::vector<double> ref(size_t(13 * (4 * dh[0] + dh[1])));
-            dn.read(reinterpret_cast<char*>(ref.data()), std::streamsize(ref.size() * sizeof(double)));
+            dn.read(
+                reinterpret_cast<char*>(ref.data()),
+                std::streamsize(ref.size() * sizeof(double)));
             REQUIRE(dn.good());
             std::array<double, 3> dworst_s = {0., 0., 0.}, dworst_r = {0., 0., 0.};
             std::vector<double> us;
             int nslow = 0;
-            const auto check = [&](const Tet& Tc, const int kv, const double* r, std::array<double, 3>& w, const int id) {
+            const auto check = [&](const Tet& Tc,
+                                   const int kv,
+                                   const double* r,
+                                   std::array<double, 3>& w,
+                                   const int id) {
                 Vec3 G;
                 Eigen::Matrix3d H;
                 const auto a0 = clk::now();
                 const double J = eb.value_grad_hess(Tc, kv, delta, G, H);
                 us.push_back(1e6 * std::chrono::duration<double>(clk::now() - a0).count());
-                const double vol = std::abs((Tc[1] - Tc[0]).dot((Tc[2] - Tc[0]).cross(Tc[3] - Tc[0]))) / 6.;
+                const double vol =
+                    std::abs((Tc[1] - Tc[0]).dot((Tc[2] - Tc[0]).cross(Tc[3] - Tc[0]))) / 6.;
                 const Eigen::Map<const Eigen::Vector3d> Gr(r + 1);
                 const Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> Hr(r + 4);
                 const std::array<double, 3> e = {
                     std::abs(J - r[0]) / (std::abs(r[0]) + delta * vol),
                     (G - Gr).norm() / std::max(Gr.norm(), 1e-300),
-                    (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300)};
+                    (H - Eigen::Matrix3d(Hr)).norm() /
+                        std::max(Eigen::Matrix3d(Hr).norm(), 1e-300)};
                 for (int k = 0; k < 3; ++k) w[size_t(k)] = std::max(w[size_t(k)], e[size_t(k)]);
                 if (e[2] > 1e-9) {
                     ++nslow;
-                    std::printf("   derivative outlier: cell %d corner %d: J %.1e G %.1e H %.1e\n", id, kv, e[0], e[1], e[2]);
+                    std::printf(
+                        "   derivative outlier: cell %d corner %d: J %.1e G %.1e H %.1e\n",
+                        id,
+                        kv,
+                        e[0],
+                        e[1],
+                        e[2]);
                 }
             };
             for (int i = 0; i < dh[0]; ++i) {
-                for (int kv = 0; kv < 4; ++kv) check(tet_of(&Ts[size_t(12 * i)]), kv, &ref[size_t(13 * (4 * i + kv))], dworst_s, i);
+                for (int kv = 0; kv < 4; ++kv)
+                    check(
+                        tet_of(&Ts[size_t(12 * i)]),
+                        kv,
+                        &ref[size_t(13 * (4 * i + kv))],
+                        dworst_s,
+                        i);
             }
             for (int i = 0; i < dh[1]; ++i) {
-                check(tet_of(&Tr[size_t(12 * i)]), i % 4, &ref[size_t(13 * (4 * dh[0] + i))], dworst_r, -1 - i);
+                check(
+                    tet_of(&Tr[size_t(12 * i)]),
+                    i % 4,
+                    &ref[size_t(13 * (4 * dh[0] + i))],
+                    dworst_r,
+                    -1 - i);
             }
             const auto pct = [](std::vector<double> v, double p) {
                 std::sort(v.begin(), v.end());
@@ -621,11 +692,24 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
             double mean = 0.;
             for (const double u : us) mean += u / double(us.size());
             std::printf(
-                "   derivatives vs the Python: %d sample cells x 4 corners: J %.1e G %.1e H %.1e | %d random"
+                "   derivatives vs the Python: %d sample cells x 4 corners: J %.1e G %.1e H %.1e | "
+                "%d random"
                 " cells: J %.1e G %.1e H %.1e | H over 1e-9: %d\n"
                 "   value_grad_hess us per call: mean %.2f p50 %.2f p90 %.2f p99 %.2f max %.2f\n",
-                dh[0], dworst_s[0], dworst_s[1], dworst_s[2], dh[1], dworst_r[0], dworst_r[1], dworst_r[2],
-                nslow, mean, pct(us, 0.5), pct(us, 0.9), pct(us, 0.99), pct(us, 1.));
+                dh[0],
+                dworst_s[0],
+                dworst_s[1],
+                dworst_s[2],
+                dh[1],
+                dworst_r[0],
+                dworst_r[1],
+                dworst_r[2],
+                nslow,
+                mean,
+                pct(us, 0.5),
+                pct(us, 0.9),
+                pct(us, 0.99),
+                pct(us, 1.));
         }
 
         // time per cell, untimed calls: each cell 5 times after a warm-up, the per-cell mean
@@ -642,7 +726,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                 for (int i = 0; i < n; ++i) {
                     const auto a = clk::now();
                     sink += eb.value(cells[size_t(i)], delta);
-                    us[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
+                    us[size_t(i)] +=
+                        1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
                 }
             }
             // the corner bound's search on the same cells (InputTriangles::min_mean_distance)
@@ -651,7 +736,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                     int64_t best;
                     const auto a = clk::now();
                     sink += tris->min_mean_distance(cells[size_t(i)].data(), 4, best);
-                    cb[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
+                    cb[size_t(i)] +=
+                        1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
                 }
             }
             ExactBandIntegral::Stats st;
@@ -679,7 +765,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                 sink == 0. ? 0. : 1.);
             const double tt = st.t_total;
             std::printf(
-                "     split (timed run, %.2f us per cell with clocks): candidates %.0f%%  clipping %.0f%%"
+                "     split (timed run, %.2f us per cell with clocks): candidates %.0f%%  clipping "
+                "%.0f%%"
                 "  closed-form faces %.0f%%  series edges %.0f%%  other %.0f%%\n",
                 1e6 * tt / n,
                 100 * st.t_candidates / tt,
@@ -689,8 +776,10 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                 100 * (tt - st.t_candidates - st.t_clip - st.t_closed) / tt);
             const double c = double(st.cells);
             std::printf(
-                "     per cell: candidates %.1f  pieces %.2f  clips %.1f  point faces %.1f  line faces"
-                " radial %.2f parallel %.2f series %.2f  closed edges %.1f  series edges short %.2f long %.2f"
+                "     per cell: candidates %.1f  pieces %.2f  clips %.1f  point faces %.1f  line "
+                "faces"
+                " radial %.2f parallel %.2f series %.2f  closed edges %.1f  series edges short "
+                "%.2f long %.2f"
                 "  rule-(a) volume %.2g%%\n",
                 st.candidates / c,
                 st.pieces / c,
@@ -709,6 +798,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
 
 // Data of exact-band-integral-geneva: GENERATED by gen_geneva_data.py (scratchpad exact_port/,
 // 2026-10-12) from the Python reference exact_integral/exact_mesh.py. Hex floats: bit exact.
+// Generated table, kept as the generator writes it: not reformatted.
+// clang-format off
 namespace exact_band_geneva_data {
 
 /// A cell T, delta, and I = exact_mesh.integrate_mesh(T) = int_T d dV on the full triangle set
@@ -740,6 +831,7 @@ inline const GCase geneva_cases[] = {
 };
 
 } // namespace exact_band_geneva_data
+// clang-format on
 
 /**
  * The Geneva base (inward, tag_0, exact rule): the 10 cells whose partition failed the tiling
@@ -754,7 +846,9 @@ inline const GCase geneva_cases[] = {
 TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
 {
     using namespace exact_band_geneva_data;
-    std::printf("exact-band-integral-geneva: cells that failed the tiling check before the indexed-vertex clip\n");
+    std::printf(
+        "exact-band-integral-geneva: cells that failed the tiling check before the indexed-vertex "
+        "clip\n");
     for (const GCase& c : geneva_cases) {
         Eigen::MatrixXd V(c.nV, 3);
         for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
@@ -774,11 +868,18 @@ TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
             REQUIRE_NOTHROW(eb.value(T, c.cells[k].delta));
         }
         CHECK(st.open_results == 0);
-        std::printf("  %-12s %d cells, %d triangles: max relative error vs the Python %.1e; %lld clip"
-                    " results checked closed, %lld open; %lld cuts closed up without a cap, %lld caps of"
-                    " several circuits\n",
-                    c.name, c.ncells, c.nF, worst, (long long)st.closed_checked,
-                    (long long)st.open_results, (long long)st.clips_closed_up, (long long)st.caps_split);
+        std::printf(
+            "  %-12s %d cells, %d triangles: max relative error vs the Python %.1e; %lld clip"
+            " results checked closed, %lld open; %lld cuts closed up without a cap, %lld caps of"
+            " several circuits\n",
+            c.name,
+            c.ncells,
+            c.nF,
+            worst,
+            (long long)st.closed_checked,
+            (long long)st.open_results,
+            (long long)st.clips_closed_up,
+            (long long)st.caps_split);
     }
 }
 
@@ -829,7 +930,8 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             const Eigen::Map<const Eigen::Vector3d> Gr(sc.G);
             const Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> Hr(sc.H);
             const double eg = (G - Gr).norm() / std::max(Gr.norm(), 1e-300);
-            const double eh = (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
+            const double eh =
+                (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
             CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
             CHECK(eg <= 1e-10);
             CHECK(eh <= 1e-9);
@@ -840,7 +942,8 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
                 // the cells wholly inside the lower plate (true value 0) never go below it
                 if (k % 8 == 4) CHECK(J >= 0.);
             }
-            if (!sc.clipped || n_fd >= 24 || (std::string(c.name) == "plates" && (k / 4) % 2 == 0)) continue;
+            if (!sc.clipped || n_fd >= 24 || (std::string(c.name) == "plates" && (k / 4) % 2 == 0))
+                continue;
             // central differences on clipped cells (the plates' unjittered cells sit on ties of the
             // D bound's vertex max, where the bound has a kink: skipped)
             ++n_fd;
@@ -874,11 +977,26 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
         }
         CHECK(st.open_results == 0);
         std::printf(
-            "  %-13s %2d cells (%d clipped; D parts %lld, %lld positive): J vs the Python %.1e (delta vol);"
-            " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences on %d"
+            "  %-13s %2d cells (%d clipped; D parts %lld, %lld positive): J vs the Python %.1e "
+            "(delta vol);"
+            " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences "
+            "on %d"
             " clipped cells G %.1e H %.1e; %lld clip results closed, %lld open\n",
-            c.name, c.ncells, n_clipped, (long long)st.side_D, (long long)st.side_D_pos, e_J, n_bits,
-            n_unclipped, e_dJ, e_G, e_H, n_fd, fd_g, fd_h, (long long)st.closed_checked,
+            c.name,
+            c.ncells,
+            n_clipped,
+            (long long)st.side_D,
+            (long long)st.side_D_pos,
+            e_J,
+            n_bits,
+            n_unclipped,
+            e_dJ,
+            e_G,
+            e_H,
+            n_fd,
+            fd_g,
+            fd_h,
+            (long long)st.closed_checked,
             (long long)st.open_results);
     }
 }
@@ -933,7 +1051,8 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
 {
     using namespace exact_band_max_data;
     constexpr double EPS = std::numeric_limits<double>::epsilon();
-    std::printf("exact-band-max-distance: max_distance against the Python and a 24-per-side grid\n");
+    std::printf(
+        "exact-band-max-distance: max_distance against the Python and a 24-per-side grid\n");
     for (const MaxCase& c : max_cases) {
         Eigen::MatrixXd V(c.nV, 3);
         for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
@@ -941,14 +1060,18 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
         for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
         const ExactBandIntegral eb(V, F);
         const InputTriangles tris(V, F);
-        double w_par = 0., w_U = 0., w_at = 0., w_ub = -std::numeric_limits<double>::infinity(), w_eq = 0.;
+        double w_par = 0., w_U = 0., w_at = 0., w_ub = -std::numeric_limits<double>::infinity(),
+               w_eq = 0.;
         int n_ra = 0;
         const bool cube8 = std::string(c.name) == "cube8";
-        if (cube8) std::printf("  cube8, bars: face  former (U - delta)/eps  exact (max - delta)/eps\n");
+        if (cube8)
+            std::printf("  cube8, bars: face  former (U - delta)/eps  exact (max - delta)/eps\n");
         for (int k = 0; k < c.nfaces; ++k) {
             const MaxFace& mf = c.faces[k];
             const std::array<Vec3, 3> P = {
-                {Vec3(mf.P[0], mf.P[1], mf.P[2]), Vec3(mf.P[3], mf.P[4], mf.P[5]), Vec3(mf.P[6], mf.P[7], mf.P[8])}};
+                {Vec3(mf.P[0], mf.P[1], mf.P[2]),
+                 Vec3(mf.P[3], mf.P[4], mf.P[5]),
+                 Vec3(mf.P[6], mf.P[7], mf.P[8])}};
             ExactBandIntegral::MaxInfo info;
             const double m = eb.max_distance(P, &info);
             double xs = 0.;
@@ -964,12 +1087,15 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             CHECK(info.rule_a_pieces == mf.rule_a_pieces);
             w_par = std::max(w_par, par);
             w_U = std::max(w_U, std::abs(info.U - mf.U) / unit);
-            w_at = std::max(w_at, (info.at - Vec3(mf.at[0], mf.at[1], mf.at[2])).cwiseAbs().maxCoeff() / (EPS * xs));
+            w_at = std::max(
+                w_at,
+                (info.at - Vec3(mf.at[0], mf.at[1], mf.at[2])).cwiseAbs().maxCoeff() / (EPS * xs));
             constexpr int N = 24;
             double smax = 0.;
             for (int i = 0; i <= N; ++i) {
                 for (int j = 0; i + j <= N; ++j) {
-                    const Vec3 x = P[0] + (double(i) / N) * (P[1] - P[0]) + (double(j) / N) * (P[2] - P[0]);
+                    const Vec3 x =
+                        P[0] + (double(i) / N) * (P[1] - P[0]) + (double(j) / N) * (P[2] - P[0]);
                     smax = std::max(smax, ref_distance(x, V, F));
                 }
             }
@@ -985,7 +1111,8 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             }
             if (cube8) {
                 const double former = tris.min_max_corner_distance(P.data(), 3);
-                CHECK(std::abs(former - info.U) <= 64. * unit); // the settle loop's former bound is U
+                CHECK(
+                    std::abs(former - info.U) <= 64. * unit); // the settle loop's former bound is U
                 const double ob = (former - c.delta) / c.eps, nb = (m - c.delta) / c.eps;
                 std::printf("    %-22s %8.4f %10.4f\n", mf.label, ob, nb);
                 CHECK(ob > 1.);
@@ -993,9 +1120,17 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             }
         }
         std::printf(
-            "  %-13s %2d faces (%d rule-(a) maxima): parity max %.2f, U %.2f, at %.2f (eps units); grid -"
+            "  %-13s %2d faces (%d rule-(a) maxima): parity max %.2f, U %.2f, at %.2f (eps units); "
+            "grid -"
             " max %+.2f; |d(at) - max| %.2f\n",
-            c.name, c.nfaces, n_ra, w_par, w_U, w_at, w_ub, w_eq);
+            c.name,
+            c.nfaces,
+            n_ra,
+            w_par,
+            w_U,
+            w_at,
+            w_ub,
+            w_eq);
     }
 }
 
@@ -1015,7 +1150,14 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
     constexpr double EPS = std::numeric_limits<double>::epsilon();
     using clk = std::chrono::steady_clock;
     for (const char* name :
-         {"cube_out", "cylinder_out", "prism_in", "slot", "t100026", "sphere", "cylinder_in", "cube8"}) {
+         {"cube_out",
+          "cylinder_out",
+          "prism_in",
+          "slot",
+          "t100026",
+          "sphere",
+          "cylinder_in",
+          "cube8"}) {
         std::ifstream in(std::string(dir) + "/" + name + "_max.bin", std::ios::binary);
         REQUIRE(in.good());
         int32_t hdr[3];
@@ -1038,14 +1180,19 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
         REQUIRE(in.good());
         Eigen::MatrixXd V(nV, 3);
         Eigen::MatrixXi F(nF, 3);
-        for (int i = 0; i < nV; ++i) V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
-        for (int i = 0; i < nF; ++i) F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
+        for (int i = 0; i < nV; ++i)
+            V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
+        for (int i = 0; i < nF; ++i)
+            F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
         const ExactBandIntegral eb(V, F);
         const InputTriangles tris(V, F);
         std::vector<std::array<Vec3, 3>> faces(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < 3; ++j) {
-                faces[size_t(i)][size_t(j)] = Vec3(Pb[size_t(9 * i + 3 * j)], Pb[size_t(9 * i + 3 * j + 1)], Pb[size_t(9 * i + 3 * j + 2)]);
+                faces[size_t(i)][size_t(j)] = Vec3(
+                    Pb[size_t(9 * i + 3 * j)],
+                    Pb[size_t(9 * i + 3 * j + 1)],
+                    Pb[size_t(9 * i + 3 * j + 2)]);
             }
         }
         double w_par = 0., w_U = 0.;
@@ -1085,11 +1232,24 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
             mean_b += ub[size_t(i)] / n;
         }
         std::printf(
-            "== %-12s %4d faces, %4d triangles: parity max %.2f, U %.2f (eps units), rule_a mismatches %d"
-            " | max_distance us per face: mean %.2f p50 %.2f p90 %.2f p99 %.2f max %.2f | former bound"
+            "== %-12s %4d faces, %4d triangles: parity max %.2f, U %.2f (eps units), rule_a "
+            "mismatches %d"
+            " | max_distance us per face: mean %.2f p50 %.2f p90 %.2f p99 %.2f max %.2f | former "
+            "bound"
             " mean %.2f%s\n",
-            name, n, nF, w_par, w_U, n_ra_mismatch, mean, pct(us, 0.5), pct(us, 0.9), pct(us, 0.99),
-            pct(us, 1.), mean_b, sink == 0. ? " " : "");
+            name,
+            n,
+            nF,
+            w_par,
+            w_U,
+            n_ra_mismatch,
+            mean,
+            pct(us, 0.5),
+            pct(us, 0.9),
+            pct(us, 0.99),
+            pct(us, 1.),
+            mean_b,
+            sink == 0. ? " " : "");
     }
 }
 
@@ -1116,7 +1276,8 @@ TEST_CASE("exact-band-replay", "[.replay]")
     std::string a, b, c;
     for (int i = 0; i < nV; ++i) {
         in >> a >> b >> c;
-        V.row(i) << std::strtod(a.c_str(), nullptr), std::strtod(b.c_str(), nullptr), std::strtod(c.c_str(), nullptr);
+        V.row(i) << std::strtod(a.c_str(), nullptr), std::strtod(b.c_str(), nullptr),
+            std::strtod(c.c_str(), nullptr);
     }
     for (int i = 0; i < nF; ++i) in >> F(i, 0) >> F(i, 1) >> F(i, 2);
     REQUIRE(in.good());
@@ -1138,11 +1299,20 @@ TEST_CASE("exact-band-replay", "[.replay]")
         ExactBandIntegral::Stats st;
         try {
             const double J = eb.value(T, x[12], &st);
-            std::printf("cell %d: J %.17g | candidates %lld pieces %lld clips %lld\n", k, J, (long long)st.candidates,
-                        (long long)st.pieces, (long long)st.clips);
+            std::printf(
+                "cell %d: J %.17g | candidates %lld pieces %lld clips %lld\n",
+                k,
+                J,
+                (long long)st.candidates,
+                (long long)st.pieces,
+                (long long)st.clips);
         } catch (const std::exception& e) {
-            std::printf("cell %d: ERROR %s | candidates %lld clips %lld\n", k, e.what(), (long long)st.candidates,
-                        (long long)st.clips);
+            std::printf(
+                "cell %d: ERROR %s | candidates %lld clips %lld\n",
+                k,
+                e.what(),
+                (long long)st.candidates,
+                (long long)st.clips);
         }
         ++k;
     }

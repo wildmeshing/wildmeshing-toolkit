@@ -3,6 +3,9 @@
 // regenerate. Hex floats: bit exact.
 #pragma once
 
+// Generated tables, kept one entry per line as the generator writes them: not reformatted.
+// clang-format off
+
 namespace exact_band_side_data {
 
 /// A cell T, delta, and exact_mesh: J = band_integral(T, delta) (the offset side only); clipped (anything
@@ -238,3 +241,4 @@ inline const SCase side_cases[] = {
 };
 
 } // namespace exact_band_side_data
+// clang-format on
