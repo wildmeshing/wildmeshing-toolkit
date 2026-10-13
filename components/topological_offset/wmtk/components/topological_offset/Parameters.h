@@ -156,19 +156,33 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
+    /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
+    /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound" (the default): vol times the min
+    /// over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on
+    /// the cell's part of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
+    /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
+    /// rule-(a) pieces. See the spec doc.
+    std::string band_volume_rule = "corner_bound";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when E fell by less than the bar energy
     /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
     /// offset term's excess for a front lying front_conv off the level set. On a settled turn
-    /// every front face whose exact distance bound from the level set (the face's min of d, and
-    /// min over P of the max of d_P at its corners) exceeds front_conv has its corners halved;
+    /// every front face whose distance from the level set (the face's min of d, and its max of d,
+    /// ExactBandIntegral::max_distance()) exceeds front_conv has its corners halved;
     /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
     /// See the spec doc.
     bool settle_refinement = true;
+    /// EXPERIMENTAL (2026-10-10), with EXPERIMENTAL_settle_refinement: on a settled turn a band
+    /// cell with a front corner is also refined (its corners halved) when md - d(centroid) >
+    /// front_conv, md the corner mean of the bounding triangle's distance (the corner bound's own
+    /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
+    /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
+    bool gap_refinement = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
     /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
-    /// exceeds front_conv; its sizing is halved. "max": a face's exact bound on
-    /// max |d - target_distance| exceeds front_conv. "rms": a face's share of the offset excess
+    /// exceeds front_conv; its sizing is halved. "max": a face's max of
+    /// |d - target_distance| exceeds front_conv (exact up to rounding; an upper bound on rule-(a)
+    /// pieces, see ExactBandIntegral::max_distance()). "rms": a face's share of the offset excess
     /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
     /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
     /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
@@ -276,7 +290,17 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error("EXPERIMENTAL_repulsion_refine needs repulsion_rounds > 0");
         }
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
+        band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
+        if (band_volume_rule != "corner_bound" && band_volume_rule != "exact") {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\" or \"exact\", not \"{}\"",
+                band_volume_rule);
+        }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
+        gap_refinement = json_params["EXPERIMENTAL_gap_refinement"];
+        if (gap_refinement && !settle_refinement) {
+            log_and_throw_error("EXPERIMENTAL_gap_refinement needs EXPERIMENTAL_settle_refinement");
+        }
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(

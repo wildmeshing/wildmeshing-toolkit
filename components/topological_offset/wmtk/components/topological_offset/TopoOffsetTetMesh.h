@@ -22,6 +22,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "ExactBandIntegral.hpp"
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
@@ -522,6 +523,11 @@ public:
      * on input edges and vertices, where triangles tie -- and the term depended on how the cell
      * was made. No triangle outside the corners' nearest (ties included) had a smaller mean, so
      * the exact search (InputTriangles::min_mean_distance()) visits boxes only.
+     *
+     * That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is
+     * J_t / delta, J_t = int_t (d - delta) dV in closed form (ExactBandIntegral::value()): exact
+     * up to rounding, and an upper bound only on the pieces of t where two features' regions
+     * meet on a curved border (rule (a)). See the spec doc.
      */
     double band_cell_term(const std::array<size_t, 4>& vids) const
     {
@@ -529,6 +535,17 @@ public:
             log_and_throw_error(
                 "the energy's band term reads one field, and this input has {} regions",
                 m_n_regions);
+        }
+        if (m_offset_params.band_volume_rule == "exact") {
+            // EXPERIMENTAL_band_volume_rule "exact": J_t / delta, J_t = int_t (d - delta) dV in
+            // closed form (ExactBandIntegral), in place of the corner bound
+            const std::array<Vector3d, 4> p = {
+                {m_vertex_attribute[vids[0]].m_posf,
+                 m_vertex_attribute[vids[1]].m_posf,
+                 m_vertex_attribute[vids[2]].m_posf,
+                 m_vertex_attribute[vids[3]].m_posf}};
+            const double delta = m_offset_params.target_distance;
+            return m_band_exact->value(p, delta) / delta;
         }
         int64_t best = -1;
         return band_cell_corner_bound(vids, best);
@@ -546,6 +563,10 @@ public:
     /// The input's triangles, the convex pieces of d the band term's min runs over
     /// (init_offset_potential()).
     std::shared_ptr<InputTriangles> m_band_tris;
+    /// EXPERIMENTAL_band_volume_rule "exact", or EXPERIMENTAL_settle_refinement with settle_mark
+    /// "max" (its exact max over a front face): the input's triangles for the exact integral,
+    /// built once beside m_band_tris (init_offset_potential()).
+    std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
     /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
     double band_amips_weight() const
@@ -1874,9 +1895,9 @@ public:
     /// less than the bar energy b = front_conv^2 A / (2 target_distance)
     /// since `e_prev` (E at the end of the previous turn, turn 1: before its first group; set to
     /// E now). Only a settled turn tests the front faces (InputTriangles::min_triangle_distance()
-    /// and min_max_corner_distance()) and halves the corners of those more than front_conv from
-    /// the level set, when `refine_now`. Logs the turn's [settle] line. Returns settled and no
-    /// face marked: the loop's exit. See the spec doc.
+    /// and, settle_mark "max", ExactBandIntegral::max_distance()) and halves the corners of those
+    /// more than front_conv from the level set, when `refine_now`. Logs the turn's [settle] line.
+    /// Returns settled and no face marked: the loop's exit. See the spec doc.
     bool settle_refinement_turn(int turn, double& e_prev, bool refine_now);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
@@ -2074,6 +2095,10 @@ public:
     MatrixXd m_phi_V;
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
+    /// Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1:
+    /// the row's normal (b - a) x (c - a) points out of the label-1 region), 0 for an isolated
+    /// triangle. The exact rule's offset side (ExactBandIntegral) reads it.
+    std::vector<int8_t> m_phi_F_inner;
     std::vector<int> m_phi_P;
 
     /// label connected simplicial complex components (simplices labelled 1 or 2)

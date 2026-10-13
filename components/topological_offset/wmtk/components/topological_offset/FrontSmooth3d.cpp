@@ -294,11 +294,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         cells.push_back(c);
     }
     if (cells.empty()) return nullptr;
-    return std::make_shared<BandVolumeEnergy3D>(
+    auto e = std::make_shared<BandVolumeEnergy3D>(
         m_band_tris,
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         m_offset_params.target_distance);
+    // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
+    if (m_offset_params.band_volume_rule == "exact") {
+        e->set_exact_integral(m_band_exact, m_offset_params.target_distance);
+    }
+    return e;
 }
 
 } // namespace wmtk::components::topological_offset
