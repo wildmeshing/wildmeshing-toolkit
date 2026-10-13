@@ -861,11 +861,12 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
         // The row's orientation against the solid it bounds (its tet's fourth vertex): the faces'
         // vertex order is the face's, not the solid's, so the side is kept apart.
         const Vector3d o = V.row(v_id_map[boundary_opposite.at(f_simp)]).head<3>().transpose();
-        m_phi_F_inner.push_back(int8_t(wmtk::utils::predicates::orient3d(
-            Vector3d(V.row(v_id_map[vs[0]]).head<3>().transpose()),
-            Vector3d(V.row(v_id_map[vs[1]]).head<3>().transpose()),
-            Vector3d(V.row(v_id_map[vs[2]]).head<3>().transpose()),
-            o)));
+        m_phi_F_inner.push_back(int8_t(
+            wmtk::utils::predicates::orient3d(
+                Vector3d(V.row(v_id_map[vs[0]]).head<3>().transpose()),
+                Vector3d(V.row(v_id_map[vs[1]]).head<3>().transpose()),
+                Vector3d(V.row(v_id_map[vs[2]]).head<3>().transpose()),
+                o)));
     }
     for (int i = 0; i < F.rows(); ++i) { // isolated triangles of the complex
         phi_tris.emplace_back(F(i, 0), F(i, 1), F(i, 2));
@@ -998,13 +999,19 @@ void TopoOffsetTetMesh::init_offset_potential()
             if (m_offset_params.band_volume_rule == "exact" ||
                 (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max")) {
                 // The band is on the offset side of the input only (ExactBandIntegral's class
-                // doc): outside the selection for an outward offset, inside for an inward one,
-                // both or neither: no side. A face's side is its orient3d against the solid it
-                // bounds (positive: the row's normal points away from the solid). The oriented
-                // volume of the boundary must come out positive; it is logged, and a warning if not.
-                const int sigma = m_offset_params.offset_out == m_offset_params.offset_in
-                                      ? 0
-                                      : (m_offset_params.offset_out ? 1 : -1);
+                // doc), and that side is outside the label-1 cells whichever way the offset goes:
+                // they are the selection for offset_out and everything outside the selection for
+                // offset_in (label_input_complex()), and the band grows away from them. A face's
+                // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
+                // positive: the row's normal points away from the cell), so sigma is +1 for both
+                // directions; both or neither: no side. The oriented volume of the boundary must
+                // come out positive; it is logged, and a warning if not.
+                // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
+                // inside of cells that are the outside of the selection, so the clip kept the far
+                // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
+                // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
+                // tag_0's 343.81: the label-1 cells, not the selection.
+                const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
                 double vol6 = 0.;
                 for (int f = 0; f < m_phi_F.rows(); ++f) {
                     const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
@@ -1014,12 +1021,13 @@ void TopoOffsetTetMesh::init_offset_potential()
                 }
                 logger().log(
                     vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
-                    "\tExact band integral: offset side {} (sigma {}), the selection's boundary "
-                    "oriented by its solid encloses volume {}",
-                    sigma > 0 ? "outside" : (sigma < 0 ? "inside" : "none"),
+                    "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
+                    "oriented by them encloses volume {}",
+                    sigma > 0 ? "outside the label-1 cells" : "none",
                     sigma,
                     vol6 / 6.);
-                m_band_exact = std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F, m_phi_F_inner, sigma);
+                m_band_exact =
+                    std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F, m_phi_F_inner, sigma);
             }
         }
         return;

@@ -99,9 +99,10 @@ public:
         : ExactBandIntegral(V, F, {}, 0)
     {}
     /// With the offset side (class doc): face_side[f] = +1 if row f's normal (b - a) x (c - a)
-    /// points out of the offset_selection region, -1 if into it, 0 for a triangle that bounds no
-    /// solid; sigma = +1 for an outward offset (the band outside the selection), -1 inward, 0 no
-    /// clip (as the two-argument constructor).
+    /// points out of the solid the triangles bound, -1 if into it, 0 for a triangle that bounds no
+    /// solid; sigma = +1 for the band outside that solid, -1 inside it, 0 no clip (as the
+    /// two-argument constructor). TopoOffsetTetMesh's solid is its label-1 cells, which the band
+    /// is outside of for offset_out and offset_in alike, so it passes +1.
     ExactBandIntegral(
         const Eigen::MatrixXd& V,
         const Eigen::MatrixXi& F,
@@ -137,7 +138,8 @@ public:
         /// The offset side (class doc): value() calls with anything clipped; rule-(a) pieces split
         /// by their members' planes; parts D where the planes disagree, of them where some
         /// member's distance exceeds delta at a vertex, and where the bound is positive.
-        int64_t side_clipped = 0, side_rule_a_split = 0, side_D = 0, side_D_over = 0, side_D_pos = 0;
+        int64_t side_clipped = 0, side_rule_a_split = 0, side_D = 0, side_D_over = 0,
+                side_D_pos = 0;
         /// Times in seconds, measured only when `timing` is set (the clock reads add a few percent,
         /// mac-mini). t_candidates: the U search, the box query and the local feature setup;
         /// t_clip: every half-space clip; t_closed: every face integral (point and line
@@ -246,7 +248,7 @@ private:
     std::vector<Eigen::Vector3d> m_A, m_B, m_C; ///< triangle corners, for d_P
     std::vector<std::array<int, 6>> m_face_feats; ///< per face: its 3 edges, its 3 vertices
     /// The offset side (class doc): sigma (0: none), and per feature its side plane, the unit
-    /// normal N oriented out of the selection region and a point q on it; m_side_has[g] false
+    /// normal N oriented out of the solid (face_side) and a point q on it; m_side_has[g] false
     /// where the feature has no plane (every point counts).
     int m_sigma = 0;
     std::vector<char> m_side_has;
