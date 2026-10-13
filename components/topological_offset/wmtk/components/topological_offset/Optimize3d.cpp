@@ -291,6 +291,28 @@ void TopoOffsetTetMesh::stamp_plastic_rests()
     for (const Tuple& t : get_tets()) stamp_rest_cell(t.tid(*this));
 }
 
+bool TopoOffsetTetMesh::all_plastic(const std::vector<size_t>& tids) const
+{
+    // See the declaration.
+    if (tids.empty()) return false;
+    for (const size_t tid : tids) {
+        if (!cell_is_plastic(tid)) return false;
+    }
+    return true;
+}
+
+bool TopoOffsetTetMesh::plastic_tie(
+    const std::vector<size_t>& before,
+    const std::vector<int>& after_labels) const
+{
+    // See the declaration.
+    if (!m_plastic_active || after_labels.empty()) return false;
+    for (const int l : after_labels) {
+        if (l == 1 || l == 2) return false; // an elastic cell: the band or the input complex
+    }
+    return all_plastic(before);
+}
+
 double TopoOffsetTetMesh::global_energy() const
 {
     // E = int_B (d - delta) / delta dV (as the band term's upper bound) + (w / s^3) sum vol
@@ -327,9 +349,16 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
     }
     const double a3 = get_quality(vids);
     // use_rest_pose: a plastic cell the swap creates is stamped at creation (swap_after_cells()),
-    // so it reads A = 3 against its own shape: vol 27, the volume from vol_amips3() / A^3.
+    // so it reads A = 3 against its own shape -- scored with tet_energy()'s arithmetic for such a
+    // cell, value_of() with the rest equal to the cell itself.
     if (m_plastic_active && label != 1 && label != 2 && a3 < MAX_ENERGY) {
-        double e = band_amips_weight() * 27. * (vol_amips3(vids, a3) / a3);
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vids[size_t(k)]].m_posf;
+        Eigen::Matrix3d R;
+        for (int k = 1; k < 4; ++k) R.col(k - 1) = p[size_t(k)] - p[0];
+        const double v = VolAMIPSEnergy3D::value_of(p, R);
+        if (!std::isfinite(v)) return MAX_ENERGY;
+        double e = band_amips_weight() * v;
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
@@ -417,7 +446,14 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     if (!swap_capture_tag(tids)) return false;
     // The energy rule's before-half (see swap_after_cells()): the sum over the ring. A cell's
     // energy is its own corners' and label's, so no cell outside the ring changes energy.
+    // use_rest_pose: every new cell takes the ring's one label; an all-plastic swap is an exact
+    // tie (plastic_tie()), which the strict rule refuses -- outright, before any case is scored.
+    if (plastic_tie(tids, {m_swap_label.local()})) {
+        ++m_plastic_tie_swap;
+        return false;
+    }
     m_swap_energy_before.local() = tet_energy_sum(tids);
+
     // What the 4-4 / 5-6 case search and the face swap's gate read candidate cells' labels from;
     // see SwapRecord. After the capture, whose single label every new cell takes.
     // A 3-2 has no case search and no gate on cells that do not exist yet: the rule judges it
@@ -501,6 +537,18 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // replaces. A cell's energy is its own corners' and label's, so the cells beyond the ring --
     // a 3-2's cells beyond (a,c,d) and (b,c,d) among them, whose faces it hands to the other
     // side -- keep theirs.
+    // use_rest_pose: each new cell takes a side captured from the ring's vertices; an all-plastic
+    // flip is an exact tie (plastic_tie()), which the strict rule refuses -- outright.
+    {
+        std::vector<int> after_labels;
+        for (const auto& [v, side] : m_swap_sides.local().by_vertex) {
+            after_labels.push_back(side.second);
+        }
+        if (plastic_tie(tids, after_labels)) {
+            ++m_plastic_tie_swap;
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+    }
     m_swap_energy_before.local() = tet_energy_sum(tids);
     // What the 4-4 / 5-6 case search reads candidate cells' labels from; see SwapRecord. After
     // swap_capture_surface_sides(), whose sides the new cells take.
@@ -1012,6 +1060,17 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
         CollapseVolume& cv = m_collapse_volume.local();
         cv.before = tet_energy_sum(ring1);
+        // use_rest_pose: the cells the collapse changes are v1's cells without v2, each keeping
+        // its label; when they and the whole ring are plastic, the collapse is an exact tie
+        // (plastic_tie()).
+        std::vector<int> after_labels;
+        for (const size_t tid : ring1) {
+            const auto vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), v2_id) == vs.end()) {
+                after_labels.push_back(m_tet_attribute[tid].label);
+            }
+        }
+        cv.tie = plastic_tie(ring1, after_labels);
         std::sort(ring1.begin(), ring1.end());
         cv.v2_only.clear();
         for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
@@ -1108,17 +1167,30 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     //
     // Not in coarsening, where the engine skips its own collapse rule as well and judges the
     // region after re-smoothing.
+    //
+    // use_rest_pose: every cell the collapse changed is stamped first, at the change and before
+    // the rule reads it, as split and swap stamp the cells they make. An exact tie
+    // (plastic_tie(), decided in collapse_before_vertex()) is not gated by the energy; it is
+    // still refused for a cell the engine cannot score. Coarsening runs in the final pass, where
+    // the plastic medium is off.
     if (!m_coarsen_mode) {
         const CollapseVolume& cv = m_collapse_volume.local();
         double after = 0.;
+        bool scoreable = true;
         for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
             if (std::binary_search(cv.v2_only.begin(), cv.v2_only.end(), tid)) continue;
-            after += tet_energy(tid);
+            stamp_rest_cell(tid);
+            if (cv.tie) {
+                scoreable = scoreable && get_quality(tuple_from_tet(tid)) < MAX_ENERGY;
+            } else {
+                after += tet_energy(tid);
+            }
         }
-        if (!(after <= cv.before)) { // a NaN refuses
+        if (cv.tie ? !scoreable : !(after <= cv.before)) { // a NaN refuses
             ++m_volume_reject_collapse;
             return false;
         }
+        if (cv.tie) ++m_plastic_tie_collapse;
     }
     // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
     // elements for nothing but the promise that the result is still good. As in 2D.
@@ -1587,6 +1659,12 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
     }
     m_newton_front.reset();
     if (m_offset_params.debug_crossings && m_round > 0) crossing_snapshot("smooth", true, false);
+    // use_rest_pose: the engine calls this after EVERY smoothing pass, in every path (a group's
+    // passes, adaptive smoothing, pre_smooth), so this is where the plastic rests are restamped:
+    // between passes and after the last one, never before the first. With the operations
+    // stamping the cells they make or change, every rule reads rests that are up to date. A
+    // no-op while the plastic medium is off (the final pass, coarsening, the repulsion passes).
+    stamp_plastic_rests();
 }
 
 void TopoOffsetTetMesh::log_smooth_trace() const
@@ -3140,9 +3218,6 @@ void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
     const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
     std::vector<Vector3d> before;
     double prev_front = std::numeric_limits<double>::infinity();
-    // use_rest_pose: the rests are stamped once before the block, not between its passes, so the
-    // block's rest-shape term resists everything the block moves. A no-op off the plastic medium.
-    stamp_plastic_rests();
     for (int p = 0; p < max_passes; ++p) {
         before.assign(vert_capacity(), Vector3d::Zero());
         for (const Tuple& v : get_vertices()) {
@@ -4209,7 +4284,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         if (m_offset_params.adaptive_smoothing) {
             smooth_group_to_convergence("pre_smooth");
         } else {
-            stamp_plastic_rests(); // use_rest_pose: before every block of smoothing passes
             local_operations({{0, 0, 0, k}});
         }
     }
@@ -4228,15 +4302,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_iterations_used = it + 1;
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             ++m_smooth_group; // see VertexExtra::m_front_change
-            // use_rest_pose: every operation group starts from its own shape. Before E is read, so
-            // the group's descent check compares E under one set of rests.
-            stamp_plastic_rests();
             // E before and after each group, the descent check (a collapse or swap group may not
             // raise it; a split group may).
             const double energy_before_group = global_energy();
             if (settle && it == 0 && gi == 0) settle_e_prev = energy_before_group;
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
+            const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             if (m_offset_params.adaptive_smoothing) {
@@ -4244,12 +4316,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
                 smooth_group_to_convergence(group_names[gi]);
-            } else if (m_plastic_active) {
-                // use_rest_pose: the group's operations, then its smoothing passes with the rests
-                // stamped again between the two.
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
-                stamp_plastic_rests();
-                local_operations({{0, 0, 0, groups[gi][3]}});
             } else {
                 local_operations(groups[gi]);
             }
@@ -4272,6 +4338,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
                     m_volume_reject_split.load() - vol_p0);
+                if (m_plastic_active) {
+                    logger().info(
+                        "\t[plastic tie] turn {} {} group: {} swaps refused outright, {} collapses "
+                        "not gated by the energy (all-plastic, plastic_tie())",
+                        it + 1,
+                        group_names[gi],
+                        m_plastic_tie_swap.load() - tie_s0,
+                        m_plastic_tie_collapse.load() - tie_c0);
+                }
             }
         }
         consolidate_mesh();
@@ -4647,9 +4722,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     if (m_plastic_active) {
         logger().info(
             "[plastic] use_rest_pose true: AMIPS of every cell outside the band and the input "
-            "complex against its rest shape: stamped now, before every operation group and every "
-            "block of smoothing passes, and at creation for cells a split or swap makes; off in "
-            "the final pass");
+            "complex against its rest shape: stamped now, after every smoothing pass, and on every "
+            "cell a split or swap creates or a collapse changes; all-plastic operations decided "
+            "as exact ties; off in the final pass");
     } else {
         logger().info("[plastic] use_rest_pose false: equilateral AMIPS for every cell");
     }

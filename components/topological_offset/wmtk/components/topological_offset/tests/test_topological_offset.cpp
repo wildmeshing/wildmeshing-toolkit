@@ -1446,6 +1446,18 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 REQUIRE(mesh->cell_is_plastic(2));
                 REQUIRE(!mesh->cell_is_plastic(0)); // band
                 REQUIRE(!mesh->cell_is_plastic(3)); // input complex
+                // The exact tie's test: plastic cells only; not a band cell, not an empty set.
+                REQUIRE(mesh->all_plastic({size_t(2)}));
+                REQUIRE(!mesh->all_plastic({size_t(0)}));
+                REQUIRE(!mesh->all_plastic({size_t(2), size_t(0)}));
+                REQUIRE(!mesh->all_plastic({}));
+                // The tie needs both sides plastic: an after cell in the band or the complex
+                // breaks it.
+                REQUIRE(mesh->plastic_tie({size_t(2)}, {0}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {0, 2}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {1}));
+                REQUIRE(!mesh->plastic_tie({size_t(2), size_t(3)}, {0}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {}));
                 // c2 leaves its stamped rest, so cell 2 is off its minimum.
                 mesh->set_vertex_position(
                     4,

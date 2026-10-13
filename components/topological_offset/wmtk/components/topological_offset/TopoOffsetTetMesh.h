@@ -104,9 +104,10 @@ public:
     /**
      * Rest shape of a plastic cell (TopoOffsetTetMesh::cell_is_plastic(), use_rest_pose): the
      * tet's corners as last stamped, in the oriented order. Stamped for every plastic cell when
-     * the loop starts, before every operation group and every block of smoothing passes, and for
-     * a cell a split or a swap creates when it is created; a cell a collapse reshapes keeps its
-     * rest. Read only while the cell is plastic.
+     * the loop starts and after every smoothing pass (log_smoothing_pass_accounting()), and, in
+     * the operations, for every cell a split or a swap creates or a collapse changes, at the
+     * change and before the operation's energy rule reads it -- so every rule reads up-to-date
+     * rests. Read only while the cell is plastic.
      */
     bool rest_valid = false;
     std::array<Vector3d, 4> rest_pos;
@@ -441,8 +442,10 @@ public:
      * corners and its label alone: an operation changes the energy of the cells it changes and
      * of no other -- except under use_rest_pose, where a plastic cell's (cell_is_plastic(), outside
      * the band and the complex) AMIPS term is vol A^3 against its stamped rest
-     * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: the
-     * rests are stamped between operation groups and smoothing blocks, never inside one.
+     * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: every
+     * plastic cell after each smoothing pass, and the cells an operation makes or changes at that
+     * operation. All-plastic operations are decided as exact ties (plastic_tie()), not by
+     * comparing the sums.
      *
      * WHERE IT IS COMPARED: always as the SUM of tet_energy() over the cells an operation changes,
      * before against after, the cells summed in the same order each time.
@@ -706,13 +709,37 @@ public:
     /// rest_pos[0] in the oriented order; false when the cell is not plastic, has no rest, or the
     /// rest holds no shape (det <= 0) -- the cell is then measured against the regular tet.
     bool plastic_rest(const size_t tid, Eigen::Matrix3d& R) const;
-    /// Stamp rest := current for every plastic cell; called when the loop starts, before every
-    /// operation group (split, collapse, swap) and before every block of smoothing passes. A
-    /// no-op while the plastic medium is off.
+    /// Stamp rest := current for every plastic cell; called when the loop starts and after every
+    /// smoothing pass (log_smoothing_pass_accounting(), which the engine calls after each pass).
+    /// A no-op while the plastic medium is off.
     void stamp_plastic_rests();
     /// Stamp one cell's rest := its current corners (oriented order). For the cells a split or a
-    /// swap creates; a no-op unless the cell is plastic.
+    /// swap creates and a collapse changes, before the operation's energy rule; a no-op unless
+    /// the cell is plastic.
     void stamp_rest_cell(size_t tid);
+    /// Whether every cell of `tids` is plastic (cell_is_plastic()). False for an empty set.
+    bool all_plastic(const std::vector<size_t>& tids) const;
+    /**
+     * @brief THE PLASTIC TIE: whether an operation's energy is exactly the same before and after.
+     * `before` are the cells it replaces (live, read in its before-hook), `after_labels` the
+     * labels of the cells it will make or change. True when the plastic medium is on, every
+     * before cell is plastic (all_plastic()) and every after cell is plastic (a label other than
+     * 1 and 2: no band cell, no input-complex cell). The rests are up to date at every rule --
+     * restamped after every smoothing pass and, in the operations, on every cell made or changed
+     * -- so the before cells are at their rests and the after cells are stamped before any rule
+     * reads them.
+     *
+     * Then every cell on both sides has A = 3 and an AMIPS term of (w / s^3) 27 vol, no band term,
+     * and the operation retriangulates one region of one total volume: the two sums of
+     * tet_energy() are EQUAL in exact arithmetic. Floating point does not reproduce it --
+     * measured on 2000 perturbed all-plastic collapses with VolAMIPSEnergy3D::value_of()'s
+     * arithmetic, the relative difference had median 3.5e-16 and max 3.1e-15, after > before in
+     * 876, after < before in 858, an exact tie in 266 -- so the rules take the equality instead
+     * of comparing: a swap is refused outright (its rule is strict), a collapse is not gated by
+     * the energy (a tie passes) and answers only to the length gate, the inversion test and the
+     * other refusals.
+     */
+    bool plastic_tie(const std::vector<size_t>& before, const std::vector<int>& after_labels) const;
 
     /// The 3D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
@@ -1377,6 +1404,9 @@ public:
     {
         double before = 0.;
         std::vector<size_t> v2_only;
+        /// use_rest_pose: plastic_tie() of the collapse -- the rule's two sums are equal in exact
+        /// arithmetic, so the energy does not gate it.
+        bool tie = false;
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2337,6 +2367,9 @@ private:
      * labels, so their energy, and are in neither sum.
      */
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_energy_before;
+    /// use_rest_pose: operations decided by plastic_tie() -- swaps refused outright, collapses
+    /// passed by the energy rule. Per group, for the [band volume energy] line.
+    mutable std::atomic<int> m_plastic_tie_swap{0}, m_plastic_tie_collapse{0};
     /**
      * @brief The swap in flight on this thread, as candidate_energy() and the sanity check read it
      * (see tet_energy(), CANDIDATE CELLS). Filled by swap_record_fill(), which
