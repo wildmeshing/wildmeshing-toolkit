@@ -15,6 +15,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -104,12 +105,16 @@ TEST_CASE("exact-band-integral-one-triangle", "[offset][exact_band]")
         return 1e-12;
     };
     std::map<std::string, std::array<double, 4>> worst; // port, vs exact_tri, additivity, series
+    int64_t n_closed = 0;
     for (const auto& c : exact_band_data::tri_cells) {
         const ExactBandIntegral eb = one_triangle(c.P);
         const Tet T = tet_of(c.T);
         ExactBandIntegral::Stats st;
+        st.check_closed = true; // every clip result a closed surface (clip())
         const double I = eb.value(T, 0., &st);
         INFO(c.label);
+        CHECK(st.open_results == 0);
+        n_closed += st.closed_checked;
         CHECK(rel(I, c.Im) <= tol(c.label, false));
         CHECK(rel(I, c.Ix) <= tol(c.label, false));
         // the near-parallel series is exercised where the Python exercises it (the exact counts
@@ -125,7 +130,8 @@ TEST_CASE("exact-band-integral-one-triangle", "[offset][exact_band]")
         w[2] = std::max(w[2], rel(sum, I));
         w[3] += double(series(st));
     }
-    std::printf("exact-band-integral-one-triangle: max relative error per configuration\n");
+    std::printf("exact-band-integral-one-triangle: max relative error per configuration (%lld clip results"
+                " checked closed)\n", (long long)n_closed);
     std::printf("  %-30s %9s %9s %9s %7s\n", "", "vs mesh", "vs tri", "additiv.", "series");
     for (const auto& [k, w] : worst) {
         std::printf("  %-30s %9.1e %9.1e %9.1e %7.0f\n", k.c_str(), w[0], w[1], w[2], w[3]);
@@ -135,6 +141,7 @@ TEST_CASE("exact-band-integral-one-triangle", "[offset][exact_band]")
 TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
 {
     std::printf("exact-band-integral-real-cells: max relative error against the Python\n");
+    int64_t n_closed = 0;
     for (const auto& c : exact_band_data::real_cases) {
         const ExactBandIntegral eb = of_case(c);
         double worst = 0., worst_add = 0.;
@@ -144,9 +151,12 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
             const auto& cell = c.cells[i];
             const Tet T = tet_of(cell.T);
             ExactBandIntegral::Stats st;
+            st.check_closed = true; // every clip result a closed surface (clip())
             const double I = eb.value(T, 0., &st);
             J[size_t(i)] = eb.value(T, c.delta);
             INFO(c.name << " cell " << i << " (" << cell.cat << ")");
+            CHECK(st.open_results == 0);
+            n_closed += st.closed_checked;
             CHECK(rel(I, cell.I) <= 1e-12);
             // J = I - delta vol cancels in the band; its error is measured against I
             CHECK(std::abs(J[size_t(i)] - (cell.I - c.delta * cell.vol)) <= 1e-12 * cell.I);
@@ -164,8 +174,11 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
             bool exact = true;
             for (const Tet& k : red_children(T)) {
                 ExactBandIntegral::Stats sk;
+                sk.check_closed = true;
                 sum += eb.value(k, 0., &sk);
                 exact = exact && sk.rule_a_vol == 0.;
+                CHECK(sk.open_results == 0);
+                n_closed += sk.closed_checked;
             }
             if (!exact) continue;
             CHECK(rel(sum, I) <= 1e-12);
@@ -193,6 +206,7 @@ TEST_CASE("exact-band-integral-real-cells", "[offset][exact_band]")
         for (auto& x : th) x.join();
         for (int t = 0; t < 4; ++t) CHECK(Jt[size_t(t)] == J);
     }
+    std::printf("  every clip result checked closed: %lld\n", (long long)n_closed);
 }
 
 TEST_CASE("exact-band-integral-flat", "[offset][exact_band]")
@@ -534,9 +548,13 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
             ++ncat[cat[size_t(i)]];
         }
         std::printf("   worst sample cell %d (%s)\n", worst_i, cats[cat[size_t(worst_i)]]);
+        int64_t n_checked = 0, n_open = 0;
         for (int i = 0; i < nR; ++i) {
             ExactBandIntegral::Stats st;
+            st.check_closed = true;
             const double I = eb.value(tet_of(&Tr[size_t(12 * i)]), 0., &st);
+            n_checked += st.closed_checked;
+            n_open += st.open_results;
             worst_r = std::max(worst_r, rel(I, Ir[size_t(i)]));
             if (rel(I, Ir[size_t(i)]) > 3e-13) {
                 std::printf(
@@ -553,7 +571,9 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
         for (int c = 0; c < 4; ++c) {
             if (ncat[c]) std::printf("  %s (%d) %.1e", cats[c], ncat[c], worst_cat[c]);
         }
-        std::printf("  | %d random band cells %.1e\n", nR, worst_r);
+        std::printf("  | %d random band cells %.1e | clip results checked closed %lld, open %lld\n", nR, worst_r,
+                    (long long)n_checked, (long long)n_open);
+        CHECK(n_open == 0);
 
         // derivatives: parity with exact_mesh.value_grad_hess (every sample cell at its 4 corners,
         // the first random cells at corner i % 4), and the time of one value_grad_hess() call
@@ -683,6 +703,81 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                 st.series_long / c,
                 100 * st.rule_a_vol / st.vol);
         }
+    }
+}
+
+// Data of exact-band-integral-geneva: GENERATED by gen_geneva_data.py (scratchpad exact_port/,
+// 2026-10-12) from the Python reference exact_integral/exact_mesh.py. Hex floats: bit exact.
+namespace exact_band_geneva_data {
+
+/// A cell T, delta, and I = exact_mesh.integrate_mesh(T) = int_T d dV on the full triangle set
+/// (equal, bit for bit, on the subset below).
+struct GCell { double T[12]; double delta, I; };
+inline const double geneva_run_V[] = {-0x1.e4c1244ccd2c1p+3, -0x1.0f6a88739f539p+2, -0x1.0a1cb86ac17bfp-1, -0x1.d78d71fa34b23p+3, -0x1.70f2263653dd3p+2, -0x1.0a1ca7ac7886dp-1, -0x1.d17409f34290ap+3, -0x1.368e041a3b1efp+2, -0x1.0a1ca58686bbfp-1, -0x1.cd18a218a4fcep+3, -0x1.c338f2573bdb6p+1, -0x1.0a1caab335810p-1, -0x1.c0b7fc3bbdddbp+3, -0x1.125358b48c8cfp+2, -0x1.0a1cbf6b69176p-1, -0x1.bf1f138c7c3bbp+3, -0x1.59e3d785e5684p+2, -0x1.0a1ca0fdab580p-1, -0x1.b1fa9c6df4f1dp+3, -0x1.e29e3da0f85c3p+1, -0x1.0a1caa1b9091ap-1, -0x1.ae34450120391p+3, -0x1.41c46ea97b73cp+2, -0x1.0a1cb163a1198p-1, -0x1.a5ea46998011ep+3, -0x1.84d4019978413p+2, -0x1.0a1cbda1275ecp-1, -0x1.9c7464029f71cp+3, -0x1.1fa9abf2367c2p+2, -0x1.0a1cc1922842dp-1, -0x1.9c2f18a702445p+3, -0x1.4ce2c2954a3fdp+2, -0x1.0a1c8819ffa7ap-1, -0x1.9b81343737dbcp+3, -0x1.e1da5475b356ap+1, -0x1.0a1cb0eeec916p-1, -0x1.833a94ff28c2bp+3, -0x1.04a72732dea2bp+2, -0x1.0a1cccba52480p-1, -0x1.825c678e36b1ep+3, -0x1.4e813a98ea216p+2, -0x1.0a1caab4fa03fp-1, -0x1.822c739be93bbp+3, 0x1.72c16c27607b0p+1, -0x1.0a1cc91218161p-1, -0x1.77d28b583c9b9p+3, 0x1.0eceb2516dc40p+1, -0x1.0a1caba5ea276p-1, -0x1.6dc036b35e43cp+3, 0x1.709c07683b4b5p+0, -0x1.0a1c99b13add7p-1, -0x1.627e1ff0682eap+3, 0x1.1ec9bcce9f8e1p+1, -0x1.0a1cc65ff866cp-1, -0x1.5abf816cbcea0p+3, 0x1.7673efcc2aef3p+1, -0x1.0a1cb54f93ff4p-1, -0x1.51c809c94406fp+3, 0x1.d8e20b27b59cdp-1, -0x1.0a1ccc46fab5cp-1, -0x1.47d3ba3d293c5p+3, 0x1.cc17c69d77dfbp+1, -0x1.0a1caa3c73073p-1, -0x1.43b40c0372d2ap+3, 0x1.bcf9eca078f6cp+0, -0x1.0a1cac33b6b75p-1, -0x1.3fab6445835f4p+3, 0x1.5e3bc9dfd0ac0p+1, -0x1.0a1caa19a3c00p-1, -0x1.3a4e690a222dfp+3, 0x1.abf36a16843ecp-1, -0x1.0a1cb203e6b6bp-1, -0x1.36e79304442a1p+3, 0x1.abb6db38ed71cp+1, -0x1.0a1c9e995eb9fp-1, -0x1.3171dd17a04bap+3, 0x1.1d3d5b618dd64p+1, -0x1.0a1cb29158c66p-1, -0x1.290bd13e71066p+3, 0x1.448ad4bbd571bp+0, -0x1.0a1cae5276385p-1, -0x1.25815cab3f48dp+3, 0x1.8b03604f694acp+1, -0x1.0a1cd0b91a15bp-1, -0x1.83f931d176605p+2, -0x1.31791de0b97dcp+0, 0x1.d80fcd79ce4c5p-4, -0x1.8292ec0c066b8p+2, -0x1.17dc2242e9241p+1, -0x1.0a1cbf42b2d9ep-1, -0x1.7a917d6b65a9bp+2, -0x1.2c4840e1719f8p+1, 0x1.d810624dd2f1bp-4, -0x1.6a848e726a0e4p+2, -0x1.a0895e8337d54p+1, -0x1.0a1c9bf7152fep-1, -0x1.51f2720fae803p+2, -0x1.7823a3a4530e3p+0, -0x1.0a1cb45dc1a07p-1, -0x1.4f5ea0f416e1cp+2, -0x1.907db81b8ce7dp+1, 0x1.d8102a66e9182p-4, -0x1.410908d56a864p+2, -0x1.f62bd31601b68p+0, 0x1.d810791bb2c33p-4, -0x1.3c46a4455ec77p+2, -0x1.aeffe66b8076fp+1, -0x1.0a1ca6bda1ba1p-1, -0x1.37eff62674fa5p+2, -0x1.42d77efb95b59p+1, -0x1.0a1cc4a53e97fp-1, -0x1.258910ea127b9p+2, -0x1.5756af27c02c1p+1, 0x1.d810624dd2f1bp-4, -0x1.240f273a97d7ap+2, -0x1.6423de7402370p+0, 0x1.d81026e48e5f5p-4, -0x1.20f6f2b951eccp+2, -0x1.d7685421229fcp-1, -0x1.0a1cac61f691dp-1, -0x1.1cf9557404d98p+2, -0x1.bf02594149934p+0, -0x1.0a1ca0d061ac8p-1, -0x1.17902b9101c8dp+2, -0x1.0439382f1f944p+1, 0x1.d81064af078e9p-4, -0x1.095136789933ep+2, 0x1.961fb3bbc6152p-1, -0x1.0a1c9ee2d2378p-1, -0x1.07cada12f8579p+2, -0x1.ae0f88bac5d4dp+1, -0x1.0a1caa70a2430p-1, -0x1.007575ac69d2fp+2, -0x1.ef39c94a03976p-1, 0x1.d810cca59d5a4p-4, -0x1.ec6e202e3eb0bp+1, -0x1.543907920963dp-1, -0x1.0a1c97d7ad297p-1, -0x1.e755fbff233eep+1, -0x1.32b19b21cec2cp+1, 0x1.d81062907726cp-4, -0x1.e73f9d1c5bd4cp+1, 0x1.06ddc7dcfaf0bp+2, 0x1.d810722fb4da0p-4, -0x1.e048c976d0efap+1, -0x1.4361cabef7555p+1, -0x1.0a1c9e7fc85d1p-1, -0x1.dab1c7fda7011p+1, -0x1.80d231af002e9p+0, -0x1.0a1cb8570f836p-1, -0x1.d474162414dbdp+1, -0x1.ca9e05e51806dp+0, 0x1.d810723326c52p-4, -0x1.ce011da762d4cp+1, 0x1.d2df529cde26bp-6, -0x1.0a1ccae402d72p-1, -0x1.b97eb00659e22p+1, 0x1.796ecfcfb04dap+2, 0x1.d810a5c981005p-4, -0x1.b67c2247a467bp+1, 0x1.5eae66c9a2e7dp+0, -0x1.0a1ccdd9073a9p-1, -0x1.abd42b4ce23c4p+1, 0x1.3fa8dbc98f955p+2, 0x1.d80f42491b2acp-4, -0x1.a3609404885b9p+1, -0x1.2022bec93365fp+0, 0x1.d8102b82d4c97p-4, -0x1.a10148d17e9aep+1, -0x1.82651d6e0eb8ap+1, 0x1.d810624dd2f1bp-4, -0x1.9d537ca52d629p+1, -0x1.b3166b4cf60bcp+1, -0x1.0a1cadc18aa81p-1, -0x1.92c2daa2ec3aap+1, 0x1.45218325f3275p-1, -0x1.0a1ca7cfef941p-1, -0x1.81fd9ddf08672p+1, -0x1.554e01b08319dp+1, 0x1.d817e912ff867p-4, -0x1.77d7203e911d2p+1, -0x1.d85c5865429d4p-1, -0x1.0a1cc11ad9406p-1, -0x1.75fa27d817e1bp+1, -0x1.b1ff3d2fd0bc7p+0, 0x1.d8105efeb70d7p-4, -0x1.74f37525cb0fep+1, 0x1.d1002cd903b14p+1, 0x1.d80fbfb557c8ep-4, -0x1.725397b370ce2p+1, -0x1.0510077ff2728p+1, -0x1.0a1cac0affcbcp-1, -0x1.6786f33d5ad1ap+1, 0x1.186d4b3473f71p+2, 0x1.d811bbfaae6b5p-4, -0x1.621a13056b7c1p+1, 0x1.6d3ff0f95d47ep+2, 0x1.d8102391804d9p-4, -0x1.61e1cf47a467fp+1, -0x1.6509f232d9ff6p+1, -0x1.0a1cb2e4dffdfp-1, -0x1.5dffa0f132b4ep+1, -0x1.21e54b866c179p-4, -0x1.0a1cb496a505ep-1, -0x1.4e8c789ea7e38p+1, 0x1.174b1623d6512p+0, -0x1.0a1cb4a19aa2bp-1, -0x1.4868ac157f3a9p+1, 0x1.44bc87bbfb1d6p+2, 0x1.d80ff00d10b50p-4, -0x1.17657e732abb4p+1, 0x1.075d5aa0cc48ep-1, -0x1.0a1c8bf27a07dp-1, -0x1.0f5d29204c996p+1, 0x1.e6f29f7634c20p+1, 0x1.d80fb4ecba094p-4, -0x1.f40dafe71ea88p+0, 0x1.6bf4e5a63304fp+2, 0x1.d810e0750b048p-4, -0x1.e674b31568c2ap+0, -0x1.9dcfc01cdd3afp-2, -0x1.0a1cc357df1b6p-1, -0x1.bc0a7bf1a7a1ap+0, 0x1.2607d614aed9bp+2, 0x1.d8115938dc770p-4, -0x1.b6e97924d2bd9p+0, 0x1.3dcccc18e8249p+0, -0x1.0a1cbc16e7b11p-1, -0x1.7e4efa5c9b0ddp+0, 0x1.2ce42798dfdacp-2, -0x1.0a1ca2e96ab1bp-1, -0x1.33a0e3b2d5281p+0, 0x1.5cfc635957721p+2, 0x1.d80fde74b0d65p-4, -0x1.1c10cc2cc2261p+0, 0x1.144f6b5e83f03p+2, 0x1.d81151ed1cea4p-4, -0x1.dd6fa0987eec1p-1, 0x1.35611f60e2132p+2, 0x1.d8111aee6bbbdp-4, -0x1.7b73077f2322bp-1, 0x1.b41fcc3923657p+2, -0x1.0a1cb0145b230p-1, -0x1.469a93d33dafap-1, 0x1.efb7c08d34780p+2, -0x1.0a1ccf1fae90ep-1, -0x1.1577bcd033223p-3, -0x1.bdbf7b5b11baap+1, -0x1.0a1cc34795565p-1, -0x1.b0def8bd83302p-4, -0x1.5d331c5a79a8bp+1, -0x1.0a1c8eb591a3cp-1, 0x1.0274db6aa10d0p-7, -0x1.36fec793b7abap+2, -0x1.0a1cba9ad1779p-1, 0x1.99bb21f978957p-5, 0x1.9386fd1cc4f20p+2, -0x1.0a1ca8cb371f7p-1, 0x1.20bf61feb31cdp-3, 0x1.02e56d65b83f3p+3, -0x1.0a1cb7b4b988ep-1, 0x1.73067f3983d91p-3, -0x1.041e9258de0adp+2, -0x1.0a1ca46130725p-1, 0x1.6acc7b94493b3p-2, 0x1.c4b539bb447f3p+2, -0x1.0a1caa3cf8d5dp-1, 0x1.2fd657622b9bfp-1, -0x1.88b318a08272fp+1, -0x1.0a1cbc3f19d9ep-1, 0x1.300e05eb74e4cp-1, -0x1.33120317c8fdap+1, -0x1.0a1c93e07f89ap-1, 0x1.90bc0173a87ecp-1, 0x1.ef7fe8956bd64p+2, -0x1.0a1c8f0db2dbfp-1, 0x1.a4ac627dd952ep-1, -0x1.02ead6cbe769cp+2, -0x1.0a1cb9eb1efbbp-1, 0x1.e61c41262893ap-1, -0x1.5467ac5d006e9p+2, -0x1.0a1cbdf1c0101p-1, 0x1.3f9a69abe2260p+0, -0x1.38ca3e2171ab6p+1, -0x1.0a1ca4d890cf7p-1, 0x1.417ebb5d382c6p+0, 0x1.908c553d674b2p+2, -0x1.0a1ccc1fae6fdp-1, 0x1.42ecba3cd6420p+0, 0x1.0e33e69e219c4p+3, -0x1.0a1cac083126fp-1, 0x1.64fd01ca42ddcp+0, -0x1.d24b272e63758p+1, -0x1.0a1cb60d4ca43p-1, 0x1.6dd777a2f9c4cp+0, 0x1.d9c48cd8ff2e7p+2, -0x1.0a1cb18bf5a8bp-1, 0x1.90fed94df03b4p+0, -0x1.25ec1e48d5a56p+2, -0x1.0a1ca0fa92895p-1, 0x1.cc2b1c63a43f0p+0, 0x1.0080e72104d04p+3, -0x1.0a1c99d6f49d9p-1, 0x1.e0bd08b0977e2p+0, -0x1.6975dae627530p+1, -0x1.0a1cbc89e0515p-1, 0x1.029fb6a717ea6p+1, 0x1.b95972d20f258p+2, -0x1.0a1cb55a6cb1cp-1, 0x1.2d9b6b7cc0866p+1, -0x1.d9e74deb34c75p+1, -0x1.0a1cb753997e7p-1, 0x1.2dadefa30317bp+1, 0x1.ef89ae023be48p+2, -0x1.0a1cbf8f79804p-1, 0x1.2db5847685f0dp+2, 0x1.7013e7274d8c0p+2, 0x1.d8102bfe9c44ap-4, 0x1.3c7a6544041c4p+2, 0x1.a292e8f8ac6cbp+2, 0x1.d8107bac046ccp-4, 0x1.4dbe86e615311p+2, 0x1.52a362a34a61cp+2, 0x1.d80ff5fe5ca29p-4, 0x1.5571aae8f9b18p+2, 0x1.e0f895366ec01p+2, 0x1.d810d251c9d22p-4, 0x1.6c36bef58afd4p+2, 0x1.adace121285adp+2, 0x1.d81016f59dbcdp-4, 0x1.73bde99ee84d1p+2, 0x1.2aa85546d8746p+2, 0x1.d80fbd6c30f9ep-4, 0x1.770aa1ddf89dfp+2, 0x1.710b984ba91b6p+2, 0x1.d810d5a01c86bp-4, 0x1.81b5fecce2700p+2, 0x1.db36f2880a1cfp+2, 0x1.d810bf82df3dep-4, 0x1.a1e93533acba1p+2, 0x1.0286cfb8c5a33p+3, 0x1.d810678ae8870p-4, 0x1.a5fcee419d4c2p+2, 0x1.bc0f7383d26e5p+2, 0x1.d810b27e90355p-4, 0x1.ab5c8fa5049d6p+2, 0x1.3ba7bc8a6ce4ep+2, 0x1.d811bfa0be671p-4, 0x1.bec27a5f3e26ap+2, 0x1.80b946ef79433p+2, 0x1.d8106411fb15dp-4, 0x1.c3144c193b5bap+2, 0x1.e94344c4403afp+2, 0x1.d8116015bbbd0p-4, 0x1.ddee57f81f189p+2, 0x1.5689f4cbf88b1p+2, 0x1.d810fc9ee7023p-4, 0x1.f448ed5cf8338p+2, 0x1.c19b48b6371dbp+2, 0x1.d80fcfa20ba25p-4};
+inline const int geneva_run_F[] = {0, 3, 4, 0, 4, 2, 1, 2, 5, 8, 5, 7, 8, 7, 10, 26, 21, 25, 26, 21, 23, 29, 31, 36, 29, 32, 36, 30, 37, 33, 30, 37, 34, 28, 38, 34, 81, 80, 88, 81, 88, 86, 96, 98, 91, 96, 98, 100, 96, 86, 91, 94, 101, 89, 94, 89, 90, 101, 89, 97, 101, 97, 103, 114, 111, 116, 114, 111, 109, 114, 113, 117, 114, 113, 112, 114, 119, 117, 114, 119, 116, 114, 109, 112, 59, 56, 46, 59, 61, 50, 59, 50, 46, 56, 37, 46, 73, 76, 70, 73, 60, 67, 73, 70, 67, 76, 75, 70, 68, 75, 70, 68, 53, 58, 68, 58, 70, 51, 60, 45, 51, 60, 67, 51, 58, 67, 51, 58, 42, 78, 71, 74, 78, 79, 74, 71, 62, 64, 71, 74, 64, 62, 47, 64, 79, 74, 77, 74, 72, 69, 74, 72, 77, 74, 64, 69, 87, 84, 92, 87, 92, 89, 87, 82, 89, 84, 92, 93, 92, 93, 99, 92, 89, 97, 92, 97, 99, 95, 85, 88, 95, 88, 98, 95, 98, 102, 115, 111, 116, 115, 111, 110, 115, 118, 116, 3, 4, 6, 4, 6, 9, 4, 2, 5, 4, 5, 7, 4, 9, 7, 11, 6, 9, 11, 9, 12, 9, 12, 13, 9, 13, 10, 9, 7, 10, 15, 14, 17, 15, 17, 16, 14, 18, 17, 19, 21, 16, 19, 21, 23, 21, 25, 22, 21, 17, 22, 21, 17, 16, 20, 18, 22, 20, 24, 22, 25, 22, 27, 31, 36, 35, 32, 36, 40, 32, 39, 40, 36, 43, 48, 36, 43, 35, 36, 48, 40, 47, 54, 64, 53, 58, 42, 82, 89, 83, 89, 90, 83, 111, 106, 105, 111, 106, 109, 111, 110, 107, 111, 105, 107, 66, 48, 57, 66, 48, 63, 49, 39, 40, 49, 48, 40, 49, 48, 63, 85, 80, 88, 38, 41, 50, 38, 41, 34, 38, 50, 44, 106, 108, 109, 54, 52, 65, 54, 65, 69, 54, 64, 69, 18, 17, 22, 104, 98, 102, 104, 98, 100, 108, 109, 112, 72, 65, 69, 97, 103, 99, 88, 98, 91, 88, 86, 91, 37, 41, 46, 37, 41, 34, 24, 22, 27, 58, 70, 67, 41, 50, 46, 43, 48, 57, 61, 50, 55, 50, 44, 55};
+inline const GCell geneva_run_cells[] = {
+    {{0x1.6dd777a2f9c4cp+0, 0x1.d9c48cd8ff2e7p+2, -0x1.0a1cb18bf5a8bp-1, 0x1.cc90e253d25ccp-2, 0x1.d5c0fbe20f9b4p+2, -0x1.fa5f7e554dbe1p-2, 0x1.809d965abf494p-1, 0x1.f0e9e9269375ep+2, -0x1.0a1c915b519dbp-1, 0x1.6acc7b94493b3p-2, 0x1.c4b539bb447f3p+2, -0x1.0a1caa3cf8d5dp-1}, 0x1.fca85caafbc1bp-6, 0x1.10898624c7d08p-16},
+    {{0x1.a51f13a20fc5cp+2, 0x1.a4dfc68c46285p+2, 0x1.6f2e28b364dd7p-4, 0x1.6c00dd4360d6ep+2, 0x1.adebfe42d5a43p+2, 0x1.d810182185ddbp-4, 0x1.770aa1ddf89dfp+2, 0x1.710b984ba91b6p+2, 0x1.d810d5a01c86bp-4, 0x1.a5fcee419d4c2p+2, 0x1.bc0f7383d26e5p+2, 0x1.d810b27e90355p-4}, 0x1.fca85caafbc1bp-6, 0x1.9c7d2fb422c24p-16},
+    {{-0x1.9c7464029f71cp+3, -0x1.1fa9abf2367c2p+2, -0x1.0a1cc1922842dp-1, -0x1.bf1cc6d518975p+3, -0x1.18bc31f701058p+2, -0x1.025fc927f3992p-1, -0x1.c0b7fc3bbdddbp+3, -0x1.125358b48c8cfp+2, -0x1.0a1cbf6b69176p-1, -0x1.ae4916391ba19p+3, -0x1.4253a460553acp+2, -0x1.0a1cb15580d8cp-1}, 0x1.fca85caafbc1bp-6, 0x1.d232b176dc5d4p-18},
+    {{-0x1.164cb99894edap+2, -0x1.05536455acd8dp+1, 0x1.b72ebdd8edcc5p-4, -0x1.21e1df723c73cp+2, -0x1.001d39bcfe695p+1, 0x1.d8106831e7da6p-4, -0x1.e4c59e70d8a6cp+1, -0x1.356f4c5a73fa2p+1, 0x1.d81066819a88dp-4, -0x1.d474162414dbdp+1, -0x1.ca9e05e51806dp+0, 0x1.d810723326c52p-4}, 0x1.fca85caafbc1bp-6, 0x1.7521d965896d0p-20},
+    {{-0x1.439d2bc8ee8d6p+3, 0x1.b922c4d5fd071p+0, -0x1.0a1cac60cf8adp-1, -0x1.40531eabbce71p+3, 0x1.f8a4bcd42d342p+0, -0x1.fd614d3b1da0dp-2, -0x1.3fab6445835f4p+3, 0x1.5e3bc9dfd0ac0p+1, -0x1.0a1caa19a3c00p-1, -0x1.627e1ff0682eap+3, 0x1.1ec9bcce9f8e1p+1, -0x1.0a1cc65ff866cp-1}, 0x1.fca85caafbc1bp-6, 0x1.6a41fb4963e90p-16},
+    {{-0x1.6786f33d5ad1ap+1, 0x1.186d4b3473f71p+2, 0x1.d811bbfaae6b5p-4, -0x1.48afa23d8bb4cp+1, 0x1.4564d4dbf25a6p+2, 0x1.d80ff12517019p-4, -0x1.bc0a7bf1a7a1ap+0, 0x1.2607d614aed9bp+2, 0x1.d8115938dc770p-4, -0x1.c385f095176c9p+0, 0x1.26c6b61fd8394p+2, 0x1.b713ae99061d2p-4}, 0x1.fca85caafbc1bp-6, 0x1.fe82309186e88p-20},
+    {{-0x1.1cf9557404d98p+2, -0x1.bf02594149934p+0, -0x1.0a1ca0d061ac8p-1, -0x1.277df06a5ac42p+2, -0x1.0666f17f0b310p+1, -0x1.fcb7b87595cf7p-2, -0x1.37eff62674fa5p+2, -0x1.42d77efb95b59p+1, -0x1.0a1cc4a53e97fp-1, -0x1.dfaff5a67b5ebp+1, -0x1.43c6fcc8a2516p+1, -0x1.0a1c9e9b4fb05p-1}, 0x1.fca85caafbc1bp-6, 0x1.432af0af07855p-16},
+    {{-0x1.439d2bc8ee45ep+3, 0x1.b922c4d602036p+0, -0x1.0a1cac60cf8adp-1, -0x1.40531eabbce71p+3, 0x1.f8a4bcd42d342p+0, -0x1.fd614d3b1da0dp-2, -0x1.3fab6445835f4p+3, 0x1.5e3bc9dfd0ac0p+1, -0x1.0a1caa19a3c00p-1, -0x1.627e1ff0682eap+3, 0x1.1ec9bcce9f8e1p+1, -0x1.0a1cc65ff866cp-1}, 0x1.fca85caafbc1bp-6, 0x1.6a41fb495e0afp-16},
+    {{-0x1.17123343e0672p+1, 0x1.07d7561ce48bap-1, -0x1.0a1c8c18b8e2dp-1, -0x1.92c2daa2ec3aap+1, 0x1.45218325f3275p-1, -0x1.0a1ca7cfef941p-1, -0x1.5f194490c0c86p+1, -0x1.70d5c1b4d7a98p-4, -0x1.0a1cb4fa66e43p-1, -0x1.91a15f67854b8p+1, 0x1.3d8ecb01a0809p-1, -0x1.0636b1ff978e1p-1}, 0x1.fca85caafbc1bp-6, 0x1.a6f88de490a36p-20},
+    {{0x1.5f097f46ec6f4p-1, -0x1.948acf7df299ep+1, -0x1.0a1cbb83eeb85p-1, 0x1.852e42efb82ebp-1, -0x1.cf6d5dde79912p+1, -0x1.f45de64569b24p-2, 0x1.87e22a3a3a84bp-1, -0x1.11ef9734a1593p+2, -0x1.0a1cba7e0959fp-1, 0x1.392890936d814p+0, -0x1.c3f0a305c8748p+1, -0x1.0a1cb75e548d1p-1}, 0x1.fca85caafbc1bp-6, 0x1.835c5baf125ecp-16},
+};
+inline const double geneva_tag0_V[] = {-0x1.660ccbe9695f6p+3, 0x1.a6a60150d314bp+2, -0x1.0a1cb2b071ebdp-1, -0x1.589b008ff27bbp+3, 0x1.aeb80bc3af712p+1, 0x1.d810acef3dcfcp-4, -0x1.57e205c5db0e3p+3, 0x1.7a935c37618e6p+2, 0x1.d8110f523b30dp-4, -0x1.56001e6536d65p+3, 0x1.09b49f1a2e45ap+2, 0x1.d810d311f19c0p-4, -0x1.545a03e05bc16p+3, 0x1.48923d39e4c24p+2, -0x1.0a1ccc632b0f3p-1, -0x1.4f021cf22724bp+3, 0x1.487b94c3a4437p+2, 0x1.d80ece418e5b3p-4, -0x1.4dc677b10159ap+3, 0x1.a253392156eebp+2, 0x1.d8103437ce03ap-4, -0x1.4c299bffd1107p+3, 0x1.180068aac8740p+2, -0x1.0a1cbaf990250p-1, -0x1.49d9c645142b6p+3, 0x1.7e5c66dd54b33p+2, -0x1.0a1caa63db74dp-1, -0x1.47d3ba3d293c5p+3, 0x1.cc17c69d77dfbp+1, -0x1.0a1caa3c73073p-1, -0x1.45bd43843b5f6p+3, 0x1.c1b26525f5a85p+2, -0x1.0a1c8cb8c331fp-1, -0x1.4549c66fada5ap+3, 0x1.c6ad2baee2b9ep+2, 0x1.d81117c8006b0p-4, -0x1.3eb01d86355d7p+3, 0x1.9013bba7cd95ap+1, 0x1.d80f47273c242p-4, -0x1.3d6fcb1a4fa80p+3, 0x1.413dff542d754p+2, -0x1.0a1cac48441b6p-1, -0x1.3b85de6da8b76p+3, 0x1.6a0893e9f0fc7p+2, 0x1.d80feac5eb9bep-4, -0x1.396aef6105700p+3, 0x1.e49eeb50a916dp+1, 0x1.d80eac0d90db3p-4, -0x1.3749a8a7618cdp+3, 0x1.d58f6c3d895d9p+2, 0x1.d8105d32c6f7bp-4, -0x1.37391aa359aefp+3, 0x1.68c24bc37d629p+2, -0x1.0a1ca2a2c1e55p-1, -0x1.36e79304442a1p+3, 0x1.abb6db38ed71cp+1, -0x1.0a1c9e995eb9fp-1, -0x1.348d54ffed9cfp+3, 0x1.2f872e2cc2556p+2, 0x1.d8104b4372363p-4, -0x1.2fa0b0322c147p+3, 0x1.ab47f4c8e3ad4p+2, 0x1.d810dc6fbf12fp-4, -0x1.2e1c3fbef5e91p+3, 0x1.0098e906fb41fp+2, -0x1.0a1cc09b9c554p-1, -0x1.2dc1ccb615481p+3, 0x1.95b48a1a00a5dp+1, 0x1.d81223e8fedd1p-4, -0x1.2b2c2bd04b692p+3, 0x1.cb6ee37f4caa2p+2, -0x1.0a1cc1f1bf705p-1, -0x1.2b17da206b99bp+3, 0x1.8ca6393e46c34p+2, -0x1.0a1cc2aedb75ap-1, -0x1.2718631d95110p+3, 0x1.efcf7f25a9b5ep+1, 0x1.d8108c02a7573p-4, -0x1.25815cab3f48dp+3, 0x1.8b03604f694acp+1, -0x1.0a1cd0b91a15bp-1, -0x1.23723495d0062p+3, 0x1.5100170e39b30p+2, -0x1.0a1cc7ab9bea4p-1, -0x1.232c5be7d785ep+3, 0x1.e19f30099cd4dp+2, 0x1.d80f37e12f207p-4, -0x1.1ab19de7836a2p+3, 0x1.75ba930929b84p+1, 0x1.d80f366d3c3b6p-4, -0x1.1aa96bc66d46fp+3, 0x1.4d4ae318d3194p+2, 0x1.d810f7a82fb62p-4, -0x1.173e84024e76ep+3, 0x1.b0028563b7333p+2, -0x1.0a1cc7f15d78cp-1, -0x1.16f4178353651p+3, 0x1.21d8bc251b350p+2, 0x1.d80fb2b0bf04ap-4, -0x1.13d6272bddb42p+3, 0x1.1c29893e470d4p+2, -0x1.0a1ca49bfea17p-1, -0x1.12a9ce1d3901bp+3, 0x1.7c638d99a2b5cp+2, 0x1.d80fd2ae954cfp-4, -0x1.0e8cbfcf2da94p+3, 0x1.db672ea456dd4p+1, -0x1.0a1cb15955eaap-1, -0x1.0c39e93ee8f8bp+3, 0x1.c85d527860d3ep+1, 0x1.d81068dc18ab3p-4, -0x1.0b960f93d742cp+3, 0x1.b57e045862ceep+2, 0x1.d8102056e0038p-4, -0x1.0a1790ec56ac6p+3, 0x1.8ae80ae8a98f9p+2, -0x1.0a1cba8070cbap-1, -0x1.082ea8495ffa3p+3, 0x1.61a611e5bfd15p+1, -0x1.0a1cab930b6d5p-1, -0x1.05fcfc86c277ep+3, 0x1.4a6a8e65d604ap+2, -0x1.0a1cad7a7db93p-1, -0x1.fc82f8d985774p+2, 0x1.14a7f1a13a872p+2, 0x1.d8106564e1f22p-4, -0x1.f3829765c4298p+2, 0x1.4c8343b56a8b6p+2, 0x1.d810a5f4afad3p-4, -0x1.f10f59157af10p+2, 0x1.c34c2bf6db2dfp+1, 0x1.d80fe910ce56cp-4, -0x1.ef73b49da0115p+2, 0x1.b7f5fc5423911p+2, -0x1.0a1cb47f3e9dcp-1, -0x1.eb29348726520p+2, 0x1.74d2abe5ee08bp+2, -0x1.0a1cb1d8f0e3ep-1, -0x1.e7fe43fe46d4cp+2, 0x1.90a7bcf368352p+2, 0x1.d810619ac0b45p-4, -0x1.e454e24957da7p+2, 0x1.1804aa4c0b965p+2, -0x1.0a1cb8cbe27d1p-1, -0x1.d789cbf2dd9e7p+2, 0x1.c055234a6ce83p+2, 0x1.d81050a401baap-4, -0x1.d4d73bdfa454dp+2, 0x1.b6a6318799c14p+1, -0x1.0a1ca43502ab7p-1, -0x1.cc3ad12afb3e9p+2, 0x1.7996acc9153f7p+1, 0x1.d81096bf11673p-4, -0x1.c9a4c5188496dp+2, 0x1.538a95f31efe4p+2, -0x1.0a1caffdf4aafp-1, -0x1.c551abba94a90p+2, 0x1.66a8864c7c637p+2, 0x1.d810b6d0e2601p-4, -0x1.c32fb3003042bp+2, 0x1.16baadf55d20fp+2, 0x1.d8102ea5c120fp-4, -0x1.c040abcfc9be5p+2, 0x1.94ada0c865e51p+2, -0x1.0a1ca59c816f4p-1, -0x1.bac034e80055ap+2, 0x1.c85182e7b6c60p+2, -0x1.0a1cd33008e78p-1, -0x1.adc4dc6ebd3b7p+2, 0x1.02f14d0ba4736p+2, -0x1.0a1cb5f021e87p-1, -0x1.a19c509b323ccp+2, 0x1.b4ae218d892fap+2, 0x1.d810f48b4ed48p-4, -0x1.99fe70bb516dep+2, 0x1.8492f702eb91bp+1, -0x1.0a1cb1976a5a6p-1, -0x1.99d2eae615ec0p+2, 0x1.3d3a36ed4f51dp+2, -0x1.0a1cb69c6f3b6p-1, -0x1.95d794a6e8638p+2, 0x1.cbfa0a85787a4p+1, 0x1.d810722ffb6c4p-4, -0x1.903563cd98ed4p+2, 0x1.7b9eae5366c44p+2, -0x1.0a1cd6a15bf89p-1};
+inline const int geneva_tag0_F[] = {3, 1, 15, 21, 9, 7, 14, 2, 5, 3, 19, 5, 4, 13, 7, 19, 3, 15, 27, 21, 13, 19, 14, 5, 14, 20, 6, 24, 8, 10, 14, 30, 34, 34, 20, 14, 30, 32, 42, 30, 19, 32, 27, 33, 21, 42, 34, 30, 54, 61, 51, 47, 51, 59, 38, 31, 44, 40, 33, 27, 10, 23, 24, 36, 25, 29, 32, 25, 36, 26, 21, 35, 22, 29, 25, 47, 59, 56, 56, 58, 49, 51, 47, 40, 42, 46, 34, 49, 35, 47, 41, 32, 36, 43, 41, 36, 22, 15, 12, 46, 37, 34, 61, 59, 51, 25, 32, 19, 24, 31, 38, 54, 45, 44, 57, 48, 46, 46, 48, 37, 19, 15, 25, 10, 8, 0, 54, 44, 55, 31, 24, 23, 1, 12, 15, 22, 25, 15, 53, 41, 43, 38, 27, 24, 34, 37, 20, 4, 8, 13, 26, 18, 21, 18, 9, 21, 41, 53, 42, 47, 56, 49, 30, 14, 19, 6, 20, 11, 20, 28, 16, 14, 6, 2, 42, 32, 41, 26, 35, 39, 39, 35, 49, 27, 38, 40, 54, 51, 45, 42, 53, 52, 33, 35, 21, 11, 20, 16, 17, 24, 27, 13, 17, 27, 45, 38, 44, 20, 37, 28, 45, 51, 40, 52, 46, 42, 45, 40, 38, 40, 47, 33, 21, 7, 13, 33, 47, 35, 8, 24, 17, 13, 8, 17, 53, 50, 60, 43, 50, 53, 57, 46, 52};
+inline const GCell geneva_tag0_cells[] = {
+    {{-0x1.2bcbbc52a291ap+3, 0x1.781a7728c3ae7p+2, 0x1.23e2b45360874p-5, -0x1.fe839cd2a83c8p+2, 0x1.7212ee76ba342p+2, -0x1.5e6bcd05693f9p-3, -0x1.15ece5b140707p+3, 0x1.21b207a5033cap+2, -0x1.89cd6eb86e93dp-3, -0x1.15ff771523811p+3, 0x1.65f9f2cd26464p+2, 0x1.0133d1012224bp+0}, 0x1.c8c5062d4f1a5p-2, 0x1.db46ead68af0ap-5},
+};
+struct GCase { const char* name; const double* V; int nV; const int* F; int nF; const GCell* cells; int ncells; };
+inline const GCase geneva_cases[] = {
+    {"geneva_run", geneva_run_V, 120, geneva_run_F, 129, geneva_run_cells, 10},
+    {"geneva_tag0", geneva_tag0_V, 62, geneva_tag0_F, 81, geneva_tag0_cells, 1},
+};
+
+} // namespace exact_band_geneva_data
+
+/**
+ * The Geneva base (inward, tag_0, exact rule): the 10 cells whose partition failed the tiling
+ * check in the runs of ~/exact_folds/geneva (3 of 3 aborted in turn 1) and in reruns with the
+ * partial fixes, on the run's own triangles, and a straddling cell on the tag_0 boundary of
+ * m3.msh that failed it in the Python. Causes (clip()), each an open surface: a cap ring sorted by
+ * angle skipped a vertex lying tol / theta inside the cap (the cut crossing a face at the tiny
+ * angle theta); two faces' copies of one vertex, 1 tol apart, whose crossings on a nearly
+ * parallel cut fell 6e-9 apart; a cap added where the kept faces already closed up. Each cell
+ * must pass the checks (no throw) and match the Python.
+ */
+TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
+{
+    using namespace exact_band_geneva_data;
+    std::printf("exact-band-integral-geneva: cells that failed the tiling check before the indexed-vertex clip\n");
+    for (const GCase& c : geneva_cases) {
+        Eigen::MatrixXd V(c.nV, 3);
+        for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(c.nF, 3);
+        for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+        const ExactBandIntegral eb(V, F);
+        double worst = 0.;
+        ExactBandIntegral::Stats st;
+        st.check_closed = true;
+        for (int k = 0; k < c.ncells; ++k) {
+            const Tet T = tet_of(c.cells[k].T);
+            INFO(c.name << " cell " << k);
+            double I = 0.;
+            REQUIRE_NOTHROW(I = eb.value(T, 0., &st));
+            CHECK(rel(I, c.cells[k].I) <= 1e-12);
+            worst = std::max(worst, rel(I, c.cells[k].I));
+            REQUIRE_NOTHROW(eb.value(T, c.cells[k].delta));
+        }
+        CHECK(st.open_results == 0);
+        std::printf("  %-12s %d cells, %d triangles: max relative error vs the Python %.1e; %lld clip"
+                    " results checked closed, %lld open; %lld cuts closed up without a cap, %lld caps of"
+                    " several circuits\n",
+                    c.name, c.ncells, c.nF, worst, (long long)st.closed_checked,
+                    (long long)st.open_results, (long long)st.clips_closed_up, (long long)st.caps_split);
     }
 }
 
@@ -893,5 +988,60 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
             " mean %.2f%s\n",
             name, n, nF, w_par, w_U, n_ra_mismatch, mean, pct(us, 0.5), pct(us, 0.9), pct(us, 0.99),
             pct(us, 1.), mean_b, sink == 0. ? " " : "");
+    }
+}
+
+/**
+ * Hidden replay: EXACT_BAND_REPLAY_TRIS=<file> EXACT_BAND_REPLAY_CELLS=<file>
+ * ./wmtk_test_topological_offset "[.replay]". The triangles as ExactBandIntegral received them in a
+ * run ("nV nF", nV lines of hex coordinates, nF index lines); one cell per line of CELLS (12 hex
+ * corners, then delta). Prints each cell's value() and its partition counts, or the error.
+ */
+TEST_CASE("exact-band-replay", "[.replay]")
+{
+    const char* tf = std::getenv("EXACT_BAND_REPLAY_TRIS");
+    const char* cf = std::getenv("EXACT_BAND_REPLAY_CELLS");
+    if (!tf || !cf) {
+        WARN("EXACT_BAND_REPLAY_TRIS / EXACT_BAND_REPLAY_CELLS not set");
+        return;
+    }
+    std::ifstream in(tf);
+    REQUIRE(in.good());
+    int nV = 0, nF = 0;
+    in >> nV >> nF;
+    Eigen::MatrixXd V(nV, 3);
+    Eigen::MatrixXi F(nF, 3);
+    std::string a, b, c;
+    for (int i = 0; i < nV; ++i) {
+        in >> a >> b >> c;
+        V.row(i) << std::strtod(a.c_str(), nullptr), std::strtod(b.c_str(), nullptr), std::strtod(c.c_str(), nullptr);
+    }
+    for (int i = 0; i < nF; ++i) in >> F(i, 0) >> F(i, 1) >> F(i, 2);
+    REQUIRE(in.good());
+    const ExactBandIntegral eb(V, F);
+    std::ifstream cells(cf);
+    std::string line;
+    int k = 0;
+    while (std::getline(cells, line)) {
+        if (line.empty()) continue;
+        std::istringstream ls(line);
+        double x[13];
+        for (double& v : x) {
+            std::string tok;
+            ls >> tok;
+            v = std::strtod(tok.c_str(), nullptr);
+        }
+        Tet T;
+        for (int i = 0; i < 4; ++i) T[size_t(i)] = Vec3(x[3 * i], x[3 * i + 1], x[3 * i + 2]);
+        ExactBandIntegral::Stats st;
+        try {
+            const double J = eb.value(T, x[12], &st);
+            std::printf("cell %d: J %.17g | candidates %lld pieces %lld clips %lld\n", k, J, (long long)st.candidates,
+                        (long long)st.pieces, (long long)st.clips);
+        } catch (const std::exception& e) {
+            std::printf("cell %d: ERROR %s | candidates %lld clips %lld\n", k, e.what(), (long long)st.candidates,
+                        (long long)st.clips);
+        }
+        ++k;
     }
 }

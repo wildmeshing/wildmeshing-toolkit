@@ -82,6 +82,12 @@ public:
         double rule_a_vol = 0.; ///< volume of rule-(a) pieces (upper bound)
         double empty_vol = 0.; ///< volume of pieces with no member (must be rounding)
         int64_t clips = 0; ///< half-space clips of a polytope
+        int64_t clips_closed_up = 0; ///< cutting clips whose kept faces closed up without a cap
+        int64_t caps_split = 0; ///< cutting clips whose cap took several circuits (faces)
+        /// When set, every clip result is checked to be a closed surface: each directed edge once,
+        /// its reverse once (closed_checked results, open_results of them failing).
+        bool check_closed = false;
+        int64_t closed_checked = 0, open_results = 0;
         int64_t point_faces = 0; ///< faces integrated against a point distance
         int64_t line_faces_radial = 0; ///< ... against a line distance, radial closed form
         int64_t line_faces_parallel = 0; ///< ... line exactly parallel to the face

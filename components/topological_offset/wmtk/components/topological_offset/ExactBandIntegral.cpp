@@ -108,18 +108,27 @@ struct Poly
     std::vector<Vec3> P;
     std::vector<int> off{0};
     std::vector<Vec3> N;
+    /// Per ring point: its vertex, 0 .. nv - 1, numbered in order of first appearance. The
+    /// polytope's vertices are stored once: every ring point with the same id has the same
+    /// coordinates (clip() writes each vertex once).
+    std::vector<int> id;
+    int nv = 0;
     int faces() const { return int(N.size()); }
     int size(int f) const { return off[size_t(f) + 1] - off[size_t(f)]; }
     const Vec3* ring(int f) const { return P.data() + off[size_t(f)]; }
+    const int* ring_id(int f) const { return id.data() + off[size_t(f)]; }
     void clear()
     {
         P.clear();
         off.assign(1, 0);
         N.clear();
+        id.clear();
+        nv = 0;
     }
-    void add_face(const Vec3* V, int k, const Vec3& n)
+    void add_face(const Vec3* V, const int* ids, int k, const Vec3& n)
     {
         P.insert(P.end(), V, V + k);
+        id.insert(id.end(), ids, ids + k);
         off.push_back(int(P.size()));
         N.push_back(n);
     }
@@ -142,18 +151,28 @@ bool tet_polytope(const std::array<Vec3, 4>& T, Poly& out)
     const double vol6 = (T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]));
     if (L == 0. || std::abs(vol6) <= 64 * EPS * (L * L * L)) return false;
     out.clear();
+    int renum[4] = {-1, -1, -1, -1};
     for (int i = 0; i < 4; ++i) {
         Vec3 V[3];
+        int ids[3];
         int c = 0;
         for (int j = 0; j < 4; ++j) {
-            if (j != i) V[c++] = T[size_t(j)];
+            if (j != i) {
+                ids[c] = j;
+                V[c++] = T[size_t(j)];
+            }
         }
         Vec3 n = (V[1] - V[0]).cross(V[2] - V[0]);
         if (n.dot(V[0] - T[size_t(i)]) < 0) { // outward = away from the 4th vertex
             std::swap(V[0], V[2]);
+            std::swap(ids[0], ids[2]);
             n = -n;
         }
-        out.add_face(V, 3, n / n.norm());
+        for (int& v : ids) { // corners numbered in order of first appearance
+            if (renum[v] < 0) renum[v] = out.nv++;
+            v = renum[v];
+        }
+        out.add_face(V, ids, 3, n / n.norm());
     }
     return true;
 }
@@ -182,6 +201,18 @@ enum class Cut { None, Same, New };
 /// clip: Q intersected with {x : g.x <= h}, |g| = 1. Vertices within rounding distance of the
 /// plane are on it. None: no interior; Same: Q entirely inside (the result IS Q, `out` untouched);
 /// New: the result in `out`.
+///
+/// Q's vertices are taken once (Poly::id): each vertex is put on, inside or outside the plane once,
+/// each edge's crossing is computed once (from its inside end) and shared by the two faces through
+/// the edge, and the cap is the circuit of the edges the cut opened, so the result is a closed
+/// surface by construction (exact_tri.clip). Before, every face kept its own copy of each vertex,
+/// and copies made by different cuts drifted apart. MEASURED (Geneva base, inward, exact rule):
+/// copies of one vertex 1.4 tol apart, made by two cuts, became 8 tol apart at the next cut nearly
+/// parallel to their edge, then an open sliver 0.84 long and 5.9e-9 wide; a piece came 1.7e-10
+/// off its volume, the cell 1.6e-11 over (5 times the tiling bound), and the run aborted in turn 1.
+/// Earlier forms of the same defect: a cap sorted by angle that skipped a vertex lying tol / theta
+/// inside it (the cut crossing a face at the tiny angle theta), and a cap added where the kept
+/// faces already closed up.
 Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
 {
     Timer tm(cx, &Stats::t_clip);
@@ -197,50 +228,78 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
     if (smax <= tol) return Cut::Same; // entirely inside
     if (smin >= -tol) return Cut::None; // entirely outside (or flat on the plane)
     out.clear();
-    // per-thread scratch (clip is not re-entrant): MEASURED, its 7 temporaries per call were a
-    // visible part of the cost
-    thread_local std::vector<Vec3> cap, ring, cleaned, C;
-    thread_local std::vector<double> s, ang;
-    thread_local std::vector<int> ord;
-    cap.clear();
+    // per-thread scratch (clip is not re-entrant): MEASURED, its temporaries per call were a visible
+    // part of the cost
+    thread_local std::vector<Vec3> X;
+    thread_local std::vector<double> sv, s;
+    thread_local std::vector<char> have, seen;
+    thread_local std::vector<int> rings, roff, capP, ring, pos, renum, circuit, stack, used, path, loop;
+    thread_local std::vector<Vec3> rN, pts;
+    thread_local std::vector<std::array<int, 3>> cross; // (lo, hi, vertex)
+    thread_local std::vector<std::pair<int, int>> E;
+    thread_local std::vector<std::vector<int>> nxt;
+    thread_local std::vector<double> ang;
+    // one position and one plane value per vertex (its first ring point's)
+    X.resize(size_t(Q.nv));
+    sv.resize(size_t(Q.nv));
+    have.assign(size_t(Q.nv), 0);
+    for (size_t i = 0; i < Q.P.size(); ++i) {
+        const int v = Q.id[i];
+        if (have[size_t(v)]) continue;
+        have[size_t(v)] = 1;
+        X[size_t(v)] = Q.P[i];
+        const double si = Q.P[i].dot(g) - h;
+        sv[size_t(v)] = std::abs(si) <= tol ? 0. : si;
+    }
+    seen.assign(size_t(Q.nv), 0);
+    rings.clear();
+    roff.assign(1, 0);
+    rN.clear();
+    capP.clear();
+    cross.clear();
+    const auto cap_pt = [&](const int v) {
+        if (size_t(v) >= seen.size()) seen.resize(size_t(v) + 1, 0);
+        if (seen[size_t(v)]) return;
+        seen[size_t(v)] = 1;
+        capP.push_back(v);
+    };
     for (int f = 0; f < Q.faces(); ++f) {
-        const Vec3* V = Q.ring(f);
+        const int* r = Q.ring_id(f);
         const int k = Q.size(f);
         s.resize(size_t(k));
-        bool all_le = true, all_ge = true;
+        bool all_le = true, all_ge = true, on_plane = true;
         for (int i = 0; i < k; ++i) {
-            double si = V[i].dot(g) - h;
-            if (std::abs(si) <= tol) si = 0.;
+            const double si = sv[size_t(r[i])];
             s[size_t(i)] = si;
             all_le = all_le && si <= 0.;
             all_ge = all_ge && si >= 0.;
+            on_plane = on_plane && si == 0.;
         }
         // A face of Q whose outward normal is g up to rounding lies in the cut plane: a convex
         // polytope has one supporting plane per outward normal, and the cap is the result's face
-        // with normal g. So the face is part of the cap: its kept points go to the cap and it is
-        // not kept itself (also when every vertex is within tol of the plane). Kept as well, it
-        // counted twice in the volume. MEASURED: band cells of the sphere and the prism came out
-        // 2.6e-6, 3.4% and 9% over their volume, with faces in the plane up to 1.3 tol (vertices
-        // made at a larger scale, or by a coincident plane of another feature; normal equal to g
-        // or 1 ulp off).
+        // with normal g. So the face is part of the cap and not kept itself (also when every vertex
+        // is within tol of the plane). Kept as well, it counted twice in the volume. MEASURED: band
+        // cells of the sphere and the prism came out 2.6e-6, 3.4% and 9% over their volume, with
+        // faces in the plane up to 1.3 tol (vertices made at a larger scale, or by a coincident
+        // plane of another feature; normal equal to g or 1 ulp off).
         const Vec3& nf = Q.N[size_t(f)];
-        bool on_plane = true;
-        for (int i = 0; i < k; ++i) on_plane = on_plane && s[size_t(i)] == 0.;
         const bool in_cap = nf.dot(g) > 0. && (on_plane || nf.cross(g).norm() <= 16 * EPS);
         if (all_le) {
             if (in_cap) {
-                cap.insert(cap.end(), V, V + k);
+                for (int i = 0; i < k; ++i) cap_pt(r[i]);
             } else {
-                out.add_face(V, k, nf);
+                rings.insert(rings.end(), r, r + k);
+                roff.push_back(int(rings.size()));
+                rN.push_back(nf);
                 for (int i = 0; i < k; ++i) {
-                    if (s[size_t(i)] == 0.) cap.push_back(V[i]);
+                    if (s[size_t(i)] == 0.) cap_pt(r[i]);
                 }
             }
             continue;
         }
         if (all_ge) {
             for (int i = 0; i < k; ++i) {
-                if (s[size_t(i)] == 0.) cap.push_back(V[i]);
+                if (s[size_t(i)] == 0.) cap_pt(r[i]);
             }
             continue;
         }
@@ -248,55 +307,213 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
         for (int i = 0; i < k; ++i) {
             const int j = (i + 1) % k;
             const double si = s[size_t(i)], sj = s[size_t(j)];
-            if (si <= 0.) ring.push_back(V[i]);
-            if (si == 0.) cap.push_back(V[i]);
+            if (si <= 0.) ring.push_back(r[i]);
+            if (si == 0.) cap_pt(r[i]);
             if ((si < 0. && 0. < sj) || (sj < 0. && 0. < si)) {
-                const int a = si < 0. ? i : j, b = si < 0. ? j : i; // from the inside end
-                const double sa = s[size_t(a)], sb = s[size_t(b)];
-                const Vec3 x = V[a] + (sa / (sa - sb)) * (V[b] - V[a]);
+                const int lo = std::min(r[i], r[j]), hi = std::max(r[i], r[j]);
+                int x = -1;
+                for (const auto& c : cross) {
+                    if (c[0] == lo && c[1] == hi) {
+                        x = c[2];
+                        break;
+                    }
+                }
+                if (x < 0) {
+                    const int a = si < 0. ? r[i] : r[j], b = si < 0. ? r[j] : r[i]; // from the inside end
+                    const double sa = sv[size_t(a)], sb = sv[size_t(b)];
+                    x = int(X.size());
+                    X.push_back(X[size_t(a)] + (sa / (sa - sb)) * (X[size_t(b)] - X[size_t(a)]));
+                    sv.push_back(0.);
+                    cross.push_back({lo, hi, x});
+                }
                 ring.push_back(x);
-                cap.push_back(x);
+                cap_pt(x);
             }
         }
         if (in_cap) {
-            cap.insert(cap.end(), ring.begin(), ring.end());
+            for (const int v : ring) cap_pt(v);
             continue;
         }
-        if (clean_ring(ring, tol, cleaned)) {
-            out.add_face(cleaned.data(), int(cleaned.size()), Q.N[size_t(f)]);
-        }
+        rings.insert(rings.end(), ring.begin(), ring.end());
+        roff.push_back(int(rings.size()));
+        rN.push_back(Q.N[size_t(f)]);
     }
-    // _dedupe
-    C.clear();
-    for (const Vec3& p : cap) {
-        bool keep = true;
-        for (const Vec3& o : C) {
-            if (!(maxabs(p - o) > tol)) {
-                keep = false;
-                break;
+    const int nV = int(X.size());
+    // The cap: the free edges of the kept rings (a directed edge (a, b) with no reversed partner
+    // borders the cap, which runs it as (b, a)), traced as Euler circuits, one cap face per circuit
+    // (a circuit may touch itself at a vertex). Each circuit starts at its smallest angle about the
+    // mean of the cap points (capP, in the order the cut met them; ties by that order), and at a
+    // vertex the unused edge to the earliest cap point is taken first: a convex cap is the ring the
+    // angle sort gave. The kept rings bound a 2-chain, so its free edges form closed walks.
+    E.clear();
+    for (size_t r = 0; r + 1 < roff.size(); ++r) {
+        const int b = roff[r], k = roff[r + 1] - b;
+        for (int i = 0; i < k; ++i) E.push_back({rings[size_t(b + i)], rings[size_t(b + (i + 1) % k)]});
+    }
+    std::sort(E.begin(), E.end());
+    nxt.resize(size_t(nV));
+    for (auto& t : nxt) t.clear();
+    int n_free = 0;
+    for (size_t i = 0; i < E.size();) {
+        size_t j = i;
+        while (j < E.size() && E[j] == E[i]) ++j;
+        const auto [a, b] = E[i];
+        const auto rev = std::equal_range(E.begin(), E.end(), std::pair<int, int>{b, a});
+        for (int m = int(j - i) - int(rev.second - rev.first); m > 0; --m) {
+            nxt[size_t(b)].push_back(a); // the cap runs b -> a
+            ++n_free;
+        }
+        i = j;
+    }
+    int n_caps = 0;
+    if (n_free > 0) {
+        pos.assign(size_t(nV), -1);
+        int np = 0;
+        for (const int v : capP) pos[size_t(v)] = np++;
+        for (const int v : rings) { // free-edge ends the cut did not meet: after them, by first appearance
+            if (pos[size_t(v)] < 0 && !nxt[size_t(v)].empty()) pos[size_t(v)] = np++;
+        }
+        for (int v = 0; v < nV; ++v) {
+            for (const int w : nxt[size_t(v)]) {
+                if (pos[size_t(w)] < 0) pos[size_t(w)] = np++;
             }
         }
-        if (keep) C.push_back(p);
-    }
-    if (C.size() >= 3) {
         const auto [u, w] = plane_basis(g);
         Vec3 c = Vec3::Zero();
-        for (const Vec3& p : C) c += p;
-        c /= double(C.size());
-        ang.resize(C.size());
-        for (size_t i = 0; i < C.size(); ++i) {
-            ang[i] = std::atan2((C[i] - c).dot(w), (C[i] - c).dot(u));
+        for (const int v : capP) c += X[size_t(v)];
+        c /= double(capP.size());
+        ang.assign(size_t(nV), 0.);
+        for (int v = 0; v < nV; ++v) {
+            if (pos[size_t(v)] >= 0) {
+                ang[size_t(v)] = std::atan2((X[size_t(v)] - c).dot(w), (X[size_t(v)] - c).dot(u));
+            }
+            std::sort(nxt[size_t(v)].begin(), nxt[size_t(v)].end(), [&](int a, int b) {
+                return pos[size_t(a)] < pos[size_t(b)];
+            });
         }
-        ord.resize(C.size());
-        std::iota(ord.begin(), ord.end(), 0);
-        std::stable_sort(ord.begin(), ord.end(), [&](int a, int b) {
-            return ang[size_t(a)] < ang[size_t(b)];
-        });
+        used.assign(size_t(nV), 0);
+        while (true) {
+            int start = -1;
+            for (int v = 0; v < nV; ++v) {
+                if (used[size_t(v)] >= int(nxt[size_t(v)].size())) continue;
+                if (start < 0 || ang[size_t(v)] < ang[size_t(start)] ||
+                    (ang[size_t(v)] == ang[size_t(start)] && pos[size_t(v)] < pos[size_t(start)])) {
+                    start = v;
+                }
+            }
+            if (start < 0) break;
+            stack.assign(1, start);
+            circuit.clear();
+            while (!stack.empty()) {
+                const int v = stack.back();
+                if (used[size_t(v)] < int(nxt[size_t(v)].size())) {
+                    stack.push_back(nxt[size_t(v)][size_t(used[size_t(v)]++)]);
+                } else {
+                    circuit.push_back(v);
+                    stack.pop_back();
+                }
+            }
+            std::reverse(circuit.begin(), circuit.end());
+            rings.insert(rings.end(), circuit.begin(), circuit.end() - 1);
+            roff.push_back(int(rings.size()));
+            rN.push_back(g);
+            ++n_caps;
+        }
+    }
+    // Edges no longer than tol (max norm) are collapsed, in every face at once (a vertex merges into
+    // the one that appears first), and faces left with fewer than 3 vertices are dropped: the
+    // surface stays closed (exact_tri.clip). Per-face cleaning (before) merged a vertex in one face
+    // and kept it in the next; and two crossings can round to the same point (MEASURED, t100026: two
+    // edges ending 1e1 tol above the plane, 4e9 tol below at their other ends).
+    renum.assign(size_t(nV), -1); // here: rank, the order of first appearance
+    int nr = 0;
+    for (const int v : rings) {
+        if (renum[size_t(v)] < 0) renum[size_t(v)] = nr++;
+    }
+    used.assign(size_t(nV), 0); // here: union-find parent
+    for (int v = 0; v < nV; ++v) used[size_t(v)] = v;
+    const auto find = [&](int v) {
+        while (used[size_t(v)] != v) v = used[size_t(v)];
+        return v;
+    };
+    for (size_t r = 0; r + 1 < roff.size(); ++r) {
+        const int b = roff[r], k = roff[r + 1] - b;
+        for (int i = 0; i < k; ++i) {
+            int x = find(rings[size_t(b + i)]), y = find(rings[size_t(b + (i + 1) % k)]);
+            if (x == y || maxabs(X[size_t(x)] - X[size_t(y)]) > tol) continue;
+            if (renum[size_t(y)] < renum[size_t(x)]) std::swap(x, y);
+            used[size_t(y)] = x;
+        }
+    }
+    // the faces, their vertices renumbered in the order they appear
+    for (int& v : renum) v = -1;
+    int nv_out = 0;
+    for (size_t r = 0; r + 1 < roff.size(); ++r) {
+        const int b = roff[r], k = roff[r + 1] - b;
         ring.clear();
-        for (int i : ord) ring.push_back(C[size_t(i)]);
-        out.add_face(ring.data(), int(ring.size()), g);
+        for (int i = 0; i < k; ++i) {
+            const int v = find(rings[size_t(b + i)]);
+            if (ring.empty() || ring.back() != v) ring.push_back(v);
+        }
+        while (ring.size() > 1 && ring.front() == ring.back()) ring.pop_back();
+        // A ring that visits a vertex twice (a cap circuit touching itself, or two vertices merged
+        // above) is split there into simple loops, each a face with the same normal; loops of
+        // fewer than 3 vertices (an edge run there and back) are dropped. The edges are the same,
+        // so the surface stays closed, and every face is a simple polygon: no edge in more than two
+        // faces at the next cut. MEASURED (Geneva): a ring through one vertex twice, cut again,
+        // left an edge 9 tol long in four faces.
+        const auto emit = [&](const int* L, const int k) {
+            if (k < 3) return;
+            pts.resize(size_t(k));
+            loop.resize(size_t(k));
+            for (int i = 0; i < k; ++i) {
+                const int v = L[i];
+                pts[size_t(i)] = X[size_t(v)];
+                if (renum[size_t(v)] < 0) renum[size_t(v)] = nv_out++;
+                loop[size_t(i)] = renum[size_t(v)];
+            }
+            out.add_face(pts.data(), loop.data(), k, rN[r]);
+        };
+        path.clear();
+        for (const int v : ring) {
+            int i = -1;
+            for (size_t j = 0; j < path.size(); ++j) {
+                if (path[j] == v) {
+                    i = int(j);
+                    break;
+                }
+            }
+            if (i >= 0) {
+                emit(path.data() + i, int(path.size()) - i);
+                path.resize(size_t(i) + 1);
+            } else {
+                path.push_back(v);
+            }
+        }
+        emit(path.data(), int(path.size()));
+    }
+    out.nv = nv_out;
+    if (cx.st) {
+        if (n_caps == 0) ++cx.st->clips_closed_up;
+        if (n_caps > 1) ++cx.st->caps_split;
     }
     if (cx.tol_cut) *cx.tol_cut += tol;
+    if (cx.st && cx.st->check_closed && out.faces() >= 4) {
+        // every directed edge exactly once, and its reverse exactly once
+        E.clear();
+        for (int f = 0; f < out.faces(); ++f) {
+            const int* r = out.ring_id(f);
+            const int k = out.size(f);
+            for (int i = 0; i < k; ++i) E.push_back({r[i], r[(i + 1) % k]});
+        }
+        std::sort(E.begin(), E.end());
+        bool closed = std::adjacent_find(E.begin(), E.end()) == E.end();
+        for (size_t i = 0; i < E.size() && closed; ++i) {
+            closed = std::binary_search(E.begin(), E.end(), std::pair<int, int>{E[i].second, E[i].first});
+        }
+        ++cx.st->closed_checked;
+        if (!closed) ++cx.st->open_results;
+    }
     return out.faces() >= 4 ? Cut::New : Cut::None;
 }
 
