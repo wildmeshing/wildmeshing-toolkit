@@ -559,6 +559,47 @@ public:
     }
 
     /**
+     * @brief The number the shared smoother compares for one cell, given the cell's quality
+     * (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the
+     * ring before and after the move, and the default smoothing_ring_energy() is the same max.
+     *
+     * The quality itself by default, so TetWild and SimWild compare exactly what they compared
+     * before. An application whose smoother minimises another per-cell energy (through
+     * smoothing_extra_energy()) overrides it, so that the smoother's tests judge a move by that
+     * same energy. The 2D twin is TriOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*tid*/, const double quality) const
+    {
+        return quality;
+    }
+
+    /**
+     * @brief The number the shared smoother's projected step compares for a whole one-ring: a
+     * vertex held on a surface takes the first projected candidate whose value is strictly below
+     * the value before the move.
+     *
+     * `stored` true: the ring before the move, read from the stored cell qualities; it is asked
+     * before the solve moves the vertex, so the mesh as it is is that ring too. `stored` false: the
+     * ring at the candidate position, every cell of it already tested for inversion.
+     *
+     * By default the max over the ring of smoothing_cell_energy() -- what the projected step
+     * compared before this hook existed -- so TetWild and SimWild are unchanged. An application
+     * whose rules compare a sum of a per-cell energy over the cells a move changes overrides it
+     * with that sum, so that the projected step picks its candidate by the same rule. 3D only.
+     */
+    virtual double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool stored) const
+    {
+        double m = 0.;
+        for (const Tuple& loc : ring) {
+            const size_t tid = loc.tid(*this);
+            m = std::max(
+                m,
+                smoothing_cell_energy(tid, stored ? cell_quality(tid) : get_quality(loc)));
+        }
+        return m;
+    }
+
+    /**
      * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
      * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
      * vertices, and the edges, faces and tets not incident to the vertex) through const access,
