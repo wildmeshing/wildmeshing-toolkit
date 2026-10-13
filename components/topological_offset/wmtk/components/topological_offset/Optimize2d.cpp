@@ -3083,9 +3083,11 @@ TopoOffsetTriMesh::SmoothingProgress TopoOffsetTriMesh::smoothing_progress(
 
 void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
 {
-    const int max_passes = std::max(1, m_offset_params.adaptive_smoothing_max_passes);
-    const double stall_rel = m_offset_params.adaptive_smoothing_stall_rel;
-    const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
+    // The adaptive_smoothing keys were removed on the 3D-only branch spenbert/offsets-cleanup
+    // (2026-10-13); their old defaults are hard-wired here until the 2D port.
+    const int max_passes = /* adaptive_smoothing_max_passes */ 20;
+    const double stall_rel = /* adaptive_smoothing_stall_rel */ 0.1;
+    const double step_rel = /* adaptive_smoothing_step_rel */ 0.01;
     std::vector<Vector2d> before;
     double prev_front = std::numeric_limits<double>::infinity();
     for (int p = 0; p < max_passes; ++p) {
@@ -4065,13 +4067,13 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         interleaved
             ? fmt::format(
                   "INTERLEAVED -- split, collapse, swap, each followed by {}",
-                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
-                                                     : fmt::format("{} smoothing pass(es)", k))
+                  /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
+                                                 : fmt::format("{} smoothing pass(es)", k))
             : fmt::format(
                   "COMBINED -- split, collapse, swap back to back, then {} (interleaved_smoothing "
                   "false)",
-                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
-                                                     : fmt::format("{} smoothing pass(es)", k)));
+                  /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
+                                                 : fmt::format("{} smoothing pass(es)", k)));
     partition_mesh_morton();
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
@@ -4082,10 +4084,9 @@ void TopoOffsetTriMesh::optimize_offset_loop(
         stamp_plastic_rests();
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {}",
-            m_offset_params.adaptive_smoothing
-                ? std::string("adaptive smoothing")
-                : fmt::format("{} interleaved smoothing pass(es)", k));
-        if (m_offset_params.adaptive_smoothing) {
+            /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
+                                           : fmt::format("{} interleaved smoothing pass(es)", k));
+        if (/* adaptive_smoothing */ false) {
             smooth_group_to_convergence("pre_smooth");
         } else {
             local_operations({{0, 0, 0, k}});
@@ -4102,7 +4103,7 @@ void TopoOffsetTriMesh::optimize_offset_loop(
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
-            if (m_offset_params.adaptive_smoothing) {
+            if (/* adaptive_smoothing */ false) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});

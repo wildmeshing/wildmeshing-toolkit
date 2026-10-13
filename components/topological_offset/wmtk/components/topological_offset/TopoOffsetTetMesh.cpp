@@ -1601,8 +1601,8 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     }
 
     // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
-    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
-    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
+    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it) -- with no
+    // refinement (the sizing field is never lowered, so
     // every operation aims at the base edge length) and no split of a marched edge
     // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
     // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.

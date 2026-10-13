@@ -49,10 +49,6 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "colored_smoothing",
-      "adaptive_smoothing",
-      "adaptive_smoothing_max_passes",
-      "adaptive_smoothing_stall_rel",
-      "adaptive_smoothing_step_rel",
       "pre_smooth",
       "max_iterations",
       "offset_envelope",
@@ -281,7 +277,7 @@
     "type": "int",
     "default": 0,
     "min": 0,
-    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says (adaptive smoothing is not used). No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
+    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says. No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
   },
   {
     "pointer": "/EXPERIMENTAL_settle_mark",
@@ -365,7 +361,7 @@
     "pointer": "/num_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05; only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
+    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
   },
   {
     "pointer": "/length_rel",
@@ -413,7 +409,7 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the loop this fixed count is only used when adaptive_smoothing is false."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result."
   },
   {
     "pointer": "/colored_smoothing",
@@ -422,34 +418,10 @@
     "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
-    "pointer": "/adaptive_smoothing",
-    "type": "bool",
-    "default": false,
-    "doc": "The loop only, not the final pass. Run the smoothing after each operation group pass by pass until it has converged or stalled, instead of a fixed count: after the one combined group under interleaved_smoothing false in place of num_smoothing_passes, and after each of the three groups (split, collapse, swap) under true (the default) in place of interleaved_smoothing_passes. 2D and 3D alike. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the vertex's own relative error over the bar -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-finite residual) are counted and left out of the maximum."
-  },
-  {
-    "pointer": "/adaptive_smoothing_max_passes",
-    "type": "int",
-    "default": 20,
-    "doc": "Upper bound on the smoothing passes of one operation group under adaptive_smoothing; at least 1 pass always runs."
-  },
-  {
-    "pointer": "/adaptive_smoothing_stall_rel",
-    "type": "float",
-    "default": 0.1,
-    "doc": "Under adaptive_smoothing the front counts as stalled when a pass lowered the maximum convergence ratio by less than this fraction of its value before the pass (0.1 = less than 10 percent). Never applied to the first pass of a group."
-  },
-  {
-    "pointer": "/adaptive_smoothing_step_rel",
-    "type": "float",
-    "default": 0.01,
-    "doc": "Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
-  },
-  {
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike; or the adaptive smoothing when adaptive_smoothing is on -- (2D: with the plastic rests stamped before it and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike -- (2D: with the plastic rests stamped before it and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/coarsen_pass",

@@ -1567,8 +1567,8 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset surface, applied to its
      * already-measured front_vertex_conv_ratio(): finite and within the one bar. Every caller that
      * asks "is the placement of this front vertex done" -- energy_criterion()'s vertex count and
-     * the placed split of the faces over the bar, and the adaptive-smoothing stop -- goes through
-     * here. Unmeasurable (a non-finite ratio) is NOT placed.
+     * the placed split of the faces over the bar -- goes through here. Unmeasurable (a non-finite
+     * ratio) is NOT placed.
      */
     bool front_placed_by_ratio(const double ratio) const
     {
@@ -1977,31 +1977,6 @@ public:
     /// the scalar the caller gave them. Returns the number of vertices lowered.
     size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
 
-    /// What one interleaved smoothing pass achieved, measured after it against the positions
-    /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
-    struct SmoothingProgress
-    {
-        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar, the
-        /// turn criterion's own test).
-        double front_max_ratio = 0.;
-        size_t front_worst_vid = static_cast<size_t>(-1);
-        size_t n_front = 0; ///< front vertices the max was taken over
-        size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
-        double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
-        /// Max over non-front vertices of the step in the pass divided by the vertex's target
-        /// edge length s_v * l.
-        double background_max_step = 0.;
-        size_t background_worst_vid = static_cast<size_t>(-1);
-        size_t n_background = 0;
-    };
-    /// Measure a pass: `before` holds every live vertex's position before it, indexed by vid.
-    SmoothingProgress smoothing_progress(const std::vector<Vector3d>& before);
-    /// The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a
-    /// time through local_operations({0,0,0,1}), each followed by smoothing_progress(), until
-    /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
-    /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
-    /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
-    void smooth_group_to_convergence(const char* group_name);
     /// The energy criterion as measured when the loop converged; the final pass runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;

@@ -1660,7 +1660,7 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
     m_newton_front.reset();
     if (m_offset_params.debug_crossings && m_round > 0) crossing_snapshot("smooth", true, false);
     // use_rest_pose: the engine calls this after EVERY smoothing pass, in every path (a group's
-    // passes, adaptive smoothing, pre_smooth), so this is where the plastic rests are restamped:
+    // passes, pre_smooth), so this is where the plastic rests are restamped:
     // between passes and after the last one, never before the first. With the operations
     // stamping the cells they make or change, every rule reads rests that are up to date. A
     // no-op while the plastic medium is off (the final pass, coarsening, the repulsion passes).
@@ -3173,91 +3173,6 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     return settled && n_marked == 0;
 }
 
-TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
-    const std::vector<Vector3d>& before)
-{
-    SmoothingProgress s;
-    const double l = std::max(m_params.l, 1e-16);
-    // A front vertex's STEP against the one bar; the background uses its own sizing target below.
-    const double tube = m_offset_params.front_conv;
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        const Vector3d& x = m_vertex_attribute[vid].m_posf;
-        const double step = vid < before.size() ? (x - before[vid]).norm() : 0.;
-        const bool front =
-            m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
-        if (!front) {
-            ++s.n_background;
-            const double target = std::max(m_vertex_attribute[vid].m_sizing_scalar * l, 1e-300);
-            const double r = step / target;
-            if (r > s.background_max_step) {
-                s.background_max_step = r;
-                s.background_worst_vid = vid;
-            }
-            continue;
-        }
-        if (tube > 0.) s.front_max_step = std::max(s.front_max_step, step / tube);
-        const double gn = front_vertex_conv_ratio(vid);
-        if (!std::isfinite(gn)) {
-            ++s.n_front_unmeasurable;
-            continue;
-        }
-        ++s.n_front;
-        if (gn > s.front_max_ratio) {
-            s.front_max_ratio = gn;
-            s.front_worst_vid = vid;
-        }
-    }
-    return s;
-}
-
-void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
-{
-    const int max_passes = std::max(1, m_offset_params.adaptive_smoothing_max_passes);
-    const double stall_rel = m_offset_params.adaptive_smoothing_stall_rel;
-    const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
-    std::vector<Vector3d> before;
-    double prev_front = std::numeric_limits<double>::infinity();
-    for (int p = 0; p < max_passes; ++p) {
-        before.assign(vert_capacity(), Vector3d::Zero());
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            before[vid] = m_vertex_attribute[vid].m_posf;
-        }
-        // One pass through the same entry the fixed count used: the sweep, rounding, the
-        // quality log and update_attributes(). The tube is NOT rebuilt between passes; the
-        // group's caller rebuilds it once, as with the fixed count.
-        local_operations({{0, 0, 0, 1}});
-        const SmoothingProgress s = smoothing_progress(before);
-        const bool front_converged = s.n_front == 0 || front_placed_by_ratio(s.front_max_ratio);
-        const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
-                                   s.front_max_ratio > (1. - stall_rel) * prev_front;
-        const bool background_settled = s.background_max_step <= step_rel;
-        const char* front_verdict =
-            front_converged ? "converged" : (front_stalled ? "stalled" : "moving");
-        logger().info(
-            "\t[smoothing {} pass {}/{}] front: max ratio {:.4} (prev {:.4}) at v{}, {} measured "
-            "+ {} unmeasurable, max step {:.4} x tube -> {} | background: max step "
-            "{:.4} x target edge at v{} over {} vertices -> {}",
-            group_name,
-            p + 1,
-            max_passes,
-            s.front_max_ratio,
-            prev_front,
-            s.front_worst_vid,
-            s.n_front,
-            s.n_front_unmeasurable,
-            s.front_max_step,
-            front_verdict,
-            s.background_max_step,
-            s.background_worst_vid,
-            s.n_background,
-            background_settled ? "settled" : "moving");
-        if ((front_converged || front_stalled) && background_settled) break;
-        prev_front = s.front_max_ratio;
-    }
-}
-
 void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
 {
     if (seeds.empty()) return;
@@ -4233,12 +4148,10 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
     // What mesh_improvement() adds and is left out here on purpose is its stall response, which
     // refines around the worst elements: a moving front stretches cells by design.
-    // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
-    // front and the background settle (smooth_group_to_convergence()).
     // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
     // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
     // group -- split, collapse and swap back to back -- followed by one smoothing block of
-    // num_smoothing_passes (or adaptive). Why the switch reaches the loop: measured on the
+    // num_smoothing_passes. Why the switch reaches the loop: measured on the
     // deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, of the six smoothing
     // passes per turn only the first after the split moved the front from turn 5 on; the other five
     // never moved a vertex across the bar, moved the background under 2% of its target edge length,
@@ -4260,14 +4173,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         "\tTurn shape: {}",
         interleaved
             ? fmt::format(
-                  "INTERLEAVED -- split, collapse, swap, each followed by {}",
-                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
-                                                     : fmt::format("{} smoothing pass(es)", k))
+                  "INTERLEAVED -- split, collapse, swap, each followed by {} smoothing "
+                  "pass(es)",
+                  k)
             : fmt::format(
-                  "COMBINED -- split, collapse, swap back to back, then {} (interleaved_smoothing "
-                  "false)",
-                  m_offset_params.adaptive_smoothing ? std::string("adaptive smoothing")
-                                                     : fmt::format("{} smoothing pass(es)", k)));
+                  "COMBINED -- split, collapse, swap back to back, then {} smoothing pass(es) "
+                  "(interleaved_smoothing false)",
+                  k));
     compute_vertex_partition_morton();
     // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
     // scalars at the end of a turn, and the split pass
@@ -4277,15 +4189,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // block every operation group is followed by. Frames are r0S*.
         m_round = 0;
         logger().info(
-            "\t[pre_smooth] one smoothing block before turn 1: {}",
-            m_offset_params.adaptive_smoothing
-                ? std::string("adaptive smoothing")
-                : fmt::format("{} interleaved smoothing pass(es)", k));
-        if (m_offset_params.adaptive_smoothing) {
-            smooth_group_to_convergence("pre_smooth");
-        } else {
-            local_operations({{0, 0, 0, k}});
-        }
+            "\t[pre_smooth] one smoothing block before turn 1: {} interleaved smoothing pass(es)",
+            k);
+        local_operations({{0, 0, 0, k}});
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
@@ -4311,14 +4217,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
-            if (m_offset_params.adaptive_smoothing) {
-                // The group's operations alone, then its smoothing pass by pass until the front
-                // and the background have settled -- see smooth_group_to_convergence().
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
-                smooth_group_to_convergence(group_names[gi]);
-            } else {
-                local_operations(groups[gi]);
-            }
+            local_operations(groups[gi]);
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
             if (m_params.perform_sanity_checks) {
