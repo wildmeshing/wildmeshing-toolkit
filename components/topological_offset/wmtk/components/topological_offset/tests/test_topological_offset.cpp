@@ -2163,12 +2163,12 @@ TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]
         REQUIRE(mesh.m_band_exact);
         const ExactBandIntegral plain(mesh.m_phi_V, mesh.m_phi_F);
         const auto& band = inward ? inside : outside;
-        const auto& far = inward ? outside : inside;
+        const auto& far_side = inward ? outside : inside;
         INFO((inward ? "offset_in" : "offset_out"));
         const double J_band = mesh.m_band_exact->value(band, delta);
         CHECK(J_band < 0.);
         CHECK(J_band == plain.value(band, delta));
-        CHECK(mesh.m_band_exact->value(far, delta) == 0.);
-        CHECK(plain.value(far, delta) < 0.);
+        CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
+        CHECK(plain.value(far_side, delta) < 0.);
     }
 }
