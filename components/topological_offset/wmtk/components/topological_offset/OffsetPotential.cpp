@@ -1,209 +1,66 @@
 #include "OffsetPotential.hpp"
 
+#include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/orient.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <Eigen/Eigenvalues>
 
-#include <SimpleBVH/BVH.hpp>
-
-#include <ipc/candidates/candidates.hpp>
 #include <ipc/collision_mesh.hpp>
-#include <ipc/high_order_contact/arbitrary_point_potential.hpp>
-#include <ipc/high_order_contact/high_order_contact_parameters.hpp>
-#include <ipc/high_order_contact/quadrature_potential.hpp>
+#include <ipc/esp/arbitrary_point_esp.hpp>
+#include <ipc/esp/esp_parameters.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <map>
+#include <set>
 #include <string>
 
 namespace wmtk::components::topological_offset {
 
 namespace {
-/// Unread on this path -- Phi is a point evaluation against a cached collision set, with no
-/// quadrature in it -- but HighOrderContactParameters requires an order and warns about 1.
+/// Unread on this path -- Phi is a point evaluation, with no quadrature in it -- but
+/// ESPParameters requires an order and warns about 1.
 constexpr int UNUSED_QUAD_ORDER = 2;
 
-/// Also unread by the vertex path (it feeds the near/far barrier split). Upstream's default.
+/// Also unread by the point evaluation (it feeds the near/far barrier split). Upstream's default.
 constexpr double UNUSED_DBAR_FACTOR = 1.0;
 
-/// The query point in the row form ipc::ArbitraryPointPotential takes.
+/// The query point in the row form ipc::ArbitraryPointESP takes.
 template <int DIM>
 inline Eigen::RowVector<double, DIM> esp_query(const Eigen::Matrix<double, DIM, 1>& p)
 {
     return p.transpose();
 }
-
-/// The dict type upstream hands back for a vertex query. In 3D DIM is the template's own
-/// default, so `<VERTEX, 3>` and `<VERTEX>` name the same type and the helpers below match.
-template <int DIM>
-using VertexDict = ipc::HighOrderCollisionDict<ipc::PointType::VERTEX, DIM>;
 } // namespace
 
 
 /**
  * @brief Everything that mentions ipc-toolkit.
  *
- * The collision mesh carries the complex's vertices plus one extra row for the query point, the
- * pattern the upstream API is written around. Its topology never changes, so it is built once; an
- * evaluation only writes the last row and rebuilds the small collision set around it.
+ * The complex never changes, so its collision mesh and ESP's broad phase are built once. An
+ * evaluation builds only the small collision set around the query point, in ipc's per-thread
+ * scratch, so `value`, `gradient` and `hessian` are safe to call concurrently.
  */
 template <int DIM>
 struct SmoothOffsetPotential<DIM>::Impl
 {
-    ipc::CollisionMesh mesh; ///< complex vertices + the query vertex
-    ipc::HighOrderContactParameters params;
-    size_t n_complex_v = 0; ///< index of the query vertex, one past the complex's own
+    /// The complex's own vertices, compacted (see build()). Every ESP call takes the vertex
+    /// configuration as an argument, and ArbitraryPointESP indexes every row as a vertex of the
+    /// input.
+    Eigen::MatrixXd V;
+    ipc::CollisionMesh mesh;
+    ipc::ESPParameters params;
+    std::unique_ptr<ipc::ArbitraryPointESP<DIM>> esp;
 
-    /// Broad phase. ipc's own Candidates::build pairs a whole mesh's primitives with each other,
-    /// which does not suit one moving query point against a fixed complex, so this is one box
-    /// query per evaluation against the complex as loaded. 3D indexes the triangles and derives
-    /// their edges and vertices from a hit, which is complete because a primitive within dhat of q
-    /// lies inside the AABB of every triangle containing it. Segments in no triangle and isolated
-    /// points are reachable only through their own trees.
-    SimpleBVH::BVH face_bvh; ///< 3D only: the complex's triangles
-    bool has_faces = false;
-    SimpleBVH::BVH edge_bvh; ///< 2D: every segment. 3D: only the segments in no triangle.
-    bool has_edges = false;
-    std::vector<int> edge_ids; ///< edge_bvh row -> edge id in `mesh`
-    SimpleBVH::BVH point_bvh; ///< isolated complex vertices, as degenerate segments
-    bool has_points = false;
-    std::vector<int> isolated; ///< complex vertex ids with no incident segment
-
-    /// 3D only: the ESP evaluator, which owns its own broad phase and feature classification.
-    ///
-    /// `V_complex` is kept because every call takes the vertex configuration as an argument, and it
-    /// must contain the complex and nothing else: ArbitraryPointBVH indexes every row of it as a
-    /// vertex primitive, so a padding row would be a real point of the complex at whatever
-    /// coordinates it happened to hold. `mesh_esp` is the 2-manifold sub-complex, compacted and
-    /// padded -- not `mesh` above, which the OGC part needs in the complex's own indexing.
-    ipc::CollisionMesh mesh_esp;
-    Eigen::MatrixXd V_complex;
-    std::unique_ptr<ipc::ArbitraryPointPotential<DIM>> esp; ///< null when nothing feeds ESP
-
-    /// Per-thread evaluation state. The smoothing pass is parallel, so `value`, `gradient` and
-    /// `hessian` must not share the query row or the candidate sets.
-    struct Scratch
-    {
-        Eigen::MatrixXd V;
-        ipc::Candidates candidates;
-        bool initialized = false;
-    };
-    mutable wmtk::threading::enumerable_thread_specific<Scratch> scratch;
-
-    /// ogc_collisions records which builder this dimension uses; neither path reads it, since 2D
-    /// calls build_collisions_at_vertex_ogc_2d() by name and ArbitraryPointPotential ignores it.
     Impl(const double dhat)
-        : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER, /*ogc_collisions=*/DIM == 2)
+        : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER)
     {}
-
-    /// The collision set at `p`, or null when nothing is within the support. Writes the query
-    /// point into the calling thread's scratch V first, so the caller evaluates against `s.V`.
-    std::unique_ptr<VertexDict<DIM>> collisions(const VecD& p, Scratch& s) const
-    {
-        const auto q = static_cast<ipc::index_t>(n_complex_v);
-        const double dhat = params.dhat;
-
-        if (!s.initialized) {
-            s.V = mesh.rest_positions();
-            s.candidates.mesh_ = mesh;
-            s.initialized = true;
-        }
-        s.V.row(n_complex_v) = p.transpose();
-
-        SimpleBVH::Vector3d lo(-dhat, -dhat, -dhat);
-        SimpleBVH::Vector3d hi(dhat, dhat, dhat);
-        for (int d = 0; d < DIM; ++d) {
-            lo[d] += p[d];
-            hi[d] += p[d];
-        }
-
-        s.candidates.m_vf_set.clear();
-        s.candidates.m_ve_set.clear();
-        s.candidates.m_vv_set.clear();
-
-        std::vector<unsigned int> hits;
-
-        if (has_faces) {
-            // The 3D builder reads vf_set, ve_set and vv_set independently, so a triangle's edges
-            // and vertices must be seeded here too. Missing one fails silently: a convex feature
-            // whose vertex is never a candidate contributes nothing, leaving the level set with a
-            // hole where it should have a spherical cap.
-            face_bvh.intersect_box(lo, hi, hits);
-            if (!hits.empty()) {
-                std::set<ipc::index_t>& vf = s.candidates.m_vf_set[q];
-                std::set<ipc::index_t>& ve = s.candidates.m_ve_set[q];
-                std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
-                for (const unsigned int f : hits) {
-                    vf.insert(static_cast<ipc::index_t>(f));
-                    for (int j = 0; j < 3; ++j) {
-                        ve.insert(mesh.faces_to_edges()(f, j));
-                        vv.insert(mesh.faces()(f, j));
-                    }
-                }
-            }
-        }
-        if (has_edges) {
-            edge_bvh.intersect_box(lo, hi, hits);
-            if (!hits.empty()) {
-                std::set<ipc::index_t>& ve = s.candidates.m_ve_set[q];
-                for (const unsigned int e : hits) {
-                    const auto ei = static_cast<ipc::index_t>(edge_ids[e]);
-                    ve.insert(ei);
-                    if constexpr (DIM == 3) {
-                        // 2D gets its vertex candidates for free -- Candidates::vv_set() derives
-                        // them from the endpoints of the edge candidates, which is what makes a
-                        // convex corner work, since there only the vertex claims the point. 3D
-                        // has no such derivation.
-                        std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
-                        vv.insert(mesh.edges()(ei, 0));
-                        vv.insert(mesh.edges()(ei, 1));
-                    }
-                }
-            }
-        }
-        if (has_points) {
-            point_bvh.intersect_box(lo, hi, hits);
-            if (!hits.empty()) {
-                // An isolated complex vertex is in no segment and no triangle, so it can only
-                // reach the potential as an explicit vertex-vertex candidate.
-                std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
-                for (const unsigned int i : hits) {
-                    vv.insert(static_cast<ipc::index_t>(isolated[i]));
-                }
-            }
-        }
-        if (s.candidates.m_vf_set.empty() && s.candidates.m_ve_set.empty() &&
-            s.candidates.m_vv_set.empty()) {
-            return nullptr;
-        }
-
-        // Upstream decides which candidates actually contribute -- the OGC feasible-region rule,
-        // the interiority tests and the dhat cut. Deliberately not reimplemented here.
-        const ipc::PointPotential pp(mesh, s.candidates, params, nullptr);
-        size_t n_pairs = 0;
-        std::unique_ptr<VertexDict<DIM>> dict;
-        if constexpr (DIM == 2) {
-            dict = pp.build_collisions_at_vertex_ogc_2d(s.V, q, n_pairs);
-        } else {
-            dict = pp.build_collisions_at_vertex_ogc_3d(s.V, q, n_pairs);
-        }
-        if (!dict || dict->size() == 0) {
-            return nullptr;
-        }
-        return dict;
-    }
-
-    /// Phi's stencil covers the query point and every complex vertex it touches; only the query
-    /// point moves, so only its DIM-sized block of a gradient (or DIMxDIM of a Hessian) is ours.
-    ipc::index_t local_query_index(const VertexDict<DIM>& dict) const
-    {
-        return dict.vertex_ids_inverse(static_cast<ipc::index_t>(n_complex_v));
-    }
 };
-
 
 template <int DIM>
 SmoothOffsetPotential<DIM>::SmoothOffsetPotential(
@@ -312,438 +169,115 @@ void SmoothOffsetPotential<DIM>::build(
             log_and_throw_error("OffsetPotential<2> has no triangle primitive, got {}", F.rows());
         }
     }
-
-    m_impl = std::make_unique<Impl>(m_dhat);
-    m_impl->n_complex_v = static_cast<size_t>(V.rows());
-
-    // ---- 3D: ESP over the 2-manifold part of the complex ----
-    //
-    // ESP's alternating sum (+faces -edges +vertices) is inclusion-exclusion over a closed surface:
-    // each -1 edge term cancels the +1 its incident faces contribute when the closest point lands
-    // on that shared edge, netting exactly one +b(d) at the true closest feature. A primitive with
-    // no incident face has nothing to cancel against, so the sum inverts to -b(d) -- a barrier with
-    // the wrong sign, unbounded below as the query approaches it.
-    //
-    // The complex is therefore split by what ESP is defined on. Triangles, their edges and their
-    // vertices go to ArbitraryPointPotential; segments in no triangle and isolated points stay on
-    // the OGC vertex builder below, which weights every active primitive +1 and is right for a
-    // sub-manifold piece. The two sums add.
     if constexpr (DIM == 3) {
-        if (F.rows() > 0) {
-            std::map<std::pair<int, int>, int> edge_of;
-            for (int i = 0; i < E.rows(); ++i) {
-                edge_of[{std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1))}] = i;
-            }
-            // Compacted to the face-incident vertices: ipc::LBVH indexes every row it is given as a
-            // vertex primitive, so carrying a wire or isolated vertex here would add a +1 term in
-            // the surface sum on top of the one the OGC part already gives it.
-            std::vector<int> to_surf(V.rows(), -1);
-            std::vector<int> surf_v;
-            const auto claim = [&](const int v) {
-                if (to_surf[v] < 0) {
-                    to_surf[v] = static_cast<int>(surf_v.size());
-                    surf_v.push_back(v);
-                }
-                return to_surf[v];
-            };
-            MatrixXi F_s(F.rows(), 3);
-            std::set<std::pair<int, int>> surf_e;
-            for (int f = 0; f < F.rows(); ++f) {
-                for (int j = 0; j < 3; ++j) F_s(f, j) = claim(F(f, j));
-                for (int j = 0; j < 3; ++j) {
-                    const int a0 = F(f, j), b0 = F(f, (j + 1) % 3);
-                    if (edge_of.find({std::min(a0, b0), std::max(a0, b0)}) == edge_of.end()) {
-                        // ipc would throw the same thing from construct_faces_to_edges, but with
-                        // no hint about which caller built the list.
-                        log_and_throw_error(
-                            "OffsetPotential<3>: edge ({}, {}) of triangle {} is missing from E. "
-                            "The edge list must contain every edge of every triangle.",
-                            a0,
-                            b0,
-                            f);
-                    }
-                    surf_e.insert(
-                        {std::min(to_surf[a0], to_surf[b0]), std::max(to_surf[a0], to_surf[b0])});
-                }
-            }
-
-            // No ESP tree may have exactly one leaf: ipc::LBVH sizes a tree as 2N-1 nodes, so with
-            // N == 1 the root is the leaf, while ArbitraryPointBVH::query_point() starts at node 0
-            // assuming it is inner and reads node.left / node.right, both of which resolve back to
-            // the node itself. The lone primitive is then pushed twice and its term enters doubled.
-            // Three vertices, three segments and one triangle, far enough out that nothing within
-            // dhat of the real complex can see them, take all three trees to N >= 2.
-            const int n_sv = static_cast<int>(surf_v.size());
-            const Eigen::RowVector3d far = V.colwise().maxCoeff().array() + 8. * m_dhat + 1.;
-            MatrixXd V_s(n_sv + 3, 3);
-            for (int i = 0; i < n_sv; ++i) V_s.row(i) = V.row(surf_v[i]);
-            V_s.row(n_sv) = far;
-            V_s.row(n_sv + 1) = far + Eigen::RowVector3d(m_dhat, 0., 0.);
-            V_s.row(n_sv + 2) = far + Eigen::RowVector3d(0., m_dhat, 0.);
-
-            MatrixXi E_s(static_cast<int>(surf_e.size()) + 3, 2);
-            int k = 0;
-            for (const auto& [x, y] : surf_e) E_s.row(k++) << x, y;
-            E_s.row(k++) << n_sv, n_sv + 1;
-            E_s.row(k++) << n_sv + 1, n_sv + 2;
-            E_s.row(k++) << n_sv + 2, n_sv;
-
-            MatrixXi F_pad(F.rows() + 1, 3);
-            F_pad.topRows(F.rows()) = F_s;
-            F_pad.row(F.rows()) << n_sv, n_sv + 1, n_sv + 2;
-
-            m_impl->V_complex = V_s;
-            m_impl->mesh_esp = ipc::CollisionMesh(V_s, E_s, F_pad);
-            m_impl->esp = std::make_unique<ipc::ArbitraryPointPotential<DIM>>(
-                m_impl->mesh_esp,
-                m_impl->params);
-            // Once: the complex is fixed for this potential's lifetime.
-            m_impl->esp->update(m_impl->V_complex);
+        std::set<std::pair<int, int>> edges;
+        for (int i = 0; i < E.rows(); ++i) {
+            edges.emplace(std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1)));
         }
-    }
-
-    // ---- 2D: ESP over the segments of the complex ----
-    //
-    // Same inclusion-exclusion, one codimension down: segments +1, their endpoints -1, so at a
-    // corner the two segments' reductions and the direct vertex term cancel to exactly one b(d).
-    // An isolated point has no incident segment to cancel against and would invert to -b(d), so
-    // it stays on the OGC vertex builder below, exactly as a wire edge does in 3D.
-    if constexpr (DIM == 2) {
-        if (E.rows() > 0) {
-            std::vector<int> to_seg(V.rows(), -1);
-            std::vector<int> seg_v;
-            const auto claim = [&](const int v) {
-                if (to_seg[v] < 0) {
-                    to_seg[v] = static_cast<int>(seg_v.size());
-                    seg_v.push_back(v);
-                }
-                return to_seg[v];
-            };
-            MatrixXi E_s(E.rows(), 2);
-            for (int i = 0; i < E.rows(); ++i) {
-                E_s(i, 0) = claim(E(i, 0));
-                E_s(i, 1) = claim(E(i, 1));
-            }
-            // No ESP tree may have exactly one leaf -- see the 3D note above. One far segment
-            // takes the edge tree to N >= 2 (the vertex tree already is, a segment having two
-            // ends), and being beyond dhat it never enters a sum.
-            const int n_sv = static_cast<int>(seg_v.size());
-            const Eigen::RowVector2d far = V.colwise().maxCoeff().array() + 8. * m_dhat + 1.;
-            MatrixXd V_s(n_sv + 2, 2);
-            for (int i = 0; i < n_sv; ++i) V_s.row(i) = V.row(seg_v[i]);
-            V_s.row(n_sv) = far;
-            V_s.row(n_sv + 1) = far + Eigen::RowVector2d(m_dhat, 0.);
-            MatrixXi E_pad(E.rows() + 1, 2);
-            E_pad.topRows(E.rows()) = E_s;
-            E_pad.row(E.rows()) << n_sv, n_sv + 1;
-
-            m_impl->V_complex = V_s;
-            m_impl->mesh_esp = ipc::CollisionMesh(V_s, E_pad, MatrixXi(0, 3));
-            m_impl->esp = std::make_unique<ipc::ArbitraryPointPotential<DIM>>(
-                m_impl->mesh_esp,
-                m_impl->params);
-            m_impl->esp->update(m_impl->V_complex);
-        }
-    }
-
-    // ---- 2D: the OGC vertex builder, which needs a real mesh vertex to measure from ----
-    // The collision mesh is the complex plus one trailing row that every evaluation overwrites with
-    // the query point. That row belongs to no segment and no triangle, so it never appears as a
-    // contact primitive, only as the point the primitives are measured from.
-    //
-    // A complex with no segments at all needs one row more. ipc::CollisionMesh's
-    // are_adjacencies_initialized() requires all three adjacency tables to be non-empty and sizes
-    // the edge-vertex table by the edge count, so with no edges every accessor throws, including
-    // the one the OGC feasible-region test calls. One sentinel segment far outside the complex
-    // makes the table non-empty, and it is unreachable because the only source of candidates is
-    // our own BVHs below, which do not index it. No sentinel triangle is needed: a complex with
-    // triangles necessarily has their edges.
-    // In 2D every segment went to ESP, so the OGC mesh deliberately carries none: a vertex with no
-    // incident segment passes the feasible-region test from every direction, which is what both an
-    // isolated point and an open end need. In 3D the mesh keeps the wire edges the OGC part owns.
-    const bool needs_sentinel = (DIM == 2) || (E.rows() == 0);
-    const int n_extra = needs_sentinel ? 3 : 1;
-
-    MatrixXd V_ext(V.rows() + n_extra, DIM);
-    V_ext.topRows(V.rows()) = V;
-    V_ext.bottomRows(n_extra).setZero();
-
-    MatrixXi E_ext = E;
-    if (needs_sentinel) {
-        const VecD far = V.colwise().maxCoeff().transpose() + VecD::Constant(1e3 * m_dhat + 1.);
-        VecD far2 = far;
-        far2[0] += m_dhat;
-        V_ext.row(V.rows() + 1) = far.transpose();
-        V_ext.row(V.rows() + 2) = far2.transpose();
-        E_ext.resize(1, 2);
-        E_ext << static_cast<int>(V.rows()) + 1, static_cast<int>(V.rows()) + 2;
-    }
-
-    m_impl->mesh = ipc::CollisionMesh(V_ext, E_ext, F);
-    m_impl->mesh.init_adjacencies(); // the OGC feasible-region test reads them
-
-    // Broad phase. SimpleBVH is 3D, so pad; a 2D complex lies in z = 0.
-    MatrixXd V3(V.rows(), 3);
-    V3.setZero();
-    V3.leftCols(DIM) = V;
-
-    // 2D only. In 3D the triangles, and their edges and vertices, belong to the ESP sum above, so
-    // seeding them as OGC candidates as well would count the surface twice.
-    if constexpr (DIM == 2) {
-        (void)V3;
-    } else {
-        // has_faces stays false: nothing here indexes F.
-    }
-
-    // What the OGC part owns: in both dimensions only what ESP cannot take -- in 3D the segments
-    // in no triangle, plus the manifold boundary of the surface part (below); in 2D nothing at
-    // all (every segment went to ESP; the isolated points below are its whole remit).
-    //
-    // The 3D reading of the 2D degree-1 rule further down. ESP's edge term is -1 for every
-    // triangle edge, cancelled by the +1 of each incident face whose closest point lands on it. A
-    // rim edge -- exactly ONE incident triangle, the boundary of an open sheet -- has only one +1
-    // to cancel with, so its -1 survives and Phi comes out short by b(dist to it), reaching 0 where
-    // the rim should be the closest feature; a rim vertex nets 0 the same way (k faces, k+1 edges,
-    // +1 vertex). Adding the rim edges to the OGC edge tree restores the missing +1: the OGC
-    // builder seeds their endpoints as vertex candidates and lets exactly one feature claim the
-    // query, so a straight or convex rim vertex is exact too. (A rim vertex whose rim turns back on
-    // itself -- both incident rim edges' slabs covering the query -- over-counts by one, the same
-    // reentrant double barrier the 2D segment path had before it moved to ESP; a closed surface
-    // has no rim and is unaffected.)
-    std::vector<int> tree_edges;
-    if constexpr (DIM == 3) {
-        std::map<std::pair<int, int>, int> faces_at; // triangle edge -> incident triangle count
         for (int f = 0; f < F.rows(); ++f) {
             for (int j = 0; j < 3; ++j) {
-                const int a0 = F(f, j), b0 = F(f, (j + 1) % 3);
-                ++faces_at[{std::min(a0, b0), std::max(a0, b0)}];
+                const int a = F(f, j), b = F(f, (j + 1) % 3);
+                if (edges.count({std::min(a, b), std::max(a, b)}) == 0) {
+                    // ipc would throw the same thing from construct_faces_to_edges, but with no
+                    // hint about which caller built the list.
+                    log_and_throw_error(
+                        "OffsetPotential<3>: edge ({}, {}) of triangle {} is missing from E. "
+                        "The edge list must contain every edge of every triangle.",
+                        a,
+                        b,
+                        f);
+                }
             }
         }
-        for (int i = 0; i < E.rows(); ++i) {
-            const int a0 = E(i, 0), b0 = E(i, 1);
-            const auto it = faces_at.find({std::min(a0, b0), std::max(a0, b0)});
-            const bool wire = (it == faces_at.end());
-            const bool rim = !wire && it->second == 1;
-            if (wire || rim) tree_edges.push_back(i);
-        }
     }
 
-    if (!tree_edges.empty()) {
-        MatrixXi E_tree(tree_edges.size(), 2);
-        for (size_t i = 0; i < tree_edges.size(); ++i) {
-            E_tree.row(i) = E.row(tree_edges[i]);
+    // One ESP over the whole complex. ipc weighs every element so that the weights of the
+    // elements containing any point of the complex sum to one (ESP supplemental, S2): a closed
+    // surface or curve gets the alternating signs, the boundary of an open sheet and the ends of
+    // an open curve weigh zero, and segments in no triangle and isolated points weigh one. Up to
+    // ipc 3a76d751 the weights were the closed-surface signs alone: an open sheet had Phi = 0
+    // beyond its boundary and a segment in no triangle entered as a negative barrier, which this
+    // class patched with ipc's OGC builder, over-counting where a boundary turns back on itself.
+    //
+    // Compacted to the complex's own vertices: ArbitraryPointESP indexes every row it is given as
+    // a vertex of the input, so a row of V in no segment, triangle or P -- another region's
+    // vertex, when a per-region field passes the shared vertex list -- would enter as an isolated
+    // point.
+    std::vector<int> to_c(V.rows(), -1);
+    std::vector<int> used;
+    const auto claim = [&](const int v) {
+        if (to_c[v] < 0) {
+            to_c[v] = static_cast<int>(used.size());
+            used.push_back(v);
         }
-        m_impl->edge_bvh.init(V3, E_tree, 1e-6);
-        m_impl->has_edges = true;
-        m_impl->edge_ids = tree_edges;
+        return to_c[v];
+    };
+    MatrixXi F_c(F.rows(), 3);
+    for (int f = 0; f < F.rows(); ++f) {
+        for (int j = 0; j < 3; ++j) F_c(f, j) = claim(F(f, j));
     }
+    MatrixXi E_c(E.rows(), 2);
+    for (int i = 0; i < E.rows(); ++i) {
+        E_c(i, 0) = claim(E(i, 0));
+        E_c(i, 1) = claim(E(i, 1));
+    }
+    for (const int v : P) claim(v);
 
-    // ESP's vertex term is -1 for every complex vertex, cancelled by the +1 its incident segments
-    // contribute when their closest point to the query lands on it. A vertex with exactly ONE
-    // incident segment has only one +1 to cancel with, so its -1 survives everywhere inside the
-    // support -- not merely beyond the end -- and Phi comes out short by exactly b(dist to it),
-    // reaching 0 where the end should be the closest feature. Adding that vertex to the OGC point
-    // set restores the missing +1 at every query point, which is exact rather than a cap.
-    // (Degree >= 3 would over-count by the same argument; no complex here has one, and a junction
-    // is not a manifold boundary, so it is left to fail loudly rather than be silently patched.)
-    std::vector<int> pts = P;
-    if constexpr (DIM == 2) {
-        std::map<int, int> degree;
-        for (int i = 0; i < E.rows(); ++i) {
-            ++degree[E(i, 0)];
-            ++degree[E(i, 1)];
-        }
-        for (const auto& [v, d] : degree) {
-            if (d == 1) pts.push_back(v);
-        }
-    }
-    m_impl->isolated = pts;
-    if (!pts.empty()) {
-        // As pseudo-segments (p, p), the same encoding SimplicialComplexBVH uses for the
-        // isolated vertices of the complex.
-        MatrixXi PE(pts.size(), 2);
-        for (size_t i = 0; i < pts.size(); ++i) {
-            PE(i, 0) = pts[i];
-            PE(i, 1) = pts[i];
-        }
-        m_impl->point_bvh.init(V3, PE, 1e-6);
-        m_impl->has_points = true;
-    }
+    m_impl = std::make_unique<Impl>(m_dhat);
+    m_impl->V.resize(used.size(), DIM);
+    for (size_t i = 0; i < used.size(); ++i) m_impl->V.row(i) = V.row(used[i]);
+    m_impl->mesh = ipc::CollisionMesh(m_impl->V, E_c, F_c);
+    m_impl->esp = std::make_unique<ipc::ArbitraryPointESP<DIM>>(m_impl->mesh, m_impl->params);
+    // Once: the complex is fixed for this potential's lifetime.
+    m_impl->esp->update(m_impl->V);
 }
 
 template <int DIM>
 double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 {
-    // The two sums add: ESP over the triangles, the OGC vertex builder over the segments in no
-    // triangle and the isolated points. Either may be empty -- a closed surface uses only the
-    // first, a point cloud or a 2D complex only the second. See build() for the split.
-    double phi = 0.;
-    if (m_impl->esp) phi += (*m_impl->esp)(m_impl->V_complex, esp_query<DIM>(p));
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) {
-        return phi; // nothing more within the support
-    }
-    if constexpr (DIM == 2) {
-        phi += ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-    } else {
-        phi += ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-    }
-    return phi;
+    return (*m_impl->esp)(m_impl->V, esp_query<DIM>(p));
 }
 
 
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(const VecD& p) const
 {
-    VecD g_total = VecD::Zero();
-    if (m_impl->esp) g_total += m_impl->esp->gradient(m_impl->V_complex, esp_query<DIM>(p));
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) {
-        return g_total;
-    }
-    Eigen::VectorXd g;
-    if constexpr (DIM == 2) {
-        g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-    } else {
-        g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_with_cached_collisions(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-    }
-    const ipc::index_t li = m_impl->local_query_index(*dict);
-    return g_total + g.template segment<DIM>(DIM * li);
+    return m_impl->esp->gradient(m_impl->V, esp_query<DIM>(p));
 }
 
 
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(const VecD& p) const
 {
-    // PSDProjectionMethod::NONE returns the true Hessian, for the caller to project or not: the
-    // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which is
-    // a better-motivated route to a PSD matrix than clamping this one. ESP could not be projected
-    // per term in any case, because its -1 weights make that invalid.
-    MatD H_total = MatD::Zero();
-    if (m_impl->esp) H_total += m_impl->esp->hessian(m_impl->V_complex, esp_query<DIM>(p));
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) {
-        return H_total;
-    }
-    Eigen::MatrixXd H;
-    if constexpr (DIM == 2) {
-        H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_2d(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr,
-            ipc::PSDProjectionMethod::NONE);
-    } else {
-        H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_with_cached_collisions(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr,
-            ipc::PSDProjectionMethod::NONE);
-    }
-    const ipc::index_t li = m_impl->local_query_index(*dict);
-    return H_total + H.template block<DIM, DIM>(DIM * li, DIM * li);
+    // The true Hessian, for the caller to project or not: the smoothing energy squares the
+    // residual and takes its own Gauss-Newton approximation, which is a better-motivated route to
+    // a PSD matrix than clamping this one. ESP could not be projected per term in any case,
+    // because its negative weights make that invalid.
+    return m_impl->esp->hessian(m_impl->V, esp_query<DIM>(p));
 }
 
 
 template <int DIM>
 std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 {
-    std::string out;
-    {
-        // ESP builds its collision dict inside ArbitraryPointPotential and does not hand it back,
-        // so the per-pair breakdown the OGC part prints is not available for the surface; report
-        // Phi and |grad Phi| instead, which is what a discontinuity investigation compares between
-        // neighbouring samples.
-        if (m_impl->esp) {
-            const auto [v, g, h] = m_impl->esp->evaluate(m_impl->V_complex, esp_query<DIM>(p));
-            out += fmt::format(
-                "[ESP surface Phi={:.6g} |grad|={:.6g} tr(H)={:.6g}] ",
-                v,
-                g.norm(),
-                h.trace());
-        }
-    }
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) {
-        return out.empty() ? "<nothing active>" : out;
-    }
-    for (int i = 0; i < dict->size(); ++i) {
-        const auto& cc = (*dict)[i];
-        std::string ids;
-        for (const ipc::index_t v : cc.vertex_ids()) {
-            ids += fmt::format("{} ", v);
-        }
-        out += fmt::format("[{} w={} verts: {}] ", cc.name(), cc.weight, ids);
-    }
-    return out;
+    // ArbitraryPointESP builds its collision set internally and does not hand it back, so there
+    // is no per-pair breakdown; Phi, |grad Phi| and tr(H) are what a discontinuity investigation
+    // compares between neighbouring samples.
+    const auto [v, g, h] = m_impl->esp->evaluate(m_impl->V, esp_query<DIM>(p));
+    return fmt::format("[ESP Phi={:.6g} |grad|={:.6g} tr(H)={:.6g}]", v, g.norm(), h.trace());
 }
 
 
 template <int DIM>
 void SmoothOffsetPotential<DIM>::value_gradient(const VecD& p, double& v, VecD& g) const
 {
-    // value() and gradient() from ONE collision build per part: the build, not the per-pair
-    // barrier evaluation, dominates an evaluation's cost (ipc's ArbitraryPointPotential::evaluate()
-    // says so; measured on the cube, value 1.07 us, gradient 1.11 us, value+gradient+Hessian
-    // 1.06 us), and level_set_distance() needs both at its start. Same sums in the same order as
-    // value() and gradient().
-    v = 0.;
-    g.setZero();
-    if (m_impl->esp) {
-        const auto [ev, eg, eh] = m_impl->esp->evaluate(m_impl->V_complex, esp_query<DIM>(p));
-        v += ev;
-        g += eg;
-    }
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) return;
-    Eigen::VectorXd gg;
-    if constexpr (DIM == 2) {
-        v += ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-        gg = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-    } else {
-        v += ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
-            s.V,
-            *dict,
-            m_impl->params,
-            nullptr);
-        gg =
-            ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_with_cached_collisions(
-                s.V,
-                *dict,
-                m_impl->params,
-                nullptr);
-    }
-    g += gg.template segment<DIM>(DIM * m_impl->local_query_index(*dict));
+    // value() and gradient() from ONE collision build: the build, not the per-pair barrier
+    // evaluation, dominates an evaluation's cost (ipc's ArbitraryPointESP::evaluate() says so;
+    // measured on the cube, value 1.07 us, gradient 1.11 us, value+gradient+Hessian 1.06 us), and
+    // level_set_distance() needs both at its start.
+    const auto [ev, eg, eh] = m_impl->esp->evaluate(m_impl->V, esp_query<DIM>(p));
+    v = ev;
+    g = eg;
 }
 
 template <int DIM>
@@ -928,179 +462,25 @@ OffsetEnergy<DIM>::OffsetEnergy(
     const std::shared_ptr<const OffsetPotential<DIM>>& potential,
     const double weight,
     const bool gauss_newton,
-    const bool distance_residual)
+    const bool distance_residual,
+    const bool one_sided)
     : m_potential(potential)
     , m_weight(weight)
     , m_gauss_newton(gauss_newton)
     , m_distance_residual(distance_residual)
+    , m_one_sided(one_sided)
 {}
 
-
-AlignEnergy2D::AlignEnergy2D(
-    const std::shared_ptr<const OffsetPotential2D>& potential,
-    std::vector<Edge> edges,
-    const double outward_sign,
-    const double weight)
-    : m_potential(potential)
-    , m_edges(std::move(edges))
-    , m_sign(outward_sign)
-    , m_weight(weight)
-{}
-
-void AlignEnergy2D::residual(const Eigen::Vector2d& x, const Edge& e, double& r, Eigen::Vector2d& J)
-    const
-{
-    r = 0.;
-    J.setZero();
-    // The edge's outward unit normal and its derivative. t = (q - x) / |q - x|,
-    // dt/dx = -(I - t t^T) / |q - x|; n = sigma R90 t, R90 = [[0, -1], [1, 0]].
-    const Eigen::Vector2d d = e.q - x;
-    const double len = d.norm();
-    if (!(len > 0.)) return;
-    const Eigen::Vector2d t = d / len;
-    const Eigen::Matrix2d R90 = (Eigen::Matrix2d() << 0., -1., 1., 0.).finished();
-    const Eigen::Vector2d n = e.sigma * (R90 * t);
-    const Eigen::Matrix2d dn_dx =
-        -e.sigma * R90 * (Eigen::Matrix2d::Identity() - t * t.transpose()) / len;
-    // The field's outward unit direction at the midpoint and its derivative:
-    // m = (x + q) / 2, u = grad Phi / |grad Phi|, du/dm = (I - u u^T) H / |grad Phi|, dm/dx = 1/2.
-    const Eigen::Vector2d m = 0.5 * (x + e.q);
-    const Eigen::Vector2d g = m_potential->gradient(m);
-    const double gn = g.norm();
-    if (!std::isfinite(gn) || gn <= 1e-300) return;
-    const Eigen::Vector2d u = g / gn;
-    const Eigen::Matrix2d H = m_potential->hessian(m);
-    if (!H.allFinite()) return;
-    const Eigen::Vector2d ghat = m_sign * u;
-    const Eigen::Matrix2d dghat_dx =
-        0.5 * m_sign * (Eigen::Matrix2d::Identity() - u * u.transpose()) * H / gn;
-    r = 1. - n.dot(ghat);
-    // d r / dx = -(dn/dx)^T ghat - (dghat/dx)^T n
-    J = -(dn_dx.transpose() * ghat) - (dghat_dx.transpose() * n);
-}
-
-double AlignEnergy2D::value(const TVector& x)
-{
-    double E = 0., r;
-    Eigen::Vector2d J;
-    for (const Edge& e : m_edges) {
-        residual(x.head(2), e, r, J);
-        E += m_weight * e.agree * r * r;
-    }
-    return E;
-}
-
-void AlignEnergy2D::gradient(const TVector& x, TVector& gradv)
-{
-    Eigen::Vector2d G = Eigen::Vector2d::Zero(), J;
-    double r;
-    for (const Edge& e : m_edges) {
-        residual(x.head(2), e, r, J);
-        G += 2. * m_weight * e.agree * r * J;
-    }
-    gradv = G;
-}
-
-void AlignEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    Eigen::Matrix2d Hs = Eigen::Matrix2d::Zero();
-    Eigen::Vector2d J;
-    double r;
-    for (const Edge& e : m_edges) {
-        residual(x.head(2), e, r, J);
-        Hs += 2. * m_weight * e.agree * J * J.transpose();
-    }
-    hessian = Hs;
-}
-
-template <int DIM>
-bool OffsetEnergy<DIM>::root_distance(const VecD& p, double& s, VecD& n) const
-{
-    // The signed distance from p to the level set Phi = c along the field's normal at p: the root
-    // of g(t) = Phi(p - t n) - c, t > 0 outward. Safeguarded Newton -- the step is Newton's while
-    // it stays inside the bracket and a bisection of the bracket otherwise, so it converges in a
-    // handful of evaluations where Phi is smooth and cannot escape. Evaluation count matters: the
-    // residual is asked for three times per Newton iteration of the placement.
-    const double c = m_potential->target_level();
-    const VecD g0 = m_potential->gradient(p);
-    const double gn0 = g0.norm();
-    if (!std::isfinite(gn0) || !(gn0 > 0.)) return false;
-    n = g0 / gn0; // toward the input: Phi grows that way
-    const double delta = std::max(m_potential->delta(), 1e-300);
-    const double reach = 2. * std::max(m_potential->dhat(), delta);
-    const double tol = 1e-8 * delta;
-    const auto f = [&](const double t) { return m_potential->value(p - t * n) - c; };
-    const auto fprime = [&](const double t) { return -m_potential->gradient(p - t * n).dot(n); };
-    // Warm start from this vertex's previous root: the placement moves the vertex toward the level
-    // set, so the next call's root is near the last one minus the step taken. Plain Newton from
-    // there converges in a few evaluations, and the bracket below is only built when it does not.
-    double t = std::isfinite(m_last_root) ? m_last_root : 0., ft = f(t);
-    if (!std::isfinite(ft)) {
-        t = 0.;
-        ft = f(0.);
-        if (!std::isfinite(ft)) return false;
-    }
-    if (ft == 0.) {
-        s = t;
-        m_last_root = t;
-        return true;
-    }
-    for (int it = 0; it < 8; ++it) {
-        const double fp = fprime(t);
-        if (!std::isfinite(fp) || fp == 0.) break;
-        const double tn = t - ft / fp;
-        if (!std::isfinite(tn) || std::abs(tn) > reach) break;
-        const double ftn = f(tn);
-        if (!std::isfinite(ftn) || std::abs(ftn) > std::abs(ft)) break; // not converging: bracket
-        const bool done = std::abs(tn - t) < tol || ftn == 0.;
-        t = tn;
-        ft = ftn;
-        if (done) {
-            s = t;
-            m_last_root = t;
-            return true;
-        }
-    }
-    // Bracket [lo, hi] with f(lo) > 0 (too close, inside the level set) and f(hi) < 0.
-    t = 0.;
-    ft = f(0.);
-    if (!std::isfinite(ft)) return false;
-    double lo, hi;
-    if (ft > 0.) {
-        lo = 0.;
-        hi = 0.125 * delta;
-        while (hi < reach && f(hi) > 0.) hi *= 2.;
-        if (!(f(hi) < 0.)) return false;
-    } else {
-        hi = 0.;
-        lo = -0.125 * delta;
-        while (lo > -reach && f(lo) < 0.) lo *= 2.;
-        if (!(f(lo) > 0.)) return false;
-    }
-    for (int it = 0; it < 60; ++it) {
-        const double fp = fprime(t);
-        double tn = (std::isfinite(fp) && fp != 0.) ? t - ft / fp : 0.5 * (lo + hi);
-        if (!(tn > lo && tn < hi)) tn = 0.5 * (lo + hi); // Newton left the bracket: bisect
-        const double ftn = f(tn);
-        if (!std::isfinite(ftn)) return false;
-        if (ftn > 0.) {
-            lo = tn;
-        } else {
-            hi = tn;
-        }
-        const bool done = std::abs(tn - t) < tol || ftn == 0. || (hi - lo) < tol;
-        t = tn;
-        ft = ftn;
-        if (done) break;
-    }
-    s = t;
-    m_last_root = t;
-    return true;
-}
 
 template <int DIM>
 void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
 {
+    // one_sided: nothing beyond the level set (see the constructor).
+    if (m_one_sided && !m_potential->is_inside_offset(p)) {
+        r = 0.;
+        dr.setZero();
+        return;
+    }
     const double c = std::max(m_potential->target_level(), 1e-300);
     if (m_distance_residual && !m_potential->is_euclidean()) {
         // The monotone length (Phi - c)/grad_ref in units of delta: exact at the level set,
@@ -1280,9 +660,9 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     const VecD r = p - foot;
     const double d = r.norm();
     // On the complex the gradient of d does not exist, since every direction increases it equally.
-    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. Phase
-    // B excludes input-complex vertices from the offset term and the criterion books them as
-    // pinned, so this case is a backstop.
+    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. The
+    // front smoother excludes input-complex vertices from the offset term and the criterion books
+    // them as pinned, so this case is a backstop.
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }
@@ -1451,320 +831,893 @@ bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 
 // ---------------------------------------------------------------------------------------------
-// The 3D twins of the two 2D energies above.
+// CubedAMIPSEnergy3D
 // ---------------------------------------------------------------------------------------------
 
-namespace {
-/// [v]_x, the matrix with [v]_x u = v x u.
-inline Eigen::Matrix3d cross_matrix(const Eigen::Vector3d& v)
-{
-    Eigen::Matrix3d M;
-    M << 0., -v.z(), v.y(), v.z(), 0., -v.x(), -v.y(), v.x(), 0.;
-    return M;
-}
-} // namespace
-
-AlignEnergy3D::AlignEnergy3D(
-    const std::shared_ptr<const OffsetPotential3D>& potential,
-    std::vector<Face> faces,
-    const double outward_sign,
+CubedAMIPSEnergy3D::CubedAMIPSEnergy3D(
+    std::vector<std::array<double, 12>> cells,
     const double weight)
-    : m_potential(potential)
-    , m_faces(std::move(faces))
-    , m_sign(outward_sign)
-    , m_weight(weight)
-{}
-
-void AlignEnergy3D::residual(const Eigen::Vector3d& x, const Face& f, double& r, Eigen::Vector3d& J)
-    const
-{
-    r = 0.;
-    J.setZero();
-    // The face's outward unit normal and its derivative. N = a x b with a = q1 - x, b = q2 - x,
-    // so dN = dx x (a - b) = [b - a]_x dx; n = sigma N / |N|, dn/dx = sigma (I - u u^T) [b - a]_x
-    // / |N|.
-    const Eigen::Vector3d a = f.q1 - x, b = f.q2 - x;
-    const Eigen::Vector3d N = a.cross(b);
-    const double Nn = N.norm();
-    if (!(Nn > 0.)) return;
-    const Eigen::Vector3d u = N / Nn;
-    const Eigen::Vector3d n = f.sigma * u;
-    const Eigen::Matrix3d dn_dx =
-        f.sigma * (Eigen::Matrix3d::Identity() - u * u.transpose()) * cross_matrix(b - a) / Nn;
-    // The field's outward unit direction at the centroid and its derivative:
-    // c = (x + q1 + q2) / 3, ug = grad Phi / |grad Phi|, dug/dc = (I - ug ug^T) H / |grad Phi|,
-    // dc/dx = 1/3.
-    const Eigen::Vector3d c = (x + f.q1 + f.q2) / 3.;
-    const Eigen::Vector3d g = m_potential->gradient(c);
-    const double gn = g.norm();
-    if (!std::isfinite(gn) || gn <= 1e-300) return;
-    const Eigen::Vector3d ug = g / gn;
-    const Eigen::Matrix3d H = m_potential->hessian(c);
-    if (!H.allFinite()) return;
-    const Eigen::Vector3d ghat = m_sign * ug;
-    const Eigen::Matrix3d dghat_dx =
-        (m_sign / 3.) * (Eigen::Matrix3d::Identity() - ug * ug.transpose()) * H / gn;
-    r = 1. - n.dot(ghat);
-    // d r / dx = -(dn/dx)^T ghat - (dghat/dx)^T n
-    J = -(dn_dx.transpose() * ghat) - (dghat_dx.transpose() * n);
-}
-
-double AlignEnergy3D::value(const TVector& x)
-{
-    double E = 0., r;
-    Eigen::Vector3d J;
-    for (const Face& f : m_faces) {
-        residual(x.head(3), f, r, J);
-        E += m_weight * f.agree * r * r;
-    }
-    return E;
-}
-
-void AlignEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    Eigen::Vector3d G = Eigen::Vector3d::Zero(), J;
-    double r;
-    for (const Face& f : m_faces) {
-        residual(x.head(3), f, r, J);
-        G += 2. * m_weight * f.agree * r * J;
-    }
-    gradv = G;
-}
-
-void AlignEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    Eigen::Matrix3d Hs = Eigen::Matrix3d::Zero();
-    Eigen::Vector3d J;
-    double r;
-    for (const Face& f : m_faces) {
-        residual(x.head(3), f, r, J);
-        Hs += 2. * m_weight * f.agree * J * J.transpose();
-    }
-    hessian = Hs;
-}
-
-
-RestAMIPSEnergy3D::RestAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
     : m_cells(std::move(cells))
     , m_weight(weight)
 {}
 
-bool RestAMIPSEnergy3D::cell_F(
-    const Eigen::Vector3d& x,
-    const Cell& c,
-    Eigen::Matrix3d& F,
-    double& d) const
+namespace {
+/// A cell of CubedAMIPSEnergy3D with the moving vertex placed at x.
+std::array<double, 12> cubed_amips_cell_at(std::array<double, 12> c, const Eigen::VectorXd& x)
 {
-    Eigen::Matrix3d A;
-    A.col(0) = c.q1 - x;
-    A.col(1) = c.q2 - x;
-    A.col(2) = c.q3 - x;
-    F = A * c.rest_inv;
-    d = F.determinant();
-    return d > 0.;
+    c[0] = x[0];
+    c[1] = x[1];
+    c[2] = x[2];
+    return c;
+}
+} // namespace
+
+namespace {
+/// vol AMIPS^3 of a CubedAMIPSEnergy3D cell (moving vertex x first) with AMIPS a (first power) and
+/// its derivatives ga, ha in x: f = (sqrt2/12) T^(3/2) a^(3/2), T = (1/2) sum over the six edges of
+/// |e|^2, grad T = sum over the three edges at x of (x - p_j), hess T = 3 I. The volume never comes
+/// from a determinant: AMIPS = T / det(J)^(2/3) gives vol = (sqrt2/12) (T/a)^(3/2), and a
+/// floating-point determinant of a nearly flat cell can come out 0 while its AMIPS is huge (see
+/// TopoOffsetTetMesh::vol_amips3()). need: 0 value, 1 + gradient, 2 + Hessian.
+double cubed_amips_vol_term(
+    const std::array<double, 12>& c,
+    const double a,
+    const Eigen::Vector3d& ga,
+    const Eigen::Matrix3d& ha,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& h)
+{
+    const Eigen::Vector3d p[4] = {
+        Eigen::Vector3d(c[0], c[1], c[2]),
+        Eigen::Vector3d(c[3], c[4], c[5]),
+        Eigen::Vector3d(c[6], c[7], c[8]),
+        Eigen::Vector3d(c[9], c[10], c[11])};
+    double T = 0.;
+    for (int i = 0; i < 4; ++i)
+        for (int j = i + 1; j < 4; ++j) T += (p[i] - p[j]).squaredNorm();
+    T *= 0.5;
+    const double k = std::sqrt(2.) / 12.;
+    const double sT = std::sqrt(T), sa = std::sqrt(a);
+    const double f = k * T * sT * a * sa;
+    if (need >= 1) {
+        const Eigen::Vector3d gT = 3. * p[0] - p[1] - p[2] - p[3];
+        g = k * 1.5 * (sT * a * sa * gT + T * sT * sa * ga);
+        if (need >= 2) {
+            h = k * 1.5 *
+                (0.5 / sT * a * sa * gT * gT.transpose() +
+                 1.5 * sT * sa * (gT * ga.transpose() + ga * gT.transpose()) +
+                 3. * sT * a * sa * Eigen::Matrix3d::Identity() +
+                 0.5 * T * sT / sa * ga * ga.transpose() + T * sT * sa * ha);
+        }
+    }
+    return f;
+}
+} // namespace
+
+void CubedAMIPSEnergy3D::at_point(const TVector& x)
+{
+    // polysolve evaluates the same point several times per Newton step: the solver takes the value
+    // and gradient at x, the line search takes both again before its first trial, and the
+    // accepted trial is the next step's x. A call at the bitwise-same point reuses what was
+    // computed there -- the same operations in the same order, so the same bits.
+    if (m_x_set && std::memcmp(x.data(), m_x.data(), 3 * sizeof(double)) == 0) return;
+    m_x = x.head<3>();
+    m_x_set = true;
+    m_value_set = m_grad_set = false;
+    m_a.resize(m_cells.size());
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        m_a[k] = wmtk::AMIPS_energy(cubed_amips_cell_at(m_cells[k], x));
+    }
 }
 
-double RestAMIPSEnergy3D::value(const TVector& x)
+double CubedAMIPSEnergy3D::value(const TVector& x)
 {
-    double E = 0.;
-    Eigen::Matrix3d F;
-    double d;
+    at_point(x);
+    if (m_value_set) return m_value;
+    double res = 0.;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
+        Eigen::Vector3d g;
+        Eigen::Matrix3d h;
+        res +=
+            cubed_amips_vol_term(c, a, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Zero(), 0, g, h);
+    }
+    m_value = m_weight * res;
+    m_value_set = true;
+    return m_value;
+}
+
+void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    at_point(x);
+    if (m_grad_set) {
+        gradv = m_grad;
+        return;
+    }
+    gradv.setZero(3);
+    Eigen::Vector3d g;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
+        wmtk::AMIPS_jacobian(c, g);
+        Eigen::Vector3d gf;
+        Eigen::Matrix3d hf;
+        cubed_amips_vol_term(c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
+        gradv += gf;
+    }
+    gradv *= m_weight;
+    m_grad = gradv;
+    m_grad_set = true;
+}
+
+void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    at_point(x);
+    hessian.setZero(3, 3);
+    Eigen::Vector3d g;
+    Eigen::Matrix3d h;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const auto c = cubed_amips_cell_at(m_cells[k], x);
+        const double a = m_a[k];
+        wmtk::AMIPS_jacobian(c, g);
+        wmtk::AMIPS_hessian(c, h);
+        Eigen::Vector3d gf;
+        Eigen::Matrix3d hf;
+        cubed_amips_vol_term(c, a, g, h, 2, gf, hf);
+        hessian += hf;
+    }
+    hessian *= m_weight;
+}
+
+bool CubedAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    // The engine's AMIPSEnergy3D::is_step_valid: the moved vertex may not invert a cell.
+    const Eigen::Vector3d p0 = x1.head(3);
+    for (const auto& c : m_cells) {
+        if (!wmtk::utils::orient3d(
+                p0,
+                Eigen::Vector3d(c[3], c[4], c[5]),
+                Eigen::Vector3d(c[6], c[7], c[8]),
+                Eigen::Vector3d(c[9], c[10], c[11]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// InputTriangles
+// ---------------------------------------------------------------------------------------------
+
+InputTriangles::InputTriangles(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+    : m_V(V)
+    , m_F(F)
+{
+    m_bvh.init(m_V, m_F, 1e-6);
+    // min_mean_distance()'s tree, median split on the longest axis of the triangles' centroids.
+    const int nf = int(m_F.rows());
+    if (nf == 0) return;
+    std::vector<Eigen::Vector3d> centroid(static_cast<size_t>(nf));
+    for (int f = 0; f < nf; ++f) {
+        centroid[size_t(f)] =
+            (m_V.row(m_F(f, 0)) + m_V.row(m_F(f, 1)) + m_V.row(m_F(f, 2))).head<3>().transpose() /
+            3.;
+    }
+    const Eigen::Vector3d lo = m_V.leftCols<3>().colwise().minCoeff().transpose();
+    const Eigen::Vector3d hi = m_V.leftCols<3>().colwise().maxCoeff().transpose();
+    m_order.resize(size_t(nf));
+    for (int f = 0; f < nf; ++f) m_order[size_t(f)] = f;
+    m_nodes.reserve(size_t(2 * nf));
+    m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
+    build_node(0, nf, centroid, m_pad);
+}
+
+int InputTriangles::build_node(
+    const int begin,
+    const int end,
+    const std::vector<Eigen::Vector3d>& centroid,
+    const double pad)
+{
+    const int id = int(m_nodes.size());
+    m_nodes.emplace_back();
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Eigen::Vector3d hi = -lo, clo = lo, chi = -lo;
+    for (int j = begin; j < end; ++j) {
+        const int f = m_order[size_t(j)];
+        for (int c = 0; c < 3; ++c) {
+            const Eigen::Vector3d v = m_V.row(m_F(f, c)).head<3>().transpose();
+            lo = lo.cwiseMin(v);
+            hi = hi.cwiseMax(v);
+        }
+        clo = clo.cwiseMin(centroid[size_t(f)]);
+        chi = chi.cwiseMax(centroid[size_t(f)]);
+    }
+    m_nodes[size_t(id)].lo = lo - Eigen::Vector3d::Constant(pad);
+    m_nodes[size_t(id)].hi = hi + Eigen::Vector3d::Constant(pad);
+    m_nodes[size_t(id)].begin = begin;
+    m_nodes[size_t(id)].end = end;
+    if (end - begin <= 4) return id;
+    int axis = 0;
+    (chi - clo).maxCoeff(&axis);
+    const int mid = (begin + end) / 2;
+    std::nth_element(
+        m_order.begin() + begin,
+        m_order.begin() + mid,
+        m_order.begin() + end,
+        [&](const int a, const int b) {
+            return centroid[size_t(a)][axis] < centroid[size_t(b)][axis] ||
+                   (centroid[size_t(a)][axis] == centroid[size_t(b)][axis] && a < b);
+        });
+    const int left = build_node(begin, mid, centroid, pad);
+    const int right = build_node(mid, end, centroid, pad);
+    m_nodes[size_t(id)].left = left;
+    m_nodes[size_t(id)].right = right;
+    return id;
+}
+
+double InputTriangles::min_mean_distance(
+    const Eigen::Vector3d* p,
+    const int n,
+    int64_t& best,
+    const int64_t hint) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    best = -1;
+    const auto offer = [&](const int64_t t) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) s += distance(t, p[i]);
+        s /= n;
+        if (s < m || (s == m && t < best)) m = s, best = t;
+    };
+    // A hint seeds the bound; without one the walk starts unbounded. The result does not depend on
+    // the seed (see the walk below). MEASURED 2026-10-09, serial cube, 3 turns: seeding with each
+    // point's nearest triangle (n tree queries) took 24.3 s against 20.6 s unseeded, same output.
+    if (hint >= 0) offer(hint);
+    if (m_nodes.empty()) return m;
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) {
+            s += (nd.lo - p[i]).cwiseMax(p[i] - nd.hi).cwiseMax(0.).norm();
+        }
+        return s / n;
+    };
+    // Depth first, the nearer child first; a node whose bound EXCEEDS the best is skipped (equal is
+    // visited, so that the lowest index wins a tie whatever the starting point).
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) offer(m_order[size_t(j)]);
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
+}
+
+void InputTriangles::ball_candidates(
+    const Eigen::Vector3d& c,
+    const double r,
+    const std::array<Eigen::Vector3d, 3>& q,
+    std::vector<BallCandidate>& out) const
+{
+    // f_P(x) = (1/4)[d_P(x) + d_P(q1) + d_P(q2) + d_P(q3)], the mean min_mean_distance() takes of
+    // {x, q1, q2, q3}, summed in that order. For |x - c| <= R, d_P being 1-Lipschitz,
+    //     LB_P = (1/4)[max(0, d_P(c) - R) + d_P(q1) + d_P(q2) + d_P(q3)] <= f_P(x),
+    //     f_Q(x) <= (1/4)[d_Q(c) + R + d_Q(q1) + d_Q(q2) + d_Q(q3)] = UB_Q   for every Q.
+    // So with U = min over Q of UB_Q, a triangle P with LB_P > U has f_P(x) > U >= min_Q f_Q(x):
+    // it is neither the minimiser nor tied with it. Every other triangle is kept, so the min over
+    // the kept ones, scanned in increasing index with min_mean_distance()'s comparison, is its
+    // min and its minimiser, the lowest index on a tie -- at every x of the ball.
+    // In floating point: each bound is summed in f_P's order, its terms no larger (LB) or no
+    // smaller (UB) than f_P's own, and rounding is monotone, so LB_P <= f_P(x) <= UB_P hold for
+    // the computed values as long as the computed d_P moves by at most R between c and x. Hence
+    // R = r (1 + 1e-9) + 2 pad: the computed (x - c).norm() <= r leaves the true |x - c| within a
+    // few ulps of r, far below 1e-9 r, and the computed d_P is within pad of the exact one at
+    // either point -- the allowance the boxes already rest on (a box distance never exceeds a
+    // triangle distance). A triangle whose distance at c is NaN (degenerate) is kept: nothing is
+    // certified about it.
+    // The search is min_mean_distance()'s: a node's bound, LB with its box in place of P, is at
+    // most f_P(x) for every P inside and every x of the ball (a box distance is 1-Lipschitz too,
+    // and at most d_P), so a node whose bound exceeds the smallest UB_Q so far holds no minimiser
+    // and is skipped.
+    out.clear();
+    if (m_nodes.empty()) return;
+    const double R = r * (1. + 1e-9) + 2. * m_pad;
+    const auto box = [](const Node& nd, const Eigen::Vector3d& p) {
+        return (nd.lo - p).cwiseMax(p - nd.hi).cwiseMax(0.).norm();
+    };
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        s += std::max(0., box(nd, c) - R);
+        for (const Eigen::Vector3d& p : q) s += box(nd, p);
+        return s / 4;
+    };
+    double U = std::numeric_limits<double>::infinity();
+    std::vector<std::pair<double, BallCandidate>> kept; // LB_P, P
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > U) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) {
+                BallCandidate cd;
+                cd.tri = m_order[size_t(j)];
+                const double d0 = distance(cd.tri, c);
+                cd.d1 = distance(cd.tri, q[0]);
+                cd.d2 = distance(cd.tri, q[1]);
+                cd.d3 = distance(cd.tri, q[2]);
+                double lo = 0., hi = 0.;
+                lo += std::isnan(d0) ? d0 : std::max(0., d0 - R);
+                lo += cd.d1;
+                lo += cd.d2;
+                lo += cd.d3;
+                lo /= 4;
+                hi += d0 + R;
+                hi += cd.d1;
+                hi += cd.d2;
+                hi += cd.d3;
+                hi /= 4;
+                if (hi < U) U = hi;
+                if (!(lo > U)) kept.push_back({lo, cd});
+            }
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    for (const auto& [lo, cd] : kept) {
+        if (!(lo > U)) out.push_back(cd);
+    }
+    std::sort(out.begin(), out.end(), [](const BallCandidate& a, const BallCandidate& b) {
+        return a.tri < b.tri;
+    });
+}
+
+int64_t InputTriangles::nearest(const Eigen::Vector3d& p) const
+{
+    // SimpleBVH's nearest_facet returns its own (reordered) facet index; its box query returns
+    // F's. So: the nearest distance from the BVH, then every triangle whose box reaches within it,
+    // and the closest of those by distance() -- the lowest index on a tie.
+    Eigen::Vector3d q;
+    double sq = 0.;
+    m_bvh.nearest_facet(p, q, sq);
+    const double r = std::sqrt(sq) * (1. + 1e-12) + 1e-12;
+    std::vector<unsigned int> list;
+    m_bvh.intersect_box(p - Eigen::Vector3d::Constant(r), p + Eigen::Vector3d::Constant(r), list);
+    int64_t best = -1;
+    double bd = std::numeric_limits<double>::infinity();
+    for (const unsigned int t : list) {
+        const double d = distance(int64_t(t), p);
+        if (d < bd || (d == bd && int64_t(t) < best)) bd = d, best = int64_t(t);
+    }
+    return best;
+}
+
+namespace {
+
+/// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
+/// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.
+Eigen::Vector3d triangle_foot(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector3d& p,
+    int& kind,
+    Eigen::Vector3d& edge)
+{
+    const Eigen::Vector3d ab = b - a, ac = c - a, ap = p - a;
+    Eigen::Vector3d foot;
+    kind = 2;
+    edge = Eigen::Vector3d::Zero();
+    const double d1 = ab.dot(ap), d2 = ac.dot(ap);
+    const Eigen::Vector3d bp = p - b;
+    const double d3 = ab.dot(bp), d4 = ac.dot(bp);
+    const Eigen::Vector3d cp = p - c;
+    const double d5 = ab.dot(cp), d6 = ac.dot(cp);
+    const double vc = d1 * d4 - d3 * d2, vb = d5 * d2 - d1 * d6, va = d3 * d6 - d5 * d4;
+    if (d1 <= 0. && d2 <= 0.) {
+        foot = a, kind = 0;
+    } else if (d3 >= 0. && d4 <= d3) {
+        foot = b, kind = 0;
+    } else if (vc <= 0. && d1 >= 0. && d3 <= 0.) {
+        foot = a + d1 / (d1 - d3) * ab, kind = 1, edge = ab;
+    } else if (d6 >= 0. && d5 <= d6) {
+        foot = c, kind = 0;
+    } else if (vb <= 0. && d2 >= 0. && d6 <= 0.) {
+        foot = a + d2 / (d2 - d6) * ac, kind = 1, edge = ac;
+    } else if (va <= 0. && (d4 - d3) >= 0. && (d5 - d6) >= 0.) {
+        foot = b + (d4 - d3) / ((d4 - d3) + (d5 - d6)) * (c - b), kind = 1, edge = c - b;
+    } else {
+        const double den = 1. / (va + vb + vc);
+        foot = a + ab * (vb * den) + ac * (vc * den);
+    }
+    return foot;
+}
+
+/// The distance between segments p1 q1 and p2 q2: the closest pair of their lines clamped to
+/// both segments (Ericson, Real-Time Collision Detection 5.1.9). A zero-length segment is its
+/// point; parallel segments (a e - b^2 = 0, or below 0 by rounding) start from s = 0, and the
+/// clamping then finds the pair at an endpoint, where parallel segments attain their distance.
+double segment_distance(
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& q1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& q2)
+{
+    const Eigen::Vector3d d1 = q1 - p1, d2 = q2 - p2, r = p1 - p2;
+    const double a = d1.squaredNorm(), e = d2.squaredNorm(), f = d2.dot(r);
+    if (a == 0. && e == 0.) return r.norm();
+    double s = 0., t = 0.;
+    if (a == 0.) {
+        t = std::clamp(f / e, 0., 1.);
+    } else {
+        const double c = d1.dot(r);
+        if (e == 0.) {
+            s = std::clamp(-c / a, 0., 1.);
+        } else {
+            const double b = d1.dot(d2), denom = a * e - b * b;
+            if (denom > 0.) s = std::clamp((b * f - c * e) / denom, 0., 1.);
+            t = (b * s + f) / e;
+            if (t < 0.) {
+                t = 0.;
+                s = std::clamp(-c / a, 0., 1.);
+            } else if (t > 1.) {
+                t = 1.;
+                s = std::clamp((b - c) / a, 0., 1.);
+            }
+        }
+    }
+    return ((p1 + s * d1) - (p2 + t * d2)).norm();
+}
+
+/// Whether segment pq crosses triangle abc: p and q strictly on opposite sides of its plane, and
+/// the line pq through the closed triangle (the three orientations of pq against its edges of
+/// one sign or 0). Exact signs: a crossing is never decided on rounding. A contact with p or q on
+/// the plane is not a crossing here; it is a corner-to-triangle distance at 0.
+bool segment_crosses_triangle(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& q,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+    using wmtk::utils::predicates::orient3d;
+    const int sp = int(orient3d(a, b, c, p)), sq = int(orient3d(a, b, c, q));
+    if (sp * sq >= 0) return false;
+    const int s1 = int(orient3d(p, q, a, b)), s2 = int(orient3d(p, q, b, c)),
+              s3 = int(orient3d(p, q, c, a));
+    return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+}
+
+} // namespace
+
+double InputTriangles::distance(
+    const int64_t tri,
+    const Eigen::Vector3d& p,
+    Eigen::Vector3d* grad,
+    Eigen::Matrix3d* hess) const
+{
+    const Eigen::Vector3d a = m_V.row(m_F(tri, 0)).head<3>().transpose();
+    const Eigen::Vector3d b = m_V.row(m_F(tri, 1)).head<3>().transpose();
+    const Eigen::Vector3d c = m_V.row(m_F(tri, 2)).head<3>().transpose();
+    int kind = 2; // 0 vertex, 1 edge (direction `edge`), 2 interior
+    Eigen::Vector3d edge;
+    const Eigen::Vector3d foot = triangle_foot(a, b, c, p, kind, edge);
+    const double d = (p - foot).norm();
+    if (grad) *grad = d > 0. ? Eigen::Vector3d((p - foot) / d) : Eigen::Vector3d::Zero();
+    if (hess) {
+        hess->setZero();
+        if (d > 0. && kind < 2) {
+            const Eigen::Vector3d u = (p - foot) / d;
+            *hess = Eigen::Matrix3d::Identity() - u * u.transpose();
+            if (kind == 1) {
+                const Eigen::Vector3d e = edge.normalized();
+                *hess -= e * e.transpose();
+            }
+            *hess /= d;
+        }
+    }
+    return d;
+}
+
+double InputTriangles::triangle_distance(
+    const int64_t P,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c) const
+{
+    const std::array<Eigen::Vector3d, 3> A = {
+        {m_V.row(m_F(P, 0)).head<3>().transpose(),
+         m_V.row(m_F(P, 1)).head<3>().transpose(),
+         m_V.row(m_F(P, 2)).head<3>().transpose()}};
+    const std::array<Eigen::Vector3d, 3> B = {{a, b, c}};
+    for (int i = 0; i < 3; ++i) {
+        const int j = (i + 1) % 3;
+        if (segment_crosses_triangle(A[size_t(i)], A[size_t(j)], a, b, c) ||
+            segment_crosses_triangle(B[size_t(i)], B[size_t(j)], A[0], A[1], A[2])) {
+            return 0.;
+        }
+    }
+    double m = std::numeric_limits<double>::infinity();
+    int kind = 2;
+    Eigen::Vector3d edge;
+    for (int i = 0; i < 3; ++i) {
+        m = std::min(m, distance(P, B[size_t(i)]));
+        m = std::min(m, (A[size_t(i)] - triangle_foot(a, b, c, A[size_t(i)], kind, edge)).norm());
+        for (int k = 0; k < 3; ++k) {
+            m = std::min(
+                m,
+                segment_distance(
+                    A[size_t(i)],
+                    A[size_t((i + 1) % 3)],
+                    B[size_t(k)],
+                    B[size_t((k + 1) % 3)]));
+        }
+    }
+    return m;
+}
+
+double InputTriangles::min_triangle_distance(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    for (const Eigen::Vector3d* q : {&a, &b, &c}) m = std::min(m, distance(nearest(*q), *q));
+    if (m_nodes.empty()) return m;
+    // The distance between abc's box and a node's: a lower bound on triangle_distance() for every
+    // triangle inside the node, abc lying in its own box.
+    const Eigen::Vector3d lo = a.cwiseMin(b).cwiseMin(c), hi = a.cwiseMax(b).cwiseMax(c);
+    const auto lower = [&](const Node& nd) {
+        return (nd.lo - hi).cwiseMax(lo - nd.hi).cwiseMax(0.).norm();
+    };
+    // Depth first, the nearer child first; a node whose bound exceeds the best is skipped.
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) {
+                m = std::min(m, triangle_distance(m_order[size_t(j)], a, b, c));
+            }
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
+}
+
+double InputTriangles::min_max_corner_distance(const Eigen::Vector3d* p, const int n) const
+{
+    double m = std::numeric_limits<double>::infinity();
+    const auto offer = [&](const int64_t t) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) s = std::max(s, distance(t, p[i]));
+        m = std::min(m, s);
+    };
+    for (int i = 0; i < n; ++i) offer(nearest(p[i]));
+    if (m_nodes.empty()) return m;
+    const auto lower = [&](const Node& nd) {
+        double s = 0.;
+        for (int i = 0; i < n; ++i) {
+            s = std::max(s, (nd.lo - p[i]).cwiseMax(p[i] - nd.hi).cwiseMax(0.).norm());
+        }
+        return s;
+    };
+    // Depth first, the nearer child first; a node whose bound exceeds the best is skipped.
+    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
+    while (!stack.empty()) {
+        const auto [lb, id] = stack.back();
+        stack.pop_back();
+        if (lb > m) continue;
+        const Node& nd = m_nodes[size_t(id)];
+        if (nd.left < 0) {
+            for (int j = nd.begin; j < nd.end; ++j) offer(m_order[size_t(j)]);
+            continue;
+        }
+        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
+        if (ll <= lr) {
+            stack.push_back({lr, nd.right});
+            stack.push_back({ll, nd.left});
+        } else {
+            stack.push_back({ll, nd.left});
+            stack.push_back({lr, nd.right});
+        }
+    }
+    return m;
+}
+
+// ---------------------------------------------------------------------------------------------
+// BandVolumeEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+BandVolumeEnergy3D::BandVolumeEnergy3D(
+    std::shared_ptr<const InputTriangles> tris,
+    std::vector<Cell> cells,
+    const Eigen::Vector3d& x0,
+    const double delta)
+    : m_tris(std::move(tris))
+    , m_delta(delta)
+    , m_cells(std::move(cells))
+{
+    for (Cell& c : m_cells) {
+        if ((c.q1 - x0).dot((c.q2 - c.q1).cross(c.q3 - c.q1)) < 0.) std::swap(c.q2, c.q3);
+    }
+    m_hint.assign(m_cells.size(), -1);
+    m_min_md.assign(m_cells.size(), 0.);
+    m_min_tri.assign(m_cells.size(), -1);
+    m_ball_cand.assign(m_cells.size(), {});
+}
+
+bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
+{
+    // r = the distance from x to the nearest plane through a cell's three fixed corners, each
+    // cell's volume being positive while x stays on its side of that plane.
+    double r = std::numeric_limits<double>::infinity();
     for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) return std::nan("");
-        E += m_weight * F.squaredNorm() / std::cbrt(d * d);
+        const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+        const double h = (c.q1 - x).dot(N) / N.norm();
+        if (!(h > 0.)) return false;
+        r = std::min(r, h);
+    }
+    if (!std::isfinite(r)) return false;
+    m_ball_c = x;
+    m_ball_r = r;
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        m_tris->ball_candidates(x, r, {{c.q1, c.q2, c.q3}}, m_ball_cand[k]);
+    }
+    return true;
+}
+
+void BandVolumeEnergy3D::exact_minima(const Eigen::Vector3d& x) const
+{
+    if (m_min_set && std::memcmp(x.data(), m_min_x.data(), 3 * sizeof(double)) == 0) return;
+    const bool listed = (m_ball_r > 0. && (x - m_ball_c).norm() <= m_ball_r) || certify_ball(x);
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        int64_t P = -1;
+        double md = std::numeric_limits<double>::infinity();
+        if (listed) {
+            // min_mean_distance()'s sum, order and comparison over the certified candidates.
+            for (const InputTriangles::BallCandidate& cd : m_ball_cand[k]) {
+                double s = 0.;
+                s += m_tris->distance(cd.tri, x);
+                s += cd.d1;
+                s += cd.d2;
+                s += cd.d3;
+                s /= 4;
+                if (s < md || (s == md && cd.tri < P)) md = s, P = cd.tri;
+            }
+        } else {
+            const std::array<Eigen::Vector3d, 4> pts = {{x, c.q1, c.q2, c.q3}};
+            md = m_tris->min_mean_distance(pts.data(), 4, P, m_hint[k]);
+        }
+        if (P >= 0) m_hint[k] = P;
+        m_min_md[k] = md;
+        m_min_tri[k] = P;
+    }
+    m_min_x = x;
+    m_min_set = true;
+}
+
+double BandVolumeEnergy3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // Per cell the min over all triangles of the corner mean of r_P, the four corners being x and
+    // the cell's three fixed ones.
+    exact_minima(x);
+    double E = 0.;
+    g.setZero();
+    H.setZero();
+    for (size_t k = 0; k < m_cells.size(); ++k) {
+        const Cell& c = m_cells[k];
+        const Eigen::Vector3d N = (c.q2 - c.q1).cross(c.q3 - c.q1);
+        const double vol = (c.q1 - x).dot(N) / 6.;
+        const Eigen::Vector3d gvol = -N / 6.;
+        const int64_t P = m_min_tri[k];
+        if (P < 0) continue;
+        const double best = (m_min_md[k] - m_delta) / m_delta;
+        E += vol * best;
+        if (need >= 1) {
+            Eigen::Vector3d gd;
+            Eigen::Matrix3d hd;
+            m_tris->distance(P, x, &gd, need >= 2 ? &hd : nullptr);
+            const Eigen::Vector3d gm = gd / (4. * m_delta);
+            g += best * gvol + vol * gm;
+            if (need >= 2) {
+                H += gvol * gm.transpose() + gm * gvol.transpose() + vol * hd / (4. * m_delta);
+            }
+        }
     }
     return E;
 }
 
-namespace {
-/// The cofactor matrix, dE/dF's second term: d det(F) / dF = det(F) F^-T.
-inline Eigen::Matrix3d cofactor3(const Eigen::Matrix3d& F)
+double BandVolumeEnergy3D::value(const TVector& xv)
 {
-    Eigen::Matrix3d C;
-    C.col(0) = F.col(1).cross(F.col(2));
-    C.col(1) = F.col(2).cross(F.col(0));
-    C.col(2) = F.col(0).cross(F.col(1));
-    return C;
-}
-inline int levi_civita(const int i, const int j, const int k)
-{
-    if (i == j || j == k || i == k) return 0;
-    return ((j - i + 3) % 3 == 1) ? 1 : -1;
-}
-} // namespace
-
-void RestAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    // E = e / d^(2/3): dE/dF = 2 F d^(-2/3) - (2/3) e d^(-5/3) cof(F). F = Q Rinv - x r^T with
-    // r = Rinv^T (1,1,1)^T, so dF/dx_k = -e_k r^T and grad_x = -(dE/dF) r, summed over cells.
-    Eigen::Vector3d G = Eigen::Vector3d::Zero();
-    Eigen::Matrix3d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) {
-            gradv = Eigen::Vector3d::Zero(); // invalid point: the line search never accepts it
-            return;
-        }
-        const double e = F.squaredNorm();
-        const double d23 = std::cbrt(d * d);
-        const Eigen::Matrix3d dEdF = (2. / d23) * F - (2. / 3.) * (e / (d23 * d)) * cofactor3(F);
-        const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
-        G += -m_weight * (dEdF * r);
-    }
-    gradv = G;
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head(3), 0, g, H);
 }
 
-void RestAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+void BandVolumeEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
-    // F is affine in x, so H_x = M^T H_F M exactly, with M the constant 9x3 dvecF/dx and H_F
-    // the closed-form Hessian of e / d^(2/3) in F (column-major vec):
-    //   dE  = e' d^(-2/3) - (2/3) e d^(-5/3) d'
-    //   d2E = e'' d^(-2/3) - (2/3) d^(-5/3) (e' d'^T + d' e'^T) + (10/9) e d^(-8/3) d' d'^T
-    //         - (2/3) e d^(-5/3) d''
-    // e' = 2 vecF, e'' = 2 I, d' = vec(cof F), d''_{(ij),(kl)} = eps_ikm eps_jln F_mn.
-    Eigen::Matrix3d Hx = Eigen::Matrix3d::Zero();
-    Eigen::Matrix3d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x.head(3), c, F, d)) continue; // invalid point: contribute nothing
-        const double e = F.squaredNorm();
-        const double d23 = std::cbrt(d * d);
-        const double d53 = d23 * d, d83 = d23 * d * d;
-        Eigen::Matrix<double, 9, 1> vF, dd;
-        const Eigen::Matrix3d C = cofactor3(F);
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
-                vF(3 * j + i) = F(i, j);
-                dd(3 * j + i) = C(i, j);
-            }
-        }
-        const Eigen::Matrix<double, 9, 1> de = 2. * vF;
-        Eigen::Matrix<double, 9, 9> K = Eigen::Matrix<double, 9, 9>::Zero();
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-                for (int k = 0; k < 3; ++k)
-                    for (int l = 0; l < 3; ++l) {
-                        double v = 0.;
-                        for (int m = 0; m < 3; ++m)
-                            for (int n = 0; n < 3; ++n)
-                                v += levi_civita(i, k, m) * levi_civita(j, l, n) * F(m, n);
-                        K(3 * j + i, 3 * l + k) = v;
-                    }
-        Eigen::Matrix<double, 9, 9> HF = (2. / d23) * Eigen::Matrix<double, 9, 9>::Identity();
-        HF -= (2. / 3.) / d53 * (de * dd.transpose() + dd * de.transpose());
-        HF += (10. / 9.) * e / d83 * (dd * dd.transpose());
-        HF -= (2. / 3.) * e / d53 * K;
-        const Eigen::Vector3d r = c.rest_inv.transpose() * Eigen::Vector3d::Ones();
-        Eigen::Matrix<double, 9, 3> M = Eigen::Matrix<double, 9, 3>::Zero();
-        // dF(i,j)/dx_k = -r_j when k == i: vec index 3j + i.
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
-                M(3 * j + i, i) = -r(j);
-            }
-        }
-        Hx += m_weight * (M.transpose() * HF * M);
-    }
-    hessian = Hx;
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 1, g, H);
+    gradv = g;
 }
 
-bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+void BandVolumeEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
-    Eigen::Matrix3d F;
-    double d;
-    for (const Cell& c : m_cells) {
-        if (!cell_F(x1.head(3), c, F, d)) return false;
-    }
-    return true;
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 2, g, H);
+    hess = H;
 }
-
 
 // ---------------------------------------------------------------------------------------------
-// StencilEnergy3D
+// StencilEnergy2D
 // ---------------------------------------------------------------------------------------------
 
-StencilEnergy3D::StencilEnergy3D(
-    const std::shared_ptr<const OffsetPotential3D>& potential,
-    std::vector<Face> faces,
-    const double weight)
+StencilEnergy2D::StencilEnergy2D(
+    const std::shared_ptr<const OffsetPotential2D>& potential,
+    std::vector<Edge> edges,
+    const double weight,
+    const bool gauss_newton)
     : m_potential(potential)
-    , m_faces(std::move(faces))
+    , m_edges(std::move(edges))
     , m_weight(weight)
+    , m_gauss_newton(gauss_newton)
     , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
 
-bool StencilEnergy3D::residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const
+const std::vector<StencilEnergy2D::Reading>& StencilEnergy2D::readings_at(
+    const Eigen::Vector2d& x,
+    const bool need_dr) const
 {
-    const double v = m_potential->value(p);
-    if (!std::isfinite(v)) return false;
-    r = (v - m_c) / m_c;
-    if (dr) {
-        const Eigen::Vector3d g = m_potential->gradient(p);
-        if (!g.allFinite()) return false;
-        *dr = g / m_c;
+    if (m_readings_valid && x == m_readings_x && (m_readings_have_dr || !need_dr)) {
+        return m_readings;
     }
-    return true;
+    m_readings.clear();
+    for (const Edge& e : m_edges) {
+        for (const Sample& sm : e.samples) {
+            const Eigen::Vector2d p = sm.a * x + sm.b * e.q1;
+            Reading rd;
+            double v;
+            Eigen::Vector2d g;
+            if (need_dr) {
+                m_potential->value_gradient(p, v, g);
+            } else {
+                v = m_potential->value(p);
+            }
+            if (std::isfinite(v)) {
+                rd.r = (v - m_c) / m_c;
+                rd.r_ok = true;
+                if (need_dr && g.allFinite()) {
+                    rd.dr = g / m_c;
+                    rd.dr_ok = true;
+                }
+            }
+            m_readings.push_back(rd);
+        }
+    }
+    m_readings_x = x;
+    m_readings_valid = true;
+    m_readings_have_dr = need_dr;
+    return m_readings;
 }
 
-double StencilEnergy3D::value(const TVector& xv)
+double StencilEnergy2D::value(const TVector& xv)
 {
-    const Eigen::Vector3d x = xv.head(3);
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, false);
     double E = 0.;
-    for (const Face& f : m_faces) {
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
         double s = 0.;
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, nullptr)) continue;
-            s += r * r;
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok) continue;
+            s += rd.r * rd.r;
             ++n;
         }
-        if (n > 0) E += f.weight * (s / double(n));
+        if (n > 0) E += s / double(n);
     }
     return m_weight * E;
 }
 
-void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
+void StencilEnergy2D::gradient(const TVector& xv, TVector& gradv)
 {
-    const Eigen::Vector3d x = xv.head(3);
-    gradv = Eigen::VectorXd::Zero(3);
-    Eigen::Vector3d g = Eigen::Vector3d::Zero();
-    for (const Face& f : m_faces) {
-        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
-        // barycentric weight is the whole chain rule. A corner sample of another vertex has
-        // a_i = 0 and so contributes to the value but not to the gradient.
-        Eigen::Vector3d gf = Eigen::Vector3d::Zero();
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, true);
+    gradv = Eigen::VectorXd::Zero(2);
+    Eigen::Vector2d g = Eigen::Vector2d::Zero();
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
+        Eigen::Vector2d ge = Eigen::Vector2d::Zero();
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            Eigen::Vector3d dr;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
-            gf += (2. * sm.a * r) * dr;
+        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
+        // barycentric weight is the whole chain rule. An end sample of the other vertex has
+        // a_i = 0 and so contributes to the value but not to the gradient.
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            ge += (2. * e.samples[i].a * rd.r) * rd.dr;
             ++n;
         }
-        if (n > 0) g += f.weight * (gf / double(n));
+        if (n > 0) g += ge / double(n);
     }
     gradv = m_weight * g;
 }
 
-void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
 {
-    const Eigen::Vector3d x = xv.head(3);
-    Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
-    for (const Face& f : m_faces) {
-        // Gauss-Newton: 2 a_i^2 dr dr^T, dropping the 2 r a_i^2 hess Phi / c term. That term is
-        // what makes the exact Hessian indefinite near the level set where r changes sign, and
-        // the dropped part vanishes at the solution; what is kept is a sum of outer products and
-        // so is PSD by construction, with no eigenvalue projection needed.
-        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
+    const Eigen::Vector2d x = xv.head(2);
+    const std::vector<Reading>& rds = readings_at(x, true);
+    Eigen::Matrix2d H = Eigen::Matrix2d::Zero();
+    size_t k = 0;
+    for (const Edge& e : m_edges) {
+        // EXACT Hessian of r^2 unless gauss_newton: 2 a_i^2 (dr dr^T + r hess Phi / c). Until
+        // 2026-09-28 the second term was dropped (Gauss-Newton, PSD by construction; kept as
+        // gauss_newton = true). Measured on the 3D twin of this term, since removed: 28-30% of
+        // the front solves on the cube (target 1e-2, tolerance 1e-4) converged only linearly --
+        // |grad|/|grad_0| at 1e-2..1e-5 after the 10-iteration cap -- near its rounded edges,
+        // where r is still large and hess Phi is the offset surface's curvature. With the term: 2%
+        // at the cap, mean 2.8 iterations instead of 4.6, 98% stopped on the relative gradient
+        // tolerance, smoothing time unchanged, placement unchanged. The term is indefinite where
+        // r < 0 (inside the level set); polysolve's Newton regularises there.
+        Eigen::Matrix2d He = Eigen::Matrix2d::Zero();
         size_t n = 0;
-        for (const Sample& sm : f.samples) {
-            double r;
-            Eigen::Vector3d dr;
-            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
-            Hf += (2. * sm.a * sm.a) * (dr * dr.transpose());
+        for (size_t i = 0; i < e.samples.size(); ++i, ++k) {
+            const Reading& rd = rds[k];
+            if (!rd.r_ok || !rd.dr_ok) continue;
+            const Sample& sm = e.samples[i];
+            const double a = sm.a;
+            He += (2. * a * a) * (rd.dr * rd.dr.transpose());
+            if (!m_gauss_newton) {
+                const Eigen::Vector2d p = a * x + sm.b * e.q1;
+                const Eigen::Matrix2d Hphi = m_potential->hessian(p);
+                if (Hphi.allFinite()) He += (2. * a * a * rd.r / m_c) * Hphi;
+            }
             ++n;
         }
-        if (n > 0) H += f.weight * (Hf / double(n));
+        if (n > 0) H += He / double(n);
     }
     hess = m_weight * H;
 }

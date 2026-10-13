@@ -1,8 +1,9 @@
 // Python bindings for the 2D offset potentials, so a viewer draws E = (Phi - c)^2 from the same
 // C++ object a run uses. For `offset_field: "smooth"`, the default, Phi is the ipc-toolkit
-// high_order_contact (OGC) potential: a sum over primitives selected by feasible-region tests,
-// which cannot be reimplemented in numpy -- anything Python computed instead would be a different
-// field wearing the same name. Both fields are exposed so a script can compare them.
+// Extremum-Sum Potential (ESP): a weighted sum over the input's elements whose cancellations ipc
+// resolves with exact predicates, which cannot be reimplemented in numpy -- anything Python
+// computed instead would be a different field wearing the same name. Both fields are exposed so
+// a script can compare them.
 //
 // The batch entry points evaluate in C++ with the GIL released, because a grid is 10^5 samples
 // and crossing the language boundary per sample costs more than the potential does.
@@ -82,7 +83,7 @@ PYBIND11_MODULE(wmtk_offset_field, m)
     py::class_<SmoothOffsetPotential2D, std::shared_ptr<SmoothOffsetPotential2D>>(
         m,
         "SmoothOffsetPotential2D",
-        "offset_field: \"smooth\" -- the ipc-toolkit high_order_contact (OGC) potential.")
+        "offset_field: \"smooth\" -- the ipc-toolkit Extremum-Sum Potential (ESP).")
         .def(
             py::init([](const Eigen::MatrixXd& V,
                         const Eigen::MatrixXi& E,
