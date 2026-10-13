@@ -165,16 +165,15 @@ struct Parameters : public wmtk::OptimizerParameters
     /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
     /// See the spec doc.
     bool settle_refinement = true;
-    /// EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled
-    /// turn, read only under settle_refinement. "max": the face's exact bound on max |d - target_distance| exceeds
-    /// front_conv. "rms": the face's share of the offset excess exceeds its bar energy,
-    /// X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA > front_conv^2 area(f) / (2 delta),
-    /// i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the
-    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule; the
-    /// default. "vertex":
-    /// a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. See the
-    /// spec doc.
-    std::string settle_mark = "rms";
+    /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
+    /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
+    /// exceeds front_conv; its sizing is halved. "max": a face's exact bound on
+    /// max |d - target_distance| exceeds front_conv. "rms": a face's share of the offset excess
+    /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
+    /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
+    /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
+    /// 3-edge-midpoint rule. See the spec doc.
+    std::string settle_mark = "vertex";
     std::string output_path; // no extension
     bool save_vtu;
 
