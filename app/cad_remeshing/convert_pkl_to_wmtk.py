@@ -44,7 +44,12 @@ if __name__ == "__main__":
         help="output remeshing config json file (for -j remesh.json)",
     )
 
-    parser.add_argument("--len_rel", type=float, default=0.05, help="relative length for remeshing")
+    parser.add_argument(
+        "--len_rel",
+        type=float,
+        default=None,
+        help="relative length for remeshing (if not set, the default of the remeshing app is used)",
+    )
     args = parser.parse_args()
     if args.fused:
         fused_path = args.fused
@@ -149,22 +154,15 @@ if __name__ == "__main__":
 
     # Write a default remeshing config next to the produced mesh/patches so the
     # remeshing app can be called with: `-j remesh.json`.
+    # Only write what differs from the defaults in cad_remeshing_spec.json.
     remesh_config = {
         "input": mesh_path,
         "output": args.output_dir + "/remeshed",
         "patches": patches_path,
-        "log_file": "",
         "report": args.output_dir + "/remeshed_report.json",
-        "num_threads": 0,
-        "max_iterations": 3,
-        "eps_rel": 0.001,
-        "use_sample_envelope": True,
-        "freeze_boundary": False,
-        "length_factor": -1.0,
-        "length_abs": -1.0,
-        "length_rel": args.len_rel,
-        "DEBUG_output": False,
     }
+    if args.len_rel is not None:
+        remesh_config["length_rel"] = args.len_rel
 
     with open(remesh_json_path, "w") as f:
         print("writing remesh config to ", remesh_json_path)

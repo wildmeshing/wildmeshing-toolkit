@@ -38,7 +38,7 @@
   {
     "pointer": "/use_sample_envelope",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "Use sample envelope instead of exact one."
   },
   {
@@ -62,13 +62,13 @@
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": -1,
+    "default": 0.001,
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
     "pointer": "/length_rel",
     "type": "float",
-    "default": -1,
+    "default": 0.05,
     "doc": "Target edge length relative to the bounding box. Only used when absolute length is set negative."
   },
   {
