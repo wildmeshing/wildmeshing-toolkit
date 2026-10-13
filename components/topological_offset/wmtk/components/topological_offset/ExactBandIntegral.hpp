@@ -19,7 +19,7 @@ namespace wmtk::components::topological_offset {
  * exact_tri closed forms it calls), scratchpad exact_integral/ of 2026-10-10/11: same algorithm,
  * same switch constants, same operation order, so it reproduces the reference's numbers to
  * rounding (tests/test_exact_band_integral.cpp). Used by EXPERIMENTAL_band_volume_rule "exact"
- * (the band cell term).
+ * (the band cell term) and, through max_distance(), by the settle loop's max test.
  *
  * Features and local regions. The input's features are its face interiors, edges and vertices
  * (duplicate vertices merged). The local region L_g of a feature g is an intersection of
@@ -127,6 +127,42 @@ public:
         Eigen::Matrix3d& hess,
         Stats* stats = nullptr) const;
 
+    /// What max_distance() found besides the max.
+    struct MaxInfo
+    {
+        Eigen::Vector3d at; ///< a point of f where the returned max is attained
+        bool rule_a = false; ///< the max came from a rule-(a) piece: an upper bound there
+        double U = 0.; ///< min over P of max over f's corners of d_P (the former settle bound)
+        int candidates = 0, pieces = 0, rule_a_pieces = 0;
+    };
+
+    /**
+     * @brief max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop's max
+     * test. f is cut by the candidates' local regions as a cell is (the same search, region
+     * tests, splits, tolerances and scale rule; f a planar convex ring in place of a polytope),
+     * and d is convex wherever one member's distance is d, so on each piece the max is at a
+     * vertex of the piece:
+     *  - one member: the max of d_g over the piece's vertices, exact;
+     *  - members all faces, or all vertices: split by the bisectors as in value(), each sub-ring
+     *    one affine or point distance, exact;
+     *  - otherwise (rule (a), the boundary between members curved): min over members g of the max
+     *    of d_g over the piece's vertices, an upper bound on max of d there (d <= d_g).
+     * The max over pieces is exact up to rounding unless it comes from a rule-(a) piece; never
+     * below the true max. One difference from the cell's partition: a ring lying on a region's
+     * boundary plane counts as inside that region (a point of the plane is in both closed
+     * regions); a duplicated piece cannot lower a max, a lost one can.
+     *
+     * The former bound, U = min over P of max over f's corners of d_P (MaxInfo::U), is d_P's max
+     * for the single best triangle P; it overshoots where f straddles a coplanar edge of the
+     * input, by about s^2 / (2 delta) for a straddle s. MEASURED, cube outward at turn 28: all 8
+     * faces it marked were 1.06-1.26 bars by U and -0.016..+0.020 bars by this max (the dense
+     * sampled max agrees).
+     *
+     * Throws (with f in hex floats) if the pieces do not tile f, or leave more of f outside every
+     * region, than the tolerances allow (the checks of value(), on areas).
+     */
+    double max_distance(const std::array<Eigen::Vector3d, 3>& f, MaxInfo* info = nullptr) const;
+
     size_t num_faces() const { return m_A.size(); }
 
 private:
@@ -166,13 +202,21 @@ private:
     std::vector<int> m_order;
     int build_node(int begin, int end, const std::vector<Eigen::Vector3d>& centroid, double pad);
 
-    /// Per-call scratch of the partition (defined in the .cpp).
+    /// Per-call scratch of the partitions (defined in the .cpp): the candidates in the frame of a
+    /// cell or front face (Local), and the pieces of a cell (Work) or of a face (TriWork).
+    struct Local;
     struct Work;
+    struct TriWork;
+    /// The candidates of the n points t (a cell's or a face's corners) in the frame of w.c0, set
+    /// by the caller: U, the box query, the local features and half-spaces, the rounding scale.
+    void localize(const Eigen::Vector3d* t, int n, Local& w, Stats* stats) const;
     /// _partition: the candidates in t's frame and the convex pieces of t with member sets; false
     /// for a flat cell.
     bool partition(const std::array<Eigen::Vector3d, 4>& t, Work& w, Stats* stats) const;
-    /// U: min over all triangles of max over the corners of d_P.
-    double upper_bound(const std::array<Eigen::Vector3d, 4>& t) const;
+    /// _tri_partition: the same for the face f, its pieces planar rings.
+    void tri_partition(const std::array<Eigen::Vector3d, 3>& f, TriWork& w) const;
+    /// U: min over all triangles of max over the n points t of d_P.
+    double upper_bound(const Eigen::Vector3d* t, int n) const;
     /// Feature indices whose box is within r of [lo, hi], ascending.
     void candidates(
         const Eigen::Vector3d& lo,

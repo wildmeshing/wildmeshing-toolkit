@@ -12,6 +12,7 @@ set(SRC_FILES
     test_offset_potential.cpp
     test_exact_band_integral.cpp
     exact_band_integral_data.hpp
+    exact_band_max_data.hpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

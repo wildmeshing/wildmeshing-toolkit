@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "exact_band_integral_data.hpp"
+#include "exact_band_max_data.hpp"
 
 #include <algorithm>
 #include <array>
@@ -12,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <string>
 #include <thread>
@@ -681,5 +683,215 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                 st.series_long / c,
                 100 * st.rule_a_vol / st.vol);
         }
+    }
+}
+
+namespace {
+
+/// Point-triangle distance, written apart from the code under test (test_exact_tri.dist_ref):
+/// min over the three segments, and the plane distance when the projection is inside.
+double ref_point_tri(const Vec3& x, const Vec3& a, const Vec3& b, const Vec3& c)
+{
+    double best = std::numeric_limits<double>::infinity();
+    for (const auto& [p, q] : {std::pair{&a, &b}, std::pair{&b, &c}, std::pair{&c, &a}}) {
+        const Vec3 d = *q - *p;
+        const double s = std::clamp((x - *p).dot(d) / d.dot(d), 0., 1.);
+        best = std::min(best, (x - *p - s * d).norm());
+    }
+    const Vec3 v0 = b - a, v1 = c - a, w = x - a;
+    Eigen::Matrix2d G;
+    G << v0.dot(v0), v0.dot(v1), v0.dot(v1), v1.dot(v1);
+    const Eigen::Vector2d lam = G.ldlt().solve(Eigen::Vector2d(w.dot(v0), w.dot(v1)));
+    if (lam[0] >= 0 && lam[1] >= 0 && lam[0] + lam[1] <= 1) {
+        const Vec3 n = v0.cross(v1).normalized();
+        best = std::min(best, std::abs(w.dot(n)));
+    }
+    return best;
+}
+
+double ref_distance(const Vec3& x, const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+{
+    double d = std::numeric_limits<double>::infinity();
+    for (int f = 0; f < F.rows(); ++f) {
+        d = std::min(d, ref_point_tri(x, V.row(F(f, 0)), V.row(F(f, 1)), V.row(F(f, 2))));
+    }
+    return d;
+}
+
+} // namespace
+
+/**
+ * ExactBandIntegral::max_distance against the Python (exact_mesh.max_on_triangle, data in
+ * exact_band_max_data.hpp: faces of test_max_on_triangle.py near seven inputs, and the 8 cube
+ * faces of max cube_out turn 28) and against dense sampling on the embedded input subset (every
+ * face's candidates and the faces their regions are built from: every point of f has its nearest
+ * triangle there). Units: eps (|x| + delta), the rounding unit of a distance at coordinates |x|.
+ *  - parity: the max, U and the partition's counts equal the Python's;
+ *  - upper bound: d on a 24-per-side barycentric grid never exceeds the max;
+ *  - exact: d at the returned point equals the max, where it does not come from a rule-(a) piece;
+ *  - cube8: the former settle bound (U = InputTriangles::min_max_corner_distance) marked all 8
+ *    faces, the exact max marks none.
+ */
+TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
+{
+    using namespace exact_band_max_data;
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    std::printf("exact-band-max-distance: max_distance against the Python and a 24-per-side grid\n");
+    for (const MaxCase& c : max_cases) {
+        Eigen::MatrixXd V(c.nV, 3);
+        for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(c.nF, 3);
+        for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+        const ExactBandIntegral eb(V, F);
+        const InputTriangles tris(V, F);
+        double w_par = 0., w_U = 0., w_at = 0., w_ub = -std::numeric_limits<double>::infinity(), w_eq = 0.;
+        int n_ra = 0;
+        const bool cube8 = std::string(c.name) == "cube8";
+        if (cube8) std::printf("  cube8, bars: face  former (U - delta)/eps  exact (max - delta)/eps\n");
+        for (int k = 0; k < c.nfaces; ++k) {
+            const MaxFace& mf = c.faces[k];
+            const std::array<Vec3, 3> P = {
+                {Vec3(mf.P[0], mf.P[1], mf.P[2]), Vec3(mf.P[3], mf.P[4], mf.P[5]), Vec3(mf.P[6], mf.P[7], mf.P[8])}};
+            ExactBandIntegral::MaxInfo info;
+            const double m = eb.max_distance(P, &info);
+            double xs = 0.;
+            for (const Vec3& p : P) xs = std::max(xs, p.cwiseAbs().maxCoeff());
+            const double unit = EPS * (xs + c.delta);
+            INFO(c.name << " face " << k << " (" << mf.label << ")");
+            const double par = std::abs(m - mf.dmax) / unit;
+            CHECK(par <= 64.);
+            CHECK(std::abs(info.U - mf.U) <= 64. * unit);
+            CHECK(info.rule_a == bool(mf.rule_a));
+            CHECK(info.pieces == mf.pieces);
+            CHECK(info.candidates == mf.candidates);
+            CHECK(info.rule_a_pieces == mf.rule_a_pieces);
+            w_par = std::max(w_par, par);
+            w_U = std::max(w_U, std::abs(info.U - mf.U) / unit);
+            w_at = std::max(w_at, (info.at - Vec3(mf.at[0], mf.at[1], mf.at[2])).cwiseAbs().maxCoeff() / (EPS * xs));
+            constexpr int N = 24;
+            double smax = 0.;
+            for (int i = 0; i <= N; ++i) {
+                for (int j = 0; i + j <= N; ++j) {
+                    const Vec3 x = P[0] + (double(i) / N) * (P[1] - P[0]) + (double(j) / N) * (P[2] - P[0]);
+                    smax = std::max(smax, ref_distance(x, V, F));
+                }
+            }
+            CHECK(smax - m <= 64. * unit);
+            w_ub = std::max(w_ub, (smax - m) / unit);
+            if (info.rule_a) {
+                ++n_ra;
+                CHECK(ref_distance(info.at, V, F) - m <= 64. * unit);
+            } else {
+                const double e = std::abs(ref_distance(info.at, V, F) - m) / unit;
+                CHECK(e <= 64.);
+                w_eq = std::max(w_eq, e);
+            }
+            if (cube8) {
+                const double former = tris.min_max_corner_distance(P.data(), 3);
+                CHECK(std::abs(former - info.U) <= 64. * unit); // the settle loop's former bound is U
+                const double ob = (former - c.delta) / c.eps, nb = (m - c.delta) / c.eps;
+                std::printf("    %-22s %8.4f %10.4f\n", mf.label, ob, nb);
+                CHECK(ob > 1.);
+                CHECK(nb <= 1.);
+            }
+        }
+        std::printf(
+            "  %-13s %2d faces (%d rule-(a) maxima): parity max %.2f, U %.2f, at %.2f (eps units); grid -"
+            " max %+.2f; |d(at) - max| %.2f\n",
+            c.name, c.nfaces, n_ra, w_par, w_U, w_at, w_ub, w_eq);
+    }
+}
+
+/**
+ * Hidden: EXACT_BAND_BENCH_DIR=<dir> ./wmtk_test_topological_offset "[.bench_max]". Reads
+ * <dir>/<case>_max.bin (gen_max_data.py: the full input and every face of test_max_on_triangle.py
+ * with the Python's max and U), prints the parity over all faces and the time per face of
+ * max_distance() and of the former bound (InputTriangles::min_max_corner_distance) on them.
+ */
+TEST_CASE("exact-band-max-bench", "[.bench_max]")
+{
+    const char* dir = std::getenv("EXACT_BAND_BENCH_DIR");
+    if (!dir) {
+        WARN("EXACT_BAND_BENCH_DIR not set");
+        return;
+    }
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    using clk = std::chrono::steady_clock;
+    for (const char* name :
+         {"cube_out", "cylinder_out", "prism_in", "slot", "t100026", "sphere", "cylinder_in", "cube8"}) {
+        std::ifstream in(std::string(dir) + "/" + name + "_max.bin", std::ios::binary);
+        REQUIRE(in.good());
+        int32_t hdr[3];
+        double de[2];
+        in.read(reinterpret_cast<char*>(hdr), sizeof(hdr));
+        in.read(reinterpret_cast<char*>(de), sizeof(de));
+        const int nV = hdr[0], nF = hdr[1], n = hdr[2];
+        std::vector<double> Vb(static_cast<size_t>(3 * nV)), Pb(static_cast<size_t>(9 * n)),
+            dm(static_cast<size_t>(n)), Ub(static_cast<size_t>(n));
+        std::vector<int32_t> Fb(static_cast<size_t>(3 * nF)), ra(static_cast<size_t>(n));
+        const auto rd = [&](auto& v) {
+            in.read(reinterpret_cast<char*>(v.data()), std::streamsize(v.size() * sizeof(v[0])));
+        };
+        rd(Vb);
+        rd(Fb);
+        rd(Pb);
+        rd(dm);
+        rd(Ub);
+        rd(ra);
+        REQUIRE(in.good());
+        Eigen::MatrixXd V(nV, 3);
+        Eigen::MatrixXi F(nF, 3);
+        for (int i = 0; i < nV; ++i) V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
+        for (int i = 0; i < nF; ++i) F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
+        const ExactBandIntegral eb(V, F);
+        const InputTriangles tris(V, F);
+        std::vector<std::array<Vec3, 3>> faces(static_cast<size_t>(n));
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                faces[size_t(i)][size_t(j)] = Vec3(Pb[size_t(9 * i + 3 * j)], Pb[size_t(9 * i + 3 * j + 1)], Pb[size_t(9 * i + 3 * j + 2)]);
+            }
+        }
+        double w_par = 0., w_U = 0.;
+        int n_ra_mismatch = 0;
+        for (int i = 0; i < n; ++i) {
+            ExactBandIntegral::MaxInfo info;
+            const double m = eb.max_distance(faces[size_t(i)], &info);
+            double xs = 0.;
+            for (const Vec3& p : faces[size_t(i)]) xs = std::max(xs, p.cwiseAbs().maxCoeff());
+            const double unit = EPS * (xs + de[0]);
+            w_par = std::max(w_par, std::abs(m - dm[size_t(i)]) / unit);
+            w_U = std::max(w_U, std::abs(info.U - Ub[size_t(i)]) / unit);
+            n_ra_mismatch += info.rule_a != bool(ra[size_t(i)]);
+        }
+        CHECK(w_par <= 64.);
+        CHECK(n_ra_mismatch == 0);
+        constexpr int REP = 5;
+        double sink = 0.;
+        std::vector<double> us(static_cast<size_t>(n), 0.), ub(static_cast<size_t>(n), 0.);
+        for (int r = 0; r < REP; ++r) {
+            for (int i = 0; i < n; ++i) {
+                auto a = clk::now();
+                sink += eb.max_distance(faces[size_t(i)]);
+                us[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
+                a = clk::now();
+                sink += tris.min_max_corner_distance(faces[size_t(i)].data(), 3);
+                ub[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
+            }
+        }
+        const auto pct = [](std::vector<double> v, double p) {
+            std::sort(v.begin(), v.end());
+            return v[std::min(v.size() - 1, size_t(p * double(v.size())))];
+        };
+        double mean = 0., mean_b = 0.;
+        for (int i = 0; i < n; ++i) {
+            mean += us[size_t(i)] / n;
+            mean_b += ub[size_t(i)] / n;
+        }
+        std::printf(
+            "== %-12s %4d faces, %4d triangles: parity max %.2f, U %.2f (eps units), rule_a mismatches %d"
+            " | max_distance us per face: mean %.2f p50 %.2f p90 %.2f p99 %.2f max %.2f | former bound"
+            " mean %.2f%s\n",
+            name, n, nF, w_par, w_U, n_ra_mismatch, mean, pct(us, 0.5), pct(us, 0.9), pct(us, 0.99),
+            pct(us, 1.), mean_b, sink == 0. ? " " : "");
     }
 }

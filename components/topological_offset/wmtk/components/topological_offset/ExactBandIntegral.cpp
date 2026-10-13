@@ -1077,6 +1077,239 @@ std::vector<int> prune_members(const Poly& Q, const std::vector<int>& S, const s
 }
 
 // ================================================================================================
+// The exact max of d over a front triangle (exact_mesh.max_on_triangle; the settle loop's max
+// test). The triangle is cut by the candidates' local regions exactly as a cell is, a planar ring
+// in place of a polytope; every function below is the Python one of the same name. One difference
+// from the cell: a ring can lie ON a region's boundary plane (every vertex within tol of it),
+// which a solid piece cannot except as a flat sliver. A point of that plane belongs to both closed
+// regions, so the ring counts as inside the half-space (pclassify, psplit test the inside first;
+// the cell's classify tests the outside first). Duplicated pieces cannot lower a max, lost ones can.
+// ================================================================================================
+
+using Ring = std::vector<Vec3>;
+
+double ring_max_abs(const Ring& V)
+{
+    double m = 0.;
+    for (const Vec3& p : V) m = std::max(m, maxabs(p));
+    return m;
+}
+
+/// _pclip: the ring V cut by {g.x <= h}, |g| = 1; Same (V inside up to tol, `out` untouched),
+/// None (nothing inside) or New (in `out`): clip()'s rules on one face ring.
+Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx)
+{
+    const double tol = 16 * EPS * (std::abs(h) + std::max(ring_max_abs(V), cx.scale));
+    if (cx.tol_any) *cx.tol_any += tol;
+    const int k = int(V.size());
+    thread_local std::vector<double> s;
+    thread_local Ring P;
+    s.resize(size_t(k));
+    double smax = -std::numeric_limits<double>::infinity(), smin = -smax;
+    for (int i = 0; i < k; ++i) {
+        s[size_t(i)] = V[size_t(i)].dot(g) - h;
+        smax = std::max(smax, s[size_t(i)]);
+        smin = std::min(smin, s[size_t(i)]);
+    }
+    if (smax <= tol) return Cut::Same;
+    if (smin >= -tol) return Cut::None;
+    for (int i = 0; i < k; ++i) {
+        if (std::abs(s[size_t(i)]) <= tol) s[size_t(i)] = 0.;
+    }
+    P.clear();
+    for (int i = 0; i < k; ++i) {
+        const int j = (i + 1) % k;
+        const double si = s[size_t(i)], sj = s[size_t(j)];
+        if (si <= 0.) P.push_back(V[size_t(i)]);
+        if ((si < 0. && 0. < sj) || (sj < 0. && 0. < si)) {
+            const int a = si < 0. ? i : j, b = si < 0. ? j : i; // from the inside end
+            const double sa = s[size_t(a)], sb = s[size_t(b)];
+            P.push_back(V[size_t(a)] + (sa / (sa - sb)) * (V[size_t(b)] - V[size_t(a)]));
+        }
+    }
+    if (cx.tol_cut) *cx.tol_cut += tol;
+    return clean_ring(P, tol, out) ? Cut::New : Cut::None;
+}
+
+/// R = pclip(R, g, h) in place (_pclip_keep); false (R emptied) if None.
+bool pclip_inplace(Ring& R, const Vec3& g, const double h, Ring& tmp, const Ctx& cx)
+{
+    const Cut c = pclip(R, g, h, tmp, cx);
+    if (c == Cut::None) {
+        R.clear();
+        return false;
+    }
+    if (c == Cut::New) std::swap(R, tmp);
+    return true;
+}
+
+/// _pclassify: as classify, the inside tested first.
+Side pclassify(const Ring& V, const std::pair<Vec3, double>* H, const int nh, const Ctx& cx)
+{
+    const double ma = std::max(ring_max_abs(V), cx.scale);
+    bool s_in = true;
+    for (int i = 0; i < nh; ++i) {
+        const Vec3& g = H[i].first;
+        const double h = H[i].second;
+        double smin = std::numeric_limits<double>::infinity(), smax = -smin;
+        for (const Vec3& p : V) {
+            const double sv = p.dot(g) - h;
+            smin = std::min(smin, sv);
+            smax = std::max(smax, sv);
+        }
+        const double tol = 16 * EPS * (std::abs(h) + ma);
+        if (cx.tol_any) *cx.tol_any += tol;
+        if (smax <= tol) continue;
+        if (smin >= -tol) return Side::Out;
+        s_in = false;
+    }
+    return s_in ? Side::In : Side::Split;
+}
+
+/// _psplit: the part of V inside all of H (R; emptied if None) and the parts outside.
+void psplit(
+    const Ring& V,
+    const std::pair<Vec3, double>* H,
+    const int nh,
+    Ring& R,
+    std::vector<Ring>& outside,
+    const Ctx& cx)
+{
+    R = V;
+    Ring tmp;
+    for (int i = 0; i < nh; ++i) {
+        const Vec3& g = H[i].first;
+        const double h = H[i].second;
+        const double tol = 16 * EPS * (std::abs(h) + std::max(ring_max_abs(R), cx.scale));
+        double smax = -std::numeric_limits<double>::infinity();
+        for (const Vec3& p : R) smax = std::max(smax, p.dot(g) - h);
+        if (smax <= tol) continue; // inside this half-space, on its plane included
+        const Cut c = pclip(R, -g, -h, tmp, cx);
+        if (c == Cut::Same) outside.push_back(R);
+        if (c == Cut::New) outside.push_back(tmp);
+        if (!pclip_inplace(R, g, h, tmp, cx)) break;
+    }
+}
+
+/// _ring_area: the area of the planar ring V, signed along the unit normal n (fan sum).
+double ring_area(const Ring& V, const Vec3& n)
+{
+    double a = 0.;
+    for (size_t i = 1; i + 1 < V.size(); ++i) a += n.dot((V[i] - V[0]).cross(V[i + 1] - V[0]));
+    return 0.5 * a;
+}
+
+/// _pfaces_min_pieces: sub-rings with one affine distance W.x - c each; `piece(R, W, c)`.
+template <typename F>
+void pfaces_min_pieces(const Ring& R0, const std::vector<const Loc*>& faces, const Ctx& cx, F&& piece)
+{
+    struct Cell
+    {
+        Ring C;
+        std::vector<double> sg;
+    };
+    std::vector<Cell> cells(1);
+    cells[0].C = R0;
+    Ring tmp;
+    for (const Loc* f : faces) {
+        const Vec3& n = f->dir;
+        const Vec3& a0 = f->p;
+        std::vector<Cell> next;
+        for (const Cell& cl : cells) {
+            for (const double s : {1., -1.}) { // keep s n.(x - a0) >= 0
+                const Cut c = pclip(cl.C, -s * n, -s * n.dot(a0), tmp, cx);
+                if (c == Cut::None) continue;
+                Cell nc;
+                nc.C = c == Cut::Same ? cl.C : tmp;
+                nc.sg = cl.sg;
+                nc.sg.push_back(s);
+                next.push_back(std::move(nc));
+            }
+        }
+        cells = std::move(next);
+    }
+    const size_t nf = faces.size();
+    std::vector<Vec3> W(nf);
+    std::vector<double> cc(nf);
+    Ring R;
+    for (const Cell& cl : cells) {
+        for (size_t i = 0; i < nf; ++i) {
+            W[i] = cl.sg[i] * faces[i]->dir;
+            cc[i] = cl.sg[i] * faces[i]->dir.dot(faces[i]->p);
+        }
+        for (size_t i = 0; i < nf; ++i) {
+            R = cl.C;
+            bool alive = true;
+            for (size_t j = 0; j < nf && alive; ++j) {
+                if (j == i) continue;
+                const Vec3 w = W[i] - W[j];
+                const double rhs = cc[i] - cc[j];
+                if (w.norm() <= 1e-14) { // identical function: lower index wins
+                    if (j < i) alive = false;
+                    continue;
+                }
+                const double nw = w.norm();
+                alive = pclip_inplace(R, w / nw, rhs / nw, tmp, cx);
+            }
+            if (alive) piece(R, W[i], cc[i]);
+        }
+    }
+}
+
+/// _pvertices_min_pieces: one nearest vertex per sub-ring; `piece(R, v)`.
+template <typename F>
+void pvertices_min_pieces(const Ring& R0, const std::vector<const Loc*>& verts, const Ctx& cx, F&& piece)
+{
+    Ring R, tmp;
+    for (size_t i = 0; i < verts.size(); ++i) {
+        const Vec3& vi = verts[i]->p;
+        R = R0;
+        bool alive = true;
+        for (size_t j = 0; j < verts.size() && alive; ++j) {
+            if (j == i) continue;
+            const Vec3& vj = verts[j]->p;
+            const Vec3 w = 2. * (vj - vi);
+            const double nw = w.norm();
+            alive = pclip_inplace(R, w / nw, (vj.dot(vj) - vi.dot(vi)) / nw, tmp, cx);
+        }
+        if (alive) piece(R, vi);
+    }
+}
+
+/// _prune_points: _prune_members over the points Vq.
+std::vector<int> prune_points(const Ring& Vq, const std::vector<int>& S, const std::vector<Loc>& loc)
+{
+    std::vector<std::pair<double, double>> b;
+    b.reserve(S.size());
+    for (const int k : S) b.push_back(bounds(loc[size_t(k)], Vq));
+    double ubmin = std::numeric_limits<double>::infinity();
+    for (const auto& lu : b) ubmin = std::min(ubmin, lu.second);
+    std::vector<int> kept;
+    for (size_t i = 0; i < S.size(); ++i) {
+        if (b[i].first < ubmin || b[i].second == ubmin) kept.push_back(S[i]);
+    }
+    return kept;
+}
+
+struct RingPiece
+{
+    Ring R;
+    std::vector<int> S; // member candidates
+};
+
+/// The face's corners in hex floats, bit exact, for the error messages (as cell_string).
+std::string face_string(const std::array<Vec3, 3>& f)
+{
+    std::string s = "f =";
+    char buf[128];
+    for (const Vec3& p : f) {
+        std::snprintf(buf, sizeof(buf), " (%a, %a, %a)", p[0], p[1], p[2]);
+        s += buf;
+    }
+    return s;
+}
+
+// ================================================================================================
 // Exact gradient and Hessian with respect to one vertex x of t (exact_mesh.py, "Exact gradient and
 // Hessian"; every function below is the Python one of the same name).
 //
@@ -1936,7 +2169,7 @@ int ExactBandIntegral::build_node(
     return id;
 }
 
-double ExactBandIntegral::upper_bound(const std::array<Eigen::Vector3d, 4>& t) const
+double ExactBandIntegral::upper_bound(const Eigen::Vector3d* t, const int n) const
 {
     // Branch and bound: max over the corners of the distance to a node's (padded) box is a lower
     // bound of max_i d_P(t_i) for every triangle P in it, so the result is the exact minimum.
@@ -1944,7 +2177,9 @@ double ExactBandIntegral::upper_bound(const std::array<Eigen::Vector3d, 4>& t) c
     if (m_nodes.empty()) return m;
     const auto lower = [&](const Node& nd) {
         double s = 0.;
-        for (const Vec3& p : t) s = std::max(s, (nd.lo - p).cwiseMax(p - nd.hi).cwiseMax(0.).norm());
+        for (int i = 0; i < n; ++i) {
+            s = std::max(s, (nd.lo - t[i]).cwiseMax(t[i] - nd.hi).cwiseMax(0.).norm());
+        }
         return s;
     };
     std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
@@ -1957,8 +2192,8 @@ double ExactBandIntegral::upper_bound(const std::array<Eigen::Vector3d, 4>& t) c
             for (int j = nd.begin; j < nd.end; ++j) {
                 const int f = m_order[size_t(j)];
                 double s = 0.;
-                for (const Vec3& p : t) {
-                    s = std::max(s, point_tri_dist(p, m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
+                for (int i = 0; i < n; ++i) {
+                    s = std::max(s, point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
                     if (s >= m) break; // this triangle cannot lower the min: the result is unchanged
                 }
                 m = std::min(m, s);
@@ -2013,33 +2248,35 @@ void ExactBandIntegral::candidates(
     out.erase(std::unique(out.begin(), out.end()), out.end());
 }
 
-struct ExactBandIntegral::Work
+struct ExactBandIntegral::Local
 {
-    Vec3 c0; ///< the local origin: t's centroid
-    Poly Q0; ///< t in local coordinates
+    Vec3 c0; ///< the local origin: the centroid of the cell or face
     std::vector<Loc> loc; ///< the candidate features, local
     std::vector<std::pair<Vec3, double>> hs; ///< their half-spaces, local
-    std::vector<Piece> pieces; ///< the partition of t with member sets
+    double U = 0.; ///< min over P of max over the corners of d_P
     double tol_cut = 0., tol_any = 0.; ///< the partition's tolerance budget (Ctx)
-    double scale = 0.; ///< the cell's rounding scale (Ctx::scale)
+    double scale = 0.; ///< the rounding scale (Ctx::scale)
 };
 
-bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work& w, Stats* stats)
+struct ExactBandIntegral::Work : Local
+{
+    Poly Q0; ///< t in local coordinates
+    std::vector<Piece> pieces; ///< the partition of t with member sets
+};
+
+struct ExactBandIntegral::TriWork : Local
+{
+    Ring V0; ///< f in local coordinates
+    std::vector<RingPiece> pieces; ///< the partition of f with member sets
+};
+
+void ExactBandIntegral::localize(const Eigen::Vector3d* t, const int n, Local& w, Stats* stats)
     const
 {
     Ctx cx;
     cx.st = stats;
     cx.timing = stats && stats->timing;
-    w.tol_cut = w.tol_any = 0.;
-    cx.tol_cut = &w.tol_cut;
-    cx.tol_any = &w.tol_any;
-    // _partition, step 0: candidates in local coordinates (origin c0 = centroid of t). A flat
-    // cell is 0 before any search (the Python searches first; the value is the same).
-    w.c0 = (((T[0] + T[1]) + T[2]) + T[3]) / 4.;
     const Vec3& c0 = w.c0;
-    std::array<Vec3, 4> Tl;
-    for (int i = 0; i < 4; ++i) Tl[size_t(i)] = T[size_t(i)] - c0;
-    if (!tet_polytope(Tl, w.Q0)) return false;
     std::vector<Loc>& loc = w.loc;
     std::vector<std::pair<Vec3, double>>& hs = w.hs;
     loc.clear();
@@ -2047,14 +2284,14 @@ bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work&
     w.scale = 0.;
     {
         Timer tm(cx, &Stats::t_candidates);
-        Vec3 tlo = T[0], thi = T[0];
-        for (const Vec3& p : T) {
-            tlo = tlo.cwiseMin(p);
-            thi = thi.cwiseMax(p);
+        Vec3 tlo = t[0], thi = t[0];
+        for (int i = 0; i < n; ++i) {
+            tlo = tlo.cwiseMin(t[i]);
+            thi = thi.cwiseMax(t[i]);
         }
-        const double U = upper_bound(T);
+        w.U = upper_bound(t, n);
         std::vector<int> cand;
-        candidates(tlo, thi, U * (1 + 1e-12), cand);
+        candidates(tlo, thi, w.U * (1 + 1e-12), cand);
         loc.reserve(cand.size());
         for (const int gi : cand) {
             const Feature& ft = m_feat[size_t(gi)];
@@ -2073,15 +2310,36 @@ bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work&
         }
         if (stats) stats->candidates += int64_t(cand.size());
     }
-    // The cell's rounding scale: the largest magnitude among the terms its planes and vertices are
-    // built from, max |t_i - c0| (the corners) and max |q - c0| (the points the candidates'
-    // half-space offsets h = g.(q - c0) are taken from), max norm (exact_mesh._cell_scale). A
-    // tolerance on the clipped polytope's own coordinates alone (|h| + max |V|) missed what the
-    // offsets and the inherited vertices carry. MEASURED: on an inward cylinder cell the
-    // candidates' points lay 0.355 from c0 while a clip saw 3.9e-3; two copies of one vertex,
-    // made by different clips 3-6 tol apart, fell on both sides of a plane parallel to a face
-    // 1.9 tol away, the faces disagreed about the cut, and the pieces lost 3.8e-4 of the cell.
-    for (const Vec3& p : Tl) w.scale = std::max(w.scale, maxabs(p));
+    // The rounding scale: the largest magnitude among the terms the planes and vertices are built
+    // from, max |t_i - c0| (the corners) and max |q - c0| (the points the candidates' half-space
+    // offsets h = g.(q - c0) are taken from), max norm (exact_mesh._cell_scale). A tolerance on
+    // the clipped polytope's own coordinates alone (|h| + max |V|) missed what the offsets and
+    // the inherited vertices carry. MEASURED: on an inward cylinder cell the candidates' points
+    // lay 0.355 from c0 while a clip saw 3.9e-3; two copies of one vertex, made by different
+    // clips 3-6 tol apart, fell on both sides of a plane parallel to a face 1.9 tol away, the
+    // faces disagreed about the cut, and the pieces lost 3.8e-4 of the cell.
+    for (int i = 0; i < n; ++i) w.scale = std::max(w.scale, maxabs(t[i] - c0));
+}
+
+bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work& w, Stats* stats)
+    const
+{
+    Ctx cx;
+    cx.st = stats;
+    cx.timing = stats && stats->timing;
+    w.tol_cut = w.tol_any = 0.;
+    cx.tol_cut = &w.tol_cut;
+    cx.tol_any = &w.tol_any;
+    // _partition, step 0: candidates in local coordinates (origin c0 = centroid of t). A flat
+    // cell is 0 before any search (the Python searches first; the value is the same).
+    w.c0 = (((T[0] + T[1]) + T[2]) + T[3]) / 4.;
+    const Vec3& c0 = w.c0;
+    std::array<Vec3, 4> Tl;
+    for (int i = 0; i < 4; ++i) Tl[size_t(i)] = T[size_t(i)] - c0;
+    if (!tet_polytope(Tl, w.Q0)) return false;
+    localize(T.data(), 4, w, stats);
+    const std::vector<Loc>& loc = w.loc;
+    const std::vector<std::pair<Vec3, double>>& hs = w.hs;
     cx.scale = w.scale;
 
     // step 1: the convex pieces of t with constant member sets
@@ -2121,6 +2379,185 @@ bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work&
         std::swap(pieces, next);
     }
     return true;
+}
+
+void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, TriWork& w) const
+{
+    Ctx cx;
+    w.tol_cut = w.tol_any = 0.;
+    cx.tol_cut = &w.tol_cut;
+    cx.tol_any = &w.tol_any;
+    // _tri_partition: step 0 as partition()'s, origin c0 = f's centroid (P3.mean(0)).
+    w.c0 = ((f[0] + f[1]) + f[2]) / 3.;
+    localize(f.data(), 3, w, nullptr);
+    const std::vector<Loc>& loc = w.loc;
+    const std::vector<std::pair<Vec3, double>>& hs = w.hs;
+    cx.scale = w.scale;
+    w.V0 = {Vec3(f[0] - w.c0), Vec3(f[1] - w.c0), Vec3(f[2] - w.c0)};
+
+    // step 1: the convex pieces (rings) of f with constant member sets
+    std::vector<RingPiece>& pieces = w.pieces;
+    std::vector<RingPiece> next;
+    pieces.assign(1, RingPiece());
+    pieces[0].R = w.V0;
+    std::vector<Ring> outs;
+    for (int k = 0; k < int(loc.size()); ++k) {
+        const std::pair<Vec3, double>* H = hs.data() + loc[size_t(k)].h_begin;
+        const int nh = loc[size_t(k)].h_end - loc[size_t(k)].h_begin;
+        next.clear();
+        for (RingPiece& pc : pieces) {
+            const Side st = pclassify(pc.R, H, nh, cx);
+            if (st == Side::In) {
+                pc.S.push_back(k);
+                next.push_back(std::move(pc));
+            } else if (st == Side::Out) {
+                next.push_back(std::move(pc));
+            } else {
+                RingPiece in;
+                outs.clear();
+                psplit(pc.R, H, nh, in.R, outs, cx);
+                if (!in.R.empty()) {
+                    in.S = pc.S;
+                    in.S.push_back(k);
+                    next.push_back(std::move(in));
+                }
+                for (Ring& ro : outs) {
+                    RingPiece o;
+                    o.R = std::move(ro);
+                    o.S = pc.S;
+                    next.push_back(std::move(o));
+                }
+            }
+        }
+        std::swap(pieces, next);
+    }
+}
+
+double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, MaxInfo* info) const
+{
+    TriWork w;
+    tri_partition(f, w);
+    Ctx cx; // the sub-pieces' clips: no tolerance budget (as the Python)
+    cx.scale = w.scale;
+    const std::vector<Loc>& loc = w.loc;
+    Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
+    const double nn = nf.norm();
+    if (nn > 0.) nf /= nn;
+    double best = -std::numeric_limits<double>::infinity();
+    Vec3 at = Vec3::Zero();
+    bool ra_best = false;
+    double area_sum = 0., empty_area = 0.;
+    int rule_a_pieces = 0;
+    std::vector<int> S;
+    std::vector<const Loc*> members;
+    for (const RingPiece& pc : w.pieces) {
+        const double a = ring_area(pc.R, nf);
+        area_sum += a;
+        if (pc.S.empty()) {
+            empty_area += a;
+            continue;
+        }
+        S = pc.S;
+        if (S.size() > 1) S = prune_points(pc.R, S, loc);
+        bool all_faces = true, all_verts = true;
+        members.clear();
+        for (const int k : S) {
+            members.push_back(&loc[size_t(k)]);
+            all_faces = all_faces && loc[size_t(k)].kind == 0;
+            all_verts = all_verts && loc[size_t(k)].kind == 2;
+        }
+        // the max over a ring's vertices of a convex function (first maximiser, as np.argmax)
+        double val = -std::numeric_limits<double>::infinity();
+        Vec3 x = Vec3::Zero();
+        const auto take = [&](const Ring& R, auto&& dist) {
+            for (const Vec3& p : R) {
+                const double dv = dist(p);
+                if (dv > val) {
+                    val = dv;
+                    x = p;
+                }
+            }
+        };
+        bool ra = false;
+        if (S.size() == 1) {
+            take(pc.R, [&](const Vec3& p) { return d_feat(*members[0], p); });
+        } else if (all_faces) {
+            pfaces_min_pieces(pc.R, members, cx, [&](const Ring& Rs, const Vec3& W, const double c) {
+                take(Rs, [&](const Vec3& p) { return p.dot(W) - c; });
+            });
+        } else if (all_verts) {
+            pvertices_min_pieces(pc.R, members, cx, [&](const Ring& Rs, const Vec3& v) {
+                take(Rs, [&](const Vec3& p) { return (p - v).norm(); });
+            });
+        } else { // rule (a): min over g of max over the piece of d_g >= max over the piece of d
+            double vmin = std::numeric_limits<double>::infinity();
+            Vec3 xmin = Vec3::Zero();
+            for (const Loc* g : members) {
+                val = -std::numeric_limits<double>::infinity();
+                take(pc.R, [&](const Vec3& p) { return d_feat(*g, p); });
+                if (val < vmin) {
+                    vmin = val;
+                    xmin = x;
+                }
+            }
+            val = vmin;
+            x = xmin;
+            ra = true;
+            ++rule_a_pieces;
+        }
+        if (val > best) {
+            best = val;
+            at = x;
+            ra_best = ra;
+        }
+    }
+    // The checks of value(), on areas. A cutting clip moves the parts' boundary only within the
+    // slab |g.x - h| <= sqrt(3) tol, whose section of the ring has area at most 2 sqrt(3) tol D
+    // (D f's longest edge, its longest chord); a decision taken with a tolerance misplaces at most
+    // a slab of half-width tol, area 2 tol D; a fan sum of m terms of size <= D^2 rounds by at
+    // most (13 m + m^2) eps D^2 / 2.
+    const double A0 = ring_area(w.V0, nf);
+    double D = 0.;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < i; ++j) D = std::max(D, (f[size_t(i)] - f[size_t(j)]).norm());
+    }
+    const auto rho = [&](const Ring& R) {
+        const double m = double(R.size()) - 2.;
+        return (13. * m + m * m) * EPS * D * D / 2.;
+    };
+    double rho_all = rho(w.V0), rho_empty = 0.;
+    for (const RingPiece& pc : w.pieces) {
+        rho_all += rho(pc.R);
+        if (pc.S.empty()) rho_empty += rho(pc.R);
+    }
+    const double tile_bound = 2. * std::sqrt(3.) * D * w.tol_cut + rho_all;
+    const double empty_bound = 2. * D * (w.tol_any + std::sqrt(3.) * w.tol_cut) + rho_empty;
+    if (!(empty_area <= empty_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral::max_distance: pieces outside every local region, area {} of {} "
+            "(bound {}) | {}",
+            empty_area,
+            A0,
+            empty_bound,
+            face_string(f));
+    }
+    if (!(std::abs(area_sum - A0) <= tile_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral::max_distance: pieces do not tile f: {} vs {} (bound {}) | {}",
+            area_sum,
+            A0,
+            tile_bound,
+            face_string(f));
+    }
+    if (info) {
+        info->at = at + w.c0;
+        info->rule_a = ra_best;
+        info->U = w.U;
+        info->candidates = int(loc.size());
+        info->pieces = int(w.pieces.size());
+        info->rule_a_pieces = rule_a_pieces;
+    }
+    return best;
 }
 
 double ExactBandIntegral::value(

@@ -975,7 +975,10 @@ void TopoOffsetTetMesh::init_offset_potential()
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
             // EXPERIMENTAL_band_volume_rule "exact": the exact integral's structure, beside them.
-            if (m_offset_params.band_volume_rule == "exact") {
+            // It also gives the settle loop's max test its exact max of d over a front face
+            // (ExactBandIntegral::max_distance()).
+            if (m_offset_params.band_volume_rule == "exact" ||
+                (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max")) {
                 m_band_exact = std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F);
             }
         }

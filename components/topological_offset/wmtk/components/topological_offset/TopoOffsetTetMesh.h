@@ -563,8 +563,9 @@ public:
     /// The input's triangles, the convex pieces of d the band term's min runs over
     /// (init_offset_potential()).
     std::shared_ptr<InputTriangles> m_band_tris;
-    /// EXPERIMENTAL_band_volume_rule "exact": the input's triangles for the exact integral, built
-    /// once beside m_band_tris (init_offset_potential()).
+    /// EXPERIMENTAL_band_volume_rule "exact", or EXPERIMENTAL_settle_refinement with settle_mark
+    /// "max" (its exact max over a front face): the input's triangles for the exact integral,
+    /// built once beside m_band_tris (init_offset_potential()).
     std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
     /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
@@ -1894,9 +1895,9 @@ public:
     /// less than the bar energy b = front_conv^2 A / (2 target_distance)
     /// since `e_prev` (E at the end of the previous turn, turn 1: before its first group; set to
     /// E now). Only a settled turn tests the front faces (InputTriangles::min_triangle_distance()
-    /// and min_max_corner_distance()) and halves the corners of those more than front_conv from
-    /// the level set, when `refine_now`. Logs the turn's [settle] line. Returns settled and no
-    /// face marked: the loop's exit. See the spec doc.
+    /// and, settle_mark "max", ExactBandIntegral::max_distance()) and halves the corners of those
+    /// more than front_conv from the level set, when `refine_now`. Logs the turn's [settle] line.
+    /// Returns settled and no face marked: the loop's exit. See the spec doc.
     bool settle_refinement_turn(int turn, double& e_prev, bool refine_now);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way

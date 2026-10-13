@@ -2905,11 +2905,17 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     const bool rms_mode = m_offset_params.settle_mark == "rms";
     const bool vertex_mode = m_offset_params.settle_mark == "vertex";
     if (settled) {
-        // Per front face f, an exact bound on how far a point of f lies from the level set:
-        // inside_f = delta - min over f of d, exact (min over P of the triangle-triangle
-        // distance); outside_f = min over P of the max of d_P at f's corners, minus delta -- an
-        // upper bound on max over f of d - delta, d_P being convex (its max over f is at a
-        // corner) and d <= d_P. A face with either over eps has its corners halved.
+        // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
+        // over f of d, exact (min over P of the triangle-triangle distance); outside_f = max over f
+        // of d, minus delta, exact up to rounding (ExactBandIntegral::max_distance(): f cut by the
+        // input's nearest-feature regions, the max at a piece's vertex; an upper bound only on
+        // pieces with curved region boundaries, rule (a)). A face with either over eps has its
+        // corners halved. The former outside_f, min over P of the max of d_P at f's corners (one
+        // triangle's convex d_P), overshoots by about s^2 / (2 delta) where f straddles a coplanar
+        // input edge by s: MEASURED, cube outward, turn 28, all 8 faces it marked were 1.06-1.26
+        // bars over by it and -0.016..+0.020 bars by the exact max; they alone blocked the exit.
+        // settle_mark "rms" and "vertex" only log outside_f and keep the former bound (the exact
+        // structure exists for them only under band_volume_rule "exact").
         std::vector<size_t> corners;
         for (const auto& f : faces) {
             const std::array<Vector3d, 3> p = {
@@ -2917,7 +2923,10 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
             const double inside = delta - m_band_tris->min_triangle_distance(p[0], p[1], p[2]);
-            const double outside = m_band_tris->min_max_corner_distance(p.data(), 3) - delta;
+            const double outside = (m_band_exact && !rms_mode && !vertex_mode
+                                        ? m_band_exact->max_distance(p)
+                                        : m_band_tris->min_max_corner_distance(p.data(), 3)) -
+                                   delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
             const bool over_max = std::max(inside, outside) > eps;
