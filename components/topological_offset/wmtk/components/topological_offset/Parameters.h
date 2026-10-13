@@ -156,6 +156,13 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
+    /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
+    /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound" (the default): vol times the min
+    /// over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on
+    /// the cell's part of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
+    /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
+    /// rule-(a) pieces. See the spec doc.
+    std::string band_volume_rule = "corner_bound";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when E fell by less than the bar energy
     /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
@@ -277,6 +284,12 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error("EXPERIMENTAL_repulsion_refine needs repulsion_rounds > 0");
         }
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
+        band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
+        if (band_volume_rule != "corner_bound" && band_volume_rule != "exact") {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\" or \"exact\", not \"{}\"",
+                band_volume_rule);
+        }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {

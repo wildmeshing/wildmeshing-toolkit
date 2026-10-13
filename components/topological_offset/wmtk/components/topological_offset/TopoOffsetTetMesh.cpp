@@ -974,6 +974,10 @@ void TopoOffsetTetMesh::init_offset_potential()
                     m_n_regions);
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
+            // EXPERIMENTAL_band_volume_rule "exact": the exact integral's structure, beside them.
+            if (m_offset_params.band_volume_rule == "exact") {
+                m_band_exact = std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F);
+            }
         }
         return;
     }
