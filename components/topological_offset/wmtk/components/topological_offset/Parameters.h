@@ -93,9 +93,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
-    /// complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc.
-    bool deform_others = false;
+    /// 3D: the medium outside the band and the input complex is plastic during the loop -- its
+    /// AMIPS term against a rest shape stamped before every operation group and smoothing block.
+    /// false: equilateral AMIPS for every cell. See the spec doc.
+    bool use_rest_pose = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
@@ -338,7 +339,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
-        deform_others = json_params["deform_others"];
+        use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];

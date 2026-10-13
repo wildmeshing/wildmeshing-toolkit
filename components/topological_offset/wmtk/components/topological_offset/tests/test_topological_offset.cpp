@@ -10,6 +10,7 @@
 #include <numeric>
 #include <queue>
 #include <set>
+#include <tuple>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
@@ -156,9 +157,9 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face a domain-wall face. Every one of them is a tracked face and
-    // HELD (every region boundary and the wall), read live off the cells, and one envelope holds
-    // them all.
+    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
+    // are HELD depends on the input complex and on whether the final pass is running, read live
+    // off the cells, and one envelope holds them all.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -183,19 +184,38 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // Every tracked face is held, the a/b boundary and the wall alike.
+    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
+    // the wall is held.
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
     REQUIRE(mesh.m_envelope != nullptr);
+    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
+    REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
+    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
+    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
+    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+
+    // The final pass: every region boundary is held too, in one envelope with the wall, and the
+    // loop's envelope comes back afterwards.
+    const auto loop_env = mesh.m_envelope;
+    mesh.build_final_envelopes();
+    mesh.m_freeze_front = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
-    // One envelope around all of them: a point on any held face is inside, a point off all of
-    // them is outside.
-    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    mesh.m_freeze_front = false;
+    mesh.release_final_envelopes();
+    REQUIRE(mesh.m_envelope == loop_env);
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+
+    // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
+    mesh.m_tet_attribute[0].label = 1;
+    REQUIRE(mesh.face_is_complex_boundary(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
 }
 
 
@@ -1359,7 +1379,10 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // cell), and a star of eight band cells around a vertex inside the band, which is on no front
     // face but carries the band term of all eight. Each vertex is moved to three nearby positions;
     // the objective's gradient and Hessian against central differences. The engine's ring hook
-    // (smoothing_ring_energy(), the projected step's test) is the same ring sum.
+    // (smoothing_ring_energy(), the projected step's test) is the same ring sum. use_rest_pose:
+    // on the first fixture again with the plastic medium on, background cell 2 against a stamped
+    // rest that its corner c2 has since left -- tet_energy() reads the rest, and the objective
+    // still is the ring sum.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1401,9 +1424,12 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         {V2, T2, std::vector<int>(8, 2), 0, true}};
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
-        for (const auto& [w, s] : std::vector<std::pair<double, double>>{
-                 {1., 3.},
-                 {Parameters().offset_amips_weight, 100.}}) {
+        for (const auto& [w, s, plastic] : std::vector<std::tuple<double, double, bool>>{
+                 {1., 3., false},
+                 {Parameters().offset_amips_weight, 100., false},
+                 {1., 3., true},
+                 {Parameters().offset_amips_weight, 100., true}}) {
+            if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
             Parameters param;
             param.offset_amips_weight = w;
             param.stop_energy = s;
@@ -1414,6 +1440,28 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 mesh->m_vertex_extra[v].m_is_on_offset =
                     !mesh->offset_surface_faces_live_at(v).empty();
             }
+            if (plastic) {
+                mesh->m_plastic_active = true;
+                mesh->stamp_plastic_rests();
+                REQUIRE(mesh->cell_is_plastic(2));
+                REQUIRE(!mesh->cell_is_plastic(0)); // band
+                REQUIRE(!mesh->cell_is_plastic(3)); // input complex
+                // c2 leaves its stamped rest, so cell 2 is off its minimum.
+                mesh->set_vertex_position(
+                    4,
+                    mesh->m_vertex_attribute[4].m_posf + Vector3d(0.03, -0.02, 0.025));
+                Eigen::Matrix3d R;
+                REQUIRE(mesh->plastic_rest(2, R));
+                const auto p = corners(*mesh, 2);
+                const double rest_term = w / (s * s * s) * VolAMIPSEnergy3D::value_of(p, R);
+                const double a3 = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(2));
+                const double vol =
+                    std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
+                INFO("w " << w << ", s " << s << ", plastic cell 2");
+                CHECK(mesh->tet_energy(2) == Catch::Approx(rest_term).epsilon(1e-10));
+                CHECK(
+                    std::abs(rest_term - w / (s * s * s) * vol * a3) > 1e-3 * std::abs(rest_term));
+            }
             for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
                 const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
                 const auto ring_energy = [&]() {
@@ -1423,8 +1471,8 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 };
                 const bool front = mesh->vertex_carries_offset_term(v);
                 INFO(
-                    "fixture " << fi << ", w " << w << ", s " << s << ", vertex " << v
-                               << (front ? " (front)" : ""));
+                    "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
+                               << ", vertex " << v << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
                 if (v == fx.not_front) {

@@ -989,6 +989,132 @@ bool CubedAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 
 // ---------------------------------------------------------------------------------------------
+// VolAMIPSEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+/// det(E) and its gradient in x, E's columns q_k - x.
+void vol_amips_det_and_grad(const Eigen::Matrix3d& E, double& g, Eigen::Vector3d& dg)
+{
+    const Eigen::Vector3d e0 = E.col(0), e1 = E.col(1), e2 = E.col(2);
+    g = e0.dot(e1.cross(e2));
+    // d det / d e_k is the k-th cofactor column, and every column moves as -x.
+    dg = -(e1.cross(e2) + e2.cross(e0) + e0.cross(e1));
+}
+} // namespace
+
+Eigen::Matrix3d VolAMIPSEnergy3D::regular_rest()
+{
+    Eigen::Matrix3d R;
+    R.col(0) = Eigen::Vector3d(1., 0., 0.);
+    R.col(1) = Eigen::Vector3d(0.5, std::sqrt(3.) / 2., 0.);
+    R.col(2) = Eigen::Vector3d(0.5, std::sqrt(3.) / 6., std::sqrt(2. / 3.));
+    return R;
+}
+
+bool VolAMIPSEnergy3D::cell(
+    const std::array<Eigen::Vector3d, 3>& q,
+    const Eigen::Matrix3d& R,
+    Cell& out)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return false;
+    out.q = q;
+    out.rest_inv = R.inverse();
+    out.s = out.rest_inv.transpose() * Eigen::Vector3d::Ones();
+    out.c = detR * detR / 6.;
+    return true;
+}
+
+double VolAMIPSEnergy3D::value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return std::numeric_limits<double>::infinity();
+    Eigen::Matrix3d E;
+    for (int k = 0; k < 3; ++k) E.col(k) = p[size_t(k + 1)] - p[0];
+    const double g = E.determinant();
+    if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+    const double f = (E * R.inverse()).squaredNorm();
+    const double v = f * f * f * detR * detR / (6. * g);
+    return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+}
+
+VolAMIPSEnergy3D::VolAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+double VolAMIPSEnergy3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& gr,
+    Eigen::Matrix3d& H) const
+{
+    double E = 0.;
+    gr.setZero();
+    H.setZero();
+    for (const Cell& c : m_cells) {
+        Eigen::Matrix3d Em;
+        for (int j = 0; j < 3; ++j) Em.col(j) = c.q[size_t(j)] - x;
+        double g;
+        Eigen::Vector3d dg;
+        vol_amips_det_and_grad(Em, g, dg);
+        if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+        const Eigen::Matrix3d F = Em * c.rest_inv;
+        const double f = F.squaredNorm();
+        const double f3 = f * f * f;
+        E += c.c * f3 / g;
+        if (need < 1) continue;
+        const Eigen::Vector3d df = -2. * F * c.s;
+        const double f2 = f * f;
+        gr += c.c * (3. * f2 * df / g - f3 * dg / (g * g));
+        if (need < 2) continue;
+        const Eigen::Matrix3d Hf = 2. * c.s.squaredNorm() * Eigen::Matrix3d::Identity();
+        H += c.c * (6. * f * (df * df.transpose()) / g + 3. * f2 * Hf / g -
+                    3. * f2 * (df * dg.transpose() + dg * df.transpose()) / (g * g) +
+                    2. * f3 * (dg * dg.transpose()) / (g * g * g));
+    }
+    E *= m_weight;
+    gr *= m_weight;
+    H *= m_weight;
+    return std::isfinite(E) ? E : std::numeric_limits<double>::infinity();
+}
+
+double VolAMIPSEnergy3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head<3>(), 0, g, H);
+}
+
+void VolAMIPSEnergy3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 1, g, H);
+    gradv = g;
+}
+
+void VolAMIPSEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 2, g, H);
+    hess = H;
+}
+
+bool VolAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    // As CubedAMIPSEnergy3D: the moved vertex may not invert a cell.
+    const Eigen::Vector3d p0 = x1.head(3);
+    for (const Cell& c : m_cells) {
+        if (!wmtk::utils::orient3d(p0, c.q[0], c.q[1], c.q[2])) return false;
+    }
+    return true;
+}
+
+
+// ---------------------------------------------------------------------------------------------
 // InputTriangles
 // ---------------------------------------------------------------------------------------------
 

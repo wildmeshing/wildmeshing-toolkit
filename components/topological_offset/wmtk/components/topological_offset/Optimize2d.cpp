@@ -4394,7 +4394,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     check_offset_membership("construction");
 
     // deform_others: from here on, other input regions deform instead of being envelope-held.
-    if (m_offset_params.deform_others) {
+    // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13); its
+    // default, false, is hard-wired here until the 2D port.
+    if (/* deform_others */ false) {
         release_deformable_regions();
         if (!m_deform_tags.empty()) {
             m_plastic_active = true;

@@ -101,6 +101,15 @@ public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     CellTag tag;
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
+    /**
+     * Rest shape of a plastic cell (TopoOffsetTetMesh::cell_is_plastic(), use_rest_pose): the
+     * tet's corners as last stamped, in the oriented order. Stamped for every plastic cell when
+     * the loop starts, before every operation group and every block of smoothing passes, and for
+     * a cell a split or a swap creates when it is created; a cell a collapse reshapes keeps its
+     * rest. Read only while the cell is plastic.
+     */
+    bool rest_valid = false;
+    std::array<Vector3d, 4> rest_pos;
 };
 
 
@@ -112,10 +121,9 @@ public:
  * is wmtk::TetOptimizerMesh's, with the offset supplying only policy through the hooks.
  *
  * Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included)
- * keeps the primary class 0 and is held in its tags' envelopes, as tetwild holds its input; the
- * offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ.
- * Class-0 faces may move within their tubes; only the offset one is driven toward
- * target_distance.
+ * keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which
+ * the incident tet labels differ. Which class-0 faces an envelope holds, and when, is
+ * face_is_held()'s; only the offset surface is driven toward target_distance.
  */
 class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
@@ -255,25 +263,45 @@ public:
 
     /**
      * @brief THE ENVELOPES. One, m_envelope (the base's pointer): a SampleEnvelope of half-width
-     * envelope_size around every HELD face (face_is_held()), built once by build_envelopes()
-     * before anything moves -- after the simplicial embedding, before the repulsion and the
-     * march -- and never rebuilt: what it holds does not move. The offset surface is held by
-     * nothing in the loop; only the frozen-front final pass holds it, to m_offset_envelope.
+     * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
+     * anything moves -- after the simplicial embedding, before the repulsion and the march --
+     * and swapped for a wider one only for the frozen-front final pass (build_final_envelopes()).
+     * The offset surface is held by nothing in the loop; only the final pass holds it, to
+     * m_offset_envelope.
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
-     * labels it reads), never stored: a domain-wall face (no opposite tet), and every other
-     * tracked face that is not the offset surface, i.e. every region boundary, the input
-     * complex's included. One envelope for all of them, as TetWild's: where two held surfaces meet,
-     * a vertex is kept within eps of their union, not pinned to the junction curve.
+     * labels it reads), never stored:
+     * - a domain-wall face (no opposite tet), always;
+     * - the input complex's boundary (face_is_complex_boundary()), always;
+     * - every other region boundary, only in the final pass (m_freeze_front), where
+     *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
+     *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
+     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is kept
+     * within eps of their union, not pinned to the junction curve. As archive/spenbert-offset had
+     * it (2026-10-13).
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
     /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
     bool vertex_is_held(size_t vid) const;
+    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
+    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
+    bool face_is_complex_boundary(const Tuple& f) const;
     /// Build m_envelope from the held faces. Called once, from construct_offset(), after the
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
+    /// The final pass's envelopes: the offset surface's tube (build_offset_envelope()), and
+    /// m_envelope swapped for one that also holds every other region boundary, at its position as
+    /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
+    /// then). release_final_envelopes() puts the loop's envelope back.
+    void build_final_envelopes();
+    void release_final_envelopes();
+    /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
+    std::vector<Eigen::Vector3d> m_held_verts;
+    std::vector<Eigen::Vector3i> m_held_tris;
+    /// The loop's m_envelope while the final pass holds its own.
+    std::shared_ptr<SampleEnvelope> m_loop_envelope;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -411,7 +439,10 @@ public:
      * march, while the repulsion runs (m_repulsion_potential set), a cell also carries
      * repulsion_cell_term(); there is no band then. A cell's energy depends on its own four
      * corners and its label alone: an operation changes the energy of the cells it changes and
-     * of no other.
+     * of no other -- except under use_rest_pose, where a plastic cell's (cell_is_plastic(), outside
+     * the band and the complex) AMIPS term is vol A^3 against its stamped rest
+     * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: the
+     * rests are stamped between operation groups and smoothing blocks, never inside one.
      *
      * WHERE IT IS COMPARED: always as the SUM of tet_energy() over the cells an operation changes,
      * before against after, the cells summed in the same order each time.
@@ -657,6 +688,31 @@ public:
     bool cell_is_input_complex(const size_t tid) const { return m_tet_attribute[tid].label == 1; }
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
+
+    // ------- the plastic medium (use_rest_pose) -------
+
+    /// Set while the loop runs under use_rest_pose (not in the final pass, which is TetWild's
+    /// regular-tet AMIPS).
+    bool m_plastic_active = false;
+    /// Every cell outside the offset band and the input complex (cell_in_region() false), while
+    /// the plastic medium is active: its AMIPS term in tet_energy() and in the smoother is
+    /// against its stamped rest shape (TetAttributes::rest_pos) instead of the regular tet. The
+    /// band and the complex are elastic.
+    bool cell_is_plastic(const size_t tid) const
+    {
+        return m_plastic_active && !cell_in_region(tid);
+    }
+    /// The rest edge matrix of a plastic cell with a valid rest, columns rest_pos[k] -
+    /// rest_pos[0] in the oriented order; false when the cell is not plastic, has no rest, or the
+    /// rest holds no shape (det <= 0) -- the cell is then measured against the regular tet.
+    bool plastic_rest(const size_t tid, Eigen::Matrix3d& R) const;
+    /// Stamp rest := current for every plastic cell; called when the loop starts, before every
+    /// operation group (split, collapse, swap) and before every block of smoothing passes. A
+    /// no-op while the plastic medium is off.
+    void stamp_plastic_rests();
+    /// Stamp one cell's rest := its current corners (oriented order). For the cells a split or a
+    /// swap creates; a no-op unless the cell is plastic.
+    void stamp_rest_cell(size_t tid);
 
     /// The 3D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);

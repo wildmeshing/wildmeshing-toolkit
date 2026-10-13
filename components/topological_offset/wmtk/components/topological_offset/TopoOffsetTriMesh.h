@@ -319,7 +319,9 @@ public:
     enum class EnvelopeSetup { PerTag, WallComplex };
     EnvelopeSetup envelope_setup() const
     {
-        return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
+        // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13);
+        // its default, false, is hard-wired here until the 2D port.
+        return /* deform_others */ false ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
     }
     static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
     static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary
