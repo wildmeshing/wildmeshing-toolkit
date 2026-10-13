@@ -178,18 +178,16 @@ struct Parameters : public wmtk::OptimizerParameters
     /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
     /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
     bool gap_refinement = false;
-    /// EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled
-    /// turn, read only under settle_refinement. "max": the face's max of |d - target_distance|
-    /// exceeds front_conv (exact up to rounding; an upper bound on rule-(a) pieces, see
-    /// ExactBandIntegral::max_distance()). "rms": the face's share of the offset excess exceeds
-    /// its bar energy,
-    /// X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA > front_conv^2 area(f) / (2 delta),
-    /// i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the
-    /// face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule; the
-    /// default. "vertex":
-    /// a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. See the
-    /// spec doc.
-    std::string settle_mark = "rms";
+    /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
+    /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
+    /// exceeds front_conv; its sizing is halved. "max": a face's max of
+    /// |d - target_distance| exceeds front_conv (exact up to rounding; an upper bound on rule-(a)
+    /// pieces, see ExactBandIntegral::max_distance()). "rms": a face's share of the offset excess
+    /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
+    /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
+    /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
+    /// 3-edge-midpoint rule. See the spec doc.
+    std::string settle_mark = "vertex";
     std::string output_path; // no extension
     bool save_vtu;
 
