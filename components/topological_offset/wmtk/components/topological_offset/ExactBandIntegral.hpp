@@ -59,6 +59,34 @@ namespace wmtk::components::topological_offset {
  * Conditioning (Python, test_exact_tri.py "far"): a piece of size L at distance D from the
  * singular point or line loses about eps (D/L)^2 in the Euler sums.
  *
+ * The offset side (constructed with a side): the band B is the region between the input and the
+ * front, so a point on the far side of the input surface from the offset is not in it, and
+ * value() returns J(t) = int_{t cap B} (d - delta) dV. The side of x is decided by its nearest
+ * feature g, by the sign of (x - c).N_g for its nearest point c (the pseudonormal test,
+ * Baerentzen-Aanaes 2005): N_g = the face normal (face), n1 + n2 (edge), the angle-weighted
+ * pseudonormal (vertex). On g's local region c is g's own nearest point to x, so the test is the
+ * fixed plane {(x - q_g).N_g = 0}, q_g a point of g:
+ *  - a one-member piece is clipped by its member's plane and only the offset-side part counts; a
+ *    faces-only sub-piece (one face nearest, on one side of its plane) is kept or dropped whole;
+ *    a vertices-only sub-piece is clipped by its vertex's plane;
+ *  - a rule-(a) piece is split by its members' planes. Where all planes give the same side, the
+ *    true side is that one (it is the nearest member's): the part is dropped, or takes rule (a)'s
+ *    min. Where they disagree (D) the side is not known, and D adds
+ *        vol(D) max(0, min over members of (max over D's vertices of d_g) - delta),
+ *    an upper bound (chi (d - delta) <= max(0, d_g - delta), d_g convex). The plain min over the
+ *    members' own clipped integrals is not one: MEASURED, two plates 0.02 apart, delta 0.2, a cell
+ *    wholly inside the lower plate (true value 0): the upper plate's rim edge, whose region held
+ *    the cell, put it on the offset side, and that min was -1.32e-5.
+ *  - -delta vol(t) becomes -delta times the kept volume; a cell where nothing is clipped keeps
+ *    the unclipped sum, int d - delta vol(t), bit for bit.
+ * Features of isolated triangles (no side), edges without exactly two faces and zero
+ * pseudonormals have no plane: every point counts there. Why (exact_mesh.band_integral): the
+ * input surface inside the tet mesh may move within its envelope, and just inside the input body
+ * the integrand is about -1, so pushing the band's inner boundary into the body lowered E;
+ * operations accepted when they lower E ratcheted it inward. MEASURED: on the outward sphere
+ * 446 of 881 inner-boundary vertices lay inside the input by turn 12, E_band ended 58.6 bars
+ * below its exact minimum (Steiner's formula), and the settle test could not pass.
+ *
  * Thread safety: value() is const and keeps no state; concurrent calls are safe.
  */
 class ExactBandIntegral
@@ -67,7 +95,18 @@ public:
     /// V (n x 3) and F (m x 3): the input triangles. Vertices are merged by exact coordinates and
     /// sorted (numpy.unique, as the Python Mesh does), which fixes the order the features are
     /// visited in -- the rule-(a) pieces depend on it.
-    ExactBandIntegral(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+    ExactBandIntegral(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
+        : ExactBandIntegral(V, F, {}, 0)
+    {}
+    /// With the offset side (class doc): face_side[f] = +1 if row f's normal (b - a) x (c - a)
+    /// points out of the offset_selection region, -1 if into it, 0 for a triangle that bounds no
+    /// solid; sigma = +1 for an outward offset (the band outside the selection), -1 inward, 0 no
+    /// clip (as the two-argument constructor).
+    ExactBandIntegral(
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& F,
+        const std::vector<int8_t>& face_side,
+        int sigma);
 
     /// Counters, volumes and (when `timing`) times of value() calls, ADDED to on every call (never
     /// reset by value()).
@@ -95,6 +134,10 @@ public:
         int64_t closed_edges = 0; ///< polygon edges integrated by a closed form
         int64_t series_short = 0; ///< near-parallel edges, Taylor series along the edge
         int64_t series_long = 0; ///< near-parallel edges, Taylor series in eta
+        /// The offset side (class doc): value() calls with anything clipped; rule-(a) pieces split
+        /// by their members' planes; parts D where the planes disagree, of them where some
+        /// member's distance exceeds delta at a vertex, and where the bound is positive.
+        int64_t side_clipped = 0, side_rule_a_split = 0, side_D = 0, side_D_over = 0, side_D_pos = 0;
         /// Times in seconds, measured only when `timing` is set (the clock reads add a few percent,
         /// mac-mini). t_candidates: the U search, the box query and the local feature setup;
         /// t_clip: every half-space clip; t_closed: every face integral (point and line
@@ -103,8 +146,9 @@ public:
         double t_total = 0., t_candidates = 0., t_clip = 0., t_closed = 0., t_series = 0.;
     };
 
-    /// J(t) = int_t (d - delta) dV for the cell with corners t (either orientation); 0 for a
-    /// flat cell (|6 vol| <= 64 eps L^3, L its longest edge). With `stats`, adds to it.
+    /// J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted
+    /// to the offset side when constructed with one (class doc); 0 for a flat cell
+    /// (|6 vol| <= 64 eps L^3, L its longest edge). With `stats`, adds to it.
     double value(const std::array<Eigen::Vector3d, 4>& t, double delta, Stats* stats = nullptr)
         const;
 
@@ -123,6 +167,12 @@ public:
      *  - a kink of d lying on a face of t through x (a cell face on an input plane, or on a
      *    bisector): J is one-sided C^2; the Hessian is the limit for x moving INTO t (the trace
      *    of grad d from inside t).
+     * With the offset side: each kept piece integrates d - delta, the side planes being fixed
+     * faces of the pieces whose cut edges keep their terms (the integrand jumps to 0 across
+     * them); a disagreeing rule-(a) part D adds vol(D) c(x), c = max(0, d_g*(v*) - delta) (g* the
+     * member of smallest vertex max, v* its first maximising vertex of D), differentiated through
+     * vol(D) and through v*'s motion with x (v* solves the 3 x 3 system of D's planes through it,
+     * a face of t through x the moving one). c is not smooth where g* or v* switches.
      * Flat cells give J = 0 and zero derivatives.
      */
     double value_grad_hess(
@@ -195,6 +245,12 @@ private:
     int m_nF = 0, m_nE = 0;
     std::vector<Eigen::Vector3d> m_A, m_B, m_C; ///< triangle corners, for d_P
     std::vector<std::array<int, 6>> m_face_feats; ///< per face: its 3 edges, its 3 vertices
+    /// The offset side (class doc): sigma (0: none), and per feature its side plane, the unit
+    /// normal N oriented out of the selection region and a point q on it; m_side_has[g] false
+    /// where the feature has no plane (every point counts).
+    int m_sigma = 0;
+    std::vector<char> m_side_has;
+    std::vector<Eigen::Vector3d> m_side_n, m_side_q;
 
     /// A tree over the triangles' boxes (median split on the longest axis of the centroids, as
     /// InputTriangles' tree), for U and the candidate query. Boxes padded by 1e-9 of the input's

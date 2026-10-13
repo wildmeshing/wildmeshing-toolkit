@@ -2095,6 +2095,10 @@ public:
     MatrixXd m_phi_V;
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
+    /// Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1:
+    /// the row's normal (b - a) x (c - a) points out of the label-1 region), 0 for an isolated
+    /// triangle. The exact rule's offset side (ExactBandIntegral) reads it.
+    std::vector<int8_t> m_phi_F_inner;
     std::vector<int> m_phi_P;
 
     /// label connected simplicial complex components (simplices labelled 1 or 2)

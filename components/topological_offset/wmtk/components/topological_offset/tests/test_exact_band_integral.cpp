@@ -5,6 +5,7 @@
 
 #include "exact_band_integral_data.hpp"
 #include "exact_band_max_data.hpp"
+#include "exact_band_side_data.hpp"
 
 #include <algorithm>
 #include <array>
@@ -778,6 +779,107 @@ TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
                     " several circuits\n",
                     c.name, c.ncells, c.nF, worst, (long long)st.closed_checked,
                     (long long)st.open_results, (long long)st.clips_closed_up, (long long)st.caps_split);
+    }
+}
+
+/**
+ * The offset side (ExactBandIntegral's class doc) against the Python (exact_mesh.band_integral,
+ * value_grad_hess; data in exact_band_side_data.hpp): cells straddling the input surface of eleven
+ * inputs, outward and inward, the triangles oriented out of the selection region, and the two
+ * plates of side_counterexample.py. Checks: value and derivatives match the Python; a cell with
+ * nothing clipped gives the unclipped value bit for bit; every clip result is closed; on the
+ * plates the value is never below the true clipped integral (0 for the cell wholly inside the
+ * lower plate); the gradient and Hessian match central differences on the clipped cells.
+ */
+TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
+{
+    using namespace exact_band_side_data;
+    std::printf("exact-band-integral-side: the offset-side band integral against the Python\n");
+    for (const SCase& c : side_cases) {
+        Eigen::MatrixXd V(c.nV, 3);
+        for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(c.nF, 3);
+        for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+        const ExactBandIntegral eb(V, F, std::vector<int8_t>(size_t(c.nF), 1), c.sigma);
+        const ExactBandIntegral plain(V, F);
+        ExactBandIntegral::Stats st;
+        st.check_closed = true;
+        double e_J = 0., e_dJ = 0., e_G = 0., e_H = 0., fd_g = 0., fd_h = 0.;
+        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0;
+        for (int k = 0; k < c.ncells; ++k) {
+            const SCell& sc = c.cells[k];
+            const Tet T = tet_of(sc.T);
+            INFO(c.name << " cell " << k);
+            const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
+            const double unit = sc.delta * vol; // J is of size delta vol
+            const double J = eb.value(T, sc.delta, &st);
+            CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
+            e_J = std::max(e_J, std::abs(J - sc.J) / unit);
+            if (sc.clipped) {
+                ++n_clipped;
+            } else {
+                ++n_unclipped;
+                const bool same = J == plain.value(T, sc.delta);
+                CHECK(same);
+                n_bits += same;
+            }
+            Vec3 G;
+            Eigen::Matrix3d H;
+            const double Jd = eb.value_grad_hess(T, sc.kv, sc.delta, G, H);
+            const Eigen::Map<const Eigen::Vector3d> Gr(sc.G);
+            const Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> Hr(sc.H);
+            const double eg = (G - Gr).norm() / std::max(Gr.norm(), 1e-300);
+            const double eh = (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
+            CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
+            CHECK(eg <= 1e-10);
+            CHECK(eh <= 1e-9);
+            e_dJ = std::max(e_dJ, std::abs(Jd - sc.Jd) / unit);
+            e_G = std::max(e_G, eg);
+            e_H = std::max(e_H, eh);
+            if (std::string(c.name) == "plates" && k % 4 == 0 && k < 16) {
+                // the cells wholly inside the lower plate (true value 0) never go below it
+                if (k % 8 == 4) CHECK(J >= 0.);
+            }
+            if (!sc.clipped || n_fd >= 24 || (std::string(c.name) == "plates" && (k / 4) % 2 == 0)) continue;
+            // central differences on clipped cells (the plates' unjittered cells sit on ties of the
+            // D bound's vertex max, where the bound has a kink: skipped)
+            ++n_fd;
+            double L = 0.;
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < i; ++j) L = std::max(L, (T[size_t(i)] - T[size_t(j)]).norm());
+            }
+            double best_g = std::numeric_limits<double>::infinity(), best_h = best_g;
+            for (const double h0 : {1e-4, 1e-5, 1e-6}) {
+                const double h = h0 * L;
+                Vec3 gf;
+                Eigen::Matrix3d Hf;
+                for (int d = 0; d < 3; ++d) {
+                    Tet Tp = T, Tm = T;
+                    Tp[size_t(sc.kv)][d] += h;
+                    Tm[size_t(sc.kv)][d] -= h;
+                    gf[d] = (eb.value(Tp, sc.delta) - eb.value(Tm, sc.delta)) / (2. * h);
+                    Vec3 Gp, Gm;
+                    Eigen::Matrix3d Hp, Hm;
+                    eb.value_grad_hess(Tp, sc.kv, sc.delta, Gp, Hp);
+                    eb.value_grad_hess(Tm, sc.kv, sc.delta, Gm, Hm);
+                    Hf.col(d) = (Gp - Gm) / (2. * h);
+                }
+                best_g = std::min(best_g, (gf - G).norm() / std::max(G.norm(), 1e-300));
+                best_h = std::min(best_h, (Hf - H).norm() / std::max(H.norm(), 1e-300));
+            }
+            CHECK(best_g <= 1e-6);
+            CHECK(best_h <= 1e-4);
+            fd_g = std::max(fd_g, best_g);
+            fd_h = std::max(fd_h, best_h);
+        }
+        CHECK(st.open_results == 0);
+        std::printf(
+            "  %-13s %2d cells (%d clipped; D parts %lld, %lld positive): J vs the Python %.1e (delta vol);"
+            " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences on %d"
+            " clipped cells G %.1e H %.1e; %lld clip results closed, %lld open\n",
+            c.name, c.ncells, n_clipped, (long long)st.side_D, (long long)st.side_D_pos, e_J, n_bits,
+            n_unclipped, e_dJ, e_G, e_H, n_fd, fd_g, fd_h, (long long)st.closed_checked,
+            (long long)st.open_results);
     }
 }
 
