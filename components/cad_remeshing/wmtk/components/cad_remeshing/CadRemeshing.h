@@ -22,7 +22,7 @@
 #include <memory>
 #include <queue>
 #include <wmtk/Types.hpp>
-namespace app::cad_remeshing {
+namespace wmtk::components::cad_remeshing {
 
 struct VertexAttributes
 {
@@ -248,4 +248,4 @@ private:
     std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;
 };
 
-} // namespace app::cad_remeshing
+} // namespace wmtk::components::cad_remeshing

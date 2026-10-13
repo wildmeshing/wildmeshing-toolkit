@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import argparse
 import json
+import os
 import meshio
 
 # from abs.utils import * # was used to save obj mesh but IGL can do that as well
@@ -153,12 +154,16 @@ if __name__ == "__main__":
         json.dump(patches_json, f, indent=4)
 
     # Write a default remeshing config next to the produced mesh/patches so the
-    # remeshing app can be called with: `-j remesh.json`.
+    # cad_remeshing component can be called with: `wmtk_app -j remesh.json`.
     # Only write what differs from the defaults in cad_remeshing_spec.json.
+    # The component resolves input files relative to the directory of the JSON file,
+    # whereas output files are relative to the working directory.
+    remesh_json_dir = os.path.dirname(remesh_json_path) or "."
     remesh_config = {
-        "input": mesh_path,
+        "application": "cad_remeshing",
+        "input": os.path.relpath(mesh_path, remesh_json_dir),
         "output": args.output_dir + "/remeshed",
-        "patches": patches_path,
+        "patches": os.path.relpath(patches_path, remesh_json_dir),
         "report": args.output_dir + "/remeshed_report.json",
     }
     if args.len_rel is not None:

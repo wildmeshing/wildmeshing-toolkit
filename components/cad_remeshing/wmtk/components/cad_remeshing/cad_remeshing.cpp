@@ -1,26 +1,20 @@
-#include <cad_remeshing/CadRemeshing.h>
-
-#include <CLI/CLI.hpp>
+#include "cad_remeshing.hpp"
 
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/resolve_path.hpp>
 
 #include <igl/Timer.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/writeDMAT.h>
 #include <jse/jse.h>
 
-#include <stdlib.h>
 #include <chrono>
-#include <cstdlib>
-#include <iostream>
-
-using namespace wmtk;
-using namespace app::cad_remeshing;
-using namespace std::chrono;
-
-#include <wmtk/utils/getRSS.h>
 
 #include <cad_remeshing_spec.hpp>
+#include "CadRemeshing.h"
+
+namespace wmtk::components::cad_remeshing {
+
+using namespace std::chrono;
 
 void run_remeshing(
     std::string input,
@@ -60,32 +54,13 @@ void run_remeshing(
     //     m.tri_capacity());
 }
 
-int main(int argc, char** argv)
+void cad_remeshing(nlohmann::json json_params)
 {
-    CLI::App app{argv[0]};
-    std::filesystem::path json_input_file;
-
-    app.add_option(
-           "-j",
-           json_input_file,
-           "JSON input file. See individual components for further instructions.")
-        ->required()
-        ->check(CLI::ExistingFile);
-
-    CLI11_PARSE(app, argc, argv);
-
-    // read JSON input file
-    nlohmann::json json_params;
-    try {
-        std::ifstream ifs(json_input_file);
-        json_params = nlohmann::json::parse(ifs);
-    } catch (const std::exception& e) {
-        log_and_throw_error("Could not load or parse JSON input file: {}", e.what());
-    }
+    using wmtk::utils::resolve_path;
 
     // verify input and inject defaults
     {
-        const auto& spec = jse::embed::wmtk_cad_remeshing_app_spec::cad_remeshing_spec::spec();
+        const auto& spec = jse::embed::wmtk_cad_remeshing_spec::cad_remeshing_spec::spec();
         jse::JSE spec_engine;
         bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
@@ -94,6 +69,7 @@ int main(int argc, char** argv)
         json_params = spec_engine.inject_defaults(json_params, spec);
     }
 
+    const std::filesystem::path root = json_params["input_dir"];
 
     std::vector<std::pair<size_t, int>> fixed_vertices;
     std::vector<std::pair<std::array<size_t, 2>, int>> feature_edge_list;
@@ -101,7 +77,7 @@ int main(int argc, char** argv)
     std::vector<size_t> face_patch_ids;
 
     try {
-        const std::string patches_path = json_params["patches"];
+        const std::string patches_path = resolve_path(root, json_params["patches"]).string();
         logger().info("Loading patches info file: {}", patches_path);
 
         nlohmann::json patches_json;
@@ -167,12 +143,13 @@ int main(int argc, char** argv)
     {
         std::string log_file_name = json_params["log_file"];
         if (!log_file_name.empty()) {
+            log_file_name = resolve_path(root, log_file_name).string();
             wmtk::set_file_logger(log_file_name);
             logger().flush_on(spdlog::level::info);
         }
     }
 
-    const std::string input_path = json_params["input"];
+    const std::string input_path = resolve_path(root, json_params["input"]).string();
     const std::string output = json_params["output"];
     double eps = json_params["eps"];
     const double eps_rel = json_params["eps_rel"];
@@ -342,7 +319,7 @@ int main(int argc, char** argv)
     timer.stop();
 
     if (report_file.empty()) {
-        return 0;
+        return;
     }
 
     // Reload report in case downstream code (e.g. write_vtu) has updated it.
@@ -382,6 +359,6 @@ int main(int argc, char** argv)
         std::ofstream fout(report_file);
         fout << std::setw(4) << report;
     }
-
-    return 0;
 }
+
+} // namespace wmtk::components::cad_remeshing

@@ -1,7 +1,6 @@
 #include "CadRemeshing.h"
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
-#include <igl/predicates/predicates.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -32,7 +31,7 @@ auto edge_locker = [](auto& m, const auto& e, int task_id) {
 static int debug_print_counter = 0;
 } // namespace
 
-namespace app::cad_remeshing {
+namespace wmtk::components::cad_remeshing {
 
 
 CadRemeshing::CadRemeshing(
@@ -1517,4 +1516,4 @@ void CadRemeshing::write_vtu(const std::string& path, const std::string& report_
         edge_writer->write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 }
-} // namespace app::cad_remeshing
+} // namespace wmtk::components::cad_remeshing

@@ -2,9 +2,10 @@
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input", "patches"],
+    "required": ["application", "input", "patches"],
     "optional": [
       "output",
+      "input_dir",
       "use_sample_envelope",
       "num_threads",
       "max_iterations",
@@ -20,9 +21,15 @@
     ]
   },
   {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["cad_remeshing"],
+    "doc": "Application name must be cad_remeshing."
+  },
+  {
     "pointer": "/input",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "Triangular input mesh. A relative path is resolved against the directory of the JSON file."
   },
   {
     "pointer": "/output",
@@ -31,9 +38,15 @@
     "doc": "Output file name without extension. The surface is written to <output>.vtu and the feature edges to <output>_edges.vtu."
   },
   {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
     "pointer": "/patches",
     "type": "string",
-    "doc": "JSON file containing the patch ID per face (fid2patch), the feature edges (edge2seg), and the corner vertices (corner_vids)."
+    "doc": "JSON file containing the patch ID per face (fid2patch), the feature edges (edge2seg), and the corner vertices (corner_vids). A relative path is resolved against the directory of the JSON file."
   },
   {
     "pointer": "/use_sample_envelope",

@@ -8,7 +8,6 @@ include(cli11)
 
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
-option(WMTK_APP_CAD_REMESHING "CAD remeshing for surfaces" ON)
 
 option(WMTK_APP_UNIT_TESTS "unit tests for applications" ON)
 
@@ -18,10 +17,6 @@ endif()
 
 if(WMTK_APP_HARMTET)
     add_subdirectory(harmonic_tet)
-endif()
-
-if(WMTK_APP_CAD_REMESHING)
-    add_subdirectory(cad_remeshing)
 endif()
 
 # ###############################################################################
