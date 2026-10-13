@@ -2153,3 +2153,82 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
         CHECK(energy_new == Catch::Approx(energy_13).epsilon(1e-12));
     }
 }
+
+TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]")
+{
+    // The exact rule's band integral counts the offset side of the input only (ExactBandIntegral's
+    // class doc), and the band is outside the label-1 region for both directions: that region is
+    // the selection for offset_out and everything outside it for offset_in. On a 3 x 3 x 3 grid of
+    // unit cubes with the center cube as tag_0, a cell just inside tag_0 and its mirror just
+    // outside, both within delta of the face x = 0.5: the band side gives the unclipped integral,
+    // the other side 0. MEASURED before this test (Geneva base, offset_in, 2026-10-13): the side
+    // was read against the selection while the faces were oriented against the region outside
+    // it, the clip kept the far side, and the band term at construction was 0 against -7.5046.
+    Eigen::MatrixXd V(64, 3);
+    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
+    for (int k = 0; k < 4; ++k) {
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> center;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < 3; ++k) {
+        for (int j = 0; j < 3; ++j) {
+            for (int i = 0; i < 3; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
+                    T.push_back(positive(V, t));
+                }
+            }
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+    }
+    MatrixSi Tags(int(T.size()), 1);
+    for (const int t : center) Tags.coeffRef(t, 0) = 1;
+
+    const double delta = 0.2;
+    const std::array<Vector3d, 4> inside = {
+        {{0.45, -0.1, -0.1}, {0.45, 0.1, -0.1}, {0.45, 0., 0.1}, {0.35, 0., 0.}}};
+    std::array<Vector3d, 4> outside = inside;
+    for (Vector3d& q : outside) q.x() = 1. - q.x();
+
+    for (const bool inward : {true, false}) {
+        Parameters param;
+        param.offset_in = inward;
+        param.offset_out = !inward;
+        param.offset_field = "euclidean";
+        param.band_volume_rule = "exact";
+        param.target_distance = delta;
+        TopoOffsetTetMesh mesh(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh.init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
+        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+        mesh.label_input_complex();
+        mesh.init_input_complex_bvh();
+        mesh.init_offset_potential();
+        REQUIRE(mesh.m_band_exact);
+        const ExactBandIntegral plain(mesh.m_phi_V, mesh.m_phi_F);
+        const auto& band = inward ? inside : outside;
+        const auto& far_side = inward ? outside : inside;
+        INFO((inward ? "offset_in" : "offset_out"));
+        const double J_band = mesh.m_band_exact->value(band, delta);
+        CHECK(J_band < 0.);
+        CHECK(J_band == plain.value(band, delta));
+        CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
+        CHECK(plain.value(far_side, delta) < 0.);
+    }
+}

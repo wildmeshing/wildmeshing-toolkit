@@ -1,4 +1,5 @@
 #include "OffsetPotential.hpp"
+#include "ExactBandIntegral.hpp"
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Logger.hpp>
@@ -1606,6 +1607,15 @@ BandVolumeEnergy3D::BandVolumeEnergy3D(
     m_ball_cand.assign(m_cells.size(), {});
 }
 
+void BandVolumeEnergy3D::set_exact_integral(
+    std::shared_ptr<const ExactBandIntegral> eb,
+    const double delta)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_eb_val_set = m_eb_der_set = false;
+}
+
 bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
 {
     // r = the distance from x to the nearest plane through a cell's three fixed corners, each
@@ -1664,6 +1674,43 @@ double BandVolumeEnergy3D::eval(
     Eigen::Vector3d& g,
     Eigen::Matrix3d& H) const
 {
+    if (m_eb) {
+        // EXPERIMENTAL_band_volume_rule "exact": per cell J_t / delta with x a corner of t
+        const auto same = [&](const Eigen::Vector3d& y) {
+            return std::memcmp(x.data(), y.data(), 3 * sizeof(double)) == 0;
+        };
+        if (need == 0) {
+            if (!(m_eb_val_set && same(m_eb_val_x))) {
+                double E = 0.;
+                for (const Cell& c : m_cells) {
+                    E += m_eb->value({{x, c.q1, c.q2, c.q3}}, m_delta) / m_delta;
+                }
+                m_eb_E = E;
+                m_eb_val_x = x;
+                m_eb_val_set = true;
+            }
+            g.setZero();
+            H.setZero();
+            return m_eb_E;
+        }
+        if (!(m_eb_der_set && same(m_eb_der_x))) {
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (const Cell& c : m_cells) {
+                Eigen::Vector3d gc;
+                Eigen::Matrix3d hc;
+                m_eb->value_grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc);
+                m_eb_g += gc / m_delta;
+                m_eb_H += hc / m_delta;
+            }
+            m_eb_der_x = x;
+            m_eb_der_set = true;
+        }
+        g = m_eb_g;
+        H = m_eb_H;
+        // the value is value()'s; gradient() and hessian() do not read it
+        return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
+    }
     // Per cell the min over all triangles of the corner mean of r_P, the four corners being x and
     // the cell's three fixed ones.
     exact_minima(x);

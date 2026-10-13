@@ -3059,17 +3059,23 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     size_t n_marked = 0, n_floor = 0, n_halved = 0, n_over_max = 0, n_over_rms = 0;
-    size_t n_over_vertex = 0, n_front_vertices = 0;
+    size_t n_over_vertex = 0, n_front_vertices = 0, n_gap_cells = 0, n_gap_over = 0;
     double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
-    double max_rms = 0., max_vertex = 0.;
+    double max_rms = 0., max_vertex = 0., max_gap = 0.;
     const bool rms_mode = m_offset_params.settle_mark == "rms";
     const bool vertex_mode = m_offset_params.settle_mark == "vertex";
     if (settled) {
-        // Per front face f, an exact bound on how far a point of f lies from the level set:
-        // inside_f = delta - min over f of d, exact (min over P of the triangle-triangle
-        // distance); outside_f = min over P of the max of d_P at f's corners, minus delta -- an
-        // upper bound on max over f of d - delta, d_P being convex (its max over f is at a
-        // corner) and d <= d_P. A face with either over eps has its corners halved.
+        // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
+        // over f of d, exact (min over P of the triangle-triangle distance); outside_f = max over f
+        // of d, minus delta, exact up to rounding (ExactBandIntegral::max_distance(): f cut by the
+        // input's nearest-feature regions, the max at a piece's vertex; an upper bound only on
+        // pieces with curved region boundaries, rule (a)). A face with either over eps has its
+        // corners halved. The former outside_f, min over P of the max of d_P at f's corners (one
+        // triangle's convex d_P), overshoots by about s^2 / (2 delta) where f straddles a coplanar
+        // input edge by s: MEASURED, cube outward, turn 28, all 8 faces it marked were 1.06-1.26
+        // bars over by it and -0.016..+0.020 bars by the exact max; they alone blocked the exit.
+        // settle_mark "rms" and "vertex" only log outside_f and keep the former bound (the exact
+        // structure exists for them only under band_volume_rule "exact").
         std::vector<size_t> corners;
         for (const auto& f : faces) {
             const std::array<Vector3d, 3> p = {
@@ -3077,7 +3083,10 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
             const double inside = delta - m_band_tris->min_triangle_distance(p[0], p[1], p[2]);
-            const double outside = m_band_tris->min_max_corner_distance(p.data(), 3) - delta;
+            const double outside = (m_band_exact && !rms_mode && !vertex_mode
+                                        ? m_band_exact->max_distance(p)
+                                        : m_band_tris->min_max_corner_distance(p.data(), 3)) -
+                                   delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
             const bool over_max = std::max(inside, outside) > eps;
@@ -3126,6 +3135,41 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             corners.push_back(v);
             if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
         }
+        // EXPERIMENTAL_gap_refinement: a band cell with a front corner whose corner bound may lie
+        // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
+        // mean of the bounding triangle's distance. Where d is convex on the cell the true mean of
+        // d is at least d(centroid) (Jensen), so Vol (md - d(c)) / delta bounds the gap. The gap
+        // depends on the corners' positions, and the smoother descends it with the energy: on the
+        // cylinder outward (2026-10-09) every fold formed by a move that lowered the bound while
+        // the true integral plus AMIPS rose.
+        if (m_offset_params.gap_refinement) {
+            std::vector<size_t> cells;
+            for (const size_t v : front_vids) {
+                for (const size_t t : get_one_ring_tids_for_vertex(v)) {
+                    if (cell_is_offset_band(t)) cells.push_back(t);
+                }
+            }
+            wmtk::vector_unique(cells);
+            n_gap_cells = cells.size();
+            for (const size_t t : cells) {
+                const auto vs = oriented_tet_vids(t);
+                std::array<Vector3d, 4> p;
+                for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
+                int64_t best = -1;
+                const double md = m_band_tris->min_mean_distance(p.data(), 4, best);
+                const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
+                const double dc = m_band_tris->distance(m_band_tris->nearest(ctr), ctr);
+                max_gap = std::max(max_gap, (md - dc) / eps);
+                if (!(md - dc > eps)) continue;
+                ++n_gap_over;
+                bool at_floor = true;
+                for (const size_t v : vs) {
+                    corners.push_back(v);
+                    at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+                }
+                if (at_floor) ++n_floor;
+            }
+        }
         if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
     }
     // A marked face with every corner at the floor is one nothing will refine: it blocks the exit
@@ -3143,7 +3187,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         settled ? fmt::format(
                       " | marked {} {} of {} by the {} test (max test: {} faces over, max "
                       "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
-                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars), {}, {} marked "
+                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}), {}, {} marked "
                       "{} at the sizing floor {:.4g}{}",
                       n_marked,
                       vertex_mode ? "vertices" : "faces",
@@ -3157,6 +3201,14 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                       max_rms,
                       n_over_vertex,
                       max_vertex,
+                      m_offset_params.gap_refinement
+                          ? fmt::format(
+                                "; gap test: {} of {} band cells at the front over, max {:.4} bars "
+                                "(refined)",
+                                n_gap_over,
+                                n_gap_cells,
+                                max_gap)
+                          : std::string(),
                       refine_now ? fmt::format("halved {} vertices", n_halved)
                                  : std::string("no halving (this loop does not refine)"),
                       n_floor,
@@ -3164,7 +3216,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                       s_floor,
                       n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
                 : std::string(" -- no face test, no refinement, no exit: the front still moves"));
-    return settled && n_marked == 0;
+    return settled && n_marked == 0 && n_gap_over == 0;
 }
 
 void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
