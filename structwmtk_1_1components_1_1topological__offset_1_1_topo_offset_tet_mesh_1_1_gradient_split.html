@@ -80,7 +80,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic and the normal-aligned reference quantity. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples.  
+<p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
@@ -108,12 +108,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>max_at_vertex</b> =
 <tr class="memitem:a01f7ec7f510cfeedf1dd78efffc21383" id="r_a01f7ec7f510cfeedf1dd78efffc21383"><td class="memItemLeft" align="right" valign="top"><a id="a01f7ec7f510cfeedf1dd78efffc21383" name="a01f7ec7f510cfeedf1dd78efffc21383"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_in_face</b> = 0.</td></tr>
 <tr class="separator:a01f7ec7f510cfeedf1dd78efffc21383"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa67744e0bbc1b5241701c9ed6d603408" id="r_aa67744e0bbc1b5241701c9ed6d603408"><td class="memItemLeft" align="right" valign="top"><a id="aa67744e0bbc1b5241701c9ed6d603408" name="aa67744e0bbc1b5241701c9ed6d603408"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>max_in_face_pinned</b> = 0.</td></tr>
-<tr class="separator:aa67744e0bbc1b5241701c9ed6d603408"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3db096474801d3ef91826a9e712fbffc" id="r_a3db096474801d3ef91826a9e712fbffc"><td class="memItemLeft" align="right" valign="top"><a id="a3db096474801d3ef91826a9e712fbffc" name="a3db096474801d3ef91826a9e712fbffc"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>max_normal_aligned</b> = 0.</td></tr>
-<tr class="separator:a3db096474801d3ef91826a9e712fbffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab26740084312d62c43e47fdc88cef109" id="r_ab26740084312d62c43e47fdc88cef109"><td class="memItemLeft" align="right" valign="top"><a id="ab26740084312d62c43e47fdc88cef109" name="ab26740084312d62c43e47fdc88cef109"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_face_samples</b> = 0</td></tr>
 <tr class="separator:ab26740084312d62c43e47fdc88cef109"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,12 +117,9 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_skipped_inverted<
 <tr class="memitem:a5e1e546b353d19d5533e84456ebbaa1f" id="r_a5e1e546b353d19d5533e84456ebbaa1f"><td class="memItemLeft" align="right" valign="top"><a id="a5e1e546b353d19d5533e84456ebbaa1f" name="a5e1e546b353d19d5533e84456ebbaa1f"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_skipped_unrounded</b> = 0</td></tr>
 <tr class="separator:a5e1e546b353d19d5533e84456ebbaa1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261e28cce6df58a6b879330fc85106bb" id="r_a261e28cce6df58a6b879330fc85106bb"><td class="memItemLeft" align="right" valign="top"><a id="a261e28cce6df58a6b879330fc85106bb" name="a261e28cce6df58a6b879330fc85106bb"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
-<tr class="separator:a261e28cce6df58a6b879330fc85106bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic and the normal-aligned reference quantity. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples. </p>
+<div class="textblock"><p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>

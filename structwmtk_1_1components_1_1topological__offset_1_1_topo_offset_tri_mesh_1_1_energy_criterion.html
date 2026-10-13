@@ -83,7 +83,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The "energy_gradient" criterion: the front is at a critical point of Phase B's energy, and every edge resolves the pull that drives it there.  
+<p>The front's measures against the one bar and the refinable chords. The 2D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front&#39;s Newton-step ratios and the refinable faces....">TopoOffsetTetMesh::EnergyCriterion</a>, front chords in place of offset faces.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a>&gt;</code></p>
@@ -98,6 +98,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5b396dcb8c58f6be1188a20743ebf565" id="r_a5b396dcb8c58f6be1188a20743ebf565"><td class="memItemLeft" align="right" valign="top"><a id="a5b396dcb8c58f6be1188a20743ebf565" name="a5b396dcb8c58f6be1188a20743ebf565"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>rings_ok</b> () const</td></tr>
 <tr class="separator:a5b396dcb8c58f6be1188a20743ebf565"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a7f07be3723291cc36a08162fc10823" id="r_a7a7f07be3723291cc36a08162fc10823"><td class="memItemLeft" align="right" valign="top"><a id="a7a7f07be3723291cc36a08162fc10823" name="a7a7f07be3723291cc36a08162fc10823"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>avg_ring</b> () const</td></tr>
+<tr class="separator:a7a7f07be3723291cc36a08162fc10823"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7663982a4b656320e40189a0c68fdaaa" id="r_a7663982a4b656320e40189a0c68fdaaa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">vertices_ok</a> () const</td></tr>
 <tr class="separator:a7663982a4b656320e40189a0c68fdaaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9b3e5e04662513eb5a557a79e8446f80" id="r_a9b3e5e04662513eb5a557a79e8446f80"><td class="memItemLeft" align="right" valign="top"><a id="a9b3e5e04662513eb5a557a79e8446f80" name="a9b3e5e04662513eb5a557a79e8446f80"></a>
@@ -110,6 +113,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>edges_ok</b> () const
 <tr class="memitem:a93cf3a1da5da180454f70af896eef84d" id="r_a93cf3a1da5da180454f70af896eef84d"><td class="memItemLeft" align="right" valign="top"><a id="a93cf3a1da5da180454f70af896eef84d" name="a93cf3a1da5da180454f70af896eef84d"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>ratio</b> () const</td></tr>
 <tr class="separator:a93cf3a1da5da180454f70af896eef84d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae22e9d93dc1214c5ce3384f077dcfd3e" id="r_ae22e9d93dc1214c5ce3384f077dcfd3e"><td class="memItemLeft" align="right" valign="top"><a id="ae22e9d93dc1214c5ce3384f077dcfd3e" name="ae22e9d93dc1214c5ce3384f077dcfd3e"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>avg_vertex</b> () const</td></tr>
+<tr class="memdesc:ae22e9d93dc1214c5ce3384f077dcfd3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Means over the measurable front vertices / front chords; 0 when there are none. <br /></td></tr>
+<tr class="separator:ae22e9d93dc1214c5ce3384f077dcfd3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0014db79fca2973210f1736964de77c" id="r_ad0014db79fca2973210f1736964de77c"><td class="memItemLeft" align="right" valign="top"><a id="ad0014db79fca2973210f1736964de77c" name="ad0014db79fca2973210f1736964de77c"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>avg_edge</b> () const</td></tr>
+<tr class="separator:ad0014db79fca2973210f1736964de77c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -122,10 +132,13 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a364f21b094921be571f25face4cf4a63" id="r_a364f21b094921be571f25face4cf4a63"><td class="memItemLeft" align="right" valign="top"><a id="a364f21b094921be571f25face4cf4a63" name="a364f21b094921be571f25face4cf4a63"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_vertex</b> = 0.</td></tr>
 <tr class="separator:a364f21b094921be571f25face4cf4a63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f2702ae84186740bccfb282caa858ee" id="r_a6f2702ae84186740bccfb282caa858ee"><td class="memItemLeft" align="right" valign="top"><a id="a6f2702ae84186740bccfb282caa858ee" name="a6f2702ae84186740bccfb282caa858ee"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>max_edge</b> = 0.</td></tr>
-<tr class="memdesc:a6f2702ae84186740bccfb282caa858ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">ratios to the bar (1 = bar) <br /></td></tr>
+<tr class="memitem:a6f2702ae84186740bccfb282caa858ee" id="r_a6f2702ae84186740bccfb282caa858ee"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a6f2702ae84186740bccfb282caa858ee">max_edge</a> = 0.</td></tr>
 <tr class="separator:a6f2702ae84186740bccfb282caa858ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a356842a8173daddea9417feb352024c5" id="r_a356842a8173daddea9417feb352024c5"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a356842a8173daddea9417feb352024c5">sum_vertex</a> = 0.</td></tr>
+<tr class="separator:a356842a8173daddea9417feb352024c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2384511a3d8a054672ec97f9f3a2e767" id="r_a2384511a3d8a054672ec97f9f3a2e767"><td class="memItemLeft" align="right" valign="top"><a id="a2384511a3d8a054672ec97f9f3a2e767" name="a2384511a3d8a054672ec97f9f3a2e767"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sum_edge</b> = 0.</td></tr>
+<tr class="separator:a2384511a3d8a054672ec97f9f3a2e767"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c3f744d5a6ed15c1db9a32b89711eb8" id="r_a0c3f744d5a6ed15c1db9a32b89711eb8"><td class="memItemLeft" align="right" valign="top"><a id="a0c3f744d5a6ed15c1db9a32b89711eb8" name="a0c3f744d5a6ed15c1db9a32b89711eb8"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>bar</b> = 1.</td></tr>
 <tr class="separator:a0c3f744d5a6ed15c1db9a32b89711eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -141,11 +154,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_unmeasurable</b> 
 <tr class="memitem:a32677505eba69e8c29b06a0e22ad7123" id="r_a32677505eba69e8c29b06a0e22ad7123"><td class="memItemLeft" align="right" valign="top"><a id="a32677505eba69e8c29b06a0e22ad7123" name="a32677505eba69e8c29b06a0e22ad7123"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
 <tr class="separator:a32677505eba69e8c29b06a0e22ad7123"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2065c2d706d317e17fcd7749ff953ac" id="r_af2065c2d706d317e17fcd7749ff953ac"><td class="memItemLeft" align="right" valign="top"><a id="af2065c2d706d317e17fcd7749ff953ac" name="af2065c2d706d317e17fcd7749ff953ac"></a>
-Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_edge_mid</b> = Vector2d::Zero()</td></tr>
-<tr class="separator:af2065c2d706d317e17fcd7749ff953ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c6a3bacfe1b2f2f2f89932d582753ab" id="r_a0c6a3bacfe1b2f2f2f89932d582753ab"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a0c6a3bacfe1b2f2f2f89932d582753ab">worst_edge_len</a> = 0.</td></tr>
-<tr class="separator:a0c6a3bacfe1b2f2f2f89932d582753ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a706962efe62bb643f3407d5326f00f38" id="r_a706962efe62bb643f3407d5326f00f38"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a706962efe62bb643f3407d5326f00f38">n_edges_over</a> = 0</td></tr>
 <tr class="separator:a706962efe62bb643f3407d5326f00f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa948d07939a2dfec43e937e76bb70f89" id="r_aa948d07939a2dfec43e937e76bb70f89"><td class="memItemLeft" align="right" valign="top"><a id="aa948d07939a2dfec43e937e76bb70f89" name="aa948d07939a2dfec43e937e76bb70f89"></a>
@@ -197,8 +205,11 @@ std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__off
 <tr class="separator:a19c79444f6372cc519039f3baaba643a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adecc3a5d2ed03a8decea0c2f7a709f6d" id="r_adecc3a5d2ed03a8decea0c2f7a709f6d"><td class="memItemLeft" align="right" valign="top"><a id="adecc3a5d2ed03a8decea0c2f7a709f6d" name="adecc3a5d2ed03a8decea0c2f7a709f6d"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_ring</b> = 0.</td></tr>
-<tr class="memdesc:adecc3a5d2ed03a8decea0c2f7a709f6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">ratio to the bar (1 = bar) <br /></td></tr>
 <tr class="separator:adecc3a5d2ed03a8decea0c2f7a709f6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5626bafec83960d9b7261a5edac7a892" id="r_a5626bafec83960d9b7261a5edac7a892"><td class="memItemLeft" align="right" valign="top"><a id="a5626bafec83960d9b7261a5edac7a892" name="a5626bafec83960d9b7261a5edac7a892"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sum_ring</b> = 0.</td></tr>
+<tr class="memdesc:a5626bafec83960d9b7261a5edac7a892"><td class="mdescLeft">&#160;</td><td class="mdescRight">ratios to the bar (1 = bar) <br /></td></tr>
+<tr class="separator:a5626bafec83960d9b7261a5edac7a892"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a591567437d4751f1fdb94e7d6ff3f5d2" id="r_a591567437d4751f1fdb94e7d6ff3f5d2"><td class="memItemLeft" align="right" valign="top"><a id="a591567437d4751f1fdb94e7d6ff3f5d2" name="a591567437d4751f1fdb94e7d6ff3f5d2"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_rings</b> = 0</td></tr>
 <tr class="separator:a591567437d4751f1fdb94e7d6ff3f5d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -223,11 +234,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
 <tr class="separator:a3cc6b943e2a03d7c8c42ab4c497e1297"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The "energy_gradient" criterion: the front is at a critical point of Phase B's energy, and every edge resolves the pull that drives it there. </p>
-<p>One bar for everything, B = front_conv_frac() x m_front_gradient_reference:</p><ul>
-<li>vertices: max over the placed front vertices of ||grad F||, F the vertex's full Phase B objective (AMIPS + the two offset terms, as the shared smoother assembles it) &ndash; the same quantity and bar as the Phase B pass stop.</li>
-<li>edges, the interpolation test: with r(x) = (Phi(x) - c) / c on the edge's region's field, every live front edge (a, b) with midpoint m must satisfy (2 w / c) |r(m) - (r(a) + r(b)) / 2| &lt;= B, w = 1 - w_amips. That is the second difference of the offset residual along the edge, in the units of the offset term's gradient (2 w / c) r grad Phi: how far the level set curves away from the chord, which halving the edge reduces; the bar is offset_envelope_rel x c under step_size_rel and decrement (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a66d65197fa7fcef41dafade509444cd2" title="The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable.">edge_conv_ratio()</a>). No AMIPS at the midpoint &ndash; a virtual split's lopsided children carry an O(w/h) AMIPS pull that never vanishes &ndash; and no length units. The sizing rule halves an edge whose endpoints pass and which fails the interpolation test. dist_and_orient is still logged for information. </li>
-</ul>
+<div class="textblock"><p>The front's measures against the one bar and the refinable chords. The 2D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front&#39;s Newton-step ratios and the refinable faces....">TopoOffsetTetMesh::EnergyCriterion</a>, front chords in place of offset faces. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a28b95e8edfec1e2edaff33bb39dd6e45" name="a28b95e8edfec1e2edaff33bb39dd6e45"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a28b95e8edfec1e2edaff33bb39dd6e45">&#9670;&#160;</a></span>converged()</h2>
@@ -251,10 +258,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
   </tr>
 </table>
 </div><div class="memdoc">
-<p>THE exit test (with the loop's own one-turn grace after a lowering), and the front half of the run's verdict: every front chord's measure within the bar AND nothing unmeasurable &ndash; the 3D rule of 2026-09-25, the chord measure (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a66d65197fa7fcef41dafade509444cd2" title="The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable.">edge_conv_ratio()</a>) in place of the face measure. The vertex measure left the exit then and is reported only.</p>
-<p>Unlike the 3D face stencil, the chord measure is the SAG at the midpoint, the second difference of the field along the chord: it does not sample the two ends, and a displacement of both ends off the level set by the same amount cancels in it. So in 2D nothing at the exit tests how far a front vertex is from the level set; the verdict prints it, as the diagnostic max_vertex. Measured on two_circles (smooth field, target_distance 0.15), 2026-09-25: the loop now exits at turn 13 with every chord within the bar and 21 front vertices not placed, the worst, at (-0.0009, 0) midway between the two circles, 39x the bar off the level set; under the vertex test the same run never exited in its 40 turns.</p>
-<p>No refinable.empty() term: a refinable chord is over the bar, so edges_ok() already implies that nothing is refinable. A chord over the bar that the refinement does not take (n_at_floor) used to let the run end "converged" and now blocks the exit, the loop warning when its ends are at the sizing floor.</p>
-<p>Under front_measure "vertex_ring" the ring measure takes the chord measure's place here, as in 3D: every front vertex's ring measure within the bar AND nothing unmeasurable, the chord measure then reported only. </p>
+<p>THE exit test, and the front half of the run's verdict: every front chord's measure within the bar AND nothing unmeasurable &ndash; the chord measure is the root of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af9c9c99cff1eed02c4a85f56cba2c7ca" title="THE ONE CHORD FUNCTION: the mean over the chord&#39;s stencil of r^2, r = relative_residual(q) / front_co...">edge_offset_term()</a>, the RMS relative error over the chord's stencil, which samples its two ends as well as its interior. Under front_measure "vertex_ring" the ring measure takes the chord measure's place: every front vertex's ring measure within the bar AND nothing unmeasurable, the chord measure then reported only. As in 3D. </p>
 
 </div>
 </div>
@@ -298,11 +302,26 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a> rather than re-derived from max_vertex, so the reported count and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests it since 2026-09-25; see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a28b95e8edfec1e2edaff33bb39dd6e45">converged()</a>. </p>
+<p>Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d" title="THE definition of &quot;placed&quot; for a vertex on the offset boundary, applied to its already-measured front...">front_placed_by_ratio()</a> rather than re-derived from max_vertex, so the reported count and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests it since 2026-09-25; see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a28b95e8edfec1e2edaff33bb39dd6e45">converged()</a>. </p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6f2702ae84186740bccfb282caa858ee" name="a6f2702ae84186740bccfb282caa858ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f2702ae84186740bccfb282caa858ee">&#9670;&#160;</a></span>max_edge</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::max_edge = 0.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>ratios to the bar (1 = bar) </p>
+
+</div>
+</div>
 <a id="a1fe539c6638d5383af80bdde5f8f93d3" name="a1fe539c6638d5383af80bdde5f8f93d3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1fe539c6638d5383af80bdde5f8f93d3">&#9670;&#160;</a></span>n_at_floor</h2>
 
@@ -314,7 +333,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Chords over the bar with both ends placed that the refinement does not take: no chord target below the larger sizing scalar at their ends. Like every chord over the bar they block the exit. Two states share this count (see energy_criterion()): ends at the sizing floor, which nothing can refine, and a chord still at least twice the target length at its ends, which the split pass shortens. The first is n_corners_at_floor. </p>
+<p>Chords over the bar that the refinement does not take: no chord target below the larger sizing scalar at their ends. Like every chord over the bar they block the exit. Two states share this count (see energy_criterion()): ends at the sizing floor, which nothing can refine, and a chord still at least twice the target length at its ends, which the split pass shortens. The first is n_corners_at_floor. </p>
 
 </div>
 </div>
@@ -344,7 +363,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Reported only: the edges over the bar, split by whether both endpoints are PLACED (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a>, the one notion). An edge whose endpoints are placed and whose chord still misses the level set is under-resolved &ndash; the state the vertex test cannot see, and the only one the sag rule may act on: refining a chord whose ends are still moving would chase the front rather than resolve it. </p>
+<p>Reported only: the chords over the bar, split by whether both ends are PLACED (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d" title="THE definition of &quot;placed&quot; for a vertex on the offset boundary, applied to its already-measured front...">front_placed_by_ratio()</a>, the one notion). </p>
 
 </div>
 </div>
@@ -389,7 +408,7 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
         </tr>
       </table>
 </div><div class="memdoc">
-<p>measurable front vertices that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a> refuses </p>
+<p>measurable front vertices that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d" title="THE definition of &quot;placed&quot; for a vertex on the offset boundary, applied to its already-measured front...">front_placed_by_ratio()</a> refuses </p>
 
 </div>
 </div>
@@ -421,8 +440,23 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
 </div><div class="memdoc">
 
 <p>front_measure "vertex_ring" </p>
-<p>THE RING MEASURE, filled only under front_measure "vertex_ring": the 3D twin's, with the front chords in place of the offset faces and length in place of area. At a front vertex v, over the front chords incident to v that the chord loop measured (both ends front vertices) &ndash; two at a vertex inside the front, one at the end of an open one: </p><pre class="fragment">r_v = sqrt( sum_e L_e edge_conv_ratio_e^2 / sum_e L_e )
-</pre><p> L_e the chord's length. A vertex with any unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable); a ring of zero total length has none either and is counted in n_unmeasurable itself. Unlike 3D, the front smoother is not weighted to match: its offset term, OffsetEnergy2D, is the vertex's own residual and has no per-chord term of the chord measure to weight (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab9e94deb47675ddd44bc9c377a34ef5">phase_b_front_energy()</a>), so the 2D smoother is the same under both values. </p>
+<p>THE RING MEASURE, filled only under front_measure "vertex_ring": the 3D twin's, with the front chords in place of the offset faces. At a front vertex v, over the front chords incident to v that the chord loop measured (both ends front vertices) &ndash; two at a vertex inside the front, one at the end of an open one: </p><pre class="fragment">r_v = sqrt( (1/n_v) sum_e O(e) ),   O(e) = edge_offset_term()
+</pre><p> every chord weighted equally: the front smoother's own offset term at v (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy2_d.html" title="THE offset term of a 2D front vertex&#39;s smoothing objective: the mean squared relative error of the fi...">StencilEnergy2D</a> at <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3df3732d9b2ae4305f647745e6200f64">offset_term_weight()</a> is sum_e O(e) = n_v r_v^2), the same chords' terms the per-cell energy <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4a55def76a53e8ce1bb82891514e2848" title="THE per-cell energy, read from the mesh as it is – labels, neighbours and positions,...">tri_energy()</a> carries. A vertex with any unmeasurable incident chord has no ring measure (n_rings_unmeasurable; the chord itself is already in n_unmeasurable). </p>
+
+</div>
+</div>
+<a id="a356842a8173daddea9417feb352024c5" name="a356842a8173daddea9417feb352024c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a356842a8173daddea9417feb352024c5">&#9670;&#160;</a></span>sum_vertex</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::sum_vertex = 0.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Running sums of the SAME ratios, over the same measurable simplices the maxima are taken over, so <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#ae22e9d93dc1214c5ce3384f077dcfd3e" title="Means over the measurable front vertices / front chords; 0 when there are none.">avg_vertex()</a> / avg_edge() below are the plain means of what max_vertex / max_edge report the largest of. Reported only; nothing tests them. </p>
 
 </div>
 </div>
@@ -438,21 +472,6 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
       </table>
 </div><div class="memdoc">
 <p>the larger sizing scalar at the worst one's ends </p>
-
-</div>
-</div>
-<a id="a0c6a3bacfe1b2f2f2f89932d582753ab" name="a0c6a3bacfe1b2f2f2f89932d582753ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c6a3bacfe1b2f2f2f89932d582753ab">&#9670;&#160;</a></span>worst_edge_len</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::worst_edge_len = 0.</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>the worst edge's length </p>
 
 </div>
 </div>

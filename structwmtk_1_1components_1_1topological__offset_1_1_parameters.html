@@ -147,8 +147,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_size_rel</
 <tr class="memitem:a1f687fca19047b12f16067848c158ea1" id="r_a1f687fca19047b12f16067848c158ea1"><td class="memItemLeft" align="right" valign="top"><a id="a1f687fca19047b12f16067848c158ea1" name="a1f687fca19047b12f16067848c158ea1"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_dhat_factor</b></td></tr>
 <tr class="separator:a1f687fca19047b12f16067848c158ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeaef365c38235567b1a5b7acf85baad6" id="r_aeaef365c38235567b1a5b7acf85baad6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aeaef365c38235567b1a5b7acf85baad6">debug_manual_dhat</a></td></tr>
-<tr class="separator:aeaef365c38235567b1a5b7acf85baad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56a89926b6a243f85fe52d0d734afe17" id="r_a56a89926b6a243f85fe52d0d734afe17"><td class="memItemLeft" align="right" valign="top"><a id="a56a89926b6a243f85fe52d0d734afe17" name="a56a89926b6a243f85fe52d0d734afe17"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>offset_field</b></td></tr>
 <tr class="memdesc:a56a89926b6a243f85fe52d0d734afe17"><td class="mdescLeft">&#160;</td><td class="mdescRight">"smooth" (Phi level set) or "euclidean" (exact distance) <br /></td></tr>
@@ -159,18 +157,27 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv</b></td>
 <tr class="memitem:a06eedb4d505aae8a551e0677e1fc7d9e" id="r_a06eedb4d505aae8a551e0677e1fc7d9e"><td class="memItemLeft" align="right" valign="top"><a id="a06eedb4d505aae8a551e0677e1fc7d9e" name="a06eedb4d505aae8a551e0677e1fc7d9e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_rel</b></td></tr>
 <tr class="separator:a06eedb4d505aae8a551e0677e1fc7d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3188f326201273023d24761ed87c640c" id="r_a3188f326201273023d24761ed87c640c"><td class="memItemLeft" align="right" valign="top"><a id="a3188f326201273023d24761ed87c640c" name="a3188f326201273023d24761ed87c640c"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_criterion</b></td></tr>
-<tr class="memdesc:a3188f326201273023d24761ed87c640c"><td class="mdescLeft">&#160;</td><td class="mdescRight">gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY] <br /></td></tr>
-<tr class="separator:a3188f326201273023d24761ed87c640c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab81a01358a1558310de1c2906c5beb93" id="r_ab81a01358a1558310de1c2906c5beb93"><td class="memItemLeft" align="right" valign="top"><a id="ab81a01358a1558310de1c2906c5beb93" name="ab81a01358a1558310de1c2906c5beb93"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_normal_projection</b> = true</td></tr>
-<tr class="separator:ab81a01358a1558310de1c2906c5beb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05bf491992f5f3ee660f5583c5e291cc" id="r_a05bf491992f5f3ee660f5583c5e291cc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a05bf491992f5f3ee660f5583c5e291cc">front_alignment_energy</a> = true</td></tr>
-<tr class="separator:a05bf491992f5f3ee660f5583c5e291cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b20930ff2615638c6bcd11ded78d2be" id="r_a2b20930ff2615638c6bcd11ded78d2be"><td class="memItemLeft" align="right" valign="top"><a id="a2b20930ff2615638c6bcd11ded78d2be" name="a2b20930ff2615638c6bcd11ded78d2be"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_collapse_veto</b> = true</td></tr>
+<tr class="separator:a2b20930ff2615638c6bcd11ded78d2be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab811b352df7ed38c0be45dbb4d114b2b" id="r_ab811b352df7ed38c0be45dbb4d114b2b"><td class="memItemLeft" align="right" valign="top"><a id="ab811b352df7ed38c0be45dbb4d114b2b" name="ab811b352df7ed38c0be45dbb4d114b2b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_swap_veto</b> = true</td></tr>
+<tr class="separator:ab811b352df7ed38c0be45dbb4d114b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0869dbb00048aac7686020965c9f6b72" id="r_a0869dbb00048aac7686020965c9f6b72"><td class="memItemLeft" align="right" valign="top"><a id="a0869dbb00048aac7686020965c9f6b72" name="a0869dbb00048aac7686020965c9f6b72"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_front_smooth_veto</b> = false</td></tr>
+<tr class="separator:a0869dbb00048aac7686020965c9f6b72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dc0fef5a4087285a54dd4cacf34cb0c" id="r_a2dc0fef5a4087285a54dd4cacf34cb0c"><td class="memItemLeft" align="right" valign="top"><a id="a2dc0fef5a4087285a54dd4cacf34cb0c" name="a2dc0fef5a4087285a54dd4cacf34cb0c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_collapse_changed_cells</b> = true</td></tr>
+<tr class="separator:a2dc0fef5a4087285a54dd4cacf34cb0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55460593856f4b53bb3f711bc3842430" id="r_a55460593856f4b53bb3f711bc3842430"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a55460593856f4b53bb3f711bc3842430">offset_amips_weight</a> = 1.</td></tr>
+<tr class="separator:a55460593856f4b53bb3f711bc3842430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96f3f0c18c99c5a6463d1880ae2747d7" id="r_a96f3f0c18c99c5a6463d1880ae2747d7"><td class="memItemLeft" align="right" valign="top"><a id="a96f3f0c18c99c5a6463d1880ae2747d7" name="a96f3f0c18c99c5a6463d1880ae2747d7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_crossings</b> = false</td></tr>
+<tr class="memdesc:a96f3f0c18c99c5a6463d1880ae2747d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec). <br /></td></tr>
+<tr class="separator:a96f3f0c18c99c5a6463d1880ae2747d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75cefadd552bf38dd047b45d1fdcf7be" id="r_a75cefadd552bf38dd047b45d1fdcf7be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a75cefadd552bf38dd047b45d1fdcf7be">sizing_collapse_min</a> = true</td></tr>
 <tr class="separator:a75cefadd552bf38dd047b45d1fdcf7be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fe8648b4000c5ec8e9d449bdf38534c" id="r_a9fe8648b4000c5ec8e9d449bdf38534c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a9fe8648b4000c5ec8e9d449bdf38534c">deform_others</a> = true</td></tr>
+<tr class="memitem:a9fe8648b4000c5ec8e9d449bdf38534c" id="r_a9fe8648b4000c5ec8e9d449bdf38534c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a9fe8648b4000c5ec8e9d449bdf38534c">deform_others</a> = false</td></tr>
 <tr class="separator:a9fe8648b4000c5ec8e9d449bdf38534c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a802504a1c01c4ab258777aad386981c0" id="r_a802504a1c01c4ab258777aad386981c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a802504a1c01c4ab258777aad386981c0">max_rounds</a> = 40</td></tr>
 <tr class="separator:a802504a1c01c4ab258777aad386981c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,16 +189,27 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>stencil_order</b></td>
 <tr class="memitem:af2f589c738c1ca954fdd3addc9fc58f8" id="r_af2f589c738c1ca954fdd3addc9fc58f8"><td class="memItemLeft" align="right" valign="top"><a id="af2f589c738c1ca954fdd3addc9fc58f8" name="af2f589c738c1ca954fdd3addc9fc58f8"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></td></tr>
 <tr class="separator:af2f589c738c1ca954fdd3addc9fc58f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f60de909647416df3cd79bd92df9352" id="r_a1f60de909647416df3cd79bd92df9352"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a1f60de909647416df3cd79bd92df9352">sphere_trace_initialization</a></td></tr>
-<tr class="separator:a1f60de909647416df3cd79bd92df9352"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70592da646fdbc27aa5508af006c6a5" id="r_ae70592da646fdbc27aa5508af006c6a5"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ae70592da646fdbc27aa5508af006c6a5">construction_mode</a> = &quot;max_marchable_fallback&quot;</td></tr>
+<tr class="separator:ae70592da646fdbc27aa5508af006c6a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec4223bf61e4f0dc7a7218f92811ab6b" id="r_aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aec4223bf61e4f0dc7a7218f92811ab6b">sphere_trace_target_rel_tol</a></td></tr>
 <tr class="separator:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af20b7251572220cfa98f403a3919740c" id="r_af20b7251572220cfa98f403a3919740c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c">experimental_consistent_construction_split</a> = true</td></tr>
-<tr class="separator:af20b7251572220cfa98f403a3919740c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46065c1c7d95257ca220b85fa52d1328" id="r_a46065c1c7d95257ca220b85fa52d1328"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a46065c1c7d95257ca220b85fa52d1328">experimental_aggresive_refine</a> = true</td></tr>
-<tr class="separator:a46065c1c7d95257ca220b85fa52d1328"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c0c3bd35a940e09c3739f62e1c9ac89" id="r_a7c0c3bd35a940e09c3739f62e1c9ac89"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a7c0c3bd35a940e09c3739f62e1c9ac89">experimental_nonoverlapping_gates</a> = false</td></tr>
-<tr class="separator:a7c0c3bd35a940e09c3739f62e1c9ac89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfbf713e28f0d5d2fd77a4471176da69" id="r_abfbf713e28f0d5d2fd77a4471176da69"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#abfbf713e28f0d5d2fd77a4471176da69">init_optimize</a> = false</td></tr>
+<tr class="separator:abfbf713e28f0d5d2fd77a4471176da69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac52c0242ad3959aa67c4c533a497acb9" id="r_ac52c0242ad3959aa67c4c533a497acb9"><td class="memItemLeft" align="right" valign="top"><a id="ac52c0242ad3959aa67c4c533a497acb9" name="ac52c0242ad3959aa67c4c533a497acb9"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>init_optimize_stencil_order</b> = -1</td></tr>
+<tr class="separator:ac52c0242ad3959aa67c4c533a497acb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad884390f3f680357522b45046b59697a" id="r_ad884390f3f680357522b45046b59697a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad884390f3f680357522b45046b59697a">repulsion_smoothing_passes</a> = 0</td></tr>
+<tr class="separator:ad884390f3f680357522b45046b59697a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49258904f231ad12e0bacccf02d7ad33" id="r_a49258904f231ad12e0bacccf02d7ad33"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a49258904f231ad12e0bacccf02d7ad33">repulsion_rounds</a> = 0</td></tr>
+<tr class="separator:a49258904f231ad12e0bacccf02d7ad33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5accc8d824e52531debdf3868f1d3970" id="r_a5accc8d824e52531debdf3868f1d3970"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5accc8d824e52531debdf3868f1d3970">repulsion_refine</a> = false</td></tr>
+<tr class="separator:a5accc8d824e52531debdf3868f1d3970"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20e107852db5dcb7ef1de3912d5013d0" id="r_a20e107852db5dcb7ef1de3912d5013d0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a20e107852db5dcb7ef1de3912d5013d0">split_energy_gate</a> = false</td></tr>
+<tr class="separator:a20e107852db5dcb7ef1de3912d5013d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3e4baf9a3fe479b460f12ec7acd6e23" id="r_ac3e4baf9a3fe479b460f12ec7acd6e23"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac3e4baf9a3fe479b460f12ec7acd6e23">settle_refinement</a> = true</td></tr>
+<tr class="separator:ac3e4baf9a3fe479b460f12ec7acd6e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9803e8d0d7a4a4ec76877a51cd166acd" id="r_a9803e8d0d7a4a4ec76877a51cd166acd"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a9803e8d0d7a4a4ec76877a51cd166acd">settle_mark</a> = &quot;rms&quot;</td></tr>
+<tr class="separator:a9803e8d0d7a4a4ec76877a51cd166acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a4f261f3043247d7743058781a2b84d" id="r_a5a4f261f3043247d7743058781a2b84d"><td class="memItemLeft" align="right" valign="top"><a id="a5a4f261f3043247d7743058781a2b84d" name="a5a4f261f3043247d7743058781a2b84d"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a5a4f261f3043247d7743058781a2b84d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -393,7 +411,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The convergence epsilon as a FRACTION of target_distance, which is the form the dimensionless relative error <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ab84f3ba86c3161f1635f8728088472e8" title="The signed distance from p to the level set, as a fraction of delta: &gt; 0 outside the offset region,...">OffsetPotential::relative_residual()</a> is compared against. A mean of squared relative errors is below <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5c2b4dd3736e27412fe2922c8873be27">front_conv_frac()</a>^2 exactly when the same mean taken in lengths is below front_conv^2 &ndash; the two differ by target_distance^2 on both sides &ndash; so which form the code uses is a matter of where the division sits, not of what is being asked. 2D's fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason. </p>
+<p>The convergence epsilon as a FRACTION of target_distance, which is the form the dimensionless relative error <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ab84f3ba86c3161f1635f8728088472e8" title="The signed distance from p to the level set, as a fraction of delta: &gt; 0 outside the offset region,...">OffsetPotential::relative_residual()</a> is compared against. A mean of squared relative errors is below <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5c2b4dd3736e27412fe2922c8873be27">front_conv_frac()</a>^2 exactly when the same mean taken in lengths is below front_conv^2 &ndash; the two differ by target_distance^2 on both sides &ndash; so which form the code uses is a matter of where the division sits, not of what is being asked. </p>
 
 </div>
 </div>
@@ -428,18 +446,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="aeaef365c38235567b1a5b7acf85baad6" name="aeaef365c38235567b1a5b7acf85baad6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeaef365c38235567b1a5b7acf85baad6">&#9670;&#160;</a></span>debug_manual_dhat</h2>
+<a id="ae70592da646fdbc27aa5508af006c6a5" name="ae70592da646fdbc27aa5508af006c6a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae70592da646fdbc27aa5508af006c6a5">&#9670;&#160;</a></span>construction_mode</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double wmtk::components::topological_offset::Parameters::debug_manual_dhat</td>
+          <td class="memname">std::string wmtk::components::topological_offset::Parameters::construction_mode = &quot;max_marchable_fallback&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>[2D ONLY] Debugging override for the potential's support radius: &gt;= 0 uses this dhat as an ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only the 2D construction reads it; the 3D twin ignores it until the port. </p>
+<p>How the marching places the offset (see the spec). A target_distance below the maximum marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the maximum marchable distance and "midpoint_fallback" splits every marched edge at its midpoint. See marching_tris() / marching_tets(). </p>
 
 </div>
 </div>
@@ -450,72 +468,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::deform_others = true</td>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::deform_others = false</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Other input regions (no input-complex simplex, no wall contact) deform under smoothing against their rest shape instead of being envelope-held. See the spec doc. </p>
-
-</div>
-</div>
-<a id="a46065c1c7d95257ca220b85fa52d1328" name="a46065c1c7d95257ca220b85fa52d1328"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46065c1c7d95257ca220b85fa52d1328">&#9670;&#160;</a></span>experimental_aggresive_refine</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_aggresive_refine = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE a face over the bar is handed to the halving only when all THREE of its corners are already placed &ndash; the safeguard that stops refinement from chasing a moving front. True (the default) refines EVERY face over the bar, placed or not, so the sizing scalar is halved at every vertex of every unresolved face. The floor and the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is refinable only while the halving can still lower a target, and <code>n_faces_over_placed</code> / <code>max_face_placed</code> still report the PLACED subset alone.</p>
-<p>Why it exists: under one unified measure the two halves can deadlock. A face chording a feature of radius delta puts its centroid far inside the level set, and that sample's pull cancels the corners' own placement pull almost exactly, so the corners never place; refinement, which is the only thing that would shorten the chord and remove the sag, is gated on exactly those corners being placed. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for 40 turns. </p>
-
-</div>
-</div>
-<a id="af20b7251572220cfa98f403a3919740c" name="af20b7251572220cfa98f403a3919740c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af20b7251572220cfa98f403a3919740c">&#9670;&#160;</a></span>experimental_consistent_construction_split</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_consistent_construction_split = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that leaves its edge falls back to the midpoint for THAT edge alone, so one construction can mix vertices sitting on the level set with vertices sitting at edge midpoints. With this on, the march is probed first, and a single untraceable edge sends EVERY edge to its midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off. See the spec doc, and marching_tris() / marching_tets(). </p>
-
-</div>
-</div>
-<a id="a7c0c3bd35a940e09c3739f62e1c9ac89" name="a7c0c3bd35a940e09c3739f62e1c9ac89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c0c3bd35a940e09c3739f62e1c9ac89">&#9670;&#160;</a></span>experimental_nonoverlapping_gates</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_nonoverlapping_gates = false</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL, default false pending more runs. Separates the two length gates so a split can never hand the collapse pass its own halves. Both passes measure r = L / (l x mean of the endpoints' sizing scalars); the split fires at r &gt; 4/3 and the collapse at r &lt; 4/5, so an edge with 4/3 &lt; r &lt; 8/5 splits into halves with r/2 &lt; 4/5, which the collapse pass merges straight back. With this on, splitting_l2 becomes (8/5 l)^2 &ndash; twice the collapse gate &ndash; and collapsing_l2 is untouched, so every half a split produces is at or above the collapse gate. A split is still never refused on quality; this is a length rule alone. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4, alignment off: 81% of the split candidates at the end of turn 7 (29068 of 35865) were inside that band, and turns 6-8 each ran ~36k splits and ~29k collapses while refinement touched 0 vertices. With it on: last-turn operations 66826 -&gt; 19263, 8 -&gt; 7 turns, 223 -&gt; 126 s, final max AMIPS 8.69 -&gt; 10.64, front faces 25816 -&gt; 21042 under the same bar. Off by default until more runs confirm it; false keeps the TetWild gates. </p>
-
-</div>
-</div>
-<a id="a05bf491992f5f3ee660f5583c5e291cc" name="a05bf491992f5f3ee660f5583c5e291cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a05bf491992f5f3ee660f5583c5e291cc">&#9670;&#160;</a></span>front_alignment_energy</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::front_alignment_energy = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>see the spec: needed at pressed seams, biased elsewhere </p>
+<p>The medium outside the band deforms (plastic, against its rest shape), and only the input complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc. </p>
 
 </div>
 </div>
@@ -530,7 +487,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Which measure the single-phase loop exits on and refines by, in 3D and in 2D; see the spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean square of the face measures (face_conv_ratio()) of its incident offset faces weighted by area &ndash; in 2D of the chord measures (edge_conv_ratio()) of its front chords weighted by length. The loop exits when every ring measure is within the bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone. In 3D the front smoother's stencil energy weights its faces by area the same way (StencilEnergy3D::Face::weight). "face": every offset face (2D: chord) within the bar and the halving at the corners of every face over it &ndash; the rule of 2026-09-25, kept for comparison. </p>
+<p>Which measure the loop exits on and refines by, in 3D and in 2D; see the spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean square of the face measures (face_offset_term()) of its incident offset faces &ndash; in 2D of the chord measures (edge_offset_term()) of its front chords &ndash; every simplex weighted equally. The loop exits when every ring measure is within the bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone. "face": every offset face (2D: chord) within the bar and the halving at the corners of every face over it &ndash; the rule of 2026-09-25, kept for comparison. </p>
+
+</div>
+</div>
+<a id="abfbf713e28f0d5d2fd77a4471176da69" name="abfbf713e28f0d5d2fd77a4471176da69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfbf713e28f0d5d2fd77a4471176da69">&#9670;&#160;</a></span>init_optimize</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::init_optimize = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Default false. Only when the target is not below the maximum marchable distance (marched as construction_mode says): the loop first converges under stencil_order without refinement, then under stencil_order with refinement. See the spec doc. </p>
 
 </div>
 </div>
@@ -564,6 +536,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="a55460593856f4b53bb3f711bc3842430" name="a55460593856f4b53bb3f711bc3842430"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55460593856f4b53bb3f711bc3842430">&#9670;&#160;</a></span>offset_amips_weight</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::offset_amips_weight = 1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term, (w / stop_energy^3) vol AMIPS^3 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae8b3b9558e3f519803500d053b66158b" title="One cell&#39;s energy from its corners, its AMIPS^3 and its band label; see tet_energy().">TopoOffsetTetMesh::cell_energy()</a>); in 2D tri_energy = w AMIPS + the offset terms. See the spec. </p>
+
+</div>
+</div>
 <a id="a952bf15651085cd44b09b9fb2db09bf8" name="a952bf15651085cd44b09b9fb2db09bf8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a952bf15651085cd44b09b9fb2db09bf8">&#9670;&#160;</a></span>optimize_offset</h2>
 
@@ -590,7 +577,82 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive smoothing) before the first turn of the single-phase loop. </p>
+<p>See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive smoothing) before the first turn of the loop. </p>
+
+</div>
+</div>
+<a id="a5accc8d824e52531debdf3868f1d3970" name="a5accc8d824e52531debdf3868f1d3970"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5accc8d824e52531debdf3868f1d3970">&#9670;&#160;</a></span>repulsion_refine</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::repulsion_refine = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-07), 3D, with repulsion_rounds. Each round also refines where the front the march would cut fails the loop's face measure, and the rounds do not collapse. See the spec doc. </p>
+
+</div>
+</div>
+<a id="a49258904f231ad12e0bacccf02d7ad33" name="a49258904f231ad12e0bacccf02d7ad33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49258904f231ad12e0bacccf02d7ad33">&#9670;&#160;</a></span>repulsion_rounds</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::Parameters::repulsion_rounds = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>2D and 3D. After those passes, at most this many rounds of the loop's operations (split, collapse, swap, each with its smoothing) before the march, with no refinement and no split of a marched edge; same stop test. 0 (the default) = off. See the spec doc. </p>
+
+</div>
+</div>
+<a id="ad884390f3f680357522b45046b59697a" name="ad884390f3f680357522b45046b59697a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad884390f3f680357522b45046b59697a">&#9670;&#160;</a></span>repulsion_smoothing_passes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::Parameters::repulsion_smoothing_passes = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Smoothing passes before the march that push the outer ends of the marched edges out to 2 x target_distance; they stop early once every outer end is beyond target_distance + front_conv. 0 (the default) = off. See the spec doc and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abcf0c2ec47227d1405f268a641ceb9a3">TopoOffsetTetMesh::repulsion_smoothing()</a> / <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1730bae232fdab63e6b7d0b1ecda14a0">TopoOffsetTriMesh::repulsion_smoothing()</a>. </p>
+
+</div>
+</div>
+<a id="a9803e8d0d7a4a4ec76877a51cd166acd" name="a9803e8d0d7a4a4ec76877a51cd166acd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9803e8d0d7a4a4ec76877a51cd166acd">&#9670;&#160;</a></span>settle_mark</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string wmtk::components::topological_offset::Parameters::settle_mark = &quot;rms&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: the face test of a settled turn, read only under settle_refinement. "max": the face's exact bound on max |d - target_distance| exceeds front_conv. "rms": the face's share of the offset excess exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA &gt; front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the 3-edge-midpoint rule; the default. "vertex": a front vertex's own |d - target_distance| exceeds front_conv; its sizing is halved. See the spec doc. </p>
+
+</div>
+</div>
+<a id="ac3e4baf9a3fe479b460f12ec7acd6e23" name="ac3e4baf9a3fe479b460f12ec7acd6e23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3e4baf9a3fe479b460f12ec7acd6e23">&#9670;&#160;</a></span>settle_refinement</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::settle_refinement = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a turn is settled when E fell by less than the bar energy b = front_conv^2 A / (2 target_distance), A the front's area &ndash; the offset term's excess for a front lying front_conv off the level set. On a settled turn every front face whose exact distance bound from the level set (the face's min of d, and min over P of the max of d_P at its corners) exceeds front_conv has its corners halved; exit = settled and no face over. The energy criterion's own refinement and exit are off. See the spec doc. </p>
 
 </div>
 </div>
@@ -624,21 +686,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="a1f60de909647416df3cd79bd92df9352" name="a1f60de909647416df3cd79bd92df9352"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f60de909647416df3cd79bd92df9352">&#9670;&#160;</a></span>sphere_trace_initialization</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::sphere_trace_initialization</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>See the spec: the marching places each new vertex where d(x) reaches target_distance along the edge by sphere tracing, midpoint when the trace leaves the edge. </p>
-
-</div>
-</div>
 <a id="aec4223bf61e4f0dc7a7218f92811ab6b" name="aec4223bf61e4f0dc7a7218f92811ab6b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aec4223bf61e4f0dc7a7218f92811ab6b">&#9670;&#160;</a></span>sphere_trace_target_rel_tol</h2>
 
@@ -650,7 +697,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>|d - target| &lt;= tol x target ends the trace </p>
+<p>|d - D| &lt;= tol x D ends the trace (D: see above) </p>
+
+</div>
+</div>
+<a id="a20e107852db5dcb7ef1de3912d5013d0" name="a20e107852db5dcb7ef1de3912d5013d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20e107852db5dcb7ef1de3912d5013d0">&#9670;&#160;</a></span>split_energy_gate</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::split_energy_gate = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells it changes, strictly falls &ndash; judged right after the split, before any smoothing. </p>
 
 </div>
 </div>

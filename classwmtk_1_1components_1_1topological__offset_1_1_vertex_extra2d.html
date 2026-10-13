@@ -99,11 +99,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_offset</b> = 
 <tr class="memitem:a1cfaa5eaab1fca8ad236d20bb69a61c0" id="r_a1cfaa5eaab1fca8ad236d20bb69a61c0"><td class="memItemLeft" align="right" valign="top"><a id="a1cfaa5eaab1fca8ad236d20bb69a61c0" name="a1cfaa5eaab1fca8ad236d20bb69a61c0"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = false</td></tr>
 <tr class="separator:a1cfaa5eaab1fca8ad236d20bb69a61c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae82f7b558acb163cb37a7b96869df60d" id="r_ae82f7b558acb163cb37a7b96869df60d"><td class="memItemLeft" align="right" valign="top">Vector2d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#ae82f7b558acb163cb37a7b96869df60d">m_turn_start</a> = Vector2d::Zero()</td></tr>
-<tr class="separator:ae82f7b558acb163cb37a7b96869df60d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeab76b56b5facedab7c27a433d5613b6" id="r_aeab76b56b5facedab7c27a433d5613b6"><td class="memItemLeft" align="right" valign="top"><a id="aeab76b56b5facedab7c27a433d5613b6" name="aeab76b56b5facedab7c27a433d5613b6"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_turn_start_valid</b> = false</td></tr>
-<tr class="separator:aeab76b56b5facedab7c27a433d5613b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7782cf5be960945eb7046ef6cdc571e0" id="r_a7782cf5be960945eb7046ef6cdc571e0"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a7782cf5be960945eb7046ef6cdc571e0">m_boundary_mask</a> = 0</td></tr>
 <tr class="memdesc:a7782cf5be960945eb7046ef6cdc571e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aabce61d6ec34953d72f830c4f79a2451" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to.  <br /></td></tr>
 <tr class="separator:a7782cf5be960945eb7046ef6cdc571e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,7 +120,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_turn_start_valid</b
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Churn instrumentation: which split pass created this vertex, from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af07922534cf731f10ac24c0824e26bdf">wmtk::TriOptimizerMesh::m_op_epoch</a>; 0 means not created by an optimization split. Read only by collapse_after_vertex(). Assigned at each split, never OR'd &ndash; a recycled slot carries a dead vertex's epoch. </p>
+<p>Which split pass created this vertex, from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af07922534cf731f10ac24c0824e26bdf">wmtk::TriOptimizerMesh::m_op_epoch</a>; 0 means not created by an optimization split. Read only by the needle diagnostics' per-vertex lines. Assigned at each split, never OR'd &ndash; a recycled slot carries a dead vertex's epoch. </p>
 
 </div>
 </div>
@@ -143,21 +138,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_turn_start_valid</b
 
 <p>Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aabce61d6ec34953d72f830c4f79a2451" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to. </p>
 <p>Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the operations: a split's new vertex takes the AND of its endpoints (it lies on a boundary only if the whole edge did), a collapse's survivor the OR (it carries both vertices' geometry). </p>
-
-</div>
-</div>
-<a id="ae82f7b558acb163cb37a7b96869df60d" name="ae82f7b558acb163cb37a7b96869df60d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae82f7b558acb163cb37a7b96869df60d">&#9670;&#160;</a></span>m_turn_start</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Vector2d wmtk::components::topological_offset::VertexExtra2d::m_turn_start = Vector2d::Zero()</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Where this vertex stood at the start of the turn. Written every turn (and before the pre_smooth block); read by nothing since the per-vertex convergence states were removed. </p>
 
 </div>
 </div>

@@ -392,6 +392,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="memitem:a5b6cb95cf16a2904fcf5ae94ec066246" id="r_a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246">smoothing_extra_energy</a> (const size_t) const</td></tr>
 <tr class="memdesc:a5b6cb95cf16a2904fcf5ae94ec066246"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
 <tr class="separator:a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac17ed42b63171249d9109f129bf70d49" id="r_ac17ed42b63171249d9109f129bf70d49"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac17ed42b63171249d9109f129bf70d49">smoothing_cell_energy</a> (const size_t, const double quality) const</td></tr>
+<tr class="memdesc:ac17ed42b63171249d9109f129bf70d49"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number the shared smoother compares for one cell, given the cell's quality (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the ring before and after the move, and the default <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6f898ab362364632a595d07a6b62a99e" title="The number the shared smoother&#39;s projected step compares for a whole one-ring: a vertex held on a sur...">smoothing_ring_energy()</a> is the same max.  <br /></td></tr>
+<tr class="separator:ac17ed42b63171249d9109f129bf70d49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f898ab362364632a595d07a6b62a99e" id="r_a6f898ab362364632a595d07a6b62a99e"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6f898ab362364632a595d07a6b62a99e">smoothing_ring_energy</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;ring, const bool stored) const</td></tr>
+<tr class="memdesc:a6f898ab362364632a595d07a6b62a99e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number the shared smoother's projected step compares for a whole one-ring: a vertex held on a surface takes the first projected candidate whose value is strictly below the value before the move.  <br /></td></tr>
+<tr class="separator:a6f898ab362364632a595d07a6b62a99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1c12ae9e6041f288d992571a8124402" id="r_ab1c12ae9e6041f288d992571a8124402"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab1c12ae9e6041f288d992571a8124402">smooth_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:ab1c12ae9e6041f288d992571a8124402"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smoothing hooks. A derived class overriding them &ndash; or invariants(), which a smooth also runs &ndash; must read every attribute outside the smoothed vertex's star (other vertices, and the edges, faces and tets not incident to the vertex) through const access, e.g. <code>std::as_const(m_vertex_attribute)[u]</code>.  <br /></td></tr>
 <tr class="separator:ab1c12ae9e6041f288d992571a8124402"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1026,7 +1032,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a8a9acf13f8f9e14d0f5599e28f078772"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1381beef82989dd7f01d65d50b33520" id="r_ac1381beef82989dd7f01d65d50b33520"><td class="memItemLeft" align="right" valign="top">virtual std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac1381beef82989dd7f01d65d50b33520">optimization_quality_stats</a> ()</td></tr>
 <tr class="separator:ac1381beef82989dd7f01d65d50b33520"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd15213e48662351305eb9ef5fa3dff0" id="r_abd15213e48662351305eb9ef5fa3dff0"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#abd15213e48662351305eb9ef5fa3dff0">optimization_stop_metric</a> () const</td></tr>
+<tr class="memitem:abd15213e48662351305eb9ef5fa3dff0" id="r_abd15213e48662351305eb9ef5fa3dff0"><td class="memItemLeft" align="right" valign="top"><a id="abd15213e48662351305eb9ef5fa3dff0" name="abd15213e48662351305eb9ef5fa3dff0"></a>
+virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_stop_metric</b> () const</td></tr>
 <tr class="separator:abd15213e48662351305eb9ef5fa3dff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed7b33f03719aca76e293b95242bfbc7" id="r_aed7b33f03719aca76e293b95242bfbc7"><td class="memItemLeft" align="right" valign="top">virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aed7b33f03719aca76e293b95242bfbc7">refine_sizing_around_worst</a> (double max_metric)=0</td></tr>
 <tr class="separator:aed7b33f03719aca76e293b95242bfbc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1051,8 +1058,7 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_
 <tr class="memitem:a03b80a33a3319ff4267e8c3647607f5c" id="r_a03b80a33a3319ff4267e8c3647607f5c"><td class="memItemLeft" align="right" valign="top"><a id="a03b80a33a3319ff4267e8c3647607f5c" name="a03b80a33a3319ff4267e8c3647607f5c"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_is_order_2_edge</b> (const std::array&lt; size_t, 2 &gt; &amp;)</td></tr>
 <tr class="separator:a03b80a33a3319ff4267e8c3647607f5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c962f3a3486b3ab049b7d534acd379e" id="r_a3c962f3a3486b3ab049b7d534acd379e"><td class="memItemLeft" align="right" valign="top"><a id="a3c962f3a3486b3ab049b7d534acd379e" name="a3c962f3a3486b3ab049b7d534acd379e"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_connectivity</b> (size_t, size_t, const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;)</td></tr>
+<tr class="memitem:a3c962f3a3486b3ab049b7d534acd379e" id="r_a3c962f3a3486b3ab049b7d534acd379e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3c962f3a3486b3ab049b7d534acd379e">collapse_after_connectivity</a> (size_t, size_t, const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;)</td></tr>
 <tr class="separator:a3c962f3a3486b3ab049b7d534acd379e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afad4bd6fdd232162aa4967264d12589c" id="r_afad4bd6fdd232162aa4967264d12589c"><td class="memItemLeft" align="right" valign="top"><a id="afad4bd6fdd232162aa4967264d12589c" name="afad4bd6fdd232162aa4967264d12589c"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
@@ -1487,6 +1493,50 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a3c962f3a3486b3ab049b7d534acd379e" name="a3c962f3a3486b3ab049b7d534acd379e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c962f3a3486b3ab049b7d534acd379e">&#9670;&#160;</a></span>collapse_after_connectivity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::collapse_after_connectivity </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
 <a id="ab6a977dd9fdc2ea6b5820c98b14f1b40" name="ab6a977dd9fdc2ea6b5820c98b14f1b40"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab6a977dd9fdc2ea6b5820c98b14f1b40">&#9670;&#160;</a></span>collapse_all_edges_impl()</h2>
 
@@ -1705,7 +1755,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab11732b58fb798f5f7e3258f4c2cbc3f">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8bb18173a3724a3526b289df4fe68688">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -2070,7 +2120,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 <p>Quality metric used by the driver. TetWild uses absolute AMIPS; SimWild overrides this with quality normalized by each cell's tag-dependent target. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab7cd3fed496f74bd049f862f02441225">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1cd100e9d3bc65ffbd38546989826587">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab7cd3fed496f74bd049f862f02441225">wmtk::components::simwild::SimWildMesh</a>.</p>
 
 </div>
 </div>
@@ -2111,33 +2161,6 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Whether an iteration that moved the metric from <code>prev</code> to <code>cur</code> is stalled, and the sizing refinement should therefore fire. </p>
 <p>Exactly the expression mesh_improvement() used inline: the improvement is small next to the distance the metric still has to cover, i.e. the mesh is not on course to reach the target within about 1/stall_eps more iterations.</p>
 <p>It is a virtual because the scalar the driver has is a MAX over criteria, and for an application with more than one criterion that max only ever reports on whichever is currently worst &ndash; so a run whose worst criterion is stuck refines every iteration even while the others are improving. An application that knows its criteria apart overrides this to ask the question of each of them. </p>
-
-</div>
-</div>
-<a id="abd15213e48662351305eb9ef5fa3dff0" name="abd15213e48662351305eb9ef5fa3dff0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd15213e48662351305eb9ef5fa3dff0">&#9670;&#160;</a></span>optimization_stop_metric()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual double wmtk::TetOptimizerMesh::optimization_stop_metric </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1a8fb1e0ed3566c96a1dd80023c4b998">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -2350,6 +2373,45 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="ac17ed42b63171249d9109f129bf70d49" name="ac17ed42b63171249d9109f129bf70d49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac17ed42b63171249d9109f129bf70d49">&#9670;&#160;</a></span>smoothing_cell_energy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double wmtk::TetOptimizerMesh::smoothing_cell_energy </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>quality</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The number the shared smoother compares for one cell, given the cell's quality (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the ring before and after the move, and the default <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6f898ab362364632a595d07a6b62a99e" title="The number the shared smoother&#39;s projected step compares for a whole one-ring: a vertex held on a sur...">smoothing_ring_energy()</a> is the same max. </p>
+<p>The quality itself by default, so TetWild and SimWild compare exactly what they compared before. An application whose smoother minimises another per-cell energy (through <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246" title="An extra term the application adds to this vertex&#39;s smoothing objective, or null.">smoothing_extra_energy()</a>) overrides it, so that the smoother's tests judge a move by that same energy. The 2D twin is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a437b70754c764b12a8ddc04c9b6861e9" title="The number the shared smoother compares for one face, given the face&#39;s quality at the position being ...">TriOptimizerMesh::smoothing_cell_energy</a>. </p>
+
+</div>
+</div>
 <a id="a9bfbb89bfe162368e6b418cc987c6188" name="a9bfbb89bfe162368e6b418cc987c6188"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9bfbb89bfe162368e6b418cc987c6188">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
 
@@ -2438,6 +2500,48 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Null by default, so TetWild and SimWild compose exactly the energy they composed before. The 2D twin is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572" title="An extra term the application adds to this vertex&#39;s smoothing objective, or null.">TriOptimizerMesh::smoothing_extra_energy</a>. </p>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8b1e4f65e525e666dcb52d1101097355">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a6f898ab362364632a595d07a6b62a99e" name="a6f898ab362364632a595d07a6b62a99e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f898ab362364632a595d07a6b62a99e">&#9670;&#160;</a></span>smoothing_ring_energy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double wmtk::TetOptimizerMesh::smoothing_ring_energy </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ring</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>stored</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The number the shared smoother's projected step compares for a whole one-ring: a vertex held on a surface takes the first projected candidate whose value is strictly below the value before the move. </p>
+<p><code>stored</code> true: the ring before the move, read from the stored cell qualities; it is asked before the solve moves the vertex, so the mesh as it is is that ring too. <code>stored</code> false: the ring at the candidate position, every cell of it already tested for inversion.</p>
+<p>By default the max over the ring of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac17ed42b63171249d9109f129bf70d49" title="The number the shared smoother compares for one cell, given the cell&#39;s quality (AMIPS^3) at the posit...">smoothing_cell_energy()</a> &ndash; what the projected step compared before this hook existed &ndash; so TetWild and SimWild are unchanged. An application whose rules compare a sum of a per-cell energy over the cells a move changes overrides it with that sum, so that the projected step picks its candidate by the same rule. 3D only. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a018ebf15ac0a12caadf8a5ca70e92185">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -3361,6 +3465,8 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#aa9fcc7dad32cfe8edc21ce8ebf912e99">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d2f651d55f0472a674dc924fe693105">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="ad9d3d956e279b67688b3cc0210d00a07" name="ad9d3d956e279b67688b3cc0210d00a07"></a>
@@ -3406,7 +3512,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p><code>is_surface_flip</code> distinguishes a surface diagonal flip (see prepare_surface_flip) from an interior swap, so an application can relax the rule for the surface it tracks without touching interior swaps. The twin on the collapse side is collapse_quality_allowed().</p>
 <p>NOT consulted by <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4f20ddf9112d9b625ff553fa39d31ba2" title="User specified modifications and desideratas for after a 5-6 edge swap.">swap_edge_56_after()</a>, which has never had a quality gate: it computes a max energy and discards it. That is pre-existing and is left alone rather than silently changed, since it would move 5-6 behaviour for every consumer of this class. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5b0605797071dfe82dbe0c97cec4d9ad">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -3483,7 +3589,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Update the attributes of the mesh after an iteration of operations. </p>
 <p>This is necessary in SimWild to update the surface flags of faces and vertices as operations might have collapsed away regions that are now no longer on the surface. In TetWild, this is a no-op. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad6ffd03cc2c06bb56c85c29c8f089deb">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad6ffd03cc2c06bb56c85c29c8f089deb">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8c6568d1fe34d5361dc4c697e6b5ddf2">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

@@ -283,6 +283,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_smoothing_positio
 <tr class="memitem:ad53db51377c95f0dfc59f946915e2572" id="r_ad53db51377c95f0dfc59f946915e2572"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572">smoothing_extra_energy</a> (const size_t vid) const</td></tr>
 <tr class="memdesc:ad53db51377c95f0dfc59f946915e2572"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
 <tr class="separator:ad53db51377c95f0dfc59f946915e2572"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a437b70754c764b12a8ddc04c9b6861e9" id="r_a437b70754c764b12a8ddc04c9b6861e9"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a437b70754c764b12a8ddc04c9b6861e9">smoothing_cell_energy</a> (const size_t, const double quality) const</td></tr>
+<tr class="memdesc:a437b70754c764b12a8ddc04c9b6861e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number the shared smoother compares for one face, given the face's quality at the position being tested: the projected step's candidate test and the quality veto take the max of this over the ring. The quality itself by default, so TriWild and SimWild compare exactly what they compared before. The 3D twin is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac17ed42b63171249d9109f129bf70d49" title="The number the shared smoother compares for one cell, given the cell&#39;s quality (AMIPS^3) at the posit...">TetOptimizerMesh::smoothing_cell_energy</a>.  <br /></td></tr>
+<tr class="separator:a437b70754c764b12a8ddc04c9b6861e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a995dc6acee893f8e1ef1c37688f8213a" id="r_a995dc6acee893f8e1ef1c37688f8213a"><td class="memItemLeft" align="right" valign="top"><a id="a995dc6acee893f8e1ef1c37688f8213a" name="a995dc6acee893f8e1ef1c37688f8213a"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>active_quality_threshold</b> () const</td></tr>
 <tr class="separator:a995dc6acee893f8e1ef1c37688f8213a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -757,7 +760,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a0c652c3d2fdff9e8b0ecf0a88658065a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad67444d7ea045aba10647b3b069d63a1" id="r_ad67444d7ea045aba10647b3b069d63a1"><td class="memItemLeft" align="right" valign="top">virtual std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad67444d7ea045aba10647b3b069d63a1">optimization_quality_stats</a> ()</td></tr>
 <tr class="separator:ad67444d7ea045aba10647b3b069d63a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c005aa4a86bba842ccf241afeaa284e" id="r_a1c005aa4a86bba842ccf241afeaa284e"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1c005aa4a86bba842ccf241afeaa284e">optimization_stop_metric</a> () const</td></tr>
+<tr class="memitem:a1c005aa4a86bba842ccf241afeaa284e" id="r_a1c005aa4a86bba842ccf241afeaa284e"><td class="memItemLeft" align="right" valign="top"><a id="a1c005aa4a86bba842ccf241afeaa284e" name="a1c005aa4a86bba842ccf241afeaa284e"></a>
+virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_stop_metric</b> () const</td></tr>
 <tr class="separator:a1c005aa4a86bba842ccf241afeaa284e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73013c7f59d04999fee3af83019ed986" id="r_a73013c7f59d04999fee3af83019ed986"><td class="memItemLeft" align="right" valign="top">virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a73013c7f59d04999fee3af83019ed986">refine_sizing_around_worst</a> (double max_metric)=0</td></tr>
 <tr class="separator:a73013c7f59d04999fee3af83019ed986"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1128,7 +1132,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2a016e57e63c93b973f4be890c716296">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3e718b6d3ad8b6dcce73e7fd50ff0e40">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -1306,6 +1310,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>The default writes a debug frame when m_params.debug_output is set and does nothing otherwise, and NOTHING AN OVERRIDE DOES HERE MAY CHANGE THE MESH. Debug output has to be observational: if writing a frame renumbers or compacts anything, then turning DEBUG_output on changes the run it is supposed to be showing you, and under kPartition it changes it substantively, since get_partition_id() is keyed on vertex id and renumbering moves vertices between threads.</p>
 <p>topological_offset used to override this to call <a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">consolidate_mesh()</a> unconditionally &ndash; paying that cost on every pass whether or not debug output was on &ndash; because its write_vtu() consolidated. write_vtu() now packs its output locally instead and mutates nothing, so the override is gone. If a writer ever needs the mesh compacted, compact it in the optimization itself, not on the way to a file. </p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4df2675d2b27bff7412731d98286ab98">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+
 </div>
 </div>
 <a id="ad67444d7ea045aba10647b3b069d63a1" name="ad67444d7ea045aba10647b3b069d63a1"></a>
@@ -1332,7 +1338,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 <p>Quality metric used by the driver. TriWild uses absolute AMIPS; SimWild overrides this with quality normalized by each face's tag-dependent target. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae68dae0d849d83d7e1592046fa2860a7">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7051442598bf9d7a7ca9bdaf59f6cab">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae68dae0d849d83d7e1592046fa2860a7">wmtk::components::simwild::tri::SimWildMeshTri</a>.</p>
 
 </div>
 </div>
@@ -1373,33 +1379,6 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Whether an iteration that moved the metric from <code>prev</code> to <code>cur</code> is stalled, and the sizing refinement should therefore fire. </p>
 <p>Exactly the expression mesh_improvement() used inline: the improvement is small next to the distance the metric still has to cover, i.e. the mesh is not on course to reach the target within about 1/stall_eps more iterations.</p>
 <p>It is a virtual because the scalar the driver has is a MAX over criteria, and for an application with more than one criterion that max only ever reports on whichever is currently worst &ndash; so a run whose worst criterion is stuck refines every iteration even while the others are improving. An application that knows its criteria apart overrides this to ask the question of each of them. </p>
-
-</div>
-</div>
-<a id="a1c005aa4a86bba842ccf241afeaa284e" name="a1c005aa4a86bba842ccf241afeaa284e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c005aa4a86bba842ccf241afeaa284e">&#9670;&#160;</a></span>optimization_stop_metric()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual double wmtk::TriOptimizerMesh::optimization_stop_metric </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1b00f7b2af0a0d7e6069f51568ffc654">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -1644,6 +1623,46 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Parallel smoothing runs non-adjacent vertices concurrently without locks (see <a class="el" href="structwmtk_1_1_optimizer_parameters.html#ab9d80c08f359fddbfeb2d5cda143cd0e">OptimizerParameters::colored_smoothing</a>). Two of them can share a neighbour, and a non-const access inside the smooth records the entry, which a rejected smooth writes back: two threads would write the same neighbour at once. Every smooth of that pass checks this (TetMesh/TriMesh<a class="el" href="classwmtk_1_1_tri_mesh.html#a6b67c16a2171222aaa2e9d4b6b41045c" title="While true, smooth_vertex() checks that the smooth recorded nothing outside the vertex&#39;s star – the v...">m_check_smoothing_stays_in_star</a>) and throws on the first offence. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#aaeb1f51faeb8d72947bfb60bc0599cde">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="a437b70754c764b12a8ddc04c9b6861e9" name="a437b70754c764b12a8ddc04c9b6861e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a437b70754c764b12a8ddc04c9b6861e9">&#9670;&#160;</a></span>smoothing_cell_energy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double wmtk::TriOptimizerMesh::smoothing_cell_energy </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>quality</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The number the shared smoother compares for one face, given the face's quality at the position being tested: the projected step's candidate test and the quality veto take the max of this over the ring. The quality itself by default, so TriWild and SimWild compare exactly what they compared before. The 3D twin is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac17ed42b63171249d9109f129bf70d49" title="The number the shared smoother compares for one cell, given the cell&#39;s quality (AMIPS^3) at the posit...">TetOptimizerMesh::smoothing_cell_energy</a>. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4eabdfad0b0ab9d29df47ee312a1d763">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -2146,7 +2165,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Whether a swap's quality outcome is acceptable, given the max face energy over the faces it creates and over the faces it destroyed. The default is STRICT improvement, which is what the swap required before this hook existed, so a subclass that does not override it sees no change. The twin on the collapse side is collapse_quality_allowed().</p>
 <p><code>is_surface_flip</code> is the 3D twin's parameter and is ALWAYS false here: 2D has no surface flip. <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a63d72ccedf89c33eca11de9f886fe281" title="User specified preparations and desideratas for an edge swap including 1.can&#39;t swap on boundary edge....">swap_edge_before()</a> refuses any edge on a tracked surface outright (is_edge_on_surface), so a surface edge never reaches this hook. The parameter is kept so the two dimensions carry the same signature. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af5c489741a962c29268265daf07ad823">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a115b841ec9a0a365290216c763522e5a">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -2176,7 +2195,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>Update the attributes of the mesh after an iteration of operations. </p>
 <p>This is necessary in SimWild to update the surface flags of edges and vertices as operations might have collapsed away regions that are now no longer on the surface. In TriWild, this is a no-op. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0c2d3701be8243ce4c6ce16c6a723adc">wmtk::components::simwild::tri::SimWildMeshTri</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0c2d3701be8243ce4c6ce16c6a723adc">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab80b9927019d018770b83eaa919a91da">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>

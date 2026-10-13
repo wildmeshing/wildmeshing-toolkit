@@ -136,6 +136,8 @@ virtual VecD&#160;</td><td class="memItemRight" valign="bottom"><b>gradient</b> 
 <tr class="memitem:a54dac352bbc8b36f06121e1e9344d08e" id="r_a54dac352bbc8b36f06121e1e9344d08e"><td class="memItemLeft" align="right" valign="top"><a id="a54dac352bbc8b36f06121e1e9344d08e" name="a54dac352bbc8b36f06121e1e9344d08e"></a>
 virtual MatD&#160;</td><td class="memItemRight" valign="bottom"><b>hessian</b> (const VecD &amp;p) const =0</td></tr>
 <tr class="separator:a54dac352bbc8b36f06121e1e9344d08e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8617b2090418132341c781f90ebca73" id="r_ad8617b2090418132341c781f90ebca73"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ad8617b2090418132341c781f90ebca73">value_gradient</a> (const VecD &amp;p, double &amp;v, VecD &amp;g) const</td></tr>
+<tr class="separator:ad8617b2090418132341c781f90ebca73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a794b135d890c826edf6acc2bb139029c" id="r_a794b135d890c826edf6acc2bb139029c"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#a794b135d890c826edf6acc2bb139029c">residual_length</a> (const VecD &amp;p) const =0</td></tr>
 <tr class="memdesc:a794b135d890c826edf6acc2bb139029c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Distance from <code>p</code> to the level set, in length units.  <br /></td></tr>
 <tr class="separator:a794b135d890c826edf6acc2bb139029c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -397,7 +399,7 @@ template&lt;int DIM&gt; </div>
 
 <p>|d(field)/d(distance)| at the level set on a flat stretch of input. </p>
 <p>The factor that turns a field difference into a length, so a criterion stated on the field's gradient is not by itself field-independent. The smoothing objective is E = (Phi - c)^2, so |grad E| ~ 2 * slope^2 * residual_length near the level set: a bound on |grad E| bounds a length only after dividing by slope^2. It is 1 for a distance field, where the two coincide, and 1/delta-ish for a barrier. The |grad Phi| ~ slope step is local to the level set on a flat stretch, not an identity.</p>
-<p>See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c">TopoOffsetTetMesh::offset_gradient_tolerance()</a>, which is the only consumer. </p>
+<p>Consumer: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_energy.html" title="The offset term of the smoothing objective: w * (Phi(x) - c)^2.">OffsetEnergy</a>'s distance_residual branch. </p>
 
 </div>
 </div>
@@ -428,7 +430,7 @@ template&lt;int DIM&gt; </div>
 </div><div class="memdoc">
 
 <p>The signed distance from <code>p</code> to the level set, as a fraction of delta: &gt; 0 outside the offset region, &lt; 0 inside, non-finite where it cannot be measured. </p>
-<p>THE number the 3D loop's measures square and compare against front_conv_frac() (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">TopoOffsetTetMesh::face_conv_ratio()</a>, front_vertex_conv_ratio(), edge_conv_ratio()), so that under every field those measures are lengths over the length bar front_conv. The loop used to form the relative FIELD error (Phi - c)/c itself, which is this number only for the Euclidean field &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ab34550c47091187950ad4ab22b26872b" title="The same root, signed and over delta: t / delta, &gt; 0 outside the offset region. NaN where residual_le...">SmoothOffsetPotential::relative_residual()</a> for what it was for the smooth one. </p>
+<p>THE number the 3D loop's measures square and compare against front_conv_frac() (TopoOffsetTetMesh::face_conv_ratio(), front_vertex_conv_ratio(), edge_conv_ratio()), so that under every field those measures are lengths over the length bar front_conv. The loop used to form the relative FIELD error (Phi - c)/c itself, which is this number only for the Euclidean field &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ab34550c47091187950ad4ab22b26872b" title="The same root, signed and over delta: t / delta, &gt; 0 outside the offset region. NaN where residual_le...">SmoothOffsetPotential::relative_residual()</a> for what it was for the smooth one. </p>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ab34550c47091187950ad4ab22b26872b">wmtk::components::topological_offset::SmoothOffsetPotential&lt; DIM &gt;</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html#a2622f09aa8eb30137abcee0f075eda35">wmtk::components::topological_offset::EuclideanOffsetPotential&lt; DIM &gt;</a>.</p>
 
@@ -464,6 +466,53 @@ template&lt;int DIM&gt; </div>
 <p>What the convergence criterion measures: comparable to target_distance, while the field value need not be. </p>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610">wmtk::components::topological_offset::SmoothOffsetPotential&lt; DIM &gt;</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_euclidean_offset_potential.html#ae7f8e10b7bde98550594ce94f587ecf2">wmtk::components::topological_offset::EuclideanOffsetPotential&lt; DIM &gt;</a>.</p>
+
+</div>
+</div>
+<a id="ad8617b2090418132341c781f90ebca73" name="ad8617b2090418132341c781f90ebca73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8617b2090418132341c781f90ebca73">&#9670;&#160;</a></span>value_gradient()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int DIM&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html">wmtk::components::topological_offset::OffsetPotential</a>&lt; DIM &gt;::value_gradient </td>
+          <td>(</td>
+          <td class="paramtype">const VecD &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VecD &amp;&#160;</td>
+          <td class="paramname"><em>g</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>value() and gradient() at one point, bit for bit. A field whose two evaluations share work overrides it; the default is simply the two calls. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a8e000499bf7de02c6efcb6cc4fab6b63">wmtk::components::topological_offset::SmoothOffsetPotential&lt; DIM &gt;</a>.</p>
 
 </div>
 </div>

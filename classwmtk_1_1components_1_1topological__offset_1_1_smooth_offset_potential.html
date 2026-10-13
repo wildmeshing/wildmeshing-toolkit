@@ -131,6 +131,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afa25492721f21a9e116080c8c3da790b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8740e2bc960914bb5e8cd2ada0e02ce5" id="r_a8740e2bc960914bb5e8cd2ada0e02ce5"><td class="memItemLeft" align="right" valign="top">MatD&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a8740e2bc960914bb5e8cd2ada0e02ce5">hessian</a> (const VecD &amp;p) const override</td></tr>
 <tr class="separator:a8740e2bc960914bb5e8cd2ada0e02ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e000499bf7de02c6efcb6cc4fab6b63" id="r_a8e000499bf7de02c6efcb6cc4fab6b63"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a8e000499bf7de02c6efcb6cc4fab6b63">value_gradient</a> (const VecD &amp;p, double &amp;v, VecD &amp;g) const override</td></tr>
+<tr class="memdesc:a8e000499bf7de02c6efcb6cc4fab6b63"><td class="mdescLeft">&#160;</td><td class="mdescRight">value() and gradient() at p from one collision build; see the definition.  <br /></td></tr>
+<tr class="separator:a8e000499bf7de02c6efcb6cc4fab6b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad939170942b99e593b1edc167264c610" id="r_ad939170942b99e593b1edc167264c610"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#ad939170942b99e593b1edc167264c610">residual_length</a> (const VecD &amp;p) const override</td></tr>
 <tr class="memdesc:ad939170942b99e593b1edc167264c610"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from <code>p</code> to the level set Phi = c ALONG THE FIELD, in length units.  <br /></td></tr>
 <tr class="separator:ad939170942b99e593b1edc167264c610"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -144,6 +147,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:af0c001555dd5038683163d3e76b8252a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phi decreases with distance, so the offset region is where it is still above the level.  <br /></td></tr>
 <tr class="separator:af0c001555dd5038683163d3e76b8252a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d063d7e6f8d93ec1ea35ca7e72b4e55" id="r_a0d063d7e6f8d93ec1ea35ca7e72b4e55"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a0d063d7e6f8d93ec1ea35ca7e72b4e55">describe_active</a> (const VecD &amp;p) const override</td></tr>
+<tr class="memdesc:a0d063d7e6f8d93ec1ea35ca7e72b4e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diagnostic: Phi, |grad Phi| and the trace of the Hessian at <code>p</code>.  <br /></td></tr>
 <tr class="separator:a0d063d7e6f8d93ec1ea35ca7e72b4e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_offset_potential"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_offset_potential')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a></td></tr>
 <tr class="memitem:aa4a9e7b8c1a2773c9def0b4dfbc4cfee inherit pub_methods_classwmtk_1_1components_1_1topological__offset_1_1_offset_potential" id="r_aa4a9e7b8c1a2773c9def0b4dfbc4cfee"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#aa4a9e7b8c1a2773c9def0b4dfbc4cfee">~OffsetPotential</a> ()</td></tr>
@@ -174,10 +178,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>build</b> (const Matr
 <tr class="separator:a6a8b6d788a1dfda39e0f93314c0151ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4eba6921f83e98290c017be424deceec" id="r_a4eba6921f83e98290c017be424deceec"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html#a4eba6921f83e98290c017be424deceec">level_set_distance</a> (const VecD &amp;p, double &amp;t) const</td></tr>
 <tr class="separator:a4eba6921f83e98290c017be424deceec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adef4639dbee0502f137fff759f84eb8b" id="r_adef4639dbee0502f137fff759f84eb8b"><td class="memItemLeft" align="right" valign="top"><a id="adef4639dbee0502f137fff759f84eb8b" name="adef4639dbee0502f137fff759f84eb8b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>value_gradient</b> (const VecD &amp;p, double &amp;v, VecD &amp;g) const</td></tr>
-<tr class="memdesc:adef4639dbee0502f137fff759f84eb8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">value() and gradient() at p from one collision build per part; see the definition. <br /></td></tr>
-<tr class="separator:adef4639dbee0502f137fff759f84eb8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -207,12 +207,12 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_c</b> = 0.</td></
 <div class="textblock"><div class="compoundTemplParams">template&lt;int DIM&gt;<br />
 class wmtk::components::topological_offset::SmoothOffsetPotential&lt; DIM &gt;</div><p>The smooth offset potential Phi, and the offset defined as its level set Phi = c. </p>
 <p>Phi is C^2 with an analytic gradient and Hessian, so placing a vertex on the offset is an ordinary term in the smoothing objective and the front is smoothed by the same code path as every other vertex.</p>
-<p>What Phi is: the offset geometric contact potential of ipc-toolkit's <code>high_order_contact</code> subtree, evaluated at a point q against the input complex, </p><pre class="fragment">Phi(q) = sum over active primitives P of  b( dist(q, P), dhat )
+<p>What Phi is: the Extremum-Sum Potential (ESP) of ipc-toolkit's <code>esp</code> subtree (ipc::ArbitraryPointESP), evaluated at a point q against the input complex, </p><pre class="fragment">Phi(q) = sum over elements s of  w_s * b( dist(q, s), dhat )
 b(d, dhat) = -(d/dhat - 1)^2 * log(d/dhat)   for d &lt; dhat, 0 otherwise
-</pre><p> (<code>ipc::NormalizedClampedLogBarrier</code>). "Active" is the OGC feasible-region rule: a triangle is active at q when q projects into its interior, an edge when q projects into its interior and lies outside the wedges its incident triangles claim, a vertex when q lies in its Voronoi region. Away from features exactly one primitive contributes and Phi is a monotone function of the Euclidean distance alone; at a reentrant feature several contribute, their barriers add, and the level set bulges outward. So Phi = c is a smoothed offset, not the Euclidean one, and that difference is deliberate; the Euclidean distance is still reported as a diagnostic.</p>
+</pre><p> (<code>ipc::NormalizedClampedLogBarrier</code>), dist being to the closed element. The integer weights make every point of the complex count once (ESP supplemental, S2): a triangle weighs 1, an edge 1 - (triangles on it), a vertex 1 - (edges at it) + (triangles at it). A closed surface gets +1/-1/+1 (a closed curve +1/-1), the boundary of an open sheet and the ends of an open curve weigh 0, segments in no triangle and isolated points 1. Phi is b of the Euclidean distance wherever the complex within every radius r &lt; dhat of q is one piece without holes: bitwise outside the cube, on any flat stretch. Where it is several pieces &ndash; two walls within dhat: a reentrant edge, a gap narrower than (1 + dhat_factor) delta &ndash; each adds its own term, Phi is larger and the level set moves outward. Measured in 3D at delta 0.1, dhat_factor 2: a 90-degree reentrant edge rounds to a fillet reaching 1.175 delta; two faces 2.5 delta apart hold their level sets at 1.041 delta; gaps up to 2.36 delta close, against 2 delta for the Euclidean offset. Near a sharp convex vertex the ball can also wrap around the vertex before reaching it (measured: Phi about 0.3% off b just outside an octahedron's apex). So Phi = c is a smoothed offset, not the Euclidean one, and that difference is deliberate; the Euclidean distance is still reported as a diagnostic.</p>
 <p>Calibration: <code>c</code> is not a free parameter. It is Phi at perpendicular distance delta from one large flat primitive &ndash; one active pair, no feature interaction &ndash; computed at construction through this same class, so it cannot drift from a hand-kept analytic formula. Both dimensions therefore calibrate to the same c for the same delta and dhat_factor, which tests/test_offset_potential.cpp asserts.</p>
 <p>dhat, the support radius beyond which Phi and every derivative are identically zero, is <code>dhat_factor * delta</code>. delta must sit strictly inside the support (at exactly dhat the potential and its gradient are both 0, so a vertex there gets no direction to move in) and the support must not be so wide that distant parts of the complex reach the level set. A vertex beyond dhat is a hard error &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a817b4196062f74310a5ae261118a6b2b" title="Stop the run if any reachable band vertex has left the potential&#39;s support.">TopoOffsetTriMesh::check_offset_within_support()</a> and its 3D twin.</p>
-<p>Threading: an evaluation writes the query point into a scratch vertex matrix and builds a collision set around it, so it holds per-thread state; <code>value</code>, <code>gradient</code> and <code>hessian</code> are const and safe to call concurrently from the smoothing pass. </p>
+<p>Threading: ipc builds the collision set around each query point in per-thread scratch, so <code>value</code>, <code>gradient</code> and <code>hessian</code> are const and safe to call concurrently from the smoothing pass. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad2bb2eca0606c261046b3577240828e0" name="ad2bb2eca0606c261046b3577240828e0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad2bb2eca0606c261046b3577240828e0">&#9670;&#160;</a></span>SmoothOffsetPotential() <span class="overload">[1/2]</span></h2>
@@ -271,7 +271,7 @@ template&lt;int DIM&gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">V</td><td>#V x DIM complex vertices. </td></tr>
-    <tr><td class="paramname">E</td><td>#E x 2 segments. In 3D this must contain every edge of every triangle in <code>F</code> as well as the complex's own isolated edges: ipc derives faces_to_edges from it and throws if an edge of a face is missing, and the OGC feasible-region test for a vertex reads its edge neighbours. </td></tr>
+    <tr><td class="paramname">E</td><td>#E x 2 segments. In 3D this must contain every edge of every triangle in <code>F</code> as well as the complex's own isolated edges: ipc derives faces_to_edges from it and throws if an edge of a face is missing, and an edge's weight counts the triangles on it. </td></tr>
     <tr><td class="paramname">F</td><td>#F x 3 triangles. Must be empty when DIM == 2. </td></tr>
     <tr><td class="paramname">P</td><td>indices into V of the isolated complex vertices (in no segment/triangle). </td></tr>
     <tr><td class="paramname">delta</td><td>the offset distance the level set is calibrated to. </td></tr>
@@ -353,7 +353,8 @@ template&lt;int DIM&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Diagnostic: the active pairs at <code>p</code>, one per line, with each one's contribution &ndash; the only way to see why Phi has the value it has. </p>
+
+<p>Diagnostic: Phi, |grad Phi| and the trace of the Hessian at <code>p</code>. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#a37321d21f5713396b4421be6dec9bcf9">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
 
@@ -583,6 +584,54 @@ template&lt;int DIM&gt; </div>
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a8e000499bf7de02c6efcb6cc4fab6b63" name="a8e000499bf7de02c6efcb6cc4fab6b63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e000499bf7de02c6efcb6cc4fab6b63">&#9670;&#160;</a></span>value_gradient()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int DIM&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential.html">wmtk::components::topological_offset::SmoothOffsetPotential</a>&lt; DIM &gt;::value_gradient </td>
+          <td>(</td>
+          <td class="paramtype">const VecD &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VecD &amp;&#160;</td>
+          <td class="paramname"><em>g</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>value() and gradient() at p from one collision build; see the definition. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#ad8617b2090418132341c781f90ebca73">wmtk::components::topological_offset::OffsetPotential&lt; DIM &gt;</a>.</p>
 
 </div>
 </div>

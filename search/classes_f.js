@@ -5,5 +5,6 @@ var searchData=
   ['passstats_2',['PassStats',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html',1,'wmtk::ExecutePass']]],
   ['pointcloud_3',['PointCloud',['../structwmtk_1_1_point_cloud.html',1,'wmtk']]],
   ['positioninfocache_4',['positioninfocache',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache'],['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache']]],
-  ['pyexpression_5',['PyExpression',['../class_py_expression.html',1,'']]]
+  ['predictedfront_5',['PredictedFront',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_predicted_front.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['pyexpression_6',['PyExpression',['../class_py_expression.html',1,'']]]
 ];

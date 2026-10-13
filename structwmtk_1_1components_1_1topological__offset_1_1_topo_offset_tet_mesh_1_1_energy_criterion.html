@@ -83,7 +83,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">TopoOffsetTriMesh::EnergyCriterion</a>.  
+<p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The front&#39;s measures against the one bar and the refinable chords. The 2D twin of TopoOffsetTetMesh::...">TopoOffsetTriMesh::EnergyCriterion</a>.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
@@ -154,11 +154,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_unmeasurable</b> 
 <tr class="memitem:a8f494f0d51749f0ca3bb544fe89c6749" id="r_a8f494f0d51749f0ca3bb544fe89c6749"><td class="memItemLeft" align="right" valign="top"><a id="a8f494f0d51749f0ca3bb544fe89c6749" name="a8f494f0d51749f0ca3bb544fe89c6749"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
 <tr class="separator:a8f494f0d51749f0ca3bb544fe89c6749"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28cd14301d0ac8fb301b90f0e5cfea6f" id="r_a28cd14301d0ac8fb301b90f0e5cfea6f"><td class="memItemLeft" align="right" valign="top"><a id="a28cd14301d0ac8fb301b90f0e5cfea6f" name="a28cd14301d0ac8fb301b90f0e5cfea6f"></a>
-Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_face_centroid</b> = Vector3d::Zero()</td></tr>
-<tr class="separator:a28cd14301d0ac8fb301b90f0e5cfea6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e062d5beaeabd323884b5f89dbadccd" id="r_a0e062d5beaeabd323884b5f89dbadccd"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#a0e062d5beaeabd323884b5f89dbadccd">worst_face_len</a> = 0.</td></tr>
-<tr class="separator:a0e062d5beaeabd323884b5f89dbadccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab66b494f6f83c2c0b563c01c21a2e7d8" id="r_ab66b494f6f83c2c0b563c01c21a2e7d8"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#ab66b494f6f83c2c0b563c01c21a2e7d8">n_faces_over</a> = 0</td></tr>
 <tr class="separator:ab66b494f6f83c2c0b563c01c21a2e7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9824ff95872a1656332c2ea369963e5" id="r_af9824ff95872a1656332c2ea369963e5"><td class="memItemLeft" align="right" valign="top"><a id="af9824ff95872a1656332c2ea369963e5" name="af9824ff95872a1656332c2ea369963e5"></a>
@@ -239,7 +234,7 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
 <tr class="separator:a2cc2db1eef01456334c7448ca43f48d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">TopoOffsetTriMesh::EnergyCriterion</a>. </p>
+<div class="textblock"><p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The front&#39;s measures against the one bar and the refinable chords. The 2D twin of TopoOffsetTetMesh::...">TopoOffsetTriMesh::EnergyCriterion</a>. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="af021826fd1178060cccd5dbea851a220" name="af021826fd1178060cccd5dbea851a220"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af021826fd1178060cccd5dbea851a220">&#9670;&#160;</a></span>converged()</h2>
@@ -263,9 +258,9 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
   </tr>
 </table>
 </div><div class="memdoc">
-<p>THE exit test, and the front half of the run's verdict: every offset face's measure within the bar AND nothing unmeasurable. One quantity, the FACE measure (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">face_conv_ratio()</a>), now decides smoothing (it is the front smoothing energy, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d.html" title="THE offset term of a front vertex&#39;s smoothing objective: the mean squared relative error of the field...">StencilEnergy3D</a>), refinement (which faces enter <code>refinable</code>) and termination &ndash; the decision of 2026-09-25. The vertex measure left the exit then and is reported only. The stencil contains the corners, so a face within the bar bounds its corners' error in the RMS sense over the stencil, not each corner separately.</p>
+<p>THE exit test, and the front half of the run's verdict: every offset face's measure within the bar AND nothing unmeasurable. One quantity, the FACE measure (the root of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7e210293196d434ab4017518c7e8be71" title="THE ONE FACE FUNCTION: the mean over the face&#39;s stencil of r^2, r = relative_residual(q) / front_conv...">face_offset_term()</a>), decides refinement (which faces enter <code>refinable</code>) and termination &ndash; the decision of 2026-09-25. The vertex measure left the exit then and is reported only. The stencil contains the corners, so a face within the bar bounds its corners' error in the RMS sense over the stencil, not each corner separately.</p>
 <p>No refinable.empty() term: a refinable face is over the bar, so faces_ok() already implies that nothing is refinable. Against the old exit (every vertex placed, nothing unmeasurable, nothing refinable) two things change: a face over the bar that the refinement does not take (n_at_floor) used to let the run end "converged" and now blocks the exit, the loop warning when its corners are at the sizing floor; and a front vertex over the bar no longer blocks it once every face it is a corner of is within the bar.</p>
-<p>Under front_measure "vertex_ring" the ring measure takes the face measure's place here: every front vertex's ring measure within the bar AND nothing unmeasurable, the face measure then reported only. An unmeasurable ring has an unmeasurable face in it or zero total area, and n_unmeasurable counts either, so the second half is the same test in both modes. In one statement for both: max over front vertices v of the VERTEX measure V(v) within the bar, nothing unmeasurable &ndash; under "face" V(v) is the max of the face measure over v's offset faces with three front corners, so the max over vertices is the max over those faces, faces_ok(); under "vertex_ring" V(v) is the ring measure, rings_ok(). </p>
+<p>Under front_measure "vertex_ring" the ring measure takes the face measure's place here: every front vertex's ring measure within the bar AND nothing unmeasurable, the face measure then reported only. An unmeasurable ring has an unmeasurable face in it, which n_unmeasurable counts, so the second half is the same test in both modes. In one statement for both: max over front vertices v of the VERTEX measure V(v) within the bar, nothing unmeasurable &ndash; under "face" V(v) is the max of the face measure over v's offset faces with three front corners, so the max over vertices is the max over those faces, faces_ok(); under "vertex_ring" V(v) is the ring measure, rings_ok(). </p>
 
 </div>
 </div>
@@ -309,7 +304,7 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a383a0e7744d2da8c048adbe5637ab858" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a> rather than re-derived from max_vertex, so the reported count and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests it since 2026-09-25; see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#af021826fd1178060cccd5dbea851a220">converged()</a>. </p>
+<p>Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac7f18de7fc0a83ae4b74e883dd17f0d" title="THE definition of &quot;placed&quot; for a vertex on the offset surface, applied to its already-measured front_...">front_placed_by_ratio()</a> rather than re-derived from max_vertex, so the reported count and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests it since 2026-09-25; see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#af021826fd1178060cccd5dbea851a220">converged()</a>. </p>
 
 </div>
 </div>
@@ -370,7 +365,7 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Reported only: the faces over the bar, split by whether all three corners are PLACED (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a383a0e7744d2da8c048adbe5637ab858" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a>, the one notion). A face whose corners are placed and whose centroid still misses the level set is under-resolved &ndash; the state the vertex test cannot see, and the only one the sag rule may act on: refining a face whose corners are still moving would chase the front rather than resolve it. </p>
+<p>Reported only: the faces over the bar, split by whether all three corners are PLACED (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac7f18de7fc0a83ae4b74e883dd17f0d" title="THE definition of &quot;placed&quot; for a vertex on the offset surface, applied to its already-measured front_...">front_placed_by_ratio()</a>, the one notion). A face whose corners are placed and whose centroid still misses the level set is under-resolved &ndash; the state the vertex test cannot see, and the only one the sag rule may act on: refining a face whose corners are still moving would chase the front rather than resolve it. </p>
 
 </div>
 </div>
@@ -415,7 +410,7 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
         </tr>
       </table>
 </div><div class="memdoc">
-<p>measurable front vertices that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a383a0e7744d2da8c048adbe5637ab858" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a> refuses </p>
+<p>measurable front vertices that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac7f18de7fc0a83ae4b74e883dd17f0d" title="THE definition of &quot;placed&quot; for a vertex on the offset surface, applied to its already-measured front_...">front_placed_by_ratio()</a> refuses </p>
 
 </div>
 </div>
@@ -447,8 +442,8 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
 </div><div class="memdoc">
 
 <p>front_measure "vertex_ring" </p>
-<p>THE RING MEASURE, filled only under front_measure "vertex_ring". At a front vertex v, over the offset faces incident to v that the face loop measured (three front corners): </p><pre class="fragment">r_v = sqrt( sum_f A_f face_conv_ratio_f^2 / sum_f A_f )
-</pre><p> A_f the face's area from its current corners (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a018fa71fee59c0596153fe58e574af21">ring_face_area()</a>). This is the front smoother's own objective at v, normalised by the ring size so that the bar keeps its meaning: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d.html" title="THE offset term of a front vertex&#39;s smoothing objective: the mean squared relative error of the field...">StencilEnergy3D</a> weights each face's stencil mean by A_f / A_mean (StencilEnergy3D::Face::weight), so its value at v over the n_v faces is E_v = w_off front_conv_frac()^2 n_v r_v^2. Exact where the face's field (potential_for_edge()) is the vertex's (potential_for()), always so with one region, and every stencil sample is finite; the smoother's objective also carries the w_amips AMIPS term beside this one. Built from the very <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">face_conv_ratio()</a> calls the face loop makes, so both modes judge identical face numbers. A vertex with any unmeasurable incident face has no ring measure (n_rings_unmeasurable; the face itself is already in n_unmeasurable); a ring of zero total area has none either and is counted in n_unmeasurable itself. Why it exists: the face exit and refinement are per face, the smoother minimises per vertex ring, and the two disagree at the margin &ndash; on the deliverable cube at target_distance_rel 1e-3 / front_conv_rel 1e-5 the face exit never fired, turns 12-15 each ending with a handful of faces at 1.00x to 1.19x the bar, the smoothing having nudged faces from 0.99x to just over the bar while lowering the ring they belong to. </p>
+<p>THE RING MEASURE, filled only under front_measure "vertex_ring". At a front vertex v, over the offset faces incident to v that the face loop measured (three front corners): </p><pre class="fragment">r_v = sqrt( (1/n_v) sum_f O(f) ),   O(f) = face_offset_term()
+</pre><p> over the n_v such faces, every face weighted equally. Built from the very <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7e210293196d434ab4017518c7e8be71" title="THE ONE FACE FUNCTION: the mean over the face&#39;s stencil of r^2, r = relative_residual(q) / front_conv...">face_offset_term()</a> calls the face loop makes, so both modes judge identical face numbers. A vertex with any unmeasurable incident face has no ring measure (n_rings_unmeasurable; the face itself is already in n_unmeasurable). Why it exists: the face exit and refinement are per face, the smoother minimises per vertex ring, and the two disagree at the margin &ndash; on the deliverable cube at target_distance_rel 1e-3 / front_conv_rel 1e-5 the face exit never fired, turns 12-15 each ending with a handful of faces at 1.00x to 1.19x the bar, the smoothing having nudged faces from 0.99x to just over the bar while lowering the ring they belong to. </p>
 
 </div>
 </div>
@@ -479,21 +474,6 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_ring_at_flo
       </table>
 </div><div class="memdoc">
 <p>the largest sizing scalar at the worst one's corners </p>
-
-</div>
-</div>
-<a id="a0e062d5beaeabd323884b5f89dbadccd" name="a0e062d5beaeabd323884b5f89dbadccd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e062d5beaeabd323884b5f89dbadccd">&#9670;&#160;</a></span>worst_face_len</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::EnergyCriterion::worst_face_len = 0.</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>the worst face's longest edge </p>
 
 </div>
 </div>
