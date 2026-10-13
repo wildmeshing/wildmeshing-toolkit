@@ -20,11 +20,11 @@ if len(sys.argv) >= 4:
     PROJ_DIR = sys.argv[3]
 else:
     if DATASET == "ABC":
-        PROJ_DIR = "/scratch/yz6675/felix/CAD_2025/"
+        PROJ_DIR = "/path/to/data/"
     elif DATASET == "fusion":
-        PROJ_DIR = "/scratch/yz6675/CAD_2024/"
+        PROJ_DIR = "/path/to/data/"
     elif DATASET == "test":
-        PROJ_DIR= "/Users/yunfanzhou/CAD_2024/"
+        PROJ_DIR = "/path/to/data/"
     else:
         raise RuntimeError("Please provide project dir")
 
@@ -47,7 +47,7 @@ elif DATASET == "fusion":
         PROJ_DIR, "data/fusion/a1.0.0_00/"
     )
 elif DATASET == "test":
-    PROJ_ROOT = "/Volumes/myssd/CAD_2024_ssd/"
+    PROJ_ROOT = "/path/to/data/"
     RESULT_ROOT = os.path.join(PROJ_ROOT, "my_results/abc_test/") 
     CAD_INPUT_ROOT = os.path.join(PROJ_ROOT, "abc_20_data/")
     print("testing mode with hard-coded CAD_INPUT_ROOT and RESULT_ROOT")

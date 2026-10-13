@@ -1,11 +1,9 @@
 #include "CadRemeshing.h"
 #include <igl/Timer.h>
-#include <igl/is_edge_manifold.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <atomic>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/indexed_collector.hpp>
@@ -56,8 +54,7 @@ void CadRemeshing::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::pair<size_t, int>>& frozen_verts,
-    bool m_freeze,
-    double eps)
+    bool m_freeze)
 {
     wmtk::TriMesh::init(n_vertices, tris);
 
@@ -90,8 +87,6 @@ bool CadRemeshing::cache_edge_positions(const Tuple& t)
 
     cache.v0p = vertex_attrs.at(v0).pos;
     cache.v1p = vertex_attrs.at(v1).pos;
-    cache.v0_tal = vertex_attrs.at(v0).tal;
-    cache.v1_tal = vertex_attrs.at(v1).tal;
     cache.v0_corner_id = vertex_attrs.at(v0).corner_id;
     cache.v1_corner_id = vertex_attrs.at(v1).corner_id;
     cache.partition_id = vertex_attrs.at(v0).partition_id;
@@ -179,14 +174,6 @@ bool CadRemeshing::invariants(const std::vector<Tuple>& new_tris)
     return true;
 }
 
-// TODO: this should not be here
-void CadRemeshing::partition_mesh()
-{
-    auto m_vertex_partition_id = partition_TriMesh(*this, NUM_THREADS);
-    for (auto i = 0; i < m_vertex_partition_id.size(); i++)
-        vertex_attrs[i].partition_id = m_vertex_partition_id[i];
-}
-
 // TODO: morton should not be here, but inside wmtk
 void CadRemeshing::partition_mesh_morton()
 {
@@ -237,10 +224,6 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // if (vertex_attrs[v0].is_freeze && vertex_attrs[v1].is_freeze) {
-    //     return false;
-    // }
-
     auto& cache = swap_info_cache.local();
     cache.ring_edge_attrs.clear();
 
@@ -249,8 +232,6 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
 
     cache.v0p = vertex_attrs.at(cache.v0).pos;
     cache.v1p = vertex_attrs.at(cache.v1).pos;
-
-    cache.is_feature_edge = 0; // must be false, was checked before
 
     cache.v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
 
@@ -310,16 +291,6 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
 }
 
 
-// bool CadRemeshing::swap_edge_after(const TriMesh::Tuple& t)
-// {
-//     const auto& cache = swap_info_cache.local();
-
-//     std::vector<TriMesh::Tuple> tris;
-//     tris.push_back(t);
-//     tris.push_back(t.switch_edge(*this));
-//     return true;
-// }
-
 bool CadRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
     const auto& cache = swap_info_cache.local();
@@ -354,43 +325,15 @@ std::vector<TriMesh::Tuple> CadRemeshing::replace_edges_after_split(
     return new_edges;
 }
 
-std::vector<TriMesh::Tuple> CadRemeshing::new_sub_edges_after_split(
-    const std::vector<TriMesh::Tuple>& tris) const
-{
-    // only push back the renewed original edges
-    std::vector<TriMesh::Tuple> new_edges2;
-    new_edges2.reserve(tris.size() * 3);
-    for (auto t : tris) {
-        new_edges2.push_back(t);
-        new_edges2.push_back(t.switch_edge(*this));
-        new_edges2.push_back((t.switch_vertex(*this)).switch_edge(*this));
-    }
-
-    wmtk::unique_edge_tuples(*this, new_edges2);
-    return new_edges2;
-}
-
-
 bool CadRemeshing::collapse_edge_before(const Tuple& t)
 {
     size_t v0 = t.vid(*this);
     size_t v1 = t.switch_vertex(*this).vid(*this);
 
-    // if (is_feature_edge(t)) {
-    //     return false;
-    // }
-
     if (!is_feature_edge(t) && (vertex_attrs[v0].is_feature || vertex_attrs[v1].is_feature)) {
         return false;
     }
 
-    // if (is_feature_edge(t) && !vertex_attrs[v0].is_feature && vertex_attrs[v1].is_feature)
-    //     return false;
-
-
-    // if (vertex_attrs[v0].corner_id >= 0 || vertex_attrs[v1].corner_id >= 0) {
-    //     return false;
-    // }
     if (vertex_attrs[v0].corner_id >= 0 && vertex_attrs[v1].corner_id >= 0) {
         return false;
     }
@@ -401,34 +344,6 @@ bool CadRemeshing::collapse_edge_before(const Tuple& t)
     if (!cache_edge_positions(t)) {
         return false;
     }
-
-    //// for debug
-    // if (v0 == 35465 && v1 == 36590) {
-    //     logger().error("DEBUG ({},{})", v0, v1);
-    //     logger().error("v0.is_feature = {}", vertex_attrs[v0].is_feature);
-    //     logger().error("v1.is_feature = {}", vertex_attrs[v1].is_feature);
-    //     logger().error("v0.corner_id = {}", vertex_attrs[v0].corner_id);
-    //     logger().error("v1.corner_id = {}", vertex_attrs[v1].corner_id);
-    //     logger().error("is_feature_edge = {}", is_feature_edge(t));
-    //     logger().error("t.is_feature = {}", edge_attrs[t.eid(*this)].is_feature);
-    //
-    //    { // DEBUG
-    //        logger().error("DEBUG v0 = {}", v0);
-    //        const Tuple v = tuple_from_vertex(v0);
-    //        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
-    //            simplex::Edge s = simplex_from_edge(e);
-    //            logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
-    //        }
-    //    }
-    //    { // DEBUG
-    //        logger().error("DEBUG v1 = {}", v1);
-    //        const Tuple v = tuple_from_vertex(v1);
-    //        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
-    //            simplex::Edge s = simplex_from_edge(e);
-    //            logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
-    //        }
-    //    }
-    //}
 
     return true;
 }
@@ -454,11 +369,8 @@ bool CadRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     attr.partition_id = cache.partition_id;
 
 
-    /*
-     * I am not sure if it is better to keep the target edge length of the remaining vertex or to
-     * use the min of the two. The min seems to be quite aggressive.
-     */
-    // attr.tal = std::min(cache.v0_tal, cache.v1_tal);
+    // Keep the target edge length of the remaining vertex. Using the min of the two seems to be
+    // quite aggressive.
 
     // update the edge attributes of the surrounding edges
     for (const auto [v2, f] : cache.link_vertices) {
@@ -468,7 +380,6 @@ bool CadRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 
     // sanity check (for debugging)
     if (vertex_attrs.at(cache.v1).is_feature && vertex_attrs.at(cache.v1).corner_id < 0) {
-        // const Tuple v = tuple_from_vertex(55432);
         size_t counter = 0;
         for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
             if (edge_attrs[e.eid(*this)].is_feature) {
@@ -543,12 +454,6 @@ bool CadRemeshing::split_edge_after(const TriMesh::Tuple& t)
     const auto& cache = split_info_cache.local();
 
     const Eigen::Vector3d p = 0.5 * (cache.v0p + cache.v1p);
-    // Eigen::Vector3d after_project;
-    //  if (cache.is_feature_edge) {
-    //      m_feature_envelope.nearest_point(p, after_project);
-    //  } else {
-    //      m_envelope.nearest_point(p, after_project);
-    //  }
 
     const size_t vnew = t.switch_vertex(*this).vid(*this);
     auto& vnew_attrs = vertex_attrs[vnew];
@@ -615,18 +520,6 @@ bool CadRemeshing::smooth_after(const TriMesh::Tuple& t)
 
     Eigen::Vector3d after_smooth = tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
-    // todo: add envelope projection and check here
-    // if (m_has_envelope) {
-    //     std::array<Eigen::Vector3d, 3> tri;
-    //     for (auto& tri_tup : one_ring_tris) {
-    //         auto vs = oriented_tri_vertices(tri_tup);
-    //         for (auto j = 0; j < 3; j++)
-    //             tri[j] = vertex_attrs[vs[j].vid(*this)].pos;
-    //         if (m_envelope.is_outside(tri)) {
-    //             after_smooth = m_envelope.project_to_envelope(after_smooth);
-    //             break;
-    //         }
-    //     }
 
     Eigen::Vector3d after_project;
     if (vertex_attrs[t.vid(*this)].is_feature) {
@@ -634,7 +527,6 @@ bool CadRemeshing::smooth_after(const TriMesh::Tuple& t)
     } else {
         m_envelope.nearest_point(after_smooth, after_project);
     }
-    // logger().warn("{} --> {}", after_smooth.transpose(), after_project.transpose());
 
     vertex_attrs[t.vid(*this)].pos = after_project;
 
@@ -717,29 +609,6 @@ double CadRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
     return (double)(cost_before_swap - cost_after_swap);
 }
 
-double CadRemeshing::compute_swap_energy(const Tuple& t) const
-{
-    const auto t_opps = t.switch_faces(*this);
-    if (t_opps.size() != 1) {
-        return -1e50; // don't swap this
-    }
-    const size_t v0 = t.vid(*this);
-    const size_t v1 = t.switch_vertex(*this).vid(*this);
-    const size_t v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
-    const size_t v3 = t_opps[0].switch_edge(*this).switch_vertex(*this).vid(*this);
-
-    // old: (0,1,2) (0,1,3)
-    // new: (0,2,3) (1,2,3)
-
-    const double q012 = get_quality({{v0, v1, v2}}); // old
-    const double q013 = get_quality({{v0, v1, v3}}); // old
-    const double q023 = get_quality({{v0, v2, v3}}); // new
-    const double q123 = get_quality({{v1, v2, v3}}); // new
-    const double before_swap = 1.0 / std::min(q012, q013);
-    const double after_swap = 1.0 / std::min(q023, q123);
-
-    return before_swap - after_swap;
-}
 std::vector<double> CadRemeshing::average_len_valen()
 {
     double average_len = 0.0;
@@ -766,20 +635,8 @@ std::vector<double> CadRemeshing::average_len_valen()
         if (minval > currentval) minval = currentval;
     }
     average_valen /= verts.size();
-    int cnt = 0;
     std::vector<double> rtn{average_len, maxlen, minlen, average_valen, maxval, minval};
     return rtn;
-}
-
-std::vector<TriMesh::Tuple> CadRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
-{
-    std::vector<TriMesh::Tuple> new_edges;
-
-    new_edges.push_back(t.switch_edge(*this));
-    new_edges.push_back((t.switch_face(*this).value()).switch_edge(*this));
-    new_edges.push_back((t.switch_vertex(*this)).switch_edge(*this));
-    new_edges.push_back(((t.switch_vertex(*this)).switch_face(*this).value()).switch_edge(*this));
-    return new_edges;
 }
 
 bool CadRemeshing::collapse_remeshing()
@@ -839,7 +696,6 @@ bool CadRemeshing::split_remeshing()
     timer.start();
     std::vector<std::pair<std::string, Tuple>> collect_all_ops;
     size_t vid_threshold = 0;
-    std::atomic_int count_success = 0;
 
     {
         auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
@@ -854,16 +710,11 @@ bool CadRemeshing::split_remeshing()
     logger().info("***** split get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
     logger().info("size for edges to be split is {}", collect_all_ops.size());
-    // wmtk::threading::collector<std::pair<std::string, Tuple>> edges2;
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
-            count_success++;
             auto edges = m.replace_edges_after_split(tris, vid_threshold);
-            // for (const auto& e2 : m.new_sub_edges_after_split(tris)) {
-            //     edges2.emplace_back(op, e2);
-            // }
             std::vector<std::pair<std::string, Tuple>> optup;
             for (auto& e : edges) {
                 optup.emplace_back(op, e);
@@ -878,17 +729,7 @@ bool CadRemeshing::split_remeshing()
             return true;
         };
         // Execute!!
-        count_success.store(0, std::memory_order_release);
         executor(*this, collect_all_ops);
-        // do {
-        //     count_success.store(0, std::memory_order_release);
-        //     executor(*this, collect_all_ops);
-        //     collect_all_ops.clear();
-        //     for (auto& item : edges2) {
-        //         collect_all_ops.emplace_back(item);
-        //     }
-        //     edges2.clear();
-        // } while (count_success.load(std::memory_order_acquire) > 0);
     };
 
     if (NUM_THREADS > 0) {
@@ -971,20 +812,6 @@ bool CadRemeshing::swap_remeshing()
 
     return true;
 }
-double area(CadRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
-{
-    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
-               .norm() /
-           2.0;
-}
-
-Eigen::Vector3d normal(CadRemeshing& m, std::array<TriMesh::Tuple, 3>& verts)
-{
-    return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-                .cross(m.vertex_attrs[verts[1].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos))
-        .normalized();
-}
 
 Eigen::Vector3d CadRemeshing::smooth(const TriMesh::Tuple& t)
 {
@@ -1014,34 +841,6 @@ Eigen::Vector3d CadRemeshing::tangential_smooth(const Tuple& t)
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
     if (one_ring_tris.size() < 2) return vertex_attrs[t.vid(*this)].pos;
     Eigen::Vector3d after_smooth = smooth(t);
-    // get normal and area of each face
-    // auto area = [](auto& m, auto& verts) {
-    //     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-    //                 .cross(
-    //                     m.vertex_attrs[verts[1].vid(m)].pos -
-    //                     m.vertex_attrs[verts[2].vid(m)].pos))
-    //                .norm() /
-    //            2.0;
-    // };
-    // auto normal = [](auto& m, auto& verts) {
-    //     return ((m.vertex_attrs[verts[0].vid(m)].pos - m.vertex_attrs[verts[2].vid(m)].pos)
-    //                 .cross(
-    //                     m.vertex_attrs[verts[1].vid(m)].pos -
-    //                     m.vertex_attrs[verts[2].vid(m)].pos))
-    //         .normalized();
-    // };
-    // auto w0 = 0.0;
-    // Eigen::Vector3d n0(0.0, 0.0, 0.0);
-    // for (auto& e : one_ring_tris) {
-    //     auto verts = oriented_tri_vertices(e);
-    //     w0 += area(*this, verts);
-    //     n0 += area(*this, verts) * normal(*this, verts);
-    // }
-    // n0 /= w0;
-    // if (n0.norm() < 1e-10) return vertex_attrs[t.vid(*this)].pos;
-    // n0 = n0.normalized();
-    // after_smooth += n0 * n0.transpose() * (vertex_attrs[t.vid(*this)].pos - after_smooth);
-    // assert(check_mesh_connectivity_validity());
     return after_smooth;
 }
 
@@ -1098,30 +897,6 @@ bool CadRemeshing::uniform_remeshing(int iterations, bool debug_output)
     wmtk::logger().info("+++++++++finished+++++++++");
     return true;
 }
-bool CadRemeshing::write_triangle_mesh(std::string path)
-{
-    // write the collapsed mesh into a obj and assert the mesh is manifold
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(vert_capacity(), 3);
-    for (auto& t : get_vertices()) {
-        auto i = t.vid(*this);
-        V.row(i) = vertex_attrs[i].pos;
-    }
-
-    Eigen::MatrixXi F = Eigen::MatrixXi::Constant(tri_capacity(), 3, -1);
-    for (auto& t : get_faces()) {
-        auto i = t.fid(*this);
-        auto vs = oriented_tri_vertices(t);
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = vs[j].vid(*this);
-        }
-    }
-    igl::write_triangle_mesh(path, V, F);
-    bool manifold = check_edge_manifold();
-    assert(manifold);
-
-    return manifold;
-}
-
 double CadRemeshing::shape_quality(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2) const
 {
     const Eigen::Vector3d a = (p1 - p0);
@@ -1161,28 +936,6 @@ void CadRemeshing::update_qualities()
     }
     avg_q /= faces.size();
     logger().info("Quality min = {:.2}, avg = {:.2}", min_q, avg_q);
-}
-
-void CadRemeshing::set_feature_vertices(const std::vector<size_t>& feature_vertices)
-{
-    for (size_t i = 0; i < vertex_attrs.size(); ++i) {
-        vertex_attrs[i].is_feature = false;
-    }
-
-    for (size_t v : feature_vertices) {
-        if (v < vertex_attrs.size()) {
-            vertex_attrs[v].is_feature = true;
-        } else {
-            wmtk::logger().warn("set_feature_vertices: index {} out of range", v);
-        }
-    }
-
-    wmtk::logger().info("Marked {} feature vertices", feature_vertices.size());
-}
-
-bool CadRemeshing::is_feature_vertex(size_t vid) const
-{
-    return vid < vertex_attrs.size() && vertex_attrs[vid].is_feature;
 }
 
 bool CadRemeshing::is_feature_edge(const Tuple& t) const
@@ -1246,37 +999,8 @@ void CadRemeshing::initialize_feature_edges()
         edge_attrs[eid].is_feature = item.second;
     }
 
-    // size_t found = 0;
-    // for (const Tuple& e : get_edges()) {
-    //     const size_t v0 = e.vid(*this);
-    //     const size_t v1 = e.switch_vertex(*this).vid(*this);
-    //
-    //     const simplex::Edge s(v0, v1);
-    //     if (feature_edges.count(s) > 0) {
-    //         const size_t eid = e.eid(*this);
-    //
-    //         int seg_id = feature_edges[s];
-    //        // for (const auto& item : m_input_feature_edges) {
-    //        //     const auto& ab = item.first;
-    //        //     const int id = item.second;
-    //        //     if ((ab[0] == v0 && ab[1] == v1) || (ab[0] == v1 && ab[1] == v0)) {
-    //        //         seg_id = id;
-    //        //         break;
-    //        //     }
-    //        // }
-    //
-    //        edge_attrs[eid].is_feature = seg_id;
-    //        ++found;
-    //    }
-    //}
 
     wmtk::logger().info("initialize_feature_edges: marked {} feature edges", feature_edges.size());
-
-    // if (found != feature_edges.size()) {
-    //     log_and_throw_error(
-    //         "initialize_feature_edges: {} requested feature edges were not found in the mesh",
-    //         feature_edges.size() - found);
-    // }
 }
 
 
@@ -1319,10 +1043,8 @@ void CadRemeshing::set_per_patch_target_edge_length(const double factor)
     }
 
     for (auto& [pid, el] : patch_edge_length) {
-        //el /= (3 * patch_face_count[pid]);
         auto& vec = patch_edge_lengths[pid];
         std::sort(vec.begin(), vec.end());
-        //el = *(vec.begin() + std::distance(vec.begin(), vec.end()) / 2);
         el = vec.back();
     }
 
@@ -1353,28 +1075,6 @@ void CadRemeshing::set_per_patch_target_edge_length(const double factor)
             }
         }
     }
-}
-
-bool CadRemeshing::write_feature_vertices_obj(const std::string& path) const
-{
-    std::ofstream out(path);
-    if (!out.is_open()) return false;
-
-    std::vector<size_t> fmap;
-    fmap.reserve(vertex_attrs.size());
-
-    for (size_t i = 0; i < vertex_attrs.size(); ++i) {
-        if (!vertex_attrs[i].is_feature) continue;
-        const auto& p = vertex_attrs[i].pos;
-        out << "v " << p.x() << " " << p.y() << " " << p.z() << "\n";
-        fmap.push_back(i);
-    }
-
-    for (size_t k = 0; k < fmap.size(); ++k) {
-        out << "p " << (k + 1) << "\n";
-    }
-
-    return true;
 }
 
 void CadRemeshing::write_vtu(const std::string& path, const std::string& report_file) const
@@ -1418,9 +1118,9 @@ void CadRemeshing::write_vtu(const std::string& path, const std::string& report_
 
     int index = 0;
     for (const Tuple& t : faces) {
-        const auto& vs = oriented_tri_vids(t);
+        const auto& tri_vids = oriented_tri_vids(t);
         for (int j = 0; j < 3; j++) {
-            F(index, j) = vs[j];
+            F(index, j) = tri_vids[j];
         }
         f_pid[index] = face_attrs[t.fid(*this)].patch_id;
         f_quality[index] = face_attrs[t.fid(*this)].quality;

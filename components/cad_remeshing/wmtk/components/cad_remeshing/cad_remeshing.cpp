@@ -7,51 +7,21 @@
 #include <igl/read_triangle_mesh.h>
 #include <jse/jse.h>
 
-#include <chrono>
-
 #include <cad_remeshing_spec.hpp>
 #include "CadRemeshing.h"
 
 namespace wmtk::components::cad_remeshing {
 
-using namespace std::chrono;
-
 void run_remeshing(
-    std::string input,
-    std::string output,
-    std::string report_file,
+    const std::string& output,
+    const std::string& report_file,
     CadRemeshing& m,
     int itrs,
     bool debug_output = false)
 {
-    // wmtk::logger().info(
-    //     "Before_vertices#: {} \n Before_tris#: {}",
-    //     m.vert_capacity(),
-    //     m.tri_capacity());
-
-    auto start = high_resolution_clock::now();
     m.uniform_remeshing(itrs, debug_output);
-    // m.consolidate_mesh();
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start);
-
     m.consolidate_mesh();
-
-    std::filesystem::path outp(output);
-    std::string base = outp.replace_extension("").string();
     m.write_vtu(output, report_file);
-
-    // m.write_triangle_mesh(output);
-    // m.write_feature_vertices_obj(output + ".feature_vertices.obj");
-    auto properties = m.average_len_valen();
-    // wmtk::logger().info("runtime in ms {}", duration.count());
-    // wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
-    // wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
-    // wmtk::logger().info("after remesh properties: {}", properties);
-    // wmtk::logger().info(
-    //     "After_vertices#: {} \n\t After_tris#: {}",
-    //     m.vert_capacity(),
-    //     m.tri_capacity());
 }
 
 void cad_remeshing(nlohmann::json json_params)
@@ -127,17 +97,6 @@ void cad_remeshing(nlohmann::json json_params)
     } catch (const std::exception& e) {
         log_and_throw_error("Error reading corner vertices: {}", e.what());
     }
-
-    std::vector<size_t> feature_vertices;
-    feature_vertices.reserve(feature_edge_list.size() * 2);
-
-    for (const auto& e : feature_edge_list) {
-        const auto& ab = e.first;
-        feature_vertices.push_back(ab[0]);
-        feature_vertices.push_back(ab[1]);
-    }
-
-    wmtk::vector_unique(feature_vertices);
 
     // logger settings
     {
@@ -239,10 +198,8 @@ void cad_remeshing(nlohmann::json json_params)
 
     CadRemeshing m(verts, num_threads, !sample_envelope);
     m.set_feature_edges(feature_edge_list);
-    // m.set_feature_vertices(feature_vertices);
-    m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary, eps);
+    m.create_mesh(verts.size(), tris, fixed_vertices, freeze_boundary);
     m.set_patch_ids(face_patch_ids);
-
 
     if (length_factor < 0) {
         std::vector<double> properties = m.average_len_valen();
@@ -255,10 +212,6 @@ void cad_remeshing(nlohmann::json json_params)
         }
         logger().info("absolute target length: {}", length_abs);
         m.set_target_edge_length(length_abs);
-
-        // wmtk::logger().info("Mesh diag: {}", diag);
-        // wmtk::logger().info("Relative eps: {}", eps_rel);
-        // wmtk::logger().info("Envelope thickness eps: {}", eps);
     } else {
         logger().info("Use per-patch length with factor {}", length_factor);
         m.set_per_patch_target_edge_length(length_factor);
@@ -315,7 +268,7 @@ void cad_remeshing(nlohmann::json json_params)
     }
 
     timer.start();
-    run_remeshing(input_path, output, report_file, m, itrs, debug_output);
+    run_remeshing(output, report_file, m, itrs, debug_output);
     timer.stop();
 
     if (report_file.empty()) {

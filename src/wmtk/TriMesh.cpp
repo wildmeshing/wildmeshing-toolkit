@@ -95,64 +95,7 @@ void TriMesh::Tuple::print_info()
 
 size_t TriMesh::Tuple::eid(const TriMesh& m) const
 {
-    /*
-     * The edge ID is constructed from the min face ID incident to the edge and in there the local
-     * edge ID:
-     * eid = 3 * min_fid + local_eid
-     */
-
-    // const std::optional<Tuple> t_opp = switch_face(m);
-    // if (t_opp.has_value()) {
-    //     size_t fid2 = t_opp.value().fid(m);
-    //     size_t min_fid = std::min(m_fid, fid2);
-    //     if (min_fid == fid2) {
-    //         int i = m.m_tri_connectivity[fid2].find(m_vid);
-    //         int j = m.m_tri_connectivity[fid2].find(switch_vertex(m).vid(m));
-    //         return min_fid * 3 + 3 - i - j;
-    //     }
-    // }
-    // return m_fid * 3 + m_eid;
-
-    const size_t v_opp = switch_vertex(m).vid(m);
-
-    // Walk the smaller of the two endpoint fans: the faces carrying both vertices are the
-    // same set either way, and both fans are sorted, so the first hit is the minimum fid
-    // whichever one is scanned. switch_faces() below already picks the smaller fan; this
-    // one always took m_vid's, which on a high-valence vertex is the expensive choice.
-    const std::vector<size_t>& v0_fids = m.m_vertex_connectivity[m_vid].m_conn_tris;
-    const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v_opp].m_conn_tris;
-    const std::vector<size_t>& fids = v0_fids.size() <= v1_fids.size() ? v0_fids : v1_fids;
-
-    // find face that contain m_vid and v_opp
-    for (const size_t f : fids) {
-        const auto& f_vids = m.m_tri_connectivity[f].m_indices;
-
-        int local_v0 = -1;
-        int local_v1 = -1;
-        for (size_t i = 0; i < f_vids.size(); ++i) {
-            if (f_vids[i] == m_vid) {
-                local_v0 = (int)i;
-            } else if (f_vids[i] == v_opp) {
-                local_v1 = (int)i;
-            }
-        }
-        // Both tests are needed now: when the smaller fan is v_opp's, a face in it is
-        // guaranteed to carry v_opp but not m_vid, which is the reverse of the assumption
-        // the old single-fan version could make.
-        if (local_v0 == -1 || local_v1 == -1) {
-            continue;
-        }
-        size_t local_eid = 3 - (local_v0 + local_v1);
-        // fids are sorted --> return smallest fid
-        return 3 * f + local_eid;
-    }
-
-    log_and_throw_error(
-        "Invalid Tuple: no face contains both vertices of the edge. Vertices are {}, {}, tuple "
-        "face ID is {}",
-        m_vid,
-        v_opp,
-        m_fid);
+    return m.eid_from_vids(m_vid, switch_vertex(m).vid(m));
 }
 
 
@@ -2323,9 +2266,20 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t v
 
 size_t TriMesh::eid_from_vids(size_t vid0, size_t vid1) const
 {
-    const std::vector<size_t>& fids = m_vertex_connectivity[vid0].m_conn_tris;
+    /*
+     * The edge ID is constructed from the min face ID incident to the edge and in there the local
+     * edge ID:
+     * eid = 3 * min_fid + local_eid
+     */
 
-    // find face that contain m_vid and v_opp
+    // Walk the smaller of the two endpoint fans: the faces carrying both vertices are the
+    // same set either way, and both fans are sorted, so the first hit is the minimum fid
+    // whichever one is scanned.
+    const std::vector<size_t>& v0_fids = m_vertex_connectivity[vid0].m_conn_tris;
+    const std::vector<size_t>& v1_fids = m_vertex_connectivity[vid1].m_conn_tris;
+    const std::vector<size_t>& fids = v0_fids.size() <= v1_fids.size() ? v0_fids : v1_fids;
+
+    // find face that contains vid0 and vid1
     for (const size_t f : fids) {
         const auto& f_vids = m_tri_connectivity[f].m_indices;
 
@@ -2333,21 +2287,25 @@ size_t TriMesh::eid_from_vids(size_t vid0, size_t vid1) const
         int local_v1 = -1;
         for (size_t i = 0; i < f_vids.size(); ++i) {
             if (f_vids[i] == vid0) {
-                local_v0 = i;
+                local_v0 = (int)i;
             } else if (f_vids[i] == vid1) {
-                local_v1 = i;
+                local_v1 = (int)i;
             }
         }
-        if (local_v1 == -1) {
+        // A face in the smaller fan is guaranteed to carry one of the two vertices, but not
+        // necessarily the other.
+        if (local_v0 == -1 || local_v1 == -1) {
             continue;
         }
-        assert(local_v0 != -1);
         size_t local_eid = 3 - (local_v0 + local_v1);
         // fids are sorted --> return smallest fid
         return 3 * f + local_eid;
     }
 
-    log_and_throw_error("Could not find edge id for vertices ({},{})", vid0, vid1);
+    log_and_throw_error(
+        "Invalid edge: no face contains both vertices of the edge. Vertices are {}, {}",
+        vid0,
+        vid1);
 }
 
 simplex::Vertex wmtk::TriMesh::simplex_from_vertex(const Tuple& t) const

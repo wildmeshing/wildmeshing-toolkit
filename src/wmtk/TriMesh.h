@@ -347,6 +347,11 @@ public:
     Tuple tuple_from_edge(size_t vid1, size_t vid2, size_t fid) const;
 
     Tuple tuple_from_vids(size_t vid0, size_t vid1, size_t vid2) const;
+    /**
+     * @brief Get the global edge ID of the edge between two vertices.
+     *
+     * Same ID as Tuple::eid(). Throws if the two vertices are not connected by an edge.
+     */
     size_t eid_from_vids(size_t vid0, size_t vid1) const;
 
     simplex::Vertex simplex_from_vertex(const Tuple& t) const;

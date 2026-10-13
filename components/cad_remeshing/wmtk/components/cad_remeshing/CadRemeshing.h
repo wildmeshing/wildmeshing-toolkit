@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -7,7 +7,6 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <igl/write_triangle_mesh.h>
 #include <igl/doublearea.h>
 #include <igl/internal_angles.h>
 #include <nlohmann/json.hpp>
@@ -61,7 +60,6 @@ public:
     using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     FaceAttCol face_attrs;
 
-    int retry_limit = 10;
     CadRemeshing(
         std::vector<Eigen::Vector3d> _m_vertex_positions,
         int num_threads = 1,
@@ -73,8 +71,7 @@ public:
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
         const std::vector<std::pair<size_t, int>>& frozen_verts = {},
-        bool m_freeze = true,
-        double eps = 0);
+        bool m_freeze = true);
 
     void initialize_feature_edges();
 
@@ -116,7 +113,6 @@ public:
         wmtk::Vector3d v0p;
         wmtk::Vector3d v1p;
 
-        int is_feature_edge = 0;
         std::map<wmtk::simplex::Edge, EdgeAttributes> ring_edge_attrs;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_info_cache;
@@ -127,8 +123,6 @@ public:
         Eigen::Vector3d v0p;
         Eigen::Vector3d v1p;
         int partition_id;
-        double v0_tal; // v0 target edge length
-        double v1_tal; // v1 target edge length
         int v0_corner_id;
         int v1_corner_id;
 
@@ -146,9 +140,6 @@ public:
         std::function<bool(const EdgeAttributes&)> cond) const;
 
     bool invariants(const std::vector<Tuple>& new_tris) override;
-
-    // TODO: this should not be here
-    void partition_mesh();
 
     // TODO: morton should not be here, but inside wmtk
     void partition_mesh_morton();
@@ -172,12 +163,9 @@ public:
     bool swap_edge_after(const Tuple& t) override;
 
     std::vector<TriMesh::Tuple> new_edges_after(const std::vector<TriMesh::Tuple>& tris) const;
-    std::vector<TriMesh::Tuple> new_edges_after_swap(const TriMesh::Tuple& t) const;
     std::vector<TriMesh::Tuple> replace_edges_after_split(
         const std::vector<TriMesh::Tuple>& tris,
         const size_t vid_threshold) const;
-    std::vector<TriMesh::Tuple> new_sub_edges_after_split(
-        const std::vector<TriMesh::Tuple>& tris) const;
 
 
     bool split_edge_before(const Tuple& t) override;
@@ -189,7 +177,6 @@ public:
     double compute_edge_cost_collapse(const Tuple& t) const;
     double compute_edge_cost_split(const Tuple& t) const;
     double compute_vertex_valence(const Tuple& t) const;
-    double compute_swap_energy(const Tuple& t) const;
     /**
      * @brief Report statistics.
      *
@@ -206,7 +193,6 @@ public:
     bool collapse_remeshing();
     bool swap_remeshing();
     bool uniform_remeshing(int interations, bool debug_output = false);
-    bool write_triangle_mesh(std::string path);
 
     /**
      * @brief Compute the shape quality.
@@ -229,12 +215,9 @@ public:
      */
     void update_qualities();
 
-    void set_feature_vertices(const std::vector<size_t>& feature_vertices);
     void set_feature_edges(const std::vector<std::pair<std::array<size_t, 2>, int>>& feature_edges);
     void set_patch_ids(const std::vector<size_t>& patch_ids);
-    bool is_feature_vertex(size_t vid) const;
     bool is_feature_edge(const Tuple& t) const;
-    bool write_feature_vertices_obj(const std::string& path) const;
 
     /**
      * @brief Write the mesh to <path>.vtu and the feature edges to <path>_edges.vtu.
