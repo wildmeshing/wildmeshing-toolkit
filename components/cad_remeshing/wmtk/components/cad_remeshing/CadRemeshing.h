@@ -113,9 +113,10 @@ public:
 
     void set_target_edge_length(const double tal);
     /**
-     * @brief Set the target edge length to the per-patch average.
+     * @brief Per-patch target edge length: the longest edge of each patch times factor.
      *
-     * Smooth the edge length in between vertices to have a difference of at max 1.5.
+     * A vertex takes the shortest target of the patches around it, and the targets are then
+     * smoothed so that neighbouring vertices differ by a factor of at most 1.5.
      */
     void set_per_patch_target_edge_length(const double factor);
 
@@ -175,6 +176,14 @@ public:
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
         std::function<bool(const EdgeAttributes&)> cond) const;
+
+    /**
+     * The least shape quality (see shape_quality) an operation may give a triangle. 1e-6 is a
+     * numerically degenerate triangle -- an aspect ratio around a million, where normals and
+     * areas computed from it stop meaning anything -- not a quality goal; a flat triangle
+     * (quality 0, or NaN for three coincident points) used to be the only thing rejected.
+     */
+    static constexpr double MIN_QUALITY = 1e-6;
 
     bool invariants(const std::vector<Tuple>& new_tris) override;
 

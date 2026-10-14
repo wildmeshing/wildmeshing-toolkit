@@ -158,9 +158,10 @@ std::vector<std::array<size_t, 2>> CadRemeshing::get_edges_by_condition(
 
 bool CadRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
+    // No degenerate or near-degenerate triangle. The quality is NaN for three coincident points
+    // (0/0), so the comparison is written to fail on NaN as well.
     for (const Tuple& t : new_tris) {
-        const double q = get_quality(t);
-        if (q == 0) {
+        if (!(get_quality(t) > MIN_QUALITY)) {
             return false;
         }
     }
@@ -1150,55 +1151,32 @@ void CadRemeshing::set_per_patch_target_edge_length(const double factor)
 {
     assert(factor > 0);
 
-    // compute average edge length per patch
-    std::unordered_map<size_t, double> patch_edge_length;
-    std::unordered_map<size_t, std::vector<double>> patch_edge_lengths;
-    std::unordered_map<size_t, size_t> patch_face_count;
-
+    // The target of a patch is its longest edge times factor.
+    std::unordered_map<size_t, double> patch_tal;
     for (const Tuple& t : get_faces()) {
         const size_t pid = face_attrs[t.fid(*this)].patch_id;
         const auto vs = oriented_tri_vids(t);
-        const Vector3d p0 = vertex_attrs[vs[0]].pos;
-        const Vector3d p1 = vertex_attrs[vs[1]].pos;
-        const Vector3d p2 = vertex_attrs[vs[2]].pos;
-        const double l0 = (p1 - p0).norm();
-        const double l1 = (p2 - p1).norm();
-        const double l2 = (p0 - p2).norm();
-
-        if (patch_face_count.count(pid) == 0) {
-            patch_edge_length[pid] = l0 + l1 + l2;
-            patch_face_count[pid] = 1;
-        } else {
-            patch_edge_length[pid] += l0 + l1 + l2;
-            patch_face_count[pid] += 1;
+        const Vector3d& p0 = vertex_attrs[vs[0]].pos;
+        const Vector3d& p1 = vertex_attrs[vs[1]].pos;
+        const Vector3d& p2 = vertex_attrs[vs[2]].pos;
+        const double longest = std::max({(p1 - p0).norm(), (p2 - p1).norm(), (p0 - p2).norm()});
+        const auto [it, inserted] = patch_tal.try_emplace(pid, longest);
+        if (!inserted) {
+            it->second = std::max(it->second, longest);
         }
-        patch_edge_lengths[pid].emplace_back(l0);
-        patch_edge_lengths[pid].emplace_back(l1);
-        patch_edge_lengths[pid].emplace_back(l2);
+    }
+    for (auto& [pid, tal] : patch_tal) {
+        tal *= factor;
+        logger().info("Patch {}, tal = {}", pid, tal);
     }
 
-    for (auto& [pid, el] : patch_edge_length) {
-        auto& vec = patch_edge_lengths[pid];
-        std::sort(vec.begin(), vec.end());
-        el = vec.back();
-    }
-
-    // apply factor
-    for (auto& [pid, el] : patch_edge_length) {
-        el *= factor;
-        logger().info("Patch {}, tal = {}", pid, el);
-    }
-
-    // assign shortest patch edge length to vertices
+    // A vertex takes the shortest target of the patches around it.
     for (const Tuple& t : get_vertices()) {
-        const auto fs = get_one_ring_tris_for_vertex(t);
-        double min_el = std::numeric_limits<double>::max();
-        for (const Tuple& f : fs) {
-            const size_t pid = face_attrs[f.fid(*this)].patch_id;
-            const double patch_el = patch_edge_length[pid];
-            min_el = std::min(min_el, patch_el);
+        double min_tal = std::numeric_limits<double>::max();
+        for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
+            min_tal = std::min(min_tal, patch_tal.at(face_attrs[f.fid(*this)].patch_id));
         }
-        vertex_attrs[t.vid(*this)].tal = min_el;
+        vertex_attrs[t.vid(*this)].tal = min_tal;
     }
 
     // smooth edge length between vertices

@@ -171,7 +171,14 @@ void cad_remeshing(nlohmann::json json_params)
         msh.extract_faces(
             [&inF](size_t i, size_t v0, size_t v1, size_t v2) { inF.row(i) << v0, v1, v2; });
     } else {
-        igl::read_triangle_mesh(input_path, inV, inF);
+        // Not wmtk::io::read_triangle_mesh: its cleaning step renumbers vertices and faces, and
+        // the patches file refers to the input's ids.
+        if (!igl::read_triangle_mesh(input_path, inV, inF)) {
+            log_and_throw_error("Cannot read mesh {}", input_path);
+        }
+    }
+    if (inF.rows() == 0) {
+        log_and_throw_error("Mesh {} has no triangles", input_path);
     }
     verts.resize(inV.rows());
     tris.resize(inF.rows());
