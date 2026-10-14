@@ -97,7 +97,7 @@
     "pointer": "/input_edges",
     "type": "list",
     "default": [],
-    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. NOTE: inserted and tracked only, for now -- the optimization phase does not yet preserve them."
+    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
   },
   {
     "pointer": "/input_edges/*",
@@ -108,7 +108,7 @@
     "pointer": "/input_points",
     "type": "list",
     "default": [],
-    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). NOTE: inserted and tracked only, for now -- the optimization phase does not yet preserve them."
+    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
   },
   {
     "pointer": "/input_points/*",
