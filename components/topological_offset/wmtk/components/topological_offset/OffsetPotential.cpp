@@ -1614,6 +1614,8 @@ void BandVolumeEnergy3D::set_exact_integral(
     m_eb = std::move(eb);
     m_delta = delta;
     m_eb_val_set = m_eb_der_set = false;
+    m_eb_parts.clear();
+    m_eb_parts.resize(m_cells.size());
 }
 
 bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
@@ -1682,8 +1684,9 @@ double BandVolumeEnergy3D::eval(
         if (need == 0) {
             if (!(m_eb_val_set && same(m_eb_val_x))) {
                 double E = 0.;
-                for (const Cell& c : m_cells) {
-                    E += m_eb->value({{x, c.q1, c.q2, c.q3}}, m_delta) / m_delta;
+                for (size_t k = 0; k < m_cells.size(); ++k) {
+                    const Cell& c = m_cells[k];
+                    E += m_eb->value({{x, c.q1, c.q2, c.q3}}, m_delta, m_eb_parts[k]) / m_delta;
                 }
                 m_eb_E = E;
                 m_eb_val_x = x;
@@ -1696,10 +1699,11 @@ double BandVolumeEnergy3D::eval(
         if (!(m_eb_der_set && same(m_eb_der_x))) {
             m_eb_g.setZero();
             m_eb_H.setZero();
-            for (const Cell& c : m_cells) {
+            for (size_t k = 0; k < m_cells.size(); ++k) {
+                const Cell& c = m_cells[k];
                 Eigen::Vector3d gc;
                 Eigen::Matrix3d hc;
-                m_eb->value_grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc);
+                m_eb->value_grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc, m_eb_parts[k]);
                 m_eb_g += gc / m_delta;
                 m_eb_H += hc / m_delta;
             }

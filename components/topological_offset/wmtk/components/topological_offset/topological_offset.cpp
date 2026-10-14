@@ -70,6 +70,13 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params(json_params);
+    // Both dimensions: the correspondence is recorded by the march and indexes vertices the
+    // optimization would split, collapse and renumber.
+    if (params.save_offset_correspondence && params.optimize_offset) {
+        log_and_throw_error(
+            "save_offset_correspondence requires optimize_offset false: corr_input_vid is "
+            "recorded by the march and not carried through the optimization");
+    }
     const std::string offset_selection_str = json_params["offset_selection"];
     bool check_manifoldness = json_params["check_manifoldness"];
 

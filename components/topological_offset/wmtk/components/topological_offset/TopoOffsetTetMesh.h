@@ -60,6 +60,11 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
+    /// The input-complex vertex this offset vertex was split off from by marching_tets(): the
+    /// marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written
+    /// into the output .msh by save_offset_correspondence; not maintained by the optimization.
+    /// The 2D twin is VertexExtra2d::m_corr_input_vid.
+    int64_t m_corr_input_vid = -1;
 
     /// Which split pass created this vertex, from wmtk::TetOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.

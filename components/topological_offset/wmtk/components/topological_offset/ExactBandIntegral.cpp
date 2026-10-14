@@ -5,12 +5,15 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <string>
 
 // Every function below is the Python function of the same name (exact_tri.py, exact_mesh.py,
@@ -115,6 +118,13 @@ struct Poly
     /// coordinates (clip() writes each vertex once).
     std::vector<int> id;
     int nv = 0;
+    /// The vertices, V[v] the coordinates of every ring point with id v (add_face() appends each at
+    /// its first appearance). A min or max over the ring points is the one over V, which holds
+    /// the same coordinates without the repeats: a convex polytope's vertex lies on 3 or more
+    /// faces, so the ring points are 3 or more times as many. MEASURED (Geneva base, inward):
+    /// partition()'s own time, classify() inlined in it and looping over the ring points, was 27%
+    /// of the collapse pass's busy time once the value table answered its before-sums.
+    std::vector<Vec3> V;
     int faces() const { return int(N.size()); }
     int size(int f) const { return off[size_t(f) + 1] - off[size_t(f)]; }
     const Vec3* ring(int f) const { return P.data() + off[size_t(f)]; }
@@ -126,19 +136,23 @@ struct Poly
         N.clear();
         id.clear();
         nv = 0;
+        V.clear();
     }
-    void add_face(const Vec3* V, const int* ids, int k, const Vec3& n)
+    void add_face(const Vec3* pts, const int* ids, int k, const Vec3& n)
     {
-        P.insert(P.end(), V, V + k);
+        P.insert(P.end(), pts, pts + k);
         id.insert(id.end(), ids, ids + k);
         off.push_back(int(P.size()));
         N.push_back(n);
+        for (int i = 0; i < k; ++i) {
+            if (ids[i] == int(V.size())) V.push_back(pts[i]);
+        }
     }
-    /// np.max(np.abs(vstack of the rings))
+    /// np.max(np.abs(vstack of the rings)), over V
     double max_abs() const
     {
         double m = 0.;
-        for (const Vec3& p : P) m = std::max(m, maxabs(p));
+        for (const Vec3& p : V) m = std::max(m, maxabs(p));
         return m;
     }
 };
@@ -153,6 +167,11 @@ bool tet_polytope(const std::array<Vec3, 4>& T, Poly& out)
     const double vol6 = (T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]));
     if (L == 0. || std::abs(vol6) <= 64 * EPS * (L * L * L)) return false;
     out.clear();
+    out.P.reserve(12); // four triangles (see clip(): reserved, not regrown)
+    out.id.reserve(12);
+    out.V.reserve(4);
+    out.off.reserve(5);
+    out.N.reserve(4);
     int renum[4] = {-1, -1, -1, -1};
     for (int i = 0; i < 4; ++i) {
         Vec3 V[3];
@@ -221,7 +240,7 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
     if (cx.st) ++cx.st->clips;
     const double tol = 16 * EPS * (std::abs(h) + std::max(Q.max_abs(), cx.scale));
     double smax = -std::numeric_limits<double>::infinity(), smin = -smax;
-    for (const Vec3& p : Q.P) {
+    for (const Vec3& p : Q.V) {
         const double s = p.dot(g) - h;
         smax = std::max(smax, s);
         smin = std::min(smin, s);
@@ -234,7 +253,7 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
     // visible part of the cost
     thread_local std::vector<Vec3> X;
     thread_local std::vector<double> sv, s;
-    thread_local std::vector<char> have, seen;
+    thread_local std::vector<char> seen;
     thread_local std::vector<int> rings, roff, capP, ring, pos, renum, circuit, stack, used, path,
         loop;
     thread_local std::vector<Vec3> rN, pts;
@@ -242,16 +261,12 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
     thread_local std::vector<std::pair<int, int>> E;
     thread_local std::vector<std::vector<int>> nxt;
     thread_local std::vector<double> ang;
-    // one position and one plane value per vertex (its first ring point's)
+    // one position and one plane value per vertex
     X.resize(size_t(Q.nv));
     sv.resize(size_t(Q.nv));
-    have.assign(size_t(Q.nv), 0);
-    for (size_t i = 0; i < Q.P.size(); ++i) {
-        const int v = Q.id[i];
-        if (have[size_t(v)]) continue;
-        have[size_t(v)] = 1;
-        X[size_t(v)] = Q.P[i];
-        const double si = Q.P[i].dot(g) - h;
+    for (int v = 0; v < Q.nv; ++v) {
+        X[size_t(v)] = Q.V[size_t(v)];
+        const double si = Q.V[size_t(v)].dot(g) - h;
         sv[size_t(v)] = std::abs(si) <= tol ? 0. : si;
     }
     seen.assign(size_t(Q.nv), 0);
@@ -454,6 +469,15 @@ Cut clip(const Poly& Q, const Vec3& g, const double h, Poly& out, const Ctx& cx)
     // the faces, their vertices renumbered in the order they appear
     for (int& v : renum) v = -1;
     int nv_out = 0;
+    // Room for the result, reserved once: its faces are the kept rings and the caps, each emitted
+    // as one or more loops of its points, so the rings' points and faces bound it except where a
+    // ring splits into several loops. MEASURED (Geneva base, inward, collapse pass, sampled):
+    // add_face(), the vectors regrowing face by face, was 25% of the busy time.
+    out.P.reserve(rings.size());
+    out.id.reserve(rings.size());
+    out.V.reserve(size_t(nV));
+    out.off.reserve(roff.size());
+    out.N.reserve(roff.size() - 1);
     for (size_t r = 0; r + 1 < roff.size(); ++r) {
         const int b = roff[r], k = roff[r + 1] - b;
         ring.clear();
@@ -1100,7 +1124,7 @@ Side classify(
         const Vec3& g = H[i].first;
         const double h = H[i].second;
         double smin = std::numeric_limits<double>::infinity(), smax = -smin;
-        for (const Vec3& p : Q.P) {
+        for (const Vec3& p : Q.V) {
             const double s = p.dot(g) - h;
             smin = std::min(smin, s);
             smax = std::max(smax, s);
@@ -1725,6 +1749,62 @@ void M_closed(const double u, const double k, const int imax, const int power, d
     }
 }
 
+/// The jet of S (power 1) or 1/S (power -1) about a segment's midpoint, S^2 = S2[0] + S2[1] tau' +
+/// S2[2] tau'^2 (seg_int()), to length K. Coefficient k depends on coefficients 0..k of S2 only
+/// (jsqrt, jdiv are recurrences in k), so the jet computed to length K_SEG + 4, the longest any
+/// caller asks for, is in its first K coefficients the jet computed to length K, bit for bit. The
+/// last jets of this thread are kept and read back for the same S2: the callers integrate up to
+/// six polynomials over each segment (face_line_derivs(): one in its first loop over the edges,
+/// five more in the radial branch's; face_point_derivs(): four). MEASURED (Geneva base, inward,
+/// the smoothing pass after the split, sampled, the value table and Partition in place):
+/// seg_int() was 16% of the busy time, self.
+const Jet& seg_jet(const double* S2, const int K, const int power)
+{
+    constexpr int KMAX = K_SEG + 4;
+    struct Entry
+    {
+        double key[3];
+        bool full = false, inv = false;
+        Jet S, Si;
+    };
+    constexpr int kEntries = 16; // a polygon's edges, between the two loops of face_line_derivs()
+    thread_local std::array<Entry, kEntries> memo;
+    thread_local int next = 0;
+    if (K > KMAX) { // longer than any caller asks for: not kept
+        thread_local Jet S, Si;
+        jsqrt(S2, K, S.data());
+        if (power == 1) return S;
+        Jet e0{};
+        e0[0] = 1.;
+        jdiv(e0.data(), S.data(), K, Si.data());
+        return Si;
+    }
+    Entry* e = nullptr;
+    for (Entry& x : memo) {
+        if (x.full && std::memcmp(x.key, S2, sizeof(x.key)) == 0) {
+            e = &x;
+            break;
+        }
+    }
+    if (!e) {
+        e = &memo[size_t(next)];
+        next = (next + 1) % kEntries;
+        e->full = false;
+        jsqrt(S2, KMAX, e->S.data());
+        std::memcpy(e->key, S2, sizeof(e->key));
+        e->inv = false;
+        e->full = true;
+    }
+    if (power == 1) return e->S;
+    if (!e->inv) {
+        Jet e0{};
+        e0[0] = 1.;
+        jdiv(e0.data(), e->S.data(), KMAX, e->Si.data());
+        e->inv = true;
+    }
+    return e->Si;
+}
+
 /// seg_int: int_0^ell P(sigma) S(sigma)^power d sigma, S(sigma) = |w0 + sigma tp|, power = +1 or
 /// -1, P ascending in sigma (length np). With power = -1 the caller guarantees P/S is bounded (P
 /// vanishes where S does). Short against the distance to the complex zeros of S^2 (ell |tp| <=
@@ -1761,17 +1841,11 @@ double seg_int(
         // Taylor series in tau' = tau / (ell/2) in [-1, 1] (scaled, so no coefficient overflows)
         const int K = K_SEG + np;
         const double hl = 0.5 * ell;
-        Jet S2{}, S, Ps{}, g;
+        Jet S2{}, Ps{}, g;
         S2[0] = Sm * Sm;
         S2[1] = 2 * wm.dot(tp) * hl;
         S2[2] = (sa * hl) * (sa * hl);
-        jsqrt(S2.data(), K, S.data());
-        if (power == -1) {
-            Jet e0{}, Si;
-            e0[0] = 1.;
-            jdiv(e0.data(), S.data(), K, Si.data());
-            S = Si;
-        }
+        const Jet& S = seg_jet(S2.data(), K, power);
         for (int j = 0; j < np; ++j) Ps[size_t(j)] = Pc[j] * std::pow(hl, double(j));
         for (int k = 0; k < K;
              ++k) { // jmul(Ps, S), Ps vanishing beyond its first np: zeros skipped
@@ -1927,6 +2001,45 @@ void face_point_derivs(
 /// jdiv2): the same sums in the same order, the same values (MEASURED: bit-identical on every
 /// stored band cell).
 constexpr int MAXXI = 2 + K_LONG_D + 2 + 3; ///< mmax + 1 <= Aa + (K_LONG_D + degw) + 2 = 25
+///
+/// The jets u = eta / zeta, asinh(u), w = sqrt(1 + u^2), R = zeta w and zeta^2 (the base) depend
+/// on eta and zeta alone, not on kind or mmax, and coefficient k of each on coefficients 0..k of
+/// eta and zeta only (jmul, jsqrt, jdiv, jdiv2, jmul3 are recurrences in k, the same operations
+/// for every length): so a base computed to length n' >= n is, in its first n coefficients, the
+/// base computed to length n, bit for bit. The last bases of this thread are kept and read back
+/// for the same eta and zeta: edge_np_w() calls jXi() for the same jets with both weights of an
+/// edge (face_line_derivs(), its near-parallel branch), the longer first. MEASURED (Geneva base,
+/// inward, the smoothing pass after the split, sampled, the value table and Partition in place):
+/// jXi() was 25% of the busy time, 16% in the base's jasinh_w().
+struct JetBase
+{
+    int n = 0; ///< length computed; 0: unset
+    Jet eta, zeta; ///< the inputs, first n coefficients
+    Jet u, A, w, R, z2;
+};
+const JetBase& jet_base(const double* eta, const double* zeta, const int n)
+{
+    constexpr int kBases = 4; // edge_np_w()'s long branch reads three per weight
+    thread_local std::array<JetBase, kBases> bases;
+    thread_local int next = 0;
+    const size_t bytes = size_t(n) * sizeof(double);
+    for (const JetBase& b : bases) {
+        if (b.n >= n && std::memcmp(b.eta.data(), eta, bytes) == 0 &&
+            std::memcmp(b.zeta.data(), zeta, bytes) == 0) {
+            return b;
+        }
+    }
+    JetBase& b = bases[size_t(next)];
+    next = (next + 1) % kBases;
+    std::memcpy(b.eta.data(), eta, bytes);
+    std::memcpy(b.zeta.data(), zeta, bytes);
+    jdiv2(eta, zeta, n, b.u.data());
+    jasinh_w(b.u.data(), n, b.A.data(), b.w.data());
+    jmul3(zeta, b.w.data(), n, b.R.data());
+    jmul3(zeta, zeta, n, b.z2.data());
+    b.n = n;
+    return b;
+}
 void jXi(
     const double* eta,
     const double* zeta,
@@ -1935,11 +2048,9 @@ void jXi(
     const int kind,
     Jet* Xi)
 {
-    Jet u, A, w, R, z2, t, t2;
-    jdiv2(eta, zeta, n, u.data());
-    jasinh_w(u.data(), n, A.data(), w.data());
-    jmul3(zeta, w.data(), n, R.data());
-    jmul3(zeta, zeta, n, z2.data());
+    Jet t, t2;
+    const JetBase& base = jet_base(eta, zeta, n);
+    const Jet &u = base.u, &A = base.A, &w = base.w, &R = base.R, &z2 = base.z2;
     const int ne = std::max(0, mmax - 1); // ep[m] = eta^m, m = 0..ne
     std::array<Jet, MAXXI> ep;
     ep[0].fill(0.);
@@ -2228,8 +2339,10 @@ void face_line_derivs(
                     if (xij != xii) {
                         const double ei = eta_of(i), ej = eta_of(j);
                         const double zi = sg * zeta_of(xii), zj = sg * zeta_of(xij);
-                        P1 -= edge_np_w(ei, ej, zi, zj, xii, xij, W1, 0);
+                        // W2 first: its series is one longer, so W1's reads its jet bases
+                        // (jet_base())
                         Z -= edge_np_w(ei, ej, zi, zj, xii, xij, W2, 1);
+                        P1 -= edge_np_w(ei, ej, zi, zj, xii, xij, W1, 0);
                     }
                 }
                 // n.w = -cos(theta) zeta on the plane; Z = int lam^2 za / r, zeta = sg za
@@ -2358,8 +2471,17 @@ ExactBandIntegral::ExactBandIntegral(
     const Eigen::MatrixXd& Vin,
     const Eigen::MatrixXi& Fin,
     const std::vector<int8_t>& face_side,
-    const int sigma)
+    const int sigma,
+    const size_t value_slots)
 {
+    static std::atomic<uint64_t> n_constructed{0};
+    m_id = ++n_constructed;
+    if (value_slots > 0) {
+        size_t n = kValueStripes;
+        while (n < value_slots) n *= 2;
+        m_values.resize(n);
+        m_value_locks = std::make_unique<std::mutex[]>(kValueStripes);
+    }
     // Mesh.__init__: np.unique(V[F], axis=0) -- the referenced vertices, merged by exact
     // coordinates and sorted lexicographically.
     const int nf = int(Fin.rows());
@@ -2817,6 +2939,40 @@ bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work&
     return true;
 }
 
+ExactBandIntegral::Partition::Partition() = default;
+ExactBandIntegral::Partition::~Partition() = default;
+ExactBandIntegral::Partition::Partition(Partition&&) noexcept = default;
+ExactBandIntegral::Partition& ExactBandIntegral::Partition::operator=(Partition&&) noexcept =
+    default;
+
+const ExactBandIntegral::Work* ExactBandIntegral::cell_partition(
+    const std::array<Eigen::Vector3d, 4>& T,
+    Stats* stats,
+    Work* own,
+    Partition* keep) const
+{
+    if (stats) return partition(T, *own, stats) ? own : nullptr;
+    if (!keep) {
+        // MEASURED (Geneva base, inward, collapse pass): 29.8 s with a per-thread table of the
+        // last 64 partitions, 27.1 s with this one scratch partition, whose vectors keep their
+        // storage from call to call (and 365 s with a fresh partition per call, before the value
+        // table).
+        thread_local Work scratch;
+        return partition(T, scratch, nullptr) ? &scratch : nullptr;
+    }
+    double key[12];
+    for (int i = 0; i < 4; ++i) std::memcpy(key + 3 * i, T[size_t(i)].data(), 3 * sizeof(double));
+    if (keep->m_w && keep->m_owner == m_id && std::memcmp(keep->m_key, key, sizeof(key)) == 0) {
+        return keep->m_ok ? keep->m_w.get() : nullptr;
+    }
+    if (!keep->m_w) keep->m_w = std::make_unique<Work>();
+    keep->m_owner = 0; // none until partition() returns (it may throw)
+    keep->m_ok = partition(T, *keep->m_w, nullptr);
+    std::memcpy(keep->m_key, key, sizeof(key));
+    keep->m_owner = m_id;
+    return keep->m_ok ? keep->m_w.get() : nullptr;
+}
+
 void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, TriWork& w) const
 {
     Ctx cx;
@@ -3005,12 +3161,67 @@ double ExactBandIntegral::value(
     const double delta,
     Stats* stats) const
 {
+    if (m_values.empty() || stats) return evaluate(T, delta, stats, nullptr);
+    return value_tabled(T, delta, nullptr);
+}
+
+double ExactBandIntegral::value(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const double delta,
+    Partition& keep) const
+{
+    if (m_values.empty()) return evaluate(T, delta, nullptr, &keep);
+    return value_tabled(T, delta, &keep);
+}
+
+double ExactBandIntegral::value_tabled(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const double delta,
+    Partition* keep) const
+{
+    // the value table (see value())
+    double in[13];
+    for (int i = 0; i < 4; ++i) std::memcpy(in + 3 * i, T[size_t(i)].data(), 3 * sizeof(double));
+    in[12] = delta;
+    uint64_t h = 0x9e3779b97f4a7c15ull;
+    for (const double x : in) {
+        uint64_t u;
+        std::memcpy(&u, &x, sizeof(u));
+        h = (h ^ u) * 0xbf58476d1ce4e5b9ull;
+        h ^= h >> 31;
+    }
+    h *= 0x94d049bb133111ebull;
+    h ^= h >> 32;
+    const size_t k = size_t(h) & (m_values.size() - 1);
+    ValueSlot& sl = m_values[k];
+    std::mutex& mx = m_value_locks[k & (kValueStripes - 1)];
+    {
+        std::lock_guard<std::mutex> lock(mx);
+        if (sl.full && std::memcmp(sl.in, in, sizeof(in)) == 0) return sl.out;
+    }
+    const double v = evaluate(T, delta, nullptr, keep);
+    std::lock_guard<std::mutex> lock(mx);
+    std::memcpy(sl.in, in, sizeof(in));
+    sl.out = v;
+    sl.full = true;
+    return v;
+}
+
+double ExactBandIntegral::evaluate(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const double delta,
+    Stats* stats,
+    Partition* keep) const
+{
     Ctx cx;
     cx.st = stats;
     cx.timing = stats && stats->timing;
     Timer t_all(cx, &Stats::t_total);
-    Work w;
-    if (!partition(T, w, stats)) return 0.;
+    std::optional<Work> own;
+    if (stats) own.emplace();
+    const Work* wp = cell_partition(T, stats, own ? &*own : nullptr, keep);
+    if (!wp) return 0.;
+    const Work& w = *wp;
     cx.scale = w.scale;
     const std::vector<Loc>& loc = w.loc;
     const std::vector<Piece>& pieces = w.pieces;
@@ -3238,14 +3449,40 @@ double ExactBandIntegral::value_grad_hess(
     Eigen::Matrix3d& H,
     Stats* stats) const
 {
+    return value_grad_hess_impl(T, kv, delta, G, H, stats, nullptr);
+}
+
+double ExactBandIntegral::value_grad_hess(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const int kv,
+    const double delta,
+    Eigen::Vector3d& G,
+    Eigen::Matrix3d& H,
+    Partition& keep) const
+{
+    return value_grad_hess_impl(T, kv, delta, G, H, nullptr, &keep);
+}
+
+double ExactBandIntegral::value_grad_hess_impl(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const int kv,
+    const double delta,
+    Eigen::Vector3d& G,
+    Eigen::Matrix3d& H,
+    Stats* stats,
+    Partition* keep) const
+{
     G.setZero();
     H.setZero();
     Ctx cx;
     cx.st = stats;
     cx.timing = stats && stats->timing;
     Timer t_all(cx, &Stats::t_total);
-    Work w;
-    if (!partition(T, w, stats)) return 0.;
+    std::optional<Work> own;
+    if (stats) own.emplace();
+    const Work* wp = cell_partition(T, stats, own ? &*own : nullptr, keep);
+    if (!wp) return 0.;
+    const Work& w = *wp;
     cx.scale = w.scale;
     const std::vector<Loc>& loc = w.loc;
 

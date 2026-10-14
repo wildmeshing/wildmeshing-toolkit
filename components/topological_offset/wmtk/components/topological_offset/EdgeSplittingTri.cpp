@@ -104,6 +104,16 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra2d();
     cache.new_v_extra.label = m_edge_extra[e_id].label;
+    // The march splits exactly the edges with one endpoint labelled 0 (marching_tris()), and the
+    // other endpoint is on the input complex: that endpoint is the new vertex's correspondence.
+    // The simplicial embedding's edge splits pass through here too; their edges have both
+    // endpoints on the complex and record none. As in 3D.
+    {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        cache.new_v_extra.m_corr_input_vid =
+            (in1 != in2) ? int64_t(in1 ? cache.v1_id : cache.v2_id) : int64_t(-1);
+    }
     // The flag is the edge's own class, not an AND of the endpoints: two vertices sharing a
     // region can be joined by a chord through the interior, and marching splits exactly such
     // chords. Behind that gate the bits are the endpoints' AND, propagated, never recomputed from

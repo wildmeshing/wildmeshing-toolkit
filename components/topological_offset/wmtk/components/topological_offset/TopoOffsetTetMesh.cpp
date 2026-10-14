@@ -1090,8 +1090,17 @@ void TopoOffsetTetMesh::init_offset_potential()
                     sigma > 0 ? "outside the label-1 cells" : "none",
                     sigma,
                     vol6 / 6.);
-                m_band_exact =
-                    std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F, m_phi_F_inner, sigma);
+                // The value table (ExactBandIntegral::value()) for the band term only, which
+                // reads cells again; twice the constructed mesh's tets, so that its live band
+                // cells seldom share a slot.
+                const size_t value_slots =
+                    m_offset_params.band_volume_rule == "exact" ? 2 * tet_capacity() : 0;
+                m_band_exact = std::make_shared<ExactBandIntegral>(
+                    m_phi_V,
+                    m_phi_F,
+                    m_phi_F_inner,
+                    sigma,
+                    value_slots);
             }
         }
         return;
@@ -2769,6 +2778,14 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
         auto i = verts[k].vid(*this);
         return m_vertex_attribute[i].m_posf;
     });
+    // save_offset_correspondence: attached to the block just added, as MshData requires. Valid as
+    // written because the run stopped at the construction, which removes no vertex, so
+    // consolidate_mesh() above kept every id the field holds. As in 2D.
+    if (m_offset_params.save_offset_correspondence) {
+        msh.add_tet_vertex_attribute<1>("corr_input_vid", [&](size_t k) {
+            return double(m_vertex_extra[verts[k].vid(*this)].m_corr_input_vid);
+        });
+    }
 
     auto msh_add_tets = [&]() {
         msh.add_tets(tets_with_tag.size(), [&](size_t k) {
@@ -2823,8 +2840,9 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
         msh.add_physical_group("EnvelopeSurface");
     }
 
-    // No node data: the file has the same shape as simwild's output (node and element blocks per
-    // physical group, plus the retained envelope) and nothing else.
+    // No node data unless save_offset_correspondence: the file has the same shape as simwild's
+    // output (node and element blocks per physical group, plus the retained envelope) and nothing
+    // else.
     msh.save(file + ".msh", true);
 }
 
