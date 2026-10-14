@@ -405,7 +405,10 @@ TEST_CASE("exact-band-front-curved", "[offset][exact_band][front_flux]")
  * "front_flux". Also: front_flux's gradient and Hessian against exact's at every vertex, and the
  * flag against D_t on every band cell. FF_BENCH_SPLIT=1 splits front_flux's time (labelling,
  * flux, derivatives); FF_BENCH_DEBUG=1 prints the vertices where the two disagree, with central
- * differences of the gradient against each Hessian.
+ * differences of the gradient against each Hessian. FF_BENCH_DUMP=<file> writes front_flux's
+ * results bit for bit, to compare two builds: per front vertex the value alone, then value,
+ * gradient, Hessian, then the number of boundary faces through it and per face front_face(),
+ * then front_face_derivs()' gradient and Hessian (doubles).
  */
 TEST_CASE("exact-band-front-bench", "[.bench_front]")
 {
@@ -510,14 +513,18 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
         eb->front_flux_polytopes(),
         eb->front_flux_reach());
 
+    std::FILE* dump = nullptr;
+    if (const char* df = std::getenv("FF_BENCH_DUMP")) dump = std::fopen(df, "wb");
+    const auto put = [&](const double* a, const size_t n) {
+        if (dump) std::fwrite(a, sizeof(double), n, dump);
+    };
     using clk = std::chrono::steady_clock;
-    std::vector<double> t_cb, t_ex, t_ff, t_split_v, t_split_d, t_split_p, t_split_f;
+    std::vector<double> t_cb, t_ex, t_ff, t_ff_der, t_split_v, t_split_d, t_split_p, t_split_f;
     std::vector<double> v_cb, v_ex, v_ff; // value only
     double worst_g = 0., worst_h = 0.;
     std::vector<double> eg_all, eh_all;
     int n_D = 0, n_D_max = 0, n_curved = 0;
-    for (const int v : front) {
-        const Vec3 x = P[size_t(v)];
+    const auto cells_of = [&](const int v) {
         std::vector<BandVolumeEnergy3D::Cell> cells;
         for (const int t : ring[size_t(v)]) {
             BandVolumeEnergy3D::Cell c;
@@ -529,6 +536,9 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
             }
             cells.push_back(c);
         }
+        return cells;
+    };
+    const auto faces_of = [&](const int v) {
         std::vector<BandVolumeEnergy3D::Face> faces;
         for (const int fi : bfaces[size_t(v)]) {
             const auto& f = bf[size_t(fi)];
@@ -536,55 +546,109 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
             while (f[size_t(j)] != v) ++j;
             faces.push_back({P[size_t(f[size_t((j + 1) % 3)])], P[size_t(f[size_t((j + 2) % 3)])]});
         }
+        return faces;
+    };
+    // The value alone, in a pass of its own: the closed forms keep per-thread tables of their
+    // last results (ExactBandIntegral.cpp, jXi()), which a value at the same x just before would
+    // fill for the evaluation timed below.
+    std::vector<double> vo_all;
+    for (const int v : front) {
+        const Vec3 x = P[size_t(v)];
+        const auto cells = cells_of(v);
+        const auto faces = faces_of(v);
         const Eigen::VectorXd xv = x;
-        Eigen::VectorXd g;
-        Eigen::MatrixXd H;
         const auto timed_value = [&](BandVolumeEnergy3D& e, std::vector<double>& out) {
             const auto t0 = clk::now();
             e.value(xv);
             out.push_back(std::chrono::duration<double, std::micro>(clk::now() - t0).count());
         };
+        BandVolumeEnergy3D e(tris, cells, x, delta);
+        timed_value(e, v_cb);
+        BandVolumeEnergy3D e2(tris, cells, x, delta);
+        e2.set_exact_integral(eb, delta);
+        timed_value(e2, v_ex);
+        BandVolumeEnergy3D e3(tris, cells, x, delta);
+        e3.set_front_flux(eb, delta, faces);
+        double vo = std::numeric_limits<double>::quiet_NaN();
+        try {
+            timed_value(e3, v_ff);
+            vo = e3.value(xv);
+        } catch (const std::runtime_error&) {
+        }
+        vo_all.push_back(vo);
+    }
+    // value, gradient and Hessian at xv, timed into out; the derivatives' part into der
+    const auto timed = [&](BandVolumeEnergy3D& e,
+                           const Eigen::VectorXd& xv,
+                           Eigen::VectorXd& g,
+                           Eigen::MatrixXd& H,
+                           std::vector<double>& out,
+                           double& der) {
+        const auto t0 = clk::now();
+        const double val = e.value(xv);
+        const auto t1 = clk::now();
+        e.gradient(xv, g);
+        e.hessian(xv, H);
+        const auto t2 = clk::now();
+        out.push_back(std::chrono::duration<double, std::micro>(t2 - t0).count());
+        der = std::chrono::duration<double, std::micro>(t2 - t1).count();
+        return val;
+    };
+    // The "exact" rule's evaluations in a pass of their own as well: at the same vertex they fill
+    // the tables front_flux's read (MEASURED, cube_out: front_flux 48.8 us after them, 82.3 us
+    // without).
+    std::vector<Eigen::VectorXd> ge_all;
+    std::vector<Eigen::MatrixXd> He_all;
+    for (const int v : front) {
+        const Eigen::VectorXd xv = P[size_t(v)];
+        Eigen::VectorXd g;
+        Eigen::MatrixXd H;
+        double der = 0.;
+        BandVolumeEnergy3D e(tris, cells_of(v), P[size_t(v)], delta);
+        e.set_exact_integral(eb, delta);
+        timed(e, xv, g, H, t_ex, der);
+        ge_all.push_back(g);
+        He_all.push_back(H);
+    }
+    for (size_t iv = 0; iv < front.size(); ++iv) {
+        const int v = front[iv];
+        const Vec3 x = P[size_t(v)];
+        const auto cells = cells_of(v);
+        const auto faces = faces_of(v);
+        const Eigen::VectorXd xv = x;
+        Eigen::VectorXd g;
+        Eigen::MatrixXd H;
+        put(&vo_all[iv], 1);
+        double der = 0.;
         {
             BandVolumeEnergy3D e(tris, cells, x, delta);
-            timed_value(e, v_cb);
-            BandVolumeEnergy3D e2(tris, cells, x, delta);
-            e2.set_exact_integral(eb, delta);
-            timed_value(e2, v_ex);
-            BandVolumeEnergy3D e3(tris, cells, x, delta);
-            e3.set_front_flux(eb, delta, faces);
-            try {
-                timed_value(e3, v_ff);
-            } catch (const std::runtime_error&) {
-            }
+            timed(e, xv, g, H, t_cb, der);
         }
-        const auto timed = [&](BandVolumeEnergy3D& e, std::vector<double>& out) {
-            const auto t0 = clk::now();
-            const double val = e.value(xv);
-            e.gradient(xv, g);
-            e.hessian(xv, H);
-            out.push_back(std::chrono::duration<double, std::micro>(clk::now() - t0).count());
-            return val;
-        };
-        {
-            BandVolumeEnergy3D e(tris, cells, x, delta);
-            timed(e, t_cb);
-        }
-        Eigen::VectorXd ge;
-        Eigen::MatrixXd He;
-        {
-            BandVolumeEnergy3D e(tris, cells, x, delta);
-            e.set_exact_integral(eb, delta);
-            timed(e, t_ex);
-            ge = g;
-            He = H;
-        }
+        const Eigen::VectorXd& ge = ge_all[iv];
+        const Eigen::MatrixXd& He = He_all[iv];
         try {
             BandVolumeEnergy3D e(tris, cells, x, delta);
             e.set_front_flux(eb, delta, faces);
-            timed(e, t_ff);
+            const double val = timed(e, xv, g, H, t_ff, der);
+            t_ff_der.push_back(der);
+            put(&val, 1);
+            put(g.data(), 3);
+            put(H.data(), 9);
         } catch (const std::runtime_error&) {
             ++n_curved;
             continue;
+        }
+        const double nf = dump ? double(faces.size()) : 0.;
+        put(&nf, 1);
+        for (size_t fi = 0; fi < size_t(nf); ++fi) {
+            const auto& f = faces[fi];
+            const double fv = eb->front_face({{x, f.a, f.b}}, delta);
+            Vec3 gg;
+            Eigen::Matrix3d hh;
+            eb->front_face_derivs({{x, f.a, f.b}}, delta, 0, gg, hh);
+            put(&fv, 1);
+            put(gg.data(), 3);
+            put(hh.data(), 9);
         }
         if (std::getenv("FF_BENCH_SPLIT")) {
             const auto t0 = clk::now();
@@ -679,7 +743,7 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
     std::printf(
         "  one evaluation of the band part (value + gradient + Hessian), us, median / p90 / max:\n"
         "    corner_bound %.1f / %.1f / %.1f\n    exact        %.1f / %.1f / %.1f\n"
-        "    front_flux   %.1f / %.1f / %.1f\n",
+        "    front_flux   %.1f / %.1f / %.1f (of which gradient + Hessian %.1f / %.1f)\n",
         q(t_cb, 0.5),
         q(t_cb, 0.9),
         q(t_cb, 1.),
@@ -688,7 +752,9 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
         q(t_ex, 1.),
         q(t_ff, 0.5),
         q(t_ff, 0.9),
-        q(t_ff, 1.));
+        q(t_ff, 1.),
+        q(t_ff_der, 0.5),
+        q(t_ff_der, 0.9));
     std::printf(
         "  the value alone (a line-search trial), us, median / p90: corner_bound %.1f / %.1f | "
         "exact %.1f / %.1f | front_flux %.1f / %.1f\n",
@@ -760,5 +826,6 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
         missed_max,
         curved_cells,
         std::chrono::duration<double>(clk::now() - t0).count());
+    if (dump) std::fclose(dump);
     CHECK(missed == 0);
 }

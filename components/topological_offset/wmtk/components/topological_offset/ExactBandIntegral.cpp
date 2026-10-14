@@ -664,15 +664,6 @@ double mean_G(const double e1, const double e2, const double b)
 constexpr int JCAP = 48;
 using Jet = std::array<double, JCAP>;
 
-void jmul(const double* a, const double* b, const int n, double* c)
-{
-    for (int k = 0; k < n; ++k) {
-        double s = 0.;
-        for (int j = 0; j <= k; ++j) s += a[j] * b[k - j];
-        c[k] = s;
-    }
-}
-
 void jdiv(const double* a, const double* b, const int n, double* c)
 {
     c[0] = a[0] / b[0];
@@ -693,9 +684,63 @@ void jsqrt(const double* a, const int n, double* c)
     }
 }
 
-/// Jets of asinh(u) and w = sqrt(1 + u^2).
+/// The length of a without its trailing exact zeros (+0 or -0).
+int jlen(const double* a, int n)
+{
+    while (n > 0 && a[n - 1] == 0.) --n;
+    return n;
+}
+
+/// The product of a vanishing beyond its first na coefficients and b beyond its first nb (exact
+/// zeros, jlen()), to length n: c[k] = sum over j of a[j] b[k - j], added from +0 in ascending j
+/// (exact_tri _jmul), the zero terms left out. The skipped terms lie at the two ends of each sum
+/// (j < k - nb + 1 or j >= na), and adding a zero product to a sum started at +0 changes nothing,
+/// so the value is the full sum's, bit for bit. The sums are taken JB at a time, k0 .. k0 + JB - 1,
+/// in registers, one term each per j over the j any of them needs: a term a sum does not need
+/// (b[k - j] with k - j < 0 or >= nb) reads a zero of the padded copy of b, a zero product, which
+/// changes nothing for the same reason. Why: the front form's series multiply jets of length up to
+/// KB, most of them polynomials of low degree (the weights, the powers of eta, the jets of
+/// eta = 0), and a sum taken alone is a chain of dependent additions. MEASURED (cube_out band, the
+/// bench's front_flux evaluations, sampled): jasinh_w(), jXi() and edge_np_w() were 43%, 25% and
+/// 15% of the time, self, with the dense products one sum after another; (mac-mini, the build's
+/// flags, n = 31) a dense product 0.31 us that way, 0.081 us in blocks of 8, the same bits.
+void jmul_s(const double* a, const int na, const double* b, const int nb, const int n, double* c)
+{
+    constexpr int JB = 8;
+    double bp[JB + JCAP + JB]; // bp[JB + i] = b[i], i < min(nb, n); zeros around, as far as read
+    const int mb = std::max(0, std::min(nb, n));
+    std::fill(bp, bp + JB, 0.);
+    std::memcpy(bp + JB, b, size_t(mb) * sizeof(double));
+    std::fill(bp + JB + mb, bp + JB + n + JB, 0.);
+    for (int k0 = 0; k0 < n; k0 += JB) {
+        double s[JB] = {};
+        const int jlo = std::max(0, k0 - nb + 1), jhi = std::min(na - 1, k0 + JB - 1);
+        for (int j = jlo; j <= jhi; ++j) {
+            const double aj = a[j];
+            const double* bj = bp + JB + k0 - j; // bj[i] = b[k0 + i - j]
+            for (int i = 0; i < JB; ++i) s[i] += aj * bj[i];
+        }
+        for (int i = 0; i < JB && k0 + i < n; ++i) c[k0 + i] = s[i];
+    }
+}
+
+void jmul(const double* a, const double* b, const int n, double* c)
+{
+    jmul_s(a, n, b, n, n, c);
+}
+
+/// Jets of asinh(u) and w = sqrt(1 + u^2). u = 0 (every coefficient +0, as jdiv2() makes it from
+/// eta = 0): A = 0 and w = 1, the values the recurrences below return there, bit for bit (every
+/// sum and quotient of +0 terms is +0, sqrt(1) = 1).
 void jasinh_w(const double* u, const int n, double* A, double* w)
 {
+    bool zero = true;
+    for (int i = 0; i < n && zero; ++i) zero = u[i] == 0. && !std::signbit(u[i]);
+    if (zero) {
+        for (int i = 0; i < n; ++i) A[i] = w[i] = 0.;
+        w[0] = 1.;
+        return;
+    }
     Jet t, du, q;
     jmul(u, u, n, t.data());
     t[0] += 1.;
@@ -710,13 +755,7 @@ void jasinh_w(const double* u, const int n, double* A, double* w)
 /// the zero terms left out, so the same value.
 void jmul3(const double* a, const double* b, const int n, double* c)
 {
-    for (int k = 0; k < n; ++k) {
-        double s = 0.;
-        s += a[0] * b[k];
-        if (k >= 1) s += a[1] * b[k - 1];
-        if (k >= 2) s += a[2] * b[k - 2];
-        c[k] = s;
-    }
+    jmul_s(a, 3, b, n, n, c); // a[0] b[k] + a[1] b[k - 1] + a[2] b[k - 2], in that order
 }
 
 /// jdiv(a, b) for b vanishing beyond its first 2 coefficients: the same sum, zero terms left out.
@@ -759,11 +798,29 @@ void jG_linear(
     if (R) jmul3(zeta.data(), w.data(), n, R);
 }
 
-double binom(const int k, const int j)
+double binom_loop(const int k, const int j)
 {
     double c = 1.;
     for (int i = 1; i <= j; ++i) c = c * double(k - j + i) / double(i);
     return std::round(c);
+}
+
+/// binom_loop(k, j), tabulated once for 0 <= j <= k < 64: the same doubles. Why: the series
+/// call it in their innermost loops. MEASURED (coarse_r1S1 band, the bench's front_flux
+/// evaluations, sampled): binom(), std::pow() and pshift() were 31%, 25% and 9% of the time, self,
+/// in edge_np_w()'s long branch.
+double binom(const int k, const int j)
+{
+    constexpr int N = 64;
+    static const std::vector<double> tab = [] {
+        std::vector<double> t(size_t(N * N), 0.);
+        for (int a = 0; a < N; ++a) {
+            for (int b = 0; b <= a; ++b) t[size_t(a * N + b)] = binom_loop(a, b);
+        }
+        return t;
+    }();
+    if (0 <= j && j <= k && k < N) return tab[size_t(k * N + j)];
+    return binom_loop(k, j);
 }
 
 /// _edge_near_parallel: int_{xi1}^{xi2} G(eta(xi), zeta(xi)) dxi for one edge, dxi = xi2 - xi1.
@@ -1706,15 +1763,21 @@ constexpr int K_SEG = 30; ///< Taylor order on short segments (ratio <= SHORT/2 
 constexpr double EPS_PAR_D = 0.25;
 constexpr int K_LONG_D = 18;
 
+/// pshift() with cp[m] = std::pow(c, m) given, for P vanishing below j0: the same sums, their
+/// zero leading terms left out (as jmul_s()), the same values.
+void pshift_cp(const double* P, const int n, const double* cp, const int j0, double* out)
+{
+    for (int i = 0; i < n; ++i) out[i] = 0.;
+    for (int j = j0; j < n; ++j) {
+        for (int i = 0; i <= j; ++i) out[i] += P[j] * binom(j, i) * cp[j - i];
+    }
+}
 /// _pshift: coefficients (ascending) of P(tau + c), P of length n.
 void pshift(const double* P, const int n, const double c, double* out)
 {
     double cp[JCAP];
     for (int m = 0; m < n; ++m) cp[m] = std::pow(c, double(m)); // c ** (j - i)
-    for (int i = 0; i < n; ++i) out[i] = 0.;
-    for (int j = 0; j < n; ++j) {
-        for (int i = 0; i <= j; ++i) out[i] += P[j] * binom(j, i) * cp[j - i];
-    }
+    pshift_cp(P, n, cp, 0, out);
 }
 
 /// _pmul: the product polynomial; returns its length.
@@ -2006,85 +2069,137 @@ constexpr int MAXXI = 2 + K_LONG_D + 2 + 3; ///< mmax + 1 <= Aa + (K_LONG_D + de
 /// on eta and zeta alone, not on kind or mmax, and coefficient k of each on coefficients 0..k of
 /// eta and zeta only (jmul, jsqrt, jdiv, jdiv2, jmul3 are recurrences in k, the same operations
 /// for every length): so a base computed to length n' >= n is, in its first n coefficients, the
-/// base computed to length n, bit for bit. The last bases of this thread are kept and read back
-/// for the same eta and zeta: edge_np_w() calls jXi() for the same jets with both weights of an
-/// edge (face_line_derivs(), its near-parallel branch), the longer first. MEASURED (Geneva base,
-/// inward, the smoothing pass after the split, sampled, the value table and Partition in place):
-/// jXi() was 25% of the busy time, 16% in the base's jasinh_w().
+/// base computed to length n, bit for bit. jXi() is likewise a function of (eta, zeta, n, mmax,
+/// kind) alone. The bases and the results with mmax <= 2 are kept per thread, in tables keyed by
+/// the linear jets' four coefficients (a slot per hash of the inputs, taken over by any other
+/// inputs), and read back for the same inputs: a value is the one the evaluation would return
+/// again, a lost slot costs an evaluation. The base is computed to the length the caller names
+/// (edge_np_w(): KB, the longest any weight asks for), so the weights of one edge share it.
+/// Why: edge_np_w() calls jXi() for the same jets with both weights of an edge
+/// (face_line_derivs(), its near-parallel branch), and the front form evaluates the same edges
+/// twice at one x: its value (flux(), weight L) and then its derivatives (front_face_derivs(),
+/// both weights), whose kind-0 jXi() is the value's. MEASURED (Geneva base, inward, the smoothing
+/// pass after the split, sampled, the value table and Partition in place): jXi() was 25% of the
+/// busy time, 16% in the base's jasinh_w(); (cube_out band, the bench's front_flux evaluations,
+/// sampled, after jmul_s()): jasinh_w() 34% and jXi() 30%, self, with a table of the last 4 bases.
+constexpr int KB = K_SHORT + 3; ///< edge_np_w(): K_SHORT + 1 + deg W, deg W <= 2
+constexpr size_t kJetSlots = 256;
 struct JetBase
 {
+    double key[4] = {}; ///< eta[0], eta[1], zeta[0], zeta[1]
     int n = 0; ///< length computed; 0: unset
-    Jet eta, zeta; ///< the inputs, first n coefficients
-    Jet u, A, w, R, z2;
+    double u[KB], A[KB], w[KB], R[KB], z2[KB];
 };
-const JetBase& jet_base(const double* eta, const double* zeta, const int n)
+struct XiSlot
 {
-    constexpr int kBases = 4; // edge_np_w()'s long branch reads three per weight
-    thread_local std::array<JetBase, kBases> bases;
-    thread_local int next = 0;
-    const size_t bytes = size_t(n) * sizeof(double);
-    for (const JetBase& b : bases) {
-        if (b.n >= n && std::memcmp(b.eta.data(), eta, bytes) == 0 &&
-            std::memcmp(b.zeta.data(), zeta, bytes) == 0) {
-            return b;
-        }
+    double key[4] = {};
+    int n = 0, mmax = -1, kind = -1; ///< n = 0: unset
+    double Xi[3][KB];
+};
+/// The slot of the linear jets eta, zeta (and of n, mmax, kind for jXi()'s table).
+size_t jet_slot(const double* key, const int extra)
+{
+    uint64_t h = 0x9e3779b97f4a7c15ull ^ uint64_t(extra);
+    for (int i = 0; i < 4; ++i) {
+        uint64_t b;
+        std::memcpy(&b, key + i, sizeof(b));
+        h = (h ^ b) * 0xff51afd7ed558ccdull;
+        h ^= h >> 32;
     }
-    JetBase& b = bases[size_t(next)];
-    next = (next + 1) % kBases;
-    std::memcpy(b.eta.data(), eta, bytes);
-    std::memcpy(b.zeta.data(), zeta, bytes);
-    jdiv2(eta, zeta, n, b.u.data());
-    jasinh_w(b.u.data(), n, b.A.data(), b.w.data());
-    jmul3(zeta, b.w.data(), n, b.R.data());
-    jmul3(zeta, zeta, n, b.z2.data());
-    b.n = n;
+    return size_t(h % kJetSlots);
+}
+/// The base of eta, zeta to length >= n (computed to nb >= n when not kept); eta and zeta linear.
+const JetBase&
+jet_base(const double* key, const double* eta, const double* zeta, const int n, const int nb)
+{
+    thread_local std::vector<JetBase> bases(kJetSlots);
+    JetBase& b = bases[jet_slot(key, 0)];
+    if (b.n >= n && std::memcmp(b.key, key, sizeof(b.key)) == 0) return b;
+    b.n = 0;
+    std::memcpy(b.key, key, sizeof(b.key));
+    jdiv2(eta, zeta, nb, b.u);
+    jasinh_w(b.u, nb, b.A, b.w);
+    jmul3(zeta, b.w, nb, b.R);
+    jmul3(zeta, zeta, nb, b.z2);
+    b.n = nb;
     return b;
 }
+/// jXi() as described above; nb: the base's length when it is computed (>= n, <= KB).
 void jXi(
     const double* eta,
     const double* zeta,
     const int n,
+    const int nb,
     const int mmax,
     const int kind,
     Jet* Xi)
 {
+    // eta and zeta are linear (jXi() above): beyond their first two coefficients, zeros
+    const double key[4] = {eta[0], eta[1], zeta[0], zeta[1]};
+    XiSlot* slot = nullptr;
+    if (mmax <= 2 && n <= KB) {
+        thread_local std::vector<XiSlot> table(kJetSlots);
+        slot = &table[jet_slot(key, 1 + n + 64 * (mmax + 4 * kind))];
+        if (slot->n == n && slot->mmax == mmax && slot->kind == kind &&
+            std::memcmp(slot->key, key, sizeof(key)) == 0) {
+            for (int m = 0; m <= mmax; ++m)
+                std::memcpy(Xi[m].data(), slot->Xi[m], size_t(n) * sizeof(double));
+            return;
+        }
+        slot->n = 0;
+    }
     Jet t, t2;
-    const JetBase& base = jet_base(eta, zeta, n);
-    const Jet &u = base.u, &A = base.A, &w = base.w, &R = base.R, &z2 = base.z2;
+    const JetBase& base = jet_base(key, eta, zeta, n, nb);
+    const double *u = base.u, *A = base.A, *w = base.w, *R = base.R, *z2 = base.z2;
     const int ne = std::max(0, mmax - 1); // ep[m] = eta^m, m = 0..ne
     std::array<Jet, MAXXI> ep;
     ep[0].fill(0.);
     ep[0][0] = 1.;
     for (int m = 1; m <= ne; ++m) jmul3(eta, ep[size_t(m - 1)].data(), n, ep[size_t(m)].data());
+    // the products by jmul_s(), zero terms skipped: the same values (jmul_s()); eta^m has at most
+    // m (le - 1) + 1 terms, le = eta's
+    const auto len = [n](const double* a) { return jlen(a, n); };
+    const int le = jlen(eta, 2);
+    const auto len_ep = [&](const int m) { return std::clamp(m * (le - 1) + 1, 0, n); };
+    const int lR = len(R);
     if (kind == 0) {
         Jet R2, R3;
-        jmul(R.data(), R.data(), n, R2.data());
-        jmul(R.data(), R2.data(), n, R3.data());
-        jmul(u.data(), w.data(), n, t.data());
-        for (int i = 0; i < n; ++i) t[size_t(i)] += A[size_t(i)];
-        jmul3(z2.data(), t.data(), n, Xi[0].data());
+        jmul_s(R, lR, R, lR, n, R2.data());
+        jmul_s(R, lR, R2.data(), len(R2.data()), n, R3.data());
+        jmul_s(u, len(u), w, len(w), n, t.data());
+        for (int i = 0; i < n; ++i) t[size_t(i)] += A[i];
+        jmul3(z2, t.data(), n, Xi[0].data());
         for (int i = 0; i < n; ++i) Xi[0][size_t(i)] *= 0.5;
         for (int i = 0; i < n; ++i) Xi[1][size_t(i)] = R3[size_t(i)] / 3.;
+        const int lR3 = len(R3.data());
         for (int m = 2; m <= mmax; ++m) {
-            jmul(ep[size_t(m - 1)].data(), R3.data(), n, t.data());
-            jmul3(z2.data(), Xi[m - 2].data(), n, t2.data());
+            jmul_s(ep[size_t(m - 1)].data(), len_ep(m - 1), R3.data(), lR3, n, t.data());
+            jmul3(z2, Xi[m - 2].data(), n, t2.data());
             for (int i = 0; i < n; ++i) {
                 Xi[m][size_t(i)] = (t[size_t(i)] - (m - 1) * t2[size_t(i)]) / (m + 2);
             }
         }
-        return;
-    }
-    std::array<Jet, MAXXI> Y;
-    Y[0] = A;
-    Y[1] = R;
-    for (int m = 2; m <= mmax; ++m) {
-        jmul(ep[size_t(m - 1)].data(), R.data(), n, t.data());
-        jmul3(z2.data(), Y[size_t(m - 2)].data(), n, t2.data());
-        for (int i = 0; i < n; ++i) {
-            Y[size_t(m)][size_t(i)] = (t[size_t(i)] - (m - 1) * t2[size_t(i)]) / m;
+    } else {
+        std::array<Jet, MAXXI> Y;
+        std::memcpy(Y[0].data(), A, size_t(n) * sizeof(double));
+        std::memcpy(Y[1].data(), R, size_t(n) * sizeof(double));
+        for (int m = 2; m <= mmax; ++m) {
+            jmul_s(ep[size_t(m - 1)].data(), len_ep(m - 1), R, lR, n, t.data());
+            jmul3(z2, Y[size_t(m - 2)].data(), n, t2.data());
+            for (int i = 0; i < n; ++i) {
+                Y[size_t(m)][size_t(i)] = (t[size_t(i)] - (m - 1) * t2[size_t(i)]) / m;
+            }
         }
+        for (int m = 0; m <= mmax; ++m) jmul3(zeta, Y[size_t(m)].data(), n, Xi[m].data());
     }
-    for (int m = 0; m <= mmax; ++m) jmul3(zeta, Y[size_t(m)].data(), n, Xi[m].data());
+    if (slot) {
+        for (int m = 0; m <= mmax; ++m)
+            std::memcpy(slot->Xi[m], Xi[m].data(), size_t(n) * sizeof(double));
+        std::memcpy(slot->key, key, sizeof(key));
+        slot->mmax = mmax;
+        slot->kind = kind;
+        slot->n = n;
+    }
 }
 
 /// The weights of _edge_np_w: W[a] ascending coefficients in xi, a = 0..na-1, each of length len[a].
@@ -2123,13 +2238,16 @@ double edge_np_w(
         xj[0] = xm;
         xj[1] = dx;
         std::array<Jet, 3> Xi, Xi0;
-        jXi(ej.data(), zj.data(), K, Aa, kind, Xi.data());
-        jXi(zero.data(), zj.data(), K, Aa, kind, Xi0.data());
+        jXi(ej.data(), zj.data(), K, KB, Aa, kind, Xi.data());
+        jXi(zero.data(), zj.data(), K, KB, Aa, kind, Xi0.data());
         std::array<Jet, 3> xp; // _jpow(xj, degw)
         xp[0].fill(0.);
         xp[0][0] = 1.;
-        for (int m = 1; m <= degw; ++m)
-            jmul(xp[size_t(m - 1)].data(), xj.data(), K, xp[size_t(m)].data());
+        // the products by jmul_s(), zero terms skipped (xj and wj are polynomials of degree
+        // <= 2, wj of W.len[a] terms): the same values
+        for (int m = 1; m <= degw; ++m) {
+            jmul_s(xp[size_t(m - 1)].data(), m, xj.data(), 2, K, xp[size_t(m)].data());
+        }
         Jet g{}, wj, diff, t;
         for (int a = 0; a <= Aa; ++a) {
             wj.fill(0.);
@@ -2138,7 +2256,7 @@ double edge_np_w(
             }
             for (int i = 0; i < K; ++i)
                 diff[size_t(i)] = Xi[size_t(a)][size_t(i)] - Xi0[size_t(a)][size_t(i)];
-            jmul(wj.data(), diff.data(), K, t.data());
+            jmul_s(wj.data(), W.len[a], diff.data(), jlen(diff.data(), K), K, t.data());
             for (int i = 0; i < K; ++i) g[size_t(i)] += t[size_t(i)];
         }
         double sum = 0., p = 1.;
@@ -2159,12 +2277,21 @@ double edge_np_w(
     for (int s = 0; s < 2; ++s) {
         Jet eta{};
         eta[0] = s == 0 ? e1 : e2;
-        jXi(eta.data(), zj.data(), K + 1, mmax, kind, XiE[size_t(s)].data());
+        jXi(eta.data(), zj.data(), K + 1, K + 1, mmax, kind, XiE[size_t(s)].data());
     }
     std::array<Jet, 3> Xi0;
-    jXi(zero.data(), zj.data(), K + 1, Aa, kind, Xi0.data());
+    jXi(zero.data(), zj.data(), K + 1, K + 1, Aa, kind, Xi0.data());
     double tot = 0.;
     double Q[JCAP], c[JCAP];
+    // the powers the loops below take, each std::pow() call made once (the same values)
+    const int nqmax = K - 1 + degw + 1;
+    double cp[JCAP], pe1[JCAP], pe2[JCAP], pmu[JCAP];
+    for (int m = 0; m < nqmax; ++m) {
+        cp[m] = std::pow(-em, double(m));
+        pe1[m] = std::pow(e1, double(m + 1));
+        pe2[m] = std::pow(e2, double(m + 1));
+    }
+    for (int k = 0; k < K; ++k) pmu[k] = std::pow(mu, double(k));
     for (int a = 0; a <= Aa; ++a) {
         double wt[3];
         pshift(W.c[a], W.len[a], xm, wt); // W[a](xm + nu tau)
@@ -2173,12 +2300,12 @@ double edge_np_w(
             const int nq = k + W.len[a]; // tau^k W(...)
             for (int i = 0; i < k; ++i) Q[i] = 0.;
             for (int j = 0; j < W.len[a]; ++j) Q[k + j] = wt[j];
-            pshift(Q, nq, -em, c); // in powers of eta
+            pshift_cp(Q, nq, cp, k, c); // in powers of eta
             double sk = 0.;
             for (int l = 0; l < nq; ++l) {
                 const double cl = c[l];
                 if (cl == 0.) continue;
-                const double p1 = std::pow(e1, double(l + 1)), p2 = std::pow(e2, double(l + 1));
+                const double p1 = pe1[l], p2 = pe2[l];
                 const double F0 =
                     (p1 * XiE[0][size_t(a)][size_t(k)] - XiE[0][size_t(a + l + 1)][size_t(k)]) /
                     (l + 1);
@@ -2187,7 +2314,7 @@ double edge_np_w(
                     (l + 1);
                 sk += cl * (F1 - F0 - Xi0[size_t(a)][size_t(k)] * (p2 - p1) / (l + 1));
             }
-            tot += std::pow(mu, double(k)) * sk;
+            tot += pmu[k] * sk;
         }
     }
     return dx / de * tot;
