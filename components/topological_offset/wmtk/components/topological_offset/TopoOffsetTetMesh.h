@@ -2237,12 +2237,15 @@ public:
         std::string path;
         MatrixXd V;
         MatrixXi T, F_in, F_off, E;
-        VectorXd amips;
+        // per cell
+        VectorXd amips, tet_e, amips_term, band_term, band_gap, plastic;
         std::vector<MatrixXd> tags;
         std::vector<std::string> tag_names;
-        VectorXd labels, order, vid, sizing, target;
-        VectorXd conv, resid, grad, align, cdist, fold, newton_it, front_change, newton_st;
-        VectorXd f_err, f_len, ring; // the _off file's: per offset face, and the ring measure
+        // per vertex
+        VectorXd labels, order, vid, sizing;
+        VectorXd in_dist, front_err, band_force, amips_force, fold, front_change;
+        // the _off file's: per offset face, and the ring measure per vertex
+        VectorXd f_err, f_len, f_inside, f_outside, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
