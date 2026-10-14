@@ -1360,8 +1360,37 @@ public:
      * first. With the operations stamping the cells they make or change, every rule reads rests
      * that are up to date. A no-op while the plastic medium is off (the final pass, coarsening,
      * the repulsion passes).
+     *
+     * Inside a turn's operation group it also logs the pass's [energy step] line
+     * (log_energy_step()), before the restamp, and a "stamp" line after it when the plastic
+     * medium is on: a restamp changes the plastic cells' energy without moving anything.
      */
-    void smoothing_pass_done() override { stamp_plastic_rests(); }
+    void smoothing_pass_done() override
+    {
+        if (m_energy_step_turn > 0) {
+            log_energy_step(m_energy_step_first ? m_energy_step_group : "smooth");
+            m_energy_step_first = false;
+        }
+        stamp_plastic_rests();
+        if (m_energy_step_turn > 0 && m_plastic_active) log_energy_step("stamp");
+    }
+    /**
+     * @brief Log-only: "[energy step] turn N <step>: E | AMIPS term | band term", E = the sum of
+     * tet_energy() over the live cells (global_energy()), split into its AMIPS part and the band
+     * cells' band_cell_term(). What ~/Developer/wmtk_outputs/plot_energy.py plots per pass.
+     *
+     * Steps: "start" (a group's E before its operation pass: a baseline, not a step), then one per
+     * smoothing pass. There is no engine hook after an operation pass, so the group's FIRST
+     * smoothing line carries the group's name ("split", "collapse", "swap") and its change from
+     * "start" is the operation pass and that smoothing pass together; every later one is "smooth".
+     */
+    void log_energy_step(const char* step) const;
+    /// The turn (1-based) whose operation group is running, 0 outside one: smoothing_pass_done()
+    /// logs only inside a group, so pre_smooth, the final pass and coarsening log nothing.
+    int m_energy_step_turn = 0;
+    /// The running group's name, and whether its first smoothing pass is still to come.
+    const char* m_energy_step_group = "";
+    bool m_energy_step_first = false;
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
     /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current

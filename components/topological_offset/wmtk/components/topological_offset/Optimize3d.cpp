@@ -322,6 +322,37 @@ double TopoOffsetTetMesh::global_energy() const
     return s;
 }
 
+void TopoOffsetTetMesh::log_energy_step(const char* step) const
+{
+    // See the declaration. A band cell is never plastic (cell_is_plastic()), so its tet_energy()
+    // is cell_energy(vids, A^3, true): the AMIPS part (plus the repulsion term, 0 in the loop)
+    // and band_cell_term(), summed here apart rather than calling both tet_energy() and
+    // band_cell_term(), which would evaluate the band term twice.
+    double amips = 0., band = 0.;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (!cell_is_offset_band(tid)) {
+            amips += tet_energy(tid);
+            continue;
+        }
+        const std::array<size_t, 4> vids = oriented_tet_vids(tid);
+        const double a3 = get_quality(t);
+        if (a3 >= MAX_ENERGY) {
+            amips += MAX_ENERGY;
+            continue;
+        }
+        amips += cell_energy(vids, a3, false);
+        band += band_cell_term(vids);
+    }
+    logger().info(
+        "\t[energy step] turn {} {}: E {:.12g} | AMIPS term {:.12g} | band term {:.12g}",
+        m_energy_step_turn,
+        step,
+        amips + band,
+        amips,
+        band);
+}
+
 double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids) const
 {
     double s = 0.;
@@ -4263,7 +4294,14 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
+            // [energy step] lines: the group's baseline here, then one per smoothing pass from
+            // smoothing_pass_done() (see log_energy_step()).
+            m_energy_step_turn = it + 1;
+            m_energy_step_group = group_names[gi];
+            m_energy_step_first = true;
+            log_energy_step("start");
             local_operations(groups[gi]);
+            m_energy_step_turn = 0;
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
             if (m_params.perform_sanity_checks) {
