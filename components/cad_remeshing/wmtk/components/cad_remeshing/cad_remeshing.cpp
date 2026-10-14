@@ -254,9 +254,6 @@ void cad_remeshing(nlohmann::json json_params)
         } else {
             logger().info("Envelope thickness eps: {}", eps);
         }
-        const auto feature_edges =
-            m.get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
-
         // Convert inV from Eigen::MatrixXd to std::vector<Eigen::Vector3d>
         std::vector<Eigen::Vector3d> V_vec(inV.rows());
         for (int i = 0; i < inV.rows(); ++i) {
@@ -269,24 +266,15 @@ void cad_remeshing(nlohmann::json json_params)
             F_vec[i] = inF.row(i);
         }
 
-        // Convert feature edges to std::vector<Eigen::Vector2i>
-        std::vector<Eigen::Vector2i> E_vec(feature_edges.size());
-        for (int i = 0; i < feature_edges.size(); ++i) {
-            E_vec[i] = Eigen::Vector2i(feature_edges[i][0], feature_edges[i][1]);
-        }
-
         if (eps > 0) {
             m.m_envelope.init(V_vec, F_vec, eps);
-            if (!feature_edges.empty()) {
-                m.m_feature_envelope.init(V_vec, E_vec, eps);
-            }
             m.m_has_envelope = true;
         } else {
             m.m_envelope.init(V_vec, F_vec, 0.0);
-            if (!feature_edges.empty()) {
-                m.m_feature_envelope.init(V_vec, E_vec, 0.0);
-            }
         }
+        // One envelope per feature curve, from the mesh's own feature edges: nothing has moved
+        // yet, so these are the input curves.
+        m.init_feature_envelopes(eps > 0 ? eps : 0.0);
     }
     // Write an initial report so downstream code (e.g. write_vtu inside run_remeshing)
     // can update/append fields like after min/max angle and double-area.

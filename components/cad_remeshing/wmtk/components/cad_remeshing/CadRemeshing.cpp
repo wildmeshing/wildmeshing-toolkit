@@ -6,6 +6,7 @@
 #include <Eigen/Geometry>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/threading/indexed_collector.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -38,9 +39,10 @@ CadRemeshing::CadRemeshing(
     bool use_exact)
 {
     NUM_THREADS = num_threads;
-    // Both have to be set before init(): the envelopes build their exact structure at init time.
+    // Has to be set before init(): an envelope builds its exact structure at init time. The
+    // curve envelopes get it in init_feature_envelopes().
     m_envelope.use_exact = use_exact;
-    m_feature_envelope.use_exact = use_exact;
+    m_use_exact = use_exact;
 
     p_vertex_attrs = &vertex_attrs;
     p_edge_attrs = &edge_attrs;
@@ -169,11 +171,16 @@ bool CadRemeshing::invariants(const std::vector<Tuple>& new_tris)
             auto vs = oriented_tri_vertices(t);
 
             for (auto j = 0; j < 3; j++) {
-                const auto vid = vs[j].vid(*this);
-                tris[j] = vertex_attrs[vid].pos;
+                const VertexAttributes& va = vertex_attrs[vs[j].vid(*this)];
+                tris[j] = va.pos;
 
-                if (vertex_attrs[vid].is_feature && m_feature_envelope.is_outside(tris[j])) {
-                    return false;
+                // A vertex on a feature curve has to stay within the envelope of its own curve;
+                // corners never move, so they need no check.
+                if (va.is_feature && va.corner_id < 0) {
+                    const auto env = m_curve_envelopes.find(va.curve_id);
+                    if (env != m_curve_envelopes.end() && env->second.is_outside(tris[j])) {
+                        return false;
+                    }
                 }
             }
             if (m_envelope.is_outside(tris)) {
@@ -335,6 +342,20 @@ std::vector<TriMesh::Tuple> CadRemeshing::replace_edges_after_split(
     return new_edges;
 }
 
+std::vector<TriMesh::Tuple> CadRemeshing::new_sub_edges_after_split(
+    const std::vector<TriMesh::Tuple>& tris) const
+{
+    std::vector<TriMesh::Tuple> new_edges;
+    new_edges.reserve(tris.size() * 3);
+    for (const Tuple& t : tris) {
+        new_edges.push_back(t);
+        new_edges.push_back(t.switch_edge(*this));
+        new_edges.push_back(t.switch_vertex(*this).switch_edge(*this));
+    }
+    wmtk::unique_edge_tuples(*this, new_edges);
+    return new_edges;
+}
+
 bool CadRemeshing::collapse_edge_before(const Tuple& t)
 {
     size_t v0 = t.vid(*this);
@@ -475,6 +496,7 @@ bool CadRemeshing::split_edge_after(const TriMesh::Tuple& t)
     vnew_attrs.pos = p;
     vnew_attrs.partition_id = cache.partition_id;
     vnew_attrs.is_feature = cache.is_feature_edge;
+    vnew_attrs.curve_id = cache.is_feature_edge;
     vnew_attrs.tal = 0.5 * (cache.v0_tal + cache.v1_tal);
     // A frozen boundary stays frozen: the new vertex on a boundary edge is frozen like its
     // endpoints, else it would be smoothed and collapsed away from the boundary.
@@ -542,8 +564,12 @@ bool CadRemeshing::smooth_after(const TriMesh::Tuple& t)
     if (after_smooth.hasNaN()) return false;
 
     Eigen::Vector3d after_project;
-    if (vertex_attrs[t.vid(*this)].is_feature) {
-        m_feature_envelope.nearest_point(after_smooth, after_project);
+    const VertexAttributes& va = vertex_attrs[t.vid(*this)];
+    if (va.is_feature) {
+        // Not reached as long as smooth_before rejects feature vertices; kept consistent.
+        const auto env = m_curve_envelopes.find(va.curve_id);
+        if (env == m_curve_envelopes.end()) return false;
+        env->second.nearest_point(after_smooth, after_project);
     } else {
         m_envelope.nearest_point(after_smooth, after_project);
     }
@@ -716,6 +742,7 @@ bool CadRemeshing::split_remeshing()
     timer.start();
     std::vector<std::pair<std::string, Tuple>> collect_all_ops;
     size_t vid_threshold = 0;
+    std::atomic_int count_success = 0;
 
     {
         auto collect_tuples = threading::indexed_collector<Tuple>(3 * tri_capacity());
@@ -730,11 +757,22 @@ bool CadRemeshing::split_remeshing()
     logger().info("***** split get edges time *****: {} ms", timer.getElapsedTimeInMilliSec());
 
     logger().info("size for edges to be split is {}", collect_all_ops.size());
+    // A split queues the pre-existing edges around it through renew_neighbor_tuples, but the
+    // edges of the new triangles -- the two halves among them -- cannot be re-queued inside the
+    // pass (their tuples are not valid until it ends). They go to edges2 and the pass is run
+    // again on them until a pass splits nothing, so an edge many times the target length is
+    // halved as often as needed instead of once per remeshing iteration (as isotropic_remeshing
+    // does).
+    wmtk::threading::collector<std::pair<std::string, Tuple>> edges2;
     auto setup_and_execute = [&](auto& executor) {
         vid_threshold = vert_capacity();
         executor.num_threads = NUM_THREADS;
         executor.renew_neighbor_tuples = [&](auto& m, auto op, auto& tris) {
+            count_success++;
             auto edges = m.replace_edges_after_split(tris, vid_threshold);
+            for (const auto& e2 : m.new_sub_edges_after_split(tris)) {
+                edges2.emplace_back(op, e2);
+            }
             std::vector<std::pair<std::string, Tuple>> optup;
             for (auto& e : edges) {
                 optup.emplace_back(op, e);
@@ -749,7 +787,15 @@ bool CadRemeshing::split_remeshing()
             return true;
         };
         // Execute!!
-        executor(*this, collect_all_ops);
+        do {
+            count_success.store(0, std::memory_order_release);
+            executor(*this, collect_all_ops);
+            collect_all_ops.clear();
+            for (auto& item : edges2) {
+                collect_all_ops.emplace_back(item);
+            }
+            edges2.clear();
+        } while (count_success.load(std::memory_order_acquire) > 0);
     };
 
     if (NUM_THREADS > 0) {
@@ -1014,6 +1060,8 @@ void CadRemeshing::initialize_feature_edges()
 
         vertex_attrs[v0].is_feature = true;
         vertex_attrs[v1].is_feature = true;
+        vertex_attrs[v0].curve_id = item.second;
+        vertex_attrs[v1].curve_id = item.second;
         edge_attrs[std::get<1>(edge.value())].is_feature = item.second;
     }
 
@@ -1031,22 +1079,65 @@ void CadRemeshing::check_feature_curves() const
             continue;
         }
         size_t n_feature_edges = 0;
+        bool one_curve = true;
         for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
-            if (edge_attrs[e.eid(*this)].is_feature) {
-                ++n_feature_edges;
+            const int curve = edge_attrs[e.eid(*this)].is_feature;
+            if (curve == 0) {
+                continue;
+            }
+            ++n_feature_edges;
+            if (curve != va.curve_id) {
+                one_curve = false;
             }
         }
-        if (n_feature_edges != 2) {
+        if (n_feature_edges != 2 || !one_curve) {
             log_and_throw_error(
-                "Feature vertex {} has {} feature edges but is not a corner. A feature curve "
+                "Feature vertex {} has {} feature edges{} but is not a corner. A feature curve "
                 "must end at a corner and curves may only meet at corners: list the vertex in "
                 "corner_vids.",
                 vid,
-                n_feature_edges);
+                n_feature_edges,
+                one_curve ? "" : " of different curves");
         }
     }
 }
 
+
+void CadRemeshing::init_feature_envelopes(const double eps)
+{
+    m_curve_envelopes.clear();
+
+    // Each curve's edges, with its vertices renumbered 0..n-1 so that an envelope holds only
+    // the positions it needs.
+    std::map<int, std::vector<Eigen::Vector3d>> curve_verts;
+    std::map<int, std::vector<Eigen::Vector2i>> curve_edges;
+    std::map<int, std::unordered_map<size_t, int>> local_ids;
+    for (const Tuple& e : get_edges()) {
+        const int curve = edge_attrs[e.eid(*this)].is_feature;
+        if (curve == 0) {
+            continue;
+        }
+        auto& verts = curve_verts[curve];
+        auto& ids = local_ids[curve];
+        const size_t vs[2] = {e.vid(*this), e.switch_vertex(*this).vid(*this)};
+        int local[2];
+        for (int k = 0; k < 2; k++) {
+            const auto [it, inserted] = ids.try_emplace(vs[k], static_cast<int>(verts.size()));
+            if (inserted) {
+                verts.push_back(vertex_attrs[vs[k]].pos);
+            }
+            local[k] = it->second;
+        }
+        curve_edges[curve].emplace_back(local[0], local[1]);
+    }
+
+    for (const auto& [curve, edges] : curve_edges) {
+        wmtk::SampleEnvelope& env = m_curve_envelopes[curve];
+        env.use_exact = m_use_exact;
+        env.init(curve_verts[curve], edges, eps);
+    }
+    logger().info("Built {} feature-curve envelopes", m_curve_envelopes.size());
+}
 
 void CadRemeshing::set_target_edge_length(const double tal)
 {

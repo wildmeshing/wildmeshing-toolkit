@@ -20,6 +20,7 @@
 #include <atomic>
 #include <memory>
 #include <queue>
+#include <unordered_map>
 #include <wmtk/Types.hpp>
 namespace wmtk::components::cad_remeshing {
 
@@ -30,6 +31,10 @@ struct VertexAttributes
     size_t partition_id;
     int corner_id = -1;
     bool is_feature = false;
+    // The curve a feature vertex lies on (the EdgeAttributes::is_feature id of its feature
+    // edges); 0 for a vertex that is not on a curve. Not meaningful for a corner, which lies on
+    // several curves and never moves.
+    int curve_id = 0;
     double tal = -1; // target edge length
 };
 
@@ -48,7 +53,13 @@ class CadRemeshing : public wmtk::TriMesh
 {
 public:
     wmtk::SampleEnvelope m_envelope;
-    wmtk::SampleEnvelope m_feature_envelope; // envelope for feature edges
+    /**
+     * One envelope per feature curve, by curve id (EdgeAttributes::is_feature). A vertex on a
+     * curve has to stay within the envelope of ITS curve: against a single envelope around all
+     * curves, a vertex near a corner could leave its curve for a neighbouring one and still
+     * pass. Built by init_feature_envelopes().
+     */
+    std::unordered_map<int, wmtk::SampleEnvelope> m_curve_envelopes;
     bool m_has_envelope = false;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
@@ -92,6 +103,13 @@ public:
      * with an error, since the remeshing relies on the curves being chains.
      */
     void initialize_feature_edges();
+
+    /**
+     * @brief Build one envelope of thickness eps around each feature curve, from the mesh's
+     * current feature edges and vertex positions (call it before remeshing: those are the input
+     * curves). The envelopes are exact or sampled like m_envelope.
+     */
+    void init_feature_envelopes(double eps);
 
     void set_target_edge_length(const double tal);
     /**
@@ -185,6 +203,9 @@ public:
     std::vector<TriMesh::Tuple> replace_edges_after_split(
         const std::vector<TriMesh::Tuple>& tris,
         const size_t vid_threshold) const;
+    /// The edges of the triangles a split created, to be queued for splitting in the next round.
+    std::vector<TriMesh::Tuple> new_sub_edges_after_split(
+        const std::vector<TriMesh::Tuple>& tris) const;
 
 
     bool split_edge_before(const Tuple& t) override;
@@ -249,6 +270,7 @@ public:
 private:
     std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;
     bool m_freeze_boundary = false;
+    bool m_use_exact = false;
 
     /// The id of the edge between two vertices that are connected by one.
     size_t edge_id(size_t v0, size_t v1) const { return std::get<1>(tuple_from_edge({{v0, v1}})); }

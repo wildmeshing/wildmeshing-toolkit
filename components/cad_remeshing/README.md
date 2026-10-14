@@ -10,7 +10,7 @@ The CAD structure is preserved as follows:
 - **Feature curves** remain chains of mesh edges. Feature edges are never swapped, and a vertex on a curve can only be collapsed along that curve. Splitting a feature edge creates a new vertex on the same curve. Vertices on curves are not smoothed.
 - **Patches**: every output face carries the patch ID of the input face it descends from.
 
-Every operation is rejected if it creates a degenerate triangle or moves the surface outside an envelope around the input mesh. Vertices on feature curves must also stay within an envelope around the input feature curves. Smoothed vertices are projected back onto the input surface.
+Every operation is rejected if it creates a degenerate triangle or moves the surface outside an envelope around the input mesh. A vertex on a feature curve must also stay within an envelope around the input curve it lies on (one envelope per curve, so a vertex cannot drift onto a neighbouring curve near a corner). Smoothed vertices are projected back onto the input surface.
 
 The envelope thickness is `eps` if set, else `eps_rel` times the bounding box diagonal if set, else (the default) half the average edge length of the input.
 
