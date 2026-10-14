@@ -1026,8 +1026,17 @@ void TopoOffsetTetMesh::init_offset_potential()
                     sigma > 0 ? "outside the label-1 cells" : "none",
                     sigma,
                     vol6 / 6.);
-                m_band_exact =
-                    std::make_shared<ExactBandIntegral>(m_phi_V, m_phi_F, m_phi_F_inner, sigma);
+                // The value table (ExactBandIntegral::value()) for the band term only, which
+                // reads cells again; twice the constructed mesh's tets, so that its live band
+                // cells seldom share a slot.
+                const size_t value_slots =
+                    m_offset_params.band_volume_rule == "exact" ? 2 * tet_capacity() : 0;
+                m_band_exact = std::make_shared<ExactBandIntegral>(
+                    m_phi_V,
+                    m_phi_F,
+                    m_phi_F_inner,
+                    sigma,
+                    value_slots);
             }
         }
         return;
