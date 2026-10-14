@@ -17,6 +17,7 @@
 #include <paraviewo/VTUWriter.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 #include <limits>
 #include <queue>
@@ -1038,15 +1039,20 @@ void TopoOffsetTetMesh::init_offset_potential()
                     m_phi_F_inner,
                     sigma,
                     value_slots);
-                // "front_flux": where bisectors within reach of the input can be, from the input
-                // alone (ExactBandIntegral::prepare_front_flux())
-                if (m_offset_params.band_volume_rule == "front_flux") {
+                // "front_flux" and "exact": where bisectors within reach of the input can be, from
+                // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
+                // it, and both rules' band term that cancels (tet_energy()).
+                if (exact_rule) {
+                    const auto t0 = std::chrono::steady_clock::now();
                     eb->prepare_front_flux(m_offset_params.target_distance);
                     logger().info(
-                        "\tfront_flux: {} region overlaps within reach {} of the input can hold "
-                        "bisectors",
+                        "\t{}: {} region overlaps within reach {} of the input can hold "
+                        "bisectors ({:.3g} s)",
+                        m_offset_params.band_volume_rule,
                         eb->front_flux_polytopes(),
-                        eb->front_flux_reach());
+                        eb->front_flux_reach(),
+                        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
+                            .count());
                 }
                 m_band_exact = std::move(eb);
             }

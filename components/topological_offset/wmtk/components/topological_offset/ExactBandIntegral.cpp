@@ -3703,6 +3703,14 @@ double ExactBandIntegral::value(
     return value_tabled(T, delta, &keep);
 }
 
+void ExactBandIntegral::reserve_values(const size_t slots) const
+{
+    if (m_values.empty() || m_values.size() >= slots) return;
+    size_t n = m_values.size();
+    while (n < slots) n *= 2;
+    m_values.assign(n, ValueSlot{});
+}
+
 double ExactBandIntegral::value_tabled(
     const std::array<Eigen::Vector3d, 4>& T,
     const double delta,
@@ -4978,12 +4986,13 @@ int ExactBandIntegral::build_ff_node(const int begin, const int end)
     return id;
 }
 
-bool ExactBandIntegral::front_flux_flag(const std::array<Eigen::Vector3d, 4>& t) const
+bool ExactBandIntegral::front_flux_flag(const Eigen::Vector3d* t, const int n) const
 {
-    if (m_ff_nodes.empty()) return false;
+    if (m_ff_nodes.empty() || n <= 0) return false;
     Vec3 tlo = t[0], thi = t[0];
     double ma = 0.;
-    for (const Vec3& p : t) {
+    for (int i = 0; i < n; ++i) {
+        const Vec3& p = t[i];
         tlo = tlo.cwiseMin(p);
         thi = thi.cwiseMax(p);
         ma = std::max(ma, maxabs(p));
@@ -5005,12 +5014,12 @@ bool ExactBandIntegral::front_flux_flag(const std::array<Eigen::Vector3d, 4>& t)
         for (int j = nd.begin; j < nd.end; ++j) {
             const FFBox& b = m_ff_boxes[size_t(m_ff_order[size_t(j)])];
             if (apart(b.lo, b.hi)) continue;
-            // separated if one face plane has all four corners outside it beyond rounding (a cell
+            // separated if one face plane has all the points outside it beyond rounding (a cell
             // touching the polytope only on its boundary has no part of its interior in it)
             bool separated = false;
             for (const auto& [g, h] : b.planes) {
                 double smin = std::numeric_limits<double>::infinity();
-                for (const Vec3& p : t) smin = std::min(smin, p.dot(g) - h);
+                for (int i = 0; i < n; ++i) smin = std::min(smin, t[i].dot(g) - h);
                 if (smin > 64 * EPS * (std::abs(h) + ma)) {
                     separated = true;
                     break;

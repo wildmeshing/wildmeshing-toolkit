@@ -211,6 +211,12 @@ public:
     };
     /// value(t, delta), t's partition read from or written to `keep` (Partition).
     double value(const std::array<Eigen::Vector3d, 4>& t, double delta, Partition& keep) const;
+    /// Grow the value table (value()) to at least `slots` slots, emptied; no table, or one that
+    /// large already: nothing. Not thread-safe: called between passes. A table sized to the
+    /// constructed mesh only answers few calls once the mesh has grown. MEASURED (cube 1e-2 /
+    /// 1e-4, front_flux, 15 rounds, table sized at construction, 380k tets late): the smoothing
+    /// vetoes' value() calls hit it 1.6-2.3% of the time, the operations' 65%.
+    void reserve_values(size_t slots) const;
 
     /**
      * @brief J and its exact gradient and Hessian with respect to corner `kv` of t, the other
@@ -408,7 +414,14 @@ public:
      * points with d > reach: the caller flags a cell whose bound on d (distance_bound()) exceeds
      * the reach itself (BandVolumeEnergy3D).
      */
-    bool front_flux_flag(const std::array<Eigen::Vector3d, 4>& t) const;
+    bool front_flux_flag(const std::array<Eigen::Vector3d, 4>& t) const
+    {
+        return front_flux_flag(t.data(), 4);
+    }
+    /// The same test for the n points t: their box and their side of each plane. A subset of the
+    /// points is flagged only if the points are, so the points of an operation's ring unflagged
+    /// leave every cell made from them unflagged.
+    bool front_flux_flag(const Eigen::Vector3d* t, int n) const;
     /// d(x), the distance to the input: min over the triangles of the point-triangle distance.
     double distance(const Eigen::Vector3d& x) const { return upper_bound(&x, 1); }
     /// U = min over the input triangles P of max over t's corners of d_P: an upper bound of d on
@@ -417,6 +430,8 @@ public:
     {
         return upper_bound(t.data(), 4);
     }
+    /// The same bound for the n points t; a subset's bound is never larger.
+    double distance_bound(const Eigen::Vector3d* t, const int n) const { return upper_bound(t, n); }
 
     size_t num_faces() const { return m_A.size(); }
 
