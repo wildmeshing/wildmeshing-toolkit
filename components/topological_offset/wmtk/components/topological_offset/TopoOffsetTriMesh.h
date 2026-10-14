@@ -52,6 +52,12 @@ public:
      */
     uint64_t m_boundary_mask = 0;
 
+    /// The input-complex vertex this offset vertex was split off from by marching_tris(): the
+    /// marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written
+    /// into the output .msh by save_offset_correspondence; not maintained by the optimization.
+    /// The 3D twin is VertexExtra::m_corr_input_vid.
+    int64_t m_corr_input_vid = -1;
+
     /// Which split pass created this vertex, from wmtk::TriOptimizerMesh::m_op_epoch; 0 means not
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
     /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
