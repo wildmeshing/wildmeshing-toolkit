@@ -2233,7 +2233,9 @@ bool split_polygon(
 }
 
 /// face_line_derivs: (P1, P2) = (int_F lam r dA, int_F lam^2 grad r dA), r = distance to the line
-/// {A + l e}; the same three branches as face_line(), the series up to EPS_PAR_D.
+/// {A + l e}; the same three branches as face_line(), the series up to EPS_PAR_D. want_P2 false:
+/// P1 alone (P2 left 0), the same operations for P1, so the same P1 bit for bit (the front form's
+/// edge flux, which needs P1 only).
 void face_line_derivs(
     const Vec3* V,
     const int k,
@@ -2243,8 +2245,10 @@ void face_line_derivs(
     const double l0,
     const Vec3& g0,
     double& P1,
-    Vec3& P2)
+    Vec3& P2,
+    const bool want_P2 = true)
 {
+    P2.setZero();
     const double sn = e.dot(n);
     const Vec3 a = g0 - g0.dot(n) * n;
     const auto lamf = [&](const Vec3& Y) { return l0 + Y.dot(g0); };
@@ -2252,7 +2256,7 @@ void face_line_derivs(
     for (int i = 0; i < k; ++i) vmax = std::max(vmax, maxabs(V[i]));
     const double scale = vmax + maxabs(A);
     Vec3 inplane_edges = Vec3::Zero();
-    for (int i = 0; i < k; ++i) {
+    for (int i = 0; i < k && want_P2; ++i) {
         const Vec3& x1 = V[i];
         const Vec3 d = V[(i + 1) % k] - x1;
         const double ell = d.norm();
@@ -2278,6 +2282,7 @@ void face_line_derivs(
                 P1 += poly_polygon(Vs.data(), int(Vs.size()), [&](const Vec3& Y) {
                     return lamf(Y) * sg * ((Y - A).dot(eh));
                 });
+                if (!want_P2) continue;
                 P2 = P2 + sg * eh * poly_polygon(Vs.data(), int(Vs.size()), [&](const Vec3& Y) {
                               const double l = lamf(Y);
                               return l * l;
@@ -2341,12 +2346,12 @@ void face_line_derivs(
                         const double zi = sg * zeta_of(xii), zj = sg * zeta_of(xij);
                         // W2 first: its series is one longer, so W1's reads its jet bases
                         // (jet_base())
-                        Z -= edge_np_w(ei, ej, zi, zj, xii, xij, W2, 1);
+                        if (want_P2) Z -= edge_np_w(ei, ej, zi, zj, xii, xij, W2, 1);
                         P1 -= edge_np_w(ei, ej, zi, zj, xii, xij, W1, 0);
                     }
                 }
                 // n.w = -cos(theta) zeta on the plane; Z = int lam^2 za / r, zeta = sg za
-                P2 = inplane_edges - 2 * a * P1 + n * (-cth * sg * Z);
+                if (want_P2) P2 = inplane_edges - 2 * a * P1 + n * (-cth * sg * Z);
                 return;
             }
         }
@@ -2376,11 +2381,12 @@ void face_line_derivs(
         pmul(L1, 2, L1, 2, L1L1);
         pmul(L1L1, 3, nw, 2, L1L1nw);
         P1 += h * (lq * seg_int(w0, tp, ell, one, 1, 1) / 3. + seg_int(w0, tp, ell, L1, 2, 1) / 4.);
+        if (!want_P2) continue;
         Pn += h * (lq * lq * seg_int(w0, tp, ell, nw, 2, -1) / 2. +
                    2 * lq * seg_int(w0, tp, ell, L1nw, 3, -1) / 3. +
                    seg_int(w0, tp, ell, L1L1nw, 4, -1) / 4.);
     }
-    P2 = inplane_edges - 2 * a * P1 + n * Pn;
+    if (want_P2) P2 = inplane_edges - 2 * a * P1 + n * Pn;
 }
 
 /// An elementary piece (exact_mesh.elementary): a convex piece on which the integrand is ONE
@@ -2460,6 +2466,448 @@ double cut_integral(const Vec3& y1, const Vec3& y2, const Elem& e, const double 
     return seg_int(y1 - e.p, t, ell, lam2, 3, 1);
 }
 
+
+// ================================================================================================
+// The front form (EXPERIMENTAL_band_volume_rule "front_flux"; ExactBandIntegral.hpp). Every
+// function below is the Python prototype's function of the same name (front_form.py,
+// d_vertex.py, e_hessian.py, scratchpad front_form/ of 2026-10-13), on the partition, closed
+// forms and clips above.
+// ================================================================================================
+
+/// area_centroid: signed area (along n) and centroid of the planar polygon V (fan from V[0]).
+std::pair<double, Vec3> area_centroid(const Vec3* V, const int k, const Vec3& n)
+{
+    const Vec3& o = V[0];
+    double A = 0.;
+    Vec3 m = Vec3::Zero();
+    for (int i = 1; i + 1 < k; ++i) {
+        const double a = 0.5 * n.dot((V[i] - o).cross(V[i + 1] - o));
+        A += a;
+        m += a * (o + V[i] + V[i + 1]) / 3.;
+    }
+    if (A != 0.) return {A, m / A};
+    Vec3 c = Vec3::Zero();
+    for (int i = 0; i < k; ++i) c += V[i];
+    return {A, c / double(k)};
+}
+
+/// A labelled part's field (labeled()): kind 0 affine d = dir.x - c, 1 the distance to the line
+/// {p + l dir}, 2 the distance to the point p. `far`: an affine part of a face whose far side
+/// was dropped (the offset side), so its edges on the face's plane are cut edges (front_face()).
+struct Field
+{
+    int kind = 0;
+    Vec3 p = Vec3::Zero(), dir = Vec3::Zero();
+    double c = 0.;
+    bool far = false;
+};
+
+/// flux: int_V G.n dA, V a convex polygon CCW about the unit normal n (flux_face, flux_edge,
+/// flux_vertex):
+///  - face:   G.n = (d^2/2 - delta d)(W.n), quadratic: poly_polygon(), exact;
+///  - edge:   G.n = (r/3 - delta/2) L, L(x) = n.(x - x_e) = g.(x - a), g = n - (n.e) e affine:
+///            (1/3) int L r dA (face_line_derivs()' P1, lambda = L) - (delta/2) area L(centroid);
+///  - vertex: G.n = (|x - v|/4 - delta/3) h, h = n.(x - v) constant on the plane:
+///            h (face_point() / 4 - delta area / 3).
+/// MEASURED (Python, test_A.py): each within 1e-12 of an adaptive quadrature on random polygons.
+double
+flux(const Field& fd, const Vec3* V, const int k, const Vec3& n, const double delta, const Ctx& cx)
+{
+    if (fd.kind == 0) {
+        const double wn = fd.dir.dot(n);
+        if (wn == 0.) return 0.;
+        return wn * poly_polygon(V, k, [&](const Vec3& Y) {
+                   const double d = Y.dot(fd.dir) - fd.c;
+                   return 0.5 * d * d - delta * d;
+               });
+    }
+    if (fd.kind == 1) {
+        const Vec3& a = fd.p;
+        const Vec3& e = fd.dir;
+        const Vec3 g = n - n.dot(e) * e;
+        const double l0 = -g.dot(a);
+        double P1;
+        Vec3 P2;
+        face_line_derivs(V, k, n, a, e, l0, g, P1, P2, false);
+        const auto [A, cen] = area_centroid(V, k, n);
+        return P1 / 3. - 0.5 * delta * A * (l0 + g.dot(cen));
+    }
+    const double h = n.dot(V[0] - fd.p);
+    if (h == 0.) return 0.;
+    const double A = area_centroid(V, k, n).first;
+    return h * (face_point(V, k, n, fd.p, cx) / 4. - delta * A / 3.);
+}
+
+/// A squared distance as a quadratic q(x) = x.A x + b.x + c (quad_of).
+struct Quad
+{
+    Eigen::Matrix3d A;
+    Vec3 b;
+    double c = 0.;
+};
+
+Quad quad_of(const Loc& g)
+{
+    Quad q;
+    if (g.kind == 0) {
+        const double s = g.dir.dot(g.p);
+        q.A = g.dir * g.dir.transpose();
+        q.b = -2. * s * g.dir;
+        q.c = s * s;
+    } else if (g.kind == 1) {
+        const Eigen::Matrix3d P = Eigen::Matrix3d::Identity() - g.dir * g.dir.transpose();
+        q.A = P;
+        q.b = -2. * (P * g.p);
+        q.c = g.p.dot(P * g.p);
+    } else {
+        q.A = Eigen::Matrix3d::Identity();
+        q.b = -2. * g.p;
+        q.c = g.p.dot(g.p);
+    }
+    return q;
+}
+
+/// ring_candidates: the points of the ring V (CCW about n) where a quadratic's extremes over it
+/// can lie, appended to pts: the vertices, each edge's stationary point inside it, and the
+/// stationary point in the plane when it lies in the ring.
+void ring_candidates(
+    const Quad& q,
+    const Vec3* V,
+    const int k,
+    const Vec3& n,
+    std::vector<Vec3>& pts)
+{
+    for (int i = 0; i < k; ++i) pts.push_back(V[i]);
+    for (int i = 0; i < k; ++i) {
+        const Vec3& p = V[i];
+        const Vec3 u = V[(i + 1) % k] - p;
+        const Vec3 Au = q.A * u;
+        const double al = u.dot(Au);
+        const double be = 2. * p.dot(Au) + q.b.dot(u);
+        if (al != 0.) {
+            const double t = -be / (2. * al);
+            if (0. < t && t < 1.) pts.push_back(p + t * u);
+        }
+    }
+    const auto [u, w] = plane_basis(n);
+    Eigen::Matrix<double, 3, 2> U;
+    U.col(0) = u;
+    U.col(1) = w;
+    Vec3 p0 = Vec3::Zero();
+    for (int i = 0; i < k; ++i) p0 += V[i];
+    p0 /= double(k);
+    const Eigen::Matrix2d Ar = U.transpose() * q.A * U;
+    const Eigen::Vector2d br = U.transpose() * (2. * (q.A * p0) + q.b);
+    const double sc = std::max(1., Ar.cwiseAbs().maxCoeff());
+    if (!(std::abs(Ar.determinant()) > 1e-12 * sc * sc)) return;
+    const Eigen::Vector2d z = (2. * Ar).partialPivLu().solve(-br);
+    thread_local std::vector<Eigen::Vector2d> Z;
+    Z.resize(size_t(k));
+    for (int i = 0; i < k; ++i) Z[size_t(i)] = U.transpose() * (V[i] - p0);
+    double a2 = 0.;
+    for (int i = 0; i < k; ++i) {
+        const Eigen::Vector2d &a = Z[size_t(i)], &b = Z[size_t((i + 1) % k)];
+        a2 += a[0] * b[1] - b[0] * a[1];
+    }
+    if (a2 < 0.) std::reverse(Z.begin(), Z.end());
+    for (int i = 0; i < k; ++i) { // _in_ring, tol 0
+        const Eigen::Vector2d &p = Z[size_t(i)], &r = Z[size_t((i + 1) % k)];
+        if ((r[0] - p[0]) * (z[1] - p[1]) - (r[1] - p[1]) * (z[0] - p[0]) < 0.) return;
+    }
+    pts.push_back(p0 + U * z);
+}
+
+/// poly_candidates: ring_candidates() of every face, and the stationary point in space when it
+/// lies in Q.
+void poly_candidates(const Quad& q, const Poly& Q, std::vector<Vec3>& pts)
+{
+    for (int f = 0; f < Q.faces(); ++f)
+        ring_candidates(q, Q.ring(f), Q.size(f), Q.N[size_t(f)], pts);
+    const double sc = std::max(1., q.A.cwiseAbs().maxCoeff());
+    if (!(std::abs(q.A.determinant()) > 1e-12 * sc * sc * sc)) return;
+    const Vec3 x = (2. * q.A).partialPivLu().solve(-q.b);
+    for (int f = 0; f < Q.faces(); ++f) {
+        if (Q.N[size_t(f)].dot(x - Q.ring(f)[0]) > 0.) return;
+    }
+    pts.push_back(x);
+}
+
+/// q_tol: the rounding bound of q = d_a^2 - d_b^2 at a vertex of a clipped set. The vertex lies
+/// within the clip tolerance 16 eps (|h| + scale) <= 64 eps xscale of the exact one, and
+/// |grad q| <= 2 (d_a + d_b) <= 4 dmax; plus q's own evaluation rounding, 64 eps dmax^2. MEASURED
+/// (Python, slot, concave edge, faces 90/91): a cell vertex on the bisector plane gave
+/// q = +5e-21 against d^2 = 1.1e-9, where a bound of 1e-12 d^2 = 1.1e-21 called it a crossing.
+double q_tol(const double dmax, const double xscale)
+{
+    return 4. * dmax * 64. * EPS * xscale + 64. * EPS * dmax * dmax;
+}
+
+/// sign_status: the sign of q = d_a^2 - d_b^2 over a convex set whose extremes lie among pts
+/// (located with the quadratic's coefficients, evaluated from the distances themselves: the
+/// expanded x.A x + b.x + c rounds at eps (n.a)^2, MEASURED (Python) 3.7e-20 against
+/// q = 1.4e-20 at a cube edge). A: d_a <= d_b everywhere (up to tol), B: the reverse, Tie: equal
+/// up to tol, Cross: a sign change.
+enum class Sign { A, B, Tie, Cross };
+Sign sign_status(const Loc& a, const Loc& b, const std::vector<Vec3>& pts, const double tol)
+{
+    double lo = std::numeric_limits<double>::infinity(), hi = -lo;
+    for (const Vec3& y : pts) {
+        const double da = d_feat(a, y), db = d_feat(b, y);
+        const double v = da * da - db * db;
+        lo = std::min(lo, v);
+        hi = std::max(hi, v);
+    }
+    if (hi <= tol && lo >= -tol) return Sign::Tie;
+    if (hi <= tol) return Sign::A;
+    if (lo >= -tol) return Sign::B;
+    return Sign::Cross;
+}
+
+/// bisector_planes: the unit planes (g, h), g.x = h, whose union is {d_a = d_b}, appended to out;
+/// false where that set is curved (face-edge, face-vertex, edge-vertex, skew edges). Face-face:
+/// n_a.(x - a_a) = +- n_b.(x - a_b); vertex-vertex: one plane; parallel edges: one plane;
+/// edges meeting at p: (y.(e1 - e2))(y.(e1 + e2)) = 0, y = x - p.
+bool bisector_planes(const Loc& a, const Loc& b, std::vector<std::pair<Vec3, double>>& out)
+{
+    const auto add = [&](const Vec3& g, const double h) {
+        const double ng = g.norm();
+        if (ng > 1e-14) out.push_back({g / ng, h / ng});
+    };
+    if (a.kind == 0 && b.kind == 0) {
+        for (const double s : {1., -1.})
+            add(a.dir - s * b.dir, a.dir.dot(a.p) - s * b.dir.dot(b.p));
+        return true;
+    }
+    if (a.kind == 2 && b.kind == 2) {
+        add(2. * (b.p - a.p), b.p.dot(b.p) - a.p.dot(a.p));
+        return true;
+    }
+    if (a.kind == 1 && b.kind == 1) {
+        const Vec3 &a1 = a.p, &e1 = a.dir, &a2 = b.p, &e2 = b.dir;
+        const Vec3 cr = e1.cross(e2);
+        if (cr.norm() <= 1e-12) { // parallel: |P(x - a1)|^2 = |P(x - a2)|^2
+            const Eigen::Matrix3d P = Eigen::Matrix3d::Identity() - e1 * e1.transpose();
+            add(2. * (P * (a2 - a1)), a2.dot(P * a2) - a1.dot(P * a1));
+            return true;
+        }
+        const Vec3 w = a2 - a1;
+        if (std::abs(w.dot(cr)) > 1e-12 * cr.norm() * (w.norm() + 1e-300)) return false; // skew
+        Eigen::Matrix<double, 3, 2> M2; // a1 + s e1 = a2 + t e2
+        M2.col(0) = e1;
+        M2.col(1) = -e2;
+        const Eigen::Vector2d st = M2.colPivHouseholderQr().solve(w);
+        const Vec3 p = a1 + st[0] * e1;
+        for (const Vec3& g : {Vec3(e1 - e2), Vec3(e1 + e2)}) add(g, g.dot(p));
+        return true;
+    }
+    return false;
+}
+
+/// The two kinds of convex set the front form labels: a planar ring (a front face's piece,
+/// pclip()) and a polytope (a cell's piece, clip()). cut(): R cut by {g.x <= h} into out (out =
+/// R when R is inside up to tol, `same` then set); false when nothing is inside.
+struct RingOps
+{
+    using Set = Ring;
+    Vec3 n;
+    const Ctx* cx;
+    bool cut(const Ring& R, const Vec3& g, const double h, Ring& out, bool& same) const
+    {
+        Ring tmp;
+        const Cut c = pclip(R, g, h, tmp, *cx);
+        same = c == Cut::Same;
+        if (c == Cut::None) return false;
+        out = same ? R : std::move(tmp);
+        return true;
+    }
+    const std::vector<Vec3>& verts(const Ring& R) const { return R; }
+    void candidates(const Quad& q, const Ring& R, std::vector<Vec3>& pts) const
+    {
+        ring_candidates(q, R.data(), int(R.size()), n, pts);
+    }
+};
+struct PolyOps
+{
+    using Set = Poly;
+    const Ctx* cx;
+    bool cut(const Poly& Q, const Vec3& g, const double h, Poly& out, bool& same) const
+    {
+        Poly tmp;
+        const Cut c = clip(Q, g, h, tmp, *cx);
+        same = c == Cut::Same;
+        if (c == Cut::None) return false;
+        out = same ? Q : std::move(tmp);
+        return true;
+    }
+    const std::vector<Vec3>& verts(const Poly& Q) const { return Q.V; }
+    void candidates(const Quad& q, const Poly& Q, std::vector<Vec3>& pts) const
+    {
+        poly_candidates(q, Q, pts);
+    }
+};
+
+/// resolve: the labelled cells of the convex set R with member set S, (cell, k), k the member
+/// nearest on the cell. A member whose q = d^2 - d_other^2 is >= 0 over all of R (up to q_tol)
+/// is dropped; the pairs still crossing must have planar bisectors, R is split by all of them
+/// and each cell resolved again, once. fail(ka, kb, R's vertices, curved) throws: a crossing
+/// pair with a curved bisector (curved), or members still crossing after the split.
+template <typename Ops, typename Fail>
+void resolve(
+    const typename Ops::Set& R,
+    const std::vector<int>& S,
+    const std::vector<Loc>& loc,
+    const Ops& ops,
+    const double scale,
+    const int depth,
+    std::vector<std::pair<typename Ops::Set, int>>& out,
+    Fail&& fail)
+{
+    if (S.size() == 1) {
+        out.push_back({R, S[0]});
+        return;
+    }
+    const std::vector<Vec3>& Vr = ops.verts(R);
+    double dmax = 0.;
+    for (const int k : S) {
+        for (const Vec3& y : Vr) dmax = std::max(dmax, d_feat(loc[size_t(k)], y));
+    }
+    const double tol = q_tol(dmax, scale);
+    std::vector<char> alive(S.size(), 1);
+    std::vector<std::pair<size_t, size_t>> cross;
+    std::vector<Vec3> pts;
+    for (size_t i = 0; i < S.size(); ++i) {
+        for (size_t j = i + 1; j < S.size(); ++j) {
+            if (!alive[i] || !alive[j]) continue;
+            const Loc &a = loc[size_t(S[i])], &b = loc[size_t(S[j])];
+            Quad q = quad_of(a);
+            const Quad qb = quad_of(b);
+            q.A -= qb.A;
+            q.b -= qb.b;
+            q.c -= qb.c;
+            pts.clear();
+            ops.candidates(q, R, pts);
+            const Sign st = sign_status(a, b, pts, tol);
+            if (st == Sign::A || st == Sign::Tie) {
+                alive[j] = 0;
+            } else if (st == Sign::B) {
+                alive[i] = 0;
+            } else {
+                cross.push_back({i, j});
+            }
+        }
+    }
+    std::vector<int> al;
+    for (size_t i = 0; i < S.size(); ++i) {
+        if (alive[i]) al.push_back(S[i]);
+    }
+    if (al.size() == 1) {
+        out.push_back({R, al[0]});
+        return;
+    }
+    std::vector<std::pair<Vec3, double>> planes;
+    for (const auto& [i, j] : cross) {
+        if (!alive[i] || !alive[j]) continue;
+        if (!bisector_planes(loc[size_t(S[i])], loc[size_t(S[j])], planes)) {
+            fail(S[i], S[j], Vr, true);
+        }
+    }
+    if (depth > 0 || planes.empty()) fail(al[0], al[1], Vr, false);
+    std::vector<typename Ops::Set> cells(1, R), next;
+    typename Ops::Set C;
+    for (const auto& [g, h] : planes) {
+        next.clear();
+        for (const auto& Cl : cells) {
+            for (const double s : {1., -1.}) {
+                bool same;
+                if (ops.cut(Cl, s * g, s * h, C, same)) next.push_back(C);
+            }
+        }
+        std::swap(cells, next);
+    }
+    for (const auto& Cl : cells) resolve(Cl, al, loc, ops, scale, depth + 1, out, fail);
+}
+
+/// labeled: the parts of R on which the label g's distance is one smooth function, on the
+/// offset side (ExactBandIntegral.hpp). A face is split by its plane into its two affine sides,
+/// of which only the offset side is kept when the face has a side plane (sp), both otherwise; a
+/// ring lying on the plane (inside both clips up to tol) is one part, not two (MEASURED, Python,
+/// cube_out vertex 4294, three boundary faces of B on the input: counted twice it doubled
+/// int (d - delta) phi_v). An edge or vertex part is clipped by its side plane.
+template <typename Ops>
+void labeled(
+    const typename Ops::Set& R,
+    const Loc& g,
+    const SidePlane& sp,
+    const int sigma,
+    const Ops& ops,
+    std::vector<std::pair<typename Ops::Set, Field>>& out)
+{
+    const bool side = sigma != 0 && sp.has;
+    typename Ops::Set C;
+    bool same = false;
+    if (g.kind == 0) {
+        const Vec3& n = g.dir;
+        const double hn = n.dot(g.p);
+        for (const double s : {1., -1.}) { // keep s n.(x - a0) >= 0
+            if (side && !(double(sigma) * s * n.dot(sp.N) > 0.)) continue; // the far side
+            if (!ops.cut(R, -s * n, -s * hn, C, same)) continue;
+            Field fd;
+            fd.kind = 0;
+            fd.dir = s * n;
+            fd.c = s * hn;
+            fd.far = side;
+            out.push_back({C, fd});
+            if (same) break;
+        }
+        return;
+    }
+    Field fd;
+    fd.kind = g.kind;
+    fd.p = g.p;
+    fd.dir = g.dir;
+    if (!side) {
+        out.push_back({R, fd});
+        return;
+    }
+    if (ops.cut(R, -double(sigma) * sp.N, -double(sigma) * sp.N.dot(sp.ql), C, same)) {
+        out.push_back({C, fd});
+    }
+}
+
+/// box_polytope (d_vertex.py): the axis box [lo, hi] as a polytope, faces outward.
+void box_polytope(const Vec3& lo, const Vec3& hi, Poly& out)
+{
+    Vec3 c[8];
+    for (int i = 0; i < 8; ++i) {
+        c[i] = Vec3(i & 4 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 1 ? hi[2] : lo[2]);
+    }
+    const int T[6][4] =
+        {{0, 1, 3, 2}, {4, 6, 7, 5}, {0, 4, 5, 1}, {2, 3, 7, 6}, {0, 2, 6, 4}, {1, 5, 7, 3}};
+    const Vec3 mid = 0.5 * (lo + hi);
+    out.clear();
+    int renum[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    for (const auto& q : T) {
+        int idx[4] = {q[0], q[1], q[2], q[3]};
+        Vec3 n = (c[idx[1]] - c[idx[0]]).cross(c[idx[2]] - c[idx[0]]);
+        if (n.dot(c[idx[0]] - mid) < 0.) {
+            std::reverse(idx, idx + 4);
+            n = -n;
+        }
+        Vec3 V[4];
+        int ids[4];
+        for (int j = 0; j < 4; ++j) {
+            V[j] = c[idx[j]];
+            if (renum[idx[j]] < 0) renum[idx[j]] = out.nv++;
+            ids[j] = renum[idx[j]];
+        }
+        out.add_face(V, ids, 4, n / n.norm());
+    }
+}
+
+const char* kind_name(const int kind)
+{
+    return kind == 0 ? "face" : kind == 1 ? "edge" : "vertex";
+}
 
 } // namespace
 
@@ -3032,23 +3480,14 @@ double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, 
     Ctx cx; // the sub-pieces' clips: no tolerance budget (as the Python)
     cx.scale = w.scale;
     const std::vector<Loc>& loc = w.loc;
-    Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
-    const double nn = nf.norm();
-    if (nn > 0.) nf /= nn;
     double best = -std::numeric_limits<double>::infinity();
     Vec3 at = Vec3::Zero();
     bool ra_best = false;
-    double area_sum = 0., empty_area = 0.;
     int rule_a_pieces = 0;
     std::vector<int> S;
     std::vector<const Loc*> members;
     for (const RingPiece& pc : w.pieces) {
-        const double a = ring_area(pc.R, nf);
-        area_sum += a;
-        if (pc.S.empty()) {
-            empty_area += a;
-            continue;
-        }
+        if (pc.S.empty()) continue;
         S = pc.S;
         if (S.size() > 1) S = prune_points(pc.R, S, loc);
         bool all_faces = true, all_verts = true;
@@ -3107,44 +3546,7 @@ double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, 
             ra_best = ra;
         }
     }
-    // The checks of value(), on areas. A cutting clip moves the parts' boundary only within the
-    // slab |g.x - h| <= sqrt(3) tol, whose section of the ring has area at most 2 sqrt(3) tol D
-    // (D f's longest edge, its longest chord); a decision taken with a tolerance misplaces at most
-    // a slab of half-width tol, area 2 tol D; a fan sum of m terms of size <= D^2 rounds by at
-    // most (13 m + m^2) eps D^2 / 2.
-    const double A0 = ring_area(w.V0, nf);
-    double D = 0.;
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < i; ++j) D = std::max(D, (f[size_t(i)] - f[size_t(j)]).norm());
-    }
-    const auto rho = [&](const Ring& R) {
-        const double m = double(R.size()) - 2.;
-        return (13. * m + m * m) * EPS * D * D / 2.;
-    };
-    double rho_all = rho(w.V0), rho_empty = 0.;
-    for (const RingPiece& pc : w.pieces) {
-        rho_all += rho(pc.R);
-        if (pc.S.empty()) rho_empty += rho(pc.R);
-    }
-    const double tile_bound = 2. * std::sqrt(3.) * D * w.tol_cut + rho_all;
-    const double empty_bound = 2. * D * (w.tol_any + std::sqrt(3.) * w.tol_cut) + rho_empty;
-    if (!(empty_area <= empty_bound)) {
-        log_and_throw_error(
-            "ExactBandIntegral::max_distance: pieces outside every local region, area {} of {} "
-            "(bound {}) | {}",
-            empty_area,
-            A0,
-            empty_bound,
-            face_string(f));
-    }
-    if (!(std::abs(area_sum - A0) <= tile_bound)) {
-        log_and_throw_error(
-            "ExactBandIntegral::max_distance: pieces do not tile f: {} vs {} (bound {}) | {}",
-            area_sum,
-            A0,
-            tile_bound,
-            face_string(f));
-    }
+    check_face_pieces(f, w, "max_distance");
     if (info) {
         info->at = at + w.c0;
         info->rule_a = ra_best;
@@ -3379,40 +3781,6 @@ double ExactBandIntegral::evaluate(
         stats->side_D_pos += n_D_pos;
     }
     const double v0 = volume_centroid(Q0).first;
-    // The two consistency checks, with bounds derived from the partition's own tolerances.
-    //  - A clip that cuts R by the plane (g, h) builds both parts with vertices snapped within tol
-    //    of the plane and rings cleaned at tol (max norm), so each part differs from the exact one
-    //    only in the slab |g.x - h| <= sqrt(3) tol, whose section of R is at most A(R)/2 <= A(t)/2
-    //    (R lies in t, and the surface area of nested convex bodies is monotone): the volume of
-    //    the two parts moves by at most sqrt(3) tol A(t) per cutting clip.
-    //  - In exact arithmetic the candidates' regions cover t, so a piece with no member exists only
-    //    because a decision taken with a tolerance (a clip, or a region test) put a slab of
-    //    half-width tol on the wrong side: at most tol A(t) of volume per decision.
-    //  - Each volume is a fan sum of m triple products of vectors no longer than D, t's longest
-    //    edge: its rounding is at most (13 m + m^2) eps D^3 / 6.
-    // A lost or doubled piece or face exceeds these by orders of magnitude (MEASURED: a face kept
-    // and capped twice made a sphere band cell 2.6e-6 over its volume, 84000 times its bound
-    // 4.3e-16); the former fixed 1e-9 v0 did not scale with the cell's shape.
-    double At = 0., D = 0.;
-    for (int f = 0; f < Q0.faces(); ++f) {
-        const Vec3* V = Q0.ring(f);
-        At += 0.5 * (V[1] - V[0]).cross(V[2] - V[0]).norm();
-    }
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < i; ++j) D = std::max(D, (T[size_t(i)] - T[size_t(j)]).norm());
-    }
-    const auto rho = [&](const Poly& Q) {
-        double m = 0.;
-        for (int f = 0; f < Q.faces(); ++f) m += Q.size(f) - 2;
-        return (13. * m + m * m) * EPS * D * D * D / 6.;
-    };
-    double rho_all = rho(Q0), rho_empty = 0.;
-    for (const Piece& pc : pieces) {
-        rho_all += rho(pc.Q);
-        if (pc.S.empty()) rho_empty += rho(pc.Q);
-    }
-    const double tile_bound = std::sqrt(3.) * At * w.tol_cut + rho_all;
-    const double empty_bound = At * (w.tol_any + std::sqrt(3.) * w.tol_cut) + rho_empty;
     if (stats) {
         ++stats->cells;
         stats->pieces += int64_t(pieces.size());
@@ -3422,22 +3790,7 @@ double ExactBandIntegral::evaluate(
         stats->rule_a_vol += rule_a_vol;
         stats->empty_vol += empty_vol;
     }
-    if (!(empty_vol <= empty_bound)) {
-        log_and_throw_error(
-            "ExactBandIntegral: pieces outside every local region, volume {} of {} (bound {}) | {}",
-            empty_vol,
-            v0,
-            empty_bound,
-            cell_string(T, delta));
-    }
-    if (!(std::abs(vol_sum - v0) <= tile_bound)) {
-        log_and_throw_error(
-            "ExactBandIntegral: pieces do not tile t: {} vs {} (bound {}) | {}",
-            vol_sum,
-            v0,
-            tile_bound,
-            cell_string(T, delta));
-    }
+    check_cell_pieces(T, delta, w, vol_sum, empty_vol);
     return clipped ? total_c : total - delta * v0;
 }
 
@@ -3948,6 +4301,598 @@ double ExactBandIntegral::value_grad_hess_impl(
     if (clipped) return Jd;
     G = G - delta * gradV;
     return Jd - delta * volume_centroid(Q0).first;
+}
+
+void ExactBandIntegral::check_cell_pieces(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const double delta,
+    const Work& w,
+    const double vol_sum,
+    const double empty_vol) const
+{
+    // The two consistency checks, with bounds derived from the partition's own tolerances.
+    //  - A clip that cuts R by the plane (g, h) builds both parts with vertices snapped within tol
+    //    of the plane and rings cleaned at tol (max norm), so each part differs from the exact one
+    //    only in the slab |g.x - h| <= sqrt(3) tol, whose section of R is at most A(R)/2 <= A(t)/2
+    //    (R lies in t, and the surface area of nested convex bodies is monotone): the volume of
+    //    the two parts moves by at most sqrt(3) tol A(t) per cutting clip.
+    //  - In exact arithmetic the candidates' regions cover t, so a piece with no member exists only
+    //    because a decision taken with a tolerance (a clip, or a region test) put a slab of
+    //    half-width tol on the wrong side: at most tol A(t) of volume per decision.
+    //  - Each volume is a fan sum of m triple products of vectors no longer than D, t's longest
+    //    edge: its rounding is at most (13 m + m^2) eps D^3 / 6.
+    // A lost or doubled piece or face exceeds these by orders of magnitude (MEASURED: a face kept
+    // and capped twice made a sphere band cell 2.6e-6 over its volume, 84000 times its bound
+    // 4.3e-16); the former fixed 1e-9 v0 did not scale with the cell's shape.
+    const Poly& Q0 = w.Q0;
+    const double v0 = volume_centroid(Q0).first;
+    double At = 0., D = 0.;
+    for (int f = 0; f < Q0.faces(); ++f) {
+        const Vec3* V = Q0.ring(f);
+        At += 0.5 * (V[1] - V[0]).cross(V[2] - V[0]).norm();
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < i; ++j) D = std::max(D, (T[size_t(i)] - T[size_t(j)]).norm());
+    }
+    const auto rho = [&](const Poly& Q) {
+        double m = 0.;
+        for (int f = 0; f < Q.faces(); ++f) m += Q.size(f) - 2;
+        return (13. * m + m * m) * EPS * D * D * D / 6.;
+    };
+    double rho_all = rho(Q0), rho_empty = 0.;
+    for (const Piece& pc : w.pieces) {
+        rho_all += rho(pc.Q);
+        if (pc.S.empty()) rho_empty += rho(pc.Q);
+    }
+    const double tile_bound = std::sqrt(3.) * At * w.tol_cut + rho_all;
+    const double empty_bound = At * (w.tol_any + std::sqrt(3.) * w.tol_cut) + rho_empty;
+    if (!(empty_vol <= empty_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral: pieces outside every local region, volume {} of {} (bound {}) | {}",
+            empty_vol,
+            v0,
+            empty_bound,
+            cell_string(T, delta));
+    }
+    if (!(std::abs(vol_sum - v0) <= tile_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral: pieces do not tile t: {} vs {} (bound {}) | {}",
+            vol_sum,
+            v0,
+            tile_bound,
+            cell_string(T, delta));
+    }
+}
+
+void ExactBandIntegral::check_face_pieces(
+    const std::array<Eigen::Vector3d, 3>& f,
+    const TriWork& w,
+    const char* who) const
+{
+    // The checks of value(), on areas. A cutting clip moves the parts' boundary only within the
+    // slab |g.x - h| <= sqrt(3) tol, whose section of the ring has area at most 2 sqrt(3) tol D
+    // (D f's longest edge, its longest chord); a decision taken with a tolerance misplaces at most
+    // a slab of half-width tol, area 2 tol D; a fan sum of m terms of size <= D^2 rounds by at
+    // most (13 m + m^2) eps D^2 / 2.
+    Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
+    const double nn = nf.norm();
+    if (nn > 0.) nf /= nn;
+    double area_sum = 0., empty_area = 0.;
+    for (const RingPiece& pc : w.pieces) {
+        const double a = ring_area(pc.R, nf);
+        area_sum += a;
+        if (pc.S.empty()) empty_area += a;
+    }
+    const double A0 = ring_area(w.V0, nf);
+    double D = 0.;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < i; ++j) D = std::max(D, (f[size_t(i)] - f[size_t(j)]).norm());
+    }
+    const auto rho = [&](const Ring& R) {
+        const double m = double(R.size()) - 2.;
+        return (13. * m + m * m) * EPS * D * D / 2.;
+    };
+    double rho_all = rho(w.V0), rho_empty = 0.;
+    for (const RingPiece& pc : w.pieces) {
+        rho_all += rho(pc.R);
+        if (pc.S.empty()) rho_empty += rho(pc.R);
+    }
+    const double tile_bound = 2. * std::sqrt(3.) * D * w.tol_cut + rho_all;
+    const double empty_bound = 2. * D * (w.tol_any + std::sqrt(3.) * w.tol_cut) + rho_empty;
+    if (!(empty_area <= empty_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral::{}: pieces outside every local region, area {} of {} "
+            "(bound {}) | {}",
+            who,
+            empty_area,
+            A0,
+            empty_bound,
+            face_string(f));
+    }
+    if (!(std::abs(area_sum - A0) <= tile_bound)) {
+        log_and_throw_error(
+            "ExactBandIntegral::{}: pieces do not tile f: {} vs {} (bound {}) | {}",
+            who,
+            area_sum,
+            A0,
+            tile_bound,
+            face_string(f));
+    }
+}
+
+struct ExactBandIntegral::FaceWork
+{
+    TriWork w; ///< f's partition
+    Vec3 n = Vec3::Zero(); ///< f's unit normal; zero for a flat face
+    std::vector<std::pair<Ring, Field>> parts; ///< the labelled parts on the offset side
+};
+
+ExactBandIntegral::FaceParts::FaceParts() = default;
+ExactBandIntegral::FaceParts::~FaceParts() = default;
+ExactBandIntegral::FaceParts::FaceParts(FaceParts&&) noexcept = default;
+ExactBandIntegral::FaceParts& ExactBandIntegral::FaceParts::operator=(FaceParts&&) noexcept =
+    default;
+
+void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, FaceWork& fw) const
+{
+    TriWork& w = fw.w;
+    fw.parts.clear();
+    tri_partition(f, w);
+    check_face_pieces(f, w, "front_face");
+    Ctx cx; // the sub-pieces' clips: no tolerance budget (as max_distance())
+    cx.scale = w.scale;
+    const std::vector<Loc>& loc = w.loc;
+    const Ring& V0 = w.V0;
+    Vec3 n = (V0[1] - V0[0]).cross(V0[2] - V0[0]);
+    const double nn = n.norm();
+    fw.n.setZero();
+    if (!(nn > 0.)) return; // a flat face
+    n /= nn;
+    fw.n = n;
+    const RingOps ops{n, &cx};
+    const auto side_plane = [&](const int k) {
+        SidePlane sp;
+        if (m_sigma == 0) return sp;
+        const size_t gi = size_t(w.cand[size_t(k)]);
+        sp.has = m_side_has[gi];
+        sp.N = m_side_n[gi];
+        sp.ql = m_side_q[gi] - w.c0;
+        return sp;
+    };
+    const auto fail = [&](const int ka,
+                          const int kb,
+                          const std::vector<Vec3>& Vr,
+                          const bool curved) {
+        Vec3 c = Vec3::Zero();
+        for (const Vec3& y : Vr) c += y;
+        c = c / double(Vr.size()) + w.c0;
+        log_and_throw_error(
+            "ExactBandIntegral::front_face: {} between feature {} ({}) and feature {} ({}) on a "
+            "piece at ({}, {}, {}) | {}",
+            curved ? "the bisector is curved and crosses" : "members still cross after the split",
+            w.cand[size_t(ka)],
+            kind_name(loc[size_t(ka)].kind),
+            w.cand[size_t(kb)],
+            kind_name(loc[size_t(kb)].kind),
+            c[0],
+            c[1],
+            c[2],
+            face_string(f));
+    };
+    std::vector<int> S;
+    std::vector<std::pair<Ring, int>> cells;
+    for (const RingPiece& pc : w.pieces) {
+        if (pc.S.empty()) continue;
+        S = pc.S.size() > 1 ? prune_points(pc.R, pc.S, loc) : pc.S;
+        cells.clear();
+        resolve(pc.R, S, loc, ops, w.scale, 0, cells, fail);
+        for (const auto& [C, k] : cells) {
+            labeled(C, loc[size_t(k)], side_plane(k), m_sigma, ops, fw.parts);
+        }
+    }
+}
+
+const ExactBandIntegral::FaceWork& ExactBandIntegral::face_parts(
+    const std::array<Eigen::Vector3d, 3>& f,
+    FaceParts* keep) const
+{
+    double key[9];
+    for (int i = 0; i < 3; ++i) std::memcpy(key + 3 * i, f[size_t(i)].data(), 3 * sizeof(double));
+    if (keep && keep->m_w && keep->m_owner == m_id &&
+        std::memcmp(keep->m_key, key, sizeof(key)) == 0) {
+        return *keep->m_w;
+    }
+    // without `keep` a per-thread scratch, its storage reused from call to call (as
+    // cell_partition())
+    thread_local FaceWork scratch;
+    FaceWork* fw = &scratch;
+    if (keep) {
+        if (!keep->m_w) keep->m_w = std::make_unique<FaceWork>();
+        keep->m_owner = 0; // none until the parts are made (label_face() may throw)
+        fw = keep->m_w.get();
+    }
+    label_face(f, *fw);
+    if (keep) {
+        std::memcpy(keep->m_key, key, sizeof(key));
+        keep->m_owner = m_id;
+    }
+    return *fw;
+}
+
+double ExactBandIntegral::front_face(
+    const std::array<Eigen::Vector3d, 3>& f,
+    const double delta,
+    FaceParts* keep) const
+{
+    const FaceWork& fw = face_parts(f, keep);
+    if (fw.n.isZero(0.)) return 0.; // a flat face: no area
+    Ctx cx;
+    cx.scale = fw.w.scale;
+    double val = 0.;
+    for (const auto& [R, fd] : fw.parts) val += flux(fd, R.data(), int(R.size()), fw.n, delta, cx);
+    return val;
+}
+
+void ExactBandIntegral::front_face_derivs(
+    const std::array<Eigen::Vector3d, 3>& f,
+    const double delta,
+    const int kv,
+    Eigen::Vector3d& grad,
+    Eigen::Matrix3d& hess,
+    FaceParts* keep) const
+{
+    grad.setZero();
+    hess.setZero();
+    const FaceWork& fw = face_parts(f, keep);
+    const TriWork& w = fw.w;
+    const Vec3& n = fw.n;
+    if (n.isZero(0.)) return; // a flat face: no area, every term 0
+    Ctx cx;
+    cx.scale = w.scale;
+    const Ring& V0 = w.V0;
+    // phi = l0 + g0.y, the hat function of corner kv: 1 there, 0 on the opposite edge; f ordered
+    // (x, b, c) from kv, N = (b - x) x (c - x), column l of dN/dx = e_l x (b - c)
+    const Vec3 &x = V0[size_t(kv)], &b = V0[size_t((kv + 1) % 3)], &c = V0[size_t((kv + 2) % 3)];
+    const Vec3 m = n.cross(c - b);
+    const Vec3 g0 = m / (x - b).dot(m);
+    const double l0 = -g0.dot(b);
+    const double nN = (b - x).cross(c - x).norm();
+    Eigen::Matrix3d dN;
+    for (int l = 0; l < 3; ++l) dN.col(l) = Vec3::Unit(l).cross(b - c);
+    const auto lam = [&](const Vec3& Y) { return l0 + Y.dot(g0); };
+    // a part on the input (d = 0 on every vertex): grad d from the band side (front_face() doc)
+    const double tolS = 64 * EPS * (ring_max_abs(V0) + maxabs(w.c0));
+    double gi = 0.;
+    Vec3 P2 = Vec3::Zero();
+    Eigen::Matrix3d Hcut = Eigen::Matrix3d::Zero();
+    for (const auto& [R, fd] : fw.parts) {
+        const Vec3* V = R.data();
+        const int nk = int(R.size());
+        if (fd.kind == 0) {
+            gi += poly_polygon(V, nk, [&](const Vec3& Y) {
+                return (Y.dot(fd.dir) - fd.c - delta) * lam(Y);
+            });
+            // Without a side both affine sides are parts, and a part lying on the plane takes
+            // the side labeled() met first; grad d is then the band side's, -n (n out of the
+            // band; Python e_hessian.py). With a side the part IS the offset side, the side the
+            // band is on: its own W.
+            double on = 0.;
+            for (int i = 0; i < nk; ++i) on = std::max(on, std::abs(V[i].dot(fd.dir) - fd.c));
+            const Vec3 W = !fd.far && on <= tolS ? Vec3(-n) : fd.dir;
+            P2 += W * poly_polygon(V, nk, [&](const Vec3& Y) {
+                      const double l = lam(Y);
+                      return l * l;
+                  });
+            if (!fd.far) continue;
+            // The cut edges: where f crosses the face's plane into the far side, chi (d - delta)
+            // jumps from -delta to 0, and the line slides over f as x moves (value_grad_hess()'s
+            // cut edges, which the offset side keeps there too). An edge of f moves with it: no
+            // term. A part lying on the plane has no cut edge (g_c along n: g_c,f = 0).
+            // MEASURED (tests, a ring astride a cube face): without these terms the Hessian came
+            // 2.1 (relative) off its central differences and 1.3 off the "exact" rule's.
+            const double tolc = 64 * EPS * (std::abs(fd.c) + std::max(ring_max_abs(R), w.scale));
+            const Vec3 gc = -fd.dir; // out of the kept side
+            const Vec3 gp = gc - gc.dot(n) * n;
+            if (gp.norm() <= 1e-12) continue;
+            for (int i = 0; i < nk; ++i) {
+                const Vec3 &y1 = V[i], &y2 = V[(i + 1) % nk];
+                if (maxabs(y2 - y1) <= tolc) continue;
+                if (std::abs(y1.dot(fd.dir) - fd.c) > tolc ||
+                    std::abs(y2.dot(fd.dir) - fd.c) > tolc) {
+                    continue;
+                }
+                bool f_edge = false;
+                for (int e = 0; e < 3 && !f_edge; ++e) {
+                    const Vec3& P = V0[size_t(e)];
+                    const Vec3 t = (V0[size_t((e + 1) % 3)] - P).normalized();
+                    const auto off = [&](const Vec3& y) {
+                        const Vec3 r = y - P;
+                        return maxabs(r - r.dot(t) * t);
+                    };
+                    f_edge = off(y1) <= tolc && off(y2) <= tolc;
+                }
+                if (f_edge) continue;
+                Elem e; // phi = d - delta on the kept side
+                e.kind = 0;
+                e.dir = fd.dir;
+                e.c = fd.c + delta;
+                const double P3 = cut_integral(y1, y2, e, l0, g0);
+                Hcut -= n * gc.transpose() * (P3 / gp.norm());
+            }
+            continue;
+        }
+        const auto [A, cen] = area_centroid(V, nk, n);
+        double p1;
+        Vec3 p2;
+        if (fd.kind == 1) {
+            face_line_derivs(V, nk, n, fd.p, fd.dir, l0, g0, p1, p2);
+        } else {
+            face_point_derivs(V, nk, n, fd.p, l0, g0, p1, p2, cx);
+        }
+        gi += p1 - delta * A * (l0 + g0.dot(cen));
+        P2 += p2;
+    }
+    grad = gi * n;
+    hess = n * P2.transpose() + (gi / nN) * dN + Hcut;
+}
+
+double ExactBandIntegral::bisector_jump(
+    const std::array<Eigen::Vector3d, 4>& T,
+    const double delta,
+    Partition* keep) const
+{
+    const Work* wp = cell_partition(T, nullptr, nullptr, keep);
+    if (!wp) return 0.;
+    const Work& w = *wp;
+    Ctx cx;
+    cx.scale = w.scale;
+    const std::vector<Loc>& loc = w.loc;
+    const Poly& Q0 = w.Q0;
+    const PolyOps ops{&cx};
+    double vol_sum = 0., empty_vol = 0.;
+    for (const Piece& pc : w.pieces) {
+        const double v = volume_centroid(pc.Q).first;
+        vol_sum += v;
+        if (pc.S.empty()) empty_vol += v;
+    }
+    check_cell_pieces(T, delta, w, vol_sum, empty_vol);
+    const auto side_plane = [&](const int k) {
+        SidePlane sp;
+        if (m_sigma == 0) return sp;
+        const size_t gi = size_t(w.cand[size_t(k)]);
+        sp.has = m_side_has[gi];
+        sp.N = m_side_n[gi];
+        sp.ql = m_side_q[gi] - w.c0;
+        return sp;
+    };
+    const auto fail = [&](const int ka,
+                          const int kb,
+                          const std::vector<Vec3>& Vr,
+                          const bool curved) {
+        Vec3 c = Vec3::Zero();
+        for (const Vec3& y : Vr) c += y;
+        c = c / double(Vr.size()) + w.c0;
+        log_and_throw_error(
+            "ExactBandIntegral::bisector_jump: {} between feature {} ({}) and feature {} ({}) on "
+            "a piece at ({}, {}, {}) | {}",
+            curved ? "the bisector is curved and crosses" : "members still cross after the split",
+            w.cand[size_t(ka)],
+            kind_name(loc[size_t(ka)].kind),
+            w.cand[size_t(kb)],
+            kind_name(loc[size_t(kb)].kind),
+            c[0],
+            c[1],
+            c[2],
+            cell_string(T, delta));
+    };
+    // the labelled parts on the offset side
+    struct Part
+    {
+        Poly R;
+        Field fd;
+        int k;
+    };
+    std::vector<Part> kept;
+    std::vector<int> S;
+    std::vector<std::pair<Poly, int>> cells;
+    std::vector<std::pair<Poly, Field>> parts;
+    bool one_label = true;
+    for (const Piece& pc : w.pieces) {
+        if (pc.S.empty()) continue;
+        S = pc.S.size() > 1 ? prune_members(pc.Q, pc.S, loc) : pc.S;
+        cells.clear();
+        resolve(pc.Q, S, loc, ops, w.scale, 0, cells, fail);
+        for (const auto& [C, k] : cells) {
+            parts.clear();
+            labeled(C, loc[size_t(k)], side_plane(k), m_sigma, ops, parts);
+            for (auto& [R, fd] : parts) {
+                one_label = one_label && (kept.empty() || kept.front().k == k);
+                kept.push_back({std::move(R), fd, k});
+            }
+        }
+    }
+    // One feature labelling every kept part: G is one field on them, and D_t = 0 exactly.
+    if (one_label) return 0.;
+    // Otherwise D_t = sum over the parts C of oint_dC G.n dA - oint_dt G.n dA (sum over C of
+    // int_C div G = J_t): the flux of each part's field through its faces not on dt. A face on
+    // one of the label's own region planes carries none (G_k is tangent to them: a face's prism
+    // planes hold its normal, an edge's and a vertex's planes pass through it or are
+    // perpendicular to it), and is skipped. The faces between two parts of one label cancel;
+    // the jumps are where the label changes. The prototype summed only the faces lying on a
+    // planar bisector of the label and another candidate (within 1e3 16 eps of the scale); that
+    // missed the jumps across a region plane NEAR a bisector: MEASURED (Geneva base, inward,
+    // stored side cells 0 and 7): the label changed across the prism plane of a nearly coplanar
+    // neighbour face, 2.4e-8 and 1.1e-7 from their bisector, and D_t came 8.7e-11 and 2.6e-10
+    // off J_t - oint_dt G.n dA (1.1e-8 and 1.4e-8 of delta vol); with every face, 1.9e-16.
+    std::array<std::pair<Vec3, double>, 4> tet_planes;
+    for (int i = 0; i < 4; ++i) {
+        tet_planes[size_t(i)] = {Q0.N[size_t(i)], Q0.N[size_t(i)].dot(Q0.ring(i)[0])};
+    }
+    double tot = 0.;
+    for (const Part& p : kept) {
+        const Loc& g = loc[size_t(p.k)];
+        const Poly& R = p.R;
+        for (int f = 0; f < R.faces(); ++f) {
+            const Vec3* V = R.ring(f);
+            const int nk = R.size(f);
+            const Vec3& nf = R.N[size_t(f)];
+            double ma = 0.;
+            for (int i = 0; i < nk; ++i) ma = std::max(ma, maxabs(V[i]));
+            const double tol = 1e3 * 16 * EPS * std::max(ma, w.scale);
+            const auto on = [&](const Vec3& gn, const double h) { // a supporting plane of the part
+                if (nf.dot(gn) < 1 - 1e-12) return false;
+                for (int i = 0; i < nk; ++i) {
+                    if (std::abs(V[i].dot(gn) - h) > tol) return false;
+                }
+                return true;
+            };
+            bool skip = false;
+            for (const auto& [gn, h] : tet_planes) skip = skip || on(gn, h);
+            for (int i = g.h_begin; i < g.h_end && !skip; ++i) {
+                skip = on(w.hs[size_t(i)].first, w.hs[size_t(i)].second);
+            }
+            if (!skip) tot += flux(p.fd, V, nk, nf, delta, cx);
+        }
+    }
+    return tot;
+}
+
+void ExactBandIntegral::prepare_front_flux(const double delta)
+{
+    const double R = 2. * delta;
+    m_ff_reach = R;
+    m_ff_boxes.clear();
+    m_ff_nodes.clear();
+    m_ff_order.clear();
+    Ctx cx;
+    std::vector<int> near;
+    Poly Q, tmp;
+    const Vec3 r2 = Vec3::Constant(2. * R), r1 = Vec3::Constant(R);
+    for (int g = 0; g < int(m_feat.size()); ++g) {
+        const Feature& fg = m_feat[size_t(g)];
+        candidates(fg.lo - r2, fg.hi + r2, 0., near); // every h whose box grown by R meets g's
+        for (const int h : near) {
+            if (h <= g) continue;
+            const Feature& fh = m_feat[size_t(h)];
+            const Vec3 lo = (fg.lo - r1).cwiseMax(fh.lo - r1),
+                       hi = (fg.hi + r1).cwiseMin(fh.hi + r1);
+            if ((lo.array() > hi.array()).any()) continue;
+            const Vec3 c0 = 0.5 * (lo + hi);
+            box_polytope(lo - c0, hi - c0, Q);
+            cx.scale = maxabs(hi - c0);
+            bool alive = true;
+            for (const Feature* ft : {&fg, &fh}) {
+                for (int i = ft->h_begin; i < ft->h_end && alive; ++i) {
+                    const auto& [gn, q] = m_hs[size_t(i)];
+                    cx.scale = std::max(cx.scale, maxabs(q - c0));
+                    alive = clip_inplace(Q, gn, gn.dot(q - c0), tmp, cx);
+                }
+            }
+            for (const int k : {g, h}) { // the offset side of both
+                if (!alive || m_sigma == 0 || !m_side_has[size_t(k)]) continue;
+                const Vec3 N = double(m_sigma) * m_side_n[size_t(k)];
+                alive = clip_inplace(Q, -N, -N.dot(m_side_q[size_t(k)] - c0), tmp, cx);
+            }
+            if (!alive || !(volume_centroid(Q).first > 0.)) continue;
+            FFBox b;
+            b.lo = Vec3::Constant(std::numeric_limits<double>::infinity());
+            b.hi = -b.lo;
+            for (const Vec3& p : Q.V) {
+                b.lo = b.lo.cwiseMin(p + c0);
+                b.hi = b.hi.cwiseMax(p + c0);
+            }
+            for (int f = 0; f < Q.faces(); ++f) {
+                b.planes.push_back({Q.N[size_t(f)], Q.N[size_t(f)].dot(Q.ring(f)[0] + c0)});
+            }
+            m_ff_boxes.push_back(std::move(b));
+        }
+    }
+    if (m_ff_boxes.empty()) return;
+    m_ff_order.resize(m_ff_boxes.size());
+    std::iota(m_ff_order.begin(), m_ff_order.end(), 0);
+    m_ff_nodes.reserve(2 * m_ff_boxes.size());
+    build_ff_node(0, int(m_ff_boxes.size()));
+}
+
+int ExactBandIntegral::build_ff_node(const int begin, const int end)
+{
+    const int id = int(m_ff_nodes.size());
+    m_ff_nodes.emplace_back();
+    Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity());
+    Vec3 hi = -lo, clo = lo, chi = -lo;
+    for (int j = begin; j < end; ++j) {
+        const FFBox& b = m_ff_boxes[size_t(m_ff_order[size_t(j)])];
+        lo = lo.cwiseMin(b.lo);
+        hi = hi.cwiseMax(b.hi);
+        clo = clo.cwiseMin(0.5 * (b.lo + b.hi));
+        chi = chi.cwiseMax(0.5 * (b.lo + b.hi));
+    }
+    m_ff_nodes[size_t(id)].lo = lo;
+    m_ff_nodes[size_t(id)].hi = hi;
+    m_ff_nodes[size_t(id)].begin = begin;
+    m_ff_nodes[size_t(id)].end = end;
+    if (end - begin <= 4) return id;
+    int axis = 0;
+    (chi - clo).maxCoeff(&axis);
+    const int mid = (begin + end) / 2;
+    const auto cen = [&](const int a) {
+        const FFBox& b = m_ff_boxes[size_t(a)];
+        return b.lo[axis] + b.hi[axis];
+    };
+    std::nth_element(
+        m_ff_order.begin() + begin,
+        m_ff_order.begin() + mid,
+        m_ff_order.begin() + end,
+        [&](const int a, const int b) { return cen(a) < cen(b) || (cen(a) == cen(b) && a < b); });
+    const int left = build_ff_node(begin, mid);
+    const int right = build_ff_node(mid, end);
+    m_ff_nodes[size_t(id)].left = left;
+    m_ff_nodes[size_t(id)].right = right;
+    return id;
+}
+
+bool ExactBandIntegral::front_flux_flag(const std::array<Eigen::Vector3d, 4>& t) const
+{
+    if (m_ff_nodes.empty()) return false;
+    Vec3 tlo = t[0], thi = t[0];
+    double ma = 0.;
+    for (const Vec3& p : t) {
+        tlo = tlo.cwiseMin(p);
+        thi = thi.cwiseMax(p);
+        ma = std::max(ma, maxabs(p));
+    }
+    const auto apart = [&](const Vec3& lo, const Vec3& hi) {
+        return (lo.array() > thi.array()).any() || (hi.array() < tlo.array()).any();
+    };
+    thread_local std::vector<int> stack;
+    stack.assign(1, 0);
+    while (!stack.empty()) {
+        const Node& nd = m_ff_nodes[size_t(stack.back())];
+        stack.pop_back();
+        if (apart(nd.lo, nd.hi)) continue;
+        if (nd.left >= 0) {
+            stack.push_back(nd.left);
+            stack.push_back(nd.right);
+            continue;
+        }
+        for (int j = nd.begin; j < nd.end; ++j) {
+            const FFBox& b = m_ff_boxes[size_t(m_ff_order[size_t(j)])];
+            if (apart(b.lo, b.hi)) continue;
+            // separated if one face plane has all four corners outside it beyond rounding (a cell
+            // touching the polytope only on its boundary has no part of its interior in it)
+            bool separated = false;
+            for (const auto& [g, h] : b.planes) {
+                double smin = std::numeric_limits<double>::infinity();
+                for (const Vec3& p : t) smin = std::min(smin, p.dot(g) - h);
+                if (smin > 64 * EPS * (std::abs(h) + ma)) {
+                    separated = true;
+                    break;
+                }
+            }
+            if (!separated) return true;
+        }
+    }
+    return false;
 }
 
 } // namespace wmtk::components::topological_offset

@@ -527,7 +527,13 @@ public:
      * That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is
      * J_t / delta, J_t = int_t (d - delta) dV in closed form (ExactBandIntegral::value()): exact
      * up to rounding, and an upper bound only on the pieces of t where two features' regions
-     * meet on a curved border (rule (a)). See the spec doc.
+     * meet on a curved border (rule (a)). Under "front_flux" b(t) is the same J_t / delta: the
+     * front form changes how the smoother evaluates the band term, not the term. A cell's part
+     * of the front form is oint_dt G.n dA + D_t (ExactBandIntegral.hpp), which IS
+     * int_t (d - delta) dV by the divergence theorem, so the operations, the veto and the global
+     * energy read it as value() computes it. The two can differ only on rule-(a) pieces, where
+     * value() takes an upper bound and the front form labels the piece exactly, or throws where
+     * a curved bisector crosses it. See the spec doc.
      */
     double band_cell_term(const std::array<size_t, 4>& vids) const
     {
@@ -536,9 +542,11 @@ public:
                 "the energy's band term reads one field, and this input has {} regions",
                 m_n_regions);
         }
-        if (m_offset_params.band_volume_rule == "exact") {
-            // EXPERIMENTAL_band_volume_rule "exact": J_t / delta, J_t = int_t (d - delta) dV in
-            // closed form (ExactBandIntegral), in place of the corner bound
+        if (m_offset_params.band_volume_rule == "exact" ||
+            m_offset_params.band_volume_rule == "front_flux") {
+            // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
+            // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
+            // (ExactBandIntegral), in place of the corner bound
             const std::array<Vector3d, 4> p = {
                 {m_vertex_attribute[vids[0]].m_posf,
                  m_vertex_attribute[vids[1]].m_posf,
@@ -563,9 +571,9 @@ public:
     /// The input's triangles, the convex pieces of d the band term's min runs over
     /// (init_offset_potential()).
     std::shared_ptr<InputTriangles> m_band_tris;
-    /// EXPERIMENTAL_band_volume_rule "exact", or EXPERIMENTAL_settle_refinement with settle_mark
-    /// "max" (its exact max over a front face): the input's triangles for the exact integral,
-    /// built once beside m_band_tris (init_offset_potential()).
+    /// EXPERIMENTAL_band_volume_rule "exact" or "front_flux", or EXPERIMENTAL_settle_refinement
+    /// with settle_mark "max" (its exact max over a front face): the input's triangles for the
+    /// exact integral, built once beside m_band_tris (init_offset_potential()).
     std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
     /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.

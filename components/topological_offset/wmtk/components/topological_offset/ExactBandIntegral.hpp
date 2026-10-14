@@ -287,6 +287,137 @@ public:
      */
     double max_distance(const std::array<Eigen::Vector3d, 3>& f, MaxInfo* info = nullptr) const;
 
+    // --------------------------------------------------------------------------------------------
+    // The front form (EXPERIMENTAL_band_volume_rule "front_flux"; Python prototype front_form.py,
+    // d_vertex.py, e_hessian.py, scratchpad front_form/ of 2026-10-13). Per feature k, in its
+    // local region, a field G_k with div G_k = d - delta, tangent to the region's planes and 0 on
+    // the input (d = 0):
+    //     face    G = (d^2/2 - delta d) W        d = W.x - c, W = +-n on each side of its plane
+    //     edge    G = (d/3 - delta/2) (x - x_e)  x_e the projection of x on the edge's line
+    //     vertex  G = (d/4 - delta/3) (x - v).
+    // On a band B made of cells, the divergence theorem cell by cell gives
+    //     E(B) = int_B (d - delta) dV = sum over the boundary faces f of B of int_f G.n dA
+    //            + sum over the cells t of D_t,
+    // D_t = int_t (d - delta) dV - oint_dt G.n dA: the jumps of G.n across the BISECTORS inside t
+    // (the sets where two features are nearest), 0 for a cell no bisector crosses. Every piece of
+    // the partition (as value()'s) is labelled with its nearest feature exactly: a member whose
+    // squared distance is not below another's anywhere on the piece is dropped (the exact range
+    // of the difference, a quadratic, over the piece); members that still cross must have a
+    // planar bisector (face-face, vertex-vertex, parallel or intersecting edge-edge), and the
+    // piece is split by it. A crossing pair with a curved bisector (face-edge, face-vertex,
+    // edge-vertex, skew edges) THROWS std::runtime_error naming the pair and the position:
+    // there is no approximation in this form (rule (a)'s bound is value()'s only).
+    //
+    // The offset side (class doc), as value(): a labelled part counts only on the offset side of
+    // its label's plane. On a labelled part the label is the nearest feature, whose plane meets it
+    // only where d = 0 (the pseudonormal theorem), so the side drops whole parts: a face's far
+    // side, and the edge and vertex parts beyond the input (MEASURED, the side cases' cells of
+    // the tests: 47 edge parts clipped by their side plane, every one dropped whole, none cut).
+    // Where G = 0 (on the input) the
+    // dropped parts carry no flux, so the identity holds with the side as without it. The
+    // Python prototype used the unsigned d (both sides of every face counted); the two agree on
+    // every part on the offset side, and constructed without a side this class is the prototype.
+
+    struct FaceWork;
+    /**
+     * @brief One face's labelled parts, kept by the caller between front_face() calls on that
+     * face, as Partition keeps a cell's partition: the parts are a function of f's 9 coordinates,
+     * in their order, and of the input alone (not of delta or kv). A call whose f equals, bit for
+     * bit, the f they were made for (by this integral) reads them; any other call makes them anew
+     * into it. Why: the smoother asks for the value at x and then for the derivatives at the same
+     * x, each labelling every boundary face through x.
+     */
+    class FaceParts
+    {
+    public:
+        FaceParts();
+        ~FaceParts();
+        FaceParts(FaceParts&&) noexcept;
+        FaceParts& operator=(FaceParts&&) noexcept;
+
+    private:
+        friend class ExactBandIntegral;
+        std::unique_ptr<FaceWork> m_w;
+        uint64_t m_owner = 0; ///< the integral's m_id; 0: none
+        double m_key[9] = {};
+    };
+    /**
+     * @brief front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f
+     * ordered with the normal pointing out of the band). front_face_derivs(): for the motion of
+     * corner kv (the others fixed), the gradient and the one-vertex Hessian of E's dependence
+     * through f:
+     *     grad = n int_f chi (d - delta) phi dA,
+     *     hess = n (x) int_f chi phi^2 grad d dA + (int_f chi (d - delta) phi dA / |N|) dN/dx
+     *            - sum over cut edges c: n (x) g_c int_c (d - delta) phi^2 ds / |g_c,f|,
+     * phi the hat function of corner kv, chi the offset side's indicator, N = (f1 - f0) x
+     * (f2 - f0) with column l of dN/dx = e_l x (x_a - x_b) (f ordered (x, x_a, x_b)), and the cut
+     * edges the lines where f crosses an input face's plane into the far side (chi (d - delta)
+     * jumps by delta there; g_c the plane's normal out of the kept side, g_c,f its part in f's
+     * plane). Summed over the band's boundary faces through x these are E(B)'s gradient and
+     * Hessian in x: Reynolds' transport theorem on int_B chi (d - delta), the boundary moving
+     * with velocity phi; d is Lipschitz, so no medial-axis term and no D_t term. A part of f
+     * lying on the input (d = 0 on it) takes grad d from the band side (the side the band is on,
+     * the offset side with a side; -n without one), the one-sided limit, as value_grad_hess().
+     * Throws on a curved bisector (above) or if f's pieces do not tile it (max_distance()).
+     * With `keep`, f's labelled parts are read from or written to it (FaceParts).
+     */
+    double front_face(
+        const std::array<Eigen::Vector3d, 3>& f,
+        double delta,
+        FaceParts* keep = nullptr) const;
+    void front_face_derivs(
+        const std::array<Eigen::Vector3d, 3>& f,
+        double delta,
+        int kv,
+        Eigen::Vector3d& grad,
+        Eigen::Matrix3d& hess,
+        FaceParts* keep = nullptr) const;
+    /**
+     * @brief D_t = int_t (d - delta) dV - oint_dt G.n dA of the cell t (either orientation): 0
+     * exactly when one feature labels every part of t on the offset side (one field); otherwise
+     * the flux of each labelled part's field through its faces not on dt, outward from the part,
+     * a face on one of the label's own region planes skipped (the field is tangent to it). The
+     * faces between two parts of one label cancel, so the sum is the jumps of G.n where the label
+     * changes: on the bisectors, and on region planes that coincide with one (MEASURED, Python,
+     * cube_out tet 2234: the prism plane between two coplanar triangles of a cube face is the
+     * bisector of the two perpendicular faces at the cube edge it contains) or nearly so (see the
+     * .cpp). t's partition read from or written to `keep` when given (Partition). Throws on a
+     * curved bisector, or as value() if the pieces do not tile t.
+     */
+    double bisector_jump(
+        const std::array<Eigen::Vector3d, 4>& t,
+        double delta,
+        Partition* keep = nullptr) const;
+    /**
+     * @brief Builds, from the input alone, where bisectors can be: for every pair of features g, h
+     * the polytope L_g cap L_h cap box_g(R) cap box_h(R) (and, with a side, cap both features'
+     * offset sides), R = reach = 2 delta, kept where it has volume. A bisector point y of g and
+     * h with d(y) <= R lies in it: both are nearest at y, so y is in both regions, on the offset
+     * side of both planes, and within d_g(y) = d(y) of a point of g (fact (ii) of the class doc),
+     * so in g's box grown by R. Called once, before the integral is shared.
+     */
+    void prepare_front_flux(double delta);
+    /// prepare_front_flux()'s R (0 before it), and the number of polytopes it kept.
+    double front_flux_reach() const { return m_ff_reach; }
+    size_t front_flux_polytopes() const { return m_ff_boxes.size(); }
+    /**
+     * @brief Whether the cell t can meet a bisector at points with d <= front_flux_reach(): t's
+     * box meets a kept polytope's box and no face plane of that polytope has all four corners
+     * strictly outside it (beyond rounding). Conservative: a cell flagged without a bisector gets
+     * D_t = 0 up to rounding (exactly 0 when one feature labels all of it). Says nothing about
+     * points with d > reach: the caller flags a cell whose bound on d (distance_bound()) exceeds
+     * the reach itself (BandVolumeEnergy3D).
+     */
+    bool front_flux_flag(const std::array<Eigen::Vector3d, 4>& t) const;
+    /// d(x), the distance to the input: min over the triangles of the point-triangle distance.
+    double distance(const Eigen::Vector3d& x) const { return upper_bound(&x, 1); }
+    /// U = min over the input triangles P of max over t's corners of d_P: an upper bound of d on
+    /// t (each d_P is convex, and d <= d_P), the bound value()'s candidate search starts from.
+    double distance_bound(const std::array<Eigen::Vector3d, 4>& t) const
+    {
+        return upper_bound(t.data(), 4);
+    }
+
     size_t num_faces() const { return m_A.size(); }
 
 private:
@@ -386,6 +517,36 @@ private:
     void tri_partition(const std::array<Eigen::Vector3d, 3>& f, TriWork& w) const;
     /// U: min over all triangles of max over the n points t of d_P.
     double upper_bound(const Eigen::Vector3d* t, int n) const;
+    /// The checks of value() on t's pieces (volumes summed by the caller), and of max_distance()
+    /// on f's pieces (areas): throw with the corners in hex floats if the pieces do not tile, or
+    /// leave more outside every region, than the partition's tolerances allow.
+    void check_cell_pieces(
+        const std::array<Eigen::Vector3d, 4>& t,
+        double delta,
+        const Work& w,
+        double vol_sum,
+        double empty_vol) const;
+    void check_face_pieces(
+        const std::array<Eigen::Vector3d, 3>& f,
+        const TriWork& w,
+        const char* who) const;
+    /// front_face()'s labelled parts of f into fw: the partition, each piece resolved to its
+    /// nearest feature, the offset side kept.
+    void label_face(const std::array<Eigen::Vector3d, 3>& f, FaceWork& fw) const;
+    /// f's labelled parts, from `keep` when it holds f's, else made (into keep, or a scratch).
+    const FaceWork& face_parts(const std::array<Eigen::Vector3d, 3>& f, FaceParts* keep) const;
+    /// prepare_front_flux(): the kept polytopes' boxes and face planes {x : g.x <= h} (global
+    /// coordinates), and a tree over the boxes (as m_nodes, over m_ff_order).
+    struct FFBox
+    {
+        Eigen::Vector3d lo, hi;
+        std::vector<std::pair<Eigen::Vector3d, double>> planes;
+    };
+    std::vector<FFBox> m_ff_boxes;
+    std::vector<Node> m_ff_nodes;
+    std::vector<int> m_ff_order;
+    double m_ff_reach = 0.;
+    int build_ff_node(int begin, int end);
     /// Feature indices whose box is within r of [lo, hi], ascending.
     void candidates(
         const Eigen::Vector3d& lo,
