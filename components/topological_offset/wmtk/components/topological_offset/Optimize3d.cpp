@@ -262,6 +262,20 @@ double TopoOffsetTetMesh::global_energy() const
     return s;
 }
 
+double TopoOffsetTetMesh::offset_energy() const
+{
+    // int_B (d - delta) / delta dV as band_cell_term() reads it, the band cells only. The settle
+    // test reads this, not E: E's AMIPS term changes wherever the mesh is improved, the front
+    // moving or not. Measured 2026-10-14 (serial, Geneva settings): splits raised E through the
+    // AMIPS term by 0.7-3.6 bar energies per turn on the cube outward.
+    double s = 0.;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (cell_is_offset_band(tid)) s += band_cell_term(oriented_tet_vids(tid));
+    }
+    return s;
+}
+
 double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids, const bool band_term)
     const
 {
@@ -2904,7 +2918,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
 {
     const double delta = m_offset_params.target_distance;
     const double eps = m_offset_params.front_conv;
-    const double e_now = global_energy();
+    const double e_now = offset_energy(); // no AMIPS: see offset_energy()
     const double de = e_prev - e_now;
     e_prev = e_now;
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
@@ -3042,7 +3056,8 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     // for good, hence the warning, every turn such faces exist.
     logger().log(
         n_floor > 0 ? spdlog::level::warn : spdlog::level::info,
-        "\t[settle] turn {}: E {:.10g}, dE {:.4g}, bar energy b {:.4g} (front area {:.6g}), "
+        "\t[settle] turn {}: offset energy {:.10g}, its fall {:.4g}, bar energy b {:.4g} (front "
+        "area {:.6g}), "
         "settled {}{}",
         turn,
         e_now,
@@ -4206,7 +4221,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     m_swap_scoring_mismatch = 0;
     // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
     // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
-    // settle_e_prev is E at the end of the previous turn, for turn 1 E before its first group.
+    // settle_e_prev is the offset energy at the end of the previous turn, for turn 1 before its
+    // first group.
     const bool settle = m_offset_params.settle_refinement;
     double settle_e_prev = 0.;
     for (int it = 0; it < budget; ++it) {
@@ -4220,7 +4236,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             // ExactBandIntegral::reserve_values()).
             if (m_band_exact) m_band_exact->reserve_values(2 * tet_capacity());
             const double energy_before_group = global_energy();
-            if (settle && it == 0 && gi == 0) settle_e_prev = energy_before_group;
+            if (settle && it == 0 && gi == 0) settle_e_prev = offset_energy();
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             if (gi == 1) needle_scan("collapse pass");

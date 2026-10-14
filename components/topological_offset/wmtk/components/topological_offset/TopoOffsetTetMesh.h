@@ -650,9 +650,11 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
     mutable std::atomic<int> m_volume_reject_split{0};
 
-    /// E, the sum of tet_energy() over every live tet: the settle test's E and the
-    /// [band volume energy] lines'.
+    /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'.
     double global_energy() const;
+    /// The offset energy: band_cell_term() summed over the band cells, E without its AMIPS term.
+    /// What the settle test compares (settle_refinement_turn()).
+    double offset_energy() const;
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The scale of face_offset_term() and of the repulsion term.
     double offset_term_weight() const
@@ -1946,10 +1948,10 @@ public:
     /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
     /// the bar.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
-    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when E fell by
-    /// less than the bar energy b = front_conv^2 A / (2 target_distance)
-    /// since `e_prev` (E at the end of the previous turn, turn 1: before its first group; set to
-    /// E now). Only a settled turn tests the front faces (InputTriangles::min_triangle_distance()
+    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when the offset
+    /// energy (offset_energy(), no AMIPS) fell by less than the bar energy
+    /// b = front_conv^2 A / (2 target_distance) since `e_prev` (the offset energy at the end of
+    /// the previous turn, turn 1: before its first group; set to the offset energy now). Only a settled turn tests the front faces (InputTriangles::min_triangle_distance()
     /// and, settle_mark "max", ExactBandIntegral::max_distance()) and halves the corners of those
     /// more than front_conv from the level set, when `refine_now`. Logs the turn's [settle] line.
     /// Returns settled and no face marked: the loop's exit. See the spec doc.
