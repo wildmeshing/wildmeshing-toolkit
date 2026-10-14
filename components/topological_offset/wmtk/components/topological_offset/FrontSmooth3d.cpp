@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -82,8 +83,20 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
         // smooth_vertex_3d() refuses an already-inverted ring before solving; nothing after the
         // solve touches the solver, so it still holds that solve's state here.
         optimization::NewtonCounters one;
+        // EXPERIMENTAL_band_volume_rule "front_flux": the band term's exceptions (a curved
+        // bisector crossing a piece, a partition that does not tile) are errors, not failed line
+        // searches; the shared smoother takes any exception out of a solve for the latter, so
+        // the term keeps its message (BandVolumeEnergy3D::front_flux_error()) and it is rethrown
+        // here.
+        std::string& ff_error = BandVolumeEnergy3D::front_flux_error();
+        ff_error.clear();
         const bool ok =
             optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects, &one);
+        if (!ff_error.empty()) {
+            const std::string msg = std::move(ff_error);
+            ff_error.clear();
+            log_and_throw_error("front smoother, vertex {}: {}", vid, msg);
+        }
         if (one.solves() > 0) {
             m_newton_front.record(*solver, one.threw.load() > 0);
             if (m_offset_params.debug_output) {
@@ -302,6 +315,55 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
     if (m_offset_params.band_volume_rule == "exact") {
         e->set_exact_integral(m_band_exact, m_offset_params.target_distance);
+    }
+    // EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same term
+    // (BandVolumeEnergy3D::set_front_flux()), over the band's boundary faces through vid. A face
+    // through vid lies in one or two cells of vid's one-ring, so pairing the ring's faces through
+    // vid finds them without reading beyond the ring: a boundary face has exactly one band cell
+    // among its cells (the other not a band cell, or none on the domain boundary). Each is
+    // ordered (vid, a, b) with its normal out of its band cell, away from the cell's fourth corner.
+    if (m_offset_params.band_volume_rule == "front_flux") {
+        struct Rec
+        {
+            size_t lo, hi;
+            int band = 0;
+            BandVolumeEnergy3D::Face f;
+        };
+        std::vector<Rec> recs;
+        const Vector3d& x = m_vertex_attribute[vid].m_posf;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            const bool band = cell_is_offset_band(tid);
+            std::array<size_t, 3> o;
+            int k = 0;
+            for (const size_t u : oriented_tet_vids(tid)) {
+                if (u != vid && k < 3) o[size_t(k++)] = u;
+            }
+            if (k != 3) continue;
+            for (int i = 0; i < 3; ++i) {
+                const size_t u = o[size_t(i)], w = o[size_t((i + 1) % 3)],
+                             z = o[size_t((i + 2) % 3)];
+                const size_t lo = std::min(u, w), hi = std::max(u, w);
+                Rec* r = nullptr;
+                for (Rec& q : recs) {
+                    if (q.lo == lo && q.hi == hi) r = &q;
+                }
+                if (!r) {
+                    recs.push_back({lo, hi, 0, {}});
+                    r = &recs.back();
+                }
+                if (!band) continue;
+                ++r->band;
+                Vector3d a = m_vertex_attribute[u].m_posf, b = m_vertex_attribute[w].m_posf;
+                if ((a - x).cross(b - x).dot(m_vertex_attribute[z].m_posf - x) > 0.)
+                    std::swap(a, b);
+                r->f = {a, b};
+            }
+        }
+        std::vector<BandVolumeEnergy3D::Face> faces;
+        for (const Rec& r : recs) {
+            if (r.band == 1) faces.push_back(r.f);
+        }
+        e->set_front_flux(m_band_exact, m_offset_params.target_distance, std::move(faces));
     }
     return e;
 }

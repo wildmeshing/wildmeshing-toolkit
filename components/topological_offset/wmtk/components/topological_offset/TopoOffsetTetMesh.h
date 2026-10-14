@@ -436,6 +436,26 @@ public:
      * The engine's own AMIPS^3 rules for collapses and swaps are off: collapse_quality_allowed()
      * and swap_quality_allowed() admit everything, and this energy decides in their place.
      *
+     * BAND TERM THAT CANCELS (band_term_cancels()): under EXPERIMENTAL_band_volume_rule "exact"
+     * or "front_flux", a collapse or swap whose old cells are all band cells makes new cells that
+     * are all band cells too -- a swap gives every new cell the ring's one label (interior) or a
+     * ring vertex's side, all of them band (flip); a collapse's new cells are v1's old cells in
+     * their own slots with their own labels -- and the new cells cover the region the old ones
+     * did. So the band region B is unchanged, and the band term, the integral of (d - delta) /
+     * delta over B, changes by exactly 0 -- where value() is exact. On a rule-(a) piece
+     * (ExactBandIntegral) value() is an upper bound that depends on the cell, and its change is not
+     * 0. So the ring must also be clear of the input's bisectors: no old, candidate or new cell
+     * flagged by ExactBandIntegral::front_flux_flag() or beyond its reach (distance_bound()), the
+     * test BandVolumeEnergy3D's front form makes for the same reason. Every such cell is made of
+     * the ring's vertices, and both tests flag a subset of points only if they flag the points,
+     * so the ring's vertices are tested once, before the operation. Such an operation compares
+     * its sums without the band term (band_term = false in tet_energy(), tet_energy_sum(),
+     * candidate_energy()): before, candidates and after alike. Not under "corner_bound": its
+     * per-cell bound changes with the cells. MEASURED on the cube
+     * (target 1e-2, bar 1e-4, front_flux, 15 turns, serial, 516 s): these operations spent 97.4 s
+     * (19% of the run) integrating band cells, their band change was |dJ| <= 1.2e-13 delta V
+     * (rounding), and reading it as 0 flipped 0 of their decisions.
+     *
      * CANDIDATE CELLS: the 4-4 and 5-6 case searches (TetMesh::swap_edge_44() / ::swap_edge_56(),
      * scored through swap_edge_44_energy() / swap_edge_56_energy()) and the face swap's gate
      * (swap_face_before()) score cells that do not exist yet, by the same sum: the current cells
@@ -461,7 +481,27 @@ public:
      * The front's face measure (face_offset_term()) is not part of E: the exit, the refinement and
      * the frames read it.
      */
-    double tet_energy(size_t tid) const;
+    double tet_energy(size_t tid, bool band_term = true) const;
+    /// Whether an operation whose old cells are `tids` leaves the band term unchanged exactly, so
+    /// its sums leave it out; see tet_energy(), BAND TERM THAT CANCELS.
+    bool band_term_cancels(const std::vector<size_t>& tids) const
+    {
+        if (m_offset_params.band_volume_rule != "exact" &&
+            m_offset_params.band_volume_rule != "front_flux")
+            return false;
+        std::vector<size_t> vids;
+        for (const size_t tid : tids) {
+            if (!cell_is_offset_band(tid)) return false;
+            for (const size_t v : oriented_tet_vids(tid)) vids.push_back(v);
+        }
+        wmtk::vector_unique(vids);
+        std::vector<Vector3d> pts;
+        pts.reserve(vids.size());
+        for (const size_t v : vids) pts.push_back(m_vertex_attribute[v].m_posf);
+        const int n = int(pts.size());
+        if (m_band_exact->front_flux_flag(pts.data(), n)) return false;
+        return m_band_exact->distance_bound(pts.data(), n) <= m_band_exact->front_flux_reach();
+    }
     /**
      * @brief What the shared smoother's projected step compares for a vertex held on a surface:
      * the sum of tet_energy() over the one-ring, the rule every other move answers to. The step
@@ -532,7 +572,13 @@ public:
      * That is EXPERIMENTAL_band_volume_rule "corner_bound", the default. Under "exact" b(t) is
      * J_t / delta, J_t = int_t (d - delta) dV in closed form (ExactBandIntegral::value()): exact
      * up to rounding, and an upper bound only on the pieces of t where two features' regions
-     * meet on a curved border (rule (a)). See the spec doc.
+     * meet on a curved border (rule (a)). Under "front_flux" b(t) is the same J_t / delta: the
+     * front form changes how the smoother evaluates the band term, not the term. A cell's part
+     * of the front form is oint_dt G.n dA + D_t (ExactBandIntegral.hpp), which IS
+     * int_t (d - delta) dV by the divergence theorem, so the operations, the veto and the global
+     * energy read it as value() computes it. The two can differ only on rule-(a) pieces, where
+     * value() takes an upper bound and the front form labels the piece exactly, or throws where
+     * a curved bisector crosses it. See the spec doc.
      */
     double band_cell_term(const std::array<size_t, 4>& vids) const
     {
@@ -541,9 +587,11 @@ public:
                 "the energy's band term reads one field, and this input has {} regions",
                 m_n_regions);
         }
-        if (m_offset_params.band_volume_rule == "exact") {
-            // EXPERIMENTAL_band_volume_rule "exact": J_t / delta, J_t = int_t (d - delta) dV in
-            // closed form (ExactBandIntegral), in place of the corner bound
+        if (m_offset_params.band_volume_rule == "exact" ||
+            m_offset_params.band_volume_rule == "front_flux") {
+            // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
+            // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
+            // (ExactBandIntegral), in place of the corner bound
             const std::array<Vector3d, 4> p = {
                 {m_vertex_attribute[vids[0]].m_posf,
                  m_vertex_attribute[vids[1]].m_posf,
@@ -568,9 +616,9 @@ public:
     /// The input's triangles, the convex pieces of d the band term's min runs over
     /// (init_offset_potential()).
     std::shared_ptr<InputTriangles> m_band_tris;
-    /// EXPERIMENTAL_band_volume_rule "exact", or EXPERIMENTAL_settle_refinement with settle_mark
-    /// "max" (its exact max over a front face): the input's triangles for the exact integral,
-    /// built once beside m_band_tris (init_offset_potential()).
+    /// EXPERIMENTAL_band_volume_rule "exact" or "front_flux", or EXPERIMENTAL_settle_refinement
+    /// with settle_mark "max" (its exact max over a front face): the input's triangles for the
+    /// exact integral, built once beside m_band_tris (init_offset_potential()).
     std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
     /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
@@ -590,7 +638,7 @@ public:
         return a;
     }
     /// The sum of tet_energy() over `tids`, in their order: what every rule compares.
-    double tet_energy_sum(const std::vector<size_t>& tids) const;
+    double tet_energy_sum(const std::vector<size_t>& tids, bool band_term = true) const;
     /// cell_energy() of a candidate cell of the swap in flight, which does not exist yet, with the
     /// label swap_after_cells() will write. See tet_energy(), CANDIDATE CELLS.
     double candidate_energy(const std::array<size_t, 4>& vids);
@@ -1347,6 +1395,8 @@ public:
     {
         double before = 0.;
         std::vector<size_t> v2_only;
+        /// band_term_cancels() for v1's ring: both sums leave the band term out.
+        bool band_cancels = false;
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2333,9 +2383,13 @@ private:
         /// Whether the swap is a surface flip: a candidate's label is the ring's for an interior
         /// swap and a side of the flip for a flip (candidate_energy()).
         bool flip = false;
+        /// The swap's band term cancels (band_term_cancels(), every swap kind): the before-sum,
+        /// the candidates and the after-sum leave it out.
+        bool band_cancels = false;
         void clear()
         {
             flip = false;
+            band_cancels = false;
             scored = false;
             scored_energy = std::numeric_limits<double>::max();
         }
