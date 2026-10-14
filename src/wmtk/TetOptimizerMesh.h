@@ -233,13 +233,6 @@ public:
     /// position already written into the vertex attribute.
     bool feature_edges_at_vertex_inside(size_t vid) const;
 
-    /// The derived-boundary counterpart: are all OPEN-BOUNDARY edges at `vid` inside the
-    /// order-2 tube, at the current positions? Default true; tetwild overrides with its
-    /// open-boundary flags and envelope. Membership is decided by flags + the topological
-    /// face count, NOT by the tube itself -- a tube-based membership test self-disables the
-    /// moment geometry leaves the tube, which is this defect's signature.
-    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
-
     /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
     /// TriOptimizerMesh's hook of the same name. An application uses this to pin a vertex to
     /// a 0-dimensional feature it stands for, within a ball. Default: no constraint.
@@ -774,6 +767,9 @@ protected:
         return true;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
+    /// Called once the feature-edge tags are restored after a collapse of v1 into v2, only
+    /// when feature edges are tracked: the survivor's feature state is decided here.
+    virtual void collapse_after_features(size_t, size_t) {}
 
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
@@ -920,7 +916,6 @@ protected:
         after_connectivity, // collapse_after_connectivity() said no
         after_envelope, // a surface face the survivor keeps left the envelope
         after_face_attribute, // a face attribute found no face left to land on
-        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
         after_feature_edge, // a tagged feature edge found no edge left to land on
         after_coarsen_region, // coarsening only: the region's worst quality rose
         COUNT

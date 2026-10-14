@@ -169,30 +169,6 @@ public:
     {
         m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
     }
-    bool boundary_edges_at_vertex_inside(size_t vid) const override
-    {
-        if (!m_vertex_extra[vid].m_is_on_open_boundary || !m_order2_envelope) {
-            return true;
-        }
-        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            if (!m_vertex_extra[u].m_is_on_open_boundary) {
-                continue;
-            }
-            // Exact membership: an open boundary edge has exactly one incident tracked
-            // face. Flags alone would also catch interior chords between two boundary
-            // vertices (e.g. across a corner), which must not be tube-tested.
-            if (get_num_surface_faces_for_edge({{vid, u}}) != 1) {
-                continue;
-            }
-            if (m_order2_envelope->is_outside(
-                    std::array<Eigen::Vector3d, 2>{
-                        {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
         if (collapse_breaks_feature_point(v1, v2)) return false;
@@ -252,11 +228,13 @@ public:
         if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
             m_vertex_extra[v2].m_is_on_open_boundary = false;
         }
+    }
+    void collapse_after_features(size_t, size_t v2) override
+    {
         // Same cleanup for the feature flag: v1's flag was OR-ed in (see
         // collapse_after_connectivity), but if the survivor has no incident tagged edge the
         // curve rerouted around it and the flag is stale.
-        if (m_track_feature_edges && m_vertex_extra[v2].m_is_on_feature_curve &&
-            !vertex_has_feature_edge(v2)) {
+        if (m_vertex_extra[v2].m_is_on_feature_curve && !vertex_has_feature_edge(v2)) {
             m_vertex_extra[v2].m_is_on_feature_curve = false;
         }
     }

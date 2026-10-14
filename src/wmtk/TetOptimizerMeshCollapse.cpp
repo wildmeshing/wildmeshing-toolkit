@@ -429,30 +429,24 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             //         return false;
             // }
         }
-        // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
-        // caching time, must still BE order-2 substructure -- flags and containment in the
-        // order-2 envelope included. Without it a sheet erodes IN-PLANE from its open
-        // boundary: boundary-to-boundary collapses cut corners with triangles lying exactly
-        // on the sheet's plane, invisible to the one-sided surface envelope (measured:
-        // 14% of a flat sheet's area gone, a corner receded 150x the order-2 tube). The
-        // check was live from the 2025-10-10 open-boundary fixes until the collapse
-        // refactoring (cb9b81a66c) parked it -- the shared base could not call tetwild's
-        // is_open_boundary_edge -- while giving its caching half the virtual below. This is
-        // that predicate, restored through the same virtual.
-        for (const auto& vids : cache.boundary_edges) {
-            if (!collapse_is_order_2_edge(vids)) {
-                // The edge was order-2 before the collapse (that is why it was cached) but
-                // is not anymore -- the collapse moved it off its curve.
-                return collapse_reject(CollapseReject::after_order2_chord);
-            }
-        }
+        // for (const auto& vids : cache.boundary_edges) {
+        //     if (!is_open_boundary_edge(vids)) {
+        //        // edge was an open boundary before (that is why it got cached) but is not anymore
+        //        // after collapse
+        //        return false;
+        //    }
+        //}
     }
 
-    // (collapse_after_vertex moved below: its is_vertex_on_boundary(v2) test must see the
-    // POST-collapse face tags, which the loops below are what write. Reading the
-    // half-updated state cleared open-boundary flags on genuine sheet corners -- measured
-    // on feature_demo4: three corners lost their flags, every boundary guard went blind to
-    // them, and the coarsening pass collapsed them away, 0.5 deep.)
+    // Must run HERE, before the attribute updates below -- not at the end of the function.
+    // tetwild's override asks is_vertex_on_boundary(v2), which reads BOTH
+    // m_vertex_attribute[..].m_is_on_surface and m_face_attribute[..].m_is_surface_fs
+    // (TetWildMesh.cpp), and the two blocks below overwrite exactly those: the vertex flag is
+    // OR-ed from v1 just after round(), and the cached face attributes are written onto the
+    // post-collapse faces. Asking afterwards is asking a different question, and it changes
+    // which vertices keep their open-boundary flag -- and therefore which later collapses are
+    // allowed.
+    collapse_after_vertex(v1_id, v2_id);
 
     //// update attrs
     // tet attr
@@ -495,11 +489,11 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
             return collapse_reject(CollapseReject::after_feature_edge);
         }
+        // After the restore, not in collapse_after_vertex: what the survivor's feature state
+        // is depends on the edge tags around it, and those are the post-collapse truth only
+        // from here on.
+        collapse_after_features(v1_id, v2_id);
     }
-
-    // Now that the vertex flag OR (above) and the face tags (the loop above) are the
-    // post-collapse truth, decide whether the survivor keeps its open-boundary flag.
-    collapse_after_vertex(v1_id, v2_id);
 
     if (!m_coarsen_mode) {
         return true;
@@ -556,7 +550,6 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::after_connectivity: return "after_connectivity";
     case CollapseReject::after_envelope: return "after_envelope";
     case CollapseReject::after_face_attribute: return "after_face_attribute";
-    case CollapseReject::after_order2_chord: return "after_order2_chord";
     case CollapseReject::after_feature_edge: return "after_feature_edge";
     case CollapseReject::after_coarsen_region: return "after_coarsen_region";
     default: return "?";
