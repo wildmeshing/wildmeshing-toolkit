@@ -270,7 +270,7 @@ template&lt;int DIM&gt; </div>
 <p>The complex is given as ipc gives a collision mesh &ndash; vertices, edges, triangles &ndash; plus the indices of its isolated points. Phi has no area primitive in 2D and no volume primitive in 3D, so a solid input region must enter as its boundary; outside the region, the only place an offset exists, the two descriptions agree exactly.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">V</td><td>#V x DIM complex vertices. </td></tr>
+    <tr><td class="paramname">V</td><td>V x DIM complex vertices. </td></tr>
     <tr><td class="paramname">E</td><td>#E x 2 segments. In 3D this must contain every edge of every triangle in <code>F</code> as well as the complex's own isolated edges: ipc derives faces_to_edges from it and throws if an edge of a face is missing, and an edge's weight counts the triangles on it. </td></tr>
     <tr><td class="paramname">F</td><td>#F x 3 triangles. Must be empty when DIM == 2. </td></tr>
     <tr><td class="paramname">P</td><td>indices into V of the isolated complex vertices (in no segment/triangle). </td></tr>

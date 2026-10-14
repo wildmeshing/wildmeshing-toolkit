@@ -121,7 +121,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>solution_changed</b> 
 <tr class="separator:acf5bc172657f0eb41cb69f1d7959dde0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37c38710a56fe6b0b1116f240488aa25" id="r_a37c38710a56fe6b0b1116f240488aa25"><td class="memItemLeft" align="right" valign="top"><a id="a37c38710a56fe6b0b1116f240488aa25" name="a37c38710a56fe6b0b1116f240488aa25"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exact_integral</b> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt; eb, double delta)</td></tr>
-<tr class="memdesc:a37c38710a56fe6b0b1116f240488aa25"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_band_volume_rule "exact": a cell's Vol_t m_t becomes J_t / delta, J_t = int_t (d - delta) dV in closed form (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>), the moving vertex x one of t's corners &ndash; the term band_cell_term() reads. Values from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea">ExactBandIntegral::value()</a>, the function band_cell_term() calls (the corners in another order); gradient and Hessian from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">ExactBandIntegral::value_grad_hess()</a> in x (its J equals value() to rounding): exact, except on rule-(a) pieces (the bound's derivative) and at a kink of d on a face of t through x (the one-sided limit for x moving into t). The last point's value, and its gradient and Hessian, are kept: polysolve asks for each separately at one x. The corner bound's minima and certified ball are not used. <br /></td></tr>
+<tr class="memdesc:a37c38710a56fe6b0b1116f240488aa25"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_band_volume_rule "exact": a cell's Vol_t m_t becomes J_t / delta, J_t = int_t (d - delta) dV in closed form (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>), the moving vertex x one of t's corners &ndash; the term band_cell_term() reads. Values from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">ExactBandIntegral::value()</a>, the function band_cell_term() calls (the corners in another order); gradient and Hessian from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">ExactBandIntegral::value_grad_hess()</a> in x (its J equals value() to rounding): exact, except on rule-(a) pieces (the bound's derivative) and at a kink of d on a face of t through x (the one-sided limit for x moving into t). The last point's value, and its gradient and Hessian, are kept: polysolve asks for each separately at one x. The corner bound's minima and certified ball are not used. <br /></td></tr>
 <tr class="separator:a37c38710a56fe6b0b1116f240488aa25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afabcf8deadec0fab837ab04282b7353c" id="r_afabcf8deadec0fab837ab04282b7353c"><td class="memItemLeft" align="right" valign="top"><a id="afabcf8deadec0fab837ab04282b7353c" name="afabcf8deadec0fab837ab04282b7353c"></a>
 std::pair&lt; Eigen::Vector3d, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>certified_ball</b> () const</td></tr>
@@ -176,6 +176,8 @@ std::vector&lt; std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1
 std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_eb</b></td></tr>
 <tr class="memdesc:a2e827fbc5df1bdd39965fc375b2e6da7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a37c38710a56fe6b0b1116f240488aa25" title="EXPERIMENTAL_band_volume_rule &quot;exact&quot;: a cell&#39;s Vol_t m_t becomes J_t / delta, J_t = int_t (d - delta...">set_exact_integral()</a>: the integral, and the last point's value / gradient and Hessian. <br /></td></tr>
 <tr class="separator:a2e827fbc5df1bdd39965fc375b2e6da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f50b2b70f39398e2e529458a903397b" id="r_a5f50b2b70f39398e2e529458a903397b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">ExactBandIntegral::Partition</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a5f50b2b70f39398e2e529458a903397b">m_eb_parts</a></td></tr>
+<tr class="separator:a5f50b2b70f39398e2e529458a903397b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70155527ef6859b233a8ebe049182d23" id="r_a70155527ef6859b233a8ebe049182d23"><td class="memItemLeft" align="right" valign="top"><a id="a70155527ef6859b233a8ebe049182d23" name="a70155527ef6859b233a8ebe049182d23"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_eb_val_set</b> = false</td></tr>
 <tr class="separator:a70155527ef6859b233a8ebe049182d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -283,6 +285,29 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a5f50b2b70f39398e2e529458a903397b" name="a5f50b2b70f39398e2e529458a903397b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f50b2b70f39398e2e529458a903397b">&#9670;&#160;</a></span>m_eb_parts</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">ExactBandIntegral::Partition</a>&gt; wmtk::components::topological_offset::BandVolumeEnergy3D::m_eb_parts</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Per cell its partition at the last x it was evaluated at, shared by value() and value_grad_hess() (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">ExactBandIntegral::Partition</a>). </p>
+
+</div>
+</div>
 <a id="ac8c5b09a7d56bb5879d1caa8b816d37a" name="ac8c5b09a7d56bb5879d1caa8b816d37a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac8c5b09a7d56bb5879d1caa8b816d37a">&#9670;&#160;</a></span>m_hint</h2>
 
