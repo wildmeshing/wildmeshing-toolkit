@@ -3722,11 +3722,13 @@ double ExactBandIntegral::value_grad_hess_impl(
             amax = std::max(amax, 0.5 * s);
         }
         if (volume_centroid(Q).first <= 1e3 * tol * amax) return;
+        std::array<bool, 3> on_tface = {false, false, false}; // Q has a face on faces[i]
         for (int f = 0; f < Q.faces(); ++f) {
             const Vec3* Vf = Q.ring(f);
             const int kf = Q.size(f);
             const Vec3& nf = Q.N[size_t(f)];
-            for (const TFace& tf : faces) {
+            for (size_t fi = 0; fi < faces.size(); ++fi) {
+                const TFace& tf = faces[fi];
                 if (nf.dot(tf.nu) < 1 - 1e-12) continue;
                 double dev = 0.;
                 for (int j = 0; j < kf; ++j) {
@@ -3734,6 +3736,7 @@ double ExactBandIntegral::value_grad_hess_impl(
                         std::max(dev, std::abs(Vf[j].dot(tf.nu) - tet_planes[size_t(tf.i)].second));
                 }
                 if (dev > 1e3 * tol) continue; // same scale as the sliver test
+                on_tface[fi] = true;
                 double P1;
                 Vec3 P2;
                 moments(Vf, kf, nf, e, l0, g0, P1, P2, cx);
@@ -3819,6 +3822,52 @@ double ExactBandIntegral::value_grad_hess_impl(
                     Ha -= tf.nu * gc.transpose() * (P3 / gp.norm());
                 }
                 break; // a polygon lies on at most one face of t
+            }
+        }
+        // Q touching a face F of t through x along an edge only (Q has no face on F): F holds a
+        // line where two of Q's fixed planes meet. Moving x into t tilts F into Q, whose trace on
+        // F is then a strip between those two planes, of width O(|dx|) and zero area at x, but
+        // both of its edges slide over F: each face of Q through the edge adds its cut term,
+        //     - nu_F (x) g/|g_F| int_edge phi lambda0^2 ds,   g that face's outward normal,
+        // the term of the strip's edge on its plane. The pieces on either side of the line on F
+        // pair their cut edges with these, not with each other: they meet the line on different
+        // planes (g differs), and only the strip's terms make the sum vanish where phi is
+        // continuous. MEASURED (stored cube band, turn 1, a front vertex on the symmetry plane
+        // x = y, F in that plane through the cube's corner v, so F holds the line x = y = -1/2
+        // below v): the face piece (bottom face's prism) and the vertex piece (v's cone) met on
+        // that line, on the planes x = -1/2 and y = -1/2, the edge piece between them touching F
+        // there only. Without this term the cell's Hessian came 98% off its central differences
+        // at every step 1e-3..1e-7 delta (forward and backward differences agreeing to 1.3e-6:
+        // no kink), and 26 of the 1100 front vertices' Hessians 5-57% off; with it, 1.5e-9 at
+        // most (tests, exact-band-integral-hessian-contact).
+        for (size_t fi = 0; fi < faces.size(); ++fi) {
+            if (on_tface[fi]) continue;
+            const TFace& tf = faces[fi];
+            const double hF = tet_planes[size_t(tf.i)].second;
+            for (int g = 0; g < Q.faces(); ++g) {
+                const Vec3* Vg = Q.ring(g);
+                const int kg = Q.size(g);
+                const Vec3& ng = Q.N[size_t(g)];
+                const Vec3 gp = ng - ng.dot(tf.nu) * tf.nu;
+                if (gp.norm() <= 1e-12) continue; // a plane parallel to F does not slide over it
+                for (int ee = 0; ee < kg; ++ee) {
+                    const Vec3& y1 = Vg[ee];
+                    const Vec3& y2 = Vg[(ee + 1) % kg];
+                    if (maxabs(y2 - y1) <= tol) continue;
+                    // on F: the face test's scale
+                    if (std::abs(tf.nu.dot(y1) - hF) > 1e3 * tol ||
+                        std::abs(tf.nu.dot(y2) - hF) > 1e3 * tol)
+                        continue;
+                    bool t_edge = false; // an edge of t: moves with it
+                    for (int j = 0; j < 4 && !t_edge; ++j) {
+                        const auto& [m, h] = tet_planes[size_t(j)];
+                        t_edge = j != tf.i && std::abs(m.dot(y1) - h) <= tol &&
+                                 std::abs(m.dot(y2) - h) <= tol;
+                    }
+                    if (t_edge) continue;
+                    const double P3 = cut_integral(y1, y2, e, l0, g0);
+                    Ha -= tf.nu * ng.transpose() * (P3 / gp.norm());
+                }
             }
         }
     };
