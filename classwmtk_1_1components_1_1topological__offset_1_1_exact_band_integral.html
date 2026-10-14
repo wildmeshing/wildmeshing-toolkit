@@ -91,7 +91,14 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">FaceParts</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One face's labelled parts, kept by the caller between <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea" title="front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the ...">front_face()</a> calls on that face, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">Partition</a> keeps a cell's partition: the parts are a function of f's 9 coordinates, in their order, and of the input alone (not of delta or kv). A call whose f equals, bit for bit, the f they were made for (by this integral) reads them; any other call makes them anew into it. Why: the smoother asks for the value at x and then for the derivatives at the same x, each labelling every boundary face through x.  <a href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html">FaceWork</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_feature.html">Feature</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_f_f_box.html">FFBox</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html">Local</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,6 +132,8 @@ Public Member Functions</h2></td></tr>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, double delta, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> &amp;keep) const</td></tr>
 <tr class="memdesc:a01a1dd1cfb2b7c3355b67c8b65b247b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">value(t, delta), t's partition read from or written to <code>keep</code> (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">Partition</a>). <br /></td></tr>
 <tr class="separator:a01a1dd1cfb2b7c3355b67c8b65b247b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f6cbebf7bc4c9c649ae33ad643b6616" id="r_a1f6cbebf7bc4c9c649ae33ad643b6616"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a1f6cbebf7bc4c9c649ae33ad643b6616">reserve_values</a> (size_t slots) const</td></tr>
+<tr class="separator:a1f6cbebf7bc4c9c649ae33ad643b6616"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdee7bc79534d307bca77bd75427988b" id="r_acdee7bc79534d307bca77bd75427988b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b">value_grad_hess</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, int kv, double delta, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats=nullptr) const</td></tr>
 <tr class="memdesc:acdee7bc79534d307bca77bd75427988b"><td class="mdescLeft">&#160;</td><td class="mdescRight">J and its exact gradient and Hessian with respect to corner <code>kv</code> of t, the other three fixed (exact_mesh.value_grad_hess): Reynolds' transport theorem on each smooth piece, a boundary integral over the three faces of t through x = t[kv], plus, on the Hessian, the terms of piece edges sliding over those faces ("cut edges"; they cancel in pairs between exact pieces and remain on rule-(a) pieces). J here sums the same pieces split into smooth parts, so it equals <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> to rounding.  <br /></td></tr>
 <tr class="separator:acdee7bc79534d307bca77bd75427988b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,6 +144,43 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>value_grad_hess</b>
 <tr class="memitem:a91cb66444b13a130bf1bba226a9147d4" id="r_a91cb66444b13a130bf1bba226a9147d4"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4">max_distance</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html">MaxInfo</a> *info=nullptr) const</td></tr>
 <tr class="memdesc:a91cb66444b13a130bf1bba226a9147d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop's max test. f is cut by the candidates' local regions as a cell is (the same search, region tests, splits, tolerances and scale rule; f a planar convex ring in place of a polytope), and d is convex wherever one member's distance is d, so on each piece the max is at a vertex of the piece:  <br /></td></tr>
 <tr class="separator:a91cb66444b13a130bf1bba226a9147d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c89b6ed6c4c244f76beab471b762bea" id="r_a2c89b6ed6c4c244f76beab471b762bea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea">front_face</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, double delta, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">FaceParts</a> *keep=nullptr) const</td></tr>
+<tr class="memdesc:a2c89b6ed6c4c244f76beab471b762bea"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea" title="front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the ...">front_face()</a>: int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the normal pointing out of the band). front_face_derivs(): for the motion of corner kv (the others fixed), the gradient and the one-vertex Hessian of E's dependence through f: grad = n int_f chi (d - delta) phi dA, hess = n (x) int_f chi phi^2 grad d dA + (int_f chi (d - delta) phi dA / |N|) dN/dx  <br /></td></tr>
+<tr class="separator:a2c89b6ed6c4c244f76beab471b762bea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a679cd84880a7b00c5ec958f4adaa2aca" id="r_a679cd84880a7b00c5ec958f4adaa2aca"><td class="memItemLeft" align="right" valign="top"><a id="a679cd84880a7b00c5ec958f4adaa2aca" name="a679cd84880a7b00c5ec958f4adaa2aca"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>front_face_derivs</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, double delta, int kv, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">FaceParts</a> *keep=nullptr) const</td></tr>
+<tr class="separator:a679cd84880a7b00c5ec958f4adaa2aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ccefdbe889725712773b308d5bc00a1" id="r_a3ccefdbe889725712773b308d5bc00a1"><td class="memItemLeft" align="right" valign="top"><a id="a3ccefdbe889725712773b308d5bc00a1" name="a3ccefdbe889725712773b308d5bc00a1"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>bisector_jump</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, double delta, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> *keep=nullptr) const</td></tr>
+<tr class="memdesc:a3ccefdbe889725712773b308d5bc00a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">D_t = int_t (d - delta) dV - oint_dt G.n dA of the cell t (either orientation): 0 exactly when one feature labels every part of t on the offset side (one field); otherwise the flux of each labelled part's field through its faces not on dt, outward from the part, a face on one of the label's own region planes skipped (the field is tangent to it). The faces between two parts of one label cancel, so the sum is the jumps of G.n where the label changes: on the bisectors, and on region planes that coincide with one (MEASURED, Python, cube_out tet 2234: the prism plane between two coplanar triangles of a cube face is the bisector of the two perpendicular faces at the cube edge it contains) or nearly so (see the .cpp). t's partition read from or written to <code>keep</code> when given (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">Partition</a>). Throws on a curved bisector, or as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> if the pieces do not tile t. <br /></td></tr>
+<tr class="separator:a3ccefdbe889725712773b308d5bc00a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71021986968a8785b3a34da9ed0713a0" id="r_a71021986968a8785b3a34da9ed0713a0"><td class="memItemLeft" align="right" valign="top"><a id="a71021986968a8785b3a34da9ed0713a0" name="a71021986968a8785b3a34da9ed0713a0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>prepare_front_flux</b> (double delta)</td></tr>
+<tr class="memdesc:a71021986968a8785b3a34da9ed0713a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds, from the input alone, where bisectors can be: for every pair of features g, h the polytope L_g cap L_h cap box_g(R) cap box_h(R) (and, with a side, cap both features' offset sides), R = reach = 2 delta, kept where it has volume. A bisector point y of g and h with d(y) &lt;= R lies in it: both are nearest at y, so y is in both regions, on the offset side of both planes, and within d_g(y) = d(y) of a point of g (fact (ii) of the class doc), so in g's box grown by R. Called once, before the integral is shared. <br /></td></tr>
+<tr class="separator:a71021986968a8785b3a34da9ed0713a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5aae01ff1f6dddedfc787cf338bfefee" id="r_a5aae01ff1f6dddedfc787cf338bfefee"><td class="memItemLeft" align="right" valign="top"><a id="a5aae01ff1f6dddedfc787cf338bfefee" name="a5aae01ff1f6dddedfc787cf338bfefee"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>front_flux_reach</b> () const</td></tr>
+<tr class="memdesc:a5aae01ff1f6dddedfc787cf338bfefee"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a71021986968a8785b3a34da9ed0713a0" title="Builds, from the input alone, where bisectors can be: for every pair of features g,...">prepare_front_flux()</a>'s R (0 before it), and the number of polytopes it kept. <br /></td></tr>
+<tr class="separator:a5aae01ff1f6dddedfc787cf338bfefee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a2e004a2a43e5215b5436251b54ff80" id="r_a3a2e004a2a43e5215b5436251b54ff80"><td class="memItemLeft" align="right" valign="top"><a id="a3a2e004a2a43e5215b5436251b54ff80" name="a3a2e004a2a43e5215b5436251b54ff80"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>front_flux_polytopes</b> () const</td></tr>
+<tr class="separator:a3a2e004a2a43e5215b5436251b54ff80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a008008c1dae4b90982618731710b2bed" id="r_a008008c1dae4b90982618731710b2bed"><td class="memItemLeft" align="right" valign="top"><a id="a008008c1dae4b90982618731710b2bed" name="a008008c1dae4b90982618731710b2bed"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_flux_flag</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t) const</td></tr>
+<tr class="memdesc:a008008c1dae4b90982618731710b2bed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the cell t can meet a bisector at points with d &lt;= <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a5aae01ff1f6dddedfc787cf338bfefee" title="prepare_front_flux()&#39;s R (0 before it), and the number of polytopes it kept.">front_flux_reach()</a>: t's box meets a kept polytope's box and no face plane of that polytope has all four corners strictly outside it (beyond rounding). Conservative: a cell flagged without a bisector gets D_t = 0 up to rounding (exactly 0 when one feature labels all of it). Says nothing about points with d &gt; reach: the caller flags a cell whose bound on d (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a067f37bdf63a0ab9a2a7a1ff077b26c7">distance_bound()</a>) exceeds the reach itself (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html" title="A vertex&#39;s part of the energy&#39;s band term (TopoOffsetTetMesh::band_cell_term()), the vertex moving:">BandVolumeEnergy3D</a>). <br /></td></tr>
+<tr class="separator:a008008c1dae4b90982618731710b2bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc427ba4330f8ee8ffc01be37ccf946b" id="r_adc427ba4330f8ee8ffc01be37ccf946b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#adc427ba4330f8ee8ffc01be37ccf946b">front_flux_flag</a> (const Eigen::Vector3d *t, int n) const</td></tr>
+<tr class="separator:adc427ba4330f8ee8ffc01be37ccf946b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bba23fbecd75ab350910f47660e0db6" id="r_a1bba23fbecd75ab350910f47660e0db6"><td class="memItemLeft" align="right" valign="top"><a id="a1bba23fbecd75ab350910f47660e0db6" name="a1bba23fbecd75ab350910f47660e0db6"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>distance</b> (const Eigen::Vector3d &amp;x) const</td></tr>
+<tr class="memdesc:a1bba23fbecd75ab350910f47660e0db6"><td class="mdescLeft">&#160;</td><td class="mdescRight">d(x), the distance to the input: min over the triangles of the point-triangle distance. <br /></td></tr>
+<tr class="separator:a1bba23fbecd75ab350910f47660e0db6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a067f37bdf63a0ab9a2a7a1ff077b26c7" id="r_a067f37bdf63a0ab9a2a7a1ff077b26c7"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a067f37bdf63a0ab9a2a7a1ff077b26c7">distance_bound</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t) const</td></tr>
+<tr class="separator:a067f37bdf63a0ab9a2a7a1ff077b26c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ab4b9dbf6a32b35015c60914d455b4c" id="r_a8ab4b9dbf6a32b35015c60914d455b4c"><td class="memItemLeft" align="right" valign="top"><a id="a8ab4b9dbf6a32b35015c60914d455b4c" name="a8ab4b9dbf6a32b35015c60914d455b4c"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>distance_bound</b> (const Eigen::Vector3d *t, const int n) const</td></tr>
+<tr class="memdesc:a8ab4b9dbf6a32b35015c60914d455b4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same bound for the n points t; a subset's bound is never larger. <br /></td></tr>
+<tr class="separator:a8ab4b9dbf6a32b35015c60914d455b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae178ee3a6869456e6d257a09719d212e" id="r_ae178ee3a6869456e6d257a09719d212e"><td class="memItemLeft" align="right" valign="top"><a id="ae178ee3a6869456e6d257a09719d212e" name="ae178ee3a6869456e6d257a09719d212e"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>num_faces</b> () const</td></tr>
 <tr class="separator:ae178ee3a6869456e6d257a09719d212e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,6 +216,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>tri_partition</b> (co
 double&#160;</td><td class="memItemRight" valign="bottom"><b>upper_bound</b> (const Eigen::Vector3d *t, int n) const</td></tr>
 <tr class="memdesc:aa17f0e727e0626272a74ce8b4628fb62"><td class="mdescLeft">&#160;</td><td class="mdescRight">U: min over all triangles of max over the n points t of d_P. <br /></td></tr>
 <tr class="separator:aa17f0e727e0626272a74ce8b4628fb62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f60f7e78bce53c9d01461f7731c1058" id="r_a0f60f7e78bce53c9d01461f7731c1058"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a0f60f7e78bce53c9d01461f7731c1058">check_cell_pieces</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, double delta, const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html">Work</a> &amp;w, double vol_sum, double empty_vol) const</td></tr>
+<tr class="separator:a0f60f7e78bce53c9d01461f7731c1058"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8db5a26ae0164373d7623d035af6366a" id="r_a8db5a26ae0164373d7623d035af6366a"><td class="memItemLeft" align="right" valign="top"><a id="a8db5a26ae0164373d7623d035af6366a" name="a8db5a26ae0164373d7623d035af6366a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>check_face_pieces</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_tri_work.html">TriWork</a> &amp;w, const char *who) const</td></tr>
+<tr class="separator:a8db5a26ae0164373d7623d035af6366a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96ad4589b38be290ecb635c2eecafe7a" id="r_a96ad4589b38be290ecb635c2eecafe7a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a96ad4589b38be290ecb635c2eecafe7a">label_face</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html">FaceWork</a> &amp;fw) const</td></tr>
+<tr class="separator:a96ad4589b38be290ecb635c2eecafe7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbca1640cd24eecb4b7bb9b6de7957d7" id="r_adbca1640cd24eecb4b7bb9b6de7957d7"><td class="memItemLeft" align="right" valign="top"><a id="adbca1640cd24eecb4b7bb9b6de7957d7" name="adbca1640cd24eecb4b7bb9b6de7957d7"></a>
+const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html">FaceWork</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>face_parts</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">FaceParts</a> *keep) const</td></tr>
+<tr class="memdesc:adbca1640cd24eecb4b7bb9b6de7957d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">f's labelled parts, from <code>keep</code> when it holds f's, else made (into keep, or a scratch). <br /></td></tr>
+<tr class="separator:adbca1640cd24eecb4b7bb9b6de7957d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a831240441bdb4c13dd97d5d8e764b5c2" id="r_a831240441bdb4c13dd97d5d8e764b5c2"><td class="memItemLeft" align="right" valign="top"><a id="a831240441bdb4c13dd97d5d8e764b5c2" name="a831240441bdb4c13dd97d5d8e764b5c2"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>build_ff_node</b> (int begin, int end)</td></tr>
+<tr class="separator:a831240441bdb4c13dd97d5d8e764b5c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a743aa1261a01dfe3c00051b4e291f2b5" id="r_a743aa1261a01dfe3c00051b4e291f2b5"><td class="memItemLeft" align="right" valign="top"><a id="a743aa1261a01dfe3c00051b4e291f2b5" name="a743aa1261a01dfe3c00051b4e291f2b5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>candidates</b> (const Eigen::Vector3d &amp;lo, const Eigen::Vector3d &amp;hi, double r, std::vector&lt; int &gt; &amp;out) const</td></tr>
 <tr class="memdesc:a743aa1261a01dfe3c00051b4e291f2b5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_feature.html">Feature</a> indices whose box is within r of [lo, hi], ascending. <br /></td></tr>
@@ -224,6 +284,18 @@ std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__off
 <tr class="memitem:a521d3f7b9d59f3101dc7fe0ad17ed79a" id="r_a521d3f7b9d59f3101dc7fe0ad17ed79a"><td class="memItemLeft" align="right" valign="top"><a id="a521d3f7b9d59f3101dc7fe0ad17ed79a" name="a521d3f7b9d59f3101dc7fe0ad17ed79a"></a>
 std::unique_ptr&lt; std::mutex[]&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_value_locks</b></td></tr>
 <tr class="separator:a521d3f7b9d59f3101dc7fe0ad17ed79a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a444d5a8ef7a2d2baf77ddf34375f2ba7" id="r_a444d5a8ef7a2d2baf77ddf34375f2ba7"><td class="memItemLeft" align="right" valign="top"><a id="a444d5a8ef7a2d2baf77ddf34375f2ba7" name="a444d5a8ef7a2d2baf77ddf34375f2ba7"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_f_f_box.html">FFBox</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_boxes</b></td></tr>
+<tr class="separator:a444d5a8ef7a2d2baf77ddf34375f2ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7acfffa3b34ac24c30d7b410051775ec" id="r_a7acfffa3b34ac24c30d7b410051775ec"><td class="memItemLeft" align="right" valign="top"><a id="a7acfffa3b34ac24c30d7b410051775ec" name="a7acfffa3b34ac24c30d7b410051775ec"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_node.html">Node</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_nodes</b></td></tr>
+<tr class="separator:a7acfffa3b34ac24c30d7b410051775ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61b297c8a41eae6e00ca5d051948f7e5" id="r_a61b297c8a41eae6e00ca5d051948f7e5"><td class="memItemLeft" align="right" valign="top"><a id="a61b297c8a41eae6e00ca5d051948f7e5" name="a61b297c8a41eae6e00ca5d051948f7e5"></a>
+std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_order</b></td></tr>
+<tr class="separator:a61b297c8a41eae6e00ca5d051948f7e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59b3e622c8a1ecf97fb4d8489f7f320c" id="r_a59b3e622c8a1ecf97fb4d8489f7f320c"><td class="memItemLeft" align="right" valign="top"><a id="a59b3e622c8a1ecf97fb4d8489f7f320c" name="a59b3e622c8a1ecf97fb4d8489f7f320c"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_reach</b> = 0.</td></tr>
+<tr class="separator:a59b3e622c8a1ecf97fb4d8489f7f320c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
@@ -384,6 +456,193 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 
 </div>
 </div>
+<a id="a0f60f7e78bce53c9d01461f7731c1058" name="a0f60f7e78bce53c9d01461f7731c1058"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f60f7e78bce53c9d01461f7731c1058">&#9670;&#160;</a></span>check_cell_pieces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::ExactBandIntegral::check_cell_pieces </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>t</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html">Work</a> &amp;&#160;</td>
+          <td class="paramname"><em>w</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>vol_sum</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>empty_vol</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The checks of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> on t's pieces (volumes summed by the caller), and of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">max_distance()</a> on f's pieces (areas): throw with the corners in hex floats if the pieces do not tile, or leave more outside every region, than the partition's tolerances allow. </p>
+
+</div>
+</div>
+<a id="a067f37bdf63a0ab9a2a7a1ff077b26c7" name="a067f37bdf63a0ab9a2a7a1ff077b26c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a067f37bdf63a0ab9a2a7a1ff077b26c7">&#9670;&#160;</a></span>distance_bound()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::ExactBandIntegral::distance_bound </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>U = min over the input triangles P of max over t's corners of d_P: an upper bound of d on t (each d_P is convex, and d &lt;= d_P), the bound <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a>'s candidate search starts from. </p>
+
+</div>
+</div>
+<a id="a2c89b6ed6c4c244f76beab471b762bea" name="a2c89b6ed6c4c244f76beab471b762bea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c89b6ed6c4c244f76beab471b762bea">&#9670;&#160;</a></span>front_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::ExactBandIntegral::front_face </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">FaceParts</a> *&#160;</td>
+          <td class="paramname"><em>keep</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea" title="front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the ...">front_face()</a>: int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the normal pointing out of the band). front_face_derivs(): for the motion of corner kv (the others fixed), the gradient and the one-vertex Hessian of E's dependence through f: grad = n int_f chi (d - delta) phi dA, hess = n (x) int_f chi phi^2 grad d dA + (int_f chi (d - delta) phi dA / |N|) dN/dx </p>
+<ul>
+<li>sum over cut edges c: n (x) g_c int_c (d - delta) phi^2 ds / |g_c,f|, phi the hat function of corner kv, chi the offset side's indicator, N = (f1 - f0) x (f2 - f0) with column l of dN/dx = e_l x (x_a - x_b) (f ordered (x, x_a, x_b)), and the cut edges the lines where f crosses an input face's plane into the far side (chi (d - delta) jumps by delta there; g_c the plane's normal out of the kept side, g_c,f its part in f's plane). Summed over the band's boundary faces through x these are E(B)'s gradient and Hessian in x: Reynolds' transport theorem on int_B chi (d - delta), the boundary moving with velocity phi; d is Lipschitz, so no medial-axis term and no D_t term. A part of f lying on the input (d = 0 on it) takes grad d from the band side (the side the band is on, the offset side with a side; -n without one), the one-sided limit, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a>. Throws on a curved bisector (above) or if f's pieces do not tile it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">max_distance()</a>). With <code>keep</code>, f's labelled parts are read from or written to it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html" title="One face&#39;s labelled parts, kept by the caller between front_face() calls on that face,...">FaceParts</a>). </li>
+</ul>
+
+</div>
+</div>
+<a id="adc427ba4330f8ee8ffc01be37ccf946b" name="adc427ba4330f8ee8ffc01be37ccf946b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc427ba4330f8ee8ffc01be37ccf946b">&#9670;&#160;</a></span>front_flux_flag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::ExactBandIntegral::front_flux_flag </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector3d *&#160;</td>
+          <td class="paramname"><em>t</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The same test for the n points t: their box and their side of each plane. A subset of the points is flagged only if the points are, so the points of an operation's ring unflagged leave every cell made from them unflagged. </p>
+
+</div>
+</div>
+<a id="a96ad4589b38be290ecb635c2eecafe7a" name="a96ad4589b38be290ecb635c2eecafe7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96ad4589b38be290ecb635c2eecafe7a">&#9670;&#160;</a></span>label_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::ExactBandIntegral::label_face </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html">FaceWork</a> &amp;&#160;</td>
+          <td class="paramname"><em>fw</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea" title="front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the ...">front_face()</a>'s labelled parts of f into fw: the partition, each piece resolved to its nearest feature, the offset side kept. </p>
+
+</div>
+</div>
 <a id="a0b6fa627858f53aa37c558398a3b5a6d" name="a0b6fa627858f53aa37c558398a3b5a6d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0b6fa627858f53aa37c558398a3b5a6d">&#9670;&#160;</a></span>localize()</h2>
 
@@ -510,6 +769,25 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 </table>
 </div><div class="memdoc">
 <p>_partition: the candidates in t's frame and the convex pieces of t with member sets; false for a flat cell. </p>
+
+</div>
+</div>
+<a id="a1f6cbebf7bc4c9c649ae33ad643b6616" name="a1f6cbebf7bc4c9c649ae33ad643b6616"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f6cbebf7bc4c9c649ae33ad643b6616">&#9670;&#160;</a></span>reserve_values()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::ExactBandIntegral::reserve_values </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>slots</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Grow the value table (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a>) to at least <code>slots</code> slots, emptied; no table, or one that large already: nothing. Not thread-safe: called between passes. A table sized to the constructed mesh only answers few calls once the mesh has grown. MEASURED (cube 1e-2 / 1e-4, front_flux, 15 rounds, table sized at construction, 380k tets late): the smoothing vetoes' <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> calls hit it 1.6-2.3% of the time, the operations' 65%. </p>
 
 </div>
 </div>

@@ -76,6 +76,7 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d-members.html">List of all members</a>  </div>
@@ -98,6 +99,8 @@ Inheritance diagram for wmtk::components::topological_offset::BandVolumeEnergy3D
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html">Cell</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One band cell of the ring: its three other corners, at their current positions.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_face.html">Face</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -123,10 +126,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>solution_changed</b> 
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_exact_integral</b> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt; eb, double delta)</td></tr>
 <tr class="memdesc:a37c38710a56fe6b0b1116f240488aa25"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_band_volume_rule "exact": a cell's Vol_t m_t becomes J_t / delta, J_t = int_t (d - delta) dV in closed form (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>), the moving vertex x one of t's corners &ndash; the term band_cell_term() reads. Values from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">ExactBandIntegral::value()</a>, the function band_cell_term() calls (the corners in another order); gradient and Hessian from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">ExactBandIntegral::value_grad_hess()</a> in x (its J equals value() to rounding): exact, except on rule-(a) pieces (the bound's derivative) and at a kink of d on a face of t through x (the one-sided limit for x moving into t). The last point's value, and its gradient and Hessian, are kept: polysolve asks for each separately at one x. The corner bound's minima and certified ball are not used. <br /></td></tr>
 <tr class="separator:a37c38710a56fe6b0b1116f240488aa25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52338d405144102f749b8b65a0f6773e" id="r_a52338d405144102f749b8b65a0f6773e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a52338d405144102f749b8b65a0f6773e">set_front_flux</a> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt; eb, double delta, std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_face.html">Face</a> &gt; faces)</td></tr>
+<tr class="memdesc:a52338d405144102f749b8b65a0f6773e"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same band term (<a class="el" href="_exact_band_integral_8hpp_source.html">ExactBandIntegral.hpp</a>): the value is (sum over the band's boundary faces f through x of int_f G.n dA.  <br /></td></tr>
+<tr class="separator:a52338d405144102f749b8b65a0f6773e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afabcf8deadec0fab837ab04282b7353c" id="r_afabcf8deadec0fab837ab04282b7353c"><td class="memItemLeft" align="right" valign="top"><a id="afabcf8deadec0fab837ab04282b7353c" name="afabcf8deadec0fab837ab04282b7353c"></a>
 std::pair&lt; Eigen::Vector3d, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>certified_ball</b> () const</td></tr>
 <tr class="memdesc:afabcf8deadec0fab837ab04282b7353c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The current certified ball, its centre and radius (radius &lt; 0: none yet). For the tests. <br /></td></tr>
 <tr class="separator:afabcf8deadec0fab837ab04282b7353c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a9c27e9093b760b7dee1b7e251d2e6b0a" id="r_a9c27e9093b760b7dee1b7e251d2e6b0a"><td class="memItemLeft" align="right" valign="top">static std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a9c27e9093b760b7dee1b7e251d2e6b0a">front_flux_error</a> ()</td></tr>
+<tr class="separator:a9c27e9093b760b7dee1b7e251d2e6b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -140,6 +151,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>exact_minima</b> (con
 <tr class="separator:a4a50a31b8845320a324a87938117734c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f4ed003663acbfb6562170716acd4e2" id="r_a6f4ed003663acbfb6562170716acd4e2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a6f4ed003663acbfb6562170716acd4e2">certify_ball</a> (const Eigen::Vector3d &amp;x) const</td></tr>
 <tr class="separator:a6f4ed003663acbfb6562170716acd4e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac344f829f697df9a06d127b4f57c44c7" id="r_ac344f829f697df9a06d127b4f57c44c7"><td class="memItemLeft" align="right" valign="top"><a id="ac344f829f697df9a06d127b4f57c44c7" name="ac344f829f697df9a06d127b4f57c44c7"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>ff_eval</b> (const Eigen::Vector3d &amp;x, int need, Eigen::Vector3d &amp;g, Eigen::Matrix3d &amp;H) const</td></tr>
+<tr class="memdesc:ac344f829f697df9a06d127b4f57c44c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The front form's value / derivatives at x (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a328cb908a6bca622f98f605b5263f448" title="need: 0 value, 1 + gradient, 2 + Hessian.">eval()</a>). <br /></td></tr>
+<tr class="separator:ac344f829f697df9a06d127b4f57c44c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -199,6 +214,22 @@ Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>m_eb_g</b>
 <tr class="memitem:aa84b725acdb2f60777772d7136304087" id="r_aa84b725acdb2f60777772d7136304087"><td class="memItemLeft" align="right" valign="top"><a id="aa84b725acdb2f60777772d7136304087" name="aa84b725acdb2f60777772d7136304087"></a>
 Eigen::Matrix3d&#160;</td><td class="memItemRight" valign="bottom"><b>m_eb_H</b> = Eigen::Matrix3d::Zero()</td></tr>
 <tr class="separator:aa84b725acdb2f60777772d7136304087"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb1a5e0f1dc8b67933047cf031beeefd" id="r_acb1a5e0f1dc8b67933047cf031beeefd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#acb1a5e0f1dc8b67933047cf031beeefd">m_ff</a> = false</td></tr>
+<tr class="separator:acb1a5e0f1dc8b67933047cf031beeefd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad76d00800a1201fbf9278dda8342982a" id="r_ad76d00800a1201fbf9278dda8342982a"><td class="memItemLeft" align="right" valign="top"><a id="ad76d00800a1201fbf9278dda8342982a" name="ad76d00800a1201fbf9278dda8342982a"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_face.html">Face</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_faces</b></td></tr>
+<tr class="separator:ad76d00800a1201fbf9278dda8342982a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78c4571963eda4c71eaa8a427f38628d" id="r_a78c4571963eda4c71eaa8a427f38628d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">ExactBandIntegral::FaceParts</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a78c4571963eda4c71eaa8a427f38628d">m_ff_fparts</a></td></tr>
+<tr class="separator:a78c4571963eda4c71eaa8a427f38628d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a089b4bd91207647a7769e5b7c37649ef" id="r_a089b4bd91207647a7769e5b7c37649ef"><td class="memItemLeft" align="right" valign="top"><a id="a089b4bd91207647a7769e5b7c37649ef" name="a089b4bd91207647a7769e5b7c37649ef"></a>
+std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_U</b></td></tr>
+<tr class="separator:a089b4bd91207647a7769e5b7c37649ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73a0f658535f27858a19e64778302800" id="r_a73a0f658535f27858a19e64778302800"><td class="memItemLeft" align="right" valign="top"><a id="a73a0f658535f27858a19e64778302800" name="a73a0f658535f27858a19e64778302800"></a>
+std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_Ux</b></td></tr>
+<tr class="separator:a73a0f658535f27858a19e64778302800"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49bab2b15d6732b106bbb71f2d841bb0" id="r_a49bab2b15d6732b106bbb71f2d841bb0"><td class="memItemLeft" align="right" valign="top"><a id="a49bab2b15d6732b106bbb71f2d841bb0" name="a49bab2b15d6732b106bbb71f2d841bb0"></a>
+std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ff_Ux_set</b></td></tr>
+<tr class="separator:a49bab2b15d6732b106bbb71f2d841bb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44848bdd2e371f85e856feb570b2ea1c" id="r_a44848bdd2e371f85e856feb570b2ea1c"><td class="memItemLeft" align="right" valign="top"><a id="a44848bdd2e371f85e856feb570b2ea1c" name="a44848bdd2e371f85e856feb570b2ea1c"></a>
 std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html">Cell</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_cells</b></td></tr>
 <tr class="separator:a44848bdd2e371f85e856feb570b2ea1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -284,6 +315,71 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
 
 </div>
 </div>
+<a id="a9c27e9093b760b7dee1b7e251d2e6b0a" name="a9c27e9093b760b7dee1b7e251d2e6b0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c27e9093b760b7dee1b7e251d2e6b0a">&#9670;&#160;</a></span>front_flux_error()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string &amp; wmtk::components::topological_offset::BandVolumeEnergy3D::front_flux_error </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The message of the last exception the front-flux band term threw on this thread, until the caller clears it (smooth_front_vertex() rethrows it after the solve). </p>
+
+</div>
+</div>
+<a id="a52338d405144102f749b8b65a0f6773e" name="a52338d405144102f749b8b65a0f6773e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52338d405144102f749b8b65a0f6773e">&#9670;&#160;</a></span>set_front_flux()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::BandVolumeEnergy3D::set_front_flux </td>
+          <td>(</td>
+          <td class="paramtype">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt;&#160;</td>
+          <td class="paramname"><em>eb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_face.html">Face</a> &gt;&#160;</td>
+          <td class="paramname"><em>faces</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same band term (<a class="el" href="_exact_band_integral_8hpp_source.html">ExactBandIntegral.hpp</a>): the value is (sum over the band's boundary faces f through x of int_f G.n dA. </p>
+<ul>
+<li>sum over the cells t of D_t, for the flagged cells) / delta, which differs from the "exact" rule's sum over the cells of J_t / delta by the flux through the faces that do not hold x, a constant in x: a face holding x lies in two cells of x's ring, so its fluxes cancel unless one side is not a band cell. Gradient and Hessian are those of E(B) / delta in x (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a2c89b6ed6c4c244f76beab471b762bea" title="front_face(): int over the triangle f of G.n dA, n = (f1 - f0) x (f2 - f0) / |.| (f ordered with the ...">ExactBandIntegral::front_face()</a>, summed over <code>faces</code>); they have no D_t term. D_t is evaluated for a cell flagged by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a008008c1dae4b90982618731710b2bed" title="Whether the cell t can meet a bisector at points with d &lt;= front_flux_reach(): t&#39;s box meets a kept p...">ExactBandIntegral::front_flux_flag()</a>, or whose bound on d exceeds front_flux_reach() (the flag's polytopes hold the bisector points with d &lt;= reach only): U_t = <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a067f37bdf63a0ab9a2a7a1ff077b26c7">ExactBandIntegral::distance_bound()</a>, kept per cell with the x it was computed at and read as U_t + |x - x_U| at a later x, a bound too (each d_P is 1-Lipschitz and only x moves), the search repeated where that exceeds the reach. Why U_t and not d(x) + max |q - x| (d 1-Lipschitz): MEASURED (stored cube_out band, 52957 cells, reach 2 delta), the latter put 10618 band cells beyond the reach, 5.0 D_t evaluations per front vertex, where the cube outward has no region overlaps on its offset side at all. The certified ball and the exact rule's integrals are not used. Any exception from the band term is kept (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a9c27e9093b760b7dee1b7e251d2e6b0a">front_flux_error()</a>) before it propagates: the shared smoother takes an exception out of a solve for a failed line search. </li>
+</ul>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a5f50b2b70f39398e2e529458a903397b" name="a5f50b2b70f39398e2e529458a903397b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5f50b2b70f39398e2e529458a903397b">&#9670;&#160;</a></span>m_eb_parts</h2>
@@ -305,6 +401,52 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
 </table>
 </div><div class="memdoc">
 <p>Per cell its partition at the last x it was evaluated at, shared by value() and value_grad_hess() (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">ExactBandIntegral::Partition</a>). </p>
+
+</div>
+</div>
+<a id="acb1a5e0f1dc8b67933047cf031beeefd" name="acb1a5e0f1dc8b67933047cf031beeefd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb1a5e0f1dc8b67933047cf031beeefd">&#9670;&#160;</a></span>m_ff</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::BandVolumeEnergy3D::m_ff = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a52338d405144102f749b8b65a0f6773e" title="EXPERIMENTAL_band_volume_rule &quot;front_flux&quot;: the front form of the same band term (ExactBandIntegral....">set_front_flux()</a>: on, and the band's boundary faces through x; per cell its bound U_t on d and the x it was computed at (m_ff_Ux_set: computed). </p>
+
+</div>
+</div>
+<a id="a78c4571963eda4c71eaa8a427f38628d" name="a78c4571963eda4c71eaa8a427f38628d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78c4571963eda4c71eaa8a427f38628d">&#9670;&#160;</a></span>m_ff_fparts</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html">ExactBandIntegral::FaceParts</a>&gt; wmtk::components::topological_offset::BandVolumeEnergy3D::m_ff_fparts</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>per face its labelled parts at the last x (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html" title="One face&#39;s labelled parts, kept by the caller between front_face() calls on that face,...">ExactBandIntegral::FaceParts</a>), shared by the value and the derivatives </p>
 
 </div>
 </div>

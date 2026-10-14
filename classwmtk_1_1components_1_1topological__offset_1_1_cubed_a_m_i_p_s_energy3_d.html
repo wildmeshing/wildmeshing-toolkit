@@ -82,7 +82,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of vol AMIPS^3 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa326c341fa784e86aa04c2799494e5ce" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">TopoOffsetTetMesh::tet_energy()</a>, whose caller passes w = offset_amips_weight / stop_energy^3).  
+<p>The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of vol AMIPS^3 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">TopoOffsetTetMesh::tet_energy()</a>, whose caller passes w = offset_amips_weight / stop_energy^3).  
  <a href="classwmtk_1_1components_1_1topological__offset_1_1_cubed_a_m_i_p_s_energy3_d.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>&gt;</code></p>
@@ -154,7 +154,7 @@ TVector&#160;</td><td class="memItemRight" valign="bottom"><b>m_grad</b></td></t
 <tr class="separator:a715d9fb1607a67ecc66d83d9b8255ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of vol AMIPS^3 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa326c341fa784e86aa04c2799494e5ce" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">TopoOffsetTetMesh::tet_energy()</a>, whose caller passes w = offset_amips_weight / stop_energy^3). </p>
+<div class="textblock"><p>The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of vol AMIPS^3 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">TopoOffsetTetMesh::tet_energy()</a>, whose caller passes w = offset_amips_weight / stop_energy^3). </p>
 <p>Each cell's vol AMIPS^3 is (sqrt2/12) T^(3/2) AMIPS^(3/2) with T = (1/2) sum |e|^2 &ndash; the volume never from a determinant (see cubed_amips_vol_term() in the .cpp). Cells in the shared smoother's convention: 12 doubles with the moving vertex first, its three entries replaced by x. Derivatives by the chain rule from the engine's first-power AMIPS ones. A step that inverts a cell is invalid, as for the engine's AMIPSEnergy3D. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a710905077ccf4a15dbf5147351208326" name="a710905077ccf4a15dbf5147351208326"></a>
