@@ -134,7 +134,7 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
     }
     // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
     if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
-        return false;
+        return swap_reject(SwapReject::feature_edge);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip (see
     // prepare_surface_flip). If disabled, keep the old behavior of rejecting all surface-edge
@@ -173,6 +173,7 @@ const char* TetOptimizerMesh::swap_reject_name(const SwapReject r)
     case SwapReject::valence: return "valence";
     case SwapReject::bbox: return "bbox";
     case SwapReject::surface_not_allowed: return "surface_not_allowed";
+    case SwapReject::feature_edge: return "feature_edge";
     case SwapReject::prepare_flip: return "prepare_flip";
     case SwapReject::interior_hook: return "interior_hook";
     case SwapReject::flip_open_boundary: return "flip_open_boundary";
@@ -705,7 +706,7 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
     }
     // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
     if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
-        return false;
+        return swap_reject(SwapReject::feature_edge);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 4-4
     // swap is steered to the case that creates the new surface edge (c,d) by
@@ -855,7 +856,7 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
     }
     // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
     if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
-        return false;
+        return swap_reject(SwapReject::feature_edge);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 5-6
     // swap is steered to the fan that creates the new surface edge (c,d) by

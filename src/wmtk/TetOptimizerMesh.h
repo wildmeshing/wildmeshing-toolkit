@@ -820,6 +820,7 @@ protected:
         valence, // wrong incident-tet count for this swap kind
         bbox, // edge on the bounding box
         surface_not_allowed, // has surface faces and allow_surface_swap() is false
+        feature_edge, // the swap would delete a tagged feature edge (it is the operated edge)
         prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
         interior_hook, // swap_before_interior() refused
         flip_open_boundary, // flipping would change the surface's boundary loops
@@ -906,6 +907,7 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         substructure_link, // preserve_topology, both ends on the surface: substructure link
+        feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
         app_leaves_input, // application: v1 on the input complex, v2 not
@@ -918,6 +920,8 @@ protected:
         after_connectivity, // collapse_after_connectivity() said no
         after_envelope, // a surface face the survivor keeps left the envelope
         after_face_attribute, // a face attribute found no face left to land on
+        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
+        after_feature_edge, // a tagged feature edge found no edge left to land on
         after_coarsen_region, // coarsening only: the region's worst quality rose
         COUNT
     };

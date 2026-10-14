@@ -260,7 +260,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                 if (m_feature_envelope->is_outside(
                         std::array<Eigen::Vector3d, 2>{
                             {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
-                    return false;
+                    return collapse_reject(CollapseReject::feature_leaves_tube);
                 }
             }
         }
@@ -443,7 +443,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             if (!collapse_is_order_2_edge(vids)) {
                 // The edge was order-2 before the collapse (that is why it was cached) but
                 // is not anymore -- the collapse moved it off its curve.
-                return false;
+                return collapse_reject(CollapseReject::after_order2_chord);
             }
         }
     }
@@ -493,7 +493,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // rollback undoes everything.
     if (m_track_feature_edges) {
         if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
-            return false;
+            return collapse_reject(CollapseReject::after_feature_edge);
         }
     }
 
@@ -543,6 +543,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::inverted: return "inverted";
     case CollapseReject::quality: return "quality";
     case CollapseReject::substructure_link: return "substructure_link";
+    case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
     case CollapseReject::app_both_surfaces: return "app_both_surfaces";
     case CollapseReject::app_front_unlimited: return "app_front_unlimited";
     case CollapseReject::app_leaves_input: return "app_leaves_input";
@@ -555,6 +556,8 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::after_connectivity: return "after_connectivity";
     case CollapseReject::after_envelope: return "after_envelope";
     case CollapseReject::after_face_attribute: return "after_face_attribute";
+    case CollapseReject::after_order2_chord: return "after_order2_chord";
+    case CollapseReject::after_feature_edge: return "after_feature_edge";
     case CollapseReject::after_coarsen_region: return "after_coarsen_region";
     default: return "?";
     }
