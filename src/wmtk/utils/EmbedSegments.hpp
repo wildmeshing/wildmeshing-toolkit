@@ -31,6 +31,13 @@ namespace wmtk::utils {
  * @param[out] E_out_sources optional: for each row of E_out, the input edges (rows of E) it
  *             tiles, ascending. Usually one; more where input edges overlap, which is
  *             exactly the case a geometric look-up on E_out alone cannot tell apart.
+ * @param[out] E_out_orientation optional: for each row of E_out, the input's direction on it,
+ *             as the signed number of input edges covering it, measured along the row as
+ *             written (E_out rows are (min, max)): +1 for an input edge running min -> max.
+ *             Overlapping edges add up and opposite ones cancel, but the copies of a repeated
+ *             input edge count once. Then made consistent curve by curve, by length-weighted
+ *             majority, which repairs edges reversed against their neighbours and changes
+ *             nothing on a consistently oriented input. See SurfaceTagAttributes::m_orientation.
  * @param[out] point_map optional: for each row of V, the row of V_out holding that exact
  *             point. The arrangement triangulates every input point, referenced by a
  *             segment or not, so this is how a free point (no incident segment) is found
@@ -46,6 +53,7 @@ void embed_segments(
     MatrixXi& F_out,
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources = nullptr,
+    std::vector<int>* E_out_orientation = nullptr,
     std::vector<int>* point_map = nullptr);
 
 /**

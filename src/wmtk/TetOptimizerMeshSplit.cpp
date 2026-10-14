@@ -29,6 +29,8 @@ void TetOptimizerMesh::split_all_edges()
         // valence-increasing splits in a single pass, where the gate allows one, reaching
         // valence ~700 while the max energy climbed with it. The attribute collections are
         // resized to the reservation, so their size is the capacity to use.
+        // UPDATE (dzint): This seems to be no longer necessary. At least model 509315 passes
+        // without this.
         m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
@@ -53,26 +55,46 @@ void TetOptimizerMesh::split_all_edges()
                 auto [weight, op, tup] = ele;
                 auto length = m.get_length2(tup);
                 if (length != weight) return false;
-                //
-                size_t v1_id = tup.vid(*this);
-                size_t v2_id = tup.switch_vertex(*this).vid(*this);
-                // Force-split: a worst tet's longest edge (queued by
-                // refine_sizing_around_worst when the max energy stalls) is split once
-                // regardless of the length gate, to unstick a sliver without changing the
-                // sizing field. The new midpoint is not in m_force_split_edges, so the
-                // two halves are NOT force-split again -- exactly one split per edge.
-                if (is_force_split_edge(v1_id, v2_id)) {
-                    return true;
-                }
-                double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                       m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                      2;
-                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                    return false;
-                }
-                return true;
+                return split_edge_is_due(tup);
             };
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            // Longest-edge order. The serial pass pops the longest edge first, so by the time it
+            // reaches an edge, every longer due edge of the same tets has been tried: split, or
+            // refused. The parallel pass loses that order: an edge that cannot lock its ring is
+            // set aside, and the thread goes on to shorter edges, among them edges of the same
+            // tets, which are then bisected off their longest edge. So a split waits while a
+            // longer due edge of one of its tets is still queued -- not yet tried, and not
+            // dropped. A refused edge is no longer queued, so nothing waits on it, exactly as in
+            // the serial pass; a serial run never waits at all (see ExecutePass::must_wait).
+            //
+            // Measured on the 14 TetWild challenging models at 10 threads, one run each: without
+            // the wait, 1,061 to 6,935 splits per model were committed while a longer due edge of
+            // the same tets was still queued (0 in every serial pass), and one split pass raised
+            // the max energy up to 23x (101955; serially at most 1.8x). With it: no such split,
+            // at most 1.8x. Serial output is byte-identical with and without the wait on all 30
+            // challenging models.
+            const auto edge_key = [&](const Tuple& e) {
+                return wmtk::edge_queue_key(e.vid(*this), e.switch_vertex(*this).vid(*this));
+            };
+            executor.queue_key = [&](const auto&, const auto&, const Tuple& e) -> uint64_t {
+                return split_edge_is_due(e) ? edge_key(e) : 0;
+            };
+            executor.must_wait = [&](const auto&, const auto&, const Tuple& e) {
+                const double l2 = get_length2(e);
+                for (const Tuple& t : get_incident_tets_for_edge(e)) {
+                    const size_t tid = t.tid(*this);
+                    for (int j = 0; j < 6; ++j) {
+                        const Tuple f = tuple_from_edge(tid, j);
+                        if (get_length2(f) > l2 && split_edge_is_due(f) &&
+                            executor.is_queued(edge_key(f))) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
+            m_split_order_waits = executor.waits();
+            m_split_order_wait_defects = executor.wait_defects();
         });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
@@ -85,8 +107,35 @@ void TetOptimizerMesh::split_all_edges()
             n,
             m_params.split_high_valence_threshold);
     }
+    if (m_split_order_waits > 0) {
+        wmtk::logger().info(
+            "[longest-edge order] {} splits set aside to wait for a longer queued edge",
+            m_split_order_waits);
+    }
+    if (m_split_order_wait_defects > 0) {
+        wmtk::logger().warn(
+            "[longest-edge order] {} splits still had a longer queued edge in a serial run, and "
+            "were refused",
+            m_split_order_wait_defects);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
+}
+
+bool TetOptimizerMesh::split_edge_is_due(const Tuple& e) const
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+    // Force-split: a worst tet's longest edge (queued by refine_sizing_around_worst when the max
+    // energy stalls) is split once regardless of the length gate, to unstick a sliver without
+    // changing the sizing field. The new midpoint is not in m_force_split_edges, so the two
+    // halves are NOT force-split again -- exactly one split per edge.
+    if (is_force_split_edge(v1_id, v2_id)) {
+        return true;
+    }
+    const double sizing_ratio =
+        (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar) / 2;
+    return !(get_length2(e) < m_params.splitting_l2 * sizing_ratio * sizing_ratio);
 }
 
 bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
@@ -101,11 +150,6 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
     //
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
-
-    cache.max_quality_before = 0.;
-    for (const size_t tid : get_incident_tids_for_edge(loc0)) {
-        cache.max_quality_before = std::max(cache.max_quality_before, cell_quality(tid));
-    }
 
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
@@ -158,8 +202,11 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
         }
         // Claim only once the whole link is known to be free, so a refusal late in the
         // loop does not burn the budget of a vertex found earlier.
-        for (const size_t vid : to_claim) {
-            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        // A dry run only checks: claiming here would make the real attempt refuse itself.
+        if (!dry_run()) {
+            for (const size_t vid : to_claim) {
+                m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+            }
         }
     }
 
@@ -212,7 +259,7 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(m_vertex_attribute[v_id].m_posf);
+    m_vertex_attribute[v_id].set_pos_to_posf();
 
     for (const Tuple& loc : locs) {
         if (is_inverted(loc)) {
@@ -228,7 +275,8 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
         // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
         // shared edge, so it can never invert a previously-valid incident tet: the split
         // always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
+        // it.
         //
         // This used to apply only when an endpoint was already rational, to stop a split
         // between two rounded endpoints from reintroducing exact coordinates into a
@@ -244,19 +292,24 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
         // split is the only operation that can un-round a vertex (collapse, all four swaps
         // and smoothing never do), the post-optimization pass is collapse-only, and the loop
         // does not stop until every vertex is rounded as well as the energy target being met.
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].set_pos(
+            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
         // Keep m_posf in step with the exact position. It was left holding the double
         // midpoint, which is a different point -- and specifically the one just found to
         // invert an incident tet. Every un-guarded m_posf read (edge length, the envelope
         // tests, the smoothing seed) then works from a position the vertex does not have.
         // When an endpoint is itself un-rounded the gap is not a rounding step but the whole
         // distance between that endpoint's exact and approximate positions.
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].pos());
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
-        for (const Tuple& loc : locs) {
-            if (is_inverted(loc)) {
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                log_and_throw_error(
+                    "split_edge_after: split of ({},{}) produced inverted triangle {}",
+                    v1_id,
+                    v2_id,
+                    t.fid(*this));
                 return false;
             }
         }
@@ -270,27 +323,11 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
-    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
-    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite
-    // edge. The result is a POSITIVELY ORIENTED tet whose volume is too small for AMIPS, so
-    // get_quality returns MAX_ENERGY, the reported max energy jumps to cbrt(1e50) = 4.6e16, and
-    // every control decision that divides by it -- filter_energy, the stall test, the average -- is
-    // meaningless from then on. On Thingi10K 101954 that is exactly how the run died: the
-    // first 4.6e16 appears on the split line immediately after "[force-split] 92 worst-tet longest
-    // edges force-split".
-    //
-    // Refuse to be the operation that creates one. A split that merely subdivides a region
-    // that was already degenerate is still allowed, so a stuck region can keep being refined.
-    double max_quality_after = 0.;
-    for (const Tuple& loc : locs) {
-        max_quality_after = std::max(max_quality_after, get_quality(loc));
-    }
-    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
-        return false;
-    }
-    for (const Tuple& loc : locs) {
-        set_cell_quality(loc.tid(*this), get_quality(loc));
+    // A split is never refused on quality. It checks orientation, rounding and (above) the
+    // envelope, and that is all: subdividing is the operation the optimizer reaches for when a
+    // region is stuck, so it has to be allowed to run even where the result scores badly.
+    for (const Tuple& t : locs) {
+        set_cell_quality(t.tid(*this), get_quality(t));
     }
 
     /// containment: the new surface triangles must stay inside the envelope
@@ -328,9 +365,17 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
             }
             if (n_shared != 2) continue; // face does not contain the split edge
             if (surface_triangle_is_outside(v1_id, v_id, other)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
             if (surface_triangle_is_outside(v2_id, v_id, other)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
         }
@@ -359,10 +404,20 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
             }
         }
         if (j_vn.size() == 1) {
-            auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, old_vids[j_vn[0]]}});
+            // (v1,v2,c) -> (v1,v,c) + (v,v2,c): each half replaces one endpoint by v in place,
+            // so measured along those orders it carries the parent's orientation unchanged.
+            const size_t c = old_vids[j_vn[0]];
+            const int o = f_attr.orientation_along(std::array<size_t, 3>{{v1_id, v2_id, c}});
+            auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, c}});
             m_face_attribute[global_fid1] = f_attr;
-            auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, old_vids[j_vn[0]]}});
+            m_face_attribute[global_fid1].set_orientation_along(
+                std::array<size_t, 3>{{v1_id, v_id, c}},
+                o);
+            auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, c}});
             m_face_attribute[global_fid2] = f_attr;
+            m_face_attribute[global_fid2].set_orientation_along(
+                std::array<size_t, 3>{{v_id, v2_id, c}},
+                o);
         } else { // j_vn.size() == 2
             auto [_, global_fid] = tuple_from_face(old_vids);
             m_face_attribute[global_fid] = f_attr;

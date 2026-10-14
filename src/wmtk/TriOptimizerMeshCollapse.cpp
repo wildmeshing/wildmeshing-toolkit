@@ -20,7 +20,8 @@ void TriOptimizerMesh::collapse_all_edges(bool is_limit_length)
     collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
 }
 
-size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring)
+size_t
+TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
 {
     m_collapse_limit_length = is_limit_length;
     collapse_pass_begin();
@@ -46,6 +47,13 @@ size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_
         lock_ring,
         "edge collapse",
         [&](auto& executor, auto& mesh) {
+            // The one pass that is not screened (ExecutePass::screen_before_commit). In 2D a
+            // collapse's time goes into the attempts that pass their pre-checks -- the queue
+            // already turns the refusals away cheaply, with no 3D-sized ring to lock -- so
+            // screening only added the dry runs, and the attempts that a stale snapshot
+            // multiplies: triwild 191265 collapsed in 8.8-9.7s screened, 5.8-6.2s not (main
+            // 6.2-6.4s), 190586 in 11.8-13.6s against 9.8-11.1s.
+            executor.screen_before_commit = false;
             executor.renew_neighbor_tuples =
                 [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
                     std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
@@ -67,9 +75,17 @@ size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_
                 if (length != -weight) {
                     return false;
                 }
-                // Deliberately NOT filtered on length here. An over-length edge stays a
-                // candidate and collapse_edge_before decides it on quality instead: it is kept
-                // only if it STRICTLY improves the worst element of the ring. See there.
+                // Length gate, applied to the CANDIDATE LIST -- TriWild's placement. An edge
+                // at or above the collapse target is not offered to this pass at all.
+                if (m_collapse_limit_length) {
+                    const size_t v1_id = tup.vid(m);
+                    const size_t v2_id = tup.switch_vertex(m).vid(m);
+                    const double sizing_ratio =
+                        (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
+                    if (length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+                        return false;
+                    }
+                }
                 return true;
             };
 
@@ -78,7 +94,7 @@ size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_
             // list from get_edges() after every pass and re-ran the expensive geometric
             // pre-checks on every failure, even where nothing could have changed.
             const size_t total_success =
-                wmtk::run_localized_to_convergence(mesh, executor, all_ops);
+                wmtk::run_localized_to_convergence(mesh, executor, std::move(all_ops), max_passes);
             logger().info("collapse success: {}", total_success);
             collapse_pass_end(total_success);
             accepted = total_success;
@@ -95,6 +111,7 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.changed_fids.clear();
     cache.changed_energies.clear();
     cache.surface_edges.clear();
+    cache.renamed_orientations.clear();
 
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
@@ -199,39 +216,6 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
 
-    // Length gate, applied here rather than when the candidate list is built.
-    //
-    // Coarsening a well-shaped mesh is what the length limit exists to prevent, so a short
-    // edge keeps the old behaviour. But applying it to the CANDIDATE LIST made any element
-    // whose edges are all longer than 0.8 * l invisible to this pass: it was never offered,
-    // so it produced no rejection record anywhere and looked untouched rather than refused.
-    // A collinear triangle is exactly that -- measured on triwild20k 189017 at eps_rel 1e-4,
-    // one with edges 55 / 165 / 220 against a gate of 38.7 survived every pass while
-    // stuck-refine split it, halving its short edge and DOUBLING its energy each round
-    // (6.7e16 -> 1.5e17 -> 3.1e17 -> inverted) and growing the mesh from 17k to 6.6M faces.
-    //
-    // Refinement cannot repair a shape defect -- AMIPS is scale-invariant, so splitting a
-    // collinear triangle leaves it collinear -- and collapse is the only operation that can
-    // remove one. So an over-length edge is allowed, on the condition that it STRICTLY
-    // improves the worst element of the ring. That needs no threshold and is self-limiting:
-    // in a healthy mesh almost no long-edge collapse strictly improves anything.
-    //
-    // Note changed_fids excludes the faces the collapse deletes, so when the worst element
-    // in the ring is one of those, the test passes by construction -- the rule admits
-    // precisely the collapses that remove a bad element.
-    if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
-        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-        const double len2 = cache.edge_length * cache.edge_length;
-        if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
-            double max_after = 0.;
-            for (const double q : cache.changed_energies) {
-                max_after = std::max(max_after, q);
-            }
-            if (max_after >= cache.max_energy) {
-                return false;
-            }
-        }
-    }
 
     //
     const auto& n12_locs = get_incident_fids_for_edge(loc);
@@ -250,6 +234,12 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         auto [_2, global_eid2] = tuple_from_edge({{v2_id, e_vids[1]}});
         auto e_attr = m_edge_attribute.at(global_eid1);
         e_attr.merge(m_edge_attribute.at(global_eid2));
+        // (v1,x) and (v2,x) become one edge (v2,x); their directions add up along it.
+        const std::array<size_t, 2> merged{{v2_id, e_vids[1]}};
+        e_attr.set_orientation_along(
+            merged,
+            m_edge_attribute.at(global_eid1).orientation_along(e_vids) +
+                m_edge_attribute.at(global_eid2).orientation_along(merged));
         cache.changed_edges.push_back(std::make_pair(e_attr, e_vids));
     }
 
@@ -282,6 +272,9 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                     if (!m_edge_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
+                    }
+                    if (const int o = m_edge_attribute.at(fid).orientation_along(f); o != 0) {
+                        cache.renamed_orientations.push_back({{{v2_id, va}}, o});
                     }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
@@ -349,7 +342,16 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     }
     // vertex attr
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    VA[v2_id].m_sizing_scalar =
+        std::min(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     // no need to update on_bbox_faces
+    // Edges renamed in place keep their slot but not their vertex pair; re-express their
+    // direction against the new one, before the merged link edges below overwrite theirs.
+    for (const auto& [e, o] : cache.renamed_orientations) {
+        if (const auto found = try_tuple_from_edge(e); found.has_value()) {
+            m_edge_attribute[std::get<1>(found.value())].set_orientation_along(e, o);
+        }
+    }
     // face attr
     for (auto& info : cache.changed_edges) {
         auto& f_attr = info.first;
@@ -520,12 +522,19 @@ size_t TriOptimizerMesh::coarsen_mesh()
     size_t total = 0;
     for (int round = 0; round < m_params.coarsen_max_rounds; ++round) {
         m_coarsen_mode = true;
-        // The lock claims one ring more than the smoothing reaches: smoothing a vertex at
-        // distance r reads its one-ring and writes the quality of its incident faces.
-        const size_t accepted = collapse_all_edges_impl(false, m_params.coarsen_smooth_ring + 1);
+        // The lock claims one ring more than coarsen_smooth_ring. With smoothing on that is
+        // what the writes reach (smoothing a vertex at distance r reads its one-ring and
+        // writes the quality of its incident faces); with coarsen_local_smoothing_passes at 0
+        // it is what the accept test READS, since a face incident to a distance-r vertex has
+        // vertices at r+1. Either way the +1 is required.
+        const size_t accepted = collapse_all_edges_impl(
+            false,
+            m_params.coarsen_smooth_ring + 1,
+            size_t(m_params.coarsen_max_inner_passes));
         m_coarsen_mode = false;
         total += accepted;
 
+        m_debug_pass_name = "coarsen-smooth";
         smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
         if (m_params.coarsen_global_smoothing_passes > 0) {
             round_all_vertices();

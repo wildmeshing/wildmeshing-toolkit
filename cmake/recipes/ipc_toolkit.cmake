@@ -1,0 +1,110 @@
+# IPC Toolkit (https://github.com/wildmeshing/ipc-toolkit)
+# License: MIT
+#
+# Public mirror of fsichetti/ipc-toolkit@upstream-merge, published in the wildmeshing
+# organisation with the author's permission. What wmtk uses from it is the `esp` subtree: the
+# Extremum-Sum Potential evaluated at arbitrary points (ArbitraryPointESP) and its analytic
+# gradient and Hessian, which the topological_offset component evaluates as its offset field.
+#
+# Only the topological_offset component links this. Core wmtk::toolkit does not, so nothing
+# here reaches tetwild, triwild or simwild.
+
+if(TARGET ipc::toolkit)
+    return()
+endif()
+
+message(STATUS "Third-party: creating target 'ipc::toolkit'")
+
+# wmtk asks for C++17 per target (target_compile_features), leaving CMAKE_CXX_STANDARD unset.
+# Abseil, which ipc-toolkit pulls in for its hash functions, probes the compiler's DEFAULT
+# standard at configure time and hard-errors when that is below 17 -- so a per-target request is
+# invisible to it. Set the directory-scoped default for the subtree ipc-toolkit is configured in.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# EIGEN AND GEOGRAM FIRST, and deliberately. ipc-toolkit ships its own recipe for each, and both
+# recipes -- theirs and ours -- open with `if(TARGET ...) return()`, so whichever runs first wins
+# and the loser is a no-op. Creating both targets here means wmtk's settings are the ones the
+# whole build gets: the Eigen ABI pin (recipes/eigen.cmake) and geogram at a version whose
+# bundled PoissonRecon still compiles on current MSVC (recipes/geogram.cmake). Each of those
+# files explains what breaks without it; both broke the build in ways that surface a long way
+# from here.
+include(eigen)
+include(geogram)
+
+include(CPM)
+CPMAddPackage(
+    NAME ipc_toolkit
+    GITHUB_REPOSITORY wildmeshing/ipc-toolkit
+    GIT_TAG 626e27e11ac64c68f1e00859fec86c4688fde51c
+    OPTIONS
+    "IPC_TOOLKIT_BUILD_TESTS OFF"
+    "IPC_TOOLKIT_BUILD_PYTHON OFF"
+    "IPC_TOOLKIT_WITH_CUDA OFF"
+)
+
+# ipc-toolkit's SIMD branch ends with
+#
+# target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
+#
+# -- PUBLIC, with a comment saying the author does not know why making it private crashes. It
+# is not optional for us either: esp, the subtree wmtk actually uses, carries a
+# static_assert(packet_traits<double>::size == 1, "Eigen vectorization is NOT disabled!") in
+# ESPCollisionTemplate's constructor, so building it with vectorization on does not
+# compile. IPC_TOOLKIT_WITH_SIMD must therefore stay at its default ON.
+#
+# On its own that definition splits the build's Eigen ABI in half, because it reaches only the
+# targets that link ipc while core wildmeshing_toolkit keeps the aligned layout -- which cost a
+# day of green-looking local runs and red CI. recipes/eigen.cmake pins
+# EIGEN_MAX_STATIC_ALIGN_BYTES for everyone precisely so that this definition can no longer do
+# that: the pin wins over Eigen's inference, so ipc gets the scalar packets it demands while
+# every fixed-size Eigen type keeps one alignment across the whole binary.
+#
+# That pin is load-bearing, and the symptom if it is lost is an alignment abort in tests that
+# have nothing to do with either the offset or ipc. Check it here, next to the cause.
+get_target_property(WMTK_EIGEN_DEFS Eigen3_Eigen INTERFACE_COMPILE_DEFINITIONS)
+
+if(NOT WMTK_EIGEN_DEFS MATCHES "EIGEN_MAX_STATIC_ALIGN_BYTES")
+    message(FATAL_ERROR
+        "Eigen3::Eigen is missing the EIGEN_MAX_STATIC_ALIGN_BYTES pin from "
+        "cmake/recipes/eigen.cmake. Without it ipc-toolkit's PUBLIC EIGEN_DONT_VECTORIZE gives "
+        "the targets that link ipc a different alignment for Vector2d/Vector4d/Vector3r than "
+        "the rest of the build, and Eigen's unaligned-array assert aborts "
+        "wmtk_test_manifold_extraction and wmtk_test_topological_offset.")
+endif()
+
+# ipc-toolkit links its hash-map backends PRIVATE, but leaks them through the PUBLIC header
+# ipc/utils/unordered_map_and_set.hpp, so any consumer including it fails to find
+# <tsl/robin_map.h> / <absl/hash/hash.h>. Upstream's own test target works around this by
+# linking them again; do it once here instead, so every wmtk consumer inherits the fix.
+foreach(IPC_LEAKED_DEP IN ITEMS tsl::robin_map absl::hash)
+    if(TARGET ${IPC_LEAKED_DEP})
+        target_link_libraries(ipc_toolkit PUBLIC ${IPC_LEAKED_DEP})
+    endif()
+endforeach()
+
+# ipc-toolkit compiles itself for the CPU of whatever machine ran cmake: its cmake/find/FindSIMD
+# settles on -march=native for GCC and for Clang >= 15, publishes it as the SIMD_CXX_FLAGS cache
+# variable, and applies it as target_compile_options(ipc_toolkit PRIVATE ${SIMD_CXX_FLAGS}). An
+# object built that way carries the instruction set of the machine that produced it, so it is only
+# valid there. CI hands such objects between runners through ccache -- whose hash covers the
+# command line and the sources but not the CPU -- and an object compiled where AVX-512 exists,
+# restored onto a runner where it does not, dies on its first EVEX instruction: SIGILL in
+# wmtk_test_topological_offset and wmtk_test_manifold_extraction, the only two binaries that link
+# ipc, crashing inside an inline spdlog function whose copy came from one of these objects.
+# recipes/volumeremesher.cmake does the same thing for the same class of problem, one step further
+# on (there the flags were PUBLIC and split Eigen's alignment across the binary).
+#
+# Strip the flags from the TARGET, not from SIMD_CXX_FLAGS. Emptying the variable looks tidier and
+# breaks the build: ipc's CMakeLists.txt reads
+#
+#   find_package(SIMD)
+#   if (SIMD_CXX_FLAGS) ... else() set(IPC_TOOLKIT_WITH_SIMD OFF CACHE BOOL "Enable SIMD" FORCE)
+#
+# so an empty value turns SIMD off, and with it the EIGEN_DONT_VECTORIZE definition that
+# esp's static_assert demands (see the block above).
+get_target_property(_ipc_opts ipc_toolkit COMPILE_OPTIONS)
+if(_ipc_opts)
+    list(FILTER _ipc_opts EXCLUDE REGEX "^(-m(arch|tune)=|-mavx|-mfma|-msse|/arch:)")
+    set_target_properties(ipc_toolkit PROPERTIES COMPILE_OPTIONS "${_ipc_opts}")
+endif()

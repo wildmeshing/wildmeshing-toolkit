@@ -67,19 +67,34 @@ class EmbedSurface
 public:
     /**
      * @brief Input from meshes.
+     *
+     * @param split_connected_components Treat each connected component of an input file as an
+     * input in its own right, rather than the file as a whole. What counts as "an input" is
+     * what gets its own tag column and its own winding-number evaluation, so a file holding
+     * several disjoint closed surfaces is tagged as one region with this off, and as one
+     * region per component with it on. Off by default.
+     *
+     * Note that the inputs then outnumber the files, so `input_names` -- which is applied by
+     * position -- no longer lines up with the filenames; components past the end of that list
+     * fall back to the generic `tag_N` names.
      */
     EmbedSurface(
         const std::vector<std::string>& img_filenames,
         const std::vector<Matrix4d>& img_transform = {},
         const double tol_rel = -1,
-        const double tol_abs = -1);
+        const double tol_abs = -1,
+        const bool split_connected_components = false);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
+     * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
+     *        within a tube of this radius around the input's boundary edges. See
+     *        ShortestEdgeCollapse::create_mesh.
      */
-    void simplify_surface(const double eps, const int num_threads = 0);
+    void
+    simplify_surface(const double eps, const int num_threads = 0, const double boundary_eps = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.
@@ -137,6 +152,11 @@ private:
     void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
+    /**
+     * @brief One binary tag column per input, set where that input's winding number at a tet
+     * barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input
+     * claims nothing, as the 2D EmbedCurves::tag_from_winding_number does.
+     */
     void tag_from_winding_number();
 
     /**

@@ -33,7 +33,7 @@ TEST_CASE("embed-segments-point-map", "[triwild_operation][free_points]")
     std::vector<Vector2r> V_rational;
     MatrixXi F_out, E_out;
     std::vector<int> point_map;
-    utils::embed_segments(V, E, V_out, V_rational, F_out, E_out, nullptr, &point_map);
+    utils::embed_segments(V, E, V_out, V_rational, F_out, E_out, nullptr, nullptr, &point_map);
 
     REQUIRE(point_map.size() == 4);
     for (int i = 0; i < 4; ++i) {
@@ -79,7 +79,7 @@ TEST_CASE("embed-segments-point-map-duplicates", "[triwild_operation][free_point
     std::vector<Vector2r> V_rational;
     MatrixXi F_out, E_out;
     std::vector<int> point_map;
-    utils::embed_segments(V, E, V_out, V_rational, F_out, E_out, nullptr, &point_map);
+    utils::embed_segments(V, E, V_out, V_rational, F_out, E_out, nullptr, nullptr, &point_map);
 
     REQUIRE(point_map.size() == 4);
     CHECK(point_map[2] >= 0);
@@ -104,7 +104,7 @@ TEST_CASE("free-point-coincident-with-endpoint", "[triwild_operation][free_point
     std::vector<Vector2r> V_rational;
     MatrixXi F_arr, E_arr;
     std::vector<int> point_map;
-    utils::embed_segments(V, E, V_arr, V_rational, F_arr, E_arr, nullptr, &point_map);
+    utils::embed_segments(V, E, V_arr, V_rational, F_arr, E_arr, nullptr, nullptr, &point_map);
 
     // The duplicate merged: the free point maps to the same vertex as the endpoint.
     REQUIRE(point_map[2] >= 0);
@@ -121,6 +121,7 @@ TEST_CASE("free-point-coincident-with-endpoint", "[triwild_operation][free_point
         /*tag_names=*/{},
         V,
         E,
+        /*E_orientation=*/nullptr,
         /*free_point_vids=*/{size_t(point_map[2])});
 
     // Exactly the polyline's two endpoint anchors -- no third anchor for the free point.
@@ -150,7 +151,7 @@ TEST_CASE("init-mesh-registers-free-points", "[triwild_operation][free_points]")
     std::vector<Vector2r> V_rational;
     MatrixXi F_arr, E_arr;
     std::vector<int> point_map;
-    utils::embed_segments(V, E, V_arr, V_rational, F_arr, E_arr, nullptr, &point_map);
+    utils::embed_segments(V, E, V_arr, V_rational, F_arr, E_arr, nullptr, nullptr, &point_map);
     REQUIRE(point_map[4] >= 0);
 
     Parameters params;
@@ -164,6 +165,7 @@ TEST_CASE("init-mesh-registers-free-points", "[triwild_operation][free_points]")
         /*tag_names=*/{},
         V,
         E,
+        /*E_orientation=*/nullptr,
         /*free_point_vids=*/{size_t(point_map[4])});
 
     // The closed square has no endpoints and no junctions, so the free point is the only

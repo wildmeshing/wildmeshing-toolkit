@@ -409,6 +409,9 @@ void triwild(nlohmann::json json_params)
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
     std::vector<int> point_map;
+    // The input's direction on each constraint edge, so the tracked curves can be oriented as
+    // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
+    std::vector<int> E_orientation;
     wmtk::utils::embed_segments(
         V_simp,
         E_simp,
@@ -417,6 +420,7 @@ void triwild(nlohmann::json json_params)
         F,
         E,
         nullptr,
+        &E_orientation,
         free_points.empty() ? nullptr : &point_map);
 
     // Find each free point's vertex in the arrangement. By POSITION, not by index: the
@@ -530,7 +534,15 @@ void triwild(nlohmann::json json_params)
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, free_point_vids);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, &E_orientation, free_point_vids);
+    // The arrangement now lives in `mesh`. These are function locals, so without this they --
+    // the exact coordinates above all -- would be held through the optimization, which is where
+    // the run peaks.
+    V.resize(0, 0);
+    F.resize(0, 0);
+    E.resize(0, 0);
+    std::vector<Vector2r>().swap(V_rational);
+    std::vector<int>().swap(E_orientation);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -562,10 +574,16 @@ void triwild(nlohmann::json json_params)
         logger().error("Not all vertices rounded!");
     }
 
-    // Flood-fill part ids and per-input winding-number tags. Both are needed to filter the
-    // outside region (filter != "none"); the tags additionally drive the MSH groups. When
-    // nothing needs them, skip_winding_number lets a caller opt out -- at the cost of the
-    // output groups, since without the tags every face lands in the untagged group.
+    // The finalization's per-face annotations, each computed only when something uses it:
+    //
+    //   per-input winding-number tags  filter "input", and the MSH groups. Always, unless
+    //                                  skip_winding_number opts out where no filter needs them
+    //                                  -- at the cost of the output groups, since without the
+    //                                  tags every face lands in the untagged group.
+    //   tracked winding number         filter "tracked" (below).
+    //   flood-fill parts               filter "flood", or compute_flood_fill (the VTU field).
+    //
+    // As in tetwild, the flood fill used to run on every call just to fill its output field.
     const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
     if (json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
@@ -573,14 +591,28 @@ void triwild(nlohmann::json json_params)
             "computing it anyway.",
             filter_option);
     }
-    if (!skip_winding) {
-        int num_parts = mesh.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
-        mesh.compute_winding_numbers(Vs, Es);
-    } else {
-        logger().info(
-            "Skipping winding-number and flood-fill computation (skip_winding_number). The "
-            "output groups will be empty.");
+    {
+        igl::Timer step_timer;
+        if (!skip_winding) {
+            step_timer.start();
+            mesh.compute_winding_numbers(Vs, Es);
+            logger().info(
+                "finalize: input winding numbers ({} inputs) {:.4}s",
+                Vs.size(),
+                step_timer.getElapsedTime());
+        } else {
+            logger().info(
+                "Skipping the input winding numbers (skip_winding_number). The output groups "
+                "will be empty.");
+        }
+        if (filter_option == "flood" || json_params["compute_flood_fill"]) {
+            step_timer.start();
+            const int num_parts = mesh.flood_fill();
+            logger().info(
+                "finalize: flood fill, {} parts {:.4}s",
+                num_parts,
+                step_timer.getElapsedTime());
+        }
     }
 
     // Feature collections, taken BEFORE any filter deletes triangles: user-supplied
@@ -610,6 +642,10 @@ void triwild(nlohmann::json json_params)
 
     if (filter_option == "input") {
         mesh.filter_with_input_winding_number();
+        mesh.consolidate_mesh();
+    } else if (filter_option == "tracked") {
+        mesh.compute_tracked_winding_number();
+        mesh.filter_with_tracked_winding_number();
         mesh.consolidate_mesh();
     } else if (filter_option == "flood") {
         mesh.filter_with_flood_fill();

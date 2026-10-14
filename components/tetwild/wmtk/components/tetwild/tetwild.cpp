@@ -14,6 +14,7 @@
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
 #include <functional>
+#include <map>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -32,6 +33,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
 #include <wmtk/utils/EnvelopeBudget.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include <tetwild_spec.hpp>
@@ -148,6 +150,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
+    const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -197,6 +200,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+    params.colored_smoothing = json_params["colored_smoothing"];
 
     // Coarsening pass.
     params.coarsen_pass = json_params["coarsen_pass"];
@@ -205,6 +209,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
     params.coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
     params.coarsen_max_rounds = json_params["coarsen_max_rounds"];
+    params.coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
     params.w_amips = json_params["w_amips"];
     params.smoothing_mode = json_params["smoothing_mode"];
     params.project_line_search_steps = json_params["project_line_search_steps"];
@@ -234,6 +239,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
+    std::vector<int> tri_input; // the input each of `tris` came from
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
     // --- phase timing (TETWILD_PHASES) ---
@@ -250,7 +256,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
-        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
+        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -386,10 +392,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = params.epsr * diag;
-    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(
+    // Held by pointer so it can be dropped once vsimp/fsimp are extracted below: it is a full
+    // TriMesh over the input, with its own envelope and preallocated slots, and nothing reads it
+    // after the extraction -- but as a plain local it would outlive the whole optimization.
+    auto surf_mesh_owner = std::make_unique<shortest_edge_collapse::ShortestEdgeCollapse>(
         verts,
         NUM_THREADS,
         !use_sample_envelope);
+    auto& surf_mesh = *surf_mesh_owner;
     surf_mesh.set_use_link_condition(simplify_use_link_condition);
     // The simplification and the tetrahedralisation used to share one envelope object at
     // the same eps, which leaves the optimizer no room: a simplification free to place a
@@ -422,7 +432,37 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         100 * simplify_envelope_ratio,
         tet_eps);
 
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, simplify_eps);
+    // The open boundary. Frozen, the simplification cannot touch anything enclosed by boundary
+    // loops packed too tightly to leave a free vertex between them, and on Thingi10K 55928 that
+    // is a 0.02-wide crumpled knot holding every boundary edge of the model: it survives as a
+    // non-manifold tangle, the arrangement cuts it into ~460 sealed cells, and the optimizer --
+    // refusing 5.3M collapses there in its first pass, on inversion and quality alone --
+    // leaves ~570 tets with edges under 0.2% of the target length in one spot.
+    //
+    // With the envelope the boundary may move as long as it stays within a tube around the
+    // input's boundary edges, the simplification counterpart of the optimizer's order-2
+    // envelope and scaled the same way: order2_envelope_ratio of the surface eps, and of that
+    // simplify_envelope_ratio, for the same headroom reason as above. The optimizer's tube is
+    // built around the boundary it is handed, so a boundary drifts at most
+    // (simplify_envelope_ratio + 1) * order2_envelope_ratio * eps in all -- 0.75 eps at the
+    // defaults.
+    //
+    // Not under preserve_topology: a hole narrower than the tube closes.
+    const double simplify_boundary_eps = simplify_boundary_envelope && !params.preserve_topology
+                                             ? simplify_eps * params.order2_envelope_ratio
+                                             : 0.0;
+    if (simplify_boundary_eps > 0) {
+        logger().info("simplification boundary envelope eps {:.6}", simplify_boundary_eps);
+    } else {
+        logger().info("simplification freezes the open boundary");
+    }
+
+    surf_mesh.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        simplify_eps,
+        simplify_boundary_eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
@@ -458,10 +498,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             surf_mesh.m_envelope.use_exact = false;
         }
 
+        // Without preserve_topology the simplification is free to change the topology: with the
+        // link condition off it can create non-manifold edges and vertices, and with the
+        // boundary envelope it closes holes and slits narrower than the tube. (This used to
+        // warn that it "still preserves topology", which neither has been true of.)
         if (!params.preserve_topology) {
-            logger().warn(
-                "TODO the simplification still preserves topology as the toolkit does not "
-                "support non-manifold meshes, to fix");
+            logger().info(
+                "simplification may change the surface topology (link condition {}, open "
+                "boundary {})",
+                simplify_use_link_condition ? "on" : "off",
+                simplify_boundary_eps > 0 ? "in a tube" : "frozen");
         }
         surf_mesh.collapse_shortest(0);
 
@@ -495,6 +541,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
     }
+    surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
     t_simplify = phase_timer.getElapsedTime(); // surface simplification done
 
 
@@ -596,7 +643,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tet_envelope->disabled = true;
     }
 
-    tetwild::TetWildMesh mesh(params, tet_envelope, NUM_THREADS);
+    // The background mesh exists only to be cut by the insertion; held by pointer so it can be
+    // dropped as soon as the insertion has produced its output (see below).
+    auto background_owner =
+        std::make_unique<tetwild::TetWildMesh>(params, tet_envelope, NUM_THREADS);
+    auto& mesh = *background_owner;
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
@@ -621,8 +672,29 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<bool> is_v_on_input;
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
+    // The input's orientation on the tracked faces, so the tracked-surface winding number
+    // (filter "tracked", and the winding_number_tracked output field) is the input's own
+    // rather than a guess. See SurfaceTagAttributes::m_orientation.
+    std::vector<int8_t> tet_face_orientation;
 
     logger().info("simplified: #v = {}, #f = {}", vsimp.size(), fsimp.size());
+
+    // The chain boundary of the surface handed to the insertion, for the orientation check
+    // below: edges whose incident triangles do not cancel -- open, non-manifold or folded. The
+    // tracked surface reproduces it, so it may have boundary exactly where this does. A closed
+    // input can still get some here: a simplification that does not preserve topology can open
+    // the surface or make it non-manifold.
+    size_t inserted_boundary = 0;
+    if (params.perform_sanity_checks) {
+        std::map<std::array<size_t, 2>, int> net;
+        for (const auto& f : fsimp) {
+            for (int j = 0; j < 3; ++j) {
+                const size_t a = f[j], b = f[(j + 1) % 3];
+                if (a != b) net[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+            }
+        }
+        for (const auto& [e, sum] : net) inserted_boundary += sum != 0;
+    }
 
     igl::Timer insertion_timer;
     insertion_timer.start();
@@ -638,6 +710,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         is_v_on_input,
         tets,
         tet_face_on_input_surface,
+        &tet_face_orientation,
         feature_edge_vertices,
         feature_edges,
         feature_points,
@@ -662,6 +735,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     }
 
     logger().info("=== finished insertion");
+    background_owner.reset(); // `mesh` dangles from here on; nothing below may use it
 
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
@@ -691,8 +765,47 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         is_v_on_input,
         tets,
         tet_face_on_input_surface,
+        &tet_face_orientation,
         has_features ? &features_out : nullptr,
         has_features && !feature_anchors.empty() ? &feature_anchors : nullptr);
+
+    // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
+    // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
+    // one check that catches an operation forgetting to carry the orientation.
+    const auto log_orientation_check = [&](const char* when) {
+        if (!params.perform_sanity_checks || !mesh_new.m_tracks_orientation) return;
+        const size_t n_boundary = mesh_new.tracked_surface_boundary().size();
+        const size_t n_faces = mesh_new.oriented_tracked_faces().size();
+        if (inserted_boundary == 0 && n_boundary > 0) {
+            logger().warn(
+                "oriented tracked surface {}: {} faces, {} boundary edges although the inserted "
+                "surface is closed -- the tracked winding number is not an integer near them",
+                when,
+                n_faces,
+                n_boundary);
+        } else {
+            logger().info(
+                "oriented tracked surface {}: {} faces, {} boundary edges (the inserted surface "
+                "has {}: open, non-manifold or folded edges)",
+                when,
+                n_faces,
+                n_boundary,
+                inserted_boundary);
+        }
+    };
+    log_orientation_check("after insertion");
+
+    // The insertion's output now lives in mesh_new. These are function locals, so without this
+    // they -- the rational coordinates above all -- would be held through the optimization,
+    // which is where the run peaks.
+    std::vector<Vector3r>().swap(v_rational);
+    std::vector<std::array<size_t, 3>>().swap(facets);
+    std::vector<bool>().swap(is_v_on_input);
+    std::vector<std::array<size_t, 4>>().swap(tets);
+    std::vector<bool>().swap(tet_face_on_input_surface);
+    std::vector<int8_t>().swap(tet_face_orientation);
+    std::vector<Eigen::Vector3d>().swap(vsimp);
+    std::vector<std::array<size_t, 3>>().swap(fsimp);
 
     double insertion_time = insertion_timer.getElapsedTime();
 
@@ -729,6 +842,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else {
         mesh_new.mesh_improvement(max_its);
     }
+    log_orientation_check("after optimization");
     t_optimize = phase_timer.getElapsedTime(); // optimization done
     phase_timer.start(); // finalize (winding/flood/filter) begins
 
@@ -750,12 +864,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         wmtk::logger().error("Not all vertices rounded!");
     }
 
-    // Winding-number / flood-fill annotations. They are required to filter the outside
-    // region (filter != "none") and are otherwise written only as output annotation
-    // fields. On large meshes the three winding-number evaluations dominate the finalize
-    // phase, so skip_winding_number lets a caller that does not filter and does not need
-    // the annotations opt out of them. When filtering is requested the flag is ignored
-    // (the winding number is needed), with a warning.
     // Feature collections, taken BEFORE any filter deletes tets: explicit features are
     // user input, and a filter discarding the region they live in must not erase them from
     // the feature outputs and audits (they do disappear from the tet mesh itself). Same
@@ -784,6 +892,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         hybrid_retention = mesh_new.feature_retention(&hybrid_retention_worst);
     }
 
+    // The finalization's per-tet annotations, each computed only when something uses it:
+    //
+    //   input winding numbers  the whole input's, which filter "input" uses, and each input's
+    //                          (the wn_<i> output fields). Always, unless skip_winding_number
+    //                          opts out where no filter needs them.
+    //   tracked winding number filter "tracked", or compute_tracked_winding_number.
+    //   flood-fill parts       filter "flood", or compute_flood_fill. A serial BFS over every
+    //                          tet: ~1-2 min on 765k tets / 6600 parts.
+    //
+    // The two last ones used to run on every call just to fill their output fields.
     const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
     if (json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
@@ -791,26 +909,48 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             "computing it anyway.",
             filter_option);
     }
-    if (!skip_winding) {
-        // Precompute the tets and their barycenters once; all winding-number passes
-        // below reuse them (they used to each rebuild get_tets() + the barycenters).
-        const auto finalize_tets = mesh_new.get_tets();
-        const Eigen::MatrixXd finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
-
-        // apply input winding number
-        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters, verts, tris);
-        // apply tracked surface winding number
-        mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
-        // apply flood fill
-        {
-            int num_parts = mesh_new.flood_fill();
-            logger().info("flood fill parts {}", num_parts);
+    const bool need_tracked =
+        filter_option == "tracked" || json_params["compute_tracked_winding_number"];
+    const bool need_parts = filter_option == "flood" || json_params["compute_flood_fill"];
+    {
+        igl::Timer step_timer;
+        // Precompute the tets and their barycenters once; every winding-number pass reuses
+        // them.
+        std::vector<TetWildMesh::Tuple> finalize_tets;
+        Eigen::MatrixXd finalize_barycenters;
+        if (!skip_winding || need_tracked) {
+            finalize_tets = mesh_new.get_tets();
+            finalize_barycenters = mesh_new.tet_barycenters(finalize_tets);
         }
-        // compute per-input winding number (reuse in-memory verts/tris to avoid re-read)
-        mesh_new
-            .compute_winding_numbers(input_paths, finalize_tets, finalize_barycenters, verts, tris);
-    } else {
-        logger().info("Skipping winding-number and flood-fill computation (skip_winding_number)");
+        if (!skip_winding) {
+            step_timer.start();
+            mesh_new.compute_input_winding_numbers(
+                finalize_tets,
+                finalize_barycenters,
+                verts,
+                tris,
+                tri_input,
+                int(input_paths.size()));
+            logger().info(
+                "finalize: input winding numbers ({} inputs) {:.4}s",
+                input_paths.size(),
+                step_timer.getElapsedTime());
+        } else {
+            logger().info("Skipping the input winding numbers (skip_winding_number)");
+        }
+        if (need_tracked) {
+            step_timer.start();
+            mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
+            logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
+        }
+        if (need_parts) {
+            step_timer.start();
+            const int num_parts = mesh_new.flood_fill();
+            logger().info(
+                "finalize: flood fill, {} parts {:.4}s",
+                num_parts,
+                step_timer.getElapsedTime());
+        }
     }
 
     // ////winding number
@@ -819,13 +959,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else if (filter_option == "tracked") {
         mesh_new.filter_with_tracked_surface_winding_number();
     } else if (filter_option == "flood") {
-        // Flood fill (a serial BFS over all tets) is only needed to identify the
-        // outside connected component for this filter. It used to run
-        // unconditionally just to color the output part_id field, which is a very
-        // expensive no-op on large multi-component meshes (e.g. ~1-2 min of
-        // serial BFS on 765k tets / 6600 parts). Only run it when it is used.
-        const int num_parts = mesh_new.flood_fill();
-        logger().info("flood fill parts {}", num_parts);
         mesh_new.filter_with_flood_fill();
     } else if (filter_option == "hybrid") {
         // Collect everything that lives on scaffolding tets BEFORE deleting them: the
@@ -836,9 +969,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         std::vector<bool> keep(mesh_new.tet_capacity(), false);
         for (const auto& t : mesh_new.get_tets()) {
             const size_t tid = t.tid(mesh_new);
-            const auto& wn = mesh_new.m_tet_attribute[tid].m_winding_number_per_input;
+            const auto& wn = mesh_new.tet_finalize(tid).m_winding_number_per_input;
             for (const size_t k : volume_input_ids) {
-                if (k < wn.size() && wn[k] > 0.5) {
+                if (k < wn.size() && wmtk::utils::winding_number_inside(wn[k])) {
                     keep[tid] = true;
                     break;
                 }

@@ -82,6 +82,7 @@ FeatureScene build_scene()
             is_v_on_input,
             tets,
             tet_face_on_input_surface,
+            /*tet_face_orientation=*/nullptr,
             sc.fe_verts,
             sc.fe,
             {},
@@ -105,6 +106,7 @@ FeatureScene build_scene()
         is_v_on_input,
         tets,
         tet_face_on_input_surface,
+        /*tet_face_orientation=*/nullptr,
         &features_out,
         &anchors);
     return sc;
@@ -134,7 +136,7 @@ param_on_segment(TetWildMesh& m, const size_t vid, const Vector3d& A, const Vect
 {
     const Vector3r a{Rational(A[0]), Rational(A[1]), Rational(A[2])};
     const Vector3r d{Rational(B[0] - A[0]), Rational(B[1] - A[1]), Rational(B[2] - A[2])};
-    const Vector3r p = m.m_vertex_attribute[vid].m_pos - a;
+    const Vector3r p = m.m_vertex_attribute[vid].pos() - a;
     const Vector3r c = p.cross(d);
     if (c[0] != Rational(0) || c[1] != Rational(0) || c[2] != Rational(0)) {
         return std::nullopt;

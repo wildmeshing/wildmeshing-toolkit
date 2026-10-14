@@ -221,8 +221,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
-        bool use_exact = !json_params["use_sample_envelope"];
-        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope, use_exact);
+        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -271,6 +270,13 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     const bool all_rounded = mesh.all_rounded();
     if (!all_rounded) {
         logger().error("Not all vertices rounded!");
+    }
+
+    // A SimWild surface is exactly the interface between unlike tags, so every face between two
+    // differently tagged tets must be marked as surface. The operations maintain this
+    // incrementally; check it once at the end rather than trusting that they did.
+    if (!mesh.check_interface_faces_tagged(/*verbose=*/true)) {
+        logger().error("Interface faces are not consistently tagged as surface!");
     }
 
     /////////output

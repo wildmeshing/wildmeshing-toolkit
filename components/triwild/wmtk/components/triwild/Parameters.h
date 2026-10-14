@@ -100,6 +100,7 @@ struct Parameters : public wmtk::OptimizerParameters
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+        colored_smoothing = json_params["colored_smoothing"];
 
         // Coarsening pass.
         coarsen_pass = json_params["coarsen_pass"];
@@ -108,6 +109,7 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
         coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
         coarsen_max_rounds = json_params["coarsen_max_rounds"];
+        coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];

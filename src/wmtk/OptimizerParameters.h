@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <string>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 
@@ -67,7 +68,7 @@ struct OptimizerParameters
      * per pass, or 0 to disable the gate. Shared by the 2D and 3D Wild optimizers; SimWild uses
      * the same protection so tag-homogeneous runs follow the Wild path.
      */
-    int split_high_valence_threshold = 200;
+    int split_high_valence_threshold = 0;
 
     // ---- Stuck-element sizing refinement --------------------------------
     // Trigger threshold: fire when the last iteration's improvement is small compared
@@ -87,12 +88,28 @@ struct OptimizerParameters
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
     //
-    // 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall
-    // time for exactly the same mesh sizes (identical median and p90 vertex counts). The
-    // idea that the operations need an idle iteration to act on the new field does not
-    // survive contact with the data -- the trigger already declines to fire while the mesh
-    // is converging, so a separate cooldown only delays the next escape.
-    int stuck_refine_cooldown = 0;
+    // 1, because refining every iteration can outrun the operations entirely. On
+    // triwild20k 189017 at eps_rel 1e-4 the field ratchets down faster than split and
+    // collapse can act on it: the mesh sits at ~31k faces for a dozen iterations, then
+    // runs away 54k -> 96k -> 159k -> 5.8M and never converges, its max energy pinned at
+    // the inverted sentinel. At cooldown 1 the same run climbs deliberately to 181k and
+    // converges at 9.9994 in 35 iterations. Cooldown is the narrow instrument for this:
+    // it slows the refinement rather than licensing collapse to undo refinement.
+    //
+    // Cost, measured over the 31 challenging models at stop_energy 10, cooldown 0 -> 1:
+    //
+    //     tetwild   iterations 185 -> 196 (+5.9%)  elements -1.8%  wall -5.3%
+    //     triwild   iterations 166 -> 173 (+4.2%)  elements -0.1%  wall -6.2%
+    //
+    // A few percent more iterations, slightly fewer elements, and no wall-time cost -- the
+    // extra iterations are cheaper ones. 1 is the knee: 2 and 3 buy a further 2-4% element
+    // reduction in tetwild for +34% and +76% iterations.
+    //
+    // This supersedes an earlier reading of a 468-model triwild20k sweep, where cooldown 1
+    // cost ~13% wall for identical mesh sizes and was taken as evidence that a cooldown
+    // only delays the next escape. That holds where the escape hatch is not load-bearing;
+    // it does not hold on the models where it is.
+    int stuck_refine_cooldown = 1;
     // Number of worst cells (by energy) whose neighborhoods are refined.
     int stuck_refine_num_worst = 0;
     // Graph rings around each worst cell's vertices included in the refinement.
@@ -158,10 +175,29 @@ struct OptimizerParameters
     int project_line_search_steps = 12;
     /// Partial-projection bisections tried after it gives up; 0 disables that pass.
     int project_line_search_nested_steps = 0;
+
+    /// Whether smoothing refuses a move that raises the worst incident element's quality. True
+    /// is TriWild's and SimWild's behaviour; see optimization::SmoothVertexOptions::quality_veto
+    /// for the objective it stops being the right rule for.
+    /// This is used in topological_offset to allow the offset surface to move even if it reduces quality.
+    bool smooth_quality_veto = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.
     int num_smoothing_passes = 2;
+    /**
+     * Parallel smoothing by color class instead of by locked partition.
+     *
+     * The vertices to smooth are split into classes of pairwise non-adjacent vertices, and the
+     * classes run one after another, each fully in parallel and without any lock: two vertices
+     * of a class share no edge and no cell, so neither writes what the other reads or writes.
+     * They can share a neighbour, so the smoothing hooks of a derived mesh must read everything
+     * outside the vertex's star through const access; every smooth of the pass checks it and
+     * throws on the first offence (see TetOptimizerMesh::smooth_after). The result does not
+     * depend on the number of threads. Serial runs (NUM_THREADS == 0) keep the original
+     * single-queue order either way. Off: the locked partitioned pass.
+     */
+    bool colored_smoothing = true;
     bool interleaved_smoothing = true;
     int interleaved_smoothing_passes = 1;
 
@@ -180,8 +216,14 @@ struct OptimizerParameters
      * the merged vertex, and only then a decision -- keep it if the worst cell in the region
      * touched is no worse than before, undo the whole block otherwise. Because every cell
      * outside that region is untouched, "no worse locally" is exactly "no worse globally".
+     *
+     * Off by default. It is much cheaper than it used to be -- see
+     * coarsen_local_smoothing_passes, whose default is now 0 -- but it still costs a full
+     * collapse sweep over every edge, which on tetwild's models is several seconds on top of an
+     * otherwise converged run. That is worth paying when element count is what matters, and not
+     * worth paying silently for every caller, so it stays opt-in.
      */
-    bool coarsen_pass = true;
+    bool coarsen_pass = false;
     /**
      * Coarsen as far as the quality guarantee allows, instead of stopping at the target edge
      * length.
@@ -206,11 +248,40 @@ struct OptimizerParameters
      * are larger than length_rel nominally asked for. Turn it off to hold the target size.
      */
     bool coarsen_unbounded = true;
-    /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
-    int coarsen_local_smoothing_passes = 2;
-    /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
-    /// smoothing a vertex reads its one-ring and writes the quality of its incident cells.
-    int coarsen_smooth_ring = 2;
+    /**
+     * Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
+     *
+     * 0 by default, which means the pass judges the collapse on its raw post-collapse geometry
+     * and never smooths inside the operation. That sounds like it gives up the pass's whole
+     * premise, and at the level of a single candidate it does: without the smoothing the
+     * composite's reject rate rises from 25% to 39%. It does not cost coarsening, because the
+     * pass runs to a fixed point -- a candidate the smoothing would have rescued is simply
+     * replaced by another the pass finds instead, and the relaxation the mesh actually needs
+     * comes from the ordinary global smoothing between rounds (coarsen_global_smoothing_passes).
+     *
+     * What it does cost is time, and enormously. The smoothed ball averaged 98 vertices on
+     * tetwild's octocat, so at the old default of 2 sweeps a single candidate ran ~200 nonlinear
+     * smoothing solves, and the pass ran 1.4 million of them to accept 5173 collapses. Measured
+     * over seven tetwild models, dropping this to 0 (with coarsen_max_inner_passes 1) made the
+     * pass 9.7x to 31.9x faster for about 1 percentage point of cell reduction.
+     */
+    int coarsen_local_smoothing_passes = 0;
+    /**
+     * Radius smoothed inside the collapse, and the radius the accept test measures over. The
+     * lock claims one more ring than this, because smoothing a vertex reads its one-ring and
+     * writes the quality of its incident cells.
+     *
+     * With coarsen_local_smoothing_passes at 0 nothing is smoothed, so this only sets how wide a
+     * region the accept test compares. A wider region is a more permissive test -- it admits
+     * untouched cells to both the before and after maxima, which is still sound, since an
+     * untouched cell holds the global max up on both sides of the comparison -- so ring 2
+     * coarsens slightly more. It also makes the pass lock 3 rings per operation where the
+     * ordinary collapse locks 2, which is the single worst thing for its parallel scaling.
+     *
+     * 1 by default: on octocat that is 2.3x faster than ring 2 for 1.5 percentage points of
+     * cell reduction, and it puts the pass's lock footprint back in line with every other pass.
+     */
+    int coarsen_smooth_ring = 1;
     /**
      * Ordinary whole-mesh smoothing passes between coarsening rounds.
      *
@@ -242,6 +313,24 @@ struct OptimizerParameters
      * worth 9.5% for 60% of the pass's budget.
      */
     int coarsen_max_rounds = 2;
+    /**
+     * Cap on the collapse pass's own dirty-epoch retry loop inside one round; 0 is uncapped.
+     *
+     * Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations.
+     * This counts the passes run_localized_to_convergence makes within a single collapse pass,
+     * re-offering failures whose neighbourhood a successful collapse disturbed. That filter
+     * asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a
+     * productive first pass re-offers most of the mesh -- and here every re-offer that clears
+     * the cheap checks pays the whole collapse pre-check chain before failing again.
+     *
+     * 1 by default, i.e. one pass per round and no retry within it. Measured on octocat, the
+     * first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s;
+     * the second round then found 36 more in 28s. Capping the inner loop keeps the first pass
+     * and drops the rest, which is worth 1.2x on its own and more once the composite is cheap.
+     * Rounds still repeat the pass (coarsen_max_rounds), and those DO pay off, because the
+     * global smoothing between them moves the fixed point in a way this retry filter cannot see.
+     */
+    int coarsen_max_inner_passes = 1;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
@@ -269,6 +358,8 @@ struct OptimizerParameters
         } else {
             eps = epsr * diag_l;
         }
+
+        logger().info("PARAMS: eps = {}, l = {}", eps, l);
     }
 };
 

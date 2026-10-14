@@ -32,11 +32,18 @@ void read_triangle_mesh(
     double tol_rel = 2e-4,
     double tol_abs = -1);
 
+/**
+ * @brief Reads several triangle meshes into one, cleaned as a whole as above.
+ *
+ * @param face_input If not null, receives for every face of F the index into `paths` of the file
+ * it was read from, kept in step with the cleaning (which removes degenerate faces).
+ */
 void read_triangle_mesh(
     const std::vector<std::string>& paths,
     Eigen::MatrixXd& V,
     Eigen::MatrixXi& F,
     double tol_rel = 2e-4,
-    double tol_abs = -1);
+    double tol_abs = -1,
+    std::vector<int>* face_input = nullptr);
 
 } // namespace wmtk::io

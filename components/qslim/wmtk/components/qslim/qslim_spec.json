@@ -9,6 +9,7 @@
       "input_dir",
       "num_threads",
       "eps_rel",
+      "boundary_eps_rel",
       "target_rel",
       "target_abs",
       "log_file",
@@ -50,6 +51,12 @@
     "type": "float",
     "default": -1,
     "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/boundary_eps_rel",
+    "type": "float",
+    "default": -1,
+    "doc": "Thickness of a tube around the open boundary of the input, relative to the bounding box diagonal. When positive, every collapse has to leave each boundary edge that descends from the input's boundary within this distance of the input's boundary edges, and collapses at the boundary are placed on the outline instead of at the quadric's optimum: a collapse along the boundary at the optimum on the edge, one between a boundary vertex and an interior one onto the boundary vertex. Boundary that a collapse opens away from the input's is not judged. Negative (the default): the boundary is held only by the surface envelope (eps_rel), a containment test that does not stop the outline from retracting along the surface -- measured at 20 to 100 times eps on synthetic open surfaces."
   },
   {
     "pointer": "/target_rel",

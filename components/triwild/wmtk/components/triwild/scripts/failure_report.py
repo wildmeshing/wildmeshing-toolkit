@@ -20,7 +20,8 @@ PHASES = [
     ("========it pre========", "pre-collapse"),
     ("========it 0========", "optimization"),
     ("========it post========", "post-collapse"),
-    ("flood fill parts", "winding number"),
+    ("flood fill parts", "winding number"),  # logs from before the flood fill was gated
+    ("finalize: input winding numbers", "winding number"),
     ("Hausdorff distance", "hausdorff check"),
     ("final max energy", "writing output"),
 ]

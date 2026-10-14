@@ -5,6 +5,9 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <optional>
+#include <vector>
+
 namespace wmtk {
 
 // Atomically reserve `n` contiguous fresh tet slots from the preallocated storage.
@@ -13,59 +16,57 @@ namespace wmtk {
 // (rare) failure the counter is left advanced; those unusable slots are reclaimed at
 // the next consolidate_mesh(). This is the only place the tet counter grows during
 // operations, and it never resizes the storage (no more thread-safe growth).
-long TetMesh::request_tet_slots(size_t n)
+size_t TetMesh::request_tet_slots(size_t n)
 {
-    if (n == 0) return (long)current_tet_size.load();
-    const long cap = (long)m_tet_connectivity.size();
-    // CAS loop: only advance the counter when there is room, so a failed request
-    // never leaks slots (which would push current_tet_size past the storage size
-    // and make later iteration go out of bounds).
-    long first = current_tet_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_tet_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out slots to a clean state. The old tbb::collector
-    // shrank on consolidate and regrew fresh slots, so allocations were always
-    // clean; the preallocated std::vector keeps stale data in the spare region, so
-    // we must clear it here (matches old behaviour: default tet, hash = -1).
-    for (long i = first; i < first + (long)n; ++i) {
-        m_tet_connectivity[i] = TetrahedronConnectivity{};
-        m_tet_connectivity[i].hash = -1;
+    return m_tet_connectivity.request(n);
+}
+
+size_t TetMesh::request_vert_slots(size_t n)
+{
+    return m_vertex_connectivity.request(n);
+}
+
+size_t TetMesh::cell_slot_bound(const Tuple& t) const
+{
+    const auto& tet = m_tet_connectivity[t.tid(*this)];
+    size_t n = 0;
+    for (int j = 0; j < 4; ++j) {
+        n += m_vertex_connectivity[tet[j]].m_conn_tets.size();
     }
-    return first;
+    return n;
 }
 
-long TetMesh::request_vert_slots(size_t n)
+void TetMesh::reserve_free_slots(size_t cells, size_t verts)
 {
-    if (n == 0) return (long)current_vert_size.load();
-    const long cap = (long)m_vertex_connectivity.size();
-    long first = current_vert_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_vert_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out vertex slots to a clean state (see request_tet_slots).
-    for (long i = first; i < first + (long)n; ++i) {
-        m_vertex_connectivity[i] = VertexConnectivity{};
+    bool grown = false;
+    if (m_tet_connectivity.capacity() - m_tet_connectivity.live() < cells) {
+        const size_t cap = m_tet_connectivity.capacity();
+        const size_t newcap = std::max(m_tet_connectivity.live() + cells, cap + cap / 2);
+        m_tet_connectivity.resize(newcap);
+        if (p_tet_attrs) p_tet_attrs->resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(4 * newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(6 * newcap);
+        grown = true;
     }
-    return first;
+    if (m_vertex_connectivity.capacity() - m_vertex_connectivity.live() < verts) {
+        const size_t cap = m_vertex_connectivity.capacity();
+        const size_t newcap = std::max(m_vertex_connectivity.live() + verts, cap + cap / 2);
+        m_vertex_connectivity.resize(newcap);
+        resize_vertex_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+        grown = true;
+    }
+    if (grown) on_slot_storage_grown();
 }
 
-int TetMesh::get_next_empty_slot_t()
+size_t TetMesh::get_next_empty_slot_t()
 {
-    return (int)request_tet_slots(1);
+    return request_tet_slots(1);
 }
 
-int TetMesh::get_next_empty_slot_v()
+size_t TetMesh::get_next_empty_slot_v()
 {
-    return (int)request_vert_slots(1);
+    return request_vert_slots(1);
 }
 
 TetMesh::TetMesh()
@@ -85,8 +86,8 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     const size_t tcap = reserved_capacity(tets.size());
     m_vertex_connectivity.resize(vcap);
     m_tet_connectivity.resize(tcap);
-    current_vert_size = (long)n_vertices;
-    current_tet_size = (long)tets.size();
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tet_connectivity.set_live(tets.size());
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -123,8 +124,8 @@ void TetMesh::init_with_isolated_vertices(
     m_vertex_connectivity.resize(vcap);
     m_tet_connectivity.clear();
     m_tet_connectivity.resize(tcap);
-    current_vert_size = (long)n_vertices;
-    current_tet_size = (long)tets.size();
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tet_connectivity.set_live(tets.size());
     for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -363,14 +364,68 @@ std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+    if (dry_run()) return true;
     start_protect_attributes();
-    if (!smooth_after(loc0) || !invariants(get_one_ring_tets_for_vertex(loc0))) {
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0));
+    if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
+    if (!ok) {
         rollback_protected_attributes();
         return false;
     }
     release_protect_attributes();
 
     return true;
+}
+
+void TetMesh::check_smoothing_stayed_in_star(const size_t vid)
+{
+    const auto& tets = m_tet_connectivity;
+    const auto tet_has = [&](size_t tid, const int* local, int n) {
+        for (int k = 0; k < n; ++k) {
+            if (tets[tid][local[k]] == vid) return true;
+        }
+        return false;
+    };
+    const int all4[4] = {0, 1, 2, 3};
+    std::vector<size_t> recorded;
+    const auto first_outside = [&](AbstractAttributeContainer* c, auto in_star) {
+        recorded.clear();
+        if (c != nullptr) c->append_recorded(recorded);
+        for (const size_t i : recorded) {
+            if (!in_star(i)) return std::optional<size_t>(i);
+        }
+        return std::optional<size_t>();
+    };
+
+    const char* kind = "vertex";
+    std::optional<size_t> bad = first_outside(p_vertex_attrs, [&](size_t v) { return v == vid; });
+    if (!bad) {
+        kind = "edge";
+        bad = first_outside(p_edge_attrs, [&](size_t e) {
+            return tet_has(e / 6, m_local_edges[e % 6].data(), 2);
+        });
+    }
+    if (!bad) {
+        kind = "face";
+        bad = first_outside(p_face_attrs, [&](size_t f) {
+            return tet_has(f / 4, m_local_faces[f % 4].data(), 3);
+        });
+    }
+    if (!bad) {
+        kind = "tet";
+        bad = first_outside(p_tet_attrs, [&](size_t t) { return tet_has(t, all4, 4); });
+    }
+    if (!bad) return;
+    // Drop the record without writing it back: the write-back is the race this check prevents.
+    release_protect_attributes();
+    log_and_throw_error(
+        "Smoothing vertex {} reached {} {}, outside its star, through non-const attribute access. "
+        "Smoothing runs non-adjacent vertices concurrently without locks, and a rejected smooth "
+        "writes every entry it reached back: read anything outside the star through a const view "
+        "(std::as_const).",
+        vid,
+        kind,
+        *bad);
 }
 
 
@@ -969,8 +1024,8 @@ void TetMesh::consolidate_mesh()
         t_cnt++;
     }
 
-    current_vert_size = v_cnt;
-    current_tet_size = t_cnt;
+    m_vertex_connectivity.set_live(v_cnt);
+    m_tet_connectivity.set_live(t_cnt);
 
     // Re-establish spare capacity for the next round of operations (only [0,live)
     // is live; the rest is preallocated headroom that operations consume).
@@ -1051,7 +1106,7 @@ bool TetMesh::lock_vertex_ball(
 
     stack.reserve(128);
 
-    const size_t cap = m_vertex_connectivity.size();
+    const size_t cap = m_vertex_connectivity.capacity();
     if (scr.stamp.size() < cap) {
         scr.stamp.resize(cap, 0);
     }

@@ -1,0 +1,33 @@
+# Without this, `COPY . .` ships the whole working tree to the daemon -- 5.2 GB here,
+# almost all of it local build directories that the image rebuilds from scratch anyway.
+
+# Local build trees (host-specific absolute paths in their CMake caches; useless in the image)
+build*/
+cmake-build-*/
+out/
+
+# Version control. There are no submodules, so the Dockerfile's
+# `git submodule update --init --recursive` step is a no-op and .git is dead weight (643 MB).
+.git/
+.gitignore
+.github/
+
+# Editor / agent scratch
+.claude/
+.vscode/
+.idea/
+.DS_Store
+
+# Test and run output that accumulates in the working tree
+Testing/
+*.log
+*.obj
+*.msh
+*.vtu
+*.stl
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

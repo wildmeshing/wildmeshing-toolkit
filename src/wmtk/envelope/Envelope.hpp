@@ -95,6 +95,19 @@ public:
      */
     double eps2_edge = 1e-6;
     double sampling_dist = 1e-3;
+
+    /**
+     * @brief How many threads one triangle query may use. 1, the default: every sample is
+     * checked on the calling thread.
+     *
+     * A triangle many times longer than eps samples to thousands of points, and its query costs
+     * milliseconds. Above n = 1, such a query splits its samples among idle workers of the
+     * thread pool, up to n threads in all, counting the caller. It takes only workers that are
+     * idle at that moment and waits for none, so in a parallel pass that keeps every thread
+     * busy nothing changes; the queries left running at the end get the threads that ran out
+     * of work. The answer is the same either way.
+     */
+    void set_max_threads(int n) { m_max_threads = n < 1 ? 1 : n; }
     bool use_exact = false;
 
     /**
@@ -137,9 +150,17 @@ public:
     void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
     bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
-    bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
+    /**
+     * The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite
+     * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
+     * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
+     * containment path asks these two instead. See the composites in
+     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
+     * composite must never reach the NON-virtual queries below, whose BVH it does not have.
+     */
+    virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
     bool is_outside(const Eigen::Vector3d& pts) const;
-    bool is_outside(const Eigen::Vector2d& pts) const;
+    virtual bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
 
@@ -208,5 +229,9 @@ private:
     /// Whether the edge/2D exact structure was actually built. Always false for Triangles3d,
     /// which builds its exact envelope unconditionally and is checked by kind alone.
     bool m_exact_built = false;
+
+    int m_max_threads = 1; ///< see set_max_threads()
+    /// The sampled triangle query's loop over @p ps, split among idle workers.
+    bool samples_outside_parallel(const std::vector<Eigen::Vector3d>& ps) const;
 };
 } // namespace wmtk

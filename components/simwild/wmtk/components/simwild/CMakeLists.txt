@@ -17,6 +17,8 @@ set(SRC_FILES
 
 	Parameters.h
 
+	QualityStats.hpp
+
 	EdgeSplitting.cpp
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp

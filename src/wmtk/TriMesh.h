@@ -2,6 +2,8 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/OperationDryRun.hpp>
+#include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -33,7 +35,7 @@ public:
         size_t m_vid = -1;
         size_t m_eid = -1;
         size_t m_fid = -1;
-        size_t m_hash = -1;
+        size_t m_hash = 0;
 
         void update_hash(const TriMesh& m);
 
@@ -144,6 +146,17 @@ public:
          *
          */
         bool is_valid(const TriMesh& m) const;
+        /**
+         * @brief is_valid() without its debug-build consistency checks: the same answer as
+         * is_valid() in a release build.
+         *
+         * For a check made without holding the triangle's ring -- ExecutePass's filter before it
+         * claims the ring -- while another thread may be changing that triangle. The consistency
+         * checks read the triangle's vertices, which are then momentarily inconsistent, and
+         * would abort a debug build on a race the caller tolerates: a stale answer only costs
+         * a lock attempt, and the check is repeated once the ring is held.
+         */
+        bool is_valid_unlocked(const TriMesh& m) const;
 
         /**
          * Positively oriented 3 vertices (represented by Tuples) in a tri.
@@ -247,8 +260,10 @@ public:
          * @brief the hash is changed every time there is an operation that influences the
          * triangle
          *
+         * 32 bits, packed next to m_is_removed (32 bytes instead of 40); see
+         * TetMesh::TetrahedronConnectivity::hash.
          */
-        size_t hash = 0;
+        uint32_t hash = 0;
 
         inline size_t& operator[](size_t index)
         {
@@ -370,25 +385,106 @@ public:
     double preallocation_factor() const { return m_preallocation_factor; }
 
     // Atomically reserve `n` contiguous fresh triangle/vertex slots. Returns the
-    // first index of the block, or -1 if that would exceed the preallocated
+    // first index of the block, or INVALID_SLOT if that would exceed the preallocated
     // capacity (the caller must then abort the operation before mutating).
-    long request_tri_slots(size_t n);
-    long request_vert_slots(size_t n);
+
+    /**
+     * @brief True if any slot request has been refused since the last clear.
+     *
+     * The pass boundary uses this to decide whether to consolidate: a refusal means an
+     * operation was abandoned for want of storage, and consolidating reclaims the slots that
+     * removed elements still hold (the counter only ever advances during a pass) and re-derives
+     * the capacity from the real element count.
+     */
+    /**
+     * @name Storage capacity
+     *
+     * How many slots the storage holds, as opposed to tri_capacity()/vert_capacity(), which
+     * report the LIVE count -- the end of the handed-out region. Exhaustion is `live ==
+     * storage capacity`, and consolidate re-derives the latter as
+     * `reserved_capacity(real element count)`.
+     * @{
+     */
+    size_t tri_storage_capacity() const { return m_tri_connectivity.capacity(); }
+    size_t vert_storage_capacity() const { return m_vertex_connectivity.capacity(); }
+    /** @} */
+
+    bool slots_exhausted() const
+    {
+        return m_vertex_connectivity.refused() || m_tri_connectivity.refused();
+    }
+    void clear_slots_exhausted()
+    {
+        m_vertex_connectivity.clear_refused();
+        m_tri_connectivity.clear_refused();
+    }
+
+    size_t request_tri_slots(size_t n);
+    size_t request_vert_slots(size_t n);
+
+    /**
+     * @name Growing the storage at serial points
+     *
+     * The storage cannot grow while operations run in parallel -- growing reallocates it out
+     * from under concurrent readers -- which is why it is preallocated. A serial pass has no
+     * concurrent readers, and between two of its operations nothing holds a reference into the
+     * storage either: so it can grow there, and only there, with no synchronisation at all.
+     *
+     * The scheduler does exactly that: before each operation of a serial pass it reserves
+     * cell_slot_bound() cells and one vertex. Every local operation creates its cells inside
+     * the stars of the vertices of its tuple's cell and adds at most one vertex, so the
+     * reservation covers whatever the operation requests, and a serial pass never refuses
+     * an operation for want of slots. The ids handed out are unchanged -- the same counter, in
+     * the same order -- so the result is the one an unbounded preallocation would give.
+     *
+     * With that in place a serial mesh only needs a small slack at init/consolidate, instead
+     * of the preallocation factor (see storage_grows_on_demand()).
+     * @{
+     */
+    /// Upper bound on the fresh cell slots one local operation on `t` can take: the sum of the
+    /// star sizes of the vertices of t's cell. `t` must be valid.
+    size_t cell_slot_bound(const Tuple& t) const;
+    /// Serial points only: make `cells` fresh cell slots and `verts` fresh vertex slots
+    /// available, growing the storage (connectivity and attributes) by at least half if not.
+    void reserve_free_slots(size_t cells, size_t verts);
+    /// Whether this mesh's passes run serially and so grow the storage on demand; if so,
+    /// init/consolidate reserve a small slack instead of the preallocation factor.
+    virtual bool storage_grows_on_demand() const { return false; }
+
+    /// Cell and vertex slots this thread has taken from meshes of this type, ever; see
+    /// SlotPool::taken_by_this_thread. Differences measure what an operation consumed.
+    struct SlotUsage
+    {
+        size_t cells = 0;
+        size_t verts = 0;
+    };
+    static SlotUsage slot_usage_of_this_thread()
+    {
+        return {
+            SlotPool<TriangleConnectivity>::taken_by_this_thread(),
+            SlotPool<VertexConnectivity>::taken_by_this_thread()};
+    }
+    /** @} */
+
+protected:
+    /// Called after reserve_free_slots() grew the storage, for derived classes that keep
+    /// per-slot side arrays.
+    virtual void on_slot_storage_grown() {}
 
 private:
     size_t reserved_capacity(size_t live_count) const
     {
         const size_t floor = 64;
-        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        // A mesh that grows on demand only needs room for the passes not to grow at once.
+        const double factor = storage_grows_on_demand() ? 1.25 : m_preallocation_factor;
+        double c = std::ceil(factor * static_cast<double>(live_count));
         size_t capacity = static_cast<size_t>(c);
         if (capacity < live_count) capacity = live_count;
         return capacity < floor ? floor : capacity;
     }
 
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
-    std::atomic_long current_vert_size;
-    std::atomic_long current_tri_size;
+    SlotPool<VertexConnectivity> m_vertex_connectivity;
+    SlotPool<TriangleConnectivity> m_tri_connectivity;
     double m_preallocation_factor = 6.0;
     bool m_use_link_condition = true;
 
@@ -486,6 +582,8 @@ public:
      * @return true if the preparation succeed
      */
     virtual bool smooth_before(const Tuple& t) { return true; }
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
     /**
      * @brief User specified modifications and desideras after an edge smooth
      * @param the edge Tuple to be smoothed
@@ -512,13 +610,13 @@ public:
      *
      * @return size_t
      */
-    size_t tri_capacity() const { return current_tri_size; }
+    size_t tri_capacity() const { return m_tri_connectivity.live(); }
     /**
      * @brief get the current largest global vid
      *
      * @return size_t
      */
-    size_t vert_capacity() const { return current_vert_size; }
+    size_t vert_capacity() const { return m_vertex_connectivity.live(); }
 
     /**
      * @name Dimension-generic cell accessors
@@ -531,6 +629,7 @@ public:
      */
     static constexpr int EDGES_PER_CELL = 3;
     size_t cell_capacity() const { return tri_capacity(); }
+    size_t cell_storage_capacity() const { return m_tri_connectivity.capacity(); }
     Tuple tuple_from_cell(size_t cid) const { return tuple_from_tri(cid); }
     /** @} */
     /**
@@ -787,6 +886,21 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+    /**
+     * @brief While true, smooth_vertex() checks that the smooth recorded nothing outside the
+     * vertex's star -- the vertex itself and the edges, faces and triangles incident to it -- and
+     * throws if it did.
+     *
+     * Set by a pass that smooths several vertices at once without locks (colored smoothing, see
+     * TriOptimizerMesh::smooth_vertices_colored). Two vertices it runs together share no simplex of
+     * their stars, but they can share a neighbour. A smoothing hook that reaches an attribute entry
+     * through non-const access records it, and a rejected smooth writes every recorded entry
+     * back -- so an entry outside the star, such as a neighbour read as `m_vertex_attribute[u]`
+     * instead of through a const view, would be written by two threads at once. Hooks must read
+     * everything outside the star through const access; this turns a hook that does not into an
+     * error on its first such read, instead of a rare race.
+     */
+    bool m_check_smoothing_stays_in_star = false;
 
     /**
      * @brief Split a face in 3 faces.
@@ -884,7 +998,7 @@ public:
      */
     Tuple tuple_from_tri(size_t fid) const
     {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
+        if (fid >= m_tri_connectivity.capacity() || m_tri_connectivity[fid].m_is_removed)
             return Tuple();
         auto vid = m_tri_connectivity[fid][0];
         return Tuple(vid, 1, fid, *this);
@@ -905,7 +1019,7 @@ public:
      */
     Tuple tuple_from_vertex(size_t vid) const
     {
-        if (vid >= m_vertex_connectivity.size() || m_vertex_connectivity[vid].m_is_removed ||
+        if (vid >= m_vertex_connectivity.capacity() || m_vertex_connectivity[vid].m_is_removed ||
             m_vertex_connectivity[vid].m_conn_tris.empty()) {
             return Tuple();
         }
@@ -1012,6 +1126,9 @@ private:
 
     /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
     bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);
+
+    /// See m_check_smoothing_stays_in_star; throws, after dropping the record, if the check fails.
+    void check_smoothing_stayed_in_star(size_t vid);
 
 protected:
     void resize_mutex(size_t v)

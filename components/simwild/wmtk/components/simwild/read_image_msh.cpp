@@ -150,7 +150,12 @@ InputData read_image_msh(const std::string& path)
             MatrixXd V;
             MatrixXi F;
             msh.get_VF(ph, V, F);
-            tag_names.push_back(ph.name);
+            // The name goes with the FACES, in the non-envelope branch below. It used to be
+            // pushed here for every group, envelope included, while Vs/Fs skip the envelope --
+            // so whenever the envelope group is not last in file order (gmsh sorts physicals
+            // dim-first, putting a dim-1 EnvelopeSurface first), every region's name shifted
+            // by one and the last region's name vanished (c_shape.msh, 2026-08-31: shape_c's
+            // faces reported as a second 'ambient', offset_selection 'shape_c' unresolvable).
             if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
                 // this must be the envelope surface
                 if (V_envelope.size() != 0) {
@@ -158,7 +163,9 @@ InputData read_image_msh(const std::string& path)
                 }
                 input_data.V_envelope = V;
                 input_data.F_envelope = F;
+                input_data.envelope_name = ph.name;
             } else {
+                tag_names.push_back(ph.name);
                 Vs.push_back(V);
                 Fs.push_back(F);
             }
@@ -283,6 +290,7 @@ InputData read_image_msh(const std::string& path)
             logger().info("Read 2D input.");
             msh.get_VF(2, ph_vol.value().tag, input_data.V_input, input_data.T_input);
             msh.get_VF(1, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
+            input_data.envelope_name = ph_env.value().name;
             auto& Vi = input_data.V_input;
             Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
             auto& Ve = input_data.V_envelope;
@@ -424,19 +432,24 @@ InputData read_mesh(
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
+    const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
+    const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
+    const double order2_envelope_ratio = json_params["order2_envelope_ratio"];
     const std::vector<std::string> input_names = json_params["input_names"];
 
-    double tol_rel = -1;
-    double tol_abs = -1;
-    if (!preserve_topology) {
-        tol_rel = 0.1 * epsr_simplify;
-        tol_abs = 0.1 * eps_simplify;
-    }
+    const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const double tol_rel = remove_duplicate_eps;
+    const double tol_abs = -1;
 
     // convert mesh into tet mesh
-    EmbedSurface image_mesh(input_paths, input_transforms, tol_rel, tol_abs);
+    EmbedSurface image_mesh(
+        input_paths,
+        input_transforms,
+        tol_rel,
+        tol_abs,
+        split_connected_components);
     image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
@@ -457,7 +470,26 @@ InputData read_mesh(
         }
         logger().info("Simplify before insertion with eps = {:.4}", eps_simplify);
 
-        image_mesh.simplify_surface(eps_simplify, NUM_THREADS);
+        // The open boundary. Frozen, the simplification cannot touch anything enclosed by
+        // boundary loops packed too tightly to leave a free vertex between them -- on Thingi10K
+        // 55928 a crumpled knot holding every boundary edge of the model, which survives as a
+        // non-manifold tangle and costs tetwild ~570 tiny tets (see tetwild.cpp). Within a tube
+        // around the input's boundary edges instead, it coarsens like the rest of the surface.
+        //
+        // Scaled as tetwild scales it: the simplification counterpart of the optimizer's
+        // order-2 envelope, i.e. order2_envelope_ratio of the simplification's surface eps.
+        // Only reached with preserve_topology off; under it the surface is simplified after
+        // insertion instead, by SimWildMesh::simplify against its own order-2 envelope.
+        const double boundary_eps = simplify_boundary_envelope && eps_simplify > 0
+                                        ? eps_simplify * order2_envelope_ratio
+                                        : 0.0;
+        if (boundary_eps > 0) {
+            logger().info("simplification boundary envelope eps {:.4}", boundary_eps);
+        } else {
+            logger().info("simplification freezes the open boundary");
+        }
+
+        image_mesh.simplify_surface(eps_simplify, NUM_THREADS, boundary_eps);
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");
@@ -578,7 +610,9 @@ int resolve_input_dimension(
     const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
 
     int sniffed = 0;
-    if (extension != ".msh") {
+    if (extension == ".msh") {
+        sniffed = 0; // let the msh reader decide
+    } else if (extension == ".obj") {
         // A curve network and a surface are both OBJ, so the extension cannot separate them.
         // 'f' records mean a surface; 'l' records with no 'f' mean a curve network.
         bool has_f = false, has_l = false;
@@ -600,6 +634,11 @@ int resolve_input_dimension(
             }
         }
         sniffed = has_f ? 3 : (has_l ? 2 : 3);
+    } else {
+        logger().warn(
+            "Cannot determine dimension from file with extension {}. Assuming 3D surface.",
+            extension);
+        sniffed = 3;
     }
 
     const std::string d = json_params.value("dimension", std::string("auto"));

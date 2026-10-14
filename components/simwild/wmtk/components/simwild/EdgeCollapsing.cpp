@@ -41,74 +41,37 @@ bool SimWildMesh::collapse_after_connectivity(
     return true;
 }
 
-void SimWildMesh::collapse_after_vertex(size_t, size_t v2)
-{
-    // A SimWild surface is not inherited geometry: it is precisely the interface between
-    // unlike cell tags. Re-derive the affected faces after connectivity and tag data settle;
-    // OR-merging the two old face flags can leave a homogeneous face marked as an interface.
-    std::set<size_t> affected_vertices;
-    affected_vertices.insert(v2);
-
-    const auto tids = get_one_ring_tids_for_vertex(v2);
-    for (const size_t tid : tids) {
-        if (!tuple_from_tet(tid).is_valid(*this)) continue;
-        for (int j = 0; j < 4; ++j) {
-            const Tuple face = tuple_from_face(tid, j);
-            const size_t fid = face.fid(*this);
-            const auto opposite = face.switch_tetrahedron(*this);
-            const bool is_interface =
-                opposite.has_value() &&
-                m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
-            m_face_attribute[fid].m_is_surface_fs = is_interface;
-            const auto fvs = get_face_vids(face);
-            affected_vertices.insert(fvs.begin(), fvs.end());
-        }
-    }
-
-    for (const size_t vid : affected_vertices) {
-        bool on_interface = false;
-        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-            if (!tuple_from_tet(tid).is_valid(*this)) continue;
-            const auto tet = oriented_tet_vids(tid);
-            for (int j = 0; j < 4; ++j) {
-                const Tuple face = tuple_from_face(tid, j);
-                const auto fvs = get_face_vids(face);
-                if (std::find(fvs.begin(), fvs.end(), vid) == fvs.end()) continue;
-                if (m_face_attribute[face.fid(*this)].m_is_surface_fs) {
-                    on_interface = true;
-                    break;
-                }
-            }
-            if (on_interface) break;
-        }
-        m_vertex_attribute[vid].m_is_on_surface = on_interface;
-    }
-    for (const size_t vid : affected_vertices) {
-        m_vertex_attribute[vid].m_order =
-            m_vertex_attribute[vid].m_is_on_surface ? compute_vertex_order(vid) : 0;
-    }
-}
-
 void SimWildMesh::simplify()
 {
     compute_vertex_partition_morton();
-    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
     logger().info("===== Simplify =====");
 
     m_envelope->use_exact = false;
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
-    m_collapse_check_quality = false;
+    /**
+     * Not checking the quality here can lead to horrible elements that take forever to fix in the
+     * optimization stage. The quality check reduces the amount of simplification, but the overall
+     * convergence is faster because the optimizer does not have to fix the mess.
+     */
+    // m_collapse_check_quality = false;
     collapse_all_edges();
-    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-    m_collapse_check_quality = true;
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+    // m_collapse_check_quality = true;
 
     logger().warn("Update envelope");
     MatrixXd V(vert_capacity(), 3);
     V.setZero();
     for (size_t i = 0; i < vert_capacity(); ++i) {
         const Tuple v = tuple_from_vertex(i);
-        if (v.is_valid(*this)) V.row(i) = m_vertex_attribute.at(v.vid(*this)).m_posf;
+        if (v.is_valid(*this)) {
+            V.row(i) = m_vertex_attribute.at(v.vid(*this)).m_posf;
+        }
     }
 
     const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -117,12 +80,11 @@ void SimWildMesh::simplify()
         F.row(i) = Vector3i(int(surf_faces[i][0]), int(surf_faces[i][1]), int(surf_faces[i][2]));
     }
 
-    const bool use_exact = m_envelope->use_exact;
     m_envelope = nullptr;
     m_V_envelope.clear();
     m_F_envelope.clear();
     if (V.size() > 0 && F.size() > 0) {
-        init_envelope(V, F, use_exact);
+        init_envelope(V, F);
     } else {
         logger().warn("No surface faces left after simplification, skip re-building envelope");
     }

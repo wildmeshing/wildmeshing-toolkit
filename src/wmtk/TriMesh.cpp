@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <optional>
 
 using namespace wmtk;
 
@@ -293,18 +294,21 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
     return faces;
 }
 
-bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+bool TriMesh::Tuple::is_valid_unlocked(const TriMesh& m) const
 {
     if (m_fid + 1 == 0) {
         return false;
     }
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
-        // assert(false);
         return false;
     }
     // Condition 3: tuple m_hash check
-    if (m_hash != m.m_tri_connectivity[m_fid].hash) {
-        // assert(false);
+    return m_hash == m.m_tri_connectivity[m_fid].hash;
+}
+
+bool TriMesh::Tuple::is_valid(const TriMesh& m) const
+{
+    if (!is_valid_unlocked(m)) {
         return false;
     }
 #ifndef NDEBUG
@@ -794,6 +798,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (dry_run()) return true;
     // get local eid for return tuple construction
     const size_t eid = t.local_eid(*this);
     const size_t t_fid = t.fid(*this);
@@ -855,7 +860,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // abort before mutating if we ran out of preallocated slots; mark any reserved
     // slots removed so they don't become live-but-empty phantoms.
     {
-        constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
         bool slots_ok = (new_vid != INVALID_SLOT);
         for (size_t f : new_fids)
             if (f == INVALID_SLOT) slots_ok = false;
@@ -1151,6 +1155,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+    if (dry_run()) return true; // checks done, the change would come next
 
     Tuple return_t;
     size_t new_vid;
@@ -1520,6 +1525,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         // should be already checked in swap_edge_before
         return false; // can't sawp on boundary or non-manifold edge
     }
+    if (dry_run()) return true;
 
     Tuple tmp_tuple;
     tmp_tuple = t_opps[0];
@@ -1607,6 +1613,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+    if (dry_run()) return true;
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     // Smoothing moves a vertex without touching connectivity, so the reference is simply
@@ -1619,7 +1626,9 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
 #endif
 
     start_protect_attributes();
-    if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tris_for_vertex(loc0));
+    if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
+    if (!ok) {
         rollback_protected_attributes();
         return false;
     }
@@ -1638,6 +1647,48 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
     return true;
 }
 
+void TriMesh::check_smoothing_stayed_in_star(const size_t vid)
+{
+    const auto tri_has = [&](size_t fid, size_t skip) {
+        for (size_t k = 0; k < 3; ++k) {
+            if (k != skip && m_tri_connectivity[fid][k] == vid) return true;
+        }
+        return false;
+    };
+    std::vector<size_t> recorded;
+    const auto first_outside = [&](AbstractAttributeContainer* c, auto in_star) {
+        recorded.clear();
+        if (c != nullptr) c->append_recorded(recorded);
+        for (const size_t i : recorded) {
+            if (!in_star(i)) return std::optional<size_t>(i);
+        }
+        return std::optional<size_t>();
+    };
+
+    const char* kind = "vertex";
+    std::optional<size_t> bad = first_outside(p_vertex_attrs, [&](size_t v) { return v == vid; });
+    if (!bad) {
+        // Edge 3 * fid + l is the edge of triangle fid opposite its l-th vertex.
+        kind = "edge";
+        bad = first_outside(p_edge_attrs, [&](size_t e) { return tri_has(e / 3, e % 3); });
+    }
+    if (!bad) {
+        kind = "triangle";
+        bad = first_outside(p_face_attrs, [&](size_t f) { return tri_has(f, 3); });
+    }
+    if (!bad) return;
+    // Drop the record without writing it back: the write-back is the race this check prevents.
+    release_protect_attributes();
+    log_and_throw_error(
+        "Smoothing vertex {} reached {} {}, outside its star, through non-const attribute access. "
+        "Smoothing runs non-adjacent vertices concurrently without locks, and a rejected smooth "
+        "writes every entry it reached back: read anything outside the star through a const view "
+        "(std::as_const).",
+        vid,
+        kind,
+        *bad);
+}
+
 bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
 {
     if (!split_face_before(t)) {
@@ -1646,6 +1697,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     if (!t.is_valid(*this)) {
         return false;
     }
+    if (dry_run()) return true;
 
     // get local eid for return tuple construction
     const size_t local_eid = t.local_eid(*this);
@@ -1699,7 +1751,6 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     // abort before mutating if we ran out of preallocated slots; mark any reserved
     // slots removed so they don't become live-but-empty phantoms.
     {
-        constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
         if (new_vid == INVALID_SLOT || new_fid1 == INVALID_SLOT || new_fid2 == INVALID_SLOT) {
             if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
             if (new_fid1 != INVALID_SLOT) m_tri_connectivity[new_fid1].m_is_removed = true;
@@ -1830,8 +1881,8 @@ void TriMesh::consolidate_mesh()
         t_cnt++;
     }
 
-    current_vert_size = v_cnt;
-    current_tri_size = t_cnt;
+    m_vertex_connectivity.set_live(v_cnt);
+    m_tri_connectivity.set_live(t_cnt);
 
     // Re-establish spare capacity for the next round of operations.
     const size_t vcap = reserved_capacity(v_cnt);
@@ -2100,8 +2151,8 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
             m_vertex_connectivity[tris[i][j]].m_conn_tris.push_back(i);
         }
     }
-    current_vert_size = (long)n_vertices;
-    current_tri_size = (long)tris.size();
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tri_connectivity.set_live(tris.size());
 
     resize_mutex(vcap);
 
@@ -2367,57 +2418,56 @@ simplex::SimplexCollection wmtk::TriMesh::simplex_link_edges(const simplex::Vert
 // Atomically reserve `n` contiguous fresh triangle slots from the preallocated
 // storage. Returns the first index, or -1 if that would exceed the preallocated
 // capacity (the caller must abort the operation). See TetMesh::request_tet_slots.
-long TriMesh::request_tri_slots(size_t n)
+size_t TriMesh::request_tri_slots(size_t n)
 {
-    if (n == 0) return (long)current_tri_size.load();
-    const long cap = (long)m_tri_connectivity.size();
-    // CAS loop: only advance the counter when there is room (see TetMesh version).
-    long first = current_tri_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_tri_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out slots to a clean state (the preallocated std::vector
-    // keeps stale data in the spare region; the old tbb::collector regrew
-    // fresh slots on consolidate).
-    for (long i = first; i < first + (long)n; ++i) {
-        m_tri_connectivity[i] = TriangleConnectivity{};
-    }
-    return first;
+    return m_tri_connectivity.request(n);
 }
 
-long TriMesh::request_vert_slots(size_t n)
+size_t TriMesh::cell_slot_bound(const Tuple& t) const
 {
-    if (n == 0) return (long)current_vert_size.load();
-    const long cap = (long)m_vertex_connectivity.size();
-    long first = current_vert_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_vert_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out vertex slots to a clean state (see request_tri_slots).
-    for (long i = first; i < first + (long)n; ++i) {
-        m_vertex_connectivity[i] = VertexConnectivity{};
+    const auto& tri = m_tri_connectivity[t.fid(*this)];
+    size_t n = 0;
+    for (int j = 0; j < 3; ++j) {
+        n += m_vertex_connectivity[tri[j]].m_conn_tris.size();
     }
-    return first;
+    return n;
+}
+
+void TriMesh::reserve_free_slots(size_t cells, size_t verts)
+{
+    bool grown = false;
+    if (m_tri_connectivity.capacity() - m_tri_connectivity.live() < cells) {
+        const size_t cap = m_tri_connectivity.capacity();
+        const size_t newcap = std::max(m_tri_connectivity.live() + cells, cap + cap / 2);
+        m_tri_connectivity.resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(3 * newcap);
+        grown = true;
+    }
+    if (m_vertex_connectivity.capacity() - m_vertex_connectivity.live() < verts) {
+        const size_t cap = m_vertex_connectivity.capacity();
+        const size_t newcap = std::max(m_vertex_connectivity.live() + verts, cap + cap / 2);
+        m_vertex_connectivity.resize(newcap);
+        resize_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+        grown = true;
+    }
+    if (grown) on_slot_storage_grown();
+}
+
+size_t TriMesh::request_vert_slots(size_t n)
+{
+    return m_vertex_connectivity.request(n);
 }
 
 size_t TriMesh::get_next_empty_slot_t()
 {
-    const long r = request_tri_slots(1);
-    return r < 0 ? static_cast<size_t>(-1) : static_cast<size_t>(r);
+    return request_tri_slots(1);
 }
 
 size_t TriMesh::get_next_empty_slot_v()
 {
-    const long r = request_vert_slots(1);
-    return r < 0 ? static_cast<size_t>(-1) : static_cast<size_t>(r);
+    return request_vert_slots(1);
 }
 
 bool TriMesh::swap_edge_before(const Tuple& t)
@@ -2563,7 +2613,7 @@ bool TriMesh::lock_vertex_ball(
     auto& stack = mutex_release_stack.local();
     auto& scr = m_ring_lock_scratch.local();
 
-    const size_t cap = m_vertex_connectivity.size();
+    const size_t cap = m_vertex_connectivity.capacity();
     if (scr.stamp.size() < cap) {
         scr.stamp.resize(cap, 0);
     }
@@ -2695,7 +2745,9 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
         }
     }
 
-    if (!v1.is_valid(*this)) {
+    // Only once v1 is ours, as in TetMesh: while another thread holds it, that thread may be
+    // rewriting e's triangle, and is_valid()'s debug checks would read it mid-change.
+    if (!release_flag && !v1.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {
@@ -2712,7 +2764,7 @@ bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
             release_flag = true;
         }
     }
-    if (!v2.is_valid(*this)) {
+    if (!release_flag && !v2.is_valid(*this)) {
         release_flag = true;
     }
     if (release_flag) {

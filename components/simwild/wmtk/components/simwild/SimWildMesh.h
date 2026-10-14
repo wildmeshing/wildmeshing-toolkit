@@ -19,7 +19,6 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
-#include <VolumeRemesher/embed.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -148,7 +147,7 @@ public:
 
     // TODO This should not be here but inside wmtk
     // TODO This should not be here but inside wmtk
-    void init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact);
+    void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
@@ -163,6 +162,31 @@ public:
     double quality_rel(const size_t tid) const override;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+    /**
+     * @brief Verify that every interface between unlike tags carries a surface face.
+     *
+     * Checks that direction only: an interface face that is not tagged is a violation, while a
+     * tagged face between like-tagged tets is not reported here.
+     *
+     * @param verbose Log a summary line, and the first few offending faces.
+     * @return true if every interface face is tagged.
+     */
+    bool check_interface_faces_tagged(const bool verbose = false) const;
+
+    /**
+     * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * Re-derives the surface from the tet tags over the whole mesh: a face is a surface face
+     * exactly when it separates two differently tagged tets, and a vertex is on the surface
+     * exactly when it belongs to such a face. This is the global form of what the operations
+     * used to attempt incrementally; doing it here, between passes and single-threaded, avoids
+     * both the stale flags that OR-merging leaves behind and the neighbourhood reads that are
+     * unsafe inside a parallel operation.
+     *
+     * @see check_interface_faces_tagged, which verifies the post-condition in both directions.
+     */
+    void update_attributes() override;
+
     std::vector<size_t> active_vertices() const override;
 
 
@@ -197,7 +221,6 @@ protected:
         size_t v1,
         size_t v2,
         const std::vector<std::array<size_t, 2>>& boundary_edges) override;
-    void collapse_after_vertex(size_t v1, size_t v2) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)

@@ -47,6 +47,7 @@ void TriWildMesh::init_mesh(
     const std::vector<std::string>& tag_names,
     const MatrixXd& V_env,
     const MatrixXi& E_env,
+    const std::vector<int>* E_orientation,
     const std::vector<size_t>& free_point_vids)
 {
     assert(V.cols() == 2);
@@ -75,15 +76,20 @@ void TriWildMesh::init_mesh(
         auto& va = m_vertex_attribute[i];
         if (V_rational.empty()) {
             // No exact input available (a caller that only has doubles, e.g. a unit test).
-            va.m_pos = to_rational(Vector2d(V.row(i)));
             va.m_posf = V.row(i);
+            va.set_pos_to_posf();
             va.m_is_rounded = true;
             continue;
         }
-        va.m_pos = V_rational[i];
         va.m_posf = Vector2d(V_rational[i][0].to_double(), V_rational[i][1].to_double());
-        va.m_is_rounded =
-            (Rational(va.m_posf[0]) == va.m_pos[0]) && (Rational(va.m_posf[1]) == va.m_pos[1]);
+        va.m_is_rounded = (Rational(va.m_posf[0]) == V_rational[i][0]) &&
+                          (Rational(va.m_posf[1]) == V_rational[i][1]);
+        // A representable position needs no exact copy; see ExactPosition.
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(V_rational[i]);
+        }
         if (!va.m_is_rounded) {
             ++n_indirect;
             m_all_rounded.store(false, std::memory_order_relaxed);
@@ -117,12 +123,12 @@ void TriWildMesh::init_mesh(
     size_t n_degenerate = 0, n_negative = 0, n_total = 0;
     size_t first_bad_fid = std::numeric_limits<size_t>::max();
     std::array<size_t, 3> first_bad_vids = {{0, 0, 0}};
-    for (const Tuple& t : get_faces()) {
-        const size_t fid = t.fid(*this);
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
         const auto vs = oriented_tri_vids(fid);
-        const Vector2r& p0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2r& p1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2r& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r p0 = m_vertex_attribute[vs[0]].pos();
+        const Vector2r p1 = m_vertex_attribute[vs[1]].pos();
+        const Vector2r p2 = m_vertex_attribute[vs[2]].pos();
         const Rational d = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]);
         if (!(d > 0)) {
             if (d == 0) {
@@ -136,7 +142,7 @@ void TriWildMesh::init_mesh(
             }
         }
         ++n_total;
-        m_face_attribute[fid].m_quality = get_quality(t);
+        m_face_attribute[fid].m_quality = get_quality(fid);
     }
 
     if (n_degenerate + n_negative > 0) {
@@ -167,6 +173,7 @@ void TriWildMesh::init_mesh(
     }
 
     // mark edges as on surface if they are in E
+    assert(E_orientation == nullptr || E_orientation->size() == size_t(E.rows()));
     for (int i = 0; i < E.rows(); i++) {
         std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
@@ -174,9 +181,13 @@ void TriWildMesh::init_mesh(
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
+        if (E_orientation != nullptr) {
+            m_edge_attribute[eid].set_orientation_along(vids, (*E_orientation)[i]);
+        }
         m_vertex_attribute[vids[0]].m_is_on_surface = true;
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
+    if (E_orientation != nullptr) m_tracks_orientation = true;
 
     // Feature points: the 0-dimensional features of the curve network, taken from the
     // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
@@ -301,34 +312,44 @@ void TriWildMesh::init_mesh(
     const Vector2d domain_min = V.colwise().minCoeff();
     const Vector2d domain_max = V.colwise().maxCoeff();
 
-    const auto edges = get_edges();
-    for (size_t i = 0; i < edges.size(); i++) {
-        const auto vids = get_edge_vids(edges[i]);
+    // Edges are visited in place, in get_edges() order and with the same tuples, rather than
+    // through a list of every edge built while the arrangement -- the largest mesh of the run --
+    // is being set up.
+    const auto bbox_edge = [&](const Tuple& edge) {
+        const auto vids = get_edge_vids(edge);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_min[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_min[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_min[k])) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == domain_max[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, domain_max[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, domain_max[k])) {
                 on_bbox = k * 2 + 1;
                 break;
             }
         }
         if (on_bbox < 0) {
-            continue;
+            return;
         }
-        if (edges[i].switch_face(*this)) {
+        if (edge.switch_face(*this)) {
             log_and_throw_error("Boundary edge {} is not on the boundary!", vids);
         }
 
-        const size_t eid = edges[i].eid(*this);
+        const size_t eid = edge.eid(*this);
         m_edge_attribute[eid].m_is_bbox_fs = on_bbox;
 
         for (const size_t vid : vids) {
             m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+        }
+    };
+    for (size_t fid = 0; fid < tri_capacity(); fid++) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        for (size_t j = 0; j < 3; j++) {
+            const size_t loc_eid = (j + 2) % 3;
+            const Tuple edge = tuple_from_edge(fid, loc_eid);
+            if (edge.eid(*this) == 3 * fid + loc_eid) bbox_edge(edge);
         }
     }
 
@@ -555,36 +576,80 @@ void TriWildMesh::compute_winding_numbers(
         // The inputs were already read (and their x,y extracted) when the initial mesh was
         // built; reuse them instead of parsing every file a second time.
         const MatrixXd& V = Vs[input_idx];
-        MatrixXi E = Es[input_idx];
+        const MatrixXi& E = Es[input_idx];
         assert(V.cols() == 2);
         assert(E.cols() == 2);
 
         Eigen::VectorXd W;
         utils::winding_number_2d(V, E, C, W, NUM_THREADS);
 
-        if (W.maxCoeff() <= 0.5) {
-            // all removed, let's invert.
-            logger().info("Correcting winding number");
-            for (auto i = 0; i < E.rows(); i++) {
-                auto temp = E(i, 0);
-                E(i, 0) = E(i, 1);
-                E(i, 1) = temp;
-            }
-            utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+        // Nothing is inside: take the curve as wound the other way.
+        if (utils::orient_winding_number(W)) {
+            logger().info("Correcting winding number for input {}", input_idx);
         }
-
-        if (W.maxCoeff() <= 0.5) {
+        if (!utils::any_winding_number_inside(W)) {
             logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
         // store winding number in mesh
         for (int i = 0; i < faces.size(); ++i) {
             const size_t fid = faces[i].fid(*this);
-            if (W(i) > 0.5) {
+            if (utils::winding_number_inside(W(i))) {
                 m_face_attribute[fid].tags.insert(input_idx);
             }
         }
     }
+}
+
+void TriWildMesh::compute_tracked_winding_number()
+{
+    if (!m_tracks_orientation) {
+        log_and_throw_error(
+            "compute_tracked_winding_number: the tracked curves carry no orientation");
+    }
+    const auto& faces = get_faces();
+    MatrixXd C = MatrixXd::Zero(faces.size(), 2);
+    for (size_t i = 0; i < faces.size(); i++) {
+        for (size_t v : oriented_tri_vids(faces[i])) {
+            C.row(i) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(i) /= 3;
+    }
+    MatrixXd V = MatrixXd::Zero(vert_capacity(), 2);
+    for (const Tuple& v : get_vertices()) {
+        V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
+    }
+    const auto oriented = oriented_tracked_edges();
+    MatrixXi E(oriented.size(), 2);
+    for (size_t i = 0; i < oriented.size(); ++i) {
+        E(i, 0) = int(oriented[i][0]);
+        E(i, 1) = int(oriented[i][1]);
+    }
+
+    Eigen::VectorXd W;
+    utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+    if (utils::orient_winding_number(W)) {
+        logger().info("Correcting tracked winding number");
+    }
+    if (!utils::any_winding_number_inside(W)) {
+        logger().warn("No tracked winding number above 0.5");
+    }
+    for (size_t i = 0; i < faces.size(); ++i) {
+        m_face_attribute[faces[i].fid(*this)].m_winding_number = W.size() > 0 ? W(i) : 0;
+    }
+}
+
+void TriWildMesh::filter_with_tracked_winding_number()
+{
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (!utils::winding_number_inside(m_face_attribute[fid].m_winding_number)) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    logger().info("Filter with tracked winding number: removing {} faces", rm_fids.size());
+    remove_tris_by_ids(rm_fids);
 }
 
 void TriWildMesh::filter_with_input_winding_number()
@@ -736,6 +801,7 @@ int TriWildMesh::flood_fill()
 
         current_id++;
     }
+    m_has_parts = true;
     return current_id;
 }
 
@@ -887,7 +953,7 @@ void TriWildMesh::write_vtu(const std::string& path) const
         writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer.add_cell_field("quality", amips);
-    writer.add_cell_field("flood_fill", flood_fill);
+    if (m_has_parts) writer.add_cell_field("flood_fill", flood_fill);
     writer.add_field("sizing_field", v_sizing_field);
     writer.write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 

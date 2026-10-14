@@ -397,6 +397,7 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]")
             is_v_on_input,
             tets,
             tet_face_on_input_surface,
+            /*tet_face_orientation=*/nullptr,
             fe_verts,
             fe,
             fp,
@@ -447,6 +448,7 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]")
         is_v_on_input,
         tets,
         tet_face_on_input_surface,
+        /*tet_face_orientation=*/nullptr,
         &features_out);
 
     for (size_t ie = 0; ie < features_out.edge_tiling.size(); ++ie) {

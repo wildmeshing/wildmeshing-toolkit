@@ -1,382 +1,645 @@
 [
-    {
-        "doc": "",
-        "pointer": "/",
-        "type": "object",
-        "required": [
-            "application",
-            "input"
-        ],
-        "optional": [
-            "output",
-            "input_dir",
-            "offset_selection",
-            "offset_output_tags",
-            "protected_tags",
-            "respect_all_topologies",
-            "offset_in",
-            "offset_out",
-            "target_distance",
-            "target_distance_rel",
-            "convergence_target",
-            "convergence_target_rel",
-            "convergence_normal_deviation",
-            "throw_on_nonconvergence",
-            "envelope_size",
-            "envelope_size_rel",
-            "region_envelope_from_input",
-            "relative_ball_threshold",
-            "edge_search_termination_len",
-            "sorted_marching",
-            "check_manifoldness",
-            "optimize",
-            "save_vtu",
-            "DEBUG_output",
-            "log_file",
-            "report",
-            "num_threads",
-            "smoothing_iterations",
-            "optimization_iterations",
-            "length_rel",
-            "length",
-            "stop_energy",
-            "max_normal_deviation_deg",
-            "min_normal_deviation_deg",
-            "min_edge_length",
-            "smooth_quadrics_weight",
-            "smooth_laplacian_weight",
-            "quadrics_svd_threshold",
-            "min_sizing_scalar",
-            "max_sizing_scalar",
-            "sizing_mrm_threshold",
-            "sizing_gradation",
-            "split_high_valence_threshold",
-            "skip_good_regions",
-            "w_amips",
-            "smoothing_mode",
-            "project_line_search_steps",
-            "project_line_search_nested_steps",
-            "perform_sanity_checks"
-        ]
-    },
-    {
-        "pointer": "/application",
-        "type": "string",
-        "options": [
-            "topological_offset"
-        ],
-        "doc": "Application name must be topological_offset."
-    },
-    {
-        "pointer": "/input",
-        "type": "string",
-        "doc": "Tetrahedral input mesh."
-    },
-    {
-        "pointer": "/output",
-        "type": "string",
-        "default": "out",
-        "doc": "Output file name (without extension)."
-    },
-    {
-        "pointer": "/input_dir",
-        "type": "string",
-        "default": "",
-        "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
-    },
-    {
-        "pointer": "/offset_selection",
-        "type": "string",
-        "default": "!_",
-        "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used."
-    },
-    {
-        "pointer": "/offset_output_tags",
-        "type": "list",
-        "default": [
-            "newtag"
-        ],
-        "doc": "Tags to add to elements in the resulting offset region."
-    },
-    {
-        "pointer": "/offset_output_tags/*",
-        "type": "string",
-        "doc": "A tag."
-    },
-    {
-        "pointer": "/protected_tags",
-        "type": "list",
-        "default": [],
-        "doc": "Set of tags that will not be overwritten by the offset."
-    },
-    {
-        "pointer": "/protected_tags/*",
-        "type": "string",
-        "doc": "A tag."
-    },
-    {
-        "pointer": "/offset_in",
-        "type": "bool",
-        "default": false,
-        "doc": "Only relevant for single body mode. Whether to create offset inside body"
-    },
-    {
-        "pointer": "/offset_out",
-        "type": "bool",
-        "default": true,
-        "doc": "Only relevant for single body mode. Whether to create offset outside body"
-    },
-    {
-        "pointer": "/respect_all_topologies",
-        "type": "bool",
-        "default": false,
-        "doc": "If true, the topology (after offset initialization) of every tag is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
-    },
-    {
-        "pointer": "/target_distance_rel",
-        "type": "float",
-        "default": 0.01,
-        "doc": "Target offset distance relative to bounding box of mesh."
-    },
-    {
-        "pointer": "/target_distance",
-        "type": "float",
-        "default": -1.0,
-        "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
-    },
-    {
-        "pointer": "/convergence_target_rel",
-        "type": "float",
-        "default": 0.1,
-        "doc": "Optimization terminates early once max_dist_err drops to or below this fraction of target_distance. Ignored if convergence_target >= 0."
-    },
-    {
-        "pointer": "/convergence_target",
-        "type": "float",
-        "default": -1.0,
-        "doc": "Absolute max_dist_err threshold for early termination of optimization. If < 0, computed from convergence_target_rel (relative to target_distance, not the bounding box)."
-    },
-    {
-        "pointer": "/convergence_normal_deviation",
-        "type": "float",
-        "default": -1.0,
-        "doc": "AVERAGE normal deviation threshold, IN DEGREES, for early termination of optimization. Tested against avg_norm_dev, not max_norm_dev -- the paper's Termination criterion is the same way round ('the average sigma_max ... both the maximum and mean distance error'), because max normal deviation has a floor set by the input's sharpest reentrant corner, where the distance field's normal is discontinuous at every scale, and no refinement or smaller target_distance can lower it. max_norm_dev is still reported, as a diagnostic. The offset must reach both this and convergence_target before the run may stop early. An angle has no natural relative form, so unlike convergence_target there is no _rel counterpart. If <= 0 the criterion is disabled and max_dist_err alone decides convergence, which is the 3D behaviour."
-    },
-    {
-        "pointer": "/throw_on_nonconvergence",
-        "type": "bool",
-        "default": false,
-        "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Set true in integration tests so a convergence regression fails the run rather than passing with a warning nobody reads. 2D only -- the 3D path does not read it."
-    },
-    {
-        "pointer": "/region_envelope_from_input",
-        "type": "bool",
-        "default": true,
-        "doc": "Build the region-boundary envelope from the INPUT mesh, before the offset is constructed, rather than from the mesh the offset construction leaves behind. The band's tags REPLACE a face's own rather than joining them, so a region the band grows through loses its tag there and its boundary curve is truncated at whatever contour conservative growth stopped on; an envelope built afterwards caps the triple junction where a region boundary meets the offset at a position that is an artefact of relative_ball_threshold. Building it from the input follows the region's original, untruncated curve, which relaxes the constraint only along the stretch the band later swallows. Set false for the older behaviour. 2D only."
-    },
-    {
-        "pointer": "/envelope_size_rel",
-        "type": "float",
-        "default": 0.001,
-        "doc": "Half-width, relative to the bounding box diagonal, of the envelope containing every tag-region boundary during optimization. Any operation that would push a region boundary outside it is rejected. Ignored if envelope_size >= 0."
-    },
-    {
-        "pointer": "/envelope_size",
-        "type": "float",
-        "default": -1.0,
-        "doc": "Absolute half-width of the tag-region boundary envelope. If < 0, computed from envelope_size_rel."
-    },
-    {
-        "pointer": "/relative_ball_threshold",
-        "type": "float",
-        "default": 0.1,
-        "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
-    },
-    {
-        "pointer": "/edge_search_termination_len",
-        "type": "float",
-        "default": 0.001,
-        "doc": "Length below which binary search will be terminated for function-guided edge splitting"
-    },
-    {
-        "pointer": "/sorted_marching",
-        "type": "bool",
-        "default": false,
-        "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
-    },
-    {
-        "pointer": "/check_manifoldness",
-        "type": "bool",
-        "default": true,
-        "doc": "After performing offset, check if offset region is manifold"
-    },
-    {
-        "pointer": "/optimize",
-        "type": "bool",
-        "default": false,
-        "doc": "Run optimization on the offset."
-    },
-    {
-        "pointer": "/save_vtu",
-        "type": "bool",
-        "default": false,
-        "doc": "Save .vtu of output mesh"
-    },
-    {
-        "pointer": "/DEBUG_output",
-        "type": "bool",
-        "default": false,
-        "doc": "Write the tet mesh as out_{}.vtu after every operation."
-    },
-    {
-        "pointer": "/log_file",
-        "type": "string",
-        "default": "",
-        "doc": "Logs are not just printed on the terminal but also saved in this file."
-    },
-    {
-        "pointer": "/report",
-        "type": "string",
-        "default": "",
-        "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
-    },
-    {
-        "pointer": "/num_threads",
-        "type": "int",
-        "default": 0,
-        "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
-    },
-    {
-        "pointer": "/smoothing_iterations",
-        "type": "int",
-        "default": 3,
-        "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
-    },
-    {
-        "pointer": "/length_rel",
-        "type": "float",
-        "default": 0.05,
-        "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
-    },
-    {
-        "pointer": "/length",
-        "type": "float",
-        "default": -1.0,
-        "doc": "Target edge length (absolute). If < 0, computed from length_rel."
-    },
-    {
-        "pointer": "/stop_energy",
-        "type": "float",
-        "default": 10.0,
-        "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
-    },
-    {
-        "pointer": "/optimization_iterations",
-        "type": "int",
-        "default": 3,
-        "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
-    },
-    {
-        "pointer": "/max_normal_deviation_deg",
-        "type": "float",
-        "default": 15.0,
-        "doc": "sigma_max. Max normal deviation (degrees, 0-90) allowed across one offset-surface element. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this, and the sizing field refines wherever it is exceeded. Also sets the derived min_edge_length."
-    },
-    {
-        "pointer": "/min_normal_deviation_deg",
-        "type": "float",
-        "default": 2.0,
-        "doc": "sigma_min. Normal deviation (degrees) below which a stretch of offset surface counts as planar, so the sizing field may coarsen it. Paper value is 2 degrees. 2D only."
-    },
-    {
-        "pointer": "/min_edge_length",
-        "type": "float",
-        "default": -1.0,
-        "doc": "l_min: the shortest edge the sizing field may ask for, in absolute units. If < 0, derived as 2 * target_distance * sin(max_normal_deviation_deg), the paper's formula -- tied to the offset distance rather than the bounding box, because the offset is what has to be resolved. This is a floor on REFINEMENT, so raising it makes the offset coarser (paper Fig. 18). 2D only."
-    },
-    {
-        "pointer": "/smooth_quadrics_weight",
-        "type": "float",
-        "default": 0.5,
-        "doc": "Blend weight (0-1) toward the quadrics-optimal target vertex during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
-    },
-    {
-        "pointer": "/smooth_laplacian_weight",
-        "type": "float",
-        "default": 0.01,
-        "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
-    },
-    {
-        "pointer": "/quadrics_svd_threshold",
-        "type": "float",
-        "default": 0.01,
-        "doc": "SVD threshold used when solving for the quadrics-optimal target vertex during offset-surface smoothing. Controls sensitivity to feature edges: lower means more sensitive."
-    },
-    {
-        "pointer": "/min_sizing_scalar",
-        "type": "float",
-        "default": 0.01,
-        "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
-    },
-    {
-        "pointer": "/max_sizing_scalar",
-        "type": "float",
-        "default": 1.0,
-        "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
-    },
-    {
-        "pointer": "/sizing_mrm_threshold",
-        "type": "float",
-        "default": 0.5,
-        "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
-    },
-    {
-        "pointer": "/sizing_gradation",
-        "type": "float",
-        "default": 2.0,
-        "doc": "Gradation cap for the sizing field: neighboring vertices' sizing scalars may differ by at most this factor. After each mean-ratio-metric refinement pass, the refined vertices' lower sizing scalar is propagated outward (monotone, only ever lowers a neighbor's scalar) so the mesh doesn't jump straight from fine to coarse. <= 1 disables gradation."
-    },
-    {
-        "pointer": "/split_high_valence_threshold",
-        "type": "int",
-        "default": 200,
-        "doc": "Incident-tet count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex (only used if optimize is true)."
-    },
-    {
-        "pointer": "/skip_good_regions",
-        "type": "bool",
-        "default": false,
-        "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
-    },
-    {
-        "pointer": "/project_line_search_steps",
-        "type": "int",
-        "default": 12,
-        "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
-    },
-    {
-        "pointer": "/project_line_search_nested_steps",
-        "type": "int",
-        "default": 0,
-        "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
-    },
-    {
+  {
+    "doc": "",
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "application",
+      "input"
+    ],
+    "optional": [
+      "output",
+      "input_dir",
+      "offset_selection",
+      "offset_output_tags",
+      "protected_tags",
+      "offset_in",
+      "offset_out",
+      "target_distance",
+      "target_distance_rel",
+      "throw_on_nonconvergence",
+      "optimize_offset",
+      "envelope_size",
+      "envelope_size_rel",
+      "offset_field",
+      "offset_dhat_factor",
+      "front_conv",
+      "front_conv_rel",
+      "stencil_order",
+      "front_measure",
+      "sorted_marching",
+      "construction_mode",
+      "sphere_trace_target_rel_tol",
+      "init_optimize",
+      "repulsion_smoothing_passes",
+      "repulsion_rounds",
+      "EXPERIMENTAL_repulsion_refine",
+      "EXPERIMENTAL_split_energy_gate",
+      "EXPERIMENTAL_settle_refinement",
+      "EXPERIMENTAL_settle_mark",
+      "check_manifoldness",
+      "save_vtu",
+      "phi_grid_resolution",
+      "DEBUG_output",
+      "log_file",
+      "report",
+      "preallocation_factor",
+      "num_threads",
+      "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
+      "colored_smoothing",
+      "adaptive_smoothing",
+      "adaptive_smoothing_max_passes",
+      "adaptive_smoothing_stall_rel",
+      "adaptive_smoothing_step_rel",
+      "pre_smooth",
+      "max_iterations",
+      "offset_envelope",
+      "offset_envelope_rel",
+      "length_rel",
+      "length",
+      "stop_energy",
+      "min_edge_length",
+      "min_edge_length_rel",
+      "min_sizing_scalar",
+      "max_sizing_scalar",
+      "sizing_gradation",
+      "sizing_gradation_mode",
+      "split_high_valence_threshold",
+      "coarsen_pass",
+      "coarsen_unbounded",
+      "coarsen_max_rounds",
+      "coarsen_global_smoothing_passes",
+      "coarsen_smooth_ring",
+      "coarsen_local_smoothing_passes",
+      "stuck_refine_stall_eps",
+      "stuck_refine_cooldown",
+      "stuck_refine_num_worst",
+      "stuck_refine_rings",
+      "stuck_refine_factor",
+      "stuck_refine_min_scalar",
+      "stuck_refine_gradation",
+      "stuck_refine_force_split",
+      "sizing_collapse_min",
+      "max_rounds",
+      "w_amips",
+      "smoothing_mode",
+      "project_line_search_steps",
+      "project_line_search_nested_steps",
+      "offset_amips_weight",
+      "DEBUG_crossings",
+      "perform_sanity_checks",
+      "deform_others"
+    ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": [
+      "topological_offset"
+    ],
+    "doc": "Application name must be topological_offset."
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "Input mesh, .msh: a triangle or a tetrahedral mesh. The two pipelines are the same algorithm one dimension apart and read every key below the same way."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out",
+    "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
+    "pointer": "/offset_selection",
+    "type": "string",
+    "default": "!_",
+    "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used."
+  },
+  {
+    "pointer": "/offset_output_tags",
+    "type": "list",
+    "default": [
+      "newtag"
+    ],
+    "doc": "Tags to add to elements in the resulting offset region."
+  },
+  {
+    "pointer": "/offset_output_tags/*",
+    "type": "string",
+    "doc": "A tag."
+  },
+  {
+    "pointer": "/protected_tags",
+    "type": "list",
+    "default": [],
+    "doc": "Set of tags that will not be overwritten by the offset."
+  },
+  {
+    "pointer": "/protected_tags/*",
+    "type": "string",
+    "doc": "A tag."
+  },
+  {
+    "pointer": "/offset_in",
+    "type": "bool",
+    "default": false,
+    "doc": "Only relevant for single body mode. Whether to create offset inside body"
+  },
+  {
+    "pointer": "/offset_out",
+    "type": "bool",
+    "default": true,
+    "doc": "Only relevant for single body mode. Whether to create offset outside body"
+  },
+  {
+    "pointer": "/target_distance_rel",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Target offset distance relative to bounding box of mesh."
+  },
+  {
+    "pointer": "/target_distance",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
+  },
+  {
+    "pointer": "/throw_on_nonconvergence",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Integration tests set it true so a convergence regression fails the run rather than passing with a warning."
+  },
+  {
+    "pointer": "/optimize_offset",
+    "type": "bool",
+    "default": true,
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+  },
+  {
+    "pointer": "/envelope_size_rel",
+    "type": "float",
+    "default": 0.001,
+    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built once after the simplicial embedding, before the repulsion and the march: the domain wall and every region boundary, the input complex's included (see deform_others). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
+  },
+  {
+    "pointer": "/envelope_size",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If < 0, computed from envelope_size_rel."
+  },
+  {
+    "pointer": "/offset_field",
+    "type": "string",
+    "default": "euclidean",
+    "options": [
+      "smooth",
+      "euclidean"
+    ],
+    "doc": "Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by. 'smooth' is the offset geometric contact potential Phi, with the front on the level set Phi = c: C^2, analytic derivatives, and a level set that bulges outward at reentrant features, so it is a smoothed offset rather than the exact one. 'euclidean' (the default) is the exact distance to the input complex, which makes the residual exact but introduces a gradient discontinuity across the medial axis and a crease at every reentrant feature that no refinement resolves; offset_dhat_factor and the outside-the-support guard stop meaning anything, since it has no compact support."
+  },
+  {
+    "pointer": "/offset_dhat_factor",
+    "default": 2.0,
+    "type": "float",
+    "doc": "Support radius of the smooth offset potential, as a multiple of target_distance. Must be > 1. The offset level set lies strictly inside the support; a band vertex that leaves the support is a hard error."
+  },
+  {
+    "pointer": "/front_conv",
+    "type": "float",
+    "default": -1.0,
+    "doc": "THE convergence epsilon, as an ABSOLUTE length in model units; < 0 (the default) means use front_conv_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel, and against the same reference, the bounding box diagonal -- deliberately NOT a fraction of target_distance, so changing the offset distance no longer silently changes the accuracy. Startup refuses a value above target_distance: an epsilon coarser than the offset it measures decides nothing, since every front face then reads as resolved from the first turn. THIS IS THE ONLY BAR, in 2D and 3D. The measure it gates is one quantity everywhere: over a face's stencil_order stencil (in 2D a front chord's), the ROOT MEAN SQUARE of the distance to the level set along the field, over target_distance (for 'euclidean' the relative error (Phi - c)/c = (d - target_distance)/target_distance; for 'smooth' the root of Phi = c along grad Phi, since there (Phi - c)/c is not a length and read 3.44x the distance error at offset_dhat_factor 2), taken as a length. A face is resolved when that RMS is <= front_conv, i.e. when the MEAN SQUARED relative error is <= (front_conv/target_distance)^2; a vertex is placed when the same measure at the vertex alone -- the order-0 stencil -- is within it. So the vertex measure and the face measure are ONE measure at two sample counts, which is why vertex_conv and sag_conv, which split them apart on 2026-09-23, no longer exist. The offset surface debug field f_err reports the same number. The 2D front smoothing objective (StencilEnergy2D) has the same zero set but, under 'smooth', charges the field error (Phi - c)/c rather than this distance: about 3.44x it at offset_dhat_factor 2. The 3D smoothing objective is the energy (see offset_amips_weight), which has no face term. WHAT THE LOOP EXITS ON is set by front_measure: under the default 'vertex_ring', every front vertex's ring measure (the RMS of its offset faces' measures, every face weighted equally) within the bar; under 'face', the rule of 2026-09-25, every offset face's measure within the bar. Either way nothing may be unmeasurable, the single-point vertex measure is a diagnostic that decides nothing about termination, and an element over the bar that refinement cannot take (the sizing floor) blocks the exit and is named in a warning every turn it exists. 2D runs the same criterion on its front chords (offset edges in place of offset faces)."
+  },
+  {
+    "pointer": "/front_conv_rel",
+    "type": "float",
+    "default": 0.00025,
+    "doc": "THE convergence epsilon as a fraction of the BOUNDING BOX DIAGONAL, used when front_conv is < 0. The default 2.5e-4 is the old front_conv_rel default 0.025 times the default target_distance_rel 0.01, so a fully default run keeps the accuracy it has always had; at any other target_distance the default accuracy now differs from the pre-2026-09-23 behaviour, which is the point of referencing the box rather than the offset. See front_conv for what the bar actually gates."
+  },
+  {
+    "pointer": "/stencil_order",
+    "type": "int",
+    "default": 1,
+    "min": 0,
+    "doc": "Order of the sampling stencil on an offset-surface face (3D) or front chord (2D). It sets the convergence measure, and in 2D also the front smoothing energy, which samples the same points; the 3D energy has no face term (see offset_amips_weight). Order 0 is the 3 CORNERS alone, so the measure is exactly the three vertices' own placement error. Order k >= 1 is the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement, plus the centroid of each of its 4^(k-1) sub-triangles: with n = 2^(k-1) segments per side that is (n+1)(n+2)/2 + n^2 points, i.e. 4 at order 1 (the corners and the centroid), 10 at order 2 (the corners, the 3 edge midpoints and the 4 sub-triangle centroids), 31 at order 3, 109 at order 4. On a 2D chord the same rule one dimension down: order 0 is the 2 ENDS alone, order k >= 1 the vertices of the chord cut into 2^(k-1) pieces plus the midpoint of each piece, i.e. 3, 5, 9, 17 points. THE CORNERS ARE IN THE STENCIL, unlike the strictly interior lattice sag_num_samples used, and they have to be: the quantity sampled is a distance to the level set, which at a corner is that vertex's own placement error rather than the identically-zero interpolation error the old measure saw there. That is what lets one stencil replace the separate vertex and sag criteria. COST: every sample is a Phi value, paid in the criterion and the frames, and in 2D also in the operations' energy rules (TopoOffsetTriMesh::tri_energy()) and, with a gradient, in every front solve -- 4 points at the default against 6 for the old default."
+  },
+  {
+    "pointer": "/front_measure",
+    "type": "string",
+    "default": "vertex_ring",
+    "options": [
+      "vertex_ring",
+      "face"
+    ],
+    "doc": "Which measure the loop exits on and refines by, in 3D and in 2D. 'vertex_ring' (the default): at each front vertex v the RING MEASURE r_v = sqrt((1/n_v) sum_f m_f^2), over the n_v offset faces f incident to v whose three corners are front vertices, every face weighted equally, m_f the face measure, the root of face_offset_term() (the RMS over the face's stencil_order stencil of the distance to the level set along the field over target_distance -- for 'euclidean' the relative error (Phi - c)/c -- over the bar front_conv / target_distance). The loop exits when every ring measure is within the bar and nothing is unmeasurable; a vertex with an unmeasurable incident face has no ring measure and blocks the exit. The face and vertex measures are then reported as diagnostics. The halving lowers the sizing scalar at each vertex whose ring measure is over the bar, that vertex alone, under the same floor (max of min_sizing_scalar and min_edge_length / l); a vertex over the bar already at the floor blocks the exit and is named by the [sizing floor] warning. The chord rule is not read in this mode. The operations do not compare this measure (until 2026-09-28 an ops guard compared the ring measure before against after): in 3D the collapse, the swaps and the smoother compare the energy (TopoOffsetTetMesh::tet_energy(), see offset_amips_weight), whose band term is a volume integral of the distance error, not these face measures. From 2026-09-25 to 2026-09-28 this measure weighted each face by its area (A_f); it weights every face equally since. In 2D the same criterion runs on the front chords: r_v = sqrt((1/n_v) sum_e m_e^2) over the n_v front chords e incident to v, m_e the chord measure (the root of edge_offset_term()), every chord weighted equally, with the same exit and the same per-vertex halving; 2D's operations compare the per-cell energy TopoOffsetTriMesh::tri_energy() and its front smoother minimises StencilEnergy2D, the same chords' m_e^2. 'face': the rule of 2026-09-25, kept for comparison. The loop exits when every offset face's (2D: chord's) measure is within the bar and nothing is unmeasurable; the halving lowers the sizing scalar at the corners of every face over the bar whose chord rule still has a target below its corners' scalars. Why the ring measure: the smoother minimises a sum over each vertex's ring while the face exit and refinement are per face, and the two disagree at the margin. Measured on the deliverable cube at target_distance_rel 1e-3 / front_conv_rel 1e-5 under 'face', turns 12-15: the loop never exits because a handful of faces end each turn at 1.00 to 1.19 times the bar, the smoothing having pushed faces from 0.99 to just over the bar while lowering the ring they belong to. On the cube at target_distance_rel 1e-2 / front_conv_rel 1e-4 (the split gate at twice the collapse gate, a key since removed, interleaved_smoothing false, 2 smoothing passes, no alignment term, serial), measured with the area weights and before the per-tet energy: 'vertex_ring' exits after 7 turns with max AMIPS 8.784 and 20724 front faces, 60 of them over the bar (the largest 1.355x) while every ring measure is within it (the largest 0.963x); 'face' exits after 7 turns with max AMIPS 7.814 and 23476 front faces. The debug frames carry the ring measure as point data, front_ring_ratio, in both modes (2D: on the _front.vtu chord mesh)."
+  },
+  {
+    "pointer": "/sorted_marching",
+    "type": "bool",
+    "default": false,
+    "doc": "Execute the marching in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/sphere_trace_target_rel_tol",
+    "type": "float",
+    "default": 0.01,
+    "doc": "In (0, 1). The marching's sphere trace stops at the first point where |d(x) - D| <= this x D, D being the distance the march traces to (target_distance, or half the maximum marchable distance under construction_mode max_marchable_fallback); the placed vertex is that close to that level set along the edge. Smaller is tighter and takes more steps (each step is longer than the tolerance, so at most edge length / (this x D) per edge)."
+  },
+  {
+    "pointer": "/construction_mode",
+    "type": "string",
+    "default": "max_marchable_fallback",
+    "options": [
+      "max_marchable_fallback",
+      "midpoint_fallback"
+    ],
+    "doc": "How the marching constructs the offset. Construction first measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (an edge with one end in the input complex and the other in the background). Every marched edge's inner end is on the complex, so the level set d = D crosses every marched edge for every D up to that distance. If target_distance is below it, every marched edge is split where d(x) = target_distance, found by sphere tracing from the complex end (to within sphere_trace_target_rel_tol). Otherwise: 'max_marchable_fallback' (the default) traces every marched edge to half the maximum marchable distance instead; 'midpoint_fallback' splits every marched edge at its midpoint. Either way target_distance itself is not changed: the optimization carries the offset surface out to it. Both dimensions."
+  },
+  {
+    "pointer": "/init_optimize",
+    "type": "bool",
+    "default": false,
+    "doc": "Default false, as the band-volume runs ran it. 2D and 3D. Construction measures the maximum marchable distance, the smallest distance from the input complex of the outer end of any marched edge (the largest target every marched edge can be traced to). If target_distance is below it, the init_optimize loop is not done: the offset is marched to the target and the loop runs with refinement as usual, and the log says so. If target_distance is not below it, every marched edge is split as construction_mode says (the default traces it to half the maximum marchable distance; midpoint_fallback splits it at its midpoint), the loop first converges under stencil_order with no refinement (the sizing field left as it is), without the final pass, and then the ordinary loop converges under the same stencil_order with its refinement, final pass and verdict. target_distance is never changed. The no-refinement loop's debug frames are led by i."
+  },
+  {
+    "pointer": "/repulsion_smoothing_passes",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "2D and 3D. At most this many smoothing passes between the simplicial embedding and the march, so that the march can trace to target_distance itself. The march traces every marched edge (one end in the input complex, the other not) to target_distance only if every outer end is farther than it (the maximum marchable distance, see construction_mode); otherwise it falls back. The repulsion vertices are those outer ends -- the one ring of the input complex's vertices minus the complex -- that no input envelope holds. One per-cell energy holds before the march: the energy's AMIPS term (3D: see offset_amips_weight; 2D: w AMIPS, the 2D engine's quality, w = offset_amips_weight, as the front) plus, for each corner v of the cell (2D: face) that is a repulsion vertex joined in that cell to the input complex by a marched edge, O(v) = (max(0, 2 delta - d(v)) / front_conv)^2, delta = target_distance, d the Euclidean distance to the input complex. O is one-sided, so it pushes a vertex out and never pulls one in, and its target is 2 delta so that the march at delta splits each edge with room to spare (the construction's own fallback, half the maximum marchable distance, run backwards). Every vertex is smoothed against the sum of that energy over its ring, so a repulsion vertex's O(v) counts once for every ring cell that carries it; every other vertex is smoothed as in the loop. In 3D no move may raise the sum of the energy over the vertex's ring; in 2D a repulsion move has no veto and every other vertex keeps the veto on the max of the energy over its ring. The passes stop as soon as every outer end is farther than delta + front_conv, i.e. outside the tolerance band. Each pass logs the maximum marchable distance, the outer ends within delta + front_conv, delta and 2 delta, and the max AMIPS; with debug_output a frame repulsion_<k> follows each pass. 0 (the default) = off: no pass, no frame, no log line."
+  },
+  {
+    "pointer": "/repulsion_rounds",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says (adaptive smoothing is not used). No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_settle_mark",
+    "type": "string",
+    "options": ["max", "rms", "vertex"],
+    "default": "vertex",
+    "doc": "EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: which test marks a front face on a settled turn (the settle, the halving and the exit are unchanged). \"max\": the exact bound on the face's largest distance from the level set, max(inside_f, outside_f), exceeds front_conv (see EXPERIMENTAL_settle_refinement). \"rms\": the face's share of the offset term's excess exceeds the bar energy of its area. The share, to first order in d - target_distance (divergence theorem on G = (1/2)(d - delta)^2 grad d; exact for any band shape, folds included, up to the curvature and medial-axis term), is X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA, theta the angle between the face's normal (pointing out of the band) and grad d, signed; the bar energy of the face is front_conv^2 area(f) / (2 delta). So f is marked when the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2. The mean is taken by the 3-edge-midpoint rule (weights 1/3), exact for quadratic integrands, so exact over a face whose points all have one input face's interior as nearest feature (d affine, grad d constant). Near an input edge or vertex (d curved) it is an approximation. Across a ridge of d (the medial axis, where two input faces are equally near: the inward offset of a convex edge, the outward offset of a concave one) it can miss the face's excess entirely: measured on the prism inward (2026-10-09), one face read 0.24 bar by this rule and 7.46 bars over a 91-point grid. A face along grad d (cos theta near 0) or turned back (cos theta < 0) has a share near 0 or negative and is not marked; the max test catches such a face. \"vertex\": a front vertex v is marked when |d(v) - target_distance| exceeds front_conv (d over all input triangles, exact at v), and its own sizing is halved; it says nothing about the points of a face between its corners. All three tests' numbers are logged on every settled turn, whichever marks. Read only under EXPERIMENTAL_settle_refinement. \"vertex\" is the default."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_settle_refinement",
+    "type": "bool",
+    "default": true,
+    "doc": "EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle, then judge every front face by an exact bound on its distance from the level set d = target_distance. Each turn, after the energy criterion: dE = E_prev - E, E the energy (see offset_amips_weight) at the end of the turn and E_prev at the end of the previous turn (turn 1: just before its first operation group); the bar energy b = front_conv^2 * A / (2 * target_distance), A the total area of the front faces: the excess of the offset term for a front of area A lying front_conv beyond the level set (per unit area the integral of s / target_distance over s from 0 to front_conv). The turn is settled when dE < b. An unsettled turn refines nothing and does not exit: the front is still moving, and a face judged now is judged where the front passes, not where it comes to rest. On a settled turn a front face f is marked when max(inside_f, outside_f) > front_conv, with inside_f = target_distance - min over f of d (exact: the min over input triangles P of the triangle-to-triangle distance) and outside_f = (min over P of the max of d_P over f's three corners) - target_distance, an upper bound on max over f of d - target_distance (d_P is convex, so its max over the face is at a corner, and d <= d_P). Every marked face has the sizing scalar halved at its three corners (down to the sizing floor); a marked face with all three corners at the floor cannot be refined, is counted and warned about, and blocks the exit like every marked face. Exit: settled and no face marked. The run then ends as on the ordinary exit (the frozen-front final pass when max AMIPS >= stop_energy), and this exit is the front half of the verdict. The energy criterion's own refinement (its refinable faces or vertices) and its exit test do not act; its turn line is still logged. One [settle] line per turn. true is the default; false = the energy criterion's refinement and exit."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_split_energy_gate",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-09), 3D. Every split of the optimisation loop (not the march's) is committed only if the energy E, summed over the cells it changes -- the parents before, the children after -- strictly falls, judged right after the split and before any smoothing; otherwise it is rolled back. A split never raises the energy's band term, so a split passes where the bound tightens by more than the AMIPS term rises (bisecting a well-shaped tet makes worse-shaped children), and is refused where the bound is already exact. Strict, since every split adds cells. What proposes splits is unchanged (the sizing field and its refinement). false (the default) = splits are not judged by the energy."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_repulsion_refine",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-07), 3D, euclidean offset_field only, needs repulsion_rounds > 0. The repulsion also refines, before the march, where the front the march would cut fails the loop's own face measure. At every report (before the passes, after each pass and each round) the front at target_distance (the construction target) is predicted: on every marched edge the split point is the sphere trace's, the point the march creates; in every cell with a marched edge these points bound the cell's front piece, a triangle, or a quad measured in both triangulations because the march's split order picks its diagonal; each triangle is measured by the loop's face measure (face_offset_term(): stencil_order, front_conv). The sizing scalar is halved, and graded, at the corners of every cell whose piece is over the bar, as the loop halves. The rounds' split pass realizes it, refusing marched edges as always, so the refinement runs along the input and the outer ends and never across the future band; the rounds have no collapse group; the repulsion term keeps the outer ends beyond target_distance. The passes and rounds stop once every outer end is beyond target_distance + front_conv AND no predicted piece is over the bar (or none is unmeasurable). The lowered sizing field carries into the loop. Why: on Thingi10K 100026 the slot-end band cells that cover a slot's mid-plane reach 3.6 x the construction target along the slot, whatever the target, because the march's split points slide along fixed background edges running across and along the slot; refining after the march splits those cells' front edges, whose midpoints land in the gap. false (the default) = the rounds as before."
+  },
+  {
+    "pointer": "/check_manifoldness",
+    "type": "bool",
+    "default": true,
+    "doc": "After performing offset, check if offset region is manifold"
+  },
+  {
+    "pointer": "/save_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "Save .vtu of output mesh"
+  },
+  {
+    "pointer": "/phi_grid_resolution",
+    "type": "int",
+    "default": 0,
+    "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. The grid is the plane through the box centre normal to the box's shortest extent (the whole domain when the domain is planar). Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface."
+  },
+  {
+    "pointer": "/DEBUG_output",
+    "type": "bool",
+    "default": false,
+    "doc": "Write debug VTU frames of the evolving mesh, in both dimensions: one frame after every operation pass and every smoothing pass, as sequential <output>_NNNNN.vtu files so ParaView loads them as one time series, plus <output>_frames.txt carrying one 'NNNNN<tab>r<turn><phase><pass>_<op>' line per frame, which the viewer scripts read for their labels; in 3D also <output>_energy.txt, one 'NNNNN<tab>label<tab>band term<tab>AMIPS term' line per frame, the energy's two parts (see offset_amips_weight). Expect hundreds of frames on a real model; observational only, the frames cannot change the run."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": "",
+    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity and attributes) is preallocated to this factor times the live element count at init and at consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs and raise it for aggressive refinement; the offset refines aggressively, so a run whose log carries [slots] warnings is dropping the very splits the criterion asked for."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05; only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": 0.05,
+    "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
+  },
+  {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Target edge length (absolute). If < 0, computed from length_rel."
+  },
+  {
+    "pointer": "/stop_energy",
+    "type": "float",
+    "default": 100.0,
+    "doc": "Target AMIPS quality for the elements. Default 100, matching the tetwild component -- the frozen-front finishing pass is TriWild/TetWild and stops where they stop. Do not lower it far: a target the operation set cannot deliver turns the split pass into an unbounded refiner. Edge collapse will not push an already-on-target region's quality back above this. In 3D it also scales the energy's AMIPS term, offset_amips_weight * vol * (AMIPS / stop_energy)^3 (see offset_amips_weight)."
+  },
+  {
+    "pointer": "/max_iterations",
+    "type": "int",
+    "default": 80,
+    "doc": "Cap on the shared TriWild/TetWild loop, which now runs in exactly one place: the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
+  },
+  {
+    "pointer": "/offset_envelope",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside (the loop holds the front to no envelope), as an ABSOLUTE length in model units; < 0 (the default) means use offset_envelope_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel. It is a leash, not an accuracy knob: front_conv sets the accuracy, and startup requires this to be <= front_conv, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable faces every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all. It also feeds the derived sizing floor when min_edge_length_rel is negative, as this length expressed in units of target_distance."
+  },
+  {
+    "pointer": "/offset_envelope_rel",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside, as a fraction of the BOUNDING BOX DIAGONAL, used when offset_envelope is < 0. Built once, from the front as the loop left it, for the frozen-front final pass; the loop holds the front to no envelope. THE REFERENCE CHANGED on 2026-09-24: it was a fraction of target_distance. A fully default run is NOT unchanged -- the old default 0.025 x the default target_distance_rel 0.01 came to 2.5e-4 of the diagonal, and this default is 1e-4, so the leash is 2.5x TIGHTER at defaults and the operation passes are correspondingly more constrained. At other target distances it moves the other way: at target_distance_rel 1e-3 the old key gave 2.5e-5 of the diagonal where this gives 1e-4, a leash four times wider. See offset_envelope for what the corridor is and what startup requires of it."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Run split, collapse and swap as three separate rounds with `interleaved_smoothing_passes` smoothing passes after each, instead of one combined round followed by `num_smoothing_passes`. DEFAULT TRUE since 2026-09-28 (it was false from 2026-09-25, when the smoothing was 63% of a turn and 5 of its 6 passes near no-ops; the single energy, the exact Hessian and the relative gradient tolerance made a front solve 2-3 Newton iterations instead of 10). Measured on the cube with the single energy, mix vetos: serial target 1e-2 / tolerance 1e-4, combined 7 turns / 22396 faces / 215 s, interleaved 6 / 20102 / 203 s; 10 threads, combined 7-9 turns / 22260-25416 faces / 55-98 s, interleaved 6-7 / 19870-21186 / 60-75 s; 10 threads 1e-3 / 5e-5 (neither resolved in 10 turns), combined 95040 faces / 330 s, interleaved 75826 / 390 s. The gain is in the late turns: the front the exit test judges has been re-placed after every operation, so fewer vertices are over the bar and halved."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the loop this fixed count is only used when adaptive_smoothing is false."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
+  },
+  {
+    "pointer": "/adaptive_smoothing",
+    "type": "bool",
+    "default": false,
+    "doc": "The loop only, not the final pass. Run the smoothing after each operation group pass by pass until it has converged or stalled, instead of a fixed count: after the one combined group under interleaved_smoothing false in place of num_smoothing_passes, and after each of the three groups (split, collapse, swap) under true (the default) in place of interleaved_smoothing_passes. 2D and 3D alike. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the vertex's own relative error over the bar -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-finite residual) are counted and left out of the maximum."
+  },
+  {
+    "pointer": "/adaptive_smoothing_max_passes",
+    "type": "int",
+    "default": 20,
+    "doc": "Upper bound on the smoothing passes of one operation group under adaptive_smoothing; at least 1 pass always runs."
+  },
+  {
+    "pointer": "/adaptive_smoothing_stall_rel",
+    "type": "float",
+    "default": 0.1,
+    "doc": "Under adaptive_smoothing the front counts as stalled when a pass lowered the maximum convergence ratio by less than this fraction of its value before the pass (0.1 = less than 10 percent). Never applied to the first pass of a group."
+  },
+  {
+    "pointer": "/adaptive_smoothing_step_rel",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
+  },
+  {
+    "pointer": "/pre_smooth",
+    "type": "bool",
+    "default": false,
+    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike; or the adaptive smoothing when adaptive_smoothing is on -- (2D: with the plastic rests stamped before it and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+  },
+  {
+    "pointer": "/coarsen_pass",
+    "type": "bool",
+    "default": false,
+    "doc": "Run the post-optimization coarsening pass, as TriWild and TetWild do. It trades elements for nothing but the guarantee that the result is still good, so topological_offset holds it to an absolute bar -- both AMIPS and the offset residual inside tolerance after each collapse -- rather than the non-degrading bar the main loop uses. Off by default: the pass can dominate total runtime, and being the last thing to run before the final convergence check, anything it degrades is reported as a quality failure rather than a coarsening one."
+  },
+  {
+    "pointer": "/coarsen_unbounded",
+    "type": "bool",
+    "default": true,
+    "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass then answers how few elements can hold this max energy, which is more aggressive than it sounds because the answer ignores how big the elements become; measured over the registered models it roughly doubles the cell reduction while raising max energy on none of them. On by default. Turned off, it leaves alone any edge already at or past the collapse threshold, since collapsing it only makes its neighbours longer. The sizing field is deliberately not applied either way: honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary."
+  },
+  {
+    "pointer": "/coarsen_max_rounds",
+    "type": "int",
+    "default": 2,
+    "doc": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does not exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point. Returns decay fast, and the default of two carries the large majority of the coarsening for a fraction of what the later rounds would cost."
+  },
+  {
+    "pointer": "/coarsen_global_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Ordinary whole-mesh smoothing passes run between coarsening rounds. This is what makes a second round worth running at all -- see coarsen_max_rounds -- so setting it to 0 collapses the rounds to one."
+  },
+  {
+    "pointer": "/coarsen_smooth_ring",
+    "type": "int",
+    "default": 1,
+    "doc": "How far the local smoothing after each coarsening collapse reaches, in rings; the pass locks one ring wider than this. Deliberately 1 rather than TriWild's and TetWild's 2: a smaller ball perturbs less per collapse, so more collapses clear the offset's absolute coarsening bar."
+  },
+  {
+    "pointer": "/coarsen_local_smoothing_passes",
+    "type": "int",
+    "default": 0,
+    "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured, so the collapse is judged on a relaxed neighbourhood rather than on the configuration it lands in. 0 by default: the ring is large enough that even two sweeps cost hundreds of nonlinear solves per candidate, and turning it off costs almost no cell reduction because the pass runs to a fixed point and finds another candidate instead. At 0 the only relaxation is the global smoothing between rounds, which has no per-operation accept test of its own -- see the forced quality veto in TetOptimizerMesh::coarsen_mesh()."
+  },
+  {
+    "pointer": "/stuck_refine_stall_eps",
+    "type": "float",
+    "default": 0.1,
+    "doc": "Fire the sizing refinement when an iteration's improvement is small next to the distance the metric still has to cover: (prev - cur) <= stall_eps * (cur - target). 0 means only when it does not improve at all."
+  },
+  {
+    "pointer": "/stuck_refine_cooldown",
+    "type": "int",
+    "default": 1,
+    "doc": "Iterations to skip after a sizing refinement before another may fire. Default 1, matching the tetwild component: the refined sizing needs one split/collapse round to act before the stall detector can fairly judge it. 0 allows one every iteration."
+  },
+  {
+    "pointer": "/stuck_refine_num_worst",
+    "type": "int",
+    "default": 0,
+    "doc": "How many worst faces seed the refinement. 0 means every face above the filter threshold, which is TriWild's default."
+  },
+  {
+    "pointer": "/stuck_refine_rings",
+    "type": "int",
+    "default": 0,
+    "doc": "Vertex rings grown around each seeded face before the sizing scalar is lowered."
+  },
+  {
+    "pointer": "/stuck_refine_factor",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Multiplicative reduction of the per-vertex sizing scalar per refinement."
+  },
+  {
+    "pointer": "/stuck_refine_min_scalar",
+    "type": "float",
+    "default": 0.001,
+    "doc": "Floor on the per-vertex sizing scalar."
+  },
+  {
+    "pointer": "/stuck_refine_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Neighbouring sizing scalars may differ by at most this factor. The smoothing only ever lowers a scalar, spreading refinement outward. <= 1 disables it."
+  },
+  {
+    "pointer": "/stuck_refine_force_split",
+    "type": "bool",
+    "default": true,
+    "doc": "On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field."
+  },
+  {
+    "pointer": "/sizing_collapse_min",
+    "default": true,
+    "type": "bool",
+    "doc": "What the surviving vertex of a collapse keeps as its sizing scalar. true (the default): the smaller of the two, which is the shared engine's rule. false: its own scalar, restored after the base collapse. The min rule carries substantially more vertices and lengthens the placement loop where the front travels, because the offset's sizing follows a moving front and has to relax behind it, which a scalar that only ever falls cannot do."
+  },
+  {
+    "pointer": "/max_rounds",
+    "default": 40,
+    "type": "int",
+    "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
+  },
+  {
+    "pointer": "/min_edge_length",
+    "type": "float",
+    "default": -1.0,
+    "doc": "l_min: the shortest edge the sizing field may ask for, in absolute units. If < 0, derived as min_edge_length_rel * target_distance -- tied to the offset distance rather than the bounding box, because the offset is what has to be resolved. This is a floor on REFINEMENT, so raising it makes the offset coarser (paper Fig. 18)."
+  },
+  {
+    "pointer": "/min_edge_length_rel",
+    "type": "float",
+    "default": -1.0,
+    "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it from the offset envelope epsilon, which is just offset_envelope (as a multiple of target_distance): TetWild's own floor (cap the sizing field below by the envelope eps, Sec 3.2) stated in the offset's units, since the front is only held to within eps and edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs."
+  },
+  {
+    "pointer": "/min_sizing_scalar",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
+  },
+  {
+    "pointer": "/max_sizing_scalar",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Upper bound for the per-vertex sizing field, as a multiplier on the target edge length (splitting_l2/collapsing_l2). 1.0 means never coarser than the base target length."
+  },
+  {
+    "pointer": "/sizing_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the sizing field: neighbouring vertices' sizing scalars may differ by at most this factor. After each refinement pass the refined vertices' lower sizing scalar is propagated outward -- monotone, only ever lowering a neighbour's scalar -- so the mesh does not jump straight from fine to coarse. <= 1 disables gradation. Only read when sizing_gradation_mode is 'ring'."
+  },
+  {
+    "pointer": "/sizing_gradation_mode",
+    "type": "string",
+    "default": "ring",
+    "options": [
+      "ring",
+      "distance"
+    ],
+    "doc": "How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the sag rule, the stuck refine). 'ring' (the default): the base gradation_smooth_sizing -- walk outward over mesh neighbours, capping each neighbour at sizing_gradation times the scalar it came from, so the field grades by mesh rings and a fine seed in a coarse mesh drags a shell of rings down with it. 'distance': TetWild's adjust_sizing_field gradation -- walk outward from the seeds and multiply every vertex within R = 1.8 l of its nearest seed by the linear ramp 0.5 + 0.5 dist / R (halved next to a seed, untouched at R), stopping at R; the seeds keep the value they were just given and nothing outside the ball changes. The refinement then reaches a seed geometrically through the split pass (each split child takes the mean of its parents' scalars) instead of by rings, so a fine target stays local to the seed however coarse the mesh around it is."
+  },
+  {
+    "pointer": "/split_high_valence_threshold",
+    "type": "int",
+    "default": 0,
+    "doc": "Incident-cell count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex."
+  },
+  {
+    "pointer": "/project_line_search_steps",
+    "type": "int",
+    "default": 12,
+    "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
+  },
+  {
+    "pointer": "/project_line_search_nested_steps",
+    "type": "int",
+    "default": 0,
+    "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
+  },
+  {
+    "pointer": "/offset_amips_weight",
+    "type": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "doc": "The weight w of AMIPS in the per-cell energy. 3D: THE energy E is the sum over the cells of tet_energy (TopoOffsetTetMesh::tet_energy()) = (w / stop_energy^3) vol AMIPS^3, plus for a band cell b = vol * min over the input triangles P of the mean over its four corners of (d_P - target_distance) / target_distance, d_P the distance to triangle P alone; MAX_ENERGY where the engine cannot score the cell's AMIPS. b is the cell's part of the integral over the band of (d - target_distance) / target_distance, as an upper bound that no split raises (d_P is convex and d <= d_P). Both terms are volumes, so E converges under refinement; a cell at the stop energy costs about w vol in AMIPS. Every operation compares the SUM of tet_energy over the cells it changes, before against after: a collapse may not raise it (a tie passes); a swap -- 3-2, 4-4, 5-6, the face swap, and the 4-4 / 5-6 case search and the face swap's gate that pick and gate the cells it makes -- must strictly lower it; a smoothing move may not raise it over the vertex's ring; a split is judged only under EXPERIMENTAL_split_energy_gate. The engine's own AMIPS^3 rules for collapses and swaps are off. The smoother minimises the vertex's part of E: the AMIPS term over its ring and, unless an input envelope holds the vertex, the band term of its band cells. Needs one input region, an input complex of triangles only, offset_field 'euclidean' and deform_others false (refused otherwise). Why the corner bound with the min over all triangles, and why a vertex held on the input carries no band term: see TopoOffsetTetMesh::band_cell_term() and smoothing_extra_energy(). DEFAULT 1, the weight the band-volume runs used (the eight-case suite of 2026-10-09 among them). The default before, 1e-4, was chosen 2026-09-30 for the energy this replaced (AMIPS^3 plus the front faces' squared measures, compared by maxima); here it would make the AMIPS term 1e-10 vol AMIPS^3. 2D: the same weight multiplies AMIPS (the 2D engine's cell quality) in tri_energy = w AMIPS + the offset terms of the front chords, and in the 2D front smoother."
+  },
+  {
+    "pointer": "/DEBUG_crossings",
+    "type": "bool",
+    "default": false,
+    "doc": "Log-only: after every operation pass and every smoothing pass, count the front vertices whose ring measure crossed the bar (from <= 1 to > 1, and back), plus new vertices already over it; inside the front smoother, classify each accepted move whose ring-measure crossing it caused as the moved vertex's own or a front neighbour's. Changes no result; costs an exit-measure evaluation per pass and a local one per front move. 2D and 3D."
+  },
+  {
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
-    "options": ["projected", "exact"],
-    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
-},
-    {
-        "pointer": "/w_amips",
-        "type": "float",
-        "default": 0.0001,
-        "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of non-offset-surface vertices. The envelope weight is derived as 1 - w_amips (only used if optimize is true)."
-    },
-    {
-        "pointer": "/perform_sanity_checks",
-        "type": "bool",
-        "default": false,
-        "doc": "Check after every operation pass that no tet is inverted and no tracked-surface triangle left its envelope. Slow; for debugging (only used if optimize is true)."
-    }
+    "options": [
+      "projected",
+      "exact"
+    ],
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along edges and curve segments. Rests a w_amips-proportional distance off the input."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices (the engine's input-surface envelope term); the envelope weight is 1 - w_amips. The front objective does not read it, in 2D or 3D: in 3D the objective is the vertex's part of the energy (see offset_amips_weight); in 2D AMIPS enters at offset_amips_weight and the offset term at 1 / (front_conv / target_distance)^2, i.e. in units of the tolerance -- the two parts of the per-cell energy."
+  },
+  {
+    "pointer": "/perform_sanity_checks",
+    "type": "bool",
+    "default": false,
+    "doc": "Check after every operation pass that no element is inverted and no tracked-surface simplex left its envelope. Slow; for debugging."
+  },
+  {
+    "pointer": "/deform_others",
+    "default": false,
+    "type": "bool",
+    "doc": "Whether everything outside the offset band deforms when the optimization pushes it. 3D refuses true: the plastic medium's rest-shape term is not part of the energy and outweighs it. 3D, false: every region boundary, the input complex's included, and the domain wall are held, in one envelope (see envelope_size_rel); the medium outside the band has no rest shape, and its vertices are smoothed on the energy like every other vertex (see offset_amips_weight). The offset surface is held by nothing during the loop; only the frozen-front final pass holds it, to offset_envelope. 2D: true drops the other regions' per-tag envelopes at the top of optimize_offset() and releases them, as before."
+  }
 ]

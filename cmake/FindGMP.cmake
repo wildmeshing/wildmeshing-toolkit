@@ -4,12 +4,34 @@
 Message(STATUS "GMP_DIR = ${GMP_DIR}")
 Message(STATUS "GMP_DIR (env var) = $ENV{GMP_DIR}")
 
+# Homebrew links every formula's headers into one shared directory (/opt/homebrew/include, or
+# /usr/local/include on Intel). Found there, GMP's include directory puts every library Homebrew
+# has installed on the include path of everything that links GMP -- as a system directory, ahead
+# of the copies this build fetches. A Homebrew Abseil then shadows the Abseil that ipc-toolkit
+# fetches for topological_offset: the code compiles against one version and links the other, and
+# the link fails on an undefined absl::lts_<version>::hash_internal::MixingHashState::kSeed. Each
+# formula also has a prefix of its own (`brew --prefix gmp`) that holds its headers alone; look
+# there first.
+set(_WMTK_GMP_HOMEBREW_PREFIXES "")
+if(APPLE)
+    foreach(_prefix "$ENV{HOMEBREW_PREFIX}" /opt/homebrew /usr/local)
+        if(_prefix AND EXISTS "${_prefix}/opt/gmp/include/gmp.h")
+            list(APPEND _WMTK_GMP_HOMEBREW_PREFIXES "${_prefix}/opt/gmp")
+        endif()
+    endforeach()
+    # A cache from before this lookup existed holds the shared directory; find it again.
+    if(_WMTK_GMP_HOMEBREW_PREFIXES AND GMP_INCLUDES MATCHES "^(/opt/homebrew|/usr/local)/include/?$")
+        unset(GMP_INCLUDES CACHE)
+    endif()
+endif()
+
 find_path(GMP_INCLUDES
     NAMES
         gmp.h
     HINTS
         ${GMP_DIR}
         ENV GMP_DIR
+        ${_WMTK_GMP_HOMEBREW_PREFIXES}
     PATHS
         ${INCLUDE_INSTALL_DIR}
     PATH_SUFFIXES
@@ -24,6 +46,7 @@ find_library(GMP_LIBRARIES
     HINTS
         ${GMP_DIR}
         ENV GMP_DIR
+        ${_WMTK_GMP_HOMEBREW_PREFIXES}
     PATHS
         ${LIB_INSTALL_DIR}
     PATH_SUFFIXES

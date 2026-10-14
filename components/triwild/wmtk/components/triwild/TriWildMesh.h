@@ -172,6 +172,9 @@ public:
      *        stay near what the user gave us, not near the simplified version of it. Same
      *        arrangement as tetwild, which hands its optimizer the envelope built on the
      *        unsimplified input surface.
+     * @param E_orientation optional: per row of E, the input's direction on it, measured along
+     *        the row as written (embed_segments' E_out_orientation). When given, the tracked
+     *        edges carry it and m_tracks_orientation is set.
      * @param free_point_vids rows of V that stand for input FREE POINTS -- input vertices
      *        with no incident segment. Each is anchored in m_feature_points exactly like a
      *        polyline endpoint: same ball, same collapse policy, same retention audit. They
@@ -186,6 +189,7 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXd& V_env,
         const MatrixXi& E_env,
+        const std::vector<int>* E_orientation = nullptr,
         const std::vector<size_t>& free_point_vids = {});
 
     void init_surfaces_and_boundaries();
@@ -228,10 +232,26 @@ public:
 
     /// Remove the faces that lie inside no input (needs compute_winding_numbers).
     void filter_with_input_winding_number();
+
+    /**
+     * @brief Winding number of every face's centroid w.r.t. the tracked curves, oriented as the
+     * input was (m_tracks_orientation must be set), into FaceAttributes::m_winding_number.
+     *
+     * The tracked counterpart of compute_winding_numbers: evaluated on the curves the mesh
+     * actually conforms to rather than on the input, and over all inputs at once -- coincident
+     * curves add up, opposite ones cancel. Like the input winding number, a result with nothing
+     * inside is taken as an inside-out input and flipped.
+     */
+    void compute_tracked_winding_number();
+    /// Remove the faces whose tracked winding number is at most 1/2.
+    void filter_with_tracked_winding_number();
     /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
     void filter_with_flood_fill();
 
     int flood_fill();
+    /// Whether flood_fill ran, so that the writers leave the part ids out rather than writing
+    /// their defaults as if they were parts.
+    bool m_has_parts = false;
 
 protected:
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }

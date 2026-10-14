@@ -38,8 +38,16 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     }
 
     partition_mesh_morton();
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+
+    if (m_params.debug_output) {
+        m_debug_pass_name = "improve-entry";
+        write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it pre========");
+        local_operations({{0, 1, 1, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -102,8 +110,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -112,12 +119,19 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 1, 0}});
+    }
 
     // Removing what the mesh does not need is the last thing to do, not something to
-    // interleave: it trades vertices for nothing but the guarantee that the max energy does
-    // not rise, which is only worth taking once the energy is where it is going to end up.
+    // interleave: it trades vertices for nothing but the guarantee that the max energy does not
+    // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
 }
 
@@ -126,6 +140,8 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     bool collapse_limit_length)
 {
     igl::Timer timer;
+
+    static constexpr std::array<const char*, 4> names = {{"split", "collapse", "swap", "smooth"}};
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
@@ -148,11 +164,21 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     };
 
     sanity_checks();
-    for (int i = 0; i < int(ops.size()); ++i) {
+    update_attributes();
+    size_t retry_count = 0;
+    for (int i = 0; i < ops.size(); ++i) {
+        if (retry_count > 0) {
+            logger().info(
+                "Retrying {} pass after consolidating. Retry count: {}",
+                names[i],
+                retry_count);
+        }
         timer.start();
+        m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==splitting {}==", n);
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 split_all_edges();
                 logger().info(
                     "#V = {}, #F = {} after split",
@@ -173,21 +199,54 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
                 logger().info("==swapping {}==", n);
                 if (swap_all_edges() == 0) break;
             }
-        } else {
-            logger().info("==smoothing ==");
+        } else if (i == 3) {
             smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
 
-        if (m_params.debug_output) {
-            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        // No checkpoint frame here. For split/collapse/swap the group writes its own frame just
+        // below, and smooth_all_vertices() writes one per sweep, so a checkpoint after the group
+        // duplicated the frame before it -- and a group with ops[i] == 0 wrote a frame of a mesh
+        // nothing had touched. Measured on the 2D offset: 18 frames per phase-A iteration where
+        // 6 passes ran.
+        if (ops[i] > 0) {
+            if (m_params.debug_output && i < 3) {
+                // no need to print debug output for smoothing, since it prints already internally
+                write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            }
+            const auto [max_metric, avg_metric] = optimization_quality_stats();
+            logger().info("{} max energy = {:.6} avg = {:.6}", names[i], max_metric, avg_metric);
+            sanity_checks();
+            update_attributes();
         }
-        const auto [max_metric, avg_metric] = optimization_quality_stats();
-        static constexpr std::array<const char*, 4> names = {
-            {"split", "collapse", "swap", "smooth"}};
-        logger()
-            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
-        sanity_checks();
+
+        // A pass that ran out of preallocated slots abandoned operations for want of storage.
+        // Consolidating both reclaims the slots removed elements still hold -- the counter only
+        // advances during a pass, so churn alone can exhaust it -- and re-derives the storage
+        // from the real element count, which grows it by m_preallocation_factor when there is
+        // no churn left to reclaim.
+        //
+        // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
+        // re-run instead, which re-collects them against the enlarged storage. Every retry
+        // grows the storage by the factor, so the chain makes progress and terminates.
+        if (slots_exhausted()) {
+            const size_t live_before = tri_capacity();
+            const size_t store_before = tri_storage_capacity();
+            consolidate_mesh();
+            clear_slots_exhausted();
+            logger().info(
+                "{} pass exhausted its preallocated slots: {} of {} faces reclaimed as "
+                "churn, storage {} -> {}",
+                names[i],
+                live_before - tri_capacity(),
+                live_before,
+                store_before,
+                tri_storage_capacity());
+            --i; // retry the same operation after consolidating
+            ++retry_count;
+        } else {
+            retry_count = 0;
+        }
     }
 
     const auto stats = optimization_quality_stats();
@@ -242,7 +301,7 @@ size_t TriOptimizerMesh::swap_all_edges()
             const double w = m.swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
-        total_success = run_localized_to_convergence(mesh, executor, collect_all_ops);
+        total_success = run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
     });
 
     return total_success;
@@ -310,7 +369,9 @@ bool TriOptimizerMesh::swap_edge_after(const Tuple& t)
         m_face_attribute[fid].tags = cache.face_tags;
         max_energy = std::max(q, max_energy);
     }
-    if (max_energy >= cache.max_energy) {
+    // 2D has no surface flip: swap_edge_before() refuses a surface edge outright, so the flag
+    // is always false here. See the hook's declaration.
+    if (!swap_quality_allowed(max_energy, cache.max_energy, /*is_surface_flip=*/false)) {
         return false;
     }
 
@@ -430,9 +491,9 @@ bool TriOptimizerMesh::is_inverted(const std::array<size_t, 3>& vs) const
         }
         return true;
     } else {
-        const Vector2r& v0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2r& v1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2r& v2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r v0 = m_vertex_attribute[vs[0]].pos();
+        const Vector2r v1 = m_vertex_attribute[vs[1]].pos();
+        const Vector2r v2 = m_vertex_attribute[vs[2]].pos();
         const Vector2r a = v1 - v0;
         const Vector2r b = v2 - v0;
         Rational res = a.x() * b.y() - a.y() * b.x();
@@ -473,9 +534,13 @@ bool TriOptimizerMesh::round(const Tuple& v)
     if (m_vertex_attribute[i].m_is_rounded) {
         return true;
     }
+    // Rounding writes the vertex, which a dry run must not do (other threads are reading it).
+    // Answer optimistically: a dry run that passes only means "worth attempting", and the real
+    // attempt rounds, or finds it cannot, for itself.
+    if (dry_run()) return true;
 
-    auto old_pos = m_vertex_attribute[i].m_pos;
-    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1];
+    const auto old_exact = m_vertex_attribute[i].m_exact;
+    m_vertex_attribute[i].set_pos_to_posf();
     auto conn_tets = get_one_ring_tris_for_vertex(v);
     // Set before the loop so is_inverted takes the float path: the question being asked is
     // exactly whether the ROUNDED position keeps every incident face valid.
@@ -483,7 +548,7 @@ bool TriOptimizerMesh::round(const Tuple& v)
     for (const Tuple& tet : conn_tets) {
         if (is_inverted(tet)) {
             m_vertex_attribute[i].m_is_rounded = false;
-            m_vertex_attribute[i].m_pos = old_pos;
+            m_vertex_attribute[i].m_exact = old_exact;
             return false;
         }
     }
@@ -522,6 +587,34 @@ double TriOptimizerMesh::get_quality(const size_t fid) const
 {
     auto its = oriented_tri_vids(fid);
     return get_quality(its);
+}
+
+std::vector<std::array<size_t, 2>> TriOptimizerMesh::oriented_tracked_edges() const
+{
+    std::vector<std::array<size_t, 2>> res;
+    for (const Tuple& e : get_edges()) {
+        const auto& attr = m_edge_attribute[e.eid(*this)];
+        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        if (a > b) std::swap(a, b);
+        if (attr.m_orientation < 0) std::swap(a, b);
+        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back({{a, b}});
+    }
+    return res;
+}
+
+std::vector<std::pair<size_t, int>> TriOptimizerMesh::tracked_curve_boundary() const
+{
+    std::map<size_t, int> sum;
+    for (const auto& e : oriented_tracked_edges()) {
+        sum[e[1]] += 1;
+        sum[e[0]] -= 1;
+    }
+    std::vector<std::pair<size_t, int>> res;
+    for (const auto& [v, s] : sum) {
+        if (s != 0) res.emplace_back(v, s);
+    }
+    return res;
 }
 
 std::vector<std::array<size_t, 2>> TriOptimizerMesh::get_edges_by_condition(

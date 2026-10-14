@@ -111,7 +111,7 @@ void manifold_extraction(nlohmann::json json_params)
         mesh.consolidate_mesh();
 
         // create offset
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // stop timer
         double time = timer.getElapsedTime();
@@ -186,7 +186,7 @@ void manifold_extraction(nlohmann::json json_params)
         mesh.consolidate_mesh();
 
         // create offset
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // stop timer
         double time = timer.getElapsedTime();

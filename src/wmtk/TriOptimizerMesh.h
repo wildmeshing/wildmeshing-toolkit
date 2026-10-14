@@ -4,12 +4,14 @@
 #include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
+#include <spdlog/fmt/bundled/format.h>
 #include <polysolve/nonlinear/Problem.hpp>
 
 #include <atomic>
@@ -40,7 +42,6 @@ public:
     struct VertexAttributes
     {
         Vector2d m_posf; // position as double
-        Vector2r m_pos; // exact position in rational
         /**
          * If a vertex cannot be rounded without inverting an incident face, the exact position
          * must be used. Once the vertex can be rounded to double precision, the rational
@@ -55,16 +56,35 @@ public:
 
         size_t partition_id = 0;
 
+        /**
+         * @name Exact position
+         *
+         * Stored only while it differs from m_posf; see ExactPosition. Read it with pos() (or
+         * pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely
+         * exact value, or set_pos_to_posf() when it is m_posf -- a rounded vertex, or one
+         * placed at a double position.
+         * @{
+         */
+        Vector2r pos() const { return m_exact.value(m_posf); }
+        bool pos_coord_equals(int k, const Rational& r) const
+        {
+            return m_exact.coord_equals(k, m_posf, r);
+        }
+        void set_pos(const Vector2r& p) { m_exact.store(p); }
+        void set_pos_to_posf() { m_exact.clear(); }
+        ExactPosition<Vector2r, Vector2d> m_exact;
+        /** @} */
+
         VertexAttributes() {}
         VertexAttributes(const Vector2d& p)
             : m_posf(p)
-            , m_pos(to_rational(p))
             , m_is_rounded(true)
         {}
         VertexAttributes(const Vector2r& p)
             : m_posf(to_double(p))
-            , m_pos(p)
-        {}
+        {
+            set_pos(p);
+        }
     };
 
     using EdgeAttributes = wmtk::SurfaceTagAttributes;
@@ -83,6 +103,23 @@ public:
 
     VertAttCol m_vertex_attribute;
     EdgeAttCol m_edge_attribute;
+
+    /**
+     * @brief The application set EdgeAttributes::m_orientation at insertion, so the tracked
+     * curves carry the input's direction and the operations keep it. See
+     * TetOptimizerMesh::m_tracks_orientation; this is the same thing one dimension down.
+     */
+    bool m_tracks_orientation = false;
+
+    /// The tracked curves as oriented segments, each edge |m_orientation| times, in the input's
+    /// direction. Edges whose segments cancel are left out.
+    std::vector<std::array<size_t, 2>> oriented_tracked_edges() const;
+
+    /**
+     * @brief Vertices where the oriented tracked curves have a boundary (in minus out != 0),
+     * each with that sum. Empty for closed input curves; the operations preserve it.
+     */
+    std::vector<std::pair<size_t, int>> tracked_curve_boundary() const;
     FaceAttCol m_face_attribute;
 
     /**
@@ -150,6 +187,11 @@ public:
 
     bool m_collapse_limit_length = true;
     int m_debug_print_counter = 0;
+    /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
+    /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
+    /// before it writes, so an application that renames frames (the 2D offset) can carry the
+    /// pass name into the file name; the base's own "debug_<N>" names are unchanged.
+    std::string m_debug_pass_name;
 
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
@@ -204,6 +246,15 @@ public:
 
     std::tuple<double, double> get_max_avg_energy();
 
+    /**
+     * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * This is necessary in SimWild to update the surface flags of edges and vertices as
+     * operations might have collapsed away regions that are now no longer on the surface. In
+     * TriWild, this is a no-op.
+     */
+    virtual void update_attributes() {}
+
     /// Shared TriWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     void mesh_improvement(int max_its = 80);
@@ -216,6 +267,36 @@ public:
     std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
+
+    /// Every pass grows the storage at its serial points -- between operations when serial,
+    /// between rounds when parallel (see ExecutePass) -- so the optimizer only keeps a small
+    /// slack instead of the preallocation factor.
+    bool storage_grows_on_demand() const override { return true; }
+
+protected:
+    /// The high-valence claims are indexed by vertex id and sized to the storage at the start
+    /// of a split pass; a split pass that grows the storage has to grow them with it, or the
+    /// vertices it creates would fall outside the gate. Existing claims are kept.
+    void on_slot_storage_grown() override
+    {
+        if (!m_high_valence_claim) return;
+        const size_t n = std::max(vert_capacity(), m_vertex_attribute.size());
+        if (n <= m_high_valence_claim_size) return;
+        auto grown = std::make_unique<std::atomic<int>[]>(n);
+        for (size_t i = 0; i < m_high_valence_claim_size; ++i) {
+            grown[i].store(m_high_valence_claim[i].load(std::memory_order_relaxed));
+        }
+        m_high_valence_claim = std::move(grown);
+        m_high_valence_claim_size = n;
+    }
+
+public:
+    /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
+    /// sizing scalars, or a force-split edge.
+    bool split_edge_is_due(const Tuple& e) const;
+    /// The current split pass's ExecutePass::waits() and wait_defects().
+    size_t m_split_order_waits = 0;
+    size_t m_split_order_wait_defects = 0;
 
     bool is_force_split_edge(const size_t v1, const size_t v2) const
     {
@@ -283,12 +364,88 @@ public:
      * quality veto, and skip_good_regions selection.
      */
     void smooth_all_vertices(size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges and triangles not incident to the vertex) through const access, e.g.
+     * `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
     Vector2d smoothing_position(size_t vid) const;
     void set_smoothing_position(size_t vid, const Vector2d& p);
     virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
+
+    /**
+     * @brief The envelope this vertex is PULLED TOWARD while smoothing, and the one it is
+     * CONTAINED BY afterwards. Split, as in wmtk::TetOptimizerMesh.
+     *
+     * Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS
+     * (plus whatever smoothing_extra_energy() adds) with no pull and no containment check.
+     *
+     * The default of both is what TriWild and SimWild do -- one envelope, applied to every
+     * vertex on the tracked surface -- so overriding nothing leaves their behaviour untouched.
+     * An application tracking more than one surface overrides them: topological_offset returns
+     * null for a vertex that is ONLY on the offset boundary, because that is the surface the
+     * optimization exists to move, and a tube around its initial position caps how far it can
+     * ever travel.
+     *
+     * WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual SampleEnvelope queries --
+     * nearest_point and the ExactDistanceEnergy2D trio -- so whatever it returns must be a real
+     * envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it
+     * may be answered by a composite over several envelopes (topological_offset holds a
+     * junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook
+     * would statically bind a composite's null BVH the moment a junction vertex was pulled.
+     */
+    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+
+    /**
+     * @brief An extra term the application adds to this vertex's smoothing objective, or null.
+     *
+     * The extension point that lets an application place a vertex by MINIMISING something
+     * rather than by computing a position and then defending it. topological_offset uses it for
+     * the offset boundary: the term is w (Phi - c)^2, whose minimum is the offset itself, so an
+     * offset-boundary vertex goes through this same smoother -- the same line search, the same
+     * inversion test, the same quality veto -- as every other vertex, instead of through a
+     * hand-rolled projection that bypassed all three.
+     *
+     * Null by default, so TriWild and SimWild compose exactly the energy they composed before.
+     */
+    virtual std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const
+    {
+        return nullptr;
+    }
+
+    /**
+     * @brief The number the shared smoother compares for one face, given the face's quality at
+     * the position being tested: the projected step's candidate test and the quality veto take
+     * the max of this over the ring. The quality itself by default, so TriWild and SimWild
+     * compare exactly what they compared before. The 3D twin is
+     * TetOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*fid*/, const double quality) const
+    {
+        return quality;
+    }
 
     double active_quality_threshold() const
     {
@@ -326,7 +483,69 @@ protected:
     virtual std::tuple<double, double> optimization_quality_stats();
     virtual double optimization_stop_metric() const { return m_params.stop_energy; }
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+
+    /**
+     * @brief Whether the loop opens and closes with BARE collapse passes.
+     *
+     * mesh_improvement() brackets the loop with local_operations({{0,1,0,0}}) -- collapse alone,
+     * not interleaved with splits or smoothing, and the opening one with collapse_limit_length
+     * FALSE so no length gate applies at all. For TriWild and SimWild that is right: it strips
+     * the redundancy left by insertion, and their tracked surface is held by an envelope.
+     *
+     * It is wrong for an application whose tracked surface is what the optimization exists to
+     * PLACE, and which therefore has no envelope holding it. See the 3D twin,
+     * TetOptimizerMesh::optimization_bare_coarsen_passes, for the measurement that found it.
+     */
+    virtual bool optimization_bare_coarsen_passes() const { return true; }
+    /// CHURN INSTRUMENTATION. Bumped at the start of every split pass in local_operations(), so
+    /// the pass a vertex was born in can be compared against the pass a collapse removes it in.
+    /// Zero until the first split pass runs, which is what lets a construction-era vertex be
+    /// told apart from an optimization-split one. Never reset -- only differences mean anything.
+    /// The 3D twin is wmtk::TetOptimizerMesh::m_op_epoch.
+    uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
+
+    /**
+     * @brief Whether an iteration that moved the metric from @p prev to @p cur is stalled, and
+     * the sizing refinement should therefore fire.
+     *
+     * Exactly the expression mesh_improvement() used inline: the improvement is small next to
+     * the distance the metric still has to cover, i.e. the mesh is not on course to reach the
+     * target within about 1/stall_eps more iterations.
+     *
+     * It is a virtual because the scalar the driver has is a MAX over criteria, and for an
+     * application with more than one criterion that max only ever reports on whichever is
+     * currently worst -- so a run whose worst criterion is stuck refines every iteration even
+     * while the others are improving. An application that knows its criteria apart overrides
+     * this to ask the question of each of them.
+     */
+    virtual bool optimization_stalled(double prev, double cur)
+    {
+        return (prev - cur) <= m_params.stuck_refine_stall_eps * (cur - optimization_stop_metric());
+    }
+
+    /**
+     * @brief Called at every pass boundary, whether or not debug output is on.
+     *
+     * The default writes a debug frame when m_params.debug_output is set and does nothing
+     * otherwise, and NOTHING AN OVERRIDE DOES HERE MAY CHANGE THE MESH. Debug output has to be
+     * observational: if writing a frame renumbers or compacts anything, then turning
+     * DEBUG_output on changes the run it is supposed to be showing you, and under kPartition it
+     * changes it substantively, since get_partition_id() is keyed on vertex id and renumbering
+     * moves vertices between threads.
+     *
+     * topological_offset used to override this to call consolidate_mesh() unconditionally --
+     * paying that cost on every pass whether or not debug output was on -- because its
+     * write_vtu() consolidated. write_vtu() now packs its output locally instead and mutates
+     * nothing, so the override is gone. If a writer ever needs the mesh compacted, compact it
+     * in the optimization itself, not on the way to a file.
+     */
+    virtual void optimization_debug_checkpoint()
+    {
+        if (m_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+    }
 
     virtual void collapse_pass_begin() {}
     virtual void collapse_pass_end(size_t) {}
@@ -337,6 +556,20 @@ protected:
                q <= ring_max;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
+
+    /// Whether a swap's quality outcome is acceptable, given the max face energy over the faces
+    /// it creates and over the faces it destroyed. The default is STRICT improvement, which is
+    /// what the swap required before this hook existed, so a subclass that does not override it
+    /// sees no change. The twin on the collapse side is collapse_quality_allowed().
+    ///
+    /// `is_surface_flip` is the 3D twin's parameter and is ALWAYS false here: 2D has no surface
+    /// flip. swap_edge_before() refuses any edge on a tracked surface outright
+    /// (is_edge_on_surface), so a surface edge never reaches this hook. The parameter is kept so
+    /// the two dimensions carry the same signature.
+    virtual bool swap_quality_allowed(double after, double before, bool /*is_surface_flip*/) const
+    {
+        return after < before;
+    }
 
     virtual bool split_adjust_position(size_t, const std::vector<Tuple>&) { return true; }
     virtual void split_after_vertex(size_t) {}
@@ -424,7 +657,6 @@ protected:
     {
         size_t v1_id = 0;
         size_t v2_id = 0;
-        double max_quality_before = 0.;
         EdgeAttributes old_e_attrs;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
         std::map<size_t, FaceAttributes> faces;
@@ -439,6 +671,9 @@ protected:
         double edge_length = 0.;
         std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
         std::vector<std::array<size_t, 2>> surface_edges;
+        /// Oriented edges (v1,y) the collapse renames in place to (v2,y), as {v2,y} with the
+        /// orientation measured along that order -- see the 3D counterpart.
+        std::vector<std::pair<std::array<size_t, 2>, int>> renamed_orientations;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
         /// Coarsening pass only: the worst relative quality in the region the composite may
@@ -491,7 +726,7 @@ private:
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
 
-    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring);
+    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes = 0);
 };
 
 } // namespace wmtk

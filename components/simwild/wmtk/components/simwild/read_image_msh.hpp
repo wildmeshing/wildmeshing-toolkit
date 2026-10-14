@@ -16,6 +16,8 @@ struct InputData
 
     MatrixXd V_envelope;
     MatrixXi F_envelope;
+    /// Name of the physical group the envelope curves came from; empty when there was none.
+    std::string envelope_name;
 };
 
 /**

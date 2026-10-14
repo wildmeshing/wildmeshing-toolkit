@@ -11,97 +11,221 @@ namespace wmtk::components::topological_offset {
 /**
  * @brief What the offset needs on top of the parameters every wmtk optimizer shares.
  *
- * The optimization phase reuses wmtk::TetOptimizerMesh, so the quantities that phase reads --
- * the target edge length and the split/collapse thresholds derived from it, the smoothing
- * weights and pass count, the sizing-refinement knobs, the debug switch -- come from
- * wmtk::OptimizerParameters rather than being spelled out again here. The json keys are
- * unchanged: `length`/`length_rel` feed the base's `l`/`lr`, `smoothing_iterations` feeds
- * `num_smoothing_passes`, `DEBUG_output` feeds `debug_output`.
+ * The optimization phase reuses wmtk::TriOptimizerMesh / wmtk::TetOptimizerMesh, so everything
+ * that phase reads -- target edge length, the split/collapse thresholds derived from it,
+ * smoothing weights and pass count, the sizing knobs, the debug switch -- comes from
+ * wmtk::OptimizerParameters and is not restated here. The bounding box stays here because its
+ * type and meaning differ per application.
  *
- * The bounding box stays here, as it does in every application: the base deliberately does not
- * own it, because its type and meaning differ per application.
+ * Every key below means the same thing in 2D and 3D; the two pipelines are the same algorithm one
+ * dimension apart, and a key that only one of them read would be a difference in the algorithm.
  */
 struct Parameters : public wmtk::OptimizerParameters
 {
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
-    bool respect_all_topologies;
     bool offset_in;
     bool offset_out;
     double target_distance;
     double target_distance_rel;
-    double convergence_target; // absolute; if < 0, computed from convergence_target_rel in init()
-    double convergence_target_rel; // relative to target_distance, not the bbox diagonal
-    // Max normal deviation, in DEGREES, that the offset boundary must reach before the
-    // optimization may terminate early. Absolute by nature -- an angle has no natural relative
-    // form the way a distance does -- so there is no _rel counterpart. Convergence requires both
-    // this and convergence_target; <= 0 disables the criterion, leaving distance alone deciding.
-    double convergence_normal_deviation;
-    // Turn a non-converged run into a hard error instead of a warning. Off by default -- a run
-    // that misses the target is still a usable offset, and the warnings already name the criterion
-    // that failed. Integration tests set it true so a regression in convergence fails the test
-    // rather than passing with a warning nobody reads.
+    // Turn a non-converged run into a hard error instead of a warning. Off by default: a run that
+    // misses the target is still a usable offset, and the warnings name the criterion that failed.
+    // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
-    // Half-width of the envelope that contains every tag-region boundary during optimization.
+    /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
+    /// called and the constructed band is written as the result.
+    bool optimize_offset;
+    // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
+    // input complex's included, and the domain wall; see the spec doc).
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
-    // Capture that envelope from the input mesh, before the offset truncates the region
-    // boundaries it grows through. See TopoOffsetTriMesh::init_region_boundary_envelope_from_input.
-    // 2D only; the 3D path never builds this envelope.
-    bool region_envelope_from_input;
-    double relative_ball_threshold;
-    // Termination length for the distance-field root finds in EdgeSplittingTet.cpp
-    // (edge_split_binary_search, edge_split_log_root_find, edge_split_sphere_tracing).
-    // 3D ONLY. The 2D path has no consumer: its sphere-tracing split was removed along with the
-    // distance-field marching pass that selected it, because placing the offset boundary is the
-    // optimization phase's job, not the insertion's. Delete this field and its spec entry when
-    // 3D drops those modes too -- see the note in .claude/CLAUDE.md.
-    double edge_search_term_len;
+
+    // ---- the smooth offset potential ----
+    // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
+    // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
+    // band vertex that travels past the support is a hard error, not a silently frozen vertex.
+    double offset_dhat_factor;
+    std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
+    // ---- the two convergence epsilons (was the single front_conv_rel) ----
+    // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
+    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
+    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
+    // more, so changing the offset distance no longer silently changes the accuracy. init()
+    // refuses either one above target_distance: an epsilon coarser than the offset it measures
+    // cannot decide anything.
+    //
+    // THE ONE BAR, in 2D and in 3D. One quantity is measured everywhere -- over a simplex's
+    // stencil (a face's in 3D, a front chord's in 2D), the RMS of the distance to the level set
+    // along the field (OffsetPotential::relative_residual(), which for the euclidean field is the
+    // relative error (Phi - c)/c) -- and compared against this. A vertex is placed when that same
+    // measure at the vertex alone is within it, which is the order-0 stencil, so the vertex
+    // measure and the face (chord) measure are one measure at two sample counts. Replaces
+    // vertex_conv / sag_conv, which split the two apart 2026-09-23. What the loop exits on is
+    // front_measure's choice; the vertex measure is a diagnostic since 2026-09-25.
+    double front_conv;
+    double front_conv_rel;
+
+    /// The convergence epsilon as a FRACTION of target_distance, which is the form the
+    /// dimensionless relative error OffsetPotential::relative_residual() is compared against. A
+    /// mean of squared relative errors is below front_conv_frac()^2 exactly when the same mean
+    /// taken in lengths is below front_conv^2 -- the two differ by target_distance^2 on both
+    /// sides -- so which form the code uses is a matter of where the division sits, not of what
+    /// is being asked.
+    double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
+    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
+    // with 3D. No JSON key; each keeps the default its key had. The 2D energy rule of collapses
+    // and swaps, the 2D front vertices' smoothing veto, and the 2D collapse rule over the changed
+    // cells (TopoOffsetTriMesh). The 2D non-front veto reads the engine's smooth_quality_veto,
+    // which keeps the engine's default, true, the default of the key offset_smooth_veto that set
+    // it. 3D's rules are always on and read none of these (TopoOffsetTetMesh::tet_energy()).
+    bool offset_collapse_veto = true, offset_swap_veto = true;
+    bool offset_front_smooth_veto = false;
+    bool offset_collapse_changed_cells = true;
+    /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
+    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
+    /// tri_energy = w AMIPS + the offset terms. See the spec.
+    double offset_amips_weight = 1.;
+    /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
+    bool debug_crossings = false;
+    /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
+    /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
+    /// behind a travelling front. false: the survivor's own.
+    bool sizing_collapse_min = true;
+    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
+    /// complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc.
+    bool deform_others = false;
+    /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
+    /// guard.
+    int max_rounds = 40;
+    // Sampling density of THE measure -- both the criterion's and the energy's, in 2D and 3D --
+    // and of the residual diagnostics that share the lattice. Order k puts these points on a
+    // face (3D):
+    //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
+    //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
+    //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
+    // and on a front chord (2D), the same rule one dimension down:
+    //   0 -> 2, the ENDS alone;
+    //   k >= 1 -> the vertices of the chord cut into 2^(k-1) pieces plus the midpoint of each
+    //   piece, i.e. 3, 5, 9, 17, ...
+    // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
+    // the quantity measured is a distance to the level set rather than an interpolation error and
+    // so is not identically zero there. Raising it costs a Phi value per sample in
+    // energy_criterion() and the frames, and in 2D also in the operations' energy rules
+    // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
+    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
+    int stencil_order;
+    /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
+    /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
+    /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D
+    /// of the chord measures (edge_offset_term()) of its front chords -- every simplex weighted
+    /// equally. The loop exits when every ring measure is within the
+    /// bar and nothing is unmeasurable, and the halving takes each vertex over the bar alone.
+    /// "face": every offset face (2D: chord) within the bar and the halving at the corners of
+    /// every face over it -- the rule of 2026-09-25, kept for comparison.
+    std::string front_measure;
     bool sorted_marching;
+    /// How the marching places the offset (see the spec). A target_distance below the maximum
+    /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
+    /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
+    /// midpoint. See marching_tris() / marching_tets().
+    std::string construction_mode = "max_marchable_fallback";
+    double sphere_trace_target_rel_tol; ///< |d - D| <= tol x D ends the trace (D: see above)
+    /// Default false. Only when the target is not below the maximum marchable distance (marched
+    /// as construction_mode says): the loop first converges under stencil_order without
+    /// refinement, then under stencil_order with refinement. See the spec doc.
+    bool init_optimize = false;
+    // 2D only: read by the 2D pipeline, which the app refuses until it is brought into lock-step
+    // with 3D. No JSON key; the default its key had. The stencil_order of the 2D init_optimize
+    // loop alone; -1 uses stencil_order there too.
+    int init_optimize_stencil_order = -1;
+    /// Smoothing passes before the march that push the outer ends of the marched edges out to
+    /// 2 x target_distance; they stop early once every outer end is beyond target_distance +
+    /// front_conv. 0 (the default) = off. See the spec doc and
+    /// TopoOffsetTetMesh::repulsion_smoothing() / TopoOffsetTriMesh::repulsion_smoothing().
+    int repulsion_smoothing_passes = 0;
+    /// 2D and 3D. After those passes, at most this many rounds of the loop's operations (split,
+    /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
+    /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
+    int repulsion_rounds = 0;
+    /// EXPERIMENTAL (2026-10-07), 3D, with repulsion_rounds. Each round also refines where the
+    /// front the march would cut fails the loop's face measure, and the rounds do not collapse.
+    /// See the spec doc.
+    bool repulsion_refine = false;
+    /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
+    /// it changes, strictly falls -- judged right after the split, before any smoothing.
+    bool split_energy_gate = false;
+    /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
+    /// turn is settled when E fell by less than the bar energy
+    /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
+    /// offset term's excess for a front lying front_conv off the level set. On a settled turn
+    /// every front face whose exact distance bound from the level set (the face's min of d, and
+    /// min over P of the max of d_P at its corners) exceeds front_conv has its corners halved;
+    /// exit = settled and no face over. The energy criterion's own refinement and exit are off.
+    /// See the spec doc.
+    bool settle_refinement = true;
+    /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
+    /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
+    /// exceeds front_conv; its sizing is halved. "max": a face's exact bound on
+    /// max |d - target_distance| exceeds front_conv. "rms": a face's share of the offset excess
+    /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
+    /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
+    /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
+    /// 3-edge-midpoint rule. See the spec doc.
+    std::string settle_mark = "vertex";
     std::string output_path; // no extension
-    bool optimize; // whether to run optimization on the offset
     bool save_vtu;
 
+    // Samples per side of the grid the smooth offset potential is written on, beside the result,
+    // for the viewer. 0 disables it. The whole domain in 2D, one plane through the box in 3D.
+    int phi_grid_resolution;
+
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    int optimization_iterations; // number of split/collapse/swap/smooth passes in optimize_offset()
+    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
+    /// frozen-front finishing pass.
+    int max_iterations;
+    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
+    // final pass, built once before it (3D: build_offset_envelope(); 2D:
+    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
+    // tying it to target_distance made every change of the offset distance a silent change of the
+    // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
+    double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
+    double offset_envelope_rel;
 
-    // max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the
-    // input-complex normal it is supposed to approximate, before collapse/swap reject a move
-    // that would push it further out of alignment.
-    double max_normal_deviation_deg;
-    // sigma_min from the paper (Sec. 5.3, "controls when the offset curvature is considered
-    // planar"): a stretch of offset whose normal deviation is below this is flat enough that
-    // the sizing field may coarsen it. Only the 2D sizing field reads it.
-    double min_normal_deviation_deg;
-    // l_min from the paper, = 2 * delta * sin(sigma_max): the shortest edge the sizing field
-    // may ask for, in absolute units. Tied to the offset distance rather than the bounding box
-    // because that is the scale the offset actually has. Derived in init() when < 0. This is a
-    // floor on refinement, so raising it makes the result COARSER (paper Fig. 18).
+    // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
+    // target_distance rather than of the bounding box because that is the scale the offset has;
+    // min_edge_length is derived from min_edge_length_rel in init() when negative. A floor on
+    // refinement, so raising it makes the result coarser. When not given, it falls back to the
+    // offset envelope eps, following TetWild: a surface pinned only to within eps cannot buy
+    // fidelity from shorter edges, so this is a runaway rail, not a resolution setting.
     double min_edge_length;
+    double min_edge_length_rel;
 
-    // ---- offset-surface smoothing blend, see TopoOffsetTetMesh::smooth_after_offset_surface()
-    // ---- each offset-surface vertex moves to a weighted blend of its previous position,
-    // the quadrics-optimal target vertex, and the Laplacian of its offset-surface
-    // neighbors; the remaining weight (1 - w - u) stays with the previous position.
-    double smooth_quadrics_weight; // w: blend toward the quadrics-optimal target vertex
-    double smooth_laplacian_weight; // u: blend toward the offset-surface Laplacian
-    // SVD threshold used by Quadrics::solve() when solving for the quadrics-optimal target
-    // vertex. Controls sensitivity to feature edges: lower means more sensitive.
-    double quadrics_svd_threshold;
-
-    // ---- sizing field, see TopoOffsetTetMesh::update_sizing_field() ----
+    // ---- sizing field ----
     // bounds for VertexAttributes::m_sizing_scalar
     double min_sizing_scalar;
     double max_sizing_scalar;
-    // mean ratio metric strictly below this is "bad" (refine); strictly above is "good"
-    // (coarsen), matching the reference's compute_target_edge_length()
-    double sizing_mrm_threshold;
     // gradation cap: neighboring vertices' sizing scalars may differ by at most this factor,
     // enforced by propagating the refinement outward (monotone, only ever lowers a
-    // neighbor's scalar). <= 1 disables gradation entirely.
+    // neighbor's scalar). <= 1 disables gradation entirely. Only used by "ring" mode.
     double sizing_gradation;
+    /// See the spec: how a lowered sizing scalar spreads to the vertices around it. "ring" =
+    /// the base gradation_smooth_sizing, ring by ring at sizing_gradation x per ring;
+    /// "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly
+    /// to 1 at distance 1.8 l, applied within that ball only.
+    std::string sizing_gradation_mode;
+    /// See the spec: the interleaved smoothing of each operation group runs until the front's
+    /// Newton-step ratio converges or stalls AND the background's step settles, instead of a
+    /// fixed interleaved_smoothing_passes.
+    bool adaptive_smoothing;
+    int adaptive_smoothing_max_passes; ///< cap on the passes per group
+    double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
+    double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
+    /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
+    /// smoothing) before the first turn of the loop.
+    bool pre_smooth;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -126,55 +250,96 @@ struct Parameters : public wmtk::OptimizerParameters
             }
             protected_tags.insert(tag);
         }
-        respect_all_topologies = json_params["respect_all_topologies"];
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         target_distance = json_params["target_distance"];
         target_distance_rel = json_params["target_distance_rel"];
-        convergence_target = json_params["convergence_target"];
-        convergence_target_rel = json_params["convergence_target_rel"];
-        convergence_normal_deviation = json_params["convergence_normal_deviation"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
+        optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
-        region_envelope_from_input = json_params["region_envelope_from_input"];
-        relative_ball_threshold = json_params["relative_ball_threshold"];
-        if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
-            log_and_throw_error(
-                "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
-                relative_ball_threshold);
-        }
+        offset_dhat_factor = json_params["offset_dhat_factor"];
+        offset_field = json_params["offset_field"];
+        front_conv = json_params["front_conv"];
+        front_conv_rel = json_params["front_conv_rel"];
+        stencil_order = json_params["stencil_order"];
+        front_measure = json_params["front_measure"];
 
-        edge_search_term_len = json_params["edge_search_termination_len"];
         sorted_marching = json_params["sorted_marching"];
+        construction_mode = json_params["construction_mode"];
+        sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
+        init_optimize = json_params["init_optimize"];
+        repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
+        repulsion_rounds = json_params["repulsion_rounds"];
+        repulsion_refine = json_params["EXPERIMENTAL_repulsion_refine"];
+        if (repulsion_refine && repulsion_rounds <= 0) {
+            log_and_throw_error("EXPERIMENTAL_repulsion_refine needs repulsion_rounds > 0");
+        }
+        split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
+        settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
+        settle_mark = json_params["EXPERIMENTAL_settle_mark"];
+        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
+                settle_mark);
+        }
         output_path = json_params["output"];
-        optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
+        phi_grid_resolution = json_params["phi_grid_resolution"];
 
         num_threads = json_params["num_threads"];
-        optimization_iterations = json_params["optimization_iterations"];
+        max_iterations = json_params["max_iterations"];
+        offset_envelope = json_params["offset_envelope"];
+        offset_envelope_rel = json_params["offset_envelope_rel"];
 
-        max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
-        min_normal_deviation_deg = json_params["min_normal_deviation_deg"];
         min_edge_length = json_params["min_edge_length"];
-
-        smooth_quadrics_weight = json_params["smooth_quadrics_weight"];
-        smooth_laplacian_weight = json_params["smooth_laplacian_weight"];
-        quadrics_svd_threshold = json_params["quadrics_svd_threshold"];
+        min_edge_length_rel = json_params["min_edge_length_rel"];
 
         min_sizing_scalar = json_params["min_sizing_scalar"];
         max_sizing_scalar = json_params["max_sizing_scalar"];
-        sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
         sizing_gradation = json_params["sizing_gradation"];
+        sizing_gradation_mode = json_params["sizing_gradation_mode"];
+        adaptive_smoothing = json_params["adaptive_smoothing"];
+        adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
+        adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
+        adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
+        pre_smooth = json_params["pre_smooth"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];
-        num_smoothing_passes = json_params["smoothing_iterations"];
+        num_smoothing_passes = json_params["num_smoothing_passes"];
+        interleaved_smoothing = json_params["interleaved_smoothing"];
+        interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+        colored_smoothing = json_params["colored_smoothing"];
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
-        skip_good_regions = json_params["skip_good_regions"];
+        // skip_good_regions is deliberately not exposed: it would restrict a smoothing pass to
+        // cells still far from stop_energy, but the smoother is what places the offset boundary,
+        // so a well-shaped yet badly-placed patch is exactly what must not be skipped.
+        // Every key of the coarsening group is copied here, not just the on/off switch: declaring
+        // a key in the spec only makes jse inject its default into the json, so a key nothing
+        // copies into this struct silently keeps whatever OptimizerParameters holds.
+        coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
+        coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+        coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+        coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+        coarsen_max_rounds = json_params["coarsen_max_rounds"];
+        stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+        stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+        stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+        stuck_refine_rings = json_params["stuck_refine_rings"];
+        stuck_refine_factor = json_params["stuck_refine_factor"];
+        stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+        stuck_refine_gradation = json_params["stuck_refine_gradation"];
+        stuck_refine_force_split = json_params["stuck_refine_force_split"];
+        offset_amips_weight = json_params["offset_amips_weight"];
+        debug_crossings = json_params["DEBUG_crossings"];
+        sizing_collapse_min = json_params["sizing_collapse_min"];
+        deform_others = json_params["deform_others"];
+        max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
@@ -188,18 +353,14 @@ struct Parameters : public wmtk::OptimizerParameters
         box_min = min_;
         box_max = max_;
 
-        // Not a user knob. A TOPOLOGICAL offset is defined by preserving the topology of the
-        // region it wraps, so the shared collapse must always apply the substructure link
-        // condition -- without it a collapse across a thin offset band pinches the two sides
-        // together and the region stops being manifold. The offset's own collapse applied this
-        // unconditionally before it moved onto the shared engine, where it is gated on this
-        // flag; tetwild and simwild leave the flag off, which is why it is set here and not
-        // changed in wmtk.
+        // Not a user knob: a topological offset preserves the topology of the region it wraps, so
+        // the shared collapse must always apply the substructure link condition, or a collapse
+        // across a thin band pinches the two sides together and the region stops being manifold.
+        // Set here because tetwild and simwild leave the flag off.
         preserve_topology = true;
 
-        // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
-        // factors this used to spell out itself. It also derives eps from epsr, which the
-        // offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
+        // Fills diag_l, l/lr and splitting_l2 / collapsing_l2. It also derives eps from epsr,
+        // which the offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
         init_lengths_from_diagonal((max_ - min_).norm());
 
         if (target_distance > 0) {
@@ -208,32 +369,59 @@ struct Parameters : public wmtk::OptimizerParameters
             target_distance = target_distance_rel * diag_l;
         }
 
-        // The convergence threshold is an error in the SAME quantity target_distance measures --
-        // how far an offset vertex sits from where it should be -- so it is relative to
-        // target_distance, not to the bounding box diagonal like every other relative length.
-        if (convergence_target > 0) {
-            convergence_target_rel = convergence_target / target_distance;
-        } else {
-            convergence_target = convergence_target_rel * target_distance;
-        }
-
-        // An ordinary relative length, unlike convergence_target: it bounds how far a region
-        // boundary may drift in space, so the bounding box is the right reference.
+        // An ordinary relative length: it bounds how far a region boundary may drift in space, so
+        // the bounding box is the right reference.
         if (envelope_size > 0) {
             envelope_size_rel = envelope_size / diag_l;
         } else {
             envelope_size = envelope_size_rel * diag_l;
         }
 
-        // l_min = 2 * delta * sin(sigma_max), from the paper's parameter list (Sec. 5.3). The
-        // reasoning is geometric: sigma_max is how far the offset surface is allowed to turn
-        // across one element, and an element subtending that angle on a circle of radius delta
-        // -- which is the shape the offset takes around a convex feature -- has chord length
-        // 2*delta*sin(sigma_max). Scaling to the offset distance rather than the bounding box
-        // is the point: it is the offset that has to be resolved, and its scale is delta.
+        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
+        // against the same reference. It is a length in space, so the bounding box diagonal is
+        // the reference, not target_distance: tying the accuracy to the offset distance made
+        // every change of target_distance a silent change of accuracy as well.
+        if (front_conv > 0) {
+            front_conv_rel = front_conv / diag_l;
+        } else {
+            front_conv = front_conv_rel * diag_l;
+        }
+
+        // An epsilon coarser than the offset it measures decides nothing: every front vertex is
+        // "placed" and every face "resolved" from the first turn, whatever the offset looks like.
+        // Checked on the resolved ABSOLUTE values, so it catches the mistake whichever of the two
+        // forms the config used to state it.
+        if (front_conv > target_distance) {
+            log_and_throw_error(
+                "front_conv {} must be <= target_distance {}: the convergence epsilon cannot be "
+                "coarser than the offset distance it measures, or every front face reads as "
+                "resolved from the first turn",
+                front_conv,
+                target_distance);
+        }
+
+        // The operation leash, the same absolute-or-relative pair as the envelope and the
+        // convergence epsilon, against the same reference.
+        if (offset_envelope > 0) {
+            offset_envelope_rel = offset_envelope / diag_l;
+        } else {
+            offset_envelope = offset_envelope_rel * diag_l;
+        }
+
+        // l_min is relative to the offset distance rather than the bounding box: it is the offset
+        // that has to be resolved. See the declaration.
+        if (min_edge_length_rel < 0) {
+            // The envelope eps expressed as a multiple of target_distance, which is what this
+            // wants. offset_envelope_rel is a fraction of the BBOX DIAGONAL since 2026-09-24, so
+            // the conversion goes through the resolved absolute rather than being the identity it
+            // used to be -- the derived floor is unchanged in model units either way.
+            min_edge_length_rel =
+                std::max(offset_envelope / std::max(target_distance, 1e-16), 1e-12);
+        }
         if (min_edge_length < 0) {
-            const double sigma = max_normal_deviation_deg * M_PI / 180.;
-            min_edge_length = 2. * target_distance * std::sin(std::min(sigma, M_PI / 2.));
+            min_edge_length = min_edge_length_rel * target_distance;
+        } else {
+            min_edge_length_rel = min_edge_length / std::max(target_distance, 1e-16);
         }
     }
 };

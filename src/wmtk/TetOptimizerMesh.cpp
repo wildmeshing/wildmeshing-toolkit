@@ -10,6 +10,7 @@
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/VertexColoring.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -20,6 +21,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <cstdlib>
 #include <queue>
 
@@ -40,8 +42,10 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    if (optimization_bare_coarsen_passes()) {
+        // Performing swaps after the initial collapse improves quality and convergence.
+        local_operations({{0, 1, 1, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -104,8 +108,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -114,12 +117,19 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 1, 0}});
+    }
 
     // Removing what the mesh does not need is the last thing to do, not something to
     // interleave: it trades cells for nothing but the guarantee that the max energy does not
     // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
 }
 
@@ -128,6 +138,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     bool collapse_limit_length)
 {
     igl::Timer timer;
+
+    static constexpr std::array<const char*, 4> names = {{"split", "collapse", "swap", "smooth"}};
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
@@ -152,10 +164,20 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     };
 
     sanity_checks();
+    update_attributes();
+    size_t retry_count = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
+        if (retry_count > 0) {
+            logger().info(
+                "Retrying {} pass after consolidating. Retry count: {}",
+                names[size_t(i)],
+                retry_count);
+        }
         timer.start();
+        m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 logger().info("==splitting {}==", n);
                 split_all_edges();
                 logger().info(
@@ -179,30 +201,60 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                 if (cnt_success == 0) break;
             }
         } else {
-            for (int n = 0; n < ops[i]; ++n) {
-                logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
+            smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
 
-        if (m_params.debug_output) {
-            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-        const auto [max_metric, avg_metric] = optimization_quality_stats();
-        static constexpr std::array<const char*, 4> names = {
-            {"split", "collapse", "swap", "smooth"}};
-        logger()
-            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
-        if (i == 2) {
+        if (ops[i] > 0) {
+            if (m_params.debug_output && i < 3) {
+                // no need to print debug output for smoothing, since it prints already internally
+                write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            }
+            const auto [max_metric, avg_metric] = optimization_quality_stats();
             logger().info(
-                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-                cnt_surface_swap.load(),
-                cnt_surface_swap_32.load(),
-                cnt_surface_swap_44.load(),
-                cnt_surface_swap_56.load());
+                "{} max energy = {:.6} avg = {:.6}",
+                names[size_t(i)],
+                max_metric,
+                avg_metric);
+            if (i == 2) {
+                logger().info(
+                    "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                    cnt_surface_swap.load(),
+                    cnt_surface_swap_32.load(),
+                    cnt_surface_swap_44.load(),
+                    cnt_surface_swap_56.load());
+            }
+            sanity_checks();
+            update_attributes();
         }
-        sanity_checks();
+
+        // A pass that ran out of preallocated slots abandoned operations for want of storage.
+        // Consolidating both reclaims the slots removed elements still hold -- the counter only
+        // advances during a pass, so churn alone can exhaust it -- and re-derives the storage
+        // from the real element count, which grows it by m_preallocation_factor when there is
+        // no churn left to reclaim.
+        //
+        // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
+        // re-run instead, which re-collects them against the enlarged storage. Every retry
+        // grows the storage by the factor, so the chain makes progress and terminates.
+        if (slots_exhausted()) {
+            const size_t live_before = tet_capacity();
+            const size_t store_before = tet_storage_capacity();
+            consolidate_mesh();
+            clear_slots_exhausted();
+            logger().info(
+                "{} pass exhausted its preallocated slots: {} of {} tets reclaimed as "
+                "churn, storage {} -> {}",
+                names[size_t(i)],
+                live_before - tet_capacity(),
+                live_before,
+                store_before,
+                tet_storage_capacity());
+            --i; // retry the same operation after consolidating
+            ++retry_count;
+        } else {
+            retry_count = 0;
+        }
     }
 
     const auto stats = optimization_quality_stats();
@@ -214,8 +266,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
 
 TetOptimizerMesh::VertexAttributes::VertexAttributes(const Vector3r& p)
 {
-    m_pos = p;
-    m_posf = to_double(m_pos);
+    set_pos(p);
+    m_posf = to_double(p);
 }
 
 void TetOptimizerMesh::compute_vertex_partition()
@@ -308,13 +360,21 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    opts.quality_veto = m_params.smooth_quality_veto;
 
-    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
+    return optimization::smooth_vertex_3d(
+        *this,
+        t,
+        opts,
+        m_solver.local(),
+        &m_smooth_rejects,
+        &m_newton);
 }
 
 void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 {
     for (size_t i = 0; i < n_iters; ++i) {
+        logger().info("==smoothing {}==", i);
         // Preserve TetWild's deterministic serial random-seed progression. The current
         // collector does not consume rand(), but keeping the state transition makes the move
         // behavior-neutral if its ordering is randomized again.
@@ -324,6 +384,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         igl::Timer timer;
         timer.start();
         m_smooth_rejects.reset();
+        m_newton.reset();
         std::vector<std::pair<std::string, Tuple>> collect_all_ops;
         if (m_params.skip_good_regions) {
             for (const size_t v : active_vertices()) {
@@ -335,16 +396,79 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             }
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
-        logger().debug("Num verts {}", collect_all_ops.size());
-        run_pass(
-            *this,
-            PassLock::VertexRing,
-            "vertex smoothing operation",
-            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
+        logger().debug("#V = {}", collect_all_ops.size());
+        if (use_colored_smoothing()) {
+            smooth_vertices_colored(collect_all_ops);
+        } else {
+            run_pass(
+                *this,
+                PassLock::VertexRing,
+                "vertex smoothing operation",
+                [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        }
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+        logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
+        log_smoothing_pass_accounting();
+
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
     }
 }
 
+
+bool TetOptimizerMesh::use_colored_smoothing() const
+{
+    return NUM_THREADS > 0 && m_params.colored_smoothing;
+}
+
+void TetOptimizerMesh::smooth_vertices_colored(
+    const std::vector<std::pair<std::string, Tuple>>& ops)
+{
+    igl::Timer timer;
+    timer.start();
+
+    std::vector<size_t> vids;
+    vids.reserve(ops.size());
+    for (const auto& op : ops) {
+        vids.push_back(op.second.vid(*this));
+    }
+    auto classes = utils::greedy_vertex_coloring(
+        vids,
+        vert_capacity(),
+        NUM_THREADS,
+        [this](size_t vid, std::vector<size_t>& out) {
+            const std::vector<size_t> ring = get_one_ring_vids_for_vertex(vid);
+            out.insert(out.end(), ring.begin(), ring.end());
+        });
+    const double coloring_time = timer.getElapsedTime();
+
+    // Each class runs fully in parallel: its vertices share no edge and no cell, so smoothing one
+    // neither moves a vertex another reads nor writes a cell attribute another writes -- as long
+    // as the hooks read everything outside the vertex's star through const access (see
+    // smooth_after()), which every smooth checks (m_check_smoothing_stays_in_star). Nothing is
+    // locked, and the result does not depend on which thread smooths which vertex.
+    // Surface vertices first: they are the expensive ones (envelope), and starting them early
+    // keeps a thread from picking one up just before a class's barrier. The order within a class
+    // does not change the result -- its vertices do not interact.
+    size_t n_total = 0;
+    for (std::vector<size_t>& cls : classes) {
+        std::stable_partition(cls.begin(), cls.end(), [this](size_t v) {
+            return m_vertex_attribute.at(v).m_is_on_surface;
+        });
+        n_total += cls.size();
+    }
+    const size_t successes = utils::smooth_classes_checked(*this, classes, 16);
+    const size_t failures = n_total - successes;
+
+    logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);
+    logger().info(
+        "vertex smoothing colored: {} classes, coloring {:.4}s",
+        classes.size(),
+        coloring_time);
+    // Same wording as run_pass's line, so pass timings read the same either way.
+    logger().info("vertex smoothing operation time parallel: {:.4}s", timer.getElapsedTime());
+}
 
 std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
 {
@@ -490,10 +614,10 @@ bool TetOptimizerMesh::is_inverted(const std::array<size_t, 4>& vs) const
             return false;
         return true;
     } else {
+        const Vector3r p0 = m_vertex_attribute[vs[0]].pos();
         Vector3r n =
-            ((m_vertex_attribute[vs[1]].m_pos) - m_vertex_attribute[vs[0]].m_pos)
-                .cross((m_vertex_attribute[vs[2]].m_pos) - m_vertex_attribute[vs[0]].m_pos);
-        Vector3r d = (m_vertex_attribute[vs[3]].m_pos) - m_vertex_attribute[vs[0]].m_pos;
+            (m_vertex_attribute[vs[1]].pos() - p0).cross(m_vertex_attribute[vs[2]].pos() - p0);
+        Vector3r d = m_vertex_attribute[vs[3]].pos() - p0;
         auto res = n.dot(d);
         if (res > 0) // predicates returns pos value: non-inverted
             return false;
@@ -512,16 +636,19 @@ bool TetOptimizerMesh::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
+    // Rounding writes the vertex, which a dry run must not do (other threads are reading it).
+    // Answer optimistically: a dry run that passes only means "worth attempting", and the real
+    // attempt rounds, or finds it cannot, for itself.
+    if (dry_run()) return true;
 
-    auto old_pos = m_vertex_attribute[i].m_pos;
-    m_vertex_attribute[i].m_pos << m_vertex_attribute[i].m_posf[0], m_vertex_attribute[i].m_posf[1],
-        m_vertex_attribute[i].m_posf[2];
+    const auto old_exact = m_vertex_attribute[i].m_exact;
+    m_vertex_attribute[i].set_pos_to_posf();
     auto conn_tets = get_one_ring_tets_for_vertex(v);
     m_vertex_attribute[i].m_is_rounded = true;
     for (auto& tet : conn_tets) {
         if (is_inverted(tet)) {
             m_vertex_attribute[i].m_is_rounded = false;
-            m_vertex_attribute[i].m_pos = old_pos;
+            m_vertex_attribute[i].m_exact = old_exact;
             return false;
         }
     }
@@ -549,8 +676,10 @@ double TetOptimizerMesh::get_quality(const std::array<size_t, 4>& its) const
         energy = wmtk::AMIPS_energy_stable_p3<wmtk::Rational>(T);
     } else {
         std::array<wmtk::Rational, 12> T;
-        for (auto k = 0; k < 4; k++)
-            for (auto j = 0; j < 3; j++) T[k * 3 + j] = m_vertex_attribute[its[k]].m_pos[j];
+        for (auto k = 0; k < 4; k++) {
+            const Vector3r p = m_vertex_attribute[its[k]].pos();
+            for (auto j = 0; j < 3; j++) T[k * 3 + j] = p[j];
+        }
         energy = wmtk::AMIPS_energy_rational_p3<wmtk::Rational>(T);
     }
     if (std::isinf(energy) || std::isnan(energy) || energy < 27 - 1e-3) return MAX_ENERGY;
@@ -566,6 +695,38 @@ double TetOptimizerMesh::get_quality(const Tuple& loc) const
 bool TetOptimizerMesh::invariants(const std::vector<Tuple>& tets)
 {
     return true;
+}
+
+std::vector<std::array<size_t, 3>> TetOptimizerMesh::oriented_tracked_faces() const
+{
+    std::vector<std::array<size_t, 3>> res;
+    for (const auto& f : get_faces()) {
+        const auto& attr = m_face_attribute[f.fid(*this)];
+        if (!attr.m_is_surface_fs || attr.m_orientation == 0) continue;
+        const auto vs = get_face_vertices(f);
+        std::array<size_t, 3> v{{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+        std::sort(v.begin(), v.end());
+        if (attr.m_orientation < 0) std::swap(v[1], v[2]);
+        for (int k = 0; k < std::abs(attr.m_orientation); ++k) res.push_back(v);
+    }
+    return res;
+}
+
+std::vector<std::pair<std::array<size_t, 2>, int>> TetOptimizerMesh::tracked_surface_boundary()
+    const
+{
+    std::map<std::array<size_t, 2>, int> sum;
+    for (const auto& f : oriented_tracked_faces()) {
+        for (int j = 0; j < 3; ++j) {
+            const size_t a = f[j], b = f[(j + 1) % 3];
+            sum[{{std::min(a, b), std::max(a, b)}}] += a < b ? 1 : -1;
+        }
+    }
+    std::vector<std::pair<std::array<size_t, 2>, int>> res;
+    for (const auto& [e, s] : sum) {
+        if (s != 0) res.emplace_back(e, s);
+    }
+    return res;
 }
 
 std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
@@ -861,6 +1022,173 @@ bool TetOptimizerMesh::feature_edges_restore_remap(
         m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = tag;
     }
     return true;
+}
+
+// ---- OPERATION ACCOUNTING ----
+
+TetOptimizerMesh::SwapRejectRole TetOptimizerMesh::swap_reject_role(const SwapReject r)
+{
+    switch (r) {
+    case SwapReject::prepare_flip:
+    case SwapReject::interior_hook:
+    case SwapReject::flip_app_refused:
+    case SwapReject::after_cells: return SwapRejectRole::wrapper;
+    case SwapReject::flip_wrong_case: return SwapRejectRole::per_case;
+    case SwapReject::base_after:
+    case SwapReject::after_inverted:
+    case SwapReject::after_quality:
+    case SwapReject::app_sag_raised:
+    case SwapReject::app_after_side_conflict:
+    case SwapReject::app_after_no_side:
+    case SwapReject::after_envelope: return SwapRejectRole::after_leaf;
+    default: return SwapRejectRole::before_leaf;
+    }
+}
+
+TetOptimizerMesh::OpHookReasons TetOptimizerMesh::op_hook_reasons(const OpKind k) const
+{
+    OpHookReasons h;
+    const auto add = [](std::string& out, long& sum, const char* name, const long v) {
+        sum += v;
+        if (v != 0) out += fmt::format(" {}={}", name, v);
+    };
+    if (k == OpKind::collapse) {
+        for (int i = 0; i < int(CollapseReject::COUNT); ++i) {
+            const long v = m_collapse_reject[size_t(i)].load(std::memory_order_relaxed);
+            const char* name = collapse_reject_name(CollapseReject(i));
+            if (i < int(CollapseReject::after_base)) {
+                add(h.before, h.before_sum, name, v);
+            } else {
+                add(h.after, h.after_sum, name, v);
+            }
+        }
+    } else if (k == OpKind::split) {
+        h.counted = false;
+    } else {
+        for (int i = 0; i < int(SwapReject::COUNT); ++i) {
+            const long v =
+                m_swap_reject_by_kind[size_t(k)][size_t(i)].load(std::memory_order_relaxed);
+            const char* name = swap_reject_name(SwapReject(i));
+            switch (swap_reject_role(SwapReject(i))) {
+            case SwapRejectRole::before_leaf: add(h.before, h.before_sum, name, v); break;
+            case SwapRejectRole::after_leaf: add(h.after, h.after_sum, name, v); break;
+            default: break;
+            }
+        }
+    }
+    return h;
+}
+
+long TetOptimizerMesh::op_unaccounted(const OpKind k) const
+{
+    long r = op_event_count(k, OpEvent::attempt);
+    for (int e = int(OpEvent::attempt) + 1; e < int(OpEvent::COUNT); ++e) {
+        r -= op_event_count(k, OpEvent(e));
+    }
+    return r;
+}
+
+const char* TetOptimizerMesh::op_kind_name(const OpKind k)
+{
+    switch (k) {
+    case OpKind::split: return "split";
+    case OpKind::collapse: return "collapse";
+    case OpKind::swap_32: return "swap_32";
+    case OpKind::swap_44: return "swap_44";
+    case OpKind::swap_56: return "swap_56";
+    case OpKind::swap_face: return "swap_face";
+    default: return "?";
+    }
+}
+
+const char* TetOptimizerMesh::op_event_name(const OpEvent e)
+{
+    switch (e) {
+    case OpEvent::attempt: return "attempt";
+    case OpEvent::before_hook: return "before_hook";
+    case OpEvent::link_condition: return "link_condition";
+    case OpEvent::no_return_tet: return "no_return_tet";
+    case OpEvent::duplicate_tet: return "duplicate_tet";
+    case OpEvent::topology: return "topology";
+    case OpEvent::valence: return "valence";
+    case OpEvent::boundary: return "boundary";
+    case OpEvent::exists: return "exists";
+    case OpEvent::no_case_allowed: return "no_case_allowed";
+    case OpEvent::no_better_case: return "no_better_case";
+    case OpEvent::out_of_slots: return "out_of_slots";
+    case OpEvent::after_hook: return "after_hook";
+    case OpEvent::invariants: return "invariants";
+    case OpEvent::committed: return "committed";
+    case OpEvent::screened: return "screened";
+    default: return "?";
+    }
+}
+
+bool TetOptimizerMesh::op_accounting_unexplained(const OpKind k) const
+{
+    if (op_unaccounted(k) != 0) return true;
+    const OpHookReasons h = op_hook_reasons(k);
+    if (!h.counted) return false;
+    return op_event_count(k, OpEvent::before_hook) != h.before_sum ||
+           op_event_count(k, OpEvent::after_hook) != h.after_sum;
+}
+
+std::string TetOptimizerMesh::op_accounting_report(const OpKind k) const
+{
+    // attempts = committed + every refusal, each counted once where it was decided:
+    //   before_hook {the hooks' own reasons | unattributed}, TetMesh's refusals between the
+    //   hooks, after_hook {reasons | unattributed}, invariants.
+    // unattributed = hook refusals minus the reasons the hooks counted; unaccounted = attempts
+    // minus every outcome. Both must be 0. Nonzero TetMesh refusals only; the rest always.
+    const OpHookReasons h = op_hook_reasons(k);
+    const long before = op_event_count(k, OpEvent::before_hook);
+    const long after = op_event_count(k, OpEvent::after_hook);
+    std::string between;
+    for (const OpEvent e :
+         {OpEvent::link_condition,
+          OpEvent::no_return_tet,
+          OpEvent::duplicate_tet,
+          OpEvent::topology,
+          OpEvent::valence,
+          OpEvent::boundary,
+          OpEvent::exists,
+          OpEvent::no_case_allowed,
+          OpEvent::no_better_case,
+          OpEvent::out_of_slots}) {
+        const long v = op_event_count(k, e);
+        if (v != 0) between += fmt::format(" {}={}", op_event_name(e), v);
+    }
+    const auto hook = [&h](const long total, const std::string& leaves, const long sum) {
+        if (!h.counted) return fmt::format("{} {{reasons not counted}}", total);
+        return fmt::format("{} {{{} unattributed={} }}", total, leaves, total - sum);
+    };
+    std::string out = fmt::format(
+        "{}: attempts={} committed={} screened={} | before_hook={} |{} | after_hook={} | "
+        "invariants={} | unaccounted={}",
+        op_kind_name(k),
+        op_event_count(k, OpEvent::attempt),
+        op_event_count(k, OpEvent::committed),
+        op_event_count(k, OpEvent::screened),
+        hook(before, h.before, h.before_sum),
+        between.empty() ? std::string(" none") : between,
+        hook(after, h.after, h.after_sum),
+        op_event_count(k, OpEvent::invariants),
+        op_unaccounted(k));
+    if (k == OpKind::swap_44 || k == OpKind::swap_56) {
+        const long w = m_swap_reject_by_kind[size_t(k)][size_t(SwapReject::flip_wrong_case)].load(
+            std::memory_order_relaxed);
+        if (w != 0) out += fmt::format(" | per case: flip_wrong_case={}", w);
+    }
+    return out;
+}
+
+void TetOptimizerMesh::op_accounting_reset()
+{
+    for (auto& row : m_op_events)
+        for (auto& c : row) c.store(0, std::memory_order_relaxed);
+    for (auto& row : m_swap_reject_by_kind)
+        for (auto& c : row) c.store(0, std::memory_order_relaxed);
+    for (auto& c : m_collapse_reject) c.store(0, std::memory_order_relaxed);
 }
 
 } // namespace wmtk
