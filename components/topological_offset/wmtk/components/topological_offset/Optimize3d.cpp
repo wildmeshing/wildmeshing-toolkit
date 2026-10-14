@@ -466,6 +466,10 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 
 bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
 {
+    // m_face_extra and the edge label, as the base's face_attribute_tracker(); swap_after_cells()
+    // assigns them.
+    face_extra_capture(tids, m_face_extra_swap.local());
+    edge_label_capture(tids, m_edge_label_swap.local());
     // Clear whatever the last surface flip on this thread left behind: the flags outlive one
     // operation, and an interior swap is no flip of the offset surface.
     {
@@ -500,6 +504,10 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const size_t c,
     const size_t d)
 {
+    // m_face_extra and the edge label, as the base's face_attribute_tracker(); swap_after_cells()
+    // assigns them.
+    face_extra_capture(tids, m_face_extra_swap.local());
+    edge_label_capture(tids, m_edge_label_swap.local());
     // Re-decided below, for this flip alone. Cleared first, so a refusal on any path below
     // leaves nothing behind for the funnel. swap_before_interior() clears them too.
     {
@@ -931,6 +939,12 @@ void TopoOffsetTetMesh::swap_scoring_check(const std::vector<size_t>& tids, cons
 
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
+    // m_face_extra, as the base's tracker_assign_after() does m_face_attribute after this hook:
+    // a new cell's face that was a face of the old cells keeps its value, every other is reset.
+    // A refusal below rolls it back with the rest. The edge label likewise; both are closed once
+    // the new cells' labels are written below (close_labels()).
+    face_extra_assign(tids, m_face_extra_swap.local());
+    edge_label_assign(tids, m_edge_label_swap.local());
     // THE ENERGY RULE for every swap -- interior edge swaps, flips of a tracked surface, face
     // swaps (see tet_energy()): the sum of tet_energy() over the cells the swap made, their labels
     // written below, must be STRICTLY below the sum over the cells it replaced, as
@@ -979,6 +993,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             // rule reads it (candidate_energy() scores it the same way).
             stamp_rest_cell(t);
         }
+        close_labels(tids);
         if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
             ++m_repulsion_embed_refused;
             return false;
@@ -1015,6 +1030,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
+    close_labels(tids);
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
@@ -1084,6 +1100,32 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     const size_t v2_id,
     const double edge_length)
 {
+    // m_face_extra, as the base's collapse_edge_before() caches m_face_attribute: around the edge
+    // each cell (v1, v2, l1, l2) has faces (v1, l1, l2) and (v2, l1, l2), which become the one
+    // face (v2, l1, l2), merged; collapse_after_vertex() writes it.
+    {
+        auto& faces = m_face_extra_collapse.local();
+        faces.clear();
+        for (const Tuple& t : get_incident_tets_for_edge(v1_id, v2_id)) {
+            std::array<size_t, 2> l{{0, 0}};
+            int n = 0;
+            for (const size_t u : oriented_tet_vids(t.tid(*this))) {
+                if (u != v1_id && u != v2_id) l[size_t(n++)] = u;
+            }
+            FaceExtra fe = m_face_extra.at(std::get<1>(tuple_from_face({{v1_id, l[0], l[1]}})));
+            fe.merge(m_face_extra.at(std::get<1>(tuple_from_face({{v2_id, l[0], l[1]}}))));
+            faces.push_back({fe, l});
+        }
+    }
+    // The edge label: every edge of the two rings, v1 renamed v2, so (v1, l) and (v2, l) merge
+    // (closed_label()); collapse_after_vertex() writes them onto v2's ring.
+    {
+        std::vector<size_t> tids = get_one_ring_tids_for_vertex(v1_id);
+        for (const size_t t : get_one_ring_tids_for_vertex(v2_id)) tids.push_back(t);
+        std::sort(tids.begin(), tids.end());
+        tids.erase(std::unique(tids.begin(), tids.end()), tids.end());
+        edge_label_capture(tids, m_edge_label_collapse.local(), v1_id, v2_id);
+    }
     // The energy rule's before-half (see CollapseVolume): the sum of tet_energy() over v1's ring,
     // the cells the collapse changes, and v2's other cells, which it does not. Not in coarsening,
     // where the engine skips its own collapse rule as well.
@@ -1250,8 +1292,7 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
 
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
-    m_vertex_extra[v2_id].m_is_on_input =
-        m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
+    // m_is_on_input is written by close_labels() below, from the label.
     // The offset half is NOT an OR: it is re-derived from the labels, for v2 and for the link of
     // the edge that just died. An OR can only ever add the flag, so a collapse that takes a
     // vertex off the offset surface used to leave it flagged for the rest of the run -- counted
@@ -1265,6 +1306,19 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     }
     m_vertex_extra[v2_id].m_is_on_region =
         m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
+
+    // m_face_extra: the merged faces around the edge (collapse_before_vertex()), as the base writes
+    // m_face_attribute just after this returns. A face it cannot find makes the base refuse.
+    for (const auto& [fe, l] : m_face_extra_collapse.local()) {
+        if (const auto found = try_tuple_from_face({{v2_id, l[0], l[1]}}); found.has_value()) {
+            m_face_extra[std::get<1>(found.value())] = fe;
+        }
+    }
+    // The edge label (collapse_before_vertex()), then the closure over v2's ring -- which is
+    // where v2 gets v1's label when v1 carried more.
+    const std::vector<size_t> ring2 = get_one_ring_tids_for_vertex(v2_id);
+    edge_label_assign(ring2, m_edge_label_collapse.local());
+    close_labels(ring2);
 
     // The base calls this only once a collapse has actually gone through.
     ++iter_cnt_collapse;

@@ -45,6 +45,20 @@ const CellTag TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
 // label: 0=default, 1=input, 2=offset
 
 /**
+ * The label is CLOSED: a face, edge or vertex of a simplex carries that simplex's label, the input
+ * complex (1) winning over the band (2) and both over 0 -- the rule label_input_complex() and the
+ * band growth in construct_offset() write. A face, edge or vertex may also carry 1 of its own (a
+ * sheet, wire or point complex). This is the one way two labels combine; the optimization's
+ * operations restore the closure with it (TopoOffsetTetMesh::close_labels()).
+ */
+inline int closed_label(const int a, const int b)
+{
+    if (a == 1 || b == 1) return 1;
+    if (a == 2 || b == 2) return 2;
+    return 0;
+}
+
+/**
  * @brief Per-vertex data the shared 3D optimizer knows nothing about.
  *
  * Position, rounding, bbox membership, order, sizing and partition live on
@@ -94,10 +108,18 @@ class FaceExtra
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     /// The face lies on the input's envelope surface group (within its envelope): selectable as
-    /// the complex by name, held in that group's tube. Re-derived by classify_sheet_faces();
-    /// nothing propagates it through split or collapse, so it is read only before the
-    /// optimization starts. The 2D twin is EdgeExtra2d::on_curve.
+    /// the complex by name, held in that group's tube. Re-derived by classify_sheet_faces() and
+    /// read only before the optimization starts; the optimization's operations carry it with the
+    /// label (see m_face_extra in TopoOffsetTetMesh). The 2D twin is EdgeExtra2d::on_curve.
     bool on_sheet = false;
+
+    /// Two faces that a collapse makes one, as the base's SurfaceTagAttributes::merge(): the
+    /// labels combine by closed_label(), on_sheet is the OR.
+    void merge(const FaceExtra& o)
+    {
+        label = closed_label(label, o.label);
+        on_sheet = on_sheet || o.on_sheet;
+    }
 };
 
 
@@ -395,6 +417,63 @@ public:
     FaceExtraCol m_face_extra;
     EdgeAttCol m_edge_attribute;
     TetAttCol m_tet_attribute;
+
+    /**
+     * @name m_face_extra through the optimization's operations
+     *
+     * Carried exactly as the base carries m_face_attribute (TetOptimizerMeshSplit.cpp,
+     * TetOptimizerMeshCollapse.cpp, TetOptimizerMeshSwaps.cpp), at the canonical face id, which
+     * is where every reader looks:
+     *   - split: a face of the parents is captured by its sorted vertices (split_before_cells());
+     *     afterwards a child face that is a parent face keeps its value, the two halves of a
+     *     parent face containing the edge take that face's, and the new faces between a link
+     *     edge and the midpoint are reset (split_after_cells()).
+     *   - collapse: (v1,l1,l2) and (v2,l1,l2) around the edge are merged (FaceExtra::merge())
+     *     onto (v2,l1,l2) (collapse_before_vertex() / collapse_after_vertex()); the other faces
+     *     are renamed in place and keep their slots.
+     *   - swap: the old cells' faces are captured (swap_before_interior() /
+     *     swap_before_surface()); a new cell's face that was one of them keeps its value, every
+     *     other face of the new cells is reset (swap_after_cells()).
+     * face_is_complex_boundary() reads the label live, which is why it has to be carried.
+     *
+     * The edge label is carried the same way (edge_label_capture() / edge_label_assign()): an
+     * edge's slot is its lowest incident tet's, so an operation that changes the tets around an
+     * edge moves it to a slot holding another edge's value or a dead one's. After that, every
+     * operation closes the labels over the cells it made (close_labels()).
+     * @{
+     */
+    using FaceExtraMap = std::map<std::array<size_t, 3>, FaceExtra>;
+    /// The faces of `tids`, by sorted vertices, first value kept (as face_attribute_tracker()).
+    void face_extra_capture(const std::vector<size_t>& tids, FaceExtraMap& out) const;
+    /// Every face of `tids`: its captured value when it was captured, else reset.
+    void face_extra_assign(const std::vector<size_t>& tids, const FaceExtraMap& captured);
+    /// The split's and the swap's capture, per thread.
+    wmtk::threading::enumerable_thread_specific<FaceExtraMap> m_face_extra_split, m_face_extra_swap;
+    /// The collapse's merged faces around the edge: (merged value, the two link vertices).
+    wmtk::threading::enumerable_thread_specific<
+        std::vector<std::pair<FaceExtra, std::array<size_t, 2>>>>
+        m_face_extra_collapse;
+    using EdgeLabelMap = std::map<std::array<size_t, 2>, int>;
+    /// The edges of `tids` by sorted vertices; `from`, when given, renamed `to` first (a
+    /// collapse's v1 -> v2). Two edges meeting at one key combine by closed_label().
+    void edge_label_capture(
+        const std::vector<size_t>& tids,
+        EdgeLabelMap& out,
+        size_t from = size_t(-1),
+        size_t to = size_t(-1)) const;
+    /// Every edge of `tids`: its captured label when it was captured, else 0.
+    void edge_label_assign(const std::vector<size_t>& tids, const EdgeLabelMap& captured);
+    /// The split's, the swap's and the collapse's edge capture, per thread.
+    wmtk::threading::enumerable_thread_specific<EdgeLabelMap> m_edge_label_split, m_edge_label_swap,
+        m_edge_label_collapse;
+    /**
+     * Restore the closure over `tids`, the cells an operation made: each cell's label onto its
+     * faces, each face's onto its edges, each edge's onto its ends (closed_label()), and then
+     * VertexExtra::m_is_on_input of every corner from its label, as
+     * mark_input_complex_vertices() defines it. Only raises: a carried label stays.
+     */
+    void close_labels(const std::vector<size_t>& tids);
+    /// @}
 
     TopoOffsetTetMesh(Parameters& _m_offset_params, int _num_threads = 0)
         : wmtk::TetOptimizerMesh(_m_offset_params, nullptr)
