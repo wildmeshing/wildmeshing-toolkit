@@ -126,6 +126,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// every face over it -- the rule of 2026-09-25, kept for comparison.
     std::string front_measure;
     bool sorted_marching;
+    /// Construction only (optimize_offset false), 2D and 3D: the output .msh carries the node
+    /// field corr_input_vid, each offset vertex's input-complex vertex (see the spec).
+    bool save_offset_correspondence = false;
     /// How the marching places the offset (see the spec). A target_distance below the maximum
     /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
     /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
@@ -282,6 +285,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
+        save_offset_correspondence = json_params["save_offset_correspondence"];
         construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         init_optimize = json_params["init_optimize"];

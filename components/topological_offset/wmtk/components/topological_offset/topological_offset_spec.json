@@ -28,6 +28,7 @@
       "stencil_order",
       "front_measure",
       "sorted_marching",
+      "save_offset_correspondence",
       "construction_mode",
       "sphere_trace_target_rel_tol",
       "init_optimize",
@@ -248,6 +249,12 @@
     "type": "bool",
     "default": false,
     "doc": "Execute the marching in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/save_offset_correspondence",
+    "type": "bool",
+    "default": false,
+    "doc": "2D and 3D, and only with optimize_offset false (the run refuses the combination with true). The output .msh carries the node field corr_input_vid, a scalar $NodeData entry for every vertex of the mesh (the retained envelope's own nodes, when the input has an EnvelopeSurface, carry none). The march splits every edge with exactly one endpoint on the input complex and so makes the offset vertices (vertex label 2, the vertices of the offset band that are not on the complex); for each such vertex the field holds the 0-based index of that edge's endpoint on the complex, the input-complex vertex the offset vertex was split off from. Every other vertex holds -1. The index is the output file's own: vertex k is the node with tag k + 1. The optimization splits, collapses and renumbers vertices and does not carry the field, hence the restriction. The prismatic_mesh component reads this file. Default false: the .msh has no node data."
   },
   {
     "pointer": "/sphere_trace_target_rel_tol",

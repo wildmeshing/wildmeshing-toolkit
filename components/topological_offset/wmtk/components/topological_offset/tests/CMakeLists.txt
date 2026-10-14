@@ -19,3 +19,5 @@ set(SRC_FILES
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+# The spec's defaults, so a test can build Parameters as the app does.
+target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk_${COMPONENT_NAME}_spec)
