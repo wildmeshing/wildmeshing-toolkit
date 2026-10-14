@@ -178,12 +178,24 @@ public:
         std::function<bool(const EdgeAttributes&)> cond) const;
 
     /**
-     * The least shape quality (see shape_quality) an operation may give a triangle. 1e-6 is a
-     * numerically degenerate triangle -- an aspect ratio around a million, where normals and
-     * areas computed from it stop meaning anything -- not a quality goal; a flat triangle
-     * (quality 0, or NaN for three coincident points) used to be the only thing rejected.
+     * Shape quality (see shape_quality) below which a triangle counts as numerically degenerate:
+     * an aspect ratio around a million, where normals and areas computed from it stop meaning
+     * anything. invariants() rejects an operation that creates a triangle below it, unless the
+     * triangles the operation replaces were already at least as bad. An input with degenerate
+     * triangles must still be remeshable: refusing every operation that keeps one around would
+     * leave those regions stuck.
      */
     static constexpr double MIN_QUALITY = 1e-6;
+
+    /**
+     * @brief Minimum shape quality of the given triangles. NaN (three coincident points) counts
+     * as 0.
+     */
+    double min_quality(const std::vector<Tuple>& tris) const;
+
+    /// Minimum quality of the triangles the current operation replaces, set by its before-hook
+    /// and read by invariants().
+    wmtk::threading::enumerable_thread_specific<double> min_quality_before;
 
     bool invariants(const std::vector<Tuple>& new_tris) override;
 

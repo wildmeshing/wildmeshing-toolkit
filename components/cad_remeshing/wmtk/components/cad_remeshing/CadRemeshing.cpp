@@ -4,6 +4,7 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <cmath>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/collector.hpp>
@@ -156,14 +157,24 @@ std::vector<std::array<size_t, 2>> CadRemeshing::get_edges_by_condition(
     return res;
 }
 
+double CadRemeshing::min_quality(const std::vector<Tuple>& tris) const
+{
+    double min_q = std::numeric_limits<double>::max();
+    for (const Tuple& t : tris) {
+        const double q = get_quality(t);
+        min_q = std::min(min_q, std::isnan(q) ? 0.0 : q);
+    }
+    return min_q;
+}
+
 bool CadRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
-    // No degenerate or near-degenerate triangle. The quality is NaN for three coincident points
-    // (0/0), so the comparison is written to fail on NaN as well.
-    for (const Tuple& t : new_tris) {
-        if (!(get_quality(t) > MIN_QUALITY)) {
-            return false;
-        }
+    // No new degenerate or near-degenerate triangle, unless the replaced triangles were already
+    // at least as bad. NaN (three coincident points) counts as quality 0.
+    const double q_before = min_quality_before.local();
+    const double q_after = min_quality(new_tris);
+    if (q_after <= MIN_QUALITY && q_after < q_before) {
+        return false;
     }
 
     if (m_has_envelope) {
@@ -305,6 +316,11 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
         const size_t eid = edge_id(vs[0], vs[1]);
         cache.ring_edge_attrs[e] = edge_attrs.at(eid);
     }
+
+    std::vector<Tuple> old_tris = t.switch_faces(*this);
+    old_tris.push_back(t);
+    min_quality_before.local() = min_quality(old_tris);
+
     return true;
 }
 
@@ -377,6 +393,11 @@ bool CadRemeshing::collapse_edge_before(const Tuple& t)
         return false;
     }
 
+    std::vector<Tuple> old_tris = get_one_ring_tris_for_vertex(t);
+    const std::vector<Tuple> old_tris1 = get_one_ring_tris_for_vertex(t.switch_vertex(*this));
+    old_tris.insert(old_tris.end(), old_tris1.begin(), old_tris1.end());
+    min_quality_before.local() = min_quality(old_tris);
+
     return true;
 }
 
@@ -444,6 +465,12 @@ bool CadRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) {
         return false;
+    }
+
+    {
+        std::vector<Tuple> old_tris = t.switch_faces(*this);
+        old_tris.push_back(t);
+        min_quality_before.local() = min_quality(old_tris);
     }
 
     auto& cache = split_info_cache.local();
@@ -543,6 +570,8 @@ bool CadRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].corner_id >= 0) return false;
     if (vertex_attrs[t.vid(*this)].is_feature) return false;
+
+    min_quality_before.local() = min_quality(get_one_ring_tris_for_vertex(t));
 
     return true;
 }
