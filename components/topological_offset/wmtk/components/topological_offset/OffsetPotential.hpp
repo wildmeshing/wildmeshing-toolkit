@@ -6,6 +6,7 @@
 #include <wmtk/envelope/Envelope.hpp>
 
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "ExactBandIntegral.hpp"
 #include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -787,8 +788,6 @@ private:
     int build_node(int begin, int end, const std::vector<Eigen::Vector3d>& centroid, double pad);
 };
 
-class ExactBandIntegral;
-
 /**
  * @brief A vertex's part of the energy's band term (TopoOffsetTetMesh::band_cell_term()), the
  * vertex moving:
@@ -891,6 +890,9 @@ private:
     mutable std::vector<std::vector<InputTriangles::BallCandidate>> m_ball_cand;
     /// set_exact_integral(): the integral, and the last point's value / gradient and Hessian.
     std::shared_ptr<const ExactBandIntegral> m_eb;
+    /// Per cell its partition at the last x it was evaluated at, shared by value() and
+    /// value_grad_hess() (ExactBandIntegral::Partition).
+    mutable std::vector<ExactBandIntegral::Partition> m_eb_parts;
     mutable bool m_eb_val_set = false, m_eb_der_set = false;
     mutable Eigen::Vector3d m_eb_val_x = Eigen::Vector3d::Zero();
     mutable Eigen::Vector3d m_eb_der_x = Eigen::Vector3d::Zero();

@@ -5,6 +5,8 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -87,7 +89,9 @@ namespace wmtk::components::topological_offset {
  * 446 of 881 inner-boundary vertices lay inside the input by turn 12, E_band ended 58.6 bars
  * below its exact minimum (Steiner's formula), and the settle test could not pass.
  *
- * Thread safety: value() is const and keeps no state; concurrent calls are safe.
+ * Thread safety: value() and value_grad_hess() are const. Their state is a per-thread scratch
+ * partition and value()'s table of results, whose slots are read and written under a lock
+ * (value()); concurrent calls are safe. A Partition (below) is the caller's, used by one thread.
  */
 class ExactBandIntegral
 {
@@ -103,11 +107,14 @@ public:
     /// solid; sigma = +1 for the band outside that solid, -1 inside it, 0 no clip (as the
     /// two-argument constructor). TopoOffsetTetMesh's solid is its label-1 cells, which the band
     /// is outside of for offset_out and offset_in alike, so it passes +1.
+    /// value_slots > 0: value() keeps a table of its results of at least that many slots (the
+    /// value table, value()).
     ExactBandIntegral(
         const Eigen::MatrixXd& V,
         const Eigen::MatrixXi& F,
         const std::vector<int8_t>& face_side,
-        int sigma);
+        int sigma,
+        size_t value_slots = 0);
 
     /// Counters, volumes and (when `timing`) times of value() calls, ADDED to on every call (never
     /// reset by value()).
@@ -148,11 +155,62 @@ public:
         double t_total = 0., t_candidates = 0., t_clip = 0., t_closed = 0., t_series = 0.;
     };
 
-    /// J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted
-    /// to the offset side when constructed with one (class doc); 0 for a flat cell
-    /// (|6 vol| <= 64 eps L^3, L its longest edge). With `stats`, adds to it.
+    /**
+     * @brief J(t) = int_t (d - delta) dV for the cell with corners t (either orientation),
+     * restricted to the offset side when constructed with one (class doc); 0 for a flat cell
+     * (|6 vol| <= 64 eps L^3, L its longest edge). With `stats`, adds to it.
+     *
+     * The value table (constructed with value_slots > 0; not used with `stats`, whose counters
+     * count every evaluation): J is a function of its 13 inputs alone -- t's 12 coordinates in
+     * their order, delta -- and of the input triangles, fixed. A slot, chosen by a hash of the
+     * inputs, holds the last result with its inputs; a call whose inputs equal a slot's, bit for
+     * bit, returns its result, which is what the evaluation would return again. Any other call
+     * evaluates and takes the slot over: a cell that moved or two cells sharing a slot cost an
+     * evaluation, never a different value.
+     *
+     * Why: the energy rule reads the band cells of an operation's ring before it, and an unchanged
+     * cell is read again by every later operation whose ring holds it. MEASURED (Geneva base,
+     * inward, exact rule, the turn-1 collapse group, every evaluation of value() logged by its
+     * inputs): the collapse before-sums made 8.5M calls (6.2 band cells per sum), every one of
+     * them a repeat of an earlier call, 83% of the group's value() time; the after-sums 0.69M,
+     * 62% repeats (a collapse refused, retried in a later round). A table taking every result,
+     * of 2^18 / 2^20 / 2^22 slots, would have answered 98.2 / 99.5 / 99.9% of the before-sums and
+     * 52 / 59 / 61% of the after-sums.
+     */
     double value(const std::array<Eigen::Vector3d, 4>& t, double delta, Stats* stats = nullptr)
         const;
+
+    struct Work;
+    /**
+     * @brief One cell's partition, kept by the caller between value() and value_grad_hess() of
+     * that cell: each partitions t (partition(), the candidates and the convex pieces) before
+     * integrating, and a partition is a function of t's 12 coordinates, in their order, and of the
+     * input alone. Given a Partition, a call whose t equals, bit for bit, the t the Partition was
+     * made for (by this integral) reads it; any other call partitions t into it. The value is
+     * therefore the one the call would compute without it.
+     *
+     * Why: the smoother asks for J at x (value(), the line search) and then for its derivatives
+     * at the same x (value_grad_hess()), each partitioning every band cell of the ring. MEASURED
+     * (Geneva base, inward, the smoothing pass after the split, sampled): partition() was 51% of
+     * the busy time, 20% inside value_grad_hess() and 31% inside value().
+     */
+    class Partition
+    {
+    public:
+        Partition();
+        ~Partition();
+        Partition(Partition&&) noexcept;
+        Partition& operator=(Partition&&) noexcept;
+
+    private:
+        friend class ExactBandIntegral;
+        std::unique_ptr<Work> m_w;
+        uint64_t m_owner = 0; ///< the integral's m_id; 0: none
+        double m_key[12] = {};
+        bool m_ok = false; ///< false: t is flat
+    };
+    /// value(t, delta), t's partition read from or written to `keep` (Partition).
+    double value(const std::array<Eigen::Vector3d, 4>& t, double delta, Partition& keep) const;
 
     /**
      * @brief J and its exact gradient and Hessian with respect to corner `kv` of t, the other
@@ -184,6 +242,14 @@ public:
         Eigen::Vector3d& grad,
         Eigen::Matrix3d& hess,
         Stats* stats = nullptr) const;
+    /// value_grad_hess(), t's partition read from or written to `keep` (Partition).
+    double value_grad_hess(
+        const std::array<Eigen::Vector3d, 4>& t,
+        int kv,
+        double delta,
+        Eigen::Vector3d& grad,
+        Eigen::Matrix3d& hess,
+        Partition& keep) const;
 
     /// What max_distance() found besides the max.
     struct MaxInfo
@@ -269,7 +335,6 @@ private:
     /// Per-call scratch of the partitions (defined in the .cpp): the candidates in the frame of a
     /// cell or front face (Local), and the pieces of a cell (Work) or of a face (TriWork).
     struct Local;
-    struct Work;
     struct TriWork;
     /// The candidates of the n points t (a cell's or a face's corners) in the frame of w.c0, set
     /// by the caller: U, the box query, the local features and half-spaces, the rounding scale.
@@ -277,6 +342,46 @@ private:
     /// _partition: the candidates in t's frame and the convex pieces of t with member sets; false
     /// for a flat cell.
     bool partition(const std::array<Eigen::Vector3d, 4>& t, Work& w, Stats* stats) const;
+    /// partition() of t (null: t is flat): into `own` with `stats` (which counts every
+    /// partition), else read from or written to `keep` when given (Partition), else into a
+    /// per-thread scratch partition (its storage reused from call to call).
+    const Work* cell_partition(
+        const std::array<Eigen::Vector3d, 4>& t,
+        Stats* stats,
+        Work* own,
+        Partition* keep) const;
+    /// This integral's number among all constructed, the owner a Partition records (an address
+    /// can be reused by a later integral).
+    uint64_t m_id = 0;
+    /// value() without the value table.
+    double evaluate(
+        const std::array<Eigen::Vector3d, 4>& t,
+        double delta,
+        Stats* stats,
+        Partition* keep) const;
+    /// value(t, delta, stats, keep) through the value table (value()).
+    double value_tabled(const std::array<Eigen::Vector3d, 4>& t, double delta, Partition* keep)
+        const;
+    /// value_grad_hess() with cell_partition()'s `keep`.
+    double value_grad_hess_impl(
+        const std::array<Eigen::Vector3d, 4>& t,
+        int kv,
+        double delta,
+        Eigen::Vector3d& grad,
+        Eigen::Matrix3d& hess,
+        Stats* stats,
+        Partition* keep) const;
+    /// The value table (value()): slots of the 13 inputs and the result; locked by stripes of
+    /// kValueStripes slots. Empty: no table.
+    struct ValueSlot
+    {
+        double in[13];
+        double out = 0.;
+        bool full = false;
+    };
+    static constexpr size_t kValueStripes = 1024;
+    mutable std::vector<ValueSlot> m_values;
+    mutable std::unique_ptr<std::mutex[]> m_value_locks;
     /// _tri_partition: the same for the face f, its pieces planar rings.
     void tri_partition(const std::array<Eigen::Vector3d, 3>& f, TriWork& w) const;
     /// U: min over all triangles of max over the n points t of d_P.
