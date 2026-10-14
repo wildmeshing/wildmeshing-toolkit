@@ -933,6 +933,40 @@ public:
      * certified ball are not used.
      */
     void set_exact_integral(std::shared_ptr<const ExactBandIntegral> eb, double delta);
+    /// A boundary face of the band through x, its other two corners: (x, a, b) ordered with its
+    /// normal (a - x) x (b - x) out of the band.
+    struct Face
+    {
+        Eigen::Vector3d a, b;
+    };
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same band term
+     * (ExactBandIntegral.hpp): the value is
+     *     (sum over the band's boundary faces f through x of int_f G.n dA
+     *      + sum over the cells t of D_t, for the flagged cells) / delta,
+     * which differs from the "exact" rule's sum over the cells of J_t / delta by the flux through
+     * the faces that do not hold x, a constant in x: a face holding x lies in two cells of x's
+     * ring, so its fluxes cancel unless one side is not a band cell. Gradient and Hessian are
+     * those of E(B) / delta in x (ExactBandIntegral::front_face(), summed over `faces`); they have
+     * no D_t term. D_t is evaluated for a cell flagged by ExactBandIntegral::front_flux_flag(),
+     * or whose bound on d exceeds front_flux_reach() (the flag's polytopes hold the bisector
+     * points with d <= reach only): U_t = ExactBandIntegral::distance_bound(), kept per cell with
+     * the x it was computed at and read as U_t + |x - x_U| at a later x, a bound too (each d_P is
+     * 1-Lipschitz and only x moves), the search repeated where that exceeds the reach. Why U_t and
+     * not d(x) + max |q - x| (d 1-Lipschitz): MEASURED (stored cube_out band, 52957 cells, reach
+     * 2 delta), the latter put 10618 band cells beyond the reach, 5.0 D_t evaluations per front
+     * vertex, where the cube outward has no region overlaps on its offset side at all. The
+     * certified ball and the exact rule's integrals are not used. Any exception from the band term
+     * is kept (front_flux_error()) before it propagates: the shared smoother takes an exception out
+     * of a solve for a failed line search.
+     */
+    void set_front_flux(
+        std::shared_ptr<const ExactBandIntegral> eb,
+        double delta,
+        std::vector<Face> faces);
+    /// The message of the last exception the front-flux band term threw on this thread, until
+    /// the caller clears it (smooth_front_vertex() rethrows it after the solve).
+    static std::string& front_flux_error();
     /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
     std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
@@ -968,6 +1002,19 @@ private:
     mutable double m_eb_E = 0.;
     mutable Eigen::Vector3d m_eb_g = Eigen::Vector3d::Zero();
     mutable Eigen::Matrix3d m_eb_H = Eigen::Matrix3d::Zero();
+    /// set_front_flux(): on, and the band's boundary faces through x; per cell its bound U_t on d
+    /// and the x it was computed at (m_ff_Ux_set: computed).
+    bool m_ff = false;
+    std::vector<Face> m_ff_faces;
+    /// per face its labelled parts at the last x (ExactBandIntegral::FaceParts), shared by the
+    /// value and the derivatives
+    mutable std::vector<ExactBandIntegral::FaceParts> m_ff_fparts;
+    mutable std::vector<double> m_ff_U;
+    mutable std::vector<Eigen::Vector3d> m_ff_Ux;
+    mutable std::vector<char> m_ff_Ux_set;
+    /// The front form's value / derivatives at x (eval()).
+    double ff_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)
+        const;
 
     std::vector<Cell> m_cells;
 };

@@ -1618,6 +1618,96 @@ void BandVolumeEnergy3D::set_exact_integral(
     m_eb_parts.resize(m_cells.size());
 }
 
+void BandVolumeEnergy3D::set_front_flux(
+    std::shared_ptr<const ExactBandIntegral> eb,
+    const double delta,
+    std::vector<Face> faces)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_ff = true;
+    m_ff_faces = std::move(faces);
+    m_ff_fparts.clear();
+    m_ff_fparts.resize(m_ff_faces.size());
+    m_ff_U.assign(m_cells.size(), 0.);
+    m_ff_Ux.assign(m_cells.size(), Eigen::Vector3d::Zero());
+    m_ff_Ux_set.assign(m_cells.size(), 0);
+    m_eb_val_set = m_eb_der_set = false;
+    m_eb_parts.clear();
+    m_eb_parts.resize(m_cells.size());
+}
+
+std::string& BandVolumeEnergy3D::front_flux_error()
+{
+    thread_local std::string msg;
+    return msg;
+}
+
+double BandVolumeEnergy3D::ff_eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // EXPERIMENTAL_band_volume_rule "front_flux" (set_front_flux())
+    const auto same = [&](const Eigen::Vector3d& y) {
+        return std::memcmp(x.data(), y.data(), 3 * sizeof(double)) == 0;
+    };
+    try {
+        if (need == 0) {
+            if (!(m_eb_val_set && same(m_eb_val_x))) {
+                double E = 0.;
+                for (size_t i = 0; i < m_ff_faces.size(); ++i) {
+                    const Face& f = m_ff_faces[i];
+                    E += m_eb->front_face({{x, f.a, f.b}}, m_delta, &m_ff_fparts[i]);
+                }
+                const double reach = m_eb->front_flux_reach();
+                for (size_t k = 0; k < m_cells.size(); ++k) {
+                    const Cell& c = m_cells[k];
+                    const std::array<Eigen::Vector3d, 4> t = {{x, c.q1, c.q2, c.q3}};
+                    // U_t + |x - x_U| bounds d on t (set_front_flux()); searched again only
+                    // where it exceeds the reach
+                    if (!m_ff_Ux_set[k] || m_ff_U[k] + (x - m_ff_Ux[k]).norm() > reach) {
+                        m_ff_U[k] = m_eb->distance_bound(t);
+                        m_ff_Ux[k] = x;
+                        m_ff_Ux_set[k] = 1;
+                    }
+                    if (m_ff_U[k] + (x - m_ff_Ux[k]).norm() > reach || m_eb->front_flux_flag(t)) {
+                        E += m_eb->bisector_jump(t, m_delta, &m_eb_parts[k]);
+                    }
+                }
+                m_eb_E = E / m_delta;
+                m_eb_val_x = x;
+                m_eb_val_set = true;
+            }
+            g.setZero();
+            H.setZero();
+            return m_eb_E;
+        }
+        if (!(m_eb_der_set && same(m_eb_der_x))) {
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (size_t i = 0; i < m_ff_faces.size(); ++i) {
+                const Face& f = m_ff_faces[i];
+                Eigen::Vector3d gf;
+                Eigen::Matrix3d hf;
+                m_eb->front_face_derivs({{x, f.a, f.b}}, m_delta, 0, gf, hf, &m_ff_fparts[i]);
+                m_eb_g += gf / m_delta;
+                m_eb_H += hf / m_delta;
+            }
+            m_eb_der_x = x;
+            m_eb_der_set = true;
+        }
+    } catch (const std::exception& e) {
+        front_flux_error() = e.what();
+        throw;
+    }
+    g = m_eb_g;
+    H = m_eb_H;
+    // the value is the value path's; gradient() and hessian() do not read it
+    return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
+}
+
 bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
 {
     // r = the distance from x to the nearest plane through a cell's three fixed corners, each
@@ -1676,6 +1766,7 @@ double BandVolumeEnergy3D::eval(
     Eigen::Vector3d& g,
     Eigen::Matrix3d& H) const
 {
+    if (m_ff) return ff_eval(x, need, g, H);
     if (m_eb) {
         // EXPERIMENTAL_band_volume_rule "exact": per cell J_t / delta with x a corner of t
         const auto same = [&](const Eigen::Vector3d& y) {

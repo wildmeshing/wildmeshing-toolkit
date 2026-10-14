@@ -244,7 +244,7 @@ double TopoOffsetTetMesh::face_offset_term(const size_t a, const size_t b, const
         m_vertex_attribute[c].m_posf);
 }
 
-double TopoOffsetTetMesh::tet_energy(const size_t tid) const
+double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) const
 {
     // See the declaration. get_quality() is the base's: AMIPS^3 or MAX_ENERGY.
     const double a3 = get_quality(tuple_from_tet(tid));
@@ -261,7 +261,7 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid) const
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    return cell_energy(vids, a3, cell_is_offset_band(tid));
+    return cell_energy(vids, a3, band_term && cell_is_offset_band(tid));
 }
 
 bool TopoOffsetTetMesh::plastic_rest(const size_t tid, Eigen::Matrix3d& R) const
@@ -353,10 +353,11 @@ void TopoOffsetTetMesh::log_energy_step(const char* step) const
         band);
 }
 
-double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids) const
+double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids, const bool band_term)
+    const
 {
     double s = 0.;
-    for (const size_t tid : tids) s += tet_energy(tid);
+    for (const size_t tid : tids) s += tet_energy(tid, band_term);
     return s;
 }
 
@@ -393,7 +394,8 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    return cell_energy(vids, a3, label == 2);
+    // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS).
+    return cell_energy(vids, a3, label == 2 && !rec.band_cancels);
 }
 
 void TopoOffsetTetMesh::swap_record_fill(const bool flip)
@@ -487,13 +489,16 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         ++m_plastic_tie_swap;
         return false;
     }
-    m_swap_energy_before.local() = tet_energy_sum(tids);
-
+    // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
+    // band cells has label 2, the label every new cell takes.
+    const bool band_cancels = band_term_cancels(tids);
+    m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search and the face swap's gate read candidate cells' labels from;
     // see SwapRecord. After the capture, whose single label every new cell takes.
     // A 3-2 has no case search and no gate on cells that do not exist yet: the rule judges it
-    // on the real cells in swap_after_cells(), so it needs no record.
+    // on the real cells in swap_after_cells(), so it needs no record beyond band_cancels.
     if (current_op_kind() != OpKind::swap_32) swap_record_fill(false);
+    m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
     return true;
 }
 
@@ -588,11 +593,15 @@ bool TopoOffsetTetMesh::swap_before_surface(
             return swap_reject(SwapReject::app_sag_raised);
         }
     }
-    m_swap_energy_before.local() = tet_energy_sum(tids);
+    // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
+    // band cells has only band sides, and every new cell takes one or the flip is refused.
+    const bool band_cancels = band_term_cancels(tids);
+    m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search reads candidate cells' labels from; see SwapRecord. After
     // swap_capture_surface_sides(), whose sides the new cells take.
     if (current_op_kind() != OpKind::swap_32)
         swap_record_fill(true); // as in swap_before_interior()
+    m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
     // triangles with surface_triangle_is_outside(), which holds a held face to m_envelope, and
@@ -713,6 +722,16 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         m_vertex_attribute[vid].m_is_on_surface && smoothing_energy_envelope(vid) != nullptr;
     const std::vector<size_t> ring = get_one_ring_tids_for_vertex(vid);
     const double before = projected ? 0. : tet_energy_sum(ring);
+    // BAND TERM THAT CANCELS (tet_energy()) for the move: the ring's cells tile the star of vid,
+    // whose link does not move, and smooth_vertex_3d() refuses a move that inverts one, so a
+    // ring of band cells clear of the input's bisectors at the old position and at the new one
+    // keeps B, and the veto compares the sums without the band term. The full before-sum is
+    // kept for a move that leaves the clear region. MEASURED (cube 1e-2 / 1e-4, front_flux, 15
+    // rounds, serial): 412,850 of 1,962,638 non-front vetoes had such a ring, |dB| <= 1.6e-12
+    // delta V over it (rounding; 16% exactly 0), and reading dB as 0 flipped 0 of them. Front
+    // vertices (a background cell in every ring) and held vertices (an input cell) never have one.
+    const bool cancels_before = !projected && band_term_cancels(ring);
+    const double before_no_band = cancels_before ? tet_energy_sum(ring, false) : 0.;
     if (!optimization::smooth_vertex_3d(
             *this,
             t,
@@ -723,7 +742,9 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         return false;
     }
     if (projected) return true;
-    if (!(tet_energy_sum(ring) <= before)) { // a NaN refuses; a tie passes
+    const bool cancels = cancels_before && band_term_cancels(ring);
+    const double after = tet_energy_sum(ring, !cancels);
+    if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
         --m_smooth_rejects.accepted;
         ++m_smooth_rejects.quality;
         return false;
@@ -972,7 +993,8 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // for this after-hook refusal (SwapReject lives in the engine, which this does not change);
     // a face swap counts in the per-kind table alone, as the engine counts its own refusals.
     const auto energy_lowered = [&]() {
-        const double after_sum = tet_energy_sum(tids);
+        // without the band term when the before-sum left it out (BAND TERM THAT CANCELS)
+        const double after_sum = tet_energy_sum(tids, !m_swap_record.local().band_cancels);
         if (m_params.perform_sanity_checks) swap_scoring_check(tids, after_sum);
         if (after_sum < m_swap_energy_before.local()) return true;
         ++m_volume_reject_swap;
@@ -1132,7 +1154,10 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     if (!m_coarsen_mode) {
         std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
         CollapseVolume& cv = m_collapse_volume.local();
-        cv.before = tet_energy_sum(ring1);
+        // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): the new
+        // cells are ring1's cells without v2, in their own slots with their own labels.
+        cv.band_cancels = band_term_cancels(ring1);
+        cv.before = tet_energy_sum(ring1, !cv.band_cancels);
         // use_rest_pose: the cells the collapse changes are v1's cells without v2, each keeping
         // its label; when they and the whole ring are plastic, the collapse is an exact tie
         // (plastic_tie()).
@@ -1256,7 +1281,7 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             if (cv.tie) {
                 scoreable = scoreable && get_quality(tuple_from_tet(tid)) < MAX_ENERGY;
             } else {
-                after += tet_energy(tid);
+                after += tet_energy(tid, !cv.band_cancels);
             }
         }
         if (cv.tie ? !scoreable : !(after <= cv.before)) { // a NaN refuses
@@ -4341,6 +4366,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             ++m_smooth_group; // see VertexExtra::m_front_change
             // E before and after each group, the descent check (a collapse or swap group may not
             // raise it; a split group may).
+            // The exact rules' value table, sized to the mesh as it is now (see
+            // ExactBandIntegral::reserve_values()).
+            if (m_band_exact) m_band_exact->reserve_values(2 * tet_capacity());
             const double energy_before_group = global_energy();
             if (settle && it == 0 && gi == 0) settle_e_prev = energy_before_group;
             const int vol_c0 = m_volume_reject_collapse.load(),

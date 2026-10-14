@@ -17,6 +17,7 @@
 #include <paraviewo/VTUWriter.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 #include <limits>
 #include <queue>
@@ -1054,12 +1055,14 @@ void TopoOffsetTetMesh::init_offset_potential()
                     m_n_regions);
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
-            // EXPERIMENTAL_band_volume_rule "exact": the exact integral's structure, beside them.
-            // It also gives the settle loop's max test its exact max of d over a front face
-            // (ExactBandIntegral::max_distance()).
-            // DEBUG_output builds it too, for the debug frames' band_gap_bars (gather_vtu_frame());
-            // nothing else reads it unless one of the two conditions holds.
-            if (m_offset_params.band_volume_rule == "exact" ||
+            // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
+            // structure, beside them. It also gives the settle loop's max test its exact max of d
+            // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
+            // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
+            // nothing else reads it unless one of the other conditions holds.
+            const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                                    m_offset_params.band_volume_rule == "front_flux";
+            if (exact_rule ||
                 (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
                 m_offset_params.debug_output) {
                 // The band is on the offset side of the input only (ExactBandIntegral's class
@@ -1093,14 +1096,29 @@ void TopoOffsetTetMesh::init_offset_potential()
                 // The value table (ExactBandIntegral::value()) for the band term only, which
                 // reads cells again; twice the constructed mesh's tets, so that its live band
                 // cells seldom share a slot.
-                const size_t value_slots =
-                    m_offset_params.band_volume_rule == "exact" ? 2 * tet_capacity() : 0;
-                m_band_exact = std::make_shared<ExactBandIntegral>(
+                const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
+                auto eb = std::make_shared<ExactBandIntegral>(
                     m_phi_V,
                     m_phi_F,
                     m_phi_F_inner,
                     sigma,
                     value_slots);
+                // "front_flux" and "exact": where bisectors within reach of the input can be, from
+                // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
+                // it, and both rules' band term that cancels (tet_energy()).
+                if (exact_rule) {
+                    const auto t0 = std::chrono::steady_clock::now();
+                    eb->prepare_front_flux(m_offset_params.target_distance);
+                    logger().info(
+                        "\t{}: {} region overlaps within reach {} of the input can hold "
+                        "bisectors ({:.3g} s)",
+                        m_offset_params.band_volume_rule,
+                        eb->front_flux_polytopes(),
+                        eb->front_flux_reach(),
+                        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
+                            .count());
+                }
+                m_band_exact = std::move(eb);
             }
         }
         return;
