@@ -6,6 +6,7 @@
 #include <wmtk/envelope/Envelope.hpp>
 
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "ExactBandIntegral.hpp"
 #include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -851,6 +852,18 @@ public:
     }
     void hessian(const TVector& x, MatrixXd& hessian) override;
     void solution_changed(const TVector& new_x) override {}
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "exact": a cell's Vol_t m_t becomes J_t / delta,
+     * J_t = int_t (d - delta) dV in closed form (ExactBandIntegral), the moving vertex x one of
+     * t's corners -- the term band_cell_term() reads. Values from ExactBandIntegral::value(), the
+     * function band_cell_term() calls (the corners in another order); gradient and Hessian from
+     * ExactBandIntegral::value_grad_hess() in x (its J equals value() to rounding): exact, except
+     * on rule-(a) pieces (the bound's derivative) and at a kink of d on a face of t through x (the
+     * one-sided limit for x moving into t). The last point's value, and its gradient and Hessian,
+     * are kept: polysolve asks for each separately at one x. The corner bound's minima and
+     * certified ball are not used.
+     */
+    void set_exact_integral(std::shared_ptr<const ExactBandIntegral> eb, double delta);
     /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
     std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
@@ -875,6 +888,17 @@ private:
     mutable Eigen::Vector3d m_ball_c = Eigen::Vector3d::Zero();
     mutable double m_ball_r = -1.;
     mutable std::vector<std::vector<InputTriangles::BallCandidate>> m_ball_cand;
+    /// set_exact_integral(): the integral, and the last point's value / gradient and Hessian.
+    std::shared_ptr<const ExactBandIntegral> m_eb;
+    /// Per cell its partition at the last x it was evaluated at, shared by value() and
+    /// value_grad_hess() (ExactBandIntegral::Partition).
+    mutable std::vector<ExactBandIntegral::Partition> m_eb_parts;
+    mutable bool m_eb_val_set = false, m_eb_der_set = false;
+    mutable Eigen::Vector3d m_eb_val_x = Eigen::Vector3d::Zero();
+    mutable Eigen::Vector3d m_eb_der_x = Eigen::Vector3d::Zero();
+    mutable double m_eb_E = 0.;
+    mutable Eigen::Vector3d m_eb_g = Eigen::Vector3d::Zero();
+    mutable Eigen::Matrix3d m_eb_H = Eigen::Matrix3d::Zero();
 
     std::vector<Cell> m_cells;
 };
