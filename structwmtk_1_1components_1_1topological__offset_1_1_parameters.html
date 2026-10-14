@@ -189,6 +189,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>stencil_order</b></td>
 <tr class="memitem:af2f589c738c1ca954fdd3addc9fc58f8" id="r_af2f589c738c1ca954fdd3addc9fc58f8"><td class="memItemLeft" align="right" valign="top"><a id="af2f589c738c1ca954fdd3addc9fc58f8" name="af2f589c738c1ca954fdd3addc9fc58f8"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></td></tr>
 <tr class="separator:af2f589c738c1ca954fdd3addc9fc58f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff3dcf142eaf27cbc1ec0dec7e622b91" id="r_aff3dcf142eaf27cbc1ec0dec7e622b91"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aff3dcf142eaf27cbc1ec0dec7e622b91">save_offset_correspondence</a> = false</td></tr>
+<tr class="separator:aff3dcf142eaf27cbc1ec0dec7e622b91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae70592da646fdbc27aa5508af006c6a5" id="r_ae70592da646fdbc27aa5508af006c6a5"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ae70592da646fdbc27aa5508af006c6a5">construction_mode</a> = &quot;max_marchable_fallback&quot;</td></tr>
 <tr class="separator:ae70592da646fdbc27aa5508af006c6a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec4223bf61e4f0dc7a7218f92811ab6b" id="r_aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aec4223bf61e4f0dc7a7218f92811ab6b">sphere_trace_target_rel_tol</a></td></tr>
@@ -657,6 +659,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>Smoothing passes before the march that push the outer ends of the marched edges out to 2 x target_distance; they stop early once every outer end is beyond target_distance + front_conv. 0 (the default) = off. See the spec doc and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abcf0c2ec47227d1405f268a641ceb9a3">TopoOffsetTetMesh::repulsion_smoothing()</a> / <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1730bae232fdab63e6b7d0b1ecda14a0">TopoOffsetTriMesh::repulsion_smoothing()</a>. </p>
+
+</div>
+</div>
+<a id="aff3dcf142eaf27cbc1ec0dec7e622b91" name="aff3dcf142eaf27cbc1ec0dec7e622b91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff3dcf142eaf27cbc1ec0dec7e622b91">&#9670;&#160;</a></span>save_offset_correspondence</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::save_offset_correspondence = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Construction only (optimize_offset false), 2D and 3D: the output .msh carries the node field corr_input_vid, each offset vertex's input-complex vertex (see the spec). </p>
 
 </div>
 </div>

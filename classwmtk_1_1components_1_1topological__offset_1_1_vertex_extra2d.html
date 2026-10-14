@@ -102,6 +102,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 <tr class="memitem:a7782cf5be960945eb7046ef6cdc571e0" id="r_a7782cf5be960945eb7046ef6cdc571e0"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a7782cf5be960945eb7046ef6cdc571e0">m_boundary_mask</a> = 0</td></tr>
 <tr class="memdesc:a7782cf5be960945eb7046ef6cdc571e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aabce61d6ec34953d72f830c4f79a2451" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to.  <br /></td></tr>
 <tr class="separator:a7782cf5be960945eb7046ef6cdc571e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69261ae99a382b04d9f8f76934cf9276" id="r_a69261ae99a382b04d9f8f76934cf9276"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a69261ae99a382b04d9f8f76934cf9276">m_corr_input_vid</a> = -1</td></tr>
+<tr class="separator:a69261ae99a382b04d9f8f76934cf9276"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdaefaa15d22a786870d69afc35022d2" id="r_abdaefaa15d22a786870d69afc35022d2"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#abdaefaa15d22a786870d69afc35022d2">m_born_epoch</a> = 0</td></tr>
 <tr class="separator:abdaefaa15d22a786870d69afc35022d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -138,6 +140,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 
 <p>Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aabce61d6ec34953d72f830c4f79a2451" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to. </p>
 <p>Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the operations: a split's new vertex takes the AND of its endpoints (it lies on a boundary only if the whole edge did), a collapse's survivor the OR (it carries both vertices' geometry). </p>
+
+</div>
+</div>
+<a id="a69261ae99a382b04d9f8f76934cf9276" name="a69261ae99a382b04d9f8f76934cf9276"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69261ae99a382b04d9f8f76934cf9276">&#9670;&#160;</a></span>m_corr_input_vid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::components::topological_offset::VertexExtra2d::m_corr_input_vid = -1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The input-complex vertex this offset vertex was split off from by marching_tris(): the marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written into the output .msh by save_offset_correspondence; not maintained by the optimization. The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a076486a398d36991eb95b48c78435d26">VertexExtra::m_corr_input_vid</a>. </p>
 
 </div>
 </div>

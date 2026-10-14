@@ -99,6 +99,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_offset</b> = 
 <tr class="memitem:a6a2343b8ebd0bcbb0835642fa8ca2dbc" id="r_a6a2343b8ebd0bcbb0835642fa8ca2dbc"><td class="memItemLeft" align="right" valign="top"><a id="a6a2343b8ebd0bcbb0835642fa8ca2dbc" name="a6a2343b8ebd0bcbb0835642fa8ca2dbc"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = false</td></tr>
 <tr class="separator:a6a2343b8ebd0bcbb0835642fa8ca2dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a076486a398d36991eb95b48c78435d26" id="r_a076486a398d36991eb95b48c78435d26"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a076486a398d36991eb95b48c78435d26">m_corr_input_vid</a> = -1</td></tr>
+<tr class="separator:a076486a398d36991eb95b48c78435d26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3376f4ffa03654803d0315b16ce9a3b4" id="r_a3376f4ffa03654803d0315b16ce9a3b4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a3376f4ffa03654803d0315b16ce9a3b4">m_born_epoch</a> = 0</td></tr>
 <tr class="separator:a3376f4ffa03654803d0315b16ce9a3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad65c2d84a31f30aa547e32627afb2785" id="r_ad65c2d84a31f30aa547e32627afb2785"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ad65c2d84a31f30aa547e32627afb2785">m_front_change</a> = 0.</td></tr>
@@ -123,6 +125,21 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>m_front_change_group</
       </table>
 </div><div class="memdoc">
 <p>Which split pass created this vertex, from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a928e9c3f7ca1270f4b4322362fd310b4">wmtk::TetOptimizerMesh::m_op_epoch</a>; 0 means not created by an optimization split. Read only by the needle diagnostics' per-vertex lines. Assigned at each split, never OR'd &ndash; a recycled slot carries a dead vertex's epoch. </p>
+
+</div>
+</div>
+<a id="a076486a398d36991eb95b48c78435d26" name="a076486a398d36991eb95b48c78435d26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a076486a398d36991eb95b48c78435d26">&#9670;&#160;</a></span>m_corr_input_vid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::components::topological_offset::VertexExtra::m_corr_input_vid = -1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The input-complex vertex this offset vertex was split off from by marching_tets(): the marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written into the output .msh by save_offset_correspondence; not maintained by the optimization. The 2D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a69261ae99a382b04d9f8f76934cf9276">VertexExtra2d::m_corr_input_vid</a>. </p>
 
 </div>
 </div>
