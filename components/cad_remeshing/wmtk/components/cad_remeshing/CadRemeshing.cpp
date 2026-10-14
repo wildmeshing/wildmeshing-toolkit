@@ -38,7 +38,9 @@ CadRemeshing::CadRemeshing(
     bool use_exact)
 {
     NUM_THREADS = num_threads;
+    // Both have to be set before init(): the envelopes build their exact structure at init time.
     m_envelope.use_exact = use_exact;
+    m_feature_envelope.use_exact = use_exact;
 
     p_vertex_attrs = &vertex_attrs;
     p_edge_attrs = &edge_attrs;
@@ -54,22 +56,30 @@ void CadRemeshing::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::pair<size_t, int>>& frozen_verts,
-    bool m_freeze)
+    bool freeze_boundary)
 {
     wmtk::TriMesh::init(n_vertices, tris);
+    m_freeze_boundary = freeze_boundary;
 
     // TODO: this should not be here
     partition_mesh_morton();
 
     for (const auto& [v, corner_id] : frozen_verts) {
+        if (v >= n_vertices) {
+            log_and_throw_error(
+                "Invalid corner vertex id {}: the mesh has {} vertices",
+                v,
+                n_vertices);
+        }
         vertex_attrs[v].corner_id = corner_id;
     }
 
-    if (m_freeze) {
+    if (m_freeze_boundary) {
         for (const Tuple& e : get_edges()) {
             if (is_boundary_edge(e)) {
-                vertex_attrs[e.vid(*this)].corner_id = 100000;
-                vertex_attrs[e.switch_vertex(*this).vid(*this)].corner_id = 100000;
+                vertex_attrs[e.vid(*this)].corner_id = FROZEN_BOUNDARY_CORNER_ID;
+                vertex_attrs[e.switch_vertex(*this).vid(*this)].corner_id =
+                    FROZEN_BOUNDARY_CORNER_ID;
             }
         }
     }
@@ -100,8 +110,8 @@ bool CadRemeshing::cache_edge_positions(const Tuple& t)
         EdgeAttributes dummy;
 
         const size_t v2 = t_.switch_edge(*this).switch_vertex(*this).vid(*this);
-        const size_t e0 = eid_from_vids(v0, v2);
-        const size_t e1 = eid_from_vids(v1, v2);
+        const size_t e0 = edge_id(v0, v2);
+        const size_t e1 = edge_id(v1, v2);
         const int e0_is_feature = edge_attrs.at(e0).is_feature;
         const int e1_is_feature = edge_attrs.at(e1).is_feature;
         if (e0_is_feature != dummy.is_feature && e1_is_feature != dummy.is_feature) {
@@ -220,7 +230,7 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
     const size_t v1 = t.switch_vertex(*this).vid(*this);
 
     // do not swap if vertex has valence 3
-    if (get_valence_for_vertex(v0) == 3 || get_valence_for_vertex(v1) == 3) {
+    if (vertex_valence(v0) == 3 || vertex_valence(v1) == 3) {
         return false;
     }
 
@@ -284,7 +294,7 @@ bool CadRemeshing::swap_edge_before(const Tuple& t)
 
     for (const auto& e : ring_edges) {
         const auto& vs = e.vertices();
-        const size_t eid = eid_from_vids(vs[0], vs[1]);
+        const size_t eid = edge_id(vs[0], vs[1]);
         cache.ring_edge_attrs[e] = edge_attrs.at(eid);
     }
     return true;
@@ -297,10 +307,10 @@ bool CadRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 
     for (const auto& [edge, attrs] : cache.ring_edge_attrs) {
         const auto& vs = edge.vertices();
-        const size_t eid = eid_from_vids(vs[0], vs[1]);
+        const size_t eid = edge_id(vs[0], vs[1]);
         edge_attrs[eid] = attrs;
     }
-    const size_t e_new = eid_from_vids(cache.v2, cache.v3);
+    const size_t e_new = edge_id(cache.v2, cache.v3);
 
     edge_attrs[e_new].is_feature = 0;
 
@@ -373,12 +383,14 @@ bool CadRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     // quite aggressive.
 
     // update the edge attributes of the surrounding edges
-    for (const auto [v2, f] : cache.link_vertices) {
-        const size_t eid = eid_from_vids(t.vid(*this), v2);
+    for (const auto& [v2, f] : cache.link_vertices) {
+        const size_t eid = edge_id(t.vid(*this), v2);
         edge_attrs[eid].is_feature = f;
     }
 
-    // sanity check (for debugging)
+    // Invariant: a feature vertex that is not a corner has exactly two feature edges. The input
+    // is checked for it (check_feature_curves), and collapse_edge_before only lets a feature
+    // vertex collapse along its curve, so a violation here is a bug in the collapse logic.
     if (vertex_attrs.at(cache.v1).is_feature && vertex_attrs.at(cache.v1).corner_id < 0) {
         size_t counter = 0;
         for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
@@ -396,7 +408,9 @@ bool CadRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
                 simplex::Edge s = simplex_from_edge(e);
                 logger().error("({}) = {}", s.vertices(), edge_attrs[e.eid(*this)].is_feature);
             }
-            log_and_throw_error("Sanity check for feature edges failed!");
+            log_and_throw_error(
+                "Internal error: a feature vertex ended up with {} feature edges after a collapse",
+                counter);
         }
     }
 
@@ -423,6 +437,7 @@ bool CadRemeshing::split_edge_before(const Tuple& t)
     cache.v1_tal = vertex_attrs.at(cache.v1).tal;
     cache.partition_id = vertex_attrs.at(cache.v0).partition_id;
     cache.is_feature_edge = edge_attrs[t.eid(*this)].is_feature;
+    cache.is_boundary_edge = is_boundary_edge(t);
 
     // gather all surrounding edges
     std::vector<simplex::Edge> edges;
@@ -442,7 +457,7 @@ bool CadRemeshing::split_edge_before(const Tuple& t)
 
     // save all edge attributes
     for (const auto& e : edges) {
-        const size_t eid = eid_from_vids(e.vertices()[0], e.vertices()[1]);
+        const size_t eid = edge_id(e.vertices()[0], e.vertices()[1]);
         cache.edge_attrs[e] = edge_attrs.at(eid);
     }
 
@@ -461,12 +476,17 @@ bool CadRemeshing::split_edge_after(const TriMesh::Tuple& t)
     vnew_attrs.partition_id = cache.partition_id;
     vnew_attrs.is_feature = cache.is_feature_edge;
     vnew_attrs.tal = 0.5 * (cache.v0_tal + cache.v1_tal);
+    // A frozen boundary stays frozen: the new vertex on a boundary edge is frozen like its
+    // endpoints, else it would be smoothed and collapsed away from the boundary.
+    if (m_freeze_boundary && cache.is_boundary_edge) {
+        vnew_attrs.corner_id = FROZEN_BOUNDARY_CORNER_ID;
+    }
 
     // update the edge attributes of the surrounding edges
     std::vector<size_t> vids;
     vids.reserve(cache.edge_attrs.size() * 2);
     for (const auto& [edge, attrs] : cache.edge_attrs) {
-        const size_t eid = eid_from_vids(edge.vertices()[0], edge.vertices()[1]);
+        const size_t eid = edge_id(edge.vertices()[0], edge.vertices()[1]);
         edge_attrs[eid] = attrs;
         vids.push_back(edge.vertices()[0]);
         vids.push_back(edge.vertices()[1]);
@@ -476,7 +496,7 @@ bool CadRemeshing::split_edge_after(const TriMesh::Tuple& t)
 
     // set attributes of new edges
     for (size_t vid : vids) {
-        const size_t e = eid_from_vids(vnew, vid);
+        const size_t e = edge_id(vnew, vid);
         if (cache.is_feature_edge && (vid == cache.v0 || vid == cache.v1)) {
             edge_attrs[e].is_feature = cache.is_feature_edge;
         } else {
@@ -977,30 +997,54 @@ void CadRemeshing::initialize_feature_edges()
         }
         feature_edges[simplex::Edge(v0, v1)] = item.second;
 
-        if (v0 >= vertex_attrs.size()) {
+        // vert_capacity() is the vertex count here (nothing has been split yet); the attribute
+        // collection is larger, it has room for the vertices the splits will add.
+        if (v0 >= vert_capacity() || v1 >= vert_capacity()) {
             log_and_throw_error(
-                "Invalid feature edge ({},{}), vertex id {} is invalid",
+                "Invalid feature edge ({},{}): the mesh has {} vertices",
                 v0,
                 v1,
-                v0);
+                vert_capacity());
         }
-        if (v1 >= vertex_attrs.size()) {
-            log_and_throw_error(
-                "Invalid feature edge ({},{}), vertex id {} is invalid",
-                v0,
-                v1,
-                v1);
+        // The user's edge may not exist: ask, rather than assert.
+        const auto edge = try_tuple_from_edge({{v0, v1}});
+        if (!edge.has_value()) {
+            log_and_throw_error("Invalid feature edge ({},{}): the mesh has no such edge", v0, v1);
         }
 
         vertex_attrs[v0].is_feature = true;
         vertex_attrs[v1].is_feature = true;
-
-        const size_t eid = eid_from_vids(v0, v1);
-        edge_attrs[eid].is_feature = item.second;
+        edge_attrs[std::get<1>(edge.value())].is_feature = item.second;
     }
 
-
     wmtk::logger().info("initialize_feature_edges: marked {} feature edges", feature_edges.size());
+
+    check_feature_curves();
+}
+
+void CadRemeshing::check_feature_curves() const
+{
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const VertexAttributes& va = vertex_attrs[vid];
+        if (!va.is_feature || va.corner_id >= 0) {
+            continue;
+        }
+        size_t n_feature_edges = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+            if (edge_attrs[e.eid(*this)].is_feature) {
+                ++n_feature_edges;
+            }
+        }
+        if (n_feature_edges != 2) {
+            log_and_throw_error(
+                "Feature vertex {} has {} feature edges but is not a corner. A feature curve "
+                "must end at a corner and curves may only meet at corners: list the vertex in "
+                "corner_vids.",
+                vid,
+                n_feature_edges);
+        }
+    }
 }
 
 
@@ -1139,7 +1183,7 @@ void CadRemeshing::write_vtu(const std::string& path, const std::string& report_
         v_is_feature[vid] = vertex_attrs[vid].is_feature;
         v_corner_id[vid] = vertex_attrs[vid].corner_id;
         v_tal[vid] = vertex_attrs[vid].tal;
-        v_valence[vid] = get_valence_for_vertex(vid);
+        v_valence[vid] = vertex_valence(vid);
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;

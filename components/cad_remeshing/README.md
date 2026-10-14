@@ -12,7 +12,7 @@ The CAD structure is preserved as follows:
 
 Every operation is rejected if it creates a degenerate triangle or moves the surface outside an envelope around the input mesh. Vertices on feature curves must also stay within an envelope around the input feature curves. Smoothed vertices are projected back onto the input surface.
 
-> Note: the envelope thickness is currently fixed to half the average edge length of the input. `eps` and `eps_rel` have no effect yet.
+The envelope thickness is `eps` if set, else `eps_rel` times the bounding box diagonal if set, else (the default) half the average edge length of the input.
 
 ## Input
 
@@ -20,9 +20,11 @@ The component requires two input files:
 
 - **`input`**: the triangle mesh, as `.msh` or any format libigl can read (e.g., `.obj`, `.off`, `.stl`, `.ply`).
 - **`patches`**: a JSON file describing the CAD structure on that mesh. All IDs refer to the vertices and faces of `input`.
-  - `fid2patch`: the patch ID of each face. It must contain every face.
-  - `edge2seg`: the feature edges and their curve ID. Keys are the two vertex IDs of the edge, separated by a comma, and every key must be an edge of the mesh.
+  - `fid2patch`: the patch ID of each face. It must contain every face exactly once.
+  - `edge2seg`: the feature edges and their curve ID. Keys are the two vertex IDs of the edge, separated by a comma, and every key must be an edge of the mesh. The feature edges must form chains: a vertex with feature edges that is not a corner must have exactly two of them, i.e., every curve ends at a corner and curves only meet at corners.
   - `corner_vids`: maps each CAD corner ID to its vertex ID.
+
+All three keys are required, and the IDs are validated against the mesh; an invalid file is reported as an error.
 
 ```json
 {

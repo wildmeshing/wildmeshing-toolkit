@@ -57,6 +57,14 @@ void cad_remeshing(nlohmann::json json_params)
         }
         cifs >> patches_json;
 
+        // A missing key would read as null and iterate as empty -- a patches file without
+        // feature edges would silently remesh without features.
+        for (const char* key : {"fid2patch", "edge2seg", "corner_vids"}) {
+            if (!patches_json.contains(key) || !patches_json[key].is_object()) {
+                log_and_throw_error("Patches file {} has no object \"{}\"", patches_path, key);
+            }
+        }
+
         const auto& corners = patches_json["corner_vids"];
         fixed_vertices.reserve(corners.size());
 
@@ -88,14 +96,28 @@ void cad_remeshing(nlohmann::json json_params)
 
         logger().info("Loaded {} feature edges.", feature_edge_list.size());
 
+        // fid2patch must map every face 0..n-1 exactly once; set_patch_ids checks the count
+        // against the mesh, the range and duplicates are checked here.
         const auto& pids = patches_json["fid2patch"];
-        face_patch_ids.resize(pids.size());
+        constexpr size_t unset = std::numeric_limits<size_t>::max();
+        face_patch_ids.assign(pids.size(), unset);
         for (const auto& [key, pid] : pids.items()) {
             const size_t fid = std::stoul(key);
-            face_patch_ids[fid] = pid;
+            if (fid >= face_patch_ids.size()) {
+                log_and_throw_error(
+                    "fid2patch: face id {} is out of range for {} entries; the map must contain "
+                    "every face 0..{} exactly once",
+                    fid,
+                    pids.size(),
+                    pids.size() - 1);
+            }
+            if (face_patch_ids[fid] != unset) {
+                log_and_throw_error("fid2patch: face id {} appears more than once", fid);
+            }
+            face_patch_ids[fid] = pid.get<size_t>();
         }
     } catch (const std::exception& e) {
-        log_and_throw_error("Error reading corner vertices: {}", e.what());
+        log_and_throw_error("Error reading the patches file: {}", e.what());
     }
 
     // logger settings
@@ -186,12 +208,13 @@ void cad_remeshing(nlohmann::json json_params)
 
     box_minmax = std::pair(inV.colwise().minCoeff(), inV.colwise().maxCoeff());
     double diag = (box_minmax.first - box_minmax.second).norm();
-    if (eps < 0) {
+    // Envelope thickness: eps if set, else eps_rel relative to the bounding box diagonal if set,
+    // else (both negative, the default) half the average input edge length -- decided below,
+    // once the mesh exists.
+    if (eps < 0 && eps_rel > 0) {
         eps = eps_rel * diag;
     }
     wmtk::logger().info("Mesh diag: {}", diag);
-    wmtk::logger().info("Relative eps: {}", eps_rel);
-    wmtk::logger().info("Envelope thickness eps: {}", eps);
     igl::Timer timer;
 
     wmtk::logger().info("Total frozen vertices: {}", fixed_vertices.size());
@@ -225,7 +248,12 @@ void cad_remeshing(nlohmann::json json_params)
     report["before"]["min_valence"] = properties[5];
     // init envelopes
     {
-        eps = properties[0] * 0.5; // reset eps to half of avg edge length
+        if (eps < 0) {
+            eps = properties[0] * 0.5;
+            logger().info("Envelope thickness eps: {} (half the average input edge length)", eps);
+        } else {
+            logger().info("Envelope thickness eps: {}", eps);
+        }
         const auto feature_edges =
             m.get_edges_by_condition([](const EdgeAttributes& e) { return e.is_feature; });
 

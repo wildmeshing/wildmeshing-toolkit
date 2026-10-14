@@ -71,13 +71,13 @@
     "pointer": "/eps",
     "type": "float",
     "default": -1,
-    "doc": "Envelope thickness"
+    "doc": "Envelope thickness (absolute). If negative, eps_rel is used; if that is negative as well, half the average edge length of the input."
   },
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 0.001,
-    "doc": "Envelope thickness relative to the bounding box"
+    "default": -1,
+    "doc": "Envelope thickness relative to the bounding box diagonal. Only used when eps is negative; if negative as well, half the average edge length of the input is used."
   },
   {
     "pointer": "/length_rel",

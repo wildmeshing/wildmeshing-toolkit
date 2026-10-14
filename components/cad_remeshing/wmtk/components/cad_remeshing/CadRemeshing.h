@@ -67,12 +67,30 @@ public:
 
     ~CadRemeshing() {}
 
+    /**
+     * @brief Build the mesh and mark the corners.
+     *
+     * frozen_verts: (vertex id, corner id) pairs; the vertex ids are checked against n_vertices.
+     * With freeze_boundary, every vertex on the open boundary of the mesh is frozen as well, with
+     * corner id FROZEN_BOUNDARY_CORNER_ID, and so is every vertex a later split creates on the
+     * boundary.
+     */
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
         const std::vector<std::pair<size_t, int>>& frozen_verts = {},
-        bool m_freeze = true);
+        bool freeze_boundary = true);
 
+    /// Corner id of a frozen boundary vertex: treated like a corner, but not a CAD corner.
+    static constexpr int FROZEN_BOUNDARY_CORNER_ID = 100000;
+
+    /**
+     * @brief Mark the feature edges given to set_feature_edges and check that they form curves.
+     *
+     * Every feature vertex that is not a corner must have exactly two feature edges: a curve
+     * that ends anywhere but at a corner, or two curves that meet without a corner, is rejected
+     * with an error, since the remeshing relies on the curves being chains.
+     */
     void initialize_feature_edges();
 
     void set_target_edge_length(const double tal);
@@ -96,6 +114,7 @@ public:
         int partition_id;
 
         int is_feature_edge = 0;
+        bool is_boundary_edge = false;
 
         std::map<wmtk::simplex::Edge, EdgeAttributes> edge_attrs;
         std::unordered_map<size_t, FaceAttributes> face_attrs;
@@ -229,6 +248,12 @@ public:
 
 private:
     std::vector<std::pair<std::array<size_t, 2>, int>> m_input_feature_edges;
+    bool m_freeze_boundary = false;
+
+    /// The id of the edge between two vertices that are connected by one.
+    size_t edge_id(size_t v0, size_t v1) const { return std::get<1>(tuple_from_edge({{v0, v1}})); }
+
+    void check_feature_curves() const;
 };
 
 } // namespace wmtk::components::cad_remeshing
