@@ -41,7 +41,8 @@ struct BackgroundRemeshingOptions
 struct OptimizationOptions
 {
     int iterations = 5;
-    // Acceptance floor for new/modified shell tets. Background only requires positive volume.
+    // Floor for new/modified shell tets and background pyramid reconstruction cones.
+    // Background optimization and unchanged background tets only require positive volume.
     double min_tet_volume = 1e-12; // absolute signed volume, in coordinate units cubed
     int smoothing_max_backtracks = 40; // try alpha=1, then halve at most this many times
     bool keep_background_mesh = false; // include exterior tets in optimization validity checks
@@ -62,6 +63,15 @@ struct UnlockStatistics
     size_t attempted = 0;
     size_t unlocked = 0;
     size_t remaining = 0;
+};
+
+struct OpenBoundaryStatistics
+{
+    size_t open_boundary_edges = 0;
+    size_t candidate_tets = 0;
+    size_t unmarked_tets = 0;
+    size_t junction_vertices = 0;
+    size_t protected_candidate_tets = 0;
 };
 
 struct OptimizationIteration
@@ -119,6 +129,7 @@ struct HybridCell
     std::vector<size_t> vertices; // VTK corner ordering; rows in PrismaticMeshInput::vertices
     std::vector<size_t> source_tets; // exact partition of the final reference tetrahedral mesh
     int64_t prism_candidate = -1;
+    bool background_transition = false; // reconstructed background pyramid or its supporting tet
 };
 
 struct PrismDominantMesh
@@ -136,8 +147,10 @@ void smooth_prism_jacobians(
     const JacobianSmoothingOptions& options);
 
 // Reconstruct the band, with input-apex pyramids and compatible prism triangulations.
-// Updates band tetrahedra to the chosen reference splits, retaining vertex rows/attributes
-// and fixed input/background cells. The report records every changed three-tet region.
+// Updates band tetrahedra to compatible reference splits and replaces feasible disjoint
+// background edge-star cavities by a new kernel point, pyramid and supporting tets.
+// Existing vertex rows/positions and input volume stay fixed; failed/overlapping cavities
+// retain a conforming tetrahedral interface. Reports record both kinds of reconstruction.
 // Prisms require positive Jacobians at 21 samples and all side-edge quadratic minima;
 // unused bad tet splits do not reject the prism. The interface solve admits positive splits,
 // requiring newly introduced tets to exceed the operation floor. Existing tets need only positive
@@ -164,6 +177,11 @@ void write_prismatic_mesh(
 // Keep band tetrahedra in their original order and filter cell attributes with them.
 // Vertex arrays/IDs stay unchanged; unused vertices are inactive in the rebuilt TetMesh.
 void keep_offset_band(PrismaticMeshInput& input);
+// Preprocess the full construction mesh before extracting the band or computing targets.
+// Candidates are band tets incident to either endpoint of an open input edge. Only clears
+// offset_tet_tags to -1; connectivity, coordinates, input volume and vertex labels stay intact.
+// Input edges with >=3 incident shell faces protect both endpoints' complete tet stars.
+OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input);
 void label_offset_faces(PrismaticMeshInput& input);
 // Computes targets only; does not move vertices. Call on the band mesh.
 void evaluate_target_positions(PrismaticMeshInput& input, double thicknessratio);

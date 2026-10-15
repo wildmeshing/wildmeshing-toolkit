@@ -16,6 +16,9 @@ set(SRC_FILES
     write_msh.hpp
     write_msh.cpp
     prism_main.cpp
+    open_boundary.cpp
+    background_pyramids.hpp
+    background_pyramids.cpp
     prism_dominant.cpp
     prism_jacobian.hpp
     prism_jacobian.cpp

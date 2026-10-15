@@ -155,7 +155,8 @@ For a paired experiment use the same executable with iterations 0 and 20, and se
 Set `"prism_dominant": true` to convert the optimized band into a conforming mixture of
 prisms (VTK wedge, type 13), pyramids (14) and tetrahedra (10). The default is false for
 compatibility with the tetrahedral workflow. Conversion is a separate final stage in
-`prism_dominant.cpp`; vertex positions and attributes remain intact. The band tetrahedral
+`prism_dominant.cpp`; existing vertex positions and attributes remain intact. Feasible
+background interface cavities gain a new kernel point and a pyramid. The band tetrahedral
 connectivity is updated to the final reference splits after optimization.
 A filename without an extension gets `.vtu` appended.
 For this example, the output is `mydata/resultmesh.vtu`.
@@ -210,7 +211,34 @@ have `vertex_tags == 2`. `offset_face_tags[face.fid(*input.mesh)]` is 1 for thre
 and -1 for non-offset faces. The vertex rule applies to all faces, not just boundary faces.
 Face tags must be recomputed after topology or correspondence changes.
 
-`evaluate_target_positions(input, thicknessratio)` next computes targets without moving
+Before extracting the band, `handle_open_boundaries(input)` processes the full construction
+mesh according to Section 4.2.6. An open input edge has exactly one incident shell input
+triangle and belongs to no input-volume tetrahedron (`input_cells == 1`). A shell input
+triangle has three input vertices and an incident band tet; shared triangles are counted once,
+including on two-sided sheets. Input-volume membership is checked before filtering the mesh.
+Candidates are band tets in the union of the two input endpoint stars, so they include
+configurations with only one input vertex.
+
+T junctions take priority over removal: an input edge with at least three incident shell
+input triangles marks both endpoints as junction vertices. Their **complete tet one-rings**
+are preserved, including every candidate tet incident to either vertex, so open-boundary
+trimming does not remove the junction neighborhood. This also protects higher-valence
+shell junctions. It is a local preservation rule, not a proof that every target normal is valid.
+
+The type `tau^n_m` counts offset vertices (`n`) and their distinct input identifiers (`m`).
+The pass unmarks `tau^2_1` and `tau^3_1`, and unmarks `tau^3_2` unless its distinct labels
+map to an existing input edge outside the open boundary. `tau^1_1` and `tau^3_3` are preserved.
+A `tau^2_2` is unmarked only when its offset label set matches its two input vertices and
+that input edge is open. Decisions use the initial boundary and candidate sets, with resolved
+correspondence rows preserving the meaning of noncontiguous source IDs.
+
+Unmarking only sets `offset_tet_tags` to -1. The pass preserves all tetrahedra, coordinates,
+input-volume tags and vertex attributes. The subsequent extraction computes targets on the
+remaining band; with `keep_background_mesh=true`, unmarked cells join the background
+optimization domain. They are excluded from the shell unlocking schedule. Logs report open
+edges, candidate tets, unmarked tets, junction vertices and protected candidate tets.
+
+`evaluate_target_positions(input, thicknessratio)` then computes targets without moving
 the mesh. `thicknessratio` defaults to 0.1 and must be finite and positive. Its length scale
 is the mean length of **unique input surface edges** in the band mesh (edges of faces whose
 three vertices have tag 1), not the mean over ambient or input volume diagonals. The target is
@@ -358,10 +386,34 @@ Unmatched or overlapping candidates remain tetrahedral.
 Vertices touching a repeated-correspondence boundary triangle seed the tet region. A candidate
 with one affected offset corner uses a pyramid plus a tet, with the **pyramid apex always on
 the input side**. Its quadrilateral base is the opposite prism side. Candidates with two or
-three affected corners become three tetrahedra. Tets outside matched candidates remain fixed.
-A pyramid's lateral triangular interfaces require a prism-derived transition region; a direct
-interface to an unmatched original tet core expands the retained region to create that buffer.
+three affected corners become three tetrahedra. Tets outside matched candidates remain fixed
+except for accepted background transition cavities described below.
+A shell pyramid's lateral triangular interfaces within the band require a prism-derived
+transition region; a direct interface to an unmatched band tet core expands the retained
+region to create that buffer. Matching triangular interfaces to background tets are allowed.
 The input triangular caps and their adjacent input-volume tetrahedra stay unchanged.
+
+When background is retained, each candidate lateral quad may instead receive a background
+pyramid. Its two reference triangles must each have one band and one background owner.
+The cavity is the connected background sector of the existing quad-diagonal edge star;
+its link must be a simple path between the other two quad vertices and its boundary a
+closed triangulated sphere. Input-volume cells and mixed background region tags are excluded.
+Cavities are reserved deterministically and cannot overlap. Only reservations whose quad
+survives the shell shape solve are applied.
+
+With cavity boundary vertices fixed, a normalized four-variable linear program maximizes
+the new apex's minimum signed distance to all cavity boundary planes and the four pyramid
+corner planes (both base diagonals). The implementation enumerates rank-four active sets;
+at most 64 constraints are admitted per cavity to bound work. A positive clearance is followed
+by exact rational positivity/floor tests on every coned tet and all four pyramid corner
+determinants, plus exact cavity volume conservation. The two cones at the quad base merge
+into the background pyramid; all other boundary cones remain background tets. New points
+have unique source IDs, no input correspondence, and inactive target/component attributes.
+Existing points, cavity boundary triangles, input cells and non-cavity background cells stay
+unchanged. A geometric failure, overlap or search limit leaves the original interface for
+ordinary conforming prism/pyramid/tet degradation; it never emits an unmatched quad.
+The search-limit reason is distinct from an empty positive kernel. There is no vertex-moving
+nonlinear repair or enlargement of an infeasible cavity in this pass.
 
 Prism admission checks the six-node wedge's **minimum signed Jacobian determinant over the
 reference element**, together with the existing 21 sample points.
@@ -402,9 +454,10 @@ retained region and is recorded separately, rather than claiming the constraints
 Output shape changes only progress from prism to pyramid+tet to all tets. Flexible prism-derived
 tet regions can change their internal diagonals during reconstruction; frozen original regions
 cannot. A quad facing two triangles forces its neighbor to downgrade, and this propagates until
-all output interfaces agree. The final reference tetrahedral mesh is built privately and committed
-to `PrismaticMeshInput` only after validation. Input and background cells, vertex coordinates,
-source vertex IDs, correspondence, normals and targets remain unchanged.
+all output interfaces agree. Feasible background pyramid reservations satisfy a lateral quad
+without forcing this downgrade. The final reference tetrahedral mesh is built privately and
+committed to `PrismaticMeshInput` only after validation. Existing vertex coordinates, IDs,
+correspondence, normals and targets, input cells and non-cavity background cells remain unchanged.
 
 The hybrid JSON report records the Jacobian sample positions, minimum sampled determinant
 among output prisms, `invalid_prism_jacobian` rejections, and the histogram
@@ -412,7 +465,8 @@ among output prisms, `invalid_prism_jacobian` rejections, and the histogram
 positive reference tets, new-tet volume floors and pyramid decompositions separately.
 
 Validation checks positive reference tets, exact coverage of the final reference mesh,
-triangle/quad interface agreement, opposite face orientations, and input-side pyramid apices.
+triangle/quad interface agreement, opposite face orientations, input-side shell pyramid apices
+and background kernel-point pyramid apices.
 The new reference mesh must have exactly the same oriented exterior triangles as the original
 volume mesh. A changed diagonal on a warped internal quad is always changed on both sides;
 this may redistribute volume between adjacent candidate prisms, while preserving the boundary
@@ -428,6 +482,7 @@ Hybrid VTU adds these CellData fields:
 | `source_tet_ids` | Up to three row IDs in the final reconstructed reference tet mesh, padded with -1 |
 | `tet_decomposition` | Up to three oriented tets, each four **local corner indices** in this cell; 12 entries padded with -1 |
 | `retriangulated` | 1 if the cell belongs to a prism region whose reference split changed, otherwise 0 |
+| `background_transition` | 1 for a reconstructed background pyramid or one of its supporting cavity tets |
 
 The decomposition field preserves the precise prism/pyramid subdivision and the shared-face
 diagonals for downstream tetrahedralization. `<output_stem>_hybrid.json` records cell counts,
@@ -436,6 +491,11 @@ records the original and new tets using source vertex IDs, along with the affect
 IDs. After a split changes, `source_tet_ids` refers to these final reference rows, not a claim
 that the new cell is a union of those pre-reconstruction tets. In ParaView, color the
 volume by `cell_type`; select `offset_tag = 1` to inspect only the reconstructed band.
+`shell_pyramids` and `background_pyramids` split the total `pyramids` count in the report.
+`background_pyramid_reconstruction` records accepted/applied cavity counts, rejection reasons,
+new point rows/IDs, original and replacement reference rows, clearance and exact checks.
+Unchanged reference row IDs are retained; removed cavity rows are reused before appending
+additional reference tets. Input/shell-only exports omit the new background points and cells.
 MSH exports the same attributes, except that the 12-component `tet_decomposition` is split
 into scalar fields `tet_decomposition_0` through `tet_decomposition_11`: Gmsh view data
 supports 1, 3 or 9 components. The local corner indices remain zero-based and padded with -1.

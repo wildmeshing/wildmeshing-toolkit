@@ -73,7 +73,7 @@
         "pointer": "/prism_dominant",
         "type": "bool",
         "default": false,
-        "doc": "After optimization, reconstruct the band as conforming prisms, input-apex pyramids and tetrahedra. Select compatible prism reference triangulations, preserve fixed input/background cells, and expand retained tet regions when direction or geometry constraints conflict."
+        "doc": "After optimization, reconstruct conforming prisms, input-apex shell pyramids and tetrahedra. Retained background receives kernel-point pyramids in feasible disjoint quad-diagonal edge-star cavities. Preserve existing points, input volume and non-cavity background; fall back to conforming tet regions on failed geometry, overlap or search limits."
     },
     {
         "pointer": "/export_input_and_shell",
@@ -85,7 +85,7 @@
         "pointer": "/min_tet_volume",
         "type": "float",
         "default": 1e-12,
-        "doc": "Nonnegative acceptance floor for new or modified shell tetrahedra during local operations, reconstruction and candidate pyramid decompositions, in coordinate units cubed. Background tetrahedra only require strictly positive volume. Existing positive cells below the floor may be retained; they do not terminate the pipeline."
+        "doc": "Nonnegative acceptance floor for new or modified shell tetrahedra, candidate pyramid decompositions and new background pyramid cavity cones, in coordinate units cubed. Background optimization and unchanged background tets only require strictly positive volume. Existing positive cells below the floor may be retained; they do not terminate the pipeline."
     },
     {
         "pointer": "/smoothing_max_backtracks",

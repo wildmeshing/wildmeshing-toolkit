@@ -78,7 +78,7 @@ void write_prismatic_mesh(
     // Compact output row indices only. vid and corr_input_vid remain source IDs.
     const size_t nc = cell_rows.size();
     VectorXd input_tags(nc), offset_tags(nc), tau22(nc);
-    VectorXd cell_types, source_counts, candidates, retriangulated;
+    VectorXd cell_types, source_counts, candidates, retriangulated, background_transition;
     std::vector<bool> changed_reference_tets(input.tetrahedra.rows(), false);
     MatrixXd reference_tets, source_tet_ids;
     std::vector<paraviewo::CellElement> mixed_cells;
@@ -88,6 +88,7 @@ void write_prismatic_mesh(
         source_counts.resize(nc);
         candidates.resize(nc);
         retriangulated.resize(nc);
+        background_transition.resize(nc);
         if (hybrid->report.contains("retriangulated_regions"))
             for (const auto& region : hybrid->report["retriangulated_regions"])
                 for (const auto& tid : region["reference_tet_rows"])
@@ -129,6 +130,7 @@ void write_prismatic_mesh(
         cell_types[i] = static_cast<int>(cell.type);
         source_counts[i] = cell.source_tets.size();
         candidates[i] = cell.prism_candidate;
+        background_transition[i] = cell.background_transition ? 1 : 0;
         retriangulated[i] = std::any_of(
                                 cell.source_tets.begin(),
                                 cell.source_tets.end(),
@@ -160,6 +162,7 @@ void write_prismatic_mesh(
         cell_fields.emplace("source_tet_ids", std::move(source_tet_ids));
         cell_fields.emplace("tet_decomposition", std::move(reference_tets));
         cell_fields.emplace("retriangulated", std::move(retriangulated));
+        cell_fields.emplace("background_transition", std::move(background_transition));
     }
     add_targets(point_fields, input, vertex_rows);
     if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
@@ -182,6 +185,12 @@ void write_prismatic_mesh(
             export_report["export_scope"] = "input_and_shell";
             export_report["output_cells"] = nc;
             export_report["background_tetrahedra"] = 0;
+            export_report["background_pyramids"] = 0;
+            export_report["pyramids"] =
+                std::count_if(cell_rows.begin(), cell_rows.end(), [&](size_t row) {
+                    return hybrid->cells[row].type == HybridCellType::Pyramid;
+                });
+            export_report["shell_pyramids"] = export_report["pyramids"];
             export_report["source_tetrahedra"] = reference_tets;
             export_report["full_reference_tetrahedra"] = input.tetrahedra.rows();
             export_report["source_tet_id_space"] = "full_reconstructed_mesh";

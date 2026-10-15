@@ -66,7 +66,7 @@ bool try_unlock_tau22(PrismaticMeshInput& input, size_t tet_id, int side, double
     validate_threshold(min_tet_volume);
     if (side != 0 && side != 1) log_and_throw_error("Unlock side must be 0 or 1.");
     const auto tau = classify_tau22(input, tet_id);
-    if (!tau) return false;
+    if (!tau || input.offset_tet_tags.at(tet_id) != 1) return false;
     const size_t u = tau->input_vertices[side];
     const size_t v = tau->offset_vertices[1 - side];
     const size_t destination = tau->offset_vertices[side];
@@ -189,7 +189,8 @@ UnlockStatistics unlock_tau22(PrismaticMeshInput& input, double min_tet_volume)
         for (size_t v : input.offset_vertices) {
             if (v >= input.mesh->vert_capacity()) continue;
             const auto& star = input.mesh->get_one_ring_tids_for_vertex(v);
-            ids.insert(star.begin(), star.end());
+            for (size_t tid : star)
+                if (input.offset_tet_tags.at(tid) == 1) ids.insert(tid);
         }
         return ids;
     };

@@ -97,6 +97,22 @@ TEST_CASE("tau22 classification matches original IDs and requires two distinct c
     REQUIRE_FALSE(classify_tau22(data, 0));
 }
 
+TEST_CASE("unlock leaves an unmarked background tau22 out of the shell schedule")
+{
+    auto data = fixture();
+    data.offset_tet_tags[0] = -1;
+    const auto cells = data.tetrahedra;
+    REQUIRE(classify_tau22(data, 0)); // The structural type still exists in the background.
+    REQUIRE_FALSE(try_unlock_tau22(data, 0, 0, 1e-6));
+    REQUIRE_FALSE(try_unlock_tau22(data, 0, 1, 1e-6));
+    const auto stats = unlock_tau22(data, 1e-6);
+    REQUIRE(stats.candidates == 0);
+    REQUIRE(stats.attempted == 0);
+    REQUIRE(stats.remaining == 0);
+    REQUIRE(data.tetrahedra == cells);
+    REQUIRE(data.offset_tet_tags == std::vector<int>{-1, 1, 1, 1});
+}
+
 TEST_CASE("unlock uses each symmetric cross edge and preserves every original vertex attribute")
 {
     int side = 0;

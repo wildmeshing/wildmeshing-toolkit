@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <fstream>
+#include <wmtk/components/prismatic_mesh/background_pyramids.hpp>
 #include <wmtk/components/prismatic_mesh/prism_jacobian.hpp>
 #include <wmtk/components/prismatic_mesh/prismatic_mesh.hpp>
 
@@ -535,6 +536,195 @@ TEST_CASE("a fixed lateral interface expands the input-apex transition region")
     REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 4);
     REQUIRE(hybrid.report["direction_region_expansions"] == 1);
     check_partition(data, hybrid);
+}
+
+TEST_CASE("background edge-star pyramids preserve a prism and its complete quad interface")
+{
+    std::vector<wmtk::Vector3d> extra = {{.5, -1, .5}, {0, 0, -1}};
+    std::vector<std::array<size_t, 4>> outside = {{0, 1, 4, 6}, {0, 4, 3, 6}, {0, 2, 1, 7}};
+    double scale = 1;
+    SECTION("the old background pair already has a common apex") {}
+    SECTION("different old apices require the entire three-tet fan")
+    {
+        extra = {{.6, -.75, .4}, {.4, -.75, .6}, {0, 0, -1}};
+        outside = {{0, 4, 1, 6}, {0, 4, 6, 7}, {0, 4, 7, 3}, {0, 2, 1, 8}};
+    }
+    SECTION("translated small coordinates use the same normalized kernel constraints")
+    {
+        scale = 1e-3;
+    }
+    auto data = fixture(extra, outside);
+    for (size_t tid = 3; tid < size_t(data.tetrahedra.rows()); ++tid)
+        data.offset_tet_tags[tid] = -1;
+    const size_t fixed = data.tetrahedra.rows() - 1;
+    data.input_cells[fixed] = 1;
+    const size_t input_apex = data.vertices.rows() - 1;
+    data.vertex_tags[input_apex] = 1;
+    data.input_vertices.push_back(input_apex);
+    if (scale != 1) data.vertices = (data.vertices.array() * scale + 1e6).matrix();
+    evaluate_target_positions(data, .1);
+    label_offset_faces(data);
+    const auto positions = data.vertices;
+    const auto ids = data.source_vertex_ids;
+    const auto fixed_tet = data.tetrahedra.row(fixed).eval();
+    const auto hybrid = build_prism_dominant_mesh(data, 1e-15);
+    REQUIRE(count(hybrid, HybridCellType::Prism) == 1);
+    REQUIRE(count(hybrid, HybridCellType::Pyramid) == 1);
+    REQUIRE(hybrid.report["background_pyramids"] == 1);
+    REQUIRE(hybrid.report["shell_pyramids"] == 0);
+    REQUIRE(hybrid.report["background_pyramid_reconstruction"]["applied"] == 1);
+    REQUIRE(
+        hybrid.report["background_pyramid_reconstruction"]["exact_cavity_volume_preserved"] ==
+        true);
+    REQUIRE(data.vertices.rows() == positions.rows() + 1);
+    REQUIRE(data.vertices.topRows(positions.rows()) == positions);
+    REQUIRE(std::equal(ids.begin(), ids.end(), data.source_vertex_ids.begin()));
+    REQUIRE(data.tetrahedra.row(fixed) == fixed_tet);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    const size_t p = positions.rows();
+    REQUIRE(data.vertex_tags[p] == -1);
+    REQUIRE(data.corr_input_vid[p] == -1);
+    REQUIRE(data.corr_input_vertex[p] == -1);
+    REQUIRE(data.source_vertex_ids[p] > *std::max_element(ids.begin(), ids.end()));
+    REQUIRE(data.vertex_component_ids.size() == size_t(data.vertices.rows()));
+    REQUIRE(data.vertex_component_ids[p] == -1);
+    REQUIRE(data.singular_vertex_tags[p] == -1);
+    REQUIRE(data.optimal_normals.row(p).isZero());
+    REQUIRE(data.target_positions.row(p) == data.vertices.row(p));
+    for (const auto& c : hybrid.cells)
+        if (c.background_transition) {
+            REQUIRE(data.input_cells[c.source_tets[0]] != 1);
+            REQUIRE(data.offset_tet_tags[c.source_tets[0]] != 1);
+            for (size_t tid : c.source_tets) {
+                std::array<size_t, 4> t;
+                for (int j = 0; j < 4; ++j) t[j] = data.tetrahedra(tid, j);
+                REQUIRE(tet_volume_above_threshold(data.vertices, t, 1e-15));
+            }
+        }
+    check_partition(data, hybrid);
+    auto broken = hybrid;
+    for (auto& c : broken.cells)
+        if (c.type == HybridCellType::Pyramid) c.background_transition = false;
+    REQUIRE_THROWS(validate_prism_dominant_mesh(data, broken, 1e-15));
+
+    // Export exercises the new point's complete attributes and both hybrid scopes.
+    const auto stem = std::filesystem::temp_directory_path() /
+                      ("background_pyramid_" +
+                       std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    for (bool background : {true, false}) {
+        for (const auto* ext : {".vtu", ".msh"}) {
+            const auto path = std::filesystem::path(stem.string() + ext);
+            REQUIRE_NOTHROW(write_prismatic_mesh(data, path, &hybrid, background));
+            if (std::string(ext) == ".msh") {
+                const auto msh = mshio::load_msh(path.string());
+                REQUIRE_NOTHROW(mshio::validate_spec(msh));
+                REQUIRE(
+                    msh.nodes.num_nodes == data.vertices.rows() - (background ? 0 : extra.size()));
+                const auto transition = std::find_if(
+                    msh.element_data.begin(),
+                    msh.element_data.end(),
+                    [](const auto& f) {
+                        return f.header.string_tags[0] == "background_transition";
+                    });
+                REQUIRE(transition != msh.element_data.end());
+                const size_t transitions = std::count_if(
+                    transition->entries.begin(),
+                    transition->entries.end(),
+                    [](const auto& e) { return e.data[0] == 1; });
+                REQUIRE(transitions == (background ? 2 * (outside.size() - 1) + 1 : 0));
+            }
+            std::filesystem::remove(path);
+        }
+        std::ifstream report_stream(stem.string() + "_hybrid.json");
+        const auto report = nlohmann::json::parse(report_stream);
+        REQUIRE(report["background_pyramids"] == (background ? 1 : 0));
+        REQUIRE(report["pyramids"] == (background ? 1 : 0));
+    }
+    for (const auto* suffix : {"_hybrid.json", "_offset_faces.vtu"})
+        std::filesystem::remove(stem.string() + suffix);
+}
+
+TEST_CASE("infeasible background reconstruction falls back without changing source geometry")
+{
+    auto data = fixture({{.5, -1, .5}}, {{0, 1, 4, 6}, {0, 4, 3, 6}});
+    data.offset_tet_tags[3] = data.offset_tet_tags[4] = -1;
+    const auto positions = data.vertices;
+    const auto tets = data.tetrahedra;
+    const auto ids = data.source_vertex_ids;
+    const auto hybrid = build_prism_dominant_mesh(data, 1.0);
+    REQUIRE(hybrid.report["background_pyramids"] == 0);
+    REQUIRE(
+        hybrid.report["background_pyramid_reconstruction"]["rejections"]
+                     ["no_positive_common_kernel"] == 1);
+    REQUIRE(count(hybrid, HybridCellType::Prism) == 0);
+    REQUIRE(count(hybrid, HybridCellType::Tetrahedron) == 5);
+    REQUIRE(data.vertices == positions);
+    REQUIRE(data.tetrahedra == tets);
+    REQUIRE(data.source_vertex_ids == ids);
+    REQUIRE_NOTHROW(validate_prism_dominant_mesh(data, hybrid, 1.0));
+}
+
+TEST_CASE("a shell pyramid can meet background triangles while its quad gets a background pyramid")
+{
+    // The repeated offset face (5,9,10) selects a shell pyramid opposite corner 5.
+    // All three lateral background cavities are feasible, but only its quad needs
+    // reconstruction. Its other two sides already match background triangles.
+    auto data = fixture(
+        {{.5, -1, .5}, {1, 1, .5}, {-1, .5, .5}, {0, 2, 1}, {-1, 2, 1}},
+        {{0, 1, 4, 6},
+         {0, 4, 3, 6},
+         {1, 2, 4, 7},
+         {2, 4, 5, 7},
+         {0, 2, 3, 8},
+         {2, 3, 5, 8},
+         {2, 5, 9, 10}},
+        {-1, -1, -1, 2, 2});
+    const std::array<std::array<size_t, 4>, 3> split = {{{0, 3, 4, 2}, {0, 4, 1, 2}, {2, 3, 4, 5}}};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 4; ++j) data.tetrahedra(i, j) = split[i][j];
+    std::vector<std::array<size_t, 4>> reference_tets(data.tetrahedra.rows());
+    for (size_t i = 0; i < reference_tets.size(); ++i)
+        for (int j = 0; j < 4; ++j) reference_tets[i][j] = data.tetrahedra(i, j);
+    data.mesh = std::make_unique<wmtk::TetMesh>();
+    data.mesh->init_with_isolated_vertices(data.vertices.rows(), reference_tets);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    for (size_t tid = 3; tid < 9; ++tid) data.offset_tet_tags[tid] = -1;
+    const auto retained = data.tetrahedra.middleRows(5, 4).eval();
+    const auto hybrid = build_prism_dominant_mesh(data, 0);
+    REQUIRE(count(hybrid, HybridCellType::Prism) == 0);
+    REQUIRE(hybrid.report["shell_pyramids"] == 1);
+    REQUIRE(hybrid.report["background_pyramids"] == 1);
+    REQUIRE(hybrid.report["background_pyramid_reconstruction"]["feasible_disjoint_cavities"] == 3);
+    REQUIRE(hybrid.report["background_pyramid_reconstruction"]["applied"] == 1);
+    REQUIRE(data.tetrahedra.middleRows(5, 4) == retained);
+    REQUIRE(data.mesh->check_mesh_connectivity_validity());
+    check_partition(data, hybrid);
+}
+
+TEST_CASE("background cavity reservations reject overlap and input-volume consumption")
+{
+    auto data = fixture(
+        {{.5, -1, .5}, {.5, -.3, -.5}, {-.5, -.3, .5}},
+        {{0, 1, 4, 6}, {0, 4, 3, 6}, {0, 1, 6, 7}, {0, 3, 6, 8}});
+    data.offset_tet_tags[3] = data.offset_tet_tags[4] = -1;
+    const detail::BackgroundQuad first{{0, 1, 4, 3}, {{{0, 1, 4}, {0, 4, 3}}}};
+    const detail::BackgroundQuad second{{0, 1, 6, 3}, {{{0, 1, 6}, {0, 6, 3}}}};
+    const auto positions = data.vertices;
+    const auto tets = data.tetrahedra;
+    SECTION("overlap is left for the caller's conforming fallback")
+    {
+        const auto plans = detail::plan_background_pyramids(data, {first, second}, 0);
+        REQUIRE(plans.accepted.size() == 1);
+        REQUIRE(plans.report["rejections"]["overlapping_cavity"] == 1);
+    }
+    SECTION("fixed input volume never becomes a background cavity")
+    {
+        data.input_cells[3] = 1;
+        const auto plans = detail::plan_background_pyramids(data, {first}, 0);
+        REQUIRE(plans.accepted.empty());
+    }
+    REQUIRE(data.vertices == positions);
+    REQUIRE(data.tetrahedra == tets);
 }
 
 TEST_CASE("adjacent prisms share a quadrilateral and reject a one-sided tetrahedral fallback")

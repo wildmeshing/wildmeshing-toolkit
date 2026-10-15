@@ -1,3 +1,4 @@
+#include "background_pyramids.hpp"
 #include "prism_jacobian.hpp"
 #include "prismatic_mesh.hpp"
 
@@ -363,7 +364,8 @@ std::vector<Interface> split_interfaces(
     std::vector<Candidate>& candidates,
     const SourceFaces& faces,
     const PrismaticMeshInput& input,
-    double min_tet_volume)
+    double min_tet_volume,
+    const detail::BackgroundPyramidPlans& background)
 {
     std::map<Quad, std::vector<std::pair<size_t, int>>> users;
     for (size_t ci = 0; ci < candidates.size(); ++ci) {
@@ -409,7 +411,8 @@ std::vector<Interface> split_interfaces(
             // Exterior boundaries and interfaces to original tet regions stay fixed.
             for (const auto& [ci, side] : list) {
                 auto& c = candidates[ci];
-                if (std::any_of(
+                if (!background.accepted.count(quad) &&
+                    std::any_of(
                         c.sides[side].triangles.begin(),
                         c.sides[side].triangles.end(),
                         [&](const Tri& t) { return faces.at(t).tets.size() == 2; }))
@@ -426,6 +429,7 @@ std::vector<Interface> split_interfaces(
 void propagate_shapes(
     std::vector<Candidate>& candidates,
     const SourceFaces& faces,
+    const detail::BackgroundPyramidPlans& background,
     size_t& passes,
     size_t& constraints)
 {
@@ -441,6 +445,7 @@ void propagate_shapes(
             bool compatible = false;
             if (users.size() == 1) {
                 compatible =
+                    background.accepted.count(quad) ||
                     std::all_of(first.triangles.begin(), first.triangles.end(), [&](const Tri& t) {
                         return faces.at(t).tets.size() == 1;
                     });
@@ -611,12 +616,23 @@ void validate_prism_dominant_mesh(
                 cell.vertices.size(),
             "repeated cell corner");
         require(matches_reference(input, cell), "cell is not a source tetrahedron partition");
-        if (cell.type == HybridCellType::Pyramid)
-            require(input.vertex_tags.at(cell.vertices[4]) == 1, "pyramid apex is not on input");
         const size_t first = cell.source_tets.front();
         const bool band = input.offset_tet_tags.at(first) == 1;
-        require(band || cell.type == HybridCellType::Tetrahedron, "fixed volume cell was merged");
-        if (!band) {
+        if (cell.background_transition)
+            require(
+                !band && input.input_cells.at(first) != 1,
+                "background transition is not in background");
+        if (cell.type == HybridCellType::Pyramid)
+            require(
+                band ? input.vertex_tags.at(cell.vertices[4]) == 1
+                     : cell.background_transition && input.input_cells.at(first) != 1 &&
+                           input.vertex_tags.at(cell.vertices[4]) == -1,
+                "invalid shell/background pyramid apex");
+        require(
+            band || cell.type == HybridCellType::Tetrahedron ||
+                (cell.type == HybridCellType::Pyramid && cell.background_transition),
+            "fixed volume cell was merged");
+        if (!band && cell.type == HybridCellType::Tetrahedron) {
             const auto original = source_tet(input, first);
             require(
                 cell.vertices == std::vector<size_t>(original.begin(), original.end()),
@@ -686,11 +702,12 @@ void validate_prism_dominant_mesh(
             const auto& pyramid = hybrid.cells[owners[k]];
             const auto& neighbor = hybrid.cells[owners[1 - k]];
             if (pyramid.type == HybridCellType::Pyramid &&
-                neighbor.type == HybridCellType::Tetrahedron)
+                input.offset_tet_tags[pyramid.source_tets[0]] == 1 &&
+                neighbor.type == HybridCellType::Tetrahedron &&
+                input.offset_tet_tags[neighbor.source_tets[0]] == 1)
                 require(
-                    neighbor.prism_candidate >= 0 &&
-                        input.offset_tet_tags[neighbor.source_tets[0]] == 1,
-                    "pyramid lateral interface lacks a prism-derived tet buffer");
+                    neighbor.prism_candidate >= 0,
+                    "shell pyramid lateral band interface lacks a prism-derived tet buffer");
         }
     }
 }
@@ -807,6 +824,38 @@ std::vector<HybridCell> prism_candidates_for_smoothing(const PrismaticMeshInput&
     return result;
 }
 
+namespace {
+// Mesh connectivity is rebuilt after validation; retain all other optimizer/export state.
+PrismaticMeshInput reconstruction_state(const PrismaticMeshInput& input)
+{
+    PrismaticMeshInput r;
+    r.vertices = input.vertices;
+    r.tetrahedra = input.tetrahedra;
+    r.vertex_tags = input.vertex_tags;
+    r.source_vertex_ids = input.source_vertex_ids;
+    r.corr_input_vid = input.corr_input_vid;
+    r.corr_input_vertex = input.corr_input_vertex;
+    r.input_vertices = input.input_vertices;
+    r.offset_vertices = input.offset_vertices;
+    r.input_to_offset_vertices = input.input_to_offset_vertices;
+    r.input_cells = input.input_cells;
+    r.offset_tet_tags = input.offset_tet_tags;
+    r.fixed_background_vertices = input.fixed_background_vertices;
+    r.offset_components = input.offset_components;
+    r.input_to_components = input.input_to_components;
+    r.vertex_component_ids = input.vertex_component_ids;
+    r.singular_vertex_tags = input.singular_vertex_tags;
+    r.optimal_normals = input.optimal_normals;
+    r.target_positions = input.target_positions;
+    r.input_average_edge_length = input.input_average_edge_length;
+    r.target_thickness = input.target_thickness;
+    r.optimization_iterations = input.optimization_iterations;
+    r.jacobian_smoothing_report = input.jacobian_smoothing_report;
+    r.background_remeshing_report = input.background_remeshing_report;
+    return r;
+}
+} // namespace
+
 PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double min_tet_volume)
 {
     require(std::isfinite(min_tet_volume) && min_tet_volume >= 0, "invalid volume floor");
@@ -819,7 +868,17 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
     // Geometry failures seed a larger tet region; correspondence and positions remain fixed.
     for (const auto& c : candidates)
         if (!c.reason.empty()) special.insert(c.prism.vertices.begin() + 3, c.prism.vertices.end());
-    const auto interfaces = split_interfaces(candidates, faces, input, min_tet_volume);
+    std::vector<detail::BackgroundQuad> background_quads;
+    for (const auto& c : candidates) {
+        if (!c.partition || c.conflict || !c.positive) continue;
+        const auto fs = cell_faces(c.prism);
+        for (int s = 0; s < 3; ++s) {
+            const auto& f = fs[s + 2];
+            background_quads.push_back({{f[0], f[1], f[2], f[3]}, c.sides[s].triangles});
+        }
+    }
+    auto background = detail::plan_background_pyramids(input, background_quads, min_tet_volume);
+    const auto interfaces = split_interfaces(candidates, faces, input, min_tet_volume, background);
     for (auto& c : candidates) {
         if (!c.partition || c.conflict || !c.positive) continue;
         const auto& v = c.prism.vertices;
@@ -854,7 +913,7 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
                     c.forbidden |= 1u << side;
             select(c);
         }
-        propagate_shapes(candidates, faces, passes, constraints);
+        propagate_shapes(candidates, faces, background, passes, constraints);
         size_t failure = 0, decisions = 0;
         bool limited = false;
         const bool solved =
@@ -874,13 +933,8 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
     }
 
     // Build the reference mesh privately. Commit only after checking its boundary and
-    // the complete hybrid mesh; vertex positions and fixed tetrahedra never change.
-    PrismaticMeshInput reference;
-    reference.vertices = input.vertices;
-    reference.tetrahedra = input.tetrahedra;
-    reference.vertex_tags = input.vertex_tags;
-    reference.input_cells = input.input_cells;
-    reference.offset_tet_tags = input.offset_tet_tags;
+    // the complete hybrid mesh. Existing vertex positions and input volume stay fixed.
+    PrismaticMeshInput reference = reconstruction_state(input);
     nlohmann::json retriangulated = nlohmann::json::array();
     for (size_t ci = 0; ci < candidates.size(); ++ci) {
         auto& c = candidates[ci];
@@ -1009,17 +1063,33 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
             unassigned_band += input.offset_tet_tags[tid] == 1;
             append(retained_tet(reference, tid));
         }
+    detail::apply_background_pyramids(reference, result, background);
+    // Cavity replacement must preserve the full domain's oriented triangular boundary.
+    if (background.report["applied"].get<size_t>()) {
+        const auto final_faces = source_faces(reference);
+        std::map<Tri, Tri> final_boundary;
+        for (const auto& [key, f] : final_faces)
+            if (f.tets.size() == 1) final_boundary[key] = f.oriented[0];
+        require(final_boundary.size() == old_boundary.size(), "background changes volume boundary");
+        for (const auto& [key, f] : old_boundary) {
+            const auto it = final_boundary.find(key);
+            require(
+                it != final_boundary.end() && same_orientation(f, it->second),
+                "background changes oriented boundary triangle");
+        }
+    }
     validate_prism_dominant_mesh(reference, result, min_tet_volume);
     size_t prisms = 0, pyramids = 0, band_tetrahedra = 0, input_tetrahedra = 0,
-           background_tetrahedra = 0;
+           background_tetrahedra = 0, background_pyramids = 0;
     for (const auto& cell : result.cells) {
         if (cell.type == HybridCellType::Prism)
             ++prisms;
-        else if (cell.type == HybridCellType::Pyramid)
+        else if (cell.type == HybridCellType::Pyramid) {
             ++pyramids;
-        else if (input.offset_tet_tags[cell.source_tets[0]] == 1)
+            background_pyramids += cell.background_transition;
+        } else if (reference.offset_tet_tags[cell.source_tets[0]] == 1)
             ++band_tetrahedra;
-        else if (input.input_cells[cell.source_tets[0]] == 1)
+        else if (reference.input_cells[cell.source_tets[0]] == 1)
             ++input_tetrahedra;
         else
             ++background_tetrahedra;
@@ -1027,10 +1097,14 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
     result.report = {
         {"prisms", prisms},
         {"pyramids", pyramids},
+        {"shell_pyramids", pyramids - background_pyramids},
+        {"background_pyramids", background_pyramids},
+        {"background_pyramid_reconstruction", background.report},
         {"band_tetrahedra", band_tetrahedra},
         {"input_tetrahedra", input_tetrahedra},
         {"background_tetrahedra", background_tetrahedra},
-        {"source_tetrahedra", nt},
+        {"source_tetrahedra", reference.tetrahedra.rows()},
+        {"original_source_tetrahedra", nt},
         {"output_cells", result.cells.size()},
         {"bijective_offset_faces", bijective.size()},
         {"repeated_correspondence_faces", repeated},
@@ -1041,7 +1115,7 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
         {"candidate_rejections", reasons},
         {"compatibility_passes", passes},
         {"quad_constraints_added", constraints},
-        {"pyramid_apex", "input"},
+        {"pyramid_apex", {{"shell", "input"}, {"background", "new cavity kernel point"}}},
         {"direction_region_expansions", direction_expansions},
         {"direction_search_decisions", search_decisions},
         {"direction_search_limit_fallbacks", search_limit_fallbacks},
@@ -1070,15 +1144,17 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
           {"reference_tetrahedra_positive", true},
           {"new_reference_tetrahedra_above_min_volume", true},
           {"pyramid_decompositions_above_min_volume", true},
-          {"fixed_cells_preserved", true},
+          {"input_volume_and_non_cavity_background_preserved", true},
+          {"existing_vertex_positions_preserved", true},
           {"volume_boundary_preserved", true},
-          {"all_pyramid_apices_on_input", true}}},
+          {"all_shell_pyramid_apices_on_input", true}}},
         {"transition_and_tet_regions", exceptional}};
     logger().info(
-        "Prism dominant band: {} prisms, {} pyramids, {} tetrahedra; {} input and {} background "
-        "tetrahedra preserved; {} interface passes",
+        "Prism dominant output: {} prisms, {} shell pyramids, {} background pyramids, {} band "
+        "tetrahedra; {} input and {} background tetrahedra; {} interface passes",
         prisms,
-        pyramids,
+        pyramids - background_pyramids,
+        background_pyramids,
         band_tetrahedra,
         input_tetrahedra,
         background_tetrahedra,
@@ -1095,16 +1171,21 @@ PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double mi
         retriangulated.size(),
         direction_expansions,
         search_limit_fallbacks);
-    if (!retriangulated.empty()) {
-        std::vector<Tet> tets(nt);
-        for (size_t tid = 0; tid < nt; ++tid) tets[tid] = source_tet(reference, tid);
+    if (!retriangulated.empty() || background_pyramids) {
+        std::vector<Tet> tets(reference.tetrahedra.rows());
+        for (size_t tid = 0; tid < tets.size(); ++tid) tets[tid] = source_tet(reference, tid);
         auto mesh = std::make_unique<TetMesh>();
-        mesh->init_with_isolated_vertices(input.vertices.rows(), tets);
+        mesh->init_with_isolated_vertices(reference.vertices.rows(), tets);
         require(mesh->check_mesh_connectivity_validity(), "invalid reconstructed tet connectivity");
-        input.tetrahedra = std::move(reference.tetrahedra);
-        input.mesh = std::move(mesh);
-        label_offset_faces(input);
+        reference.mesh = std::move(mesh);
+        label_offset_faces(reference);
+        input = std::move(reference);
     }
+    logger().info(
+        "Background transition: {} pyramids, {} new kernel points; {} feasible cavities",
+        background_pyramids,
+        background_pyramids,
+        background.accepted.size());
     if (!input.background_remeshing_report.is_null())
         result.report["background_remeshing"] = input.background_remeshing_report;
     return result;

@@ -116,6 +116,7 @@ void prism_main(
     validate_background_remeshing_options(optimization.background_remeshing);
     if (optimization.background_remeshing.enabled && !optimization.keep_background_mesh)
         log_and_throw_error("background_remeshing requires keep_background_mesh=true.");
+    handle_open_boundaries(input);
     // With remeshing enabled all background stars must be present, including neighbors
     // of movable interior vertices. Otherwise only offset-incident cells can change.
     // In the default mode, cutting away far background creates no boundary face incident
