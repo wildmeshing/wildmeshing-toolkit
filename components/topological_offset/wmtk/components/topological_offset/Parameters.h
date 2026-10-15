@@ -93,9 +93,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
-    /// complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc.
-    bool deform_others = false;
+    /// 3D: the medium outside the band and the input complex is plastic during the loop -- its
+    /// AMIPS term against a rest shape stamped before every operation group and smoothing block.
+    /// false: equilateral AMIPS for every cell. See the spec doc.
+    bool use_rest_pose = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
@@ -126,6 +127,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// every face over it -- the rule of 2026-09-25, kept for comparison.
     std::string front_measure;
     bool sorted_marching;
+    /// Construction only (optimize_offset false), 2D and 3D: the output .msh carries the node
+    /// field corr_input_vid, each offset vertex's input-complex vertex (see the spec).
+    bool save_offset_correspondence = false;
     /// How the marching places the offset (see the spec). A target_distance below the maximum
     /// marchable distance is traced to; otherwise "max_marchable_fallback" traces to half the
     /// maximum marchable distance and "midpoint_fallback" splits every marched edge at its
@@ -161,7 +165,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on
     /// the cell's part of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
-    /// rule-(a) pieces. See the spec doc.
+    /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
+    /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
+    /// at the vertex, plus the bisector jumps D_t of its flagged cells). See the spec doc.
     std::string band_volume_rule = "corner_bound";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when E fell by less than the bar energy
@@ -230,15 +236,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly
     /// to 1 at distance 1.8 l, applied within that ball only.
     std::string sizing_gradation_mode;
-    /// See the spec: the interleaved smoothing of each operation group runs until the front's
-    /// Newton-step ratio converges or stalls AND the background's step settles, instead of a
-    /// fixed interleaved_smoothing_passes.
-    bool adaptive_smoothing;
-    int adaptive_smoothing_max_passes; ///< cap on the passes per group
-    double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
-    double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
-    /// smoothing) before the first turn of the loop.
+    /// See the spec: true runs one smoothing block (the fixed interleaved count) before the first
+    /// turn of the loop.
     bool pre_smooth;
 
     VectorXd box_min;
@@ -280,6 +279,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_measure = json_params["front_measure"];
 
         sorted_marching = json_params["sorted_marching"];
+        save_offset_correspondence = json_params["save_offset_correspondence"];
         construction_mode = json_params["construction_mode"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         init_optimize = json_params["init_optimize"];
@@ -291,9 +291,11 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
-        if (band_volume_rule != "corner_bound" && band_volume_rule != "exact") {
+        if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&
+            band_volume_rule != "front_flux") {
             log_and_throw_error(
-                "EXPERIMENTAL_band_volume_rule is \"corner_bound\" or \"exact\", not \"{}\"",
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\" or \"front_flux\", "
+                "not \"{}\"",
                 band_volume_rule);
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
@@ -323,10 +325,6 @@ struct Parameters : public wmtk::OptimizerParameters
         max_sizing_scalar = json_params["max_sizing_scalar"];
         sizing_gradation = json_params["sizing_gradation"];
         sizing_gradation_mode = json_params["sizing_gradation_mode"];
-        adaptive_smoothing = json_params["adaptive_smoothing"];
-        adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
-        adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
-        adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
@@ -362,7 +360,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
-        deform_others = json_params["deform_others"];
+        use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];

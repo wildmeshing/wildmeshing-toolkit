@@ -229,6 +229,43 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
+    // Feature-edge tags: cache every edge of every tet incident to v1 -- the tets that get
+    // rewired or deleted. This includes the deleted tets' link edges (la,lb), which contain
+    // neither endpoint and can live on in tets outside any region enumerable after the
+    // collapse; that is why the restore walks the cache, not a region.
+    if (m_track_feature_edges) {
+        feature_edges_cache(n1_locs, cache.changed_edges);
+
+        // The geometric guard: every tagged edge, as the collapse would leave it (v1 renamed
+        // to v2, which does not move), must stay inside the feature-curve tube. This is what
+        // lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in the
+        // tube and passes -- while a collapse that would drag the curve sideways, or weld
+        // two curves farther apart than the tube width, is refused. The exact counterpart of
+        // the surface-split's surface_triangle_is_outside check, and of the open-boundary
+        // collapse guard.
+        if (m_feature_envelope) {
+            for (const auto& [pair, tag] : cache.changed_edges) {
+                if (!tag) {
+                    continue;
+                }
+                std::array<size_t, 2> p = pair;
+                for (size_t& v : p) {
+                    if (v == v1_id) {
+                        v = v2_id;
+                    }
+                }
+                if (p[0] == p[1]) {
+                    continue; // the collapsed edge itself; it disappears
+                }
+                if (m_feature_envelope->is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                    return collapse_reject(CollapseReject::feature_leaves_tube);
+                }
+            }
+        }
+    }
+
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
@@ -452,6 +489,19 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
 
+    // Feature-edge tags: cache-driven restore with v1 renamed to v2 (see the cache comment
+    // in collapse_edge_before). False means a tagged edge no longer exists -- abort, the
+    // rollback undoes everything.
+    if (m_track_feature_edges) {
+        if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
+            return collapse_reject(CollapseReject::after_feature_edge);
+        }
+        // After the restore, not in collapse_after_vertex: what the survivor's feature state
+        // is depends on the edge tags around it, and those are the post-collapse truth only
+        // from here on.
+        collapse_after_features(v1_id, v2_id);
+    }
+
     // Now that the vertex flag OR (above) and the face tags (the loop above) are the
     // post-collapse truth, decide whether the survivor keeps its open-boundary flag.
     collapse_after_vertex(v1_id, v2_id);
@@ -498,6 +548,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::inverted: return "inverted";
     case CollapseReject::quality: return "quality";
     case CollapseReject::substructure_link: return "substructure_link";
+    case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
     case CollapseReject::app_both_surfaces: return "app_both_surfaces";
     case CollapseReject::app_front_unlimited: return "app_front_unlimited";
     case CollapseReject::app_leaves_input: return "app_leaves_input";
@@ -511,6 +562,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::after_envelope: return "after_envelope";
     case CollapseReject::after_face_attribute: return "after_face_attribute";
     case CollapseReject::after_order2_chord: return "after_order2_chord";
+    case CollapseReject::after_feature_edge: return "after_feature_edge";
     case CollapseReject::after_coarsen_region: return "after_coarsen_region";
     default: return "?";
     }

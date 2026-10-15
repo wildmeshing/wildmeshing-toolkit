@@ -990,6 +990,132 @@ bool CubedAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 
 // ---------------------------------------------------------------------------------------------
+// VolAMIPSEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+/// det(E) and its gradient in x, E's columns q_k - x.
+void vol_amips_det_and_grad(const Eigen::Matrix3d& E, double& g, Eigen::Vector3d& dg)
+{
+    const Eigen::Vector3d e0 = E.col(0), e1 = E.col(1), e2 = E.col(2);
+    g = e0.dot(e1.cross(e2));
+    // d det / d e_k is the k-th cofactor column, and every column moves as -x.
+    dg = -(e1.cross(e2) + e2.cross(e0) + e0.cross(e1));
+}
+} // namespace
+
+Eigen::Matrix3d VolAMIPSEnergy3D::regular_rest()
+{
+    Eigen::Matrix3d R;
+    R.col(0) = Eigen::Vector3d(1., 0., 0.);
+    R.col(1) = Eigen::Vector3d(0.5, std::sqrt(3.) / 2., 0.);
+    R.col(2) = Eigen::Vector3d(0.5, std::sqrt(3.) / 6., std::sqrt(2. / 3.));
+    return R;
+}
+
+bool VolAMIPSEnergy3D::cell(
+    const std::array<Eigen::Vector3d, 3>& q,
+    const Eigen::Matrix3d& R,
+    Cell& out)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return false;
+    out.q = q;
+    out.rest_inv = R.inverse();
+    out.s = out.rest_inv.transpose() * Eigen::Vector3d::Ones();
+    out.c = detR * detR / 6.;
+    return true;
+}
+
+double VolAMIPSEnergy3D::value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R)
+{
+    const double detR = R.determinant();
+    if (!(detR > 0.)) return std::numeric_limits<double>::infinity();
+    Eigen::Matrix3d E;
+    for (int k = 0; k < 3; ++k) E.col(k) = p[size_t(k + 1)] - p[0];
+    const double g = E.determinant();
+    if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+    const double f = (E * R.inverse()).squaredNorm();
+    const double v = f * f * f * detR * detR / (6. * g);
+    return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
+}
+
+VolAMIPSEnergy3D::VolAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+double VolAMIPSEnergy3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& gr,
+    Eigen::Matrix3d& H) const
+{
+    double E = 0.;
+    gr.setZero();
+    H.setZero();
+    for (const Cell& c : m_cells) {
+        Eigen::Matrix3d Em;
+        for (int j = 0; j < 3; ++j) Em.col(j) = c.q[size_t(j)] - x;
+        double g;
+        Eigen::Vector3d dg;
+        vol_amips_det_and_grad(Em, g, dg);
+        if (!(g > 0.)) return std::numeric_limits<double>::infinity();
+        const Eigen::Matrix3d F = Em * c.rest_inv;
+        const double f = F.squaredNorm();
+        const double f3 = f * f * f;
+        E += c.c * f3 / g;
+        if (need < 1) continue;
+        const Eigen::Vector3d df = -2. * F * c.s;
+        const double f2 = f * f;
+        gr += c.c * (3. * f2 * df / g - f3 * dg / (g * g));
+        if (need < 2) continue;
+        const Eigen::Matrix3d Hf = 2. * c.s.squaredNorm() * Eigen::Matrix3d::Identity();
+        H += c.c * (6. * f * (df * df.transpose()) / g + 3. * f2 * Hf / g -
+                    3. * f2 * (df * dg.transpose() + dg * df.transpose()) / (g * g) +
+                    2. * f3 * (dg * dg.transpose()) / (g * g * g));
+    }
+    E *= m_weight;
+    gr *= m_weight;
+    H *= m_weight;
+    return std::isfinite(E) ? E : std::numeric_limits<double>::infinity();
+}
+
+double VolAMIPSEnergy3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head<3>(), 0, g, H);
+}
+
+void VolAMIPSEnergy3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 1, g, H);
+    gradv = g;
+}
+
+void VolAMIPSEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 2, g, H);
+    hess = H;
+}
+
+bool VolAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    // As CubedAMIPSEnergy3D: the moved vertex may not invert a cell.
+    const Eigen::Vector3d p0 = x1.head(3);
+    for (const Cell& c : m_cells) {
+        if (!wmtk::utils::orient3d(p0, c.q[0], c.q[1], c.q[2])) return false;
+    }
+    return true;
+}
+
+
+// ---------------------------------------------------------------------------------------------
 // InputTriangles
 // ---------------------------------------------------------------------------------------------
 
@@ -1492,6 +1618,96 @@ void BandVolumeEnergy3D::set_exact_integral(
     m_eb_parts.resize(m_cells.size());
 }
 
+void BandVolumeEnergy3D::set_front_flux(
+    std::shared_ptr<const ExactBandIntegral> eb,
+    const double delta,
+    std::vector<Face> faces)
+{
+    m_eb = std::move(eb);
+    m_delta = delta;
+    m_ff = true;
+    m_ff_faces = std::move(faces);
+    m_ff_fparts.clear();
+    m_ff_fparts.resize(m_ff_faces.size());
+    m_ff_U.assign(m_cells.size(), 0.);
+    m_ff_Ux.assign(m_cells.size(), Eigen::Vector3d::Zero());
+    m_ff_Ux_set.assign(m_cells.size(), 0);
+    m_eb_val_set = m_eb_der_set = false;
+    m_eb_parts.clear();
+    m_eb_parts.resize(m_cells.size());
+}
+
+std::string& BandVolumeEnergy3D::front_flux_error()
+{
+    thread_local std::string msg;
+    return msg;
+}
+
+double BandVolumeEnergy3D::ff_eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // EXPERIMENTAL_band_volume_rule "front_flux" (set_front_flux())
+    const auto same = [&](const Eigen::Vector3d& y) {
+        return std::memcmp(x.data(), y.data(), 3 * sizeof(double)) == 0;
+    };
+    try {
+        if (need == 0) {
+            if (!(m_eb_val_set && same(m_eb_val_x))) {
+                double E = 0.;
+                for (size_t i = 0; i < m_ff_faces.size(); ++i) {
+                    const Face& f = m_ff_faces[i];
+                    E += m_eb->front_face({{x, f.a, f.b}}, m_delta, &m_ff_fparts[i]);
+                }
+                const double reach = m_eb->front_flux_reach();
+                for (size_t k = 0; k < m_cells.size(); ++k) {
+                    const Cell& c = m_cells[k];
+                    const std::array<Eigen::Vector3d, 4> t = {{x, c.q1, c.q2, c.q3}};
+                    // U_t + |x - x_U| bounds d on t (set_front_flux()); searched again only
+                    // where it exceeds the reach
+                    if (!m_ff_Ux_set[k] || m_ff_U[k] + (x - m_ff_Ux[k]).norm() > reach) {
+                        m_ff_U[k] = m_eb->distance_bound(t);
+                        m_ff_Ux[k] = x;
+                        m_ff_Ux_set[k] = 1;
+                    }
+                    if (m_ff_U[k] + (x - m_ff_Ux[k]).norm() > reach || m_eb->front_flux_flag(t)) {
+                        E += m_eb->bisector_jump(t, m_delta, &m_eb_parts[k]);
+                    }
+                }
+                m_eb_E = E / m_delta;
+                m_eb_val_x = x;
+                m_eb_val_set = true;
+            }
+            g.setZero();
+            H.setZero();
+            return m_eb_E;
+        }
+        if (!(m_eb_der_set && same(m_eb_der_x))) {
+            m_eb_g.setZero();
+            m_eb_H.setZero();
+            for (size_t i = 0; i < m_ff_faces.size(); ++i) {
+                const Face& f = m_ff_faces[i];
+                Eigen::Vector3d gf;
+                Eigen::Matrix3d hf;
+                m_eb->front_face_derivs({{x, f.a, f.b}}, m_delta, 0, gf, hf, &m_ff_fparts[i]);
+                m_eb_g += gf / m_delta;
+                m_eb_H += hf / m_delta;
+            }
+            m_eb_der_x = x;
+            m_eb_der_set = true;
+        }
+    } catch (const std::exception& e) {
+        front_flux_error() = e.what();
+        throw;
+    }
+    g = m_eb_g;
+    H = m_eb_H;
+    // the value is the value path's; gradient() and hessian() do not read it
+    return m_eb_val_set && same(m_eb_val_x) ? m_eb_E : std::numeric_limits<double>::quiet_NaN();
+}
+
 bool BandVolumeEnergy3D::certify_ball(const Eigen::Vector3d& x) const
 {
     // r = the distance from x to the nearest plane through a cell's three fixed corners, each
@@ -1550,6 +1766,7 @@ double BandVolumeEnergy3D::eval(
     Eigen::Vector3d& g,
     Eigen::Matrix3d& H) const
 {
+    if (m_ff) return ff_eval(x, need, g, H);
     if (m_eb) {
         // EXPERIMENTAL_band_volume_rule "exact": per cell J_t / delta with x a corner of t
         const auto same = [&](const Eigen::Vector3d& y) {
