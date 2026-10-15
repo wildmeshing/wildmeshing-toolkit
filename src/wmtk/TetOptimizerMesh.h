@@ -621,6 +621,11 @@ public:
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}
+    /// Called by smooth_all_vertices() at the end of EVERY smoothing pass, after its accounting
+    /// (log_smoothing_pass_accounting()) and before its debug frame: an application that keeps
+    /// state derived from the positions the pass just moved refreshes it here. Not called before
+    /// the first pass.
+    virtual void smoothing_pass_done() {}
 
     bool invariants(const std::vector<Tuple>& t) override;
 

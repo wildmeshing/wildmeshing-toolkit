@@ -1222,6 +1222,24 @@ bool clip_affine(Poly& R, const Vec3& w, const double rhs, Poly& tmp, const Ctx&
     return clip_inplace(R, w / nw, rhs / nw, tmp, cx);
 }
 
+/// Whether face i is nowhere the min against face j of the same slope W in a sign cell (parallel
+/// planes, w = W_i - W_j = 0): d_i - d_j = c_j - c_i = -rhs everywhere, so i loses everywhere if
+/// rhs < 0 and nowhere if rhs > 0; within rounding the two are one function and the lower index
+/// wins. MEASURED (100033, 2026-10-14): the decision was the index alone, so below a plate 2.9
+/// thick, whose two faces are exactly parallel, the top face took the pieces where it was the
+/// lower index, and its side plane dropped them; value() 0 against an exact -10.19 on a box.
+bool parallel_face_loses(
+    const double rhs,
+    const double ci,
+    const double cj,
+    const size_t i,
+    const size_t j,
+    const Ctx& cx)
+{
+    const double tie = 64 * EPS * (std::abs(ci) + std::abs(cj) + cx.scale);
+    return rhs < -tie || (rhs <= tie && j < i);
+}
+
 /// _faces_min_pieces: split Q so that min_i |n_i.(x - a_i)| is one affine function W.x - c per
 /// sub-piece (split by the planes, each |.| then affine, then by the bisectors of the affine
 /// distances); `piece(R, W, c)` for each sub-piece, in the Python's order.
@@ -1269,8 +1287,8 @@ void faces_min_pieces(const Poly& Q, const std::vector<const Loc*>& faces, const
                 if (j == i) continue;
                 const Vec3 w = W[i] - W[j];
                 const double rhs = cc[i] - cc[j];
-                if (w.norm() <= 1e-14) { // identical function: lower index wins
-                    if (j < i) alive = false;
+                if (w.norm() <= 1e-14) { // parallel planes: the nearer wins (the lower on a tie)
+                    if (parallel_face_loses(rhs, cc[i], cc[j], i, j, cx)) alive = false;
                     continue;
                 }
                 alive = clip_affine(R, w, rhs, tmp, cx);
@@ -1325,7 +1343,7 @@ double vertices_min(const Poly& Q, const std::vector<const Loc*>& verts, const C
 }
 
 // ------------------------------------------------------------------------------------------------
-// The offset side (exact_mesh: _side_clip, _side_split, _d_bound)
+// The offset side (exact_mesh: _side_clip, _side_split; nearest_member() in place of _d_bound)
 // ------------------------------------------------------------------------------------------------
 
 /// A member's side plane in the cell's frame: unit normal N, a point ql on it; has false: none.
@@ -1387,38 +1405,30 @@ void side_split(
     }
 }
 
-/// _d_bound: vol(R) max(0, min over members of (max over R's vertices of d_g) - delta); `mx_all`
-/// gets the largest member distance at R's vertices.
-double
-d_bound(const Poly& R, const std::vector<const Loc*>& members, const double delta, double& mx_all)
+/// The member nearest at the centroid of the part R (inside R, which is convex): on a member's
+/// region its d_g is the distance to a point of it, never below d, and d itself for the feature
+/// holding the nearest point (class doc), so this is the nearest feature there.
+///
+/// Why: a part R where the members' planes disagree (side_split(), some on the offset side and
+/// some not) has ONE true side, that member's. The plane test of a feature nearest at x gives x's
+/// true side (the pseudonormal theorem), so two members nearest at one point agree there, and two
+/// members of opposite verdicts are never nearest together in R: along a segment in R the nearest
+/// member never passes from one verdict to the other. Until 2026-10-14 such a part took
+/// vol(R) max(0, min over members of (max over R's vertices of d_g) - delta), an upper bound that
+/// is 0 near the input, against a true value down to -delta vol(R), and that depends on how the
+/// cell cuts R. MEASURED (100033, plates 2.9 thick, delta 2.49): the edge of a plate's other side,
+/// whose region reached the band, made such parts; swaps of band cells that move no band changed
+/// the sum of value() by up to 1.24, and a swap pass cycled on one of them.
+size_t nearest_member(const Poly& R, const std::vector<const Loc*>& members)
 {
-    double mn = std::numeric_limits<double>::infinity();
-    mx_all = 0.;
-    for (const Loc* g : members) {
-        double mx = 0.;
-        for (const Vec3& y : R.P) mx = std::max(mx, d_feat(*g, y));
-        mn = std::min(mn, mx);
-        mx_all = std::max(mx_all, mx);
+    const Vec3 c = volume_centroid(R).second;
+    size_t best = 0;
+    double dmin = std::numeric_limits<double>::infinity();
+    for (size_t m = 0; m < members.size(); ++m) {
+        const double dm = d_feat(*members[m], c);
+        if (dm < dmin) dmin = dm, best = m;
     }
-    return volume_centroid(R).first * std::max(0., mn - delta);
-}
-
-/// _d_derivs: the gradient and Hessian of d_g at v (off the feature).
-void d_derivs(const Loc& g, const Vec3& v, Vec3& grad, Eigen::Matrix3d& hess)
-{
-    if (g.kind == 0) {
-        const double s = g.dir.dot(v - g.p);
-        grad = (s > 0. ? 1. : (s < 0. ? -1. : 0.)) * g.dir;
-        hess.setZero();
-        return;
-    }
-    Vec3 w = v - g.p;
-    if (g.kind == 1) w -= w.dot(g.dir) * g.dir;
-    const double r = w.norm();
-    const Vec3 u = w / r;
-    grad = u;
-    hess = (Eigen::Matrix3d::Identity() - u * u.transpose()) / r;
-    if (g.kind == 1) hess -= g.dir * g.dir.transpose() / r;
+    return best;
 }
 
 /// point_tri_dist for one triangle: min over the three segments, and the plane distance when the
@@ -1665,8 +1675,8 @@ void pfaces_min_pieces(
                 if (j == i) continue;
                 const Vec3 w = W[i] - W[j];
                 const double rhs = cc[i] - cc[j];
-                if (w.norm() <= 1e-14) { // identical function: lower index wins
-                    if (j < i) alive = false;
+                if (w.norm() <= 1e-14) { // parallel planes: the nearer wins (the lower on a tie)
+                    if (parallel_face_loses(rhs, cc[i], cc[j], i, j, cx)) alive = false;
                     continue;
                 }
                 const double nw = w.norm();
@@ -3782,7 +3792,7 @@ double ExactBandIntegral::evaluate(
     };
     double total_c = 0.;
     bool clipped = false;
-    int64_t n_split = 0, n_D = 0, n_D_over = 0, n_D_pos = 0;
+    int64_t n_split = 0, n_D = 0, n_D_pos = 0;
     std::vector<SidePlane> planes;
     std::vector<SidePart> parts;
     Poly Rc;
@@ -3894,12 +3904,19 @@ double ExactBandIntegral::evaluate(
                             for (const Loc* g : members) m = std::min(m, int_g(*g, sp.R, cx));
                             vc += m - delta * volume_centroid(sp.R).first;
                         } else if (any) {
-                            double mx_all;
-                            const double b = d_bound(sp.R, members, delta, mx_all);
-                            vc += b;
+                            // the members' planes disagree: the side of the member nearest at
+                            // the part's centroid holds for all of it (nearest_member()). Off:
+                            // dropped. On: the members that put it on the far side are nearest
+                            // nowhere in it, and it is an all-on part over the others.
                             ++n_D;
-                            n_D_over += mx_all > delta;
-                            n_D_pos += b > 0.;
+                            if (sp.on[nearest_member(sp.R, members)]) {
+                                double m = std::numeric_limits<double>::infinity();
+                                for (size_t q = 0; q < members.size(); ++q) {
+                                    if (sp.on[q]) m = std::min(m, int_g(*members[q], sp.R, cx));
+                                }
+                                vc += m - delta * volume_centroid(sp.R).first;
+                                ++n_D_pos;
+                            }
                         }
                     }
                 }
@@ -3912,7 +3929,6 @@ double ExactBandIntegral::evaluate(
         stats->side_clipped += clipped;
         stats->side_rule_a_split += n_split;
         stats->side_D += n_D;
-        stats->side_D_over += n_D_over;
         stats->side_D_pos += n_D_pos;
     }
     const double v0 = volume_centroid(Q0).first;
@@ -3977,8 +3993,9 @@ double ExactBandIntegral::value_grad_hess_impl(
     // elementary(): pieces on which the integrand is ONE smooth function. A face member is split
     // by its plane (affine per side); a rule-(a) piece carries the member of smallest integral
     // (lowest candidate on a tie), so its derivative is that of the BOUND. With the offset side
-    // (class doc; exact_mesh.elementary): only the offset-side parts, the rule-(a) parts where the
-    // members' planes disagree going to Dl.
+    // (class doc; exact_mesh.elementary): only the offset-side parts, a rule-(a) part where the
+    // members' planes disagree on the side of the member nearest at its centroid
+    // (nearest_member()).
     const bool side = m_sigma != 0;
     const auto side_plane = [&](const int k) {
         SidePlane sp;
@@ -3990,12 +4007,6 @@ double ExactBandIntegral::value_grad_hess_impl(
         return sp;
     };
     bool clipped = false;
-    struct DPart
-    {
-        Poly R;
-        std::vector<const Loc*> members;
-    };
-    std::vector<DPart> Dl;
     std::vector<Elem> pieces;
     Poly tmp, Rc;
     const auto add = [&](const Poly& Q, const Loc& g, const bool ra, const SidePlane& plane) {
@@ -4109,10 +4120,18 @@ double ExactBandIntegral::value_grad_hess_impl(
                     }
                     add(sp.R, loc[size_t(bk)], true, SidePlane());
                 } else if (any) {
-                    DPart d;
-                    d.R = sp.R;
-                    d.members = members;
-                    Dl.push_back(std::move(d));
+                    // the members' planes disagree: the side of the member nearest at the part's
+                    // centroid (nearest_member(), evaluate()); on the offset side, the rule-(a)
+                    // part over the members that put it there
+                    if (!sp.on[nearest_member(sp.R, members)]) continue;
+                    double best = std::numeric_limits<double>::infinity();
+                    int bk = -1;
+                    for (size_t q = 0; q < S.size(); ++q) { // ascending: the lowest on a tie
+                        if (!sp.on[q]) continue;
+                        const double v = int_g(loc[size_t(S[q])], sp.R, cx);
+                        if (v < best) best = v, bk = S[q];
+                    }
+                    add(sp.R, loc[size_t(bk)], true, SidePlane());
                 }
             }
         }
@@ -4359,128 +4378,10 @@ double ExactBandIntegral::value_grad_hess_impl(
             }
         }
     };
-    // _vertex_motion: dv/dx (column k = dv/dx_k) and d2v[i](k, l) = d^2 v_i / dx_k dx_l for a vertex
-    // v of the polytope R: v solves A(x) v = s(x) for three independent planes of R through v, a
-    // face F of t through x the moving one ((x - b) x w).(y - b) = 0 (w = a - b; affine in x),
-    // every other plane fixed. Differentiating A v - s = 0 (A, s affine): A dv_k = -r_k with
-    // r_k,j = (w_j x (v - b_j))_k on moving rows; A d2v_kl = -[(w_j x dv_l)_k + (w_j x dv_k)_l]_j.
-    // Fewer than three independent planes: zero (v fixed).
-    const auto vertex_motion = [&](const Vec3& v,
-                                   const Poly& R,
-                                   const Vec3& xv,
-                                   const double tl,
-                                   Eigen::Matrix3d& dv,
-                                   std::array<Eigen::Matrix3d, 3>& d2v) {
-        struct Row
-        {
-            int moving;
-            Vec3 n, w, b;
-        };
-        std::vector<Row> rows;
-        for (int f = 0; f < R.faces(); ++f) {
-            const Vec3& nf = R.N[size_t(f)];
-            if (std::abs(nf.dot(v) - nf.dot(R.ring(f)[0])) > tl) continue;
-            const TFace* mv = nullptr;
-            for (const TFace& tf : faces) {
-                if (nf.dot(tf.nu) >= 1 - 1e-12 &&
-                    std::abs(tf.nu.dot(v) - tet_planes[size_t(tf.i)].second) <= tl) {
-                    mv = &tf;
-                    break;
-                }
-            }
-            if (mv) {
-                rows.push_back({0, (xv - mv->b).cross(mv->a - mv->b), mv->a - mv->b, mv->b});
-            } else {
-                rows.push_back({1, nf, Vec3::Zero(), R.ring(f)[0]});
-            }
-        }
-        std::stable_sort(rows.begin(), rows.end(), [](const Row& p, const Row& q) {
-            return p.moving < q.moving;
-        });
-        std::vector<const Row*> sel;
-        for (const Row& r : rows) {
-            const Vec3 nr = r.n / r.n.norm();
-            if (sel.size() == 1 && (sel[0]->n / sel[0]->n.norm()).cross(nr).norm() <= 1e-9)
-                continue;
-            if (sel.size() == 2) {
-                Eigen::Matrix3d Nm;
-                Nm.row(0) = (sel[0]->n / sel[0]->n.norm()).transpose();
-                Nm.row(1) = (sel[1]->n / sel[1]->n.norm()).transpose();
-                Nm.row(2) = nr.transpose();
-                if (std::abs(Nm.determinant()) <= 1e-9) continue;
-            }
-            sel.push_back(&r);
-            if (sel.size() == 3) break;
-        }
-        dv.setZero();
-        for (auto& m : d2v) m.setZero();
-        if (sel.size() < 3) return;
-        Eigen::Matrix3d A;
-        for (int j = 0; j < 3; ++j) A.row(j) = sel[size_t(j)]->n.transpose();
-        const Eigen::Matrix3d Ai = A.inverse();
-        for (int k = 0; k < 3; ++k) {
-            Vec3 rk = Vec3::Zero();
-            for (int j = 0; j < 3; ++j) {
-                if (sel[size_t(j)]->moving == 0)
-                    rk[j] = sel[size_t(j)]->w.cross(v - sel[size_t(j)]->b)[k];
-            }
-            dv.col(k) = -Ai * rk;
-        }
-        for (int k = 0; k < 3; ++k) {
-            for (int l = 0; l < 3; ++l) {
-                Vec3 q = Vec3::Zero();
-                for (int j = 0; j < 3; ++j) {
-                    if (sel[size_t(j)]->moving != 0) continue;
-                    const Vec3& wj = sel[size_t(j)]->w;
-                    q[j] = wj.cross(Vec3(dv.col(l)))[k] + wj.cross(Vec3(dv.col(k)))[l];
-                }
-                const Vec3 dkl = -Ai * q;
-                for (int i = 0; i < 3; ++i) d2v[size_t(i)](k, l) = dkl[i];
-            }
-        }
-    };
     double Jd = 0.;
     for (const Elem& e : pieces) {
         Jd += piece_value(e, cx);
         accumulate(e, G, H);
-    }
-    // The disagreeing rule-(a) parts D: vol(D) c(x), c = max(0, d_g*(v*) - delta) (class doc)
-    for (const DPart& d : Dl) {
-        const Poly& R = d.R;
-        int gi = -1, vi = -1;
-        double cmin = std::numeric_limits<double>::infinity();
-        for (size_t m = 0; m < d.members.size(); ++m) {
-            double mx = -std::numeric_limits<double>::infinity();
-            int im = -1;
-            for (size_t j = 0; j < R.P.size(); ++j) {
-                const double dv = d_feat(*d.members[m], R.P[j]);
-                if (dv > mx) mx = dv, im = int(j);
-            }
-            if (mx < cmin) cmin = mx, gi = int(m), vi = im;
-        }
-        const double c = cmin - delta;
-        if (!(c > 0.)) continue;
-        const double vR = volume_centroid(R).first;
-        Elem one;
-        one.Q = R;
-        one.kind = 0;
-        one.dir = Vec3::Zero();
-        one.c = -1.; // phi = 1: vol(R)
-        Vec3 Gv = Vec3::Zero();
-        Eigen::Matrix3d Hv = Eigen::Matrix3d::Zero();
-        accumulate(one, Gv, Hv);
-        Vec3 gd;
-        Eigen::Matrix3d hd;
-        d_derivs(*d.members[size_t(gi)], R.P[size_t(vi)], gd, hd);
-        Eigen::Matrix3d dv;
-        std::array<Eigen::Matrix3d, 3> d2v; // d2v[i](k, l) = d^2 v_i / dx_k dx_l
-        vertex_motion(R.P[size_t(vi)], R, x, tol, dv, d2v);
-        const Vec3 gc = dv.transpose() * gd;
-        Eigen::Matrix3d hc = dv.transpose() * hd * dv;
-        for (int i = 0; i < 3; ++i) hc += gd[i] * d2v[size_t(i)];
-        Jd += vR * c;
-        G += c * Gv + vR * gc;
-        H += c * Hv + Gv * gc.transpose() + gc * Gv.transpose() + vR * hc;
     }
     if (clipped) return Jd;
     G = G - delta * gradV;

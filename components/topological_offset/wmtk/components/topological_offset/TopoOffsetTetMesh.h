@@ -45,6 +45,20 @@ const CellTag TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
 // label: 0=default, 1=input, 2=offset
 
 /**
+ * The label is CLOSED: a face, edge or vertex of a simplex carries that simplex's label, the input
+ * complex (1) winning over the band (2) and both over 0 -- the rule label_input_complex() and the
+ * band growth in construct_offset() write. A face, edge or vertex may also carry 1 of its own (a
+ * sheet, wire or point complex). This is the one way two labels combine; the optimization's
+ * operations restore the closure with it (TopoOffsetTetMesh::close_labels()).
+ */
+inline int closed_label(const int a, const int b)
+{
+    if (a == 1 || b == 1) return 1;
+    if (a == 2 || b == 2) return 2;
+    return 0;
+}
+
+/**
  * @brief Per-vertex data the shared 3D optimizer knows nothing about.
  *
  * Position, rounding, bbox membership, order, sizing and partition live on
@@ -94,10 +108,18 @@ class FaceExtra
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     /// The face lies on the input's envelope surface group (within its envelope): selectable as
-    /// the complex by name, held in that group's tube. Re-derived by classify_sheet_faces();
-    /// nothing propagates it through split or collapse, so it is read only before the
-    /// optimization starts. The 2D twin is EdgeExtra2d::on_curve.
+    /// the complex by name, held in that group's tube. Re-derived by classify_sheet_faces() and
+    /// read only before the optimization starts; the optimization's operations carry it with the
+    /// label (see m_face_extra in TopoOffsetTetMesh). The 2D twin is EdgeExtra2d::on_curve.
     bool on_sheet = false;
+
+    /// Two faces that a collapse makes one, as the base's SurfaceTagAttributes::merge(): the
+    /// labels combine by closed_label(), on_sheet is the OR.
+    void merge(const FaceExtra& o)
+    {
+        label = closed_label(label, o.label);
+        on_sheet = on_sheet || o.on_sheet;
+    }
 };
 
 
@@ -107,6 +129,16 @@ public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     CellTag tag;
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
+    /**
+     * Rest shape of a plastic cell (TopoOffsetTetMesh::cell_is_plastic(), use_rest_pose): the
+     * tet's corners as last stamped, in the oriented order. Stamped for every plastic cell when
+     * the loop starts and after every smoothing pass (smoothing_pass_done()), and, in
+     * the operations, for every cell a split or a swap creates or a collapse changes, at the
+     * change and before the operation's energy rule reads it -- so every rule reads up-to-date
+     * rests. Read only while the cell is plastic.
+     */
+    bool rest_valid = false;
+    std::array<Vector3d, 4> rest_pos;
 };
 
 
@@ -118,10 +150,9 @@ public:
  * is wmtk::TetOptimizerMesh's, with the offset supplying only policy through the hooks.
  *
  * Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included)
- * keeps the primary class 0 and is held in its tags' envelopes, as tetwild holds its input; the
- * offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ.
- * Class-0 faces may move within their tubes; only the offset one is driven toward
- * target_distance.
+ * keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which
+ * the incident tet labels differ. Which class-0 faces an envelope holds, and when, is
+ * face_is_held()'s; only the offset surface is driven toward target_distance.
  */
 class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
@@ -261,25 +292,45 @@ public:
 
     /**
      * @brief THE ENVELOPES. One, m_envelope (the base's pointer): a SampleEnvelope of half-width
-     * envelope_size around every HELD face (face_is_held()), built once by build_envelopes()
-     * before anything moves -- after the simplicial embedding, before the repulsion and the
-     * march -- and never rebuilt: what it holds does not move. The offset surface is held by
-     * nothing in the loop; only the frozen-front final pass holds it, to m_offset_envelope.
+     * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
+     * anything moves -- after the simplicial embedding, before the repulsion and the march --
+     * and swapped for a wider one only for the frozen-front final pass (build_final_envelopes()).
+     * The offset surface is held by nothing in the loop; only the final pass holds it, to
+     * m_offset_envelope.
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
-     * labels it reads), never stored: a domain-wall face (no opposite tet), and every other
-     * tracked face that is not the offset surface, i.e. every region boundary, the input
-     * complex's included. One envelope for all of them, as TetWild's: where two held surfaces meet,
-     * a vertex is kept within eps of their union, not pinned to the junction curve.
+     * labels it reads), never stored:
+     * - a domain-wall face (no opposite tet), always;
+     * - the input complex's boundary (face_is_complex_boundary()), always;
+     * - every other region boundary, only in the final pass (m_freeze_front), where
+     *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
+     *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
+     * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is kept
+     * within eps of their union, not pinned to the junction curve. As archive/spenbert-offset had
+     * it (2026-10-13).
      */
     bool face_is_held(const Tuple& f) const;
     /// A vertex is held when one of its tracked faces is (face_is_held()): the smoother then
     /// pulls it to and contains it in m_envelope. Asked of the mesh, like face_is_held().
     bool vertex_is_held(size_t vid) const;
+    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
+    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
+    bool face_is_complex_boundary(const Tuple& f) const;
     /// Build m_envelope from the held faces. Called once, from construct_offset(), after the
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
+    /// The final pass's envelopes: the offset surface's tube (build_offset_envelope()), and
+    /// m_envelope swapped for one that also holds every other region boundary, at its position as
+    /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
+    /// then). release_final_envelopes() puts the loop's envelope back.
+    void build_final_envelopes();
+    void release_final_envelopes();
+    /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
+    std::vector<Eigen::Vector3d> m_held_verts;
+    std::vector<Eigen::Vector3i> m_held_tris;
+    /// The loop's m_envelope while the final pass holds its own.
+    std::shared_ptr<SampleEnvelope> m_loop_envelope;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -367,6 +418,63 @@ public:
     EdgeAttCol m_edge_attribute;
     TetAttCol m_tet_attribute;
 
+    /**
+     * @name m_face_extra through the optimization's operations
+     *
+     * Carried exactly as the base carries m_face_attribute (TetOptimizerMeshSplit.cpp,
+     * TetOptimizerMeshCollapse.cpp, TetOptimizerMeshSwaps.cpp), at the canonical face id, which
+     * is where every reader looks:
+     *   - split: a face of the parents is captured by its sorted vertices (split_before_cells());
+     *     afterwards a child face that is a parent face keeps its value, the two halves of a
+     *     parent face containing the edge take that face's, and the new faces between a link
+     *     edge and the midpoint are reset (split_after_cells()).
+     *   - collapse: (v1,l1,l2) and (v2,l1,l2) around the edge are merged (FaceExtra::merge())
+     *     onto (v2,l1,l2) (collapse_before_vertex() / collapse_after_vertex()); the other faces
+     *     are renamed in place and keep their slots.
+     *   - swap: the old cells' faces are captured (swap_before_interior() /
+     *     swap_before_surface()); a new cell's face that was one of them keeps its value, every
+     *     other face of the new cells is reset (swap_after_cells()).
+     * face_is_complex_boundary() reads the label live, which is why it has to be carried.
+     *
+     * The edge label is carried the same way (edge_label_capture() / edge_label_assign()): an
+     * edge's slot is its lowest incident tet's, so an operation that changes the tets around an
+     * edge moves it to a slot holding another edge's value or a dead one's. After that, every
+     * operation closes the labels over the cells it made (close_labels()).
+     * @{
+     */
+    using FaceExtraMap = std::map<std::array<size_t, 3>, FaceExtra>;
+    /// The faces of `tids`, by sorted vertices, first value kept (as face_attribute_tracker()).
+    void face_extra_capture(const std::vector<size_t>& tids, FaceExtraMap& out) const;
+    /// Every face of `tids`: its captured value when it was captured, else reset.
+    void face_extra_assign(const std::vector<size_t>& tids, const FaceExtraMap& captured);
+    /// The split's and the swap's capture, per thread.
+    wmtk::threading::enumerable_thread_specific<FaceExtraMap> m_face_extra_split, m_face_extra_swap;
+    /// The collapse's merged faces around the edge: (merged value, the two link vertices).
+    wmtk::threading::enumerable_thread_specific<
+        std::vector<std::pair<FaceExtra, std::array<size_t, 2>>>>
+        m_face_extra_collapse;
+    using EdgeLabelMap = std::map<std::array<size_t, 2>, int>;
+    /// The edges of `tids` by sorted vertices; `from`, when given, renamed `to` first (a
+    /// collapse's v1 -> v2). Two edges meeting at one key combine by closed_label().
+    void edge_label_capture(
+        const std::vector<size_t>& tids,
+        EdgeLabelMap& out,
+        size_t from = size_t(-1),
+        size_t to = size_t(-1)) const;
+    /// Every edge of `tids`: its captured label when it was captured, else 0.
+    void edge_label_assign(const std::vector<size_t>& tids, const EdgeLabelMap& captured);
+    /// The split's, the swap's and the collapse's edge capture, per thread.
+    wmtk::threading::enumerable_thread_specific<EdgeLabelMap> m_edge_label_split, m_edge_label_swap,
+        m_edge_label_collapse;
+    /**
+     * Restore the closure over `tids`, the cells an operation made: each cell's label onto its
+     * faces, each face's onto its edges, each edge's onto its ends (closed_label()), and then
+     * VertexExtra::m_is_on_input of every corner from its label, as
+     * mark_input_complex_vertices() defines it. Only raises: a carried label stays.
+     */
+    void close_labels(const std::vector<size_t>& tids);
+    /// @}
+
     TopoOffsetTetMesh(Parameters& _m_offset_params, int _num_threads = 0)
         : wmtk::TetOptimizerMesh(_m_offset_params, nullptr)
         , m_offset_params(_m_offset_params)
@@ -417,7 +525,12 @@ public:
      * march, while the repulsion runs (m_repulsion_potential set), a cell also carries
      * repulsion_cell_term(); there is no band then. A cell's energy depends on its own four
      * corners and its label alone: an operation changes the energy of the cells it changes and
-     * of no other.
+     * of no other -- except under use_rest_pose, where a plastic cell's (cell_is_plastic(), outside
+     * the band and the complex) AMIPS term is vol A^3 against its stamped rest
+     * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: every
+     * plastic cell after each smoothing pass, and the cells an operation makes or changes at that
+     * operation. All-plastic operations are decided as exact ties (plastic_tie()), not by
+     * comparing the sums.
      *
      * WHERE IT IS COMPARED: always as the SUM of tet_energy() over the cells an operation changes,
      * before against after, the cells summed in the same order each time.
@@ -731,6 +844,54 @@ public:
     bool cell_is_input_complex(const size_t tid) const { return m_tet_attribute[tid].label == 1; }
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
+
+    // ------- the plastic medium (use_rest_pose) -------
+
+    /// Set while the loop runs under use_rest_pose (not in the final pass, which is TetWild's
+    /// regular-tet AMIPS).
+    bool m_plastic_active = false;
+    /// Every cell outside the offset band and the input complex (cell_in_region() false), while
+    /// the plastic medium is active: its AMIPS term in tet_energy() and in the smoother is
+    /// against its stamped rest shape (TetAttributes::rest_pos) instead of the regular tet. The
+    /// band and the complex are elastic.
+    bool cell_is_plastic(const size_t tid) const
+    {
+        return m_plastic_active && !cell_in_region(tid);
+    }
+    /// The rest edge matrix of a plastic cell with a valid rest, columns rest_pos[k] -
+    /// rest_pos[0] in the oriented order; false when the cell is not plastic, has no rest, or the
+    /// rest holds no shape (det <= 0) -- the cell is then measured against the regular tet.
+    bool plastic_rest(const size_t tid, Eigen::Matrix3d& R) const;
+    /// Stamp rest := current for every plastic cell; called when the loop starts and after every
+    /// smoothing pass (smoothing_pass_done()). A no-op while the plastic medium is off.
+    void stamp_plastic_rests();
+    /// Stamp one cell's rest := its current corners (oriented order). For the cells a split or a
+    /// swap creates and a collapse changes, before the operation's energy rule; a no-op unless
+    /// the cell is plastic.
+    void stamp_rest_cell(size_t tid);
+    /// Whether every cell of `tids` is plastic (cell_is_plastic()). False for an empty set.
+    bool all_plastic(const std::vector<size_t>& tids) const;
+    /**
+     * @brief THE PLASTIC TIE: whether an operation's energy is exactly the same before and after.
+     * `before` are the cells it replaces (live, read in its before-hook), `after_labels` the
+     * labels of the cells it will make or change. True when the plastic medium is on, every
+     * before cell is plastic (all_plastic()) and every after cell is plastic (a label other than
+     * 1 and 2: no band cell, no input-complex cell). The rests are up to date at every rule --
+     * restamped after every smoothing pass and, in the operations, on every cell made or changed
+     * -- so the before cells are at their rests and the after cells are stamped before any rule
+     * reads them.
+     *
+     * Then every cell on both sides has A = 3 and an AMIPS term of (w / s^3) 27 vol, no band term,
+     * and the operation retriangulates one region of one total volume: the two sums of
+     * tet_energy() are EQUAL in exact arithmetic. Floating point does not reproduce it --
+     * measured on 2000 perturbed all-plastic collapses with VolAMIPSEnergy3D::value_of()'s
+     * arithmetic, the relative difference had median 3.5e-16 and max 3.1e-15, after > before in
+     * 876, after < before in 858, an exact tie in 266 -- so the rules take the equality instead
+     * of comparing: a swap is refused outright (its rule is strict), a collapse is not gated by
+     * the energy (a tie passes) and answers only to the length gate, the inversion test and the
+     * other refusals.
+     */
+    bool plastic_tie(const std::vector<size_t>& before, const std::vector<int>& after_labels) const;
 
     /// The 3D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
@@ -1319,6 +1480,44 @@ public:
     static constexpr int kGradBins = 22;
     std::array<std::atomic<size_t>, kGradBins> m_front_grad_abs{}, m_front_grad_rel{};
     void log_smoothing_pass_accounting() override;
+    /**
+     * @brief The engine's end-of-pass hook (TetOptimizerMesh::smooth_all_vertices() calls it after
+     * EVERY smoothing pass, in every path: a group's passes and pre_smooth): use_rest_pose
+     * restamps the plastic rests here -- between passes and after the last, never before the
+     * first. With the operations stamping the cells they make or change, every rule reads rests
+     * that are up to date. A no-op while the plastic medium is off (the final pass, coarsening,
+     * the repulsion passes).
+     *
+     * Inside a turn's operation group it also logs the pass's [energy step] line
+     * (log_energy_step()), before the restamp, and a "stamp" line after it when the plastic
+     * medium is on: a restamp changes the plastic cells' energy without moving anything.
+     */
+    void smoothing_pass_done() override
+    {
+        if (m_energy_step_turn > 0) {
+            log_energy_step(m_energy_step_first ? m_energy_step_group : "smooth");
+            m_energy_step_first = false;
+        }
+        stamp_plastic_rests();
+        if (m_energy_step_turn > 0 && m_plastic_active) log_energy_step("stamp");
+    }
+    /**
+     * @brief Log-only: "[energy step] turn N <step>: E | AMIPS term | band term", E = the sum of
+     * tet_energy() over the live cells (global_energy()), split into its AMIPS part and the band
+     * cells' band_cell_term(). What ~/Developer/wmtk_outputs/plot_energy.py plots per pass.
+     *
+     * Steps: "start" (a group's E before its operation pass: a baseline, not a step), then one per
+     * smoothing pass. There is no engine hook after an operation pass, so the group's FIRST
+     * smoothing line carries the group's name ("split", "collapse", "swap") and its change from
+     * "start" is the operation pass and that smoothing pass together; every later one is "smooth".
+     */
+    void log_energy_step(const char* step) const;
+    /// The turn (1-based) whose operation group is running, 0 outside one: smoothing_pass_done()
+    /// logs only inside a group, so pre_smooth, the final pass and coarsening log nothing.
+    int m_energy_step_turn = 0;
+    /// The running group's name, and whether its first smoothing pass is still to come.
+    const char* m_energy_step_group = "";
+    bool m_energy_step_first = false;
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
     /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current
@@ -1395,6 +1594,9 @@ public:
     {
         double before = 0.;
         std::vector<size_t> v2_only;
+        /// use_rest_pose: plastic_tie() of the collapse -- the rule's two sums are equal in exact
+        /// arithmetic, so the energy does not gate it.
+        bool tie = false;
         /// band_term_cancels() for v1's ring: both sums leave the band term out.
         bool band_cancels = false;
     };
@@ -1557,8 +1759,8 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset surface, applied to its
      * already-measured front_vertex_conv_ratio(): finite and within the one bar. Every caller that
      * asks "is the placement of this front vertex done" -- energy_criterion()'s vertex count and
-     * the placed split of the faces over the bar, and the adaptive-smoothing stop -- goes through
-     * here. Unmeasurable (a non-finite ratio) is NOT placed.
+     * the placed split of the faces over the bar -- goes through here. Unmeasurable (a non-finite
+     * ratio) is NOT placed.
      */
     bool front_placed_by_ratio(const double ratio) const
     {
@@ -1967,31 +2169,6 @@ public:
     /// the scalar the caller gave them. Returns the number of vertices lowered.
     size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
 
-    /// What one interleaved smoothing pass achieved, measured after it against the positions
-    /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
-    struct SmoothingProgress
-    {
-        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar, the
-        /// turn criterion's own test).
-        double front_max_ratio = 0.;
-        size_t front_worst_vid = static_cast<size_t>(-1);
-        size_t n_front = 0; ///< front vertices the max was taken over
-        size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
-        double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
-        /// Max over non-front vertices of the step in the pass divided by the vertex's target
-        /// edge length s_v * l.
-        double background_max_step = 0.;
-        size_t background_worst_vid = static_cast<size_t>(-1);
-        size_t n_background = 0;
-    };
-    /// Measure a pass: `before` holds every live vertex's position before it, indexed by vid.
-    SmoothingProgress smoothing_progress(const std::vector<Vector3d>& before);
-    /// The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a
-    /// time through local_operations({0,0,0,1}), each followed by smoothing_progress(), until
-    /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
-    /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
-    /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
-    void smooth_group_to_convergence(const char* group_name);
     /// The energy criterion as measured when the loop converged; the final pass runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
@@ -2223,12 +2400,15 @@ public:
         std::string path;
         MatrixXd V;
         MatrixXi T, F_in, F_off, E;
-        VectorXd amips;
+        // per cell
+        VectorXd amips, tet_e, amips_term, band_term, band_gap, plastic;
         std::vector<MatrixXd> tags;
         std::vector<std::string> tag_names;
-        VectorXd labels, order, vid, sizing, target;
-        VectorXd conv, resid, grad, align, cdist, fold, newton_it, front_change, newton_st;
-        VectorXd f_err, f_len, ring; // the _off file's: per offset face, and the ring measure
+        // per vertex
+        VectorXd labels, order, vid, sizing;
+        VectorXd in_dist, front_err, band_force, amips_force, fold, front_change;
+        // the _off file's: per offset face, and the ring measure per vertex
+        VectorXd f_err, f_len, f_inside, f_outside, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
@@ -2361,6 +2541,9 @@ private:
      * labels, so their energy, and are in neither sum.
      */
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_energy_before;
+    /// use_rest_pose: operations decided by plastic_tie() -- swaps refused outright, collapses
+    /// passed by the energy rule. Per group, for the [band volume energy] line.
+    mutable std::atomic<int> m_plastic_tie_swap{0}, m_plastic_tie_collapse{0};
     /**
      * @brief The swap in flight on this thread, as candidate_energy() and the sanity check read it
      * (see tet_energy(), CANDIDATE CELLS). Filled by swap_record_fill(), which

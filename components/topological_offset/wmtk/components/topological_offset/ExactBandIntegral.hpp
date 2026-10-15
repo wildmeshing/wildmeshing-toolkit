@@ -73,12 +73,17 @@ namespace wmtk::components::topological_offset {
  *    a vertices-only sub-piece is clipped by its vertex's plane;
  *  - a rule-(a) piece is split by its members' planes. Where all planes give the same side, the
  *    true side is that one (it is the nearest member's): the part is dropped, or takes rule (a)'s
- *    min. Where they disagree (D) the side is not known, and D adds
- *        vol(D) max(0, min over members of (max over D's vertices of d_g) - delta),
- *    an upper bound (chi (d - delta) <= max(0, d_g - delta), d_g convex). The plain min over the
- *    members' own clipped integrals is not one: MEASURED, two plates 0.02 apart, delta 0.2, a cell
- *    wholly inside the lower plate (true value 0): the upper plate's rim edge, whose region held
- *    the cell, put it on the offset side, and that min was -1.32e-5.
+ *    min. Where they disagree (D) the true side is still one for all of D: the plane test of a
+ *    feature nearest at x gives x's true side, so members of opposite verdicts are never nearest
+ *    together in D. It is the side of the member nearest at D's centroid: D is dropped, or takes
+ *    rule (a)'s min over the members that put it on the offset side, the others being nearest
+ *    nowhere in it. Until 2026-10-14 D took vol(D) max(0, min over members of (max over D's
+ *    vertices of d_g) - delta), an upper bound that depended on how the cell cut D: MEASURED on
+ *    100033 (plates 2.9 thick, delta 2.49), up to 1.24 between two triangulations of one region,
+ *    and a swap pass that cycled. The plain min over ALL members' own clipped integrals is no
+ *    bound: MEASURED, two plates 0.02 apart, delta 0.2, a cell wholly inside the lower plate (true
+ *    value 0): the upper plate's rim edge, whose region held the cell, put it on the offset side,
+ *    and that min was -1.32e-5 (the lower plate's face, nearest there, drops it).
  *  - -delta vol(t) becomes -delta times the kept volume; a cell where nothing is clipped keeps
  *    the unclipped sum, int d - delta vol(t), bit for bit.
  * Features of isolated triangles (no side), edges without exactly two faces and zero
@@ -143,10 +148,9 @@ public:
         int64_t series_short = 0; ///< near-parallel edges, Taylor series along the edge
         int64_t series_long = 0; ///< near-parallel edges, Taylor series in eta
         /// The offset side (class doc): value() calls with anything clipped; rule-(a) pieces split
-        /// by their members' planes; parts D where the planes disagree, of them where some
-        /// member's distance exceeds delta at a vertex, and where the bound is positive.
-        int64_t side_clipped = 0, side_rule_a_split = 0, side_D = 0, side_D_over = 0,
-                side_D_pos = 0;
+        /// by their members' planes; parts D where the planes disagree, and of them those on the
+        /// offset side (the side of the member nearest at their centroid), kept.
+        int64_t side_clipped = 0, side_rule_a_split = 0, side_D = 0, side_D_pos = 0;
         /// Times in seconds, measured only when `timing` is set (the clock reads add a few percent,
         /// mac-mini). t_candidates: the U search, the box query and the local feature setup;
         /// t_clip: every half-space clip; t_closed: every face integral (point and line
@@ -235,10 +239,9 @@ public:
      *    of grad d from inside t).
      * With the offset side: each kept piece integrates d - delta, the side planes being fixed
      * faces of the pieces whose cut edges keep their terms (the integrand jumps to 0 across
-     * them); a disagreeing rule-(a) part D adds vol(D) c(x), c = max(0, d_g*(v*) - delta) (g* the
-     * member of smallest vertex max, v* its first maximising vertex of D), differentiated through
-     * vol(D) and through v*'s motion with x (v* solves the 3 x 3 system of D's planes through it,
-     * a face of t through x the moving one). c is not smooth where g* or v* switches.
+     * them); a disagreeing rule-(a) part D takes the side of the member nearest at its centroid
+     * (class doc): dropped, or a rule-(a) part over the members that put it on the offset side.
+     * The side can switch where that member does, so J is not smooth there.
      * Flat cells give J = 0 and zero derivatives.
      */
     double value_grad_hess(
