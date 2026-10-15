@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::components::topological_offset::FaceExtra Class Reference</div></div>
@@ -82,6 +83,11 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a8c692bb6bde89b7c47032a8ad4cd37a7" id="r_a8c692bb6bde89b7c47032a8ad4cd37a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8c692bb6bde89b7c47032a8ad4cd37a7">merge</a> (const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html">FaceExtra</a> &amp;o)</td></tr>
+<tr class="separator:a8c692bb6bde89b7c47032a8ad4cd37a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ac31dfa68395babecba7e891313cc5123" id="r_ac31dfa68395babecba7e891313cc5123"><td class="memItemLeft" align="right" valign="top"><a id="ac31dfa68395babecba7e891313cc5123" name="ac31dfa68395babecba7e891313cc5123"></a>
@@ -92,7 +98,35 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Per-face construction label; the surface tags themselves are the base's <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">wmtk::SurfaceTagAttributes</a>. Registered with m_face_attr_group. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a8c692bb6bde89b7c47032a8ad4cd37a7" name="a8c692bb6bde89b7c47032a8ad4cd37a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c692bb6bde89b7c47032a8ad4cd37a7">&#9670;&#160;</a></span>merge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::FaceExtra::merge </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html">FaceExtra</a> &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Two faces that a collapse makes one, as the base's <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30" title="Does NOT combine m_orientation – see there; the caller converts and sums it.">SurfaceTagAttributes::merge()</a>: the labels combine by closed_label(), on_sheet is the OR. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
 <a id="a8836b69b09aa0fa9a19a71328f1f0a95" name="a8836b69b09aa0fa9a19a71328f1f0a95"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8836b69b09aa0fa9a19a71328f1f0a95">&#9670;&#160;</a></span>on_sheet</h2>
 
@@ -104,7 +138,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The face lies on the input's envelope surface group (within its envelope): selectable as the complex by name, held in that group's tube. Re-derived by classify_sheet_faces(); nothing propagates it through split or collapse, so it is read only before the optimization starts. The 2D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a915d89d3b7fcf6b9acab20fd9b534bf0">EdgeExtra2d::on_curve</a>. </p>
+<p>The face lies on the input's envelope surface group (within its envelope): selectable as the complex by name, held in that group's tube. Re-derived by classify_sheet_faces() and read only before the optimization starts; the optimization's operations carry it with the label (see m_face_extra in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>). The 2D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a915d89d3b7fcf6b9acab20fd9b534bf0">EdgeExtra2d::on_curve</a>. </p>
 
 </div>
 </div>

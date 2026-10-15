@@ -12,7 +12,7 @@ var searchData=
   ['max_5fdistance_9',['max_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
   ['max_5frelative_10',['max_relative',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html#a8d9e0df9b214e43a36f41dbfa75c8ce2',1,'wmtk::components::simwild::QualityGroup']]],
   ['max_5ftri_5fenergy_11',['max_tri_energy',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a36328d334ca3e99005353ec0f20e1e89',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['merge_12',['merge',['../classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30',1,'wmtk::SurfaceTagAttributes']]],
+  ['merge_12',['merge',['../classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8c692bb6bde89b7c47032a8ad4cd37a7',1,'wmtk::components::topological_offset::FaceExtra::merge()'],['../classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30',1,'wmtk::SurfaceTagAttributes::merge()']]],
   ['mesh_5fimprovement_5flegacy_13',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
   ['min_5fmax_5fcorner_5fdistance_14',['min_max_corner_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a4423065add638dc8b24cf8d04d9465f1',1,'wmtk::components::topological_offset::InputTriangles']]],
   ['min_5fmean_5fdistance_15',['min_mean_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a3ad617ccc8dfc7618cf5b939bf1d6056',1,'wmtk::components::topological_offset::InputTriangles']]],

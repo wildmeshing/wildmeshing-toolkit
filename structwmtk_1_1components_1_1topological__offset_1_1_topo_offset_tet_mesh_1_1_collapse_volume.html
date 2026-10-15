@@ -90,6 +90,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>before</b> = 0.</td
 <tr class="memitem:adb497a5c4a057ec91210df69aca20fd5" id="r_adb497a5c4a057ec91210df69aca20fd5"><td class="memItemLeft" align="right" valign="top"><a id="adb497a5c4a057ec91210df69aca20fd5" name="adb497a5c4a057ec91210df69aca20fd5"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>v2_only</b></td></tr>
 <tr class="separator:adb497a5c4a057ec91210df69aca20fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49469d417a6b152c6318343ca1384792" id="r_a49469d417a6b152c6318343ca1384792"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html#a49469d417a6b152c6318343ca1384792">tie</a> = false</td></tr>
+<tr class="separator:a49469d417a6b152c6318343ca1384792"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84fb857e462b0884fc921fcd8f7ef14d" id="r_a84fb857e462b0884fc921fcd8f7ef14d"><td class="memItemLeft" align="right" valign="top"><a id="a84fb857e462b0884fc921fcd8f7ef14d" name="a84fb857e462b0884fc921fcd8f7ef14d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>band_cancels</b> = false</td></tr>
 <tr class="memdesc:a84fb857e462b0884fc921fcd8f7ef14d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5268efd474e7348e2ee975ea1d1a4504">band_term_cancels()</a> for v1's ring: both sums leave the band term out. <br /></td></tr>
@@ -97,7 +99,23 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>band_cancels</b> = fa
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The collapse energy rule's before half (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">collapse_before_vertex()</a>), compared by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">collapse_after_connectivity()</a>. The cells a collapse changes are v1's ring (removed, or given v2 in place of v1): <code>before</code> is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af27b53e59185c568a95b4a378ed8ac85" title="The sum of tet_energy() over tids, in their order: what every rule compares.">tet_energy_sum()</a> over it. v2's other cells keep their slots, corners and labels and so their energy, and are left out of both sums (<code>v2_only</code>, their sorted tids), so the two sums differ by the changed cells alone, with no summation noise. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a49469d417a6b152c6318343ca1384792" name="a49469d417a6b152c6318343ca1384792"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49469d417a6b152c6318343ca1384792">&#9670;&#160;</a></span>tie</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::CollapseVolume::tie = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>use_rest_pose: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aca7ee2acb9d5e4dea570a33187715cc7" title="THE PLASTIC TIE: whether an operation&#39;s energy is exactly the same before and after....">plastic_tie()</a> of the collapse &ndash; the rule's two sums are equal in exact arithmetic, so the energy does not gate it. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

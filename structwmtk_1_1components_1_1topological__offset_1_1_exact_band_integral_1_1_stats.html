@@ -167,9 +167,6 @@ int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>side_rule_a_split<
 <tr class="memitem:a32dbcdbe57f5e92c2bc7a692974d5366" id="r_a32dbcdbe57f5e92c2bc7a692974d5366"><td class="memItemLeft" align="right" valign="top"><a id="a32dbcdbe57f5e92c2bc7a692974d5366" name="a32dbcdbe57f5e92c2bc7a692974d5366"></a>
 int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>side_D</b> = 0</td></tr>
 <tr class="separator:a32dbcdbe57f5e92c2bc7a692974d5366"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43c8b359088569b09fa927e008bebfdf" id="r_a43c8b359088569b09fa927e008bebfdf"><td class="memItemLeft" align="right" valign="top"><a id="a43c8b359088569b09fa927e008bebfdf" name="a43c8b359088569b09fa927e008bebfdf"></a>
-int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>side_D_over</b> = 0</td></tr>
-<tr class="separator:a43c8b359088569b09fa927e008bebfdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3519699dd9dbeda21191ad6b31f8bc1b" id="r_a3519699dd9dbeda21191ad6b31f8bc1b"><td class="memItemLeft" align="right" valign="top"><a id="a3519699dd9dbeda21191ad6b31f8bc1b" name="a3519699dd9dbeda21191ad6b31f8bc1b"></a>
 int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>side_D_pos</b> = 0</td></tr>
 <tr class="separator:a3519699dd9dbeda21191ad6b31f8bc1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -250,7 +247,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>t_series</b> = 0.</
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The offset side (class doc): <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> calls with anything clipped; rule-(a) pieces split by their members' planes; parts D where the planes disagree, of them where some member's distance exceeds delta at a vertex, and where the bound is positive. </p>
+<p>The offset side (class doc): <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> calls with anything clipped; rule-(a) pieces split by their members' planes; parts D where the planes disagree, and of them those on the offset side (the side of the member nearest at their centroid), kept. </p>
 
 </div>
 </div>

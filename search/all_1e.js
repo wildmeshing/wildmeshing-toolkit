@@ -9,7 +9,8 @@ var searchData=
   ['us_6',['About Us',['../index.html#autotoc_md66',1,'']]],
   ['usage_7',['usage',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html#autotoc_md2',1,'Usage'],['../index.html#autotoc_md65',1,'Usage']]],
   ['use_5fcolored_5fsmoothing_8',['use_colored_smoothing',['../classwmtk_1_1_tet_optimizer_mesh.html#a9e39a3b15ca25f343c8b9984512106d9',1,'wmtk::TetOptimizerMesh::use_colored_smoothing()'],['../classwmtk_1_1_tri_optimizer_mesh.html#a1bc2251ab7f1075a2b126561e9164675',1,'wmtk::TriOptimizerMesh::use_colored_smoothing()']]],
-  ['use_5fsample_5fenvelope_9',['use_sample_envelope',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2',1,'wmtk::components::triwild::Parameters']]],
-  ['uvcollpaseinfocache_10',['UVCollpaseInfoCache',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh_1_1_u_v_collpase_info_cache.html',1,'wmtk::components::c1_simplification::MMUVMesh']]],
-  ['uvmeshvertexattribute_11',['UVMeshVertexAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_u_v_mesh_vertex_attribute.html',1,'wmtk::components::c1_simplification']]]
+  ['use_5frest_5fpose_9',['use_rest_pose',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a41e77fe09b000fb115e9d578c99c800e',1,'wmtk::components::topological_offset::Parameters']]],
+  ['use_5fsample_5fenvelope_10',['use_sample_envelope',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2',1,'wmtk::components::triwild::Parameters']]],
+  ['uvcollpaseinfocache_11',['UVCollpaseInfoCache',['../structwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh_1_1_u_v_collpase_info_cache.html',1,'wmtk::components::c1_simplification::MMUVMesh']]],
+  ['uvmeshvertexattribute_12',['UVMeshVertexAttribute',['../structwmtk_1_1components_1_1c1__simplification_1_1_u_v_mesh_vertex_attribute.html',1,'wmtk::components::c1_simplification']]]
 ];

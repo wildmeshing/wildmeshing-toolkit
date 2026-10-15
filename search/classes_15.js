@@ -10,5 +10,6 @@ var searchData=
   ['vertexextras_7',['vertexextras',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html',1,'wmtk::components::tetwild::TetWildMesh::VertexExtras'],['../structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html',1,'wmtk::components::triwild::TriWildMesh::VertexExtras']]],
   ['vertexmutex_8',['VertexMutex',['../classwmtk_1_1threading_1_1_vertex_mutex.html',1,'wmtk::threading']]],
   ['vertexsmoother_9',['VertexSmoother',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_vertex_smoother.html',1,'wmtk::components::tetwild::orig']]],
-  ['vtuframe_10',['VtuFrame',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_vtu_frame.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]]
+  ['volamipsenergy3d_10',['VolAMIPSEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_vol_a_m_i_p_s_energy3_d.html',1,'wmtk::components::topological_offset']]],
+  ['vtuframe_11',['VtuFrame',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_vtu_frame.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]]
 ];

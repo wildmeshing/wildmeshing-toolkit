@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['background_5fmax_5fstep_0',['background_max_step',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smoothing_progress.html#a8ea271f3e9d37b7f906cbeb8a5d1f806',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothingProgress::background_max_step'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html#a67d85b6a3e0da2cb02d88bdb3016dc5e',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothingProgress::background_max_step']]],
+  ['background_5fmax_5fstep_0',['background_max_step',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html#a67d85b6a3e0da2cb02d88bdb3016dc5e',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothingProgress']]],
   ['ball_5fcandidates_1',['ball_candidates',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a2292db298e2809876de1ce3bbce7fa3d',1,'wmtk::components::topological_offset::InputTriangles']]],
   ['ballcandidate_2',['BallCandidate',['../structwmtk_1_1components_1_1topological__offset_1_1_input_triangles_1_1_ball_candidate.html',1,'wmtk::components::topological_offset::InputTriangles']]],
   ['band_5famips_5fweight_3',['band_amips_weight',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a971258eb018a65e90ed89f5450870112',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
@@ -27,5 +27,6 @@ var searchData=
   ['boundaryenvelope_24',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
   ['build_5fboundary_5fenvelopes_25',['build_boundary_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['build_5fenvelopes_26',['build_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['busiest_5ftask_5fseconds_27',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
+  ['build_5ffinal_5fenvelopes_27',['build_final_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['busiest_5ftask_5fseconds_28',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
 ];

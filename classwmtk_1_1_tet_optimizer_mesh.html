@@ -417,6 +417,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_vertices_color
 <tr class="separator:a0d039e3d7ebcc49e1932e12aef1de129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7af15e4e4da5ea6949d54cb8830f00aa" id="r_a7af15e4e4da5ea6949d54cb8830f00aa"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7af15e4e4da5ea6949d54cb8830f00aa">log_smoothing_pass_accounting</a> ()</td></tr>
 <tr class="separator:a7af15e4e4da5ea6949d54cb8830f00aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a22a16da1fce94bcf81960c8fbdab36" id="r_a3a22a16da1fce94bcf81960c8fbdab36"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3a22a16da1fce94bcf81960c8fbdab36">smoothing_pass_done</a> ()</td></tr>
+<tr class="separator:a3a22a16da1fce94bcf81960c8fbdab36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada3fc41dd5678e0384a8cbcf246d9f22" id="r_ada3fc41dd5678e0384a8cbcf246d9f22"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ada3fc41dd5678e0384a8cbcf246d9f22">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;t) override</td></tr>
 <tr class="separator:ada3fc41dd5678e0384a8cbcf246d9f22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
@@ -2500,6 +2502,34 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Null by default, so TetWild and SimWild compose exactly the energy they composed before. The 2D twin is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572" title="An extra term the application adds to this vertex&#39;s smoothing objective, or null.">TriOptimizerMesh::smoothing_extra_energy</a>. </p>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8b1e4f65e525e666dcb52d1101097355">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a3a22a16da1fce94bcf81960c8fbdab36" name="a3a22a16da1fce94bcf81960c8fbdab36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a22a16da1fce94bcf81960c8fbdab36">&#9670;&#160;</a></span>smoothing_pass_done()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetOptimizerMesh::smoothing_pass_done </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Called by smooth_all_vertices() at the end of EVERY smoothing pass, after its accounting (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7af15e4e4da5ea6949d54cb8830f00aa">log_smoothing_pass_accounting()</a>) and before its debug frame: an application that keeps state derived from the positions the pass just moved refreshes it here. Not called before the first pass. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1e0bc42537f6630895da69bd0718d575">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

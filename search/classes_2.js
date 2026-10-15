@@ -1,7 +1,7 @@
 var searchData=
 [
   ['case_0',['Case',['../structexact__band__front__data_1_1_case.html',1,'exact_band_front_data']]],
-  ['cell_1',['cell',['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D::Cell'],['../structwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d_1_1_cell.html',1,'wmtk::components::topological_offset::RestAMIPSEnergy2D::Cell']]],
+  ['cell_1',['cell',['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D::Cell'],['../structwmtk_1_1components_1_1topological__offset_1_1_vol_a_m_i_p_s_energy3_d_1_1_cell.html',1,'wmtk::components::topological_offset::VolAMIPSEnergy3D::Cell'],['../structwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d_1_1_cell.html',1,'wmtk::components::topological_offset::RestAMIPSEnergy2D::Cell']]],
   ['cellref_2',['CellRef',['../structexact__band__front__data_1_1_cell_ref.html',1,'exact_band_front_data']]],
   ['circle_3',['Circle',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html',1,'wmtk::components::topological_offset']]],
   ['cloughtocherpatch_4',['CloughTocherPatch',['../class_clough_tocher_patch.html',1,'']]],
@@ -11,7 +11,7 @@ var searchData=
   ['coarsenscratch_8',['coarsenscratch',['../structwmtk_1_1_tet_optimizer_mesh_1_1_coarsen_scratch.html',1,'wmtk::TetOptimizerMesh::CoarsenScratch'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_coarsen_scratch.html',1,'wmtk::TriOptimizerMesh::CoarsenScratch']]],
   ['coarsenstats_9',['coarsenstats',['../structwmtk_1_1_tet_optimizer_mesh_1_1_coarsen_stats.html',1,'wmtk::TetOptimizerMesh::CoarsenStats'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_coarsen_stats.html',1,'wmtk::TriOptimizerMesh::CoarsenStats']]],
   ['collapsecells_10',['CollapseCells',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_collapse_cells.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['collapseinfocache_11',['collapseinfocache',['../structwmtk_1_1_tet_optimizer_mesh_1_1_collapse_info_cache.html',1,'wmtk::TetOptimizerMesh::CollapseInfoCache'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_collapse_info_cache.html',1,'wmtk::TriOptimizerMesh::CollapseInfoCache'],['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_collapse_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt::CollapseInfoCache']]],
+  ['collapseinfocache_11',['collapseinfocache',['../structwmtk_1_1_tri_optimizer_mesh_1_1_collapse_info_cache.html',1,'wmtk::TriOptimizerMesh::CollapseInfoCache'],['../structwmtk_1_1_tet_optimizer_mesh_1_1_collapse_info_cache.html',1,'wmtk::TetOptimizerMesh::CollapseInfoCache'],['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_collapse_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt::CollapseInfoCache']]],
   ['collapsevolume_12',['CollapseVolume',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['collector_13',['collector',['../classwmtk_1_1threading_1_1collector.html',1,'wmtk::threading']]],
   ['concurrent_5fassociative_14',['concurrent_associative',['../classwmtk_1_1threading_1_1detail_1_1concurrent__associative.html',1,'wmtk::threading::detail']]],
