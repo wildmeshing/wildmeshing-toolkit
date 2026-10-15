@@ -977,7 +977,32 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
                 }
             }
         }
+        // A tracked face with no kept tet on either side is a sheet triangle only if it lies on
+        // a surface-role input. The tracked surface is one flag for every input, so membership
+        // is decided by the same containment test the optimizer holds every tracked face to:
+        // inside an envelope of radius tet_eps around the surface-role inputs. tet_eps is that
+        // bound whichever envelope the optimizer used (the input at tet_eps, or the simplified
+        // surface at tet_eps - simplify_eps, itself within simplify_eps of the input). Without
+        // it, a face of a VOLUME-role input whose tets on both sides the filter dropped -- a
+        // part thinner than the tets, whose tet centres test outside -- was written as a
+        // sheet (thingi 104509: 19 such faces with no surface-role input at all).
+        std::vector<Eigen::Vector3i> sheet_faces;
+        for (size_t i = 0; i < tris.size(); ++i) {
+            const bool volume_role =
+                std::find(volume_input_ids.begin(), volume_input_ids.end(), size_t(tri_input[i])) !=
+                volume_input_ids.end();
+            if (!volume_role) {
+                sheet_faces.emplace_back(int(tris[i][0]), int(tris[i][1]), int(tris[i][2]));
+            }
+        }
+        wmtk::SampleEnvelope sheet_envelope(!use_sample_envelope);
+        if (!sheet_faces.empty()) {
+            sheet_envelope.init(verts, sheet_faces, tet_eps);
+        }
         for (const auto& f : mesh_new.get_faces()) {
+            if (sheet_faces.empty()) {
+                break; // no surface-role input: no sheet triangles
+            }
             if (!mesh_new.m_face_attribute[f.fid(mesh_new)].m_is_surface_fs) {
                 continue;
             }
@@ -992,10 +1017,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             const size_t v1 = f.vid(mesh_new);
             const size_t v2 = f.switch_vertex(mesh_new).vid(mesh_new);
             const size_t v3 = f.switch_edge(mesh_new).switch_vertex(mesh_new).vid(mesh_new);
-            hybrid_sheet_tris.push_back(
-                {{mesh_new.m_vertex_attribute[v1].m_posf,
-                  mesh_new.m_vertex_attribute[v2].m_posf,
-                  mesh_new.m_vertex_attribute[v3].m_posf}});
+            const std::array<Vector3d, 3> tri = {
+                {mesh_new.m_vertex_attribute[v1].m_posf,
+                 mesh_new.m_vertex_attribute[v2].m_posf,
+                 mesh_new.m_vertex_attribute[v3].m_posf}};
+            if (sheet_envelope.is_outside(tri)) {
+                continue; // not on a surface-role input
+            }
+            hybrid_sheet_tris.push_back(tri);
         }
         mesh_new.filter_with_roles(volume_input_ids);
     } else if (filter_option != "none") {
