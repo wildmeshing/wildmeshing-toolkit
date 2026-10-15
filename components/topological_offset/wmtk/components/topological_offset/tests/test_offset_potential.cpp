@@ -1,6 +1,7 @@
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/orient.hpp>
 
 #include <wmtk/optimization/EnergySum.hpp>
@@ -1303,6 +1304,97 @@ TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
                     CHECK(std::abs((gp[i] - gm[i]) / (2 * h) - H(i, j)) <= 1e-5);
             }
         }
+    }
+}
+
+TEST_CASE("envelope-primitive-queries-match-input-triangles", "[offset][potential]")
+{
+    // SampleEnvelope's per-primitive queries are to replace InputTriangles: on the same triangles
+    // they run the same operations, and must agree with it to rounding -- value, gradient and
+    // Hessian of the point distance, and the triangle-to-triangle distance.
+    //
+    // Not bit for bit: this component is compiled with EIGEN_DONT_VECTORIZE (ipc-toolkit exports
+    // it PUBLIC) and the engine is not, and the two sum each 3-term dot product in a different
+    // order. Both orders lie within gamma_2 sum_i |x_i y_i| of the exact sum (Higham, Accuracy and
+    // Stability of Numerical Algorithms, 2002, eq. 3.5; gamma_2 ~ eps), so they differ by up to
+    // about 2 eps |x| |y| -- an amount in the scale L of the coordinates, not relative to the
+    // result: the foot point moves by O(eps L), so d and the triangle distance by O(eps L),
+    // u = (p - foot)/d by O(eps L / d), and the Hessian, ~ 1/d, by O(eps L / d) of its norm. In
+    // ulps of the quantity itself the difference is unbounded as d -> 0: MEASURED 245 ulps of d
+    // at the random points below and 3.6e11 at points 1e-12 above the sphere's faces, while
+    // |d0 - d1| stayed within 2.93 eps L. So the tolerances are in those scales. Their constants
+    // are measured, not derived -- the amplification from the dot products to the foot depends
+    // on the triangle's shape (the interior foot divides by twice its squared area) -- as the
+    // maxima over 408000 (point, triangle) pairs of both meshes, the two point sets below with
+    // 2000 points each (this test runs 200 of each): 2.93 eps L for d, 3.14 for the triangle distance, 3.01 eps L / d for the
+    // gradient, 5.87 eps L / d times |H| for the Hessian. The tolerances are 8 and 16, about 2.5
+    // times those. What does not depend on any sum's order is checked with ==: a 0 from the exact
+    // crossing test, and which pairs have a zero Hessian (the foot's region).
+    //
+    // A cube (axis-aligned: many exact intermediates) and a UV sphere (none); random points
+    // around them and points 1e-12 .. 1e-1 above random points of their faces; query triangles
+    // ~0.3 across from each point, so that both the crossing (0) and the min over the 15
+    // distances come up.
+    const double eps = std::numeric_limits<double>::epsilon();
+    for (const TriSoup& s : {cube(1.0), uv_sphere(1.0, 6, 9)}) {
+        const InputTriangles tris(s.V, s.F);
+        SampleEnvelope env(true);
+        env.init(s.V, s.F, 1e-3);
+        REQUIRE(env.kind() == SampleEnvelope::Kind::Triangles3d);
+
+        std::mt19937 rng(3);
+        std::uniform_real_distribution<double> U(-1.6, 1.6), D(-0.3, 0.3), W(0, 1), E(-12, -1);
+        double max_d = 0., max_g = 0., max_h = 0., max_t = 0.;
+        size_t zeros = 0, separate = 0;
+        for (int k = 0; k < 400; ++k) {
+            Vector3d p(U(rng), U(rng), U(rng));
+            if (k % 2 == 1) {
+                const int f = int(rng() % uint32_t(s.F.rows()));
+                double w0 = W(rng), w1 = W(rng);
+                if (w0 + w1 > 1) w0 = 1 - w0, w1 = 1 - w1;
+                const Vector3d A = s.V.row(s.F(f, 0)), B = s.V.row(s.F(f, 1)),
+                               C = s.V.row(s.F(f, 2));
+                p = A + w0 * (B - A) + w1 * (C - A) +
+                    std::pow(10., E(rng)) * (B - A).cross(C - A).normalized();
+            }
+            const std::array<Vector3d, 3> q = {
+                {p, p + Vector3d(D(rng), D(rng), D(rng)), p + Vector3d(D(rng), D(rng), D(rng))}};
+            // The coordinates' scale: the input lies in [-1, 1]^3.
+            const double L = std::max(1., p.cwiseAbs().maxCoeff());
+            const double Lq =
+                std::max(L, std::max(q[1].cwiseAbs().maxCoeff(), q[2].cwiseAbs().maxCoeff()));
+            for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
+                Vector3d g0, g1;
+                Eigen::Matrix3d H0, H1;
+                const double d0 = tris.distance(t, p, &g0, &H0);
+                const double d1 = env.primitive_distance(t, p, &g1, &H1);
+                max_d = std::max(max_d, std::abs(d0 - d1) / (eps * L));
+                if (d0 > 0. && d1 > 0.) {
+                    const double r = eps * L / std::max(d0, d1);
+                    max_g = std::max(max_g, (g0 - g1).cwiseAbs().maxCoeff() / r);
+                    CHECK(H0.isZero(0) == H1.isZero(0));
+                    if (!H0.isZero(0)) {
+                        max_h = std::max(max_h, (H0 - H1).cwiseAbs().maxCoeff() / (r * H0.norm()));
+                    }
+                }
+
+                const double td0 = tris.triangle_distance(t, q[0], q[1], q[2]);
+                const double td1 = env.primitive_triangle_distance(t, q);
+                if (td0 == 0. || td1 == 0.) {
+                    CHECK(td0 == td1);
+                    ++zeros;
+                } else {
+                    max_t = std::max(max_t, std::abs(td0 - td1) / (eps * Lq));
+                    ++separate;
+                }
+            }
+        }
+        CHECK(max_d <= 8.);
+        CHECK(max_t <= 8.);
+        CHECK(max_g <= 8.);
+        CHECK(max_h <= 16.);
+        CHECK(zeros > 0);
+        CHECK(separate > 0);
     }
 }
 
