@@ -58,8 +58,14 @@ ExternalProject_Add(
     # diagonal and not to target_distance, so the default is a full delta wide at 1e-3 and the
     # triangle does not converge at it. The dragon and two_overlap wall-problem fixtures are gone
     # with the rest; the open problem they stood for is recorded in .claude/CLAUDE.md, not here.
+    # At 3755d39 (2026-10-15, data2 #5) two feature-preservation cases join the list:
+    # tetwild_features (a cube with forced edges and points; every anchor retained) and
+    # triwild_free_points (a curve with free points; 12/12 retained). The same commit raises
+    # tetwild_thingi_111388_stall's max_expected_iterations from 20 to 25 for the open-boundary
+    # erosion fixes (#1096), which protect the open-boundary edges TetWild's simplification leaves
+    # on that model; nothing else changes.
     #
-    GIT_TAG e19ece62931f64d2766b33c88a880e8056142f6a
+    GIT_TAG 3755d39400d9d86669b37be8cc5fcaf26b1be1b7
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

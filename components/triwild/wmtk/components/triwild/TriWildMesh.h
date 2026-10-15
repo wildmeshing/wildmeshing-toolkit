@@ -175,6 +175,11 @@ public:
      * @param E_orientation optional: per row of E, the input's direction on it, measured along
      *        the row as written (embed_segments' E_out_orientation). When given, the tracked
      *        edges carry it and m_tracks_orientation is set.
+     * @param free_point_vids rows of V that stand for input FREE POINTS -- input vertices
+     *        with no incident segment. Each is anchored in m_feature_points exactly like a
+     *        polyline endpoint: same ball, same collapse policy, same retention audit. They
+     *        cannot be derived here the way endpoints and junctions are, because their
+     *        valence in E is 0 -- the same valence as every background-grid vertex.
      */
     void init_mesh(
         const MatrixXd& V,
@@ -184,7 +189,8 @@ public:
         const std::vector<std::string>& tag_names,
         const MatrixXd& V_env,
         const MatrixXi& E_env,
-        const std::vector<int>* E_orientation = nullptr);
+        const std::vector<int>* E_orientation = nullptr,
+        const std::vector<size_t>& free_point_vids = {});
 
     void init_surfaces_and_boundaries();
 
@@ -255,8 +261,8 @@ protected:
     {
         if (const size_t n = m_feature_rejects.load(); n > 0) {
             logger().info(
-                "[feature] {} collapses refused to keep a polyline endpoint or junction "
-                "within {:.6} of its input position",
+                "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
+                "junction, or input free point) within {:.6} of its input position",
                 n,
                 m_envelope_eps);
         }
