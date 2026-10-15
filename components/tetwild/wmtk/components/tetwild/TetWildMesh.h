@@ -374,26 +374,6 @@ public:
     void filter_with_tracked_surface_winding_number();
     void filter_with_flood_fill();
 
-    /**
-     * The 'hybrid' filter: keep only tets inside (winding > 0.5) at least one of the
-     * inputs listed in `volume_inputs` (indices into the input list, matching
-     * m_winding_number_per_input). Everything else is scaffolding; the driver collects
-     * the surface-role faces and the feature curves BEFORE calling this, because they
-     * live on the tets this deletes.
-     */
-    void filter_with_roles(const std::vector<size_t>& volume_inputs);
-
-    /**
-     * Write the mixed-dimensional output of the hybrid filter: the (already filtered)
-     * tet mesh, plus the collected surface-role triangles as a face block and the
-     * feature curves as an edge block and the anchor points as 0D point elements.
-     */
-    void output_hybrid_mesh(
-        const std::string& file,
-        const std::vector<std::array<Vector3d, 3>>& sheet_triangles,
-        const std::vector<std::array<Vector3d, 2>>& curve_segments,
-        const std::vector<Vector3d>& anchor_points);
-
 
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
