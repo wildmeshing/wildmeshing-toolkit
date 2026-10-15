@@ -1,3 +1,4 @@
+#include <jse/jse.h>
 #include <math.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
@@ -5,17 +6,24 @@
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+#include <filesystem>
 #include <functional>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <queue>
 #include <set>
+#include <topological_offset_spec.hpp>
+#include <tuple>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
+#include <wmtk/components/topological_offset/topological_offset.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/io.hpp>
 
 using namespace wmtk;
 using namespace components::topological_offset;
@@ -156,9 +164,9 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face a domain-wall face. Every one of them is a tracked face and
-    // HELD (every region boundary and the wall), read live off the cells, and one envelope holds
-    // them all.
+    // boundary, every outer face a domain-wall face. Every one of them is a tracked face; which
+    // are HELD depends on the input complex and on whether the final pass is running, read live
+    // off the cells, and one envelope holds them all.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -183,19 +191,38 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
 
-    // Every tracked face is held, the a/b boundary and the wall alike.
+    // In the loop, no input complex: the a/b boundary stays a tracked face but nothing holds it;
+    // the wall is held.
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
     REQUIRE(mesh.m_envelope != nullptr);
+    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
+    REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
+    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
+    REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
+    REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
+
+    // The final pass: every region boundary is held too, in one envelope with the wall, and the
+    // loop's envelope comes back afterwards.
+    const auto loop_env = mesh.m_envelope;
+    mesh.build_final_envelopes();
+    mesh.m_freeze_front = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
-    // One envelope around all of them: a point on any held face is inside, a point off all of
-    // them is outside.
-    const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
+    mesh.m_freeze_front = false;
+    mesh.release_final_envelopes();
+    REQUIRE(mesh.m_envelope == loop_env);
+    REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
+
+    // ... and with tet 0 the input complex, the shared face is its boundary, so held again.
+    mesh.m_tet_attribute[0].label = 1;
+    REQUIRE(mesh.face_is_complex_boundary(face(1, 2, 3)));
+    REQUIRE(mesh.face_is_held(face(1, 2, 3)));
 }
 
 
@@ -1359,7 +1386,10 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
     // cell), and a star of eight band cells around a vertex inside the band, which is on no front
     // face but carries the band term of all eight. Each vertex is moved to three nearby positions;
     // the objective's gradient and Hessian against central differences. The engine's ring hook
-    // (smoothing_ring_energy(), the projected step's test) is the same ring sum.
+    // (smoothing_ring_energy(), the projected step's test) is the same ring sum. use_rest_pose:
+    // on the first fixture again with the plastic medium on, background cell 2 against a stamped
+    // rest that its corner c2 has since left -- tet_energy() reads the rest, and the objective
+    // still is the ring sum.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1401,9 +1431,12 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         {V2, T2, std::vector<int>(8, 2), 0, true}};
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
-        for (const auto& [w, s] : std::vector<std::pair<double, double>>{
-                 {1., 3.},
-                 {Parameters().offset_amips_weight, 100.}}) {
+        for (const auto& [w, s, plastic] : std::vector<std::tuple<double, double, bool>>{
+                 {1., 3., false},
+                 {Parameters().offset_amips_weight, 100., false},
+                 {1., 3., true},
+                 {Parameters().offset_amips_weight, 100., true}}) {
+            if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
             Parameters param;
             param.offset_amips_weight = w;
             param.stop_energy = s;
@@ -1414,6 +1447,40 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 mesh->m_vertex_extra[v].m_is_on_offset =
                     !mesh->offset_surface_faces_live_at(v).empty();
             }
+            if (plastic) {
+                mesh->m_plastic_active = true;
+                mesh->stamp_plastic_rests();
+                REQUIRE(mesh->cell_is_plastic(2));
+                REQUIRE(!mesh->cell_is_plastic(0)); // band
+                REQUIRE(!mesh->cell_is_plastic(3)); // input complex
+                // The exact tie's test: plastic cells only; not a band cell, not an empty set.
+                REQUIRE(mesh->all_plastic({size_t(2)}));
+                REQUIRE(!mesh->all_plastic({size_t(0)}));
+                REQUIRE(!mesh->all_plastic({size_t(2), size_t(0)}));
+                REQUIRE(!mesh->all_plastic({}));
+                // The tie needs both sides plastic: an after cell in the band or the complex
+                // breaks it.
+                REQUIRE(mesh->plastic_tie({size_t(2)}, {0}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {0, 2}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {1}));
+                REQUIRE(!mesh->plastic_tie({size_t(2), size_t(3)}, {0}));
+                REQUIRE(!mesh->plastic_tie({size_t(2)}, {}));
+                // c2 leaves its stamped rest, so cell 2 is off its minimum.
+                mesh->set_vertex_position(
+                    4,
+                    mesh->m_vertex_attribute[4].m_posf + Vector3d(0.03, -0.02, 0.025));
+                Eigen::Matrix3d R;
+                REQUIRE(mesh->plastic_rest(2, R));
+                const auto p = corners(*mesh, 2);
+                const double rest_term = w / (s * s * s) * VolAMIPSEnergy3D::value_of(p, R);
+                const double a3 = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(2));
+                const double vol =
+                    std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
+                INFO("w " << w << ", s " << s << ", plastic cell 2");
+                CHECK(mesh->tet_energy(2) == Catch::Approx(rest_term).epsilon(1e-10));
+                CHECK(
+                    std::abs(rest_term - w / (s * s * s) * vol * a3) > 1e-3 * std::abs(rest_term));
+            }
             for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
                 const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
                 const auto ring_energy = [&]() {
@@ -1423,8 +1490,8 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                 };
                 const bool front = mesh->vertex_carries_offset_term(v);
                 INFO(
-                    "fixture " << fi << ", w " << w << ", s " << s << ", vertex " << v
-                               << (front ? " (front)" : ""));
+                    "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
+                               << ", vertex " << v << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
                 if (v == fx.not_front) {
@@ -2171,4 +2238,299 @@ TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]
         CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
         CHECK(plain.value(far_side, delta) < 0.);
     }
+}
+
+namespace {
+/// Parameters as the app builds them: the spec's defaults injected into `j`, then the bounding
+/// box. A default-constructed Parameters leaves most keys unset, and construction reads many.
+Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
+{
+    j["application"] = "topological_offset";
+    j["input"] = "unused.msh";
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    jse::JSE spec_engine;
+    spec_engine.strict = true;
+    REQUIRE(spec_engine.verify_json(j, spec));
+    Parameters param(spec_engine.inject_defaults(j, spec));
+    param.init(V.colwise().minCoeff(), V.colwise().maxCoeff());
+    return param;
+}
+
+nlohmann::json correspondence_json()
+{
+    return {
+        {"offset_selection", "tag_0"},
+        {"offset_output_tags", {"offset"}},
+        {"optimize_offset", false},
+        {"save_offset_correspondence", true},
+        {"num_threads", 0},
+        {"target_distance", 0.2}};
+}
+
+/// The marched edges as marching_tets() / marching_tris() pick them: exactly one endpoint labelled
+/// 0. Each as (endpoint on the complex, the other endpoint).
+template <typename Mesh>
+std::vector<std::pair<size_t, size_t>> marched_edges(const Mesh& mesh)
+{
+    std::vector<std::pair<size_t, size_t>> P;
+    for (const auto& e : mesh.get_edges()) {
+        const size_t v1 = e.vid(mesh);
+        const size_t v2 = e.switch_vertex(mesh).vid(mesh);
+        const bool in1 = mesh.m_vertex_extra[v1].label != 0;
+        const bool in2 = mesh.m_vertex_extra[v2].label != 0;
+        if (in1 != in2) P.emplace_back(in1 ? v1 : v2, in1 ? v2 : v1);
+    }
+    return P;
+}
+
+/**
+ * Checks the .msh save_offset_correspondence wrote, read the way the prismatic_mesh component
+ * reads it: node k is the node with tag k + 1, the input vertices are the nodes of the tag_0
+ * cells, the offset vertices those with corr_input_vid >= 0. The march makes an offset vertex v on
+ * the marched edge (c, w), c on the complex, at v = c + t (w - c) with 0 < t < 1: where the
+ * sphere trace reached the level set, |d(v) - D| <= sphere_trace_target_rel_tol x D (d the
+ * distance to the complex, D = m_construction_distance), otherwise at t = 1/2. Construction only
+ * adds vertices, so c and w keep their ids and positions. The fixtures trace every edge.
+ */
+template <typename Mesh, typename Dist>
+void check_correspondence_msh(
+    const std::string& file,
+    const Mesh& mesh,
+    const std::vector<std::pair<size_t, size_t>>& P,
+    const size_t n_before,
+    const int dim,
+    const Dist& dist)
+{
+    MshData msh;
+    msh.load(file);
+    const auto& spec = msh.m_spec;
+
+    // nodes, by row = tag - 1
+    const size_t n = spec.nodes.num_nodes;
+    REQUIRE(n == mesh.get_vertices().size());
+    REQUIRE(n == n_before + P.size()); // no embedding split, one vertex per marched edge
+    std::vector<Vector3d> pos(n);
+    for (const auto& block : spec.nodes.entity_blocks) {
+        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
+            const size_t row = block.tags[i] - 1;
+            REQUIRE(row < n);
+            pos[row] = Vector3d(block.data[3 * i], block.data[3 * i + 1], block.data[3 * i + 2]);
+        }
+    }
+
+    // corr_input_vid covers every node exactly once, with integer values
+    std::vector<int64_t> corr(n, -2);
+    size_t n_fields = 0;
+    for (const auto& data : spec.node_data) {
+        if (data.header.string_tags.front() != "corr_input_vid") continue;
+        ++n_fields;
+        REQUIRE(data.header.int_tags[1] == 1); // scalar
+        REQUIRE(size_t(data.header.int_tags[2]) == n);
+        REQUIRE(data.entries.size() == n);
+        for (const auto& entry : data.entries) {
+            const size_t row = entry.tag - 1;
+            REQUIRE(row < n);
+            REQUIRE(corr[row] == -2);
+            REQUIRE(entry.data.size() == 1);
+            REQUIRE(entry.data[0] == std::floor(entry.data[0]));
+            corr[row] = int64_t(entry.data[0]);
+        }
+    }
+    REQUIRE(n_fields == 1);
+
+    // cells by physical group name, through the entities
+    std::map<int, std::string> group_name;
+    for (const auto& g : spec.physical_groups) {
+        if (g.dim == dim) group_name[g.tag] = g.name;
+    }
+    std::map<int, std::string> entity_group;
+    const auto add_entities = [&](const auto& entities) {
+        for (const auto& ent : entities) {
+            REQUIRE(ent.physical_group_tags.size() == 1);
+            entity_group[ent.tag] = group_name.at(ent.physical_group_tags.front());
+        }
+    };
+    if (dim == 3) {
+        add_entities(spec.entities.volumes);
+    } else {
+        add_entities(spec.entities.surfaces);
+    }
+    std::set<size_t> input_nodes, band_nodes;
+    for (const auto& block : spec.elements.entity_blocks) {
+        REQUIRE(block.entity_dim == dim);
+        const std::string& name = entity_group.at(block.entity_tag);
+        REQUIRE((name == "ambient" || name == "tag_0" || name == "offset"));
+        const size_t stride = size_t(dim) + 2;
+        for (size_t i = 0; i < block.num_elements_in_block; ++i) {
+            for (size_t j = 1; j < stride; ++j) {
+                const size_t row = block.data[stride * i + j] - 1;
+                if (name == "tag_0") input_nodes.insert(row);
+                if (name == "offset") band_nodes.insert(row);
+            }
+        }
+    }
+    REQUIRE(!input_nodes.empty());
+
+    // The offset vertices are exactly the band's vertices off the input, every one labelled 2;
+    // every other vertex carries -1.
+    std::map<std::pair<size_t, size_t>, size_t> uses;
+    for (const auto& e : P) uses[e] = 0;
+    const double D = mesh.m_construction_distance;
+    const double tol = mesh.m_offset_params.sphere_trace_target_rel_tol * D;
+    size_t n_offset = 0;
+    for (size_t v = 0; v < n; ++v) {
+        const bool offset = band_nodes.count(v) && !input_nodes.count(v);
+        CHECK(offset == (mesh.m_vertex_extra[v].label == 2));
+        if (!offset) {
+            CHECK(corr[v] == -1);
+            continue;
+        }
+        ++n_offset;
+        REQUIRE(corr[v] >= 0);
+        const size_t c = size_t(corr[v]);
+        CHECK(input_nodes.count(c) == 1);
+        // the marched edge v was split off: v on the segment from c to w, at the level set
+        size_t found = 0;
+        for (const auto& e : P) {
+            if (e.first != c) continue;
+            const Vector3d a = pos[c], b = pos[e.second];
+            const double t = (pos[v] - a).dot(b - a) / (b - a).squaredNorm();
+            if (!(t > 0. && t < 1.)) continue;
+            if ((pos[v] - (a + t * (b - a))).norm() > 1e-12 * (b - a).norm()) continue;
+            ++found;
+            ++uses[e];
+        }
+        CHECK(found == 1);
+        CHECK(std::abs(dist(pos[v]) - D) <= tol);
+    }
+    CHECK(n_offset == P.size());
+    for (const auto& [e, k] : uses) CHECK(k == 1);
+}
+} // namespace
+
+TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
+{
+    // A 3 x 3 x 3 grid of unit cubes with the center cube as tag_0, construction only. Every outer
+    // end is a unit away from the complex, so the target 0.2 is below the maximum marchable
+    // distance and every marched edge is traced to it.
+    Eigen::MatrixXd V(64, 3);
+    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
+    for (int k = 0; k < 4; ++k) {
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> center;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < 3; ++k) {
+        for (int j = 0; j < 3; ++j) {
+            for (int i = 0; i < 3; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
+                    T.push_back(positive(V, t));
+                }
+            }
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+    }
+    MatrixSi Tags(int(T.size()), 1);
+    for (const int t : center) Tags.coeffRef(t, 0) = 1;
+
+    // The steps topological_offset() runs up to the construction.
+    Parameters param = construction_params(correspondence_json(), V);
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+    mesh.init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
+    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    mesh.label_input_complex();
+    mesh.init_input_complex_bvh();
+    mesh.consolidate_mesh();
+    const auto P = marched_edges(mesh);
+    const size_t n_before = mesh.get_vertices().size();
+    REQUIRE(!P.empty());
+
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_3d";
+    mesh.construct_offset(out);
+    REQUIRE(mesh.m_marching_midpoint_splits == 0);
+    mesh.write_msh_groups(out.string());
+    check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 3, [&](const Vector3d& p) {
+        return mesh.m_input_complex_bvh->dist(p);
+    });
+    std::filesystem::remove(out.string() + ".msh");
+
+    // The field is recorded by the march only, so the app refuses it with the optimization on.
+    nlohmann::json j = correspondence_json();
+    j["application"] = "topological_offset";
+    j["input"] = "unused.msh";
+    j["optimize_offset"] = true;
+    REQUIRE_THROWS_WITH(
+        components::topological_offset::topological_offset(j),
+        Catch::Matchers::ContainsSubstring("save_offset_correspondence requires"));
+}
+
+TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
+{
+    // The 2D twin: a 3 x 3 grid of unit squares, two triangles each along the same diagonal, the
+    // center square as tag_0, construction only. Every outer end is a unit away, so every marched
+    // edge is traced to the target 0.2.
+    Eigen::MatrixXd V(16, 2);
+    const auto vid = [](int i, int j) { return i + 4 * j; };
+    for (int j = 0; j < 4; ++j) {
+        for (int i = 0; i < 4; ++i) V.row(vid(i, j)) << i - 1.5, j - 1.5;
+    }
+    std::vector<std::array<int, 3>> F;
+    std::vector<int> center;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j), vid(i + 1, j + 1)}}); // counter-clockwise
+            if (i == 1 && j == 1) center.push_back(int(F.size()));
+            F.push_back({{vid(i, j), vid(i + 1, j + 1), vid(i, j + 1)}});
+        }
+    }
+    Eigen::MatrixXi Fm(int(F.size()), 3);
+    for (size_t i = 0; i < F.size(); ++i) {
+        for (int j = 0; j < 3; ++j) Fm(int(i), j) = F[i][size_t(j)];
+    }
+    MatrixSi Tags(int(F.size()), 1);
+    for (const int f : center) Tags.coeffRef(f, 0) = 1;
+
+    // The steps the 2D branch of topological_offset() runs up to the construction.
+    Parameters param = construction_params(correspondence_json(), V);
+    TopoOffsetTriMesh mesh(param, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+    mesh.init_from_image(V, Fm, Tags, V_env, F_env, {"tag_0"});
+    mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
+    mesh.label_input_complex();
+    mesh.init_input_complex_bvh();
+    mesh.consolidate_mesh();
+    const auto P = marched_edges(mesh);
+    const size_t n_before = mesh.get_vertices().size();
+    REQUIRE(!P.empty());
+
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_2d";
+    mesh.construct_offset(out);
+    REQUIRE(mesh.m_marching_midpoint_splits == 0);
+    mesh.write_msh_groups(out.string());
+    check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 2, [&](const Vector3d& p) {
+        REQUIRE(p.z() == 0.);
+        return mesh.m_input_complex_bvh->dist(Vector2d(p.x(), p.y()));
+    });
+    std::filesystem::remove(out.string() + ".msh");
 }

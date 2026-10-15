@@ -97,19 +97,18 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # layout. Until it merged, this file declared `nfg` from a wildmeshing fork carrying it, ahead
 # of VolumeRemesher, to override VolumeRemesher's and fast-envelope's pins.
 #
-# TEMPORARY: pinned to the head of wildmeshing/VolumeRemesher#31 (a34ca64) until it merges;
-# repoint to the merge commit on main then. #31 fixes forced points and edges (tetwild's
-# input_edges / input_points): a forced vertex at an input vertex's position was mapped to the
-# background's coincident copy, which insertion evicts from every tet (stack-buffer overflow in
+# #31 (merged as 9e74ca7) fixes forced points and edges (tetwild's input_edges / input_points): a
+# forced vertex at an input vertex's position was mapped to the background's coincident copy,
+# which insertion evicts from every tet (stack-buffer overflow in
 # intersections_TetVrtOnConstraintSide), and forcing-triangle corners could land outside the
-# background mesh. It also pins NFG a35198d and Delaunay3D c9b3eec (wildmeshing forks). FetchContent
-# keeps VolumeRemesher's NFG declaration, so fast-envelope builds against a35198d too; its own
-# recipe still names the older commit until fast-envelope follows.
+# background mesh. It also pins NFG a35198d and Delaunay3D c9b3eec (wildmeshing forks).
+# FetchContent keeps VolumeRemesher's NFG declaration, so fast-envelope builds against a35198d
+# too; its own recipe still names the older commit until fast-envelope follows.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG a34ca64e7d07f0a001cfaa18f7c0458be980d5a7
+    GIT_TAG 9e74ca7119ff8f5e1db40498f08f4a60d89a4ab3
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

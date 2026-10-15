@@ -609,6 +609,12 @@ public:
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
+    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
+    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
+    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
+    /// membership test self-disables the moment geometry leaves the tube.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
+
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.
      *
@@ -691,6 +697,11 @@ public:
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}
+    /// Called by smooth_all_vertices() at the end of EVERY smoothing pass, after its accounting
+    /// (log_smoothing_pass_accounting()) and before its debug frame: an application that keeps
+    /// state derived from the positions the pass just moved refreshes it here. Not called before
+    /// the first pass.
+    virtual void smoothing_pass_done() {}
 
     bool invariants(const std::vector<Tuple>& t) override;
 
@@ -916,6 +927,7 @@ protected:
         after_connectivity, // collapse_after_connectivity() said no
         after_envelope, // a surface face the survivor keeps left the envelope
         after_face_attribute, // a face attribute found no face left to land on
+        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
         after_feature_edge, // a tagged feature edge found no edge left to land on
         after_coarsen_region, // coarsening only: the region's worst quality rose
         COUNT
