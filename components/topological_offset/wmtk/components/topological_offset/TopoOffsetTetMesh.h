@@ -1738,9 +1738,10 @@ public:
      * may not rise. See Optimize3d.cpp.
      */
     bool smooth_nonfront_vertex(const Tuple& t);
-    /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid, half the
-    /// shortest edge from vid to a vertex of its one-ring, at the positions before the solve; the
-    /// three smoothers above pass it as SmoothVertexOptions::max_step. Infinity when damping is off.
+    /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid,
+    /// EXPERIMENTAL_damping_factor (default 0.5) times the shortest edge from vid to a vertex of its
+    /// one-ring, at the positions before the solve; the three smoothers above pass it as
+    /// SmoothVertexOptions::max_step. Infinity when damping is off.
     double damping_step(size_t vid) const;
     /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
     /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).

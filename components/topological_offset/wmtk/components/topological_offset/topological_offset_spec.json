@@ -41,6 +41,7 @@
       "EXPERIMENTAL_settle_mark",
       "EXPERIMENTAL_gap_refinement",
       "EXPERIMENTAL_damping",
+      "EXPERIMENTAL_damping_factor",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -317,7 +318,14 @@
     "pointer": "/EXPERIMENTAL_damping",
     "type": "bool",
     "default": false,
-    "doc": "EXPERIMENTAL (2026-10-15), 3D. Damped smoothing: every local solve of every smoothing pass (front vertices, every other vertex, and the repulsion passes) may move its vertex at most half the length of the shortest edge at the vertex (from the vertex to any vertex of its one-ring), measured from where the vertex was when the solve started. A solve that goes further is pulled back along its step to that distance before the move's accept checks (inversion, envelope containment, the energy veto), and a held surface vertex's projected candidates beyond it are refused. Each smoothing pass logs how many accepted moves ended on the bound ([damping]). false (the default) = no bound."
+    "doc": "EXPERIMENTAL (2026-10-15), 3D. Damped smoothing: every local solve of every smoothing pass (front vertices, every other vertex, and the repulsion passes) may move its vertex at most EXPERIMENTAL_damping_factor (default 0.5: half) times the length of the shortest edge at the vertex (from the vertex to any vertex of its one-ring), measured from where the vertex was when the solve started. A solve that goes further is pulled back along its step to that distance before the move's accept checks (inversion, envelope containment, the energy veto), and a held surface vertex's projected candidates beyond it are refused. Each smoothing pass logs how many accepted moves ended on the bound ([damping]). false (the default) = no bound."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_damping_factor",
+    "type": "float",
+    "min": 0,
+    "default": 0.5,
+    "doc": "EXPERIMENTAL (2026-10-15), 3D, with EXPERIMENTAL_damping. The damping bound as a factor of the shortest edge at the vertex: each smoothing solve may move its vertex at most this times the length of its shortest edge (to any vertex of its one-ring), at the positions when the solve started. Must be > 0; a value other than the default with EXPERIMENTAL_damping false is refused with an error. 0.5 (the default) = half the shortest edge, the bound EXPERIMENTAL_damping had before this key existed."
   },
   {
     "pointer": "/EXPERIMENTAL_settle_refinement",

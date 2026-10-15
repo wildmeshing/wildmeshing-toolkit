@@ -771,7 +771,7 @@ double TopoOffsetTetMesh::damping_step(const size_t vid) const
             if (u != vid) shortest = std::min(shortest, (m_vertex_attribute[u].m_posf - x).norm());
         }
     }
-    return 0.5 * shortest;
+    return m_offset_params.damping_factor * shortest;
 }
 
 void TopoOffsetTetMesh::count_damped_move(
@@ -1783,10 +1783,11 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         const size_t bounded = m_damping_bounded.exchange(0);
         const size_t moves = m_damping_moves.exchange(0);
         logger().info(
-            "\t[damping] {} of {} accepted smoothing moves ended on the bound (half the shortest "
+            "\t[damping] {} of {} accepted smoothing moves ended on the bound ({} x the shortest "
             "edge at the vertex)",
             bounded,
-            moves);
+            moves,
+            m_offset_params.damping_factor);
     }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
