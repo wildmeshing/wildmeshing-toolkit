@@ -7,6 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
+#include <wmtk/utils/SplitContainment.hpp>
 
 namespace wmtk {
 
@@ -340,7 +341,15 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     //
     // The face split is (v1,v2,other) -> (v1,v_id,other) + (v2,v_id,other), which is the same
     // pair of new triangles the attribute update below writes.
+    //
+    // Under the sampled envelope the two pieces of a face inherit its containment instead,
+    // when the new vertex lies on the edge: the sampled test is not hereditary, and its
+    // refusing a piece of a face it accepted hangs the split pass (split_inherits_containment).
     if (cache.is_edge_on_surface) {
+        const bool on_edge = lies_on_segment(
+            m_vertex_attribute[v_id].m_posf,
+            m_vertex_attribute[v1_id].m_posf,
+            m_vertex_attribute[v2_id].m_posf);
         for (const auto& info : cache.changed_faces) {
             if (!info.first.m_is_surface_fs) continue;
             const auto& old_vids = info.second;
@@ -354,6 +363,12 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
                 }
             }
             if (n_shared != 2) continue; // face does not contain the split edge
+            if (on_edge && split_inherits_containment(
+                               surface_envelope_for_face({{v1_id, v2_id, other}}),
+                               surface_envelope_for_face({{v1_id, v_id, other}}),
+                               surface_envelope_for_face({{v2_id, v_id, other}}))) {
+                continue;
+            }
             if (surface_triangle_is_outside(v1_id, v_id, other)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
