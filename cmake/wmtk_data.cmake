@@ -59,7 +59,7 @@ ExternalProject_Add(
     # triangle does not converge at it. The dragon and two_overlap wall-problem fixtures are gone
     # with the rest; the open problem they stood for is recorded in .claude/CLAUDE.md, not here.
     #
-    GIT_TAG e19ece62931f64d2766b33c88a880e8056142f6a
+    GIT_TAG f0777b637613bde78486e380d38f2c39a506ab3c
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

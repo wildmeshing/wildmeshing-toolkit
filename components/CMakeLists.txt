@@ -21,6 +21,7 @@ endif()
 # list of all components
 add_subdirectory("shortest_edge_collapse/wmtk/components/shortest_edge_collapse")
 add_subdirectory("isotropic_remeshing/wmtk/components/isotropic_remeshing")
+add_subdirectory("cad_remeshing/wmtk/components/cad_remeshing")
 add_subdirectory("qslim/wmtk/components/qslim")
 add_subdirectory("tetwild/wmtk/components/tetwild")
 add_subdirectory("triwild/wmtk/components/triwild")
