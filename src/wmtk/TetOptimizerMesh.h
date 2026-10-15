@@ -609,6 +609,12 @@ public:
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
+    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
+    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
+    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
+    /// membership test self-disables the moment geometry leaves the tube.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
+
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.
      *
@@ -921,6 +927,7 @@ protected:
         after_connectivity, // collapse_after_connectivity() said no
         after_envelope, // a surface face the survivor keeps left the envelope
         after_face_attribute, // a face attribute found no face left to land on
+        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
         after_feature_edge, // a tagged feature edge found no edge left to land on
         after_coarsen_region, // coarsening only: the region's worst quality rose
         COUNT
