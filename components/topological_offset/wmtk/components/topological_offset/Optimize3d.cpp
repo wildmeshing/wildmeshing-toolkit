@@ -22,6 +22,7 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace wmtk {
@@ -712,6 +713,8 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
+    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     // The rule is E itself: the sum of tet_energy() over the ring may not rise. A vertex held on a
     // surface takes the engine's projected step, whose acceptance is that rule already
     // (smoothing_ring_energy(): strictly below), so it needs no veto here. Every other vertex is
@@ -741,7 +744,10 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
-    if (projected) return true;
+    if (projected) {
+        count_damped_move(vid, x0, opts.max_step);
+        return true;
+    }
     const bool cancels = cancels_before && band_term_cancels(ring);
     const double after = tet_energy_sum(ring, !cancels);
     if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
@@ -749,7 +755,34 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         ++m_smooth_rejects.quality;
         return false;
     }
+    count_damped_move(vid, x0, opts.max_step);
     return true;
+}
+
+double TopoOffsetTetMesh::damping_step(const size_t vid) const
+{
+    // See the declaration. Every edge at vid lies in a cell of its one-ring, so the ring's corners
+    // other than vid are exactly its neighbours.
+    if (!m_offset_params.damping) return std::numeric_limits<double>::infinity();
+    const Vector3d& x = m_vertex_attribute[vid].m_posf;
+    double shortest = std::numeric_limits<double>::infinity();
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (const size_t u : oriented_tet_vids(tid)) {
+            if (u != vid) shortest = std::min(shortest, (m_vertex_attribute[u].m_posf - x).norm());
+        }
+    }
+    return 0.5 * shortest;
+}
+
+void TopoOffsetTetMesh::count_damped_move(
+    const size_t vid,
+    const Vector3d& x0,
+    const double max_step)
+{
+    if (!m_offset_params.damping) return;
+    ++m_damping_moves;
+    const double moved = (std::as_const(m_vertex_attribute)[vid].m_posf - x0).norm();
+    if (moved >= max_step * (1. - 1e-9)) ++m_damping_bounded;
 }
 
 double TopoOffsetTetMesh::swap_edge_44_energy(
@@ -1746,6 +1779,15 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         "\tfront veto: fired {} of {} front moves that reached it (ring sum of tet_energy rose)",
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
+    if (m_offset_params.damping) {
+        const size_t bounded = m_damping_bounded.exchange(0);
+        const size_t moves = m_damping_moves.exchange(0);
+        logger().info(
+            "\t[damping] {} of {} accepted smoothing moves ended on the bound (half the shortest "
+            "edge at the vertex)",
+            bounded,
+            moves);
+    }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
         // value; the first bin is "<= 0 or below the range".

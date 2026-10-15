@@ -1357,6 +1357,9 @@ public:
     /// tet_energy(). Reported and reset per pass beside the Newton counters. Kept apart from
     /// m_smooth_rejects.quality, which the non-front veto also counts.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
+    /// EXPERIMENTAL_damping, per pass: smoothing moves accepted, and how many of them ended on the
+    /// bound (count_damped_move()). Reported and reset beside the Newton counters.
+    std::atomic<size_t> m_damping_moves{0}, m_damping_bounded{0};
     /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
     /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
     /// untouched.
@@ -1735,6 +1738,13 @@ public:
      * may not rise. See Optimize3d.cpp.
      */
     bool smooth_nonfront_vertex(const Tuple& t);
+    /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid, half the
+    /// shortest edge from vid to a vertex of its one-ring, at the positions before the solve; the
+    /// three smoothers above pass it as SmoothVertexOptions::max_step. Infinity when damping is off.
+    double damping_step(size_t vid) const;
+    /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
+    /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
+    void count_damped_move(size_t vid, const Vector3d& x0, double max_step);
     /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum vol AMIPS^3 (band_amips_weight(),
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;

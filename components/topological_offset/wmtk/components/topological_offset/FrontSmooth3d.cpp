@@ -42,6 +42,8 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     // must be free to worsen its ring's shape on the way to the level set: off, as it always was
     // here. solve_3d() vetoes on the energy instead.
     opts.quality_veto = false;
+    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     auto& solver =
         m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
     smoothing_solver();
@@ -128,6 +130,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             return false;
         }
         record_change(true);
+        count_damped_move(vid, x0, opts.max_step);
         if (m_offset_params.debug_crossings) {
             for (size_t k = 0; k < nb.size(); ++k) {
                 const double after = ring_measure_at(nb[k]);
@@ -160,6 +163,8 @@ bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
     opts.quality_veto = false;
+    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     auto& solver = m_solver.local();
     smoothing_solver();
     // The front veto's rule (see tet_energy()): the sum of the per-tet energy over the ring --
@@ -179,6 +184,7 @@ bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
         ++m_smooth_rejects.quality;
         return false;
     }
+    count_damped_move(vid, x0, opts.max_step);
     return true;
 }
 

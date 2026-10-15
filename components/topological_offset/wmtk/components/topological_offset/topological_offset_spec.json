@@ -40,6 +40,7 @@
       "EXPERIMENTAL_settle_refinement",
       "EXPERIMENTAL_settle_mark",
       "EXPERIMENTAL_gap_refinement",
+      "EXPERIMENTAL_damping",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -311,6 +312,12 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL (2026-10-10), 3D, needs EXPERIMENTAL_settle_refinement. On a settled turn a band cell with a front corner is also refined (its four corners' sizing halved) when md - d(centroid) > front_conv: md is the corner mean of the bounding triangle's distance (the corner bound's own min over input triangles, see EXPERIMENTAL_band_volume_rule), d(centroid) the exact distance at the cell's centroid. Where d is convex on the cell (everywhere outside a convex input) the cell's true mean of d is at least d(centroid) (Jensen), so Vol (md - d(centroid)) / target_distance bounds the corner bound's gap (bound minus true integral) from above; near a concave feature it bounds nothing. The exit also needs no such cell. Why: the gap depends on the corners' positions, and the smoother descends it with the energy. On the cylinder outward (2026-10-09) every fold of the front formed in a smoothing pass by a move that lowered the corner bound while the true integral plus AMIPS rose, and in one turn-11 pass 39 of 150 sampled front moves did that. false (the default) = only the face test refines."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_damping",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-15), 3D. Damped smoothing: every local solve of every smoothing pass (front vertices, every other vertex, and the repulsion passes) may move its vertex at most half the length of the shortest edge at the vertex (from the vertex to any vertex of its one-ring), measured from where the vertex was when the solve started. A solve that goes further is pulled back along its step to that distance before the move's accept checks (inversion, envelope containment, the energy veto), and a held surface vertex's projected candidates beyond it are refused. Each smoothing pass logs how many accepted moves ended on the bound ([damping]). false (the default) = no bound."
   },
   {
     "pointer": "/EXPERIMENTAL_settle_refinement",
