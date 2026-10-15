@@ -119,6 +119,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_collapse_info_cache.html">CollapseInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html">FeatureEdgeAttributes</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-edge feature tag: does this tet edge tile an input feature curve.  <a href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_op_hook_reasons.html">OpHookReasons</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A kind's hook refusals by reason: the nonzero leaves as "name=n" and their sums.  <a href="structwmtk_1_1_tet_optimizer_mesh_1_1_op_hook_reasons.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -140,6 +143,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a 
 <tr class="memitem:a38f27e4e4e4394050dd8817989988b4b" id="r_a38f27e4e4e4394050dd8817989988b4b"><td class="memItemLeft" align="right" valign="top"><a id="a38f27e4e4e4394050dd8817989988b4b" name="a38f27e4e4e4394050dd8817989988b4b"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &gt;</td></tr>
 <tr class="separator:a38f27e4e4e4394050dd8817989988b4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9efb790a5d599ef880e82e09794a5670" id="r_a9efb790a5d599ef880e82e09794a5670"><td class="memItemLeft" align="right" valign="top"><a id="a9efb790a5d599ef880e82e09794a5670" name="a9efb790a5d599ef880e82e09794a5670"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html">FeatureEdgeAttributes</a> &gt;</td></tr>
+<tr class="separator:a9efb790a5d599ef880e82e09794a5670"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae11a0a6aa4eec18bf4f50c39486bdfbc" id="r_ae11a0a6aa4eec18bf4f50c39486bdfbc"><td class="memItemLeft" align="right" valign="top"><a id="ae11a0a6aa4eec18bf4f50c39486bdfbc" name="ae11a0a6aa4eec18bf4f50c39486bdfbc"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>SurfaceTopoSignature</b> = <a class="el" href="structwmtk_1_1utils_1_1_surface_topo_signature.html">wmtk::utils::SurfaceTopoSignature</a></td></tr>
 <tr class="separator:ae11a0a6aa4eec18bf4f50c39486bdfbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -197,6 +203,22 @@ std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemR
 <tr class="memitem:a9e8f260061f594ffeba877edd3b3ce05" id="r_a9e8f260061f594ffeba877edd3b3ce05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::array&lt; size_t, 2 &gt;, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9e8f260061f594ffeba877edd3b3ce05">tracked_surface_boundary</a> () const</td></tr>
 <tr class="memdesc:a9e8f260061f594ffeba877edd3b3ce05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mesh edges where the oriented tracked surface has a boundary.  <br /></td></tr>
 <tr class="separator:a9e8f260061f594ffeba877edd3b3ce05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaaa78cb6f0e78ab754c535f96f7a6e0f" id="r_aaaa78cb6f0e78ab754c535f96f7a6e0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aaaa78cb6f0e78ab754c535f96f7a6e0f">enable_feature_edge_tracking</a> ()</td></tr>
+<tr class="separator:aaaa78cb6f0e78ab754c535f96f7a6e0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a438be18d7cc2c0fb54c01cddfcacc5aa" id="r_a438be18d7cc2c0fb54c01cddfcacc5aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a438be18d7cc2c0fb54c01cddfcacc5aa">vertex_has_feature_edge</a> (size_t vid) const</td></tr>
+<tr class="separator:a438be18d7cc2c0fb54c01cddfcacc5aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4dda513039fd748e1a43e7880c69206" id="r_af4dda513039fd748e1a43e7880c69206"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af4dda513039fd748e1a43e7880c69206">substructure_order_of_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
+<tr class="memdesc:af4dda513039fd748e1a43e7880c69206"><td class="mdescLeft">&#160;</td><td class="mdescRight">The orders substructure_link_condition consults, overridable so an application can widen the 1D substructure beyond what the surface complex derives.  <br /></td></tr>
+<tr class="separator:af4dda513039fd748e1a43e7880c69206"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1515f44d2d5bd7c3977e9501a2c9d263" id="r_a1515f44d2d5bd7c3977e9501a2c9d263"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1515f44d2d5bd7c3977e9501a2c9d263">substructure_order_of_vertex</a> (size_t vid) const override</td></tr>
+<tr class="separator:a1515f44d2d5bd7c3977e9501a2c9d263"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4cea668db3b37c7bd91e59e1a6adf75" id="r_ad4cea668db3b37c7bd91e59e1a6adf75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad4cea668db3b37c7bd91e59e1a6adf75">substructure_feature_neighbors</a> (size_t vid, std::vector&lt; size_t &gt; &amp;out) const override</td></tr>
+<tr class="memdesc:ad4cea668db3b37c7bd91e59e1a6adf75"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-ring vertices x of <code>vid</code> where (vid, x) is 1D substructure NOT derivable from the surface complex (feature edges through the interior, for instance). The link condition's order-2 edge collection walks surface faces and would never see them.  <br /></td></tr>
+<tr class="separator:ad4cea668db3b37c7bd91e59e1a6adf75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac816bce43a91c03c6ae3581f235ec8ef" id="r_ac816bce43a91c03c6ae3581f235ec8ef"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac816bce43a91c03c6ae3581f235ec8ef">feature_edges_at_vertex_inside</a> (size_t vid) const</td></tr>
+<tr class="separator:ac816bce43a91c03c6ae3581f235ec8ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fb93df18d5dbf03b103794b44525951" id="r_a5fb93df18d5dbf03b103794b44525951"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5fb93df18d5dbf03b103794b44525951">smoothing_position_is_allowed</a> (size_t, const Vector3d &amp;) const</td></tr>
+<tr class="separator:a5fb93df18d5dbf03b103794b44525951"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top"><a id="a0b0ec9196be8d44927cc358afb618cf6" name="a0b0ec9196be8d44927cc358afb618cf6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -802,6 +824,16 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a8645d347a3109f9f892c57c7c288c66a" id="r_a8645d347a3109f9f892c57c7c288c66a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8645d347a3109f9f892c57c7c288c66a">m_face_attr_group</a></td></tr>
 <tr class="memdesc:a8645d347a3109f9f892c57c7c288c66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_face_attrs points at, so a derived class can register more.  <br /></td></tr>
 <tr class="separator:a8645d347a3109f9f892c57c7c288c66a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30a03beede342e6b1342ef2082f8e98d" id="r_a30a03beede342e6b1342ef2082f8e98d"><td class="memItemLeft" align="right" valign="top"><a id="a30a03beede342e6b1342ef2082f8e98d" name="a30a03beede342e6b1342ef2082f8e98d"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_edge_attribute</b></td></tr>
+<tr class="memdesc:a30a03beede342e6b1342ef2082f8e98d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sized, protected and rolled back only once <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aaaa78cb6f0e78ab754c535f96f7a6e0f">enable_feature_edge_tracking()</a> ran. <br /></td></tr>
+<tr class="separator:a30a03beede342e6b1342ef2082f8e98d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9532be6b6cd814173db356a4c8ba118e" id="r_a9532be6b6cd814173db356a4c8ba118e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9532be6b6cd814173db356a4c8ba118e">m_track_feature_edges</a> = false</td></tr>
+<tr class="memdesc:a9532be6b6cd814173db356a4c8ba118e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the shared operations maintain m_feature_edge_attribute.  <br /></td></tr>
+<tr class="separator:a9532be6b6cd814173db356a4c8ba118e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe594736ded8904be57ea0b76701fc9" id="r_a9fe594736ded8904be57ea0b76701fc9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9fe594736ded8904be57ea0b76701fc9">m_feature_envelope</a></td></tr>
+<tr class="memdesc:a9fe594736ded8904be57ea0b76701fc9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
+<tr class="separator:a9fe594736ded8904be57ea0b76701fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3575ab09676dbf58dfe83f39323e6c" id="r_add3575ab09676dbf58dfe83f39323e6c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#add3575ab09676dbf58dfe83f39323e6c">m_params</a></td></tr>
 <tr class="separator:add3575ab09676dbf58dfe83f39323e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae78cbaa3d12307aa044d4dee7663483c" id="r_ae78cbaa3d12307aa044d4dee7663483c"><td class="memItemLeft" align="right" valign="top"><a id="ae78cbaa3d12307aa044d4dee7663483c" name="ae78cbaa3d12307aa044d4dee7663483c"></a>
@@ -938,36 +970,37 @@ Protected Types</h2></td></tr>
 , <b>bbox</b>
 , <br />
 &#160;&#160;<b>surface_not_allowed</b>
+, <b>feature_edge</b>
 , <b>prepare_flip</b>
 , <b>interior_hook</b>
-, <b>flip_open_boundary</b>
 , <br />
-&#160;&#160;<b>flip_not_two_surf</b>
+&#160;&#160;<b>flip_open_boundary</b>
+, <b>flip_not_two_surf</b>
 , <b>flip_nonmanifold_edge</b>
 , <b>flip_cd_nonmanifold</b>
-, <b>flip_new_face_surface</b>
 , <br />
-&#160;&#160;<b>flip_app_refused</b>
+&#160;&#160;<b>flip_new_face_surface</b>
+, <b>flip_app_refused</b>
 , <b>flip_wrong_case</b>
 , <b>app_capture_label</b>
-, <b>app_capture_tag</b>
 , <br />
-&#160;&#160;<b>app_fid_missing</b>
+&#160;&#160;<b>app_capture_tag</b>
+, <b>app_fid_missing</b>
 , <b>app_class_mismatch</b>
 , <b>app_mask_mismatch</b>
-, <b>app_sag_raised</b>
 , <br />
-&#160;&#160;<b>after_inverted</b>
+&#160;&#160;<b>app_sag_raised</b>
+, <b>after_inverted</b>
 , <b>after_quality</b>
 , <b>after_cells</b>
-, <b>app_after_side_conflict</b>
 , <br />
-&#160;&#160;<b>app_after_no_side</b>
+&#160;&#160;<b>app_after_side_conflict</b>
+, <b>app_after_no_side</b>
 , <b>after_envelope</b>
 , <b>face_tracked_surface</b>
-, <b>face_tracked_bbox</b>
 , <br />
-&#160;&#160;<b>face_inverted</b>
+&#160;&#160;<b>face_tracked_bbox</b>
+, <b>face_inverted</b>
 , <b>face_not_better</b>
 , <b>COUNT</b>
 <br />
@@ -993,22 +1026,25 @@ Protected Types</h2></td></tr>
 , <br />
 &#160;&#160;<b>quality</b>
 , <b>substructure_link</b>
+, <b>feature_leaves_tube</b>
 , <b>app_both_surfaces</b>
-, <b>app_front_unlimited</b>
 , <br />
-&#160;&#160;<b>app_leaves_input</b>
+&#160;&#160;<b>app_front_unlimited</b>
+, <b>app_leaves_input</b>
 , <b>app_leaves_offset</b>
 , <b>app_leaves_region</b>
-, <b>app_order2</b>
 , <br />
-&#160;&#160;<b>app_substructure_link</b>
+&#160;&#160;<b>app_order2</b>
+, <b>app_substructure_link</b>
 , <b>app_ops_guard</b>
 , <b>after_base</b>
-, <b>after_connectivity</b>
 , <br />
-&#160;&#160;<b>after_envelope</b>
+&#160;&#160;<b>after_connectivity</b>
+, <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_coarsen_region</b>
+, <b>after_feature_edge</b>
+, <br />
+&#160;&#160;<b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -1065,6 +1101,8 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_is_o
 <tr class="memitem:afad4bd6fdd232162aa4967264d12589c" id="r_afad4bd6fdd232162aa4967264d12589c"><td class="memItemLeft" align="right" valign="top"><a id="afad4bd6fdd232162aa4967264d12589c" name="afad4bd6fdd232162aa4967264d12589c"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
 <tr class="separator:afad4bd6fdd232162aa4967264d12589c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1667d1d4c0cfaad8c6e66a5dc83acb82" id="r_a1667d1d4c0cfaad8c6e66a5dc83acb82"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1667d1d4c0cfaad8c6e66a5dc83acb82">collapse_after_features</a> (size_t, size_t)</td></tr>
+<tr class="separator:a1667d1d4c0cfaad8c6e66a5dc83acb82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad389c1cf86e318d99e4670157f3cbcd8" id="r_ad389c1cf86e318d99e4670157f3cbcd8"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad389c1cf86e318d99e4670157f3cbcd8">split_before_cells</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;, const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="memdesc:ad389c1cf86e318d99e4670157f3cbcd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache application cell data before a split. TetWild needs none; SimWild caches tags.  <br /></td></tr>
 <tr class="separator:ad389c1cf86e318d99e4670157f3cbcd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1131,6 +1169,23 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>op_unaccounted</b> (O
 <tr class="separator:ad4c220b8faf1d8b57473df5a5cc82b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9d3d956e279b67688b3cc0210d00a07" id="r_ad9d3d956e279b67688b3cc0210d00a07"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad9d3d956e279b67688b3cc0210d00a07">swap_quality_allowed</a> (double after, double before, bool) const</td></tr>
 <tr class="separator:ad9d3d956e279b67688b3cc0210d00a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f0b14349ccab260c25080dee7eeef01" id="r_a4f0b14349ccab260c25080dee7eeef01"><td class="memItemLeft" align="right" valign="top"><a id="a4f0b14349ccab260c25080dee7eeef01" name="a4f0b14349ccab260c25080dee7eeef01"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_cache</b> (const std::vector&lt; size_t &gt; &amp;tids, std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="memdesc:a4f0b14349ccab260c25080dee7eeef01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache the feature tag of every edge of every tet in <code>tids</code>. <br /></td></tr>
+<tr class="separator:a4f0b14349ccab260c25080dee7eeef01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f8070ddd4391a7d2e4a374341cdb60c" id="r_a6f8070ddd4391a7d2e4a374341cdb60c"><td class="memItemLeft" align="right" valign="top"><a id="a6f8070ddd4391a7d2e4a374341cdb60c" name="a6f8070ddd4391a7d2e4a374341cdb60c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_region</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="memdesc:a6f8070ddd4391a7d2e4a374341cdb60c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write back tags over every edge of every tet in <code>tets</code> (created regions). <br /></td></tr>
+<tr class="separator:a6f8070ddd4391a7d2e4a374341cdb60c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a030192bf182575cdc9da9f30da8a1e1c" id="r_a030192bf182575cdc9da9f30da8a1e1c"><td class="memItemLeft" align="right" valign="top"><a id="a030192bf182575cdc9da9f30da8a1e1c" name="a030192bf182575cdc9da9f30da8a1e1c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_region</b> (const std::vector&lt; size_t &gt; &amp;tids, const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="separator:a030192bf182575cdc9da9f30da8a1e1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb15f32fe4d9a1fa7d1510f482b551e2" id="r_adb15f32fe4d9a1fa7d1510f482b551e2"><td class="memItemLeft" align="right" valign="top"><a id="adb15f32fe4d9a1fa7d1510f482b551e2" name="adb15f32fe4d9a1fa7d1510f482b551e2"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_remap</b> (const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache, size_t v_old, size_t v_new)</td></tr>
+<tr class="memdesc:adb15f32fe4d9a1fa7d1510f482b551e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write back tags for every cached edge, with <code>v_old</code> renamed to <code>v_new</code> (collapse). <br /></td></tr>
+<tr class="separator:adb15f32fe4d9a1fa7d1510f482b551e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2edc78c61490ccbf3dc41c6758e7f920" id="r_a2edc78c61490ccbf3dc41c6758e7f920"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2edc78c61490ccbf3dc41c6758e7f920">split_after_vertex_feature</a> (size_t, bool)</td></tr>
+<tr class="separator:a2edc78c61490ccbf3dc41c6758e7f920"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
@@ -1245,6 +1300,10 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>dry_run</b> ()
 <tr class="memitem:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh" id="r_a6931fcc6889e1e6804351d2cc6602b39"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>slot_usage_of_this_thread</b> ()</td></tr>
 <tr class="separator:a6931fcc6889e1e6804351d2cc6602b39 inherit pub_static_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_static_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_static_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh" id="r_ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memItemLeft" align="right" valign="top">static constexpr std::array&lt; std::array&lt; int, 2 &gt;, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b">m_local_edges</a></td></tr>
+<tr class="memdesc:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">local edges within a tet  <br /></td></tr>
+<tr class="separator:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>What tetwild and simwild's 3D mesh share. </p>
@@ -1539,6 +1598,45 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a1667d1d4c0cfaad8c6e66a5dc83acb82" name="a1667d1d4c0cfaad8c6e66a5dc83acb82"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1667d1d4c0cfaad8c6e66a5dc83acb82">&#9670;&#160;</a></span>collapse_after_features()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetOptimizerMesh::collapse_after_features </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Called once the feature-edge tags are restored after a collapse of v1 into v2, only when feature edges are tracked: the survivor's feature state is decided here. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a21e0356af43e97636ad18dae2e930e38">wmtk::components::tetwild::TetWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="ab6a977dd9fdc2ea6b5820c98b14f1b40" name="ab6a977dd9fdc2ea6b5820c98b14f1b40"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab6a977dd9fdc2ea6b5820c98b14f1b40">&#9670;&#160;</a></span>collapse_all_edges_impl()</h2>
 
@@ -1808,6 +1906,32 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="aaaa78cb6f0e78ab754c535f96f7a6e0f" name="aaaa78cb6f0e78ab754c535f96f7a6e0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaaa78cb6f0e78ab754c535f96f7a6e0f">&#9670;&#160;</a></span>enable_feature_edge_tracking()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::enable_feature_edge_tracking </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Turn on feature-edge tracking. Must run before <a class="el" href="classwmtk_1_1_tet_mesh.html#a52a44bea81d91f805cbb5d27acb7bec1">init()</a> so the connectivity init sizes the collection; refuses to share p_edge_attrs with an application that already uses it. </p>
+
+</div>
+</div>
 <a id="afec96f98e92be934c95c018e1356f120" name="afec96f98e92be934c95c018e1356f120"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afec96f98e92be934c95c018e1356f120">&#9670;&#160;</a></span>face_is_on_surface()</h2>
 
@@ -1843,6 +1967,25 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a33236c0cc24dc37be3e5c2b70ea5e1db">wmtk::TetMesh</a>.</p>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5153c8b977a1eac6998ea68af8fd5e92">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="ac816bce43a91c03c6ae3581f235ec8ef" name="ac816bce43a91c03c6ae3581f235ec8ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac816bce43a91c03c6ae3581f235ec8ef">&#9670;&#160;</a></span>feature_edges_at_vertex_inside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetOptimizerMesh::feature_edges_at_vertex_inside </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Are all tagged edges at <code>vid</code> inside the feature tube, at the CURRENT positions? True when tracking or the tube is off. Smoothing calls this with the candidate position already written into the vertex attribute. </p>
 
 </div>
 </div>
@@ -2533,6 +2676,45 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a5fb93df18d5dbf03b103794b44525951" name="a5fb93df18d5dbf03b103794b44525951"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fb93df18d5dbf03b103794b44525951">&#9670;&#160;</a></span>smoothing_position_is_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::smoothing_position_is_allowed </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Per-vertex positional constraint, on top of the envelopes &ndash; the 3D counterpart of <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">TriOptimizerMesh</a>'s hook of the same name. An application uses this to pin a vertex to a 0-dimensional feature it stands for, within a ball. Default: no constraint. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a9cc0a0e0d625e18d354dc4479acd7039">wmtk::components::tetwild::TetWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="a6f898ab362364632a595d07a6b62a99e" name="a6f898ab362364632a595d07a6b62a99e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6f898ab362364632a595d07a6b62a99e">&#9670;&#160;</a></span>smoothing_ring_energy()</h2>
 
@@ -2706,6 +2888,45 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a2edc78c61490ccbf3dc41c6758e7f920" name="a2edc78c61490ccbf3dc41c6758e7f920"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2edc78c61490ccbf3dc41c6758e7f920">&#9670;&#160;</a></span>split_after_vertex_feature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetOptimizerMesh::split_after_vertex_feature </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Hook: the split vertex was created on a feature edge (or not). Runs only when m_track_feature_edges is set; the counterpart of split_after_vertex for the feature flag, separate so existing overrides keep their signature. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#af755d02f73d748f9ab2adc6094467a5c">wmtk::components::tetwild::TetWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="ad389c1cf86e318d99e4670157f3cbcd8" name="ad389c1cf86e318d99e4670157f3cbcd8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad389c1cf86e318d99e4670157f3cbcd8">&#9670;&#160;</a></span>split_before_cells()</h2>
 
@@ -2874,6 +3095,105 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Every pass grows the storage at its serial points &ndash; between operations when serial, between rounds when parallel (see <a class="el" href="structwmtk_1_1_execute_pass.html">ExecutePass</a>) &ndash; so the optimizer only keeps a small slack instead of the preallocation factor. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a46854728e13e98079ec805437c09bdab">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="ad4cea668db3b37c7bd91e59e1a6adf75" name="ad4cea668db3b37c7bd91e59e1a6adf75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4cea668db3b37c7bd91e59e1a6adf75">&#9670;&#160;</a></span>substructure_feature_neighbors()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TetOptimizerMesh::substructure_feature_neighbors </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>One-ring vertices x of <code>vid</code> where (vid, x) is 1D substructure NOT derivable from the surface complex (feature edges through the interior, for instance). The link condition's order-2 edge collection walks surface faces and would never see them. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a04f527e768d84d3212e60b2085a15a3d">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="af4dda513039fd748e1a43e7880c69206" name="af4dda513039fd748e1a43e7880c69206"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4dda513039fd748e1a43e7880c69206">&#9670;&#160;</a></span>substructure_order_of_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetOptimizerMesh::substructure_order_of_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The orders substructure_link_condition consults, overridable so an application can widen the 1D substructure beyond what the surface complex derives. </p>
+<p>The paper's condition is written in terms of simplex orders; <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a> overrides these so an input FEATURE edge counts as order 2 (and its endpoints accordingly) without touching the meaning of get_order_of_* anywhere else &ndash; the feature tags are deliberately not part of the order classification. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a36b48c3ee57cc75b45ec7a15d1cde001">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a1515f44d2d5bd7c3977e9501a2c9d263" name="a1515f44d2d5bd7c3977e9501a2c9d263"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1515f44d2d5bd7c3977e9501a2c9d263">&#9670;&#160;</a></span>substructure_order_of_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetOptimizerMesh::substructure_order_of_vertex </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a>.</p>
 
 </div>
 </div>
@@ -3623,6 +3943,25 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a438be18d7cc2c0fb54c01cddfcacc5aa" name="a438be18d7cc2c0fb54c01cddfcacc5aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a438be18d7cc2c0fb54c01cddfcacc5aa">&#9670;&#160;</a></span>vertex_has_feature_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetOptimizerMesh::vertex_has_feature_edge </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Does any edge incident to <code>vid</code> carry the feature tag? Derived from the edge tags rather than from a vertex flag, so it cannot go stale. </p>
+
+</div>
+</div>
 <a id="a1c216b0a1b2f288f2d01fdaa4145b232" name="a1c216b0a1b2f288f2d01fdaa4145b232"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1c216b0a1b2f288f2d01fdaa4145b232">&#9670;&#160;</a></span>vertex_is_on_surface()</h2>
 
@@ -3768,6 +4107,23 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a9fe594736ded8904be57ea0b76701fc9" name="a9fe594736ded8904be57ea0b76701fc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fe594736ded8904be57ea0b76701fc9">&#9670;&#160;</a></span>m_feature_envelope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; wmtk::TetOptimizerMesh::m_feature_envelope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in. </p>
+<p>The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface envelope and the order-2 envelope: merging would let feature curves vouch for open boundaries (and vice versa) in guard decisions. Null =&gt; tagged edges are propagated but not geometrically constrained. </p>
+
+</div>
+</div>
 <a id="aa3d538e9bfd02f81a319c76f3083222b" name="aa3d538e9bfd02f81a319c76f3083222b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa3d538e9bfd02f81a319c76f3083222b">&#9670;&#160;</a></span>m_force_split_edges</h2>
 
@@ -3865,6 +4221,23 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 <p>Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared distance) on a comparable footing. </p>
+
+</div>
+</div>
+<a id="a9532be6b6cd814173db356a4c8ba118e" name="a9532be6b6cd814173db356a4c8ba118e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9532be6b6cd814173db356a4c8ba118e">&#9670;&#160;</a></span>m_track_feature_edges</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetOptimizerMesh::m_track_feature_edges = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Whether the shared operations maintain m_feature_edge_attribute. </p>
+<p>The operations are guarded by THIS flag, never by <code>p_edge_attrs != nullptr</code>: topological_offset also registers an edge collection there, with its own attribute type, and reinterpreting it as feature tags would corrupt it. </p>
 
 </div>
 </div>

@@ -121,6 +121,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a 
 <tr class="memitem:a38f27e4e4e4394050dd8817989988b4b inherit pub_types_classwmtk_1_1_tet_optimizer_mesh" id="r_a38f27e4e4e4394050dd8817989988b4b"><td class="memItemLeft" align="right" valign="top">
 using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &gt;</td></tr>
 <tr class="separator:a38f27e4e4e4394050dd8817989988b4b inherit pub_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9efb790a5d599ef880e82e09794a5670 inherit pub_types_classwmtk_1_1_tet_optimizer_mesh" id="r_a9efb790a5d599ef880e82e09794a5670"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_feature_edge_attributes.html">FeatureEdgeAttributes</a> &gt;</td></tr>
+<tr class="separator:a9efb790a5d599ef880e82e09794a5670 inherit pub_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae11a0a6aa4eec18bf4f50c39486bdfbc inherit pub_types_classwmtk_1_1_tet_optimizer_mesh" id="r_ae11a0a6aa4eec18bf4f50c39486bdfbc"><td class="memItemLeft" align="right" valign="top">
 using&#160;</td><td class="memItemRight" valign="bottom"><b>SurfaceTopoSignature</b> = <a class="el" href="structwmtk_1_1utils_1_1_surface_topo_signature.html">wmtk::utils::SurfaceTopoSignature</a></td></tr>
 <tr class="separator:ae11a0a6aa4eec18bf4f50c39486bdfbc inherit pub_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -308,6 +311,22 @@ std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemR
 <tr class="memitem:a9e8f260061f594ffeba877edd3b3ce05 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a9e8f260061f594ffeba877edd3b3ce05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::array&lt; size_t, 2 &gt;, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9e8f260061f594ffeba877edd3b3ce05">tracked_surface_boundary</a> () const</td></tr>
 <tr class="memdesc:a9e8f260061f594ffeba877edd3b3ce05 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mesh edges where the oriented tracked surface has a boundary.  <br /></td></tr>
 <tr class="separator:a9e8f260061f594ffeba877edd3b3ce05 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaaa78cb6f0e78ab754c535f96f7a6e0f inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aaaa78cb6f0e78ab754c535f96f7a6e0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aaaa78cb6f0e78ab754c535f96f7a6e0f">enable_feature_edge_tracking</a> ()</td></tr>
+<tr class="separator:aaaa78cb6f0e78ab754c535f96f7a6e0f inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a438be18d7cc2c0fb54c01cddfcacc5aa inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a438be18d7cc2c0fb54c01cddfcacc5aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a438be18d7cc2c0fb54c01cddfcacc5aa">vertex_has_feature_edge</a> (size_t vid) const</td></tr>
+<tr class="separator:a438be18d7cc2c0fb54c01cddfcacc5aa inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4dda513039fd748e1a43e7880c69206 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_af4dda513039fd748e1a43e7880c69206"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af4dda513039fd748e1a43e7880c69206">substructure_order_of_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
+<tr class="memdesc:af4dda513039fd748e1a43e7880c69206 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The orders substructure_link_condition consults, overridable so an application can widen the 1D substructure beyond what the surface complex derives.  <br /></td></tr>
+<tr class="separator:af4dda513039fd748e1a43e7880c69206 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1515f44d2d5bd7c3977e9501a2c9d263 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a1515f44d2d5bd7c3977e9501a2c9d263"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1515f44d2d5bd7c3977e9501a2c9d263">substructure_order_of_vertex</a> (size_t vid) const override</td></tr>
+<tr class="separator:a1515f44d2d5bd7c3977e9501a2c9d263 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4cea668db3b37c7bd91e59e1a6adf75 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ad4cea668db3b37c7bd91e59e1a6adf75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad4cea668db3b37c7bd91e59e1a6adf75">substructure_feature_neighbors</a> (size_t vid, std::vector&lt; size_t &gt; &amp;out) const override</td></tr>
+<tr class="memdesc:ad4cea668db3b37c7bd91e59e1a6adf75 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-ring vertices x of <code>vid</code> where (vid, x) is 1D substructure NOT derivable from the surface complex (feature edges through the interior, for instance). The link condition's order-2 edge collection walks surface faces and would never see them.  <br /></td></tr>
+<tr class="separator:ad4cea668db3b37c7bd91e59e1a6adf75 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac816bce43a91c03c6ae3581f235ec8ef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ac816bce43a91c03c6ae3581f235ec8ef"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac816bce43a91c03c6ae3581f235ec8ef">feature_edges_at_vertex_inside</a> (size_t vid) const</td></tr>
+<tr class="separator:ac816bce43a91c03c6ae3581f235ec8ef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fb93df18d5dbf03b103794b44525951 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a5fb93df18d5dbf03b103794b44525951"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5fb93df18d5dbf03b103794b44525951">smoothing_position_is_allowed</a> (size_t, const Vector3d &amp;) const</td></tr>
+<tr class="separator:a5fb93df18d5dbf03b103794b44525951 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a0b0ec9196be8d44927cc358afb618cf6"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (const size_t v1, const size_t v2) const</td></tr>
 <tr class="separator:a0b0ec9196be8d44927cc358afb618cf6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -943,6 +962,16 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>c
 <tr class="memitem:a8645d347a3109f9f892c57c7c288c66a inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a8645d347a3109f9f892c57c7c288c66a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8645d347a3109f9f892c57c7c288c66a">m_face_attr_group</a></td></tr>
 <tr class="memdesc:a8645d347a3109f9f892c57c7c288c66a inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_face_attrs points at, so a derived class can register more.  <br /></td></tr>
 <tr class="separator:a8645d347a3109f9f892c57c7c288c66a inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30a03beede342e6b1342ef2082f8e98d inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a30a03beede342e6b1342ef2082f8e98d"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_edge_attribute</b></td></tr>
+<tr class="memdesc:a30a03beede342e6b1342ef2082f8e98d inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sized, protected and rolled back only once <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aaaa78cb6f0e78ab754c535f96f7a6e0f">enable_feature_edge_tracking()</a> ran. <br /></td></tr>
+<tr class="separator:a30a03beede342e6b1342ef2082f8e98d inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a9532be6b6cd814173db356a4c8ba118e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9532be6b6cd814173db356a4c8ba118e">m_track_feature_edges</a> = false</td></tr>
+<tr class="memdesc:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the shared operations maintain m_feature_edge_attribute.  <br /></td></tr>
+<tr class="separator:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a9fe594736ded8904be57ea0b76701fc9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9fe594736ded8904be57ea0b76701fc9">m_feature_envelope</a></td></tr>
+<tr class="memdesc:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
+<tr class="separator:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3575ab09676dbf58dfe83f39323e6c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_add3575ab09676dbf58dfe83f39323e6c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#add3575ab09676dbf58dfe83f39323e6c">m_params</a></td></tr>
 <tr class="separator:add3575ab09676dbf58dfe83f39323e6c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae78cbaa3d12307aa044d4dee7663483c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ae78cbaa3d12307aa044d4dee7663483c"><td class="memItemLeft" align="right" valign="top">
@@ -1114,6 +1143,8 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_
 <tr class="memitem:afad4bd6fdd232162aa4967264d12589c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_afad4bd6fdd232162aa4967264d12589c"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
 <tr class="separator:afad4bd6fdd232162aa4967264d12589c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1667d1d4c0cfaad8c6e66a5dc83acb82 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a1667d1d4c0cfaad8c6e66a5dc83acb82"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1667d1d4c0cfaad8c6e66a5dc83acb82">collapse_after_features</a> (size_t, size_t)</td></tr>
+<tr class="separator:a1667d1d4c0cfaad8c6e66a5dc83acb82 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a427c093773eb892ab7c0f779bbba4650"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a427c093773eb892ab7c0f779bbba4650">split_after_vertex</a> (size_t, bool)</td></tr>
 <tr class="memdesc:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Application metadata not represented by the shared vertex attributes.  <br /></td></tr>
 <tr class="separator:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1158,6 +1189,23 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>op_unaccounted</b> (O
 <tr class="separator:ad4c220b8faf1d8b57473df5a5cc82b51 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9d3d956e279b67688b3cc0210d00a07 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ad9d3d956e279b67688b3cc0210d00a07"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad9d3d956e279b67688b3cc0210d00a07">swap_quality_allowed</a> (double after, double before, bool) const</td></tr>
 <tr class="separator:ad9d3d956e279b67688b3cc0210d00a07 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f0b14349ccab260c25080dee7eeef01 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a4f0b14349ccab260c25080dee7eeef01"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_cache</b> (const std::vector&lt; size_t &gt; &amp;tids, std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="memdesc:a4f0b14349ccab260c25080dee7eeef01 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache the feature tag of every edge of every tet in <code>tids</code>. <br /></td></tr>
+<tr class="separator:a4f0b14349ccab260c25080dee7eeef01 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f8070ddd4391a7d2e4a374341cdb60c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a6f8070ddd4391a7d2e4a374341cdb60c"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_region</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets, const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="memdesc:a6f8070ddd4391a7d2e4a374341cdb60c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write back tags over every edge of every tet in <code>tets</code> (created regions). <br /></td></tr>
+<tr class="separator:a6f8070ddd4391a7d2e4a374341cdb60c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a030192bf182575cdc9da9f30da8a1e1c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a030192bf182575cdc9da9f30da8a1e1c"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_region</b> (const std::vector&lt; size_t &gt; &amp;tids, const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache)</td></tr>
+<tr class="separator:a030192bf182575cdc9da9f30da8a1e1c inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb15f32fe4d9a1fa7d1510f482b551e2 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_adb15f32fe4d9a1fa7d1510f482b551e2"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges_restore_remap</b> (const std::map&lt; std::array&lt; size_t, 2 &gt;, bool &gt; &amp;cache, size_t v_old, size_t v_new)</td></tr>
+<tr class="memdesc:adb15f32fe4d9a1fa7d1510f482b551e2 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write back tags for every cached edge, with <code>v_old</code> renamed to <code>v_new</code> (collapse). <br /></td></tr>
+<tr class="separator:adb15f32fe4d9a1fa7d1510f482b551e2 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2edc78c61490ccbf3dc41c6758e7f920 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a2edc78c61490ccbf3dc41c6758e7f920"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2edc78c61490ccbf3dc41c6758e7f920">split_after_vertex_feature</a> (size_t, bool)</td></tr>
+<tr class="separator:a2edc78c61490ccbf3dc41c6758e7f920 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
@@ -1219,36 +1267,37 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 , <b>bbox</b>
 , <br />
 &#160;&#160;<b>surface_not_allowed</b>
+, <b>feature_edge</b>
 , <b>prepare_flip</b>
 , <b>interior_hook</b>
-, <b>flip_open_boundary</b>
 , <br />
-&#160;&#160;<b>flip_not_two_surf</b>
+&#160;&#160;<b>flip_open_boundary</b>
+, <b>flip_not_two_surf</b>
 , <b>flip_nonmanifold_edge</b>
 , <b>flip_cd_nonmanifold</b>
-, <b>flip_new_face_surface</b>
 , <br />
-&#160;&#160;<b>flip_app_refused</b>
+&#160;&#160;<b>flip_new_face_surface</b>
+, <b>flip_app_refused</b>
 , <b>flip_wrong_case</b>
 , <b>app_capture_label</b>
-, <b>app_capture_tag</b>
 , <br />
-&#160;&#160;<b>app_fid_missing</b>
+&#160;&#160;<b>app_capture_tag</b>
+, <b>app_fid_missing</b>
 , <b>app_class_mismatch</b>
 , <b>app_mask_mismatch</b>
-, <b>app_sag_raised</b>
 , <br />
-&#160;&#160;<b>after_inverted</b>
+&#160;&#160;<b>app_sag_raised</b>
+, <b>after_inverted</b>
 , <b>after_quality</b>
 , <b>after_cells</b>
-, <b>app_after_side_conflict</b>
 , <br />
-&#160;&#160;<b>app_after_no_side</b>
+&#160;&#160;<b>app_after_side_conflict</b>
+, <b>app_after_no_side</b>
 , <b>after_envelope</b>
 , <b>face_tracked_surface</b>
-, <b>face_tracked_bbox</b>
 , <br />
-&#160;&#160;<b>face_inverted</b>
+&#160;&#160;<b>face_tracked_bbox</b>
+, <b>face_inverted</b>
 , <b>face_not_better</b>
 , <b>COUNT</b>
 <br />
@@ -1274,22 +1323,25 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 , <br />
 &#160;&#160;<b>quality</b>
 , <b>substructure_link</b>
+, <b>feature_leaves_tube</b>
 , <b>app_both_surfaces</b>
-, <b>app_front_unlimited</b>
 , <br />
-&#160;&#160;<b>app_leaves_input</b>
+&#160;&#160;<b>app_front_unlimited</b>
+, <b>app_leaves_input</b>
 , <b>app_leaves_offset</b>
 , <b>app_leaves_region</b>
-, <b>app_order2</b>
 , <br />
-&#160;&#160;<b>app_substructure_link</b>
+&#160;&#160;<b>app_order2</b>
+, <b>app_substructure_link</b>
 , <b>app_ops_guard</b>
 , <b>after_base</b>
-, <b>after_connectivity</b>
 , <br />
-&#160;&#160;<b>after_envelope</b>
+&#160;&#160;<b>after_connectivity</b>
+, <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_coarsen_region</b>
+, <b>after_feature_edge</b>
+, <br />
+&#160;&#160;<b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -1356,6 +1408,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <tr class="memitem:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions" id="r_ac89b9d5493d872c2e5b0aef93c5f30ed"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#ac89b9d5493d872c2e5b0aef93c5f30ed">m_all_rounded</a> = false</td></tr>
 <tr class="memdesc:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when every vertex is known to be rounded.  <br /></td></tr>
 <tr class="separator:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_static_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_static_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
+<tr class="memitem:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh" id="r_ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memItemLeft" align="right" valign="top">static constexpr std::array&lt; std::array&lt; int, 2 &gt;, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b">m_local_edges</a></td></tr>
+<tr class="memdesc:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">local edges within a tet  <br /></td></tr>
+<tr class="separator:ade7fb5d05c627df8d2b47fb27b1bd69b inherit pro_static_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae104385cb6726c486390cf48272b0800" name="ae104385cb6726c486390cf48272b0800"></a>

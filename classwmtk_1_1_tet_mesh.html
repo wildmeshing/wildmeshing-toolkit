@@ -80,6 +80,7 @@ $(function() {
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-attribs">Static Protected Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
@@ -483,6 +484,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_tetra</b> (c
 <tr class="memitem:a7dde1e0405cb3cb1c354da9a6014b416" id="r_a7dde1e0405cb3cb1c354da9a6014b416"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a7dde1e0405cb3cb1c354da9a6014b416">get_order_of_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
 <tr class="memdesc:a7dde1e0405cb3cb1c354da9a6014b416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the order of an edge.  <br /></td></tr>
 <tr class="separator:a7dde1e0405cb3cb1c354da9a6014b416"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36b48c3ee57cc75b45ec7a15d1cde001" id="r_a36b48c3ee57cc75b45ec7a15d1cde001"><td class="memItemLeft" align="right" valign="top">virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a36b48c3ee57cc75b45ec7a15d1cde001">substructure_order_of_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a36b48c3ee57cc75b45ec7a15d1cde001"><td class="mdescLeft">&#160;</td><td class="mdescRight">The orders substructure_link_condition consults, overridable so an application can widen the 1D substructure beyond what the surface complex derives.  <br /></td></tr>
+<tr class="separator:a36b48c3ee57cc75b45ec7a15d1cde001"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a027151cc607176a8d336b3240d5cbdc1" id="r_a027151cc607176a8d336b3240d5cbdc1"><td class="memItemLeft" align="right" valign="top"><a id="a027151cc607176a8d336b3240d5cbdc1" name="a027151cc607176a8d336b3240d5cbdc1"></a>
+virtual size_t&#160;</td><td class="memItemRight" valign="bottom"><b>substructure_order_of_vertex</b> (const size_t vid) const</td></tr>
+<tr class="separator:a027151cc607176a8d336b3240d5cbdc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04f527e768d84d3212e60b2085a15a3d" id="r_a04f527e768d84d3212e60b2085a15a3d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a04f527e768d84d3212e60b2085a15a3d">substructure_feature_neighbors</a> (size_t, std::vector&lt; size_t &gt; &amp;) const</td></tr>
+<tr class="memdesc:a04f527e768d84d3212e60b2085a15a3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-ring vertices x of <code>vid</code> where (vid, x) is 1D substructure NOT derivable from the surface complex (feature edges through the interior, for instance). The link condition's order-2 edge collection walks surface faces and would never see them.  <br /></td></tr>
+<tr class="separator:a04f527e768d84d3212e60b2085a15a3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa85f8199512a563b9c64b1338536e261" id="r_aa85f8199512a563b9c64b1338536e261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:aa85f8199512a563b9c64b1338536e261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:aa85f8199512a563b9c64b1338536e261"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -660,6 +670,12 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ad9d6052a670ae32551b614f1e291429c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
+Static Protected Attributes</h2></td></tr>
+<tr class="memitem:ade7fb5d05c627df8d2b47fb27b1bd69b" id="r_ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memItemLeft" align="right" valign="top">static constexpr std::array&lt; std::array&lt; int, 2 &gt;, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b">m_local_edges</a></td></tr>
+<tr class="memdesc:ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="mdescLeft">&#160;</td><td class="mdescRight">local edges within a tet  <br /></td></tr>
+<tr class="separator:ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:ac03118abec84059a60bdf99afbd8b7f8" id="r_ac03118abec84059a60bdf99afbd8b7f8"><td class="memItemLeft" align="right" valign="top"><a id="ac03118abec84059a60bdf99afbd8b7f8" name="ac03118abec84059a60bdf99afbd8b7f8"></a>
@@ -736,9 +752,6 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html#abdb25494468c101
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
-<tr class="memitem:ade7fb5d05c627df8d2b47fb27b1bd69b" id="r_ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memItemLeft" align="right" valign="top">static constexpr std::array&lt; std::array&lt; int, 2 &gt;, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ade7fb5d05c627df8d2b47fb27b1bd69b">m_local_edges</a></td></tr>
-<tr class="memdesc:ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="mdescLeft">&#160;</td><td class="mdescRight">local edges within a tet  <br /></td></tr>
-<tr class="separator:ade7fb5d05c627df8d2b47fb27b1bd69b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a443a199605fb2d977a3b5d6db6d0890b" id="r_a443a199605fb2d977a3b5d6db6d0890b"><td class="memItemLeft" align="right" valign="top"><a id="a443a199605fb2d977a3b5d6db6d0890b" name="a443a199605fb2d977a3b5d6db6d0890b"></a>
 static constexpr std::array&lt; int, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_map_vertex2edge</b> = {{0, 0, 1, 3}}</td></tr>
 <tr class="separator:a443a199605fb2d977a3b5d6db6d0890b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2670,6 +2683,46 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="a04f527e768d84d3212e60b2085a15a3d" name="a04f527e768d84d3212e60b2085a15a3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04f527e768d84d3212e60b2085a15a3d">&#9670;&#160;</a></span>substructure_feature_neighbors()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetMesh::substructure_feature_neighbors </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>One-ring vertices x of <code>vid</code> where (vid, x) is 1D substructure NOT derivable from the surface complex (feature edges through the interior, for instance). The link condition's order-2 edge collection walks surface faces and would never see them. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad4cea668db3b37c7bd91e59e1a6adf75">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="aa85f8199512a563b9c64b1338536e261" name="aa85f8199512a563b9c64b1338536e261"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa85f8199512a563b9c64b1338536e261">&#9670;&#160;</a></span>substructure_link_condition()</h2>
 
@@ -2690,6 +2743,37 @@ false </dd></dl>
 <p>Implementation based on the pseudo code from the paper: Vivodtzev et. al. - Substructure Topology Preserving Simplification of Tetrahedral Meshes</p>
 <p>The math and the pseudo code in the paper contain errors! The theory itself is correct.</p>
 <p>The link condition must be evaluated for the mesh and all substructures (surfaces, lines, points). If there is a substructure simplex in the star, the simplex is extended with a dummy vertex (e.g., an edge becomes a face) and this extended simplex must also be considered for the link. </p>
+
+</div>
+</div>
+<a id="a36b48c3ee57cc75b45ec7a15d1cde001" name="a36b48c3ee57cc75b45ec7a15d1cde001"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36b48c3ee57cc75b45ec7a15d1cde001">&#9670;&#160;</a></span>substructure_order_of_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual size_t wmtk::TetMesh::substructure_order_of_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The orders substructure_link_condition consults, overridable so an application can widen the 1D substructure beyond what the surface complex derives. </p>
+<p>The paper's condition is written in terms of simplex orders; <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a> overrides these so an input FEATURE edge counts as order 2 (and its endpoints accordingly) without touching the meaning of get_order_of_* anywhere else &ndash; the feature tags are deliberately not part of the order classification. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af4dda513039fd748e1a43e7880c69206">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -3819,7 +3903,7 @@ false </dd></dl>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -3827,6 +3911,7 @@ false </dd></dl>
 <div class="line">        {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}}</div>
 </div><!-- fragment -->
 <p>local edges within a tet </p>
+<p>Protected rather than private: <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a>'s feature-edge tracker enumerates a tet's six edges by local id. </p>
 
 </div>
 </div>

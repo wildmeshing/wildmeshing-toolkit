@@ -117,9 +117,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_breaks_featu
 <tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top"><a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TriWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a7cdd3374bab4310909003eb79004eb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71e755c526b4557295ea328aaf42975f" id="r_a71e755c526b4557295ea328aaf42975f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a71e755c526b4557295ea328aaf42975f">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env, const std::vector&lt; int &gt; *E_orientation=nullptr)</td></tr>
-<tr class="memdesc:a71e755c526b4557295ea328aaf42975f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
-<tr class="separator:a71e755c526b4557295ea328aaf42975f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc48a873f2cd7ad5c8957e655d5cf8a5" id="r_afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#afc48a873f2cd7ad5c8957e655d5cf8a5">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env, const std::vector&lt; int &gt; *E_orientation=nullptr, const std::vector&lt; size_t &gt; &amp;free_point_vids={})</td></tr>
+<tr class="memdesc:afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
+<tr class="separator:afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2513e9e9b7776b5915c40ebcf34472d0" id="r_a2513e9e9b7776b5915c40ebcf34472d0"><td class="memItemLeft" align="right" valign="top"><a id="a2513e9e9b7776b5915c40ebcf34472d0" name="a2513e9e9b7776b5915c40ebcf34472d0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
 <tr class="separator:a2513e9e9b7776b5915c40ebcf34472d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1084,8 +1084,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a71e755c526b4557295ea328aaf42975f" name="a71e755c526b4557295ea328aaf42975f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71e755c526b4557295ea328aaf42975f">&#9670;&#160;</a></span>init_mesh()</h2>
+<a id="afc48a873f2cd7ad5c8957e655d5cf8a5" name="afc48a873f2cd7ad5c8957e655d5cf8a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc48a873f2cd7ad5c8957e655d5cf8a5">&#9670;&#160;</a></span>init_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1136,7 +1136,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; int &gt; *&#160;</td>
-          <td class="paramname"><em>E_orientation</em> = <code>nullptr</code>&#160;</td>
+          <td class="paramname"><em>E_orientation</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>free_point_vids</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1156,6 +1162,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
     <tr><td class="paramname">V_rational</td><td>the arrangement's EXACT vertex positions, matching V row for row. V is only their rounding, and two exactly distinct vertices can round to the same double, so V alone cannot tell a genuine degeneracy from a rounding collision. Pass an empty vector when no exact positions exist (unit tests building a mesh from doubles); every vertex is then taken as rounded. </td></tr>
     <tr><td class="paramname">V_env,E_env</td><td>the curves the envelope is built around. These are the <em>original</em> input curves, not the arrangement's constrained edges: the optimizer has to stay near what the user gave us, not near the simplified version of it. Same arrangement as tetwild, which hands its optimizer the envelope built on the unsimplified input surface. </td></tr>
     <tr><td class="paramname">E_orientation</td><td>optional: per row of E, the input's direction on it, measured along the row as written (embed_segments' E_out_orientation). When given, the tracked edges carry it and m_tracks_orientation is set. </td></tr>
+    <tr><td class="paramname">free_point_vids</td><td>rows of V that stand for input FREE POINTS &ndash; input vertices with no incident segment. Each is anchored in m_feature_points exactly like a polyline endpoint: same ball, same collapse policy, same retention audit. They cannot be derived here the way endpoints and junctions are, because their valence in E is 0 &ndash; the same valence as every background-grid vertex. </td></tr>
   </table>
   </dd>
 </dl>

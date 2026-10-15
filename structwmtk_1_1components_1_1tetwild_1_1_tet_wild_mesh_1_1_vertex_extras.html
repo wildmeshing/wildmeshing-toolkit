@@ -89,11 +89,32 @@ $(function() {
 Public Attributes</h2></td></tr>
 <tr class="memitem:a7e97d9d2a3745a8f174cadcf3dbd0067" id="r_a7e97d9d2a3745a8f174cadcf3dbd0067"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html#a7e97d9d2a3745a8f174cadcf3dbd0067">m_is_on_open_boundary</a> = false</td></tr>
 <tr class="separator:a7e97d9d2a3745a8f174cadcf3dbd0067"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9aeba57eaec7fac3e6c9575277b04849" id="r_a9aeba57eaec7fac3e6c9575277b04849"><td class="memItemLeft" align="right" valign="top"><a id="a9aeba57eaec7fac3e6c9575277b04849" name="a9aeba57eaec7fac3e6c9575277b04849"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_feature_curve</b> = false</td></tr>
+<tr class="memdesc:a9aeba57eaec7fac3e6c9575277b04849"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the vertex lies on an input feature curve (see EdgeAttributes). <br /></td></tr>
+<tr class="separator:a9aeba57eaec7fac3e6c9575277b04849"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e3c19641c3c53f30074b3b23093bfab" id="r_a3e3c19641c3c53f30074b3b23093bfab"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html#a3e3c19641c3c53f30074b3b23093bfab">m_feature_point_id</a> = std::numeric_limits&lt;size_t&gt;::max()</td></tr>
+<tr class="separator:a3e3c19641c3c53f30074b3b23093bfab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>tetwild's per-vertex additions to the shared VertexAttributes. </p>
 <p>Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled back exactly like the shared collection &ndash; which matters, because collapse_edge_after and split_edge_after both write it. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a3e3c19641c3c53f30074b3b23093bfab" name="a3e3c19641c3c53f30074b3b23093bfab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e3c19641c3c53f30074b3b23093bfab">&#9670;&#160;</a></span>m_feature_point_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::tetwild::TetWildMesh::VertexExtras::m_feature_point_id = std::numeric_limits&lt;size_t&gt;::max()</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Index into <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a2c576a50209402ac9ffb37757c6f2fcd">TetWildMesh::m_feature_points</a>, or NO_FEATURE. The port of TriWildMesh::VertexExtras::m_feature_id, and for the same reason: preserving a 0-dimensional feature &ndash; an input point, or a feature curve's endpoint &ndash; is a COVERAGE property, and a containment test passes trivially when one anchor vertex is collapsed onto another while the first quietly stops being represented. See the discussion there. </p>
+
+</div>
+</div>
 <a id="a7e97d9d2a3745a8f174cadcf3dbd0067" name="a7e97d9d2a3745a8f174cadcf3dbd0067"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7e97d9d2a3745a8f174cadcf3dbd0067">&#9670;&#160;</a></span>m_is_on_open_boundary</h2>
 
