@@ -559,6 +559,7 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
@@ -635,6 +636,7 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     Tags.coeffRef(1, 2) = 0;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
@@ -730,6 +732,7 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
     Tags.coeffRef(0, 2) = 1;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     MatrixXd V_env_dummy;
@@ -808,6 +811,7 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 2, 1;
 
         Parameters param;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
         // param.offset_selection = parse("tag_0 & tag_1");
         TopoOffsetTriMesh mesh(param, 0);
         mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
@@ -821,6 +825,7 @@ TEST_CASE("invariant_2d", "[2d]")
         F << 0, 1, 2;
 
         Parameters param;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
         // param.offset_selection = parse("tag_0 & tag_1");
         TopoOffsetTriMesh mesh(param, 0);
         mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
@@ -845,6 +850,7 @@ TEST_CASE("circle_tri_overlap", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
@@ -892,6 +898,7 @@ TEST_CASE("circle_init", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
@@ -914,6 +921,7 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     MatrixXi F_env_dummy;
 
     Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
     // param.offset_selection = parse("tag_0 & tag_1");
     TopoOffsetTriMesh mesh(param, 0);
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
@@ -1729,6 +1737,7 @@ TEST_CASE("per-tri-energy", "[offset][2d]")
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
     for (const double w : {1., Parameters().offset_amips_weight}) {
         Parameters param;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
         param.offset_amips_weight = w;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(
@@ -1765,6 +1774,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
     const int o = 0, r0 = 1, r1 = 2, r2 = 3, r3 = 4;
     for (const double w : {1., Parameters().offset_amips_weight}) {
         Parameters param;
+        param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
         param.offset_amips_weight = w;
         const auto pot = line_field();
         auto mesh = energy_mesh_2d(

@@ -163,13 +163,13 @@
     "pointer": "/target_distance_rel",
     "type": "float",
     "default": 0.01,
-    "doc": "Target offset distance relative to bounding box of mesh."
+    "doc": "Target offset distance relative to bounding box of mesh. Ignored if target_distance > 0."
   },
   {
     "pointer": "/target_distance",
     "type": "float",
     "default": -1.0,
-    "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
+    "doc": "Target distance for offset. If <= 0 (the default -1): derived from target_distance_rel."
   },
   {
     "pointer": "/throw_on_nonconvergence",
@@ -187,13 +187,13 @@
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
-    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built after the simplicial embedding, before the repulsion and the march: during the loop the domain wall and the input complex's boundary; in the frozen-front final pass every other region boundary as well, at its position as the loop left it (see use_rest_pose). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
+    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built after the simplicial embedding, before the repulsion and the march: during the loop the domain wall and the input complex's boundary; in the frozen-front final pass every other region boundary as well, at its position as the loop left it (see use_rest_pose). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size > 0."
   },
   {
     "pointer": "/envelope_size",
     "type": "float",
     "default": -1.0,
-    "doc": "Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If < 0, computed from envelope_size_rel."
+    "doc": "Absolute half-width of the envelope that holds the held surfaces (see envelope_size_rel). If <= 0 (the default -1): derived from envelope_size_rel."
   },
   {
     "pointer": "/offset_field",
@@ -203,7 +203,7 @@
       "smooth",
       "euclidean"
     ],
-    "doc": "Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by. 'smooth' is the offset geometric contact potential Phi, with the front on the level set Phi = c: C^2, analytic derivatives, and a level set that bulges outward at reentrant features, so it is a smoothed offset rather than the exact one. 'euclidean' (the default) is the exact distance to the input complex, which makes the residual exact but introduces a gradient discontinuity across the medial axis and a crease at every reentrant feature that no refinement resolves; offset_dhat_factor and the outside-the-support guard stop meaning anything, since it has no compact support."
+    "doc": "Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by. 'smooth' is the offset geometric contact potential Phi, with the front on the level set Phi = c: C^2, analytic derivatives, and a level set that bulges outward at reentrant features, so it is a smoothed offset rather than the exact one. 'euclidean' (the default) is the exact distance to the input complex, which makes the residual exact but introduces a gradient discontinuity across the medial axis and a crease at every reentrant feature that no refinement resolves; offset_dhat_factor and the outside-the-support guard stop meaning anything, since it has no compact support. 3D refuses 'smooth' with an error at startup: the 3D energy's band term reads the euclidean distance, and the smooth field has no band term; 'smooth' is 2D only."
   },
   {
     "pointer": "/offset_dhat_factor",
@@ -215,13 +215,13 @@
     "pointer": "/front_conv",
     "type": "float",
     "default": -1.0,
-    "doc": "THE convergence epsilon, as an ABSOLUTE length in model units; < 0 (the default) means use front_conv_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel, and against the same reference, the bounding box diagonal -- deliberately NOT a fraction of target_distance, so changing the offset distance no longer silently changes the accuracy. Startup refuses a value above target_distance: an epsilon coarser than the offset it measures decides nothing, since every front face then reads as resolved from the first turn. THIS IS THE ONLY BAR, in 2D and 3D. The measure it gates is one quantity everywhere: over a face's stencil_order stencil (in 2D a front chord's), the ROOT MEAN SQUARE of the distance to the level set along the field, over target_distance (for 'euclidean' the relative error (Phi - c)/c = (d - target_distance)/target_distance; for 'smooth' the root of Phi = c along grad Phi, since there (Phi - c)/c is not a length and read 3.44x the distance error at offset_dhat_factor 2), taken as a length. A face is resolved when that RMS is <= front_conv, i.e. when the MEAN SQUARED relative error is <= (front_conv/target_distance)^2; a vertex is placed when the same measure at the vertex alone -- the order-0 stencil -- is within it. So the vertex measure and the face measure are ONE measure at two sample counts, which is why vertex_conv and sag_conv, which split them apart on 2026-09-23, no longer exist. The offset surface debug field f_err reports the same number. The 2D front smoothing objective (StencilEnergy2D) has the same zero set but, under 'smooth', charges the field error (Phi - c)/c rather than this distance: about 3.44x it at offset_dhat_factor 2. The 3D smoothing objective is the energy (see offset_amips_weight), which has no face term. WHAT THE LOOP EXITS ON is set by front_measure: under the default 'vertex_ring', every front vertex's ring measure (the RMS of its offset faces' measures, every face weighted equally) within the bar; under 'face', the rule of 2026-09-25, every offset face's measure within the bar. Either way nothing may be unmeasurable, the single-point vertex measure is a diagnostic that decides nothing about termination, and an element over the bar that refinement cannot take (the sizing floor) blocks the exit and is named in a warning every turn it exists. 2D runs the same criterion on its front chords (offset edges in place of offset faces)."
+    "doc": "THE convergence epsilon, as an ABSOLUTE length in model units; <= 0 (the default -1): derived from front_conv_rel. Absolute-or-relative exactly as envelope_size / envelope_size_rel, and against the same reference, the bounding box diagonal -- deliberately NOT a fraction of target_distance, so changing the offset distance no longer silently changes the accuracy. Startup refuses a value above target_distance: an epsilon coarser than the offset it measures decides nothing, since every front face then reads as resolved from the first turn. THIS IS THE ONLY BAR, in 2D and 3D. The measure it gates is one quantity everywhere: over a face's stencil_order stencil (in 2D a front chord's), the ROOT MEAN SQUARE of the distance to the level set along the field, over target_distance (for 'euclidean' the relative error (Phi - c)/c = (d - target_distance)/target_distance; for 'smooth' the root of Phi = c along grad Phi, since there (Phi - c)/c is not a length and read 3.44x the distance error at offset_dhat_factor 2), taken as a length. A face is resolved when that RMS is <= front_conv, i.e. when the MEAN SQUARED relative error is <= (front_conv/target_distance)^2; a vertex is placed when the same measure at the vertex alone -- the order-0 stencil -- is within it. So the vertex measure and the face measure are ONE measure at two sample counts, which is why vertex_conv and sag_conv, which split them apart on 2026-09-23, no longer exist. The offset surface debug field f_err reports the same number. The 2D front smoothing objective (StencilEnergy2D) has the same zero set but, under 'smooth', charges the field error (Phi - c)/c rather than this distance: about 3.44x it at offset_dhat_factor 2. The 3D smoothing objective is the energy (see offset_amips_weight), which has no face term. WHAT THE LOOP EXITS ON is set by front_measure: under the default 'vertex_ring', every front vertex's ring measure (the RMS of its offset faces' measures, every face weighted equally) within the bar; under 'face', the rule of 2026-09-25, every offset face's measure within the bar. Either way nothing may be unmeasurable, the single-point vertex measure is a diagnostic that decides nothing about termination, and an element over the bar that refinement cannot take (the sizing floor) blocks the exit and is named in a warning every turn it exists. 2D runs the same criterion on its front chords (offset edges in place of offset faces)."
   },
   {
     "pointer": "/front_conv_rel",
     "type": "float",
     "default": 0.00025,
-    "doc": "THE convergence epsilon as a fraction of the BOUNDING BOX DIAGONAL, used when front_conv is < 0. The default 2.5e-4 is the old front_conv_rel default 0.025 times the default target_distance_rel 0.01, so a fully default run keeps the accuracy it has always had; at any other target_distance the default accuracy now differs from the pre-2026-09-23 behaviour, which is the point of referencing the box rather than the offset. See front_conv for what the bar actually gates."
+    "doc": "THE convergence epsilon as a fraction of the BOUNDING BOX DIAGONAL, used when front_conv is <= 0; ignored if front_conv > 0. The default 2.5e-4 is the old front_conv_rel default 0.025 times the default target_distance_rel 0.01, so a fully default run keeps the accuracy it has always had; at any other target_distance the default accuracy now differs from the pre-2026-09-23 behaviour, which is the point of referencing the box rather than the offset. See front_conv for what the bar actually gates."
   },
   {
     "pointer": "/stencil_order",
@@ -413,13 +413,13 @@
     "pointer": "/offset_envelope",
     "type": "float",
     "default": -1.0,
-    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside (the loop holds the front to no envelope), as an ABSOLUTE length in model units; < 0 (the default) means use offset_envelope_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel. It is a leash, not an accuracy knob: front_conv sets the accuracy, and startup requires this to be <= front_conv, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable faces every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all. It also feeds the derived sizing floor when min_edge_length_rel is negative, as this length expressed in units of target_distance."
+    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside (the loop holds the front to no envelope), as an ABSOLUTE length in model units; <= 0 (the default -1): derived from offset_envelope_rel. Absolute-or-relative exactly as envelope_size / envelope_size_rel. It is a leash, not an accuracy knob: front_conv sets the accuracy, and startup requires this to be <= front_conv, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable faces every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all. It also feeds the derived sizing floor when min_edge_length_rel is negative, as this length expressed in units of target_distance."
   },
   {
     "pointer": "/offset_envelope_rel",
     "type": "float",
     "default": 0.0001,
-    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside, as a fraction of the BOUNDING BOX DIAGONAL, used when offset_envelope is < 0. Built once, from the front as the loop left it, for the frozen-front final pass; the loop holds the front to no envelope. THE REFERENCE CHANGED on 2026-09-24: it was a fraction of target_distance. A fully default run is NOT unchanged -- the old default 0.025 x the default target_distance_rel 0.01 came to 2.5e-4 of the diagonal, and this default is 1e-4, so the leash is 2.5x TIGHTER at defaults and the operation passes are correspondingly more constrained. At other target distances it moves the other way: at target_distance_rel 1e-3 the old key gave 2.5e-5 of the diagonal where this gives 1e-4, a leash four times wider. See offset_envelope for what the corridor is and what startup requires of it."
+    "doc": "Half-width of the corridor the frozen-front final pass must keep the front inside, as a fraction of the BOUNDING BOX DIAGONAL, used when offset_envelope is <= 0; ignored if offset_envelope > 0. Built once, from the front as the loop left it, for the frozen-front final pass; the loop holds the front to no envelope. THE REFERENCE CHANGED on 2026-09-24: it was a fraction of target_distance. A fully default run is NOT unchanged -- the old default 0.025 x the default target_distance_rel 0.01 came to 2.5e-4 of the diagonal, and this default is 1e-4, so the leash is 2.5x TIGHTER at defaults and the operation passes are correspondingly more constrained. At other target distances it moves the other way: at target_distance_rel 1e-3 the old key gave 2.5e-5 of the diagonal where this gives 1e-4, a leash four times wider. See offset_envelope for what the corridor is and what startup requires of it."
   },
   {
     "pointer": "/interleaved_smoothing",
