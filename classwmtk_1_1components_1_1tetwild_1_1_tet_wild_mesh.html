@@ -186,6 +186,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4f9bd1caa031d64f897d964e6e4042ec" id="r_a4f9bd1caa031d64f897d964e6e4042ec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4f9bd1caa031d64f897d964e6e4042ec">split_after_vertex</a> (const size_t vid, const bool is_open_boundary) override</td></tr>
 <tr class="memdesc:a4f9bd1caa031d64f897d964e6e4042ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Application metadata not represented by the shared vertex attributes.  <br /></td></tr>
 <tr class="separator:a4f9bd1caa031d64f897d964e6e4042ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a111c7dce736c04a5fd8799a1179dd91c" id="r_a111c7dce736c04a5fd8799a1179dd91c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a111c7dce736c04a5fd8799a1179dd91c">boundary_edges_at_vertex_inside</a> (size_t vid) const override</td></tr>
+<tr class="separator:a111c7dce736c04a5fd8799a1179dd91c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa63838cde5d3594bd13a670be557a94a" id="r_aa63838cde5d3594bd13a670be557a94a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aa63838cde5d3594bd13a670be557a94a">collapse_before_vertex</a> (size_t v1, size_t v2, double edge_length) override</td></tr>
 <tr class="separator:aa63838cde5d3594bd13a670be557a94a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48a4b832f5f2503e2294a6dbee5d86bb" id="r_a48a4b832f5f2503e2294a6dbee5d86bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a48a4b832f5f2503e2294a6dbee5d86bb">collapse_breaks_feature_point</a> (const size_t v1_id, const size_t v2_id) const</td></tr>
@@ -1190,9 +1192,10 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 &#160;&#160;<b>after_connectivity</b>
 , <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_feature_edge</b>
+, <b>after_order2_chord</b>
 , <br />
-&#160;&#160;<b>after_coarsen_region</b>
+&#160;&#160;<b>after_feature_edge</b>
+, <b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -1411,6 +1414,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a111c7dce736c04a5fd8799a1179dd91c" name="a111c7dce736c04a5fd8799a1179dd91c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a111c7dce736c04a5fd8799a1179dd91c">&#9670;&#160;</a></span>boundary_edges_at_vertex_inside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::tetwild::TetWildMesh::boundary_edges_at_vertex_inside </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Are all OPEN-BOUNDARY edges at <code>vid</code> inside the order-2 tube, at the current positions? Default true; tetwild overrides with its open-boundary flags and envelope. Membership is decided by flags + the topological face count, NOT by the tube itself &ndash; a tube-based membership test self-disables the moment geometry leaves the tube. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>

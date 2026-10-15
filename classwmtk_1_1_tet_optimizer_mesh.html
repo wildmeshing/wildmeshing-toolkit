@@ -411,6 +411,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="separator:a9bfbb89bfe162368e6b418cc987c6188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7a3ed8b2edc2d0e871f060fe26d8f9f" id="r_ae7a3ed8b2edc2d0e871f060fe26d8f9f"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ae7a3ed8b2edc2d0e871f060fe26d8f9f">smoothing_energy_envelope</a> (const size_t vid) const =0</td></tr>
 <tr class="separator:ae7a3ed8b2edc2d0e871f060fe26d8f9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
+<tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b6cb95cf16a2904fcf5ae94ec066246" id="r_a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246">smoothing_extra_energy</a> (const size_t) const</td></tr>
 <tr class="memdesc:a5b6cb95cf16a2904fcf5ae94ec066246"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
 <tr class="separator:a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1042,9 +1044,10 @@ Protected Types</h2></td></tr>
 &#160;&#160;<b>after_connectivity</b>
 , <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_feature_edge</b>
+, <b>after_order2_chord</b>
 , <br />
-&#160;&#160;<b>after_coarsen_region</b>
+&#160;&#160;<b>after_feature_edge</b>
+, <b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
@@ -1468,6 +1471,35 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaaae353c7e13d0a070a6c320fa77ab94">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a477ae9fa6fb0040d489aed21cd8920ae" name="a477ae9fa6fb0040d489aed21cd8920ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a477ae9fa6fb0040d489aed21cd8920ae">&#9670;&#160;</a></span>boundary_edges_at_vertex_inside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::boundary_edges_at_vertex_inside </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Are all OPEN-BOUNDARY edges at <code>vid</code> inside the order-2 tube, at the current positions? Default true; tetwild overrides with its open-boundary flags and envelope. Membership is decided by flags + the topological face count, NOT by the tube itself &ndash; a tube-based membership test self-disables the moment geometry leaves the tube. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a111c7dce736c04a5fd8799a1179dd91c">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>

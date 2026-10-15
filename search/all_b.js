@@ -23,10 +23,11 @@ var searchData=
   ['bisector_5fjump_20',['bisector_jump',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a3ccefdbe889725712773b308d5bc00a1',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
   ['bite_20you_21',['Two things that will bite you',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md51',1,'']]],
   ['boundary_5fedges_22',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]],
-  ['boundary_5fedges_5finside_23',['boundary_edges_inside',['../classwmtk_1_1_boundary_envelope.html#aa29fc9c854db32bf8f0f18a570880072',1,'wmtk::BoundaryEnvelope']]],
-  ['boundaryenvelope_24',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
-  ['build_5fboundary_5fenvelopes_25',['build_boundary_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['build_5fenvelopes_26',['build_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['build_5ffinal_5fenvelopes_27',['build_final_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['busiest_5ftask_5fseconds_28',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
+  ['boundary_5fedges_5fat_5fvertex_5finside_23',['boundary_edges_at_vertex_inside',['../classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae',1,'wmtk::TetOptimizerMesh::boundary_edges_at_vertex_inside()'],['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a111c7dce736c04a5fd8799a1179dd91c',1,'wmtk::components::tetwild::TetWildMesh::boundary_edges_at_vertex_inside()']]],
+  ['boundary_5fedges_5finside_24',['boundary_edges_inside',['../classwmtk_1_1_boundary_envelope.html#aa29fc9c854db32bf8f0f18a570880072',1,'wmtk::BoundaryEnvelope']]],
+  ['boundaryenvelope_25',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
+  ['build_5fboundary_5fenvelopes_26',['build_boundary_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['build_5fenvelopes_27',['build_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['build_5ffinal_5fenvelopes_28',['build_final_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['busiest_5ftask_5fseconds_29',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
 ];

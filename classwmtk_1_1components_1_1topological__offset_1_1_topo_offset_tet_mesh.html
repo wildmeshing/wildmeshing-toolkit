@@ -1022,6 +1022,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>prepare_surface_flip<
 <tr class="memitem:af1a7efb21e83d9fcbc16964696ed73fb inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_af1a7efb21e83d9fcbc16964696ed73fb"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topology_changed</b> (const <a class="el" href="structwmtk_1_1utils_1_1_surface_topo_signature.html">SurfaceTopoSignature</a> &amp;before, const char *where) const</td></tr>
 <tr class="separator:af1a7efb21e83d9fcbc16964696ed73fb inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
+<tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac17ed42b63171249d9109f129bf70d49 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ac17ed42b63171249d9109f129bf70d49"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac17ed42b63171249d9109f129bf70d49">smoothing_cell_energy</a> (const size_t, const double quality) const</td></tr>
 <tr class="memdesc:ac17ed42b63171249d9109f129bf70d49 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number the shared smoother compares for one cell, given the cell's quality (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the ring before and after the move, and the default <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6f898ab362364632a595d07a6b62a99e" title="The number the shared smoother&#39;s projected step compares for a whole one-ring: a vertex held on a sur...">smoothing_ring_energy()</a> is the same max.  <br /></td></tr>
 <tr class="separator:ac17ed42b63171249d9109f129bf70d49 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2178,9 +2180,10 @@ Additional Inherited Members</h2></td></tr>
 &#160;&#160;<b>after_connectivity</b>
 , <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_feature_edge</b>
+, <b>after_order2_chord</b>
 , <br />
-&#160;&#160;<b>after_coarsen_region</b>
+&#160;&#160;<b>after_feature_edge</b>
+, <b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>

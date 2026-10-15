@@ -503,6 +503,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="memitem:a9bfbb89bfe162368e6b418cc987c6188 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a9bfbb89bfe162368e6b418cc987c6188"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9bfbb89bfe162368e6b418cc987c6188">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
 <tr class="memdesc:a9bfbb89bfe162368e6b418cc987c6188 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
 <tr class="separator:a9bfbb89bfe162368e6b418cc987c6188 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
+<tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b6cb95cf16a2904fcf5ae94ec066246 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246">smoothing_extra_energy</a> (const size_t) const</td></tr>
 <tr class="memdesc:a5b6cb95cf16a2904fcf5ae94ec066246 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
 <tr class="separator:a5b6cb95cf16a2904fcf5ae94ec066246 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1339,9 +1341,10 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES
 &#160;&#160;<b>after_connectivity</b>
 , <b>after_envelope</b>
 , <b>after_face_attribute</b>
-, <b>after_feature_edge</b>
+, <b>after_order2_chord</b>
 , <br />
-&#160;&#160;<b>after_coarsen_region</b>
+&#160;&#160;<b>after_feature_edge</b>
+, <b>after_coarsen_region</b>
 , <b>COUNT</b>
 <br />
  }</td></tr>
