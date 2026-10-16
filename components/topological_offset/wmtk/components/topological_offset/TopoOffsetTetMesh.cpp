@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <exception>
 #include <limits>
 #include <queue>
 #include <unordered_map>
@@ -2439,6 +2440,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     const bool energy_fields = m_band_tris &&
                                (m_n_regions <= 1 || m_offset_params.allow_mult_comp) &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);
+    size_t n_gap_threw = 0; // band cells whose exact integral threw: band_gap_bars NaN
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
@@ -2465,10 +2467,25 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
         const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
         if (!(vol > 0.)) continue;
+        // A frame never ends the run: a cell whose exact integral throws (its partition failed a
+        // check, ExactBandIntegral::check_cell_pieces()) keeps NaN and is counted.
+        double exact = 0.;
+        try {
+            exact = m_band_exact->value(p, delta);
+        } catch (const std::exception&) {
+            ++n_gap_threw;
+            continue;
+        }
         int64_t best = -1;
-        const double gap =
-            band_cell_corner_bound(vids, best) - m_band_exact->value(p, delta) / delta;
+        const double gap = band_cell_corner_bound(vids, best) - exact / delta;
         fr.band_gap[k] = gap / vol * delta / front_conv;
+    }
+    if (n_gap_threw > 0) {
+        logger().warn(
+            "\t[frame] {}: band_gap_bars NaN on {} band cell(s), whose exact integral threw (each "
+            "logged as an error above); the run goes on",
+            path,
+            n_gap_threw);
     }
     for (int64_t i = 0; i < m_tags_count; i++) {
         fr.tag_names.push_back(m_tag_id_to_name[i]);
@@ -2615,6 +2632,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
+        size_t n_outside_threw = 0; // faces whose exact max threw: settle_outside_bars NaN
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
             const bool all_front = front(a) && front(b) && front(c);
@@ -2627,11 +2645,18 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
                     (delta - m_band_tris->min_triangle_distance(pa, pb, pc)) / front_conv;
-                fr.f_outside[i] =
-                    ((m_band_exact ? m_band_exact->max_distance(p)
-                                   : m_band_tris->min_max_corner_distance(p.data(), 3)) -
-                     delta) /
-                    front_conv;
+                // A frame never ends the run: a face whose exact max throws (its partition failed
+                // a check, ExactBandIntegral::check_face_pieces()) keeps NaN and is counted.
+                // MEASURED: 70565 debug1 and debug2 (2026-10-16) each aborted on one such face.
+                try {
+                    fr.f_outside[i] =
+                        ((m_band_exact ? m_band_exact->max_distance(p)
+                                       : m_band_tris->min_max_corner_distance(p.data(), 3)) -
+                         delta) /
+                        front_conv;
+                } catch (const std::exception&) {
+                    ++n_outside_threw;
+                }
             }
             if (all_front) {
                 for (const size_t u : {a, b, c}) {
@@ -2648,6 +2673,13 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
             if (ring_bad[vid] || !(v_ring_n[int(vid)] > 0.)) continue;
             fr.ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
+        }
+        if (n_outside_threw > 0) {
+            logger().warn(
+                "\t[frame] {}: settle_outside_bars NaN on {} offset face(s), whose exact max threw "
+                "(each logged as an error above); the run goes on",
+                path,
+                n_outside_threw);
         }
         logger().info("Write {}", path + "_off.vtu");
     }

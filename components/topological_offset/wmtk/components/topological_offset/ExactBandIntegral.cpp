@@ -76,12 +76,17 @@ struct Ctx
     bool timing = false;
     /// The partition's tolerance budget (ExactBandIntegral::partition(), the checks in value()):
     /// the sum of tol over the clips that cut (tol_cut), and over every decision taken with a
-    /// tolerance, clips and region tests alike (tol_any). Null outside the partition.
+    /// tolerance, clips and region tests alike (tol_any). Null outside the partition. A face's
+    /// partition (tri_partition()) adds ring_tol() instead of tol.
     double* tol_cut = nullptr;
     double* tol_any = nullptr;
     /// The cell's rounding scale (ExactBandIntegral::partition()): every clip and region test of
     /// the cell takes its tolerance on it, never below the polytope's own coordinates.
     double scale = 0.;
+    /// A face's partition only (tri_partition()): the face's unit normal, and the most one
+    /// decision adds to the budget (ring_tol()). Null for a cell.
+    const Vec3* ring_n = nullptr;
+    double ring_cap = 0.;
 };
 
 struct Timer
@@ -1522,12 +1527,27 @@ double ring_max_abs(const Ring& V)
     return m;
 }
 
+/// What a decision of tolerance tol against the plane of unit normal g adds to a face partition's
+/// budget (Ctx::tol_cut, Ctx::tol_any): tol / sin(theta), theta the angle between that plane and
+/// the face's (Ctx::ring_n), at most Ctx::ring_cap and never below tol; tol itself outside a face
+/// partition. The slab |g.x - h| <= tol meets the face's plane in a strip 2 tol / sin(theta) wide,
+/// so a snap or a classification at tol moves a ring's boundary that far across the face, not tol.
+/// See check_face_pieces().
+double ring_tol(const Ctx& cx, const Vec3& g, const double tol)
+{
+    if (!cx.ring_n) return tol;
+    const Vec3& n = *cx.ring_n;
+    const double sin_theta = (g - g.dot(n) * n).norm();
+    return std::max(tol, std::min(tol / sin_theta, cx.ring_cap));
+}
+
 /// _pclip: the ring V cut by {g.x <= h}, |g| = 1; Same (V inside up to tol, `out` untouched),
 /// None (nothing inside) or New (in `out`): clip()'s rules on one face ring.
 Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx)
 {
     const double tol = 16 * EPS * (std::abs(h) + std::max(ring_max_abs(V), cx.scale));
-    if (cx.tol_any) *cx.tol_any += tol;
+    const double budget = ring_tol(cx, g, tol);
+    if (cx.tol_any) *cx.tol_any += budget;
     const int k = int(V.size());
     thread_local std::vector<double> s;
     thread_local Ring P;
@@ -1554,7 +1574,7 @@ Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx
             P.push_back(V[size_t(a)] + (sa / (sa - sb)) * (V[size_t(b)] - V[size_t(a)]));
         }
     }
-    if (cx.tol_cut) *cx.tol_cut += tol;
+    if (cx.tol_cut) *cx.tol_cut += budget;
     return clean_ring(P, tol, out) ? Cut::New : Cut::None;
 }
 
@@ -1585,7 +1605,7 @@ Side pclassify(const Ring& V, const std::pair<Vec3, double>* H, const int nh, co
             smax = std::max(smax, sv);
         }
         const double tol = 16 * EPS * (std::abs(h) + ma);
-        if (cx.tol_any) *cx.tol_any += tol;
+        if (cx.tol_any) *cx.tol_any += ring_tol(cx, g, tol);
         if (smax <= tol) continue;
         if (smin >= -tol) return Side::Out;
         s_in = false;
@@ -3571,6 +3591,21 @@ void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, T
     const std::vector<std::pair<Vec3, double>>& hs = w.hs;
     cx.scale = w.scale;
     w.V0 = {Vec3(f[0] - w.c0), Vec3(f[1] - w.c0), Vec3(f[2] - w.c0)};
+    // The face's normal and the cap of one decision's share of the budget (ring_tol()): A / (2 D),
+    // A the face's area and D its longest edge (check_face_pieces()'s D). The most a decision can
+    // misplace is the whole face, and check_face_pieces() charges a capped decision a small
+    // multiple of A. A flat face keeps the plain tol.
+    Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
+    const double nn = nf.norm();
+    if (nn > 0.) {
+        nf /= nn;
+        double D = 0.;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < i; ++j) D = std::max(D, (f[size_t(i)] - f[size_t(j)]).norm());
+        }
+        cx.ring_n = &nf;
+        cx.ring_cap = 0.5 * nn / (2. * D);
+    }
 
     // step 1: the convex pieces (rings) of f with constant member sets
     std::vector<RingPiece>& pieces = w.pieces;
@@ -4455,10 +4490,17 @@ void ExactBandIntegral::check_face_pieces(
     const char* who) const
 {
     // The checks of value(), on areas. A cutting clip moves the parts' boundary only within the
-    // slab |g.x - h| <= sqrt(3) tol, whose section of the ring has area at most 2 sqrt(3) tol D
-    // (D f's longest edge, its longest chord); a decision taken with a tolerance misplaces at most
-    // a slab of half-width tol, area 2 tol D; a fan sum of m terms of size <= D^2 rounds by at
-    // most (13 m + m^2) eps D^2 / 2.
+    // slab |g.x - h| <= sqrt(3) tol, and a decision taken with a tolerance misplaces at most the
+    // slab of half-width tol. A slab of half-width t meets f's plane in a strip 2 t / sin(theta)
+    // wide, theta the angle between the two planes, so its section of the ring has area at most
+    // 2 t D / sin(theta) (D f's longest edge, its longest chord): tol_cut and tol_any sum
+    // tol / sin(theta) (ring_tol(), capped). A fan sum of m terms of size <= D^2 rounds by at most
+    // (13 m + m^2) eps D^2 / 2.
+    // MEASURED (70565, 2026-10-16, a front face 0.08 degrees off a side plane of an input
+    // triangle's region): the cut by that plane snapped two neighbouring ring vertices, 0.39 and
+    // 0.001 tol off it, onto it; both parts kept the edge between them, and the sliver they
+    // shared, 2.8e-12 wide across f, put the pieces 7.07e-13 over f's area, 5.1 times the former
+    // bound 1.38e-13 (2 sqrt(3) tol D, as if every plane crossed f square). The run aborted.
     Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
     const double nn = nf.norm();
     if (nn > 0.) nf /= nn;
