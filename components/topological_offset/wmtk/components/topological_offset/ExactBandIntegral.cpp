@@ -3077,7 +3077,8 @@ ExactBandIntegral::ExactBandIntegral(
     const Eigen::MatrixXi& Fin,
     const std::vector<int8_t>& face_side,
     const int sigma,
-    const size_t value_slots)
+    const size_t value_slots,
+    std::shared_ptr<const wmtk::Envelope> envelope)
 {
     static std::atomic<uint64_t> n_constructed{0};
     m_id = ++n_constructed;
@@ -3273,104 +3274,62 @@ ExactBandIntegral::ExactBandIntegral(
         }
     }
 
-    // the triangle tree (InputTriangles' construction)
+    // The triangles' box queries (m_env): the caller's envelope, or one built here over the same
+    // triangles, face f its primitive f (eps 0: its BVH and its copies of the input, no
+    // containment structure, which nothing here asks for).
     if (nf == 0) return;
-    std::vector<Vec3> centroid(static_cast<size_t>(nf));
     Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity()), hi = -lo;
     for (int f = 0; f < nf; ++f) {
-        centroid[size_t(f)] = (m_A[size_t(f)] + m_B[size_t(f)] + m_C[size_t(f)]) / 3.;
         lo = lo.cwiseMin(m_feat[size_t(f)].lo);
         hi = hi.cwiseMax(m_feat[size_t(f)].hi);
     }
-    m_order.resize(size_t(nf));
-    std::iota(m_order.begin(), m_order.end(), 0);
-    m_nodes.reserve(size_t(2 * nf));
-    build_node(0, nf, centroid, 1e-9 * std::max((hi - lo).norm(), 1e-300));
-}
-
-int ExactBandIntegral::build_node(
-    const int begin,
-    const int end,
-    const std::vector<Eigen::Vector3d>& centroid,
-    const double pad)
-{
-    const int id = int(m_nodes.size());
-    m_nodes.emplace_back();
-    Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity());
-    Vec3 hi = -lo, clo = lo, chi = -lo;
-    for (int j = begin; j < end; ++j) {
-        const int f = m_order[size_t(j)];
-        lo = lo.cwiseMin(m_feat[size_t(f)].lo);
-        hi = hi.cwiseMax(m_feat[size_t(f)].hi);
-        clo = clo.cwiseMin(centroid[size_t(f)]);
-        chi = chi.cwiseMax(centroid[size_t(f)]);
+    m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
+    if (envelope) {
+        if (envelope->kind() != wmtk::Envelope::Kind::Triangles3d) {
+            log_and_throw_error("ExactBandIntegral: the envelope given does not hold triangles");
+        }
+        m_env = std::move(envelope);
+    } else {
+        std::vector<Vec3> corners;
+        std::vector<Eigen::Vector3i> faces;
+        corners.reserve(size_t(3 * nf));
+        faces.reserve(size_t(nf));
+        for (int f = 0; f < nf; ++f) {
+            corners.push_back(m_A[size_t(f)]);
+            corners.push_back(m_B[size_t(f)]);
+            corners.push_back(m_C[size_t(f)]);
+            faces.emplace_back(3 * f, 3 * f + 1, 3 * f + 2);
+        }
+        auto env = std::make_shared<wmtk::Envelope>(true);
+        env->init(corners, faces, 0.);
+        m_env = std::move(env);
     }
-    m_nodes[size_t(id)].lo = lo - Vec3::Constant(pad);
-    m_nodes[size_t(id)].hi = hi + Vec3::Constant(pad);
-    m_nodes[size_t(id)].begin = begin;
-    m_nodes[size_t(id)].end = end;
-    if (end - begin <= 4) return id;
-    int axis = 0;
-    (chi - clo).maxCoeff(&axis);
-    const int mid = (begin + end) / 2;
-    std::nth_element(
-        m_order.begin() + begin,
-        m_order.begin() + mid,
-        m_order.begin() + end,
-        [&](const int a, const int b) {
-            return centroid[size_t(a)][axis] < centroid[size_t(b)][axis] ||
-                   (centroid[size_t(a)][axis] == centroid[size_t(b)][axis] && a < b);
-        });
-    const int left = build_node(begin, mid, centroid, pad);
-    const int right = build_node(mid, end, centroid, pad);
-    m_nodes[size_t(id)].left = left;
-    m_nodes[size_t(id)].right = right;
-    return id;
 }
 
 double ExactBandIntegral::upper_bound(const Eigen::Vector3d* t, const int n) const
 {
-    // Branch and bound: max over the corners of the distance to a node's (padded) box is a lower
-    // bound of max_i d_P(t_i) for every triangle P in it, so the result is the exact minimum.
+    // A start, then one box query. The triangles at t[0]'s foot on the input (the envelope's
+    // nearest point) give a bound m on the min. A triangle P with max over the corners of d_P at
+    // most m has t[0] within m, so its box meets t[0]'s box grown by m (and m_pad, for rounding):
+    // the min over the triangles listed there is the exact minimum.
     double m = std::numeric_limits<double>::infinity();
-    if (m_nodes.empty()) return m;
-    const auto lower = [&](const Node& nd) {
+    if (m_nF == 0) return m;
+    const auto offer = [&](const int64_t f) {
         double s = 0.;
         for (int i = 0; i < n; ++i) {
-            s = std::max(s, (nd.lo - t[i]).cwiseMax(t[i] - nd.hi).cwiseMax(0.).norm());
+            s = std::max(s, point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
+            if (s >= m) break; // this triangle cannot lower the min: the result is unchanged
         }
-        return s;
+        m = std::min(m, s);
     };
-    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
-    while (!stack.empty()) {
-        const auto [lb, id] = stack.back();
-        stack.pop_back();
-        if (lb > m) continue;
-        const Node& nd = m_nodes[size_t(id)];
-        if (nd.left < 0) {
-            for (int j = nd.begin; j < nd.end; ++j) {
-                const int f = m_order[size_t(j)];
-                double s = 0.;
-                for (int i = 0; i < n; ++i) {
-                    s = std::max(
-                        s,
-                        point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
-                    if (s >= m)
-                        break; // this triangle cannot lower the min: the result is unchanged
-                }
-                m = std::min(m, s);
-            }
-            continue;
-        }
-        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
-        if (ll <= lr) {
-            stack.push_back({lr, nd.right});
-            stack.push_back({ll, nd.left});
-        } else {
-            stack.push_back({ll, nd.left});
-            stack.push_back({lr, nd.right});
-        }
-    }
+    std::vector<int64_t> ids;
+    Vec3 foot;
+    m_env->nearest_point(t[0], foot);
+    m_env->primitives_in_box(Vec3(foot.array() - m_pad), Vec3(foot.array() + m_pad), ids);
+    for (const int64_t f : ids) offer(f);
+    const double r = m + m_pad;
+    m_env->primitives_in_box(Vec3(t[0].array() - r), Vec3(t[0].array() + r), ids);
+    for (const int64_t f : ids) offer(f);
     return m;
 }
 
@@ -3380,29 +3339,24 @@ void ExactBandIntegral::candidates(
     const double r,
     std::vector<int>& out) const
 {
-    // Faces from the tree; then their edges and vertices. A face's box contains its edges' and
-    // vertices' boxes, so its box distance is never larger: every edge or vertex within r has an
-    // incident face within r (exactly so in floating point: the per-axis gaps are monotone).
+    // Faces from the envelope's box query; then their edges and vertices. A face whose box is
+    // within r of t's box has every per-axis gap at most r, so it meets t's box grown by r (and
+    // m_pad, for the rounding of the grown box); the test on its own box below decides, as it
+    // did on the tree's leaves. A face's box contains its edges' and vertices' boxes, so its box
+    // distance is never larger: every edge or vertex within r has an incident face within r
+    // (exactly so in floating point: the per-axis gaps are monotone).
     out.clear();
-    if (m_nodes.empty()) return;
-    std::vector<int> stack = {0};
-    while (!stack.empty()) {
-        const Node& nd = m_nodes[size_t(stack.back())];
-        stack.pop_back();
-        if (box_dist(nd.lo, nd.hi, tlo, thi) > r) continue;
-        if (nd.left >= 0) {
-            stack.push_back(nd.left);
-            stack.push_back(nd.right);
-            continue;
-        }
-        for (int j = nd.begin; j < nd.end; ++j) {
-            const int f = m_order[size_t(j)];
-            if (box_dist(m_feat[size_t(f)].lo, m_feat[size_t(f)].hi, tlo, thi) > r) continue;
-            out.push_back(f);
-            for (const int g : m_face_feats[size_t(f)]) {
-                if (box_dist(m_feat[size_t(g)].lo, m_feat[size_t(g)].hi, tlo, thi) <= r) {
-                    out.push_back(g);
-                }
+    if (m_nF == 0) return;
+    std::vector<int64_t> ids;
+    const double g = r + m_pad;
+    m_env->primitives_in_box(Vec3(tlo.array() - g), Vec3(thi.array() + g), ids);
+    for (const int64_t fi : ids) {
+        const int f = int(fi);
+        if (box_dist(m_feat[size_t(f)].lo, m_feat[size_t(f)].hi, tlo, thi) > r) continue;
+        out.push_back(f);
+        for (const int h : m_face_feats[size_t(f)]) {
+            if (box_dist(m_feat[size_t(h)].lo, m_feat[size_t(h)].hi, tlo, thi) <= r) {
+                out.push_back(h);
             }
         }
     }

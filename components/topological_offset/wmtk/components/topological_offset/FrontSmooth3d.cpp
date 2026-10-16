@@ -314,7 +314,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     }
     if (cells.empty()) return nullptr;
     auto e = std::make_shared<BandVolumeEnergy3D>(
-        m_band_tris,
+        m_input_complex_envelope,
+        m_input_complex_pad,
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         m_offset_params.target_distance);

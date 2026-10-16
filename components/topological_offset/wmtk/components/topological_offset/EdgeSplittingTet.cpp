@@ -238,7 +238,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
-        const double d = m_input_complex_bvh->dist(p);
+        const double d = input_complex_distance(p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;
