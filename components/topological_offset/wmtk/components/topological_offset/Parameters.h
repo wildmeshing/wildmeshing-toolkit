@@ -38,7 +38,7 @@ struct Parameters : public wmtk::OptimizerParameters
     bool optimize_offset;
     // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
     // input complex's included, and the domain wall; see the spec doc).
-    // Absolute; if <= 0, computed from envelope_size_rel, a fraction of target_distance (init()).
+    // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
 
@@ -50,9 +50,9 @@ struct Parameters : public wmtk::OptimizerParameters
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // ---- the two convergence epsilons (was the single front_conv_rel) ----
     // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
-    // which is a fraction of the BOUNDING BOX DIAGONAL, and deliberately NOT a fraction of
-    // target_distance any more, so changing the offset distance no longer silently changes the
-    // accuracy. init()
+    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
+    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
+    // more, so changing the offset distance no longer silently changes the accuracy. init()
     // refuses either one above target_distance: an epsilon coarser than the offset it measures
     // cannot decide anything.
     //
@@ -222,8 +222,8 @@ struct Parameters : public wmtk::OptimizerParameters
     int max_iterations;
     // The offset envelope half-width: the leash the front is kept inside during a TetWild pass,
     // built just before it (3D: build_offset_envelope(); 2D:
-    // rebuild_offset_envelope()). Absolute-or-relative like envelope_size / envelope_size_rel, but
-    // against the BOUNDING BOX DIAGONAL -- it is a distance in space, and
+    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
     // tying it to target_distance made every change of the offset distance a silent change of the
     // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
     double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
@@ -419,19 +419,16 @@ struct Parameters : public wmtk::OptimizerParameters
             target_distance = target_distance_rel * diag_l;
         }
 
-        // A fraction of target_distance (since 2026-10-16; it was a fraction of the bbox
-        // diagonal): the held surfaces bound a band target_distance thick, so how far they may
-        // drift has to be measured against it. On 70565 (target 2.5e-5 x the diagonal) the old
-        // default 1e-3 x the diagonal was 40 x target_distance.
-        const double envelope_ref = std::max(target_distance, 1e-16);
+        // An ordinary relative length: it bounds how far a region boundary may drift in space, so
+        // the bounding box is the right reference.
         if (envelope_size > 0) {
-            envelope_size_rel = envelope_size / envelope_ref;
+            envelope_size_rel = envelope_size / diag_l;
         } else {
-            envelope_size = envelope_size_rel * envelope_ref;
+            envelope_size = envelope_size_rel * diag_l;
         }
 
-        // The convergence epsilon, absolute or relative like the envelope, but against the
-        // bounding box diagonal. It is a length in space, so the bounding box diagonal is
+        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
+        // against the same reference. It is a length in space, so the bounding box diagonal is
         // the reference, not target_distance: tying the accuracy to the offset distance made
         // every change of target_distance a silent change of accuracy as well.
         if (front_conv > 0) {
@@ -453,8 +450,8 @@ struct Parameters : public wmtk::OptimizerParameters
                 target_distance);
         }
 
-        // The operation leash, absolute or relative like the convergence epsilon, against the
-        // same reference, the bounding box diagonal.
+        // The operation leash, the same absolute-or-relative pair as the envelope and the
+        // convergence epsilon, against the same reference.
         if (offset_envelope > 0) {
             offset_envelope_rel = offset_envelope / diag_l;
         } else {
