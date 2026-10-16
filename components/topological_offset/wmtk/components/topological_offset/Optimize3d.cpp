@@ -3341,9 +3341,10 @@ void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& se
 
 size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
 {
-    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
-    // (attic/app/tetwild/TetWild.cpp): the same R, the same ramp, the same breadth-first walk
-    // that stops at R, the same floor. Two parts of that function are NOT ported on purpose:
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field (the attic/
+    // directory, since deleted; read attic/app/tetwild/TetWild.cpp at 2371c13fe8): the same R,
+    // the same ramp, the same breadth-first walk that stops at R, the same floor. Two parts of
+    // that function are NOT ported on purpose:
     //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
     //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
     //     the value it wants, and halving it again would refine the seed twice.
