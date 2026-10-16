@@ -204,8 +204,6 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>init_optimize_stencil_
 <tr class="separator:ad884390f3f680357522b45046b59697a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49258904f231ad12e0bacccf02d7ad33" id="r_a49258904f231ad12e0bacccf02d7ad33"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a49258904f231ad12e0bacccf02d7ad33">repulsion_rounds</a> = 0</td></tr>
 <tr class="separator:a49258904f231ad12e0bacccf02d7ad33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5accc8d824e52531debdf3868f1d3970" id="r_a5accc8d824e52531debdf3868f1d3970"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5accc8d824e52531debdf3868f1d3970">repulsion_refine</a> = false</td></tr>
-<tr class="separator:a5accc8d824e52531debdf3868f1d3970"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20e107852db5dcb7ef1de3912d5013d0" id="r_a20e107852db5dcb7ef1de3912d5013d0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a20e107852db5dcb7ef1de3912d5013d0">split_energy_gate</a> = false</td></tr>
 <tr class="separator:a20e107852db5dcb7ef1de3912d5013d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afedb687ef8a8f83aad21429efe27d3cd" id="r_afedb687ef8a8f83aad21429efe27d3cd"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#afedb687ef8a8f83aad21429efe27d3cd">band_volume_rule</a> = &quot;corner_bound&quot;</td></tr>
@@ -557,21 +555,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>See the spec: true runs one smoothing block (the fixed interleaved count) before the first turn of the loop. </p>
-
-</div>
-</div>
-<a id="a5accc8d824e52531debdf3868f1d3970" name="a5accc8d824e52531debdf3868f1d3970"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5accc8d824e52531debdf3868f1d3970">&#9670;&#160;</a></span>repulsion_refine</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::repulsion_refine = false</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL (2026-10-07), 3D, with repulsion_rounds. Each round also refines where the front the march would cut fails the loop's face measure, and the rounds do not collapse. See the spec doc. </p>
 
 </div>
 </div>
