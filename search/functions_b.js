@@ -14,8 +14,5 @@ var searchData=
   ['max_5ftri_5fenergy_11',['max_tri_energy',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a36328d334ca3e99005353ec0f20e1e89',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['merge_12',['merge',['../classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8c692bb6bde89b7c47032a8ad4cd37a7',1,'wmtk::components::topological_offset::FaceExtra::merge()'],['../classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30',1,'wmtk::SurfaceTagAttributes::merge()']]],
   ['mesh_5fimprovement_5flegacy_13',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['min_5fmax_5fcorner_5fdistance_14',['min_max_corner_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a4423065add638dc8b24cf8d04d9465f1',1,'wmtk::components::topological_offset::InputTriangles']]],
-  ['min_5fmean_5fdistance_15',['min_mean_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a3ad617ccc8dfc7618cf5b939bf1d6056',1,'wmtk::components::topological_offset::InputTriangles']]],
-  ['min_5fseparation_5f3d_16',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]],
-  ['min_5ftriangle_5fdistance_17',['min_triangle_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#aa548e946017bcc659bd575ccd27e42c4',1,'wmtk::components::topological_offset::InputTriangles']]]
+  ['min_5fseparation_5f3d_14',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]]
 ];

@@ -123,8 +123,8 @@ Classes</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ae1d3cef95e21655e4e04ebf9b0e59756" id="r_ae1d3cef95e21655e4e04ebf9b0e59756"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#ae1d3cef95e21655e4e04ebf9b0e59756">ExactBandIntegral</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F)</td></tr>
 <tr class="separator:ae1d3cef95e21655e4e04ebf9b0e59756"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad3be05b7675663ccf8a287d92432437" id="r_aad3be05b7675663ccf8a287d92432437"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#aad3be05b7675663ccf8a287d92432437">ExactBandIntegral</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const std::vector&lt; int8_t &gt; &amp;face_side, int sigma, size_t value_slots=0)</td></tr>
-<tr class="separator:aad3be05b7675663ccf8a287d92432437"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35fc3159428fb88923ad42fbd9e41f6e" id="r_a35fc3159428fb88923ad42fbd9e41f6e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a35fc3159428fb88923ad42fbd9e41f6e">ExactBandIntegral</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const std::vector&lt; int8_t &gt; &amp;face_side, int sigma, size_t value_slots=0, std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> &gt; envelope=nullptr)</td></tr>
+<tr class="separator:a35fc3159428fb88923ad42fbd9e41f6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf4981186538458f90cd7818e0c766ea" id="r_abf4981186538458f90cd7818e0c766ea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea">value</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, double delta, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats=nullptr) const</td></tr>
 <tr class="memdesc:abf4981186538458f90cd7818e0c766ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offset side when constructed with one (class doc); 0 for a flat cell (|6 vol| &lt;= 64 eps L^3, L its longest edge). With <code>stats</code>, adds to it.  <br /></td></tr>
 <tr class="separator:abf4981186538458f90cd7818e0c766ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -187,9 +187,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>num_faces</b> () co
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a4fe5ab5620b4a12451f950bc29150de7" id="r_a4fe5ab5620b4a12451f950bc29150de7"><td class="memItemLeft" align="right" valign="top"><a id="a4fe5ab5620b4a12451f950bc29150de7" name="a4fe5ab5620b4a12451f950bc29150de7"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>build_node</b> (int begin, int end, const std::vector&lt; Eigen::Vector3d &gt; &amp;centroid, double pad)</td></tr>
-<tr class="separator:a4fe5ab5620b4a12451f950bc29150de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b6fa627858f53aa37c558398a3b5a6d" id="r_a0b6fa627858f53aa37c558398a3b5a6d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a0b6fa627858f53aa37c558398a3b5a6d">localize</a> (const Eigen::Vector3d *t, int n, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html">Local</a> &amp;w, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats) const</td></tr>
 <tr class="separator:a0b6fa627858f53aa37c558398a3b5a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8aa36432a0cf897b83784fd9af079d7c" id="r_a8aa36432a0cf897b83784fd9af079d7c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a8aa36432a0cf897b83784fd9af079d7c">partition</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html">Work</a> &amp;w, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats) const</td></tr>
@@ -270,12 +267,10 @@ std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="
 <tr class="memitem:affc053d5bc22464f7a938a819cdd4a60" id="r_affc053d5bc22464f7a938a819cdd4a60"><td class="memItemLeft" align="right" valign="top"><a id="affc053d5bc22464f7a938a819cdd4a60" name="affc053d5bc22464f7a938a819cdd4a60"></a>
 std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_side_q</b></td></tr>
 <tr class="separator:affc053d5bc22464f7a938a819cdd4a60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3f682f13e219e0fa403096df799fd1c" id="r_aa3f682f13e219e0fa403096df799fd1c"><td class="memItemLeft" align="right" valign="top"><a id="aa3f682f13e219e0fa403096df799fd1c" name="aa3f682f13e219e0fa403096df799fd1c"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_node.html">Node</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_nodes</b></td></tr>
-<tr class="separator:aa3f682f13e219e0fa403096df799fd1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa278c4e7fd593510f256747c74fb2ca9" id="r_aa278c4e7fd593510f256747c74fb2ca9"><td class="memItemLeft" align="right" valign="top"><a id="aa278c4e7fd593510f256747c74fb2ca9" name="aa278c4e7fd593510f256747c74fb2ca9"></a>
-std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_order</b></td></tr>
-<tr class="separator:aa278c4e7fd593510f256747c74fb2ca9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09e78bcbc1f9f5aa38334de21020444c" id="r_a09e78bcbc1f9f5aa38334de21020444c"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a09e78bcbc1f9f5aa38334de21020444c">m_env</a></td></tr>
+<tr class="separator:a09e78bcbc1f9f5aa38334de21020444c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a709c925764b2b3b1ca3326bd9af792cb" id="r_a709c925764b2b3b1ca3326bd9af792cb"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a709c925764b2b3b1ca3326bd9af792cb">m_pad</a> = 0.</td></tr>
+<tr class="separator:a709c925764b2b3b1ca3326bd9af792cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb4ad0f69e2b96c393e8d2559cfefacb" id="r_aeb4ad0f69e2b96c393e8d2559cfefacb"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#aeb4ad0f69e2b96c393e8d2559cfefacb">m_id</a> = 0</td></tr>
 <tr class="separator:aeb4ad0f69e2b96c393e8d2559cfefacb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c58598b8f5a320c5876436f6b104fff" id="r_a8c58598b8f5a320c5876436f6b104fff"><td class="memItemLeft" align="right" valign="top"><a id="a8c58598b8f5a320c5876436f6b104fff" name="a8c58598b8f5a320c5876436f6b104fff"></a>
@@ -308,7 +303,7 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 <pre class="fragment">J(t) = int_t (d(x) - delta) dV,   d = Euclidean distance to the input triangle mesh.
 </pre><p> A port of the VALUE path of the Python reference exact_mesh.integrate_mesh (and of the exact_tri closed forms it calls), scratchpad exact_integral/ of 2026-10-10/11: same algorithm, same switch constants, same operation order, so it reproduces the reference's numbers to rounding (tests/test_exact_band_integral.cpp). Used by EXPERIMENTAL_band_volume_rule "exact" (the band cell term) and, through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4" title="max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop&#39;s max test....">max_distance()</a>, by the settle loop's max test.</p>
 <p>Features and local regions. The input's features are its face interiors, edges and vertices (duplicate vertices merged). The local region L_g of a feature g is an intersection of half-spaces built from its incident features only: a face's prism (inside the planes through its edges perpendicular to it), an edge's slab between the planes through its ends perpendicular to it, cut by the plane through the edge perpendicular to each incident face (away from that face's third vertex), a vertex's cone {x : (x - v).(w - v) &lt;= 0 for every edge (v, w)}. Two facts make d = min over {g : x in L_g} of d_g exact, d_g the plane, line or point distance of g: (i) the feature holding x's nearest point in its relative interior has x in its region, and d_g(x) = d(x); (ii) on L_g, d_g is the distance to an actual point of g, so d_g &gt;= d.</p>
-<p>Per cell: 0. Candidates: U = min over triangles P of max over t's corners of d_P is an upper bound of d on t (d_P convex), so every feature whose bounding box is within U of t's box is kept. U is the exact min over ALL triangles (a tree search); the Python takes the min over the 32 triangles nearest t by box distance, MEASURED equal on all 14180 cells checked (the five stored cases, sample + 3000 random each), although ties at rank 32 occur in up to 634 of 3240 cells, where numpy's sort order decides which 32 it takes.</p><ol type="1">
+<p>Per cell: 0. Candidates: U = min over triangles P of max over t's corners of d_P is an upper bound of d on t (d_P convex), so every feature whose bounding box is within U of t's box is kept. U is the exact min over ALL triangles (a box search); the Python takes the min over the 32 triangles nearest t by box distance, MEASURED equal on all 14180 cells checked (the five stored cases, sample + 3000 random each), although ties at rank 32 occur in up to 634 of 3240 cells, where numpy's sort order decides which 32 it takes.</p><ol type="1">
 <li>t is cut by the candidates' local regions into convex pieces of constant member set S = {g : piece inside L_g}. Members that cannot attain the minimum on a piece are dropped (lower bound &gt;= another member's upper bound); this changes no value.</li>
 <li>|S| = 1: the closed form of d_g. S all faces: split by the planes and the bisectors of the (then affine) distances, exact. S all vertices: split by the bisector planes, exact.</li>
 <li>Otherwise ("rule (a)") the boundary between members is curved and the piece returns min over g in S of int_piece d_g &gt;= int_piece d: an UPPER BOUND, not the integral. <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a4098ff5e8a458bb5b2f1a12459b98623" title="volume of rule-(a) pieces (upper bound)">Stats::rule_a_vol</a> reports its volume (0.15-0.35% of the band volume on t100026).</li>
@@ -359,8 +354,8 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 
 </div>
 </div>
-<a id="aad3be05b7675663ccf8a287d92432437" name="aad3be05b7675663ccf8a287d92432437"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad3be05b7675663ccf8a287d92432437">&#9670;&#160;</a></span>ExactBandIntegral() <span class="overload">[2/2]</span></h2>
+<a id="a35fc3159428fb88923ad42fbd9e41f6e" name="a35fc3159428fb88923ad42fbd9e41f6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35fc3159428fb88923ad42fbd9e41f6e">&#9670;&#160;</a></span>ExactBandIntegral() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -393,7 +388,13 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>value_slots</em> = <code>0</code>&#160;</td>
+          <td class="paramname"><em>value_slots</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> &gt;&#160;</td>
+          <td class="paramname"><em>envelope</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -402,7 +403,7 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
         </tr>
       </table>
 </div><div class="memdoc">
-<p>With the offset side (class doc): face_side[f] = +1 if row f's normal (b - a) x (c - a) points out of the solid the triangles bound, -1 if into it, 0 for a triangle that bounds no solid; sigma = +1 for the band outside that solid, -1 inside it, 0 no clip (as the two-argument constructor). <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>'s solid is its label-1 cells, which the band is outside of for offset_out and offset_in alike, so it passes +1. value_slots &gt; 0: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> keeps a table of its results of at least that many slots (the value table, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a>). </p>
+<p>With the offset side (class doc): face_side[f] = +1 if row f's normal (b - a) x (c - a) points out of the solid the triangles bound, -1 if into it, 0 for a triangle that bounds no solid; sigma = +1 for the band outside that solid, -1 inside it, 0 no clip (as the two-argument constructor). <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>'s solid is its label-1 cells, which the band is outside of for offset_out and offset_in alike, so it passes +1. value_slots &gt; 0: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> keeps a table of its results of at least that many slots (the value table, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a>). envelope: the triangles' box queries, for U and the candidate query &ndash; a Triangles3d <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> whose primitive i is row i of F (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a> passes m_input_complex_envelope, built from the same rows); null: one is built here from V and F. </p>
 
 </div>
 </div>
@@ -888,6 +889,29 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a09e78bcbc1f9f5aa38334de21020444c" name="a09e78bcbc1f9f5aa38334de21020444c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09e78bcbc1f9f5aa38334de21020444c">&#9670;&#160;</a></span>m_env</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;const <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>&gt; wmtk::components::topological_offset::ExactBandIntegral::m_env</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The triangles' boxes, for U and the candidate query: the envelope's <a class="el" href="classwmtk_1_1_envelope.html#a2624fa220098adceb28b7a2b44ca060c" title="The ids of every primitive whose bounding box meets the closed box [lo, hi], ascending,...">Envelope::primitives_in_box()</a>, primitive f being face f. Until 2026-10-15 a tree of this class's own over the same boxes, beside the envelope's. </p>
+
+</div>
+</div>
 <a id="abf9e6be097d7fee9fd8433ccee00618d" name="abf9e6be097d7fee9fd8433ccee00618d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abf9e6be097d7fee9fd8433ccee00618d">&#9670;&#160;</a></span>m_face_feats</h2>
 
@@ -977,6 +1001,29 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 </table>
 </div><div class="memdoc">
 <p>This integral's number among all constructed, the owner a <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">Partition</a> records (an address can be reused by a later integral). </p>
+
+</div>
+</div>
+<a id="a709c925764b2b3b1ca3326bd9af792cb" name="a709c925764b2b3b1ca3326bd9af792cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a709c925764b2b3b1ca3326bd9af792cb">&#9670;&#160;</a></span>m_pad</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::ExactBandIntegral::m_pad = 0.</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>1e-9 of the input's diagonal: what a box query is grown by, so that a triangle whose distance reaches a bound by rounding is never left out of it. </p>
 
 </div>
 </div>

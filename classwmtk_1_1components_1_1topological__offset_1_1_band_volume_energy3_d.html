@@ -105,8 +105,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae672366aa06c2779ceae8c336045bc08" id="r_ae672366aa06c2779ceae8c336045bc08"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#ae672366aa06c2779ceae8c336045bc08">BandVolumeEnergy3D</a> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html">InputTriangles</a> &gt; tris, std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html">Cell</a> &gt; cells, const Eigen::Vector3d &amp;x0, double delta)</td></tr>
-<tr class="separator:ae672366aa06c2779ceae8c336045bc08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e4a02e2d9e30cbdcec61bd17245dd8e" id="r_a7e4a02e2d9e30cbdcec61bd17245dd8e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a7e4a02e2d9e30cbdcec61bd17245dd8e">BandVolumeEnergy3D</a> (std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; env, double pad, std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_cell.html">Cell</a> &gt; cells, const Eigen::Vector3d &amp;x0, double delta)</td></tr>
+<tr class="separator:a7e4a02e2d9e30cbdcec61bd17245dd8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e47b2cf5cbc6901a9bf4b1414ba3cde" id="r_a9e47b2cf5cbc6901a9bf4b1414ba3cde"><td class="memItemLeft" align="right" valign="top"><a id="a9e47b2cf5cbc6901a9bf4b1414ba3cde" name="a9e47b2cf5cbc6901a9bf4b1414ba3cde"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> (const TVector &amp;x) override</td></tr>
 <tr class="separator:a9e47b2cf5cbc6901a9bf4b1414ba3cde"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,9 +158,14 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>ff_eval</b> (const 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:ae6ec38c74c14310f12d5320eff215cd0" id="r_ae6ec38c74c14310f12d5320eff215cd0"><td class="memItemLeft" align="right" valign="top"><a id="ae6ec38c74c14310f12d5320eff215cd0" name="ae6ec38c74c14310f12d5320eff215cd0"></a>
-std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html">InputTriangles</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tris</b></td></tr>
-<tr class="separator:ae6ec38c74c14310f12d5320eff215cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92c277960b4c99ba3d9ed7226b79dfb1" id="r_a92c277960b4c99ba3d9ed7226b79dfb1"><td class="memItemLeft" align="right" valign="top"><a id="a92c277960b4c99ba3d9ed7226b79dfb1" name="a92c277960b4c99ba3d9ed7226b79dfb1"></a>
+std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_env</b></td></tr>
+<tr class="memdesc:a92c277960b4c99ba3d9ed7226b79dfb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">the input's primitives <br /></td></tr>
+<tr class="separator:a92c277960b4c99ba3d9ed7226b79dfb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d734ca48bfae3bf974f06e7824a92a9" id="r_a0d734ca48bfae3bf974f06e7824a92a9"><td class="memItemLeft" align="right" valign="top"><a id="a0d734ca48bfae3bf974f06e7824a92a9" name="a0d734ca48bfae3bf974f06e7824a92a9"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_pad</b> = 0.</td></tr>
+<tr class="memdesc:a0d734ca48bfae3bf974f06e7824a92a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">input_pad() of the input <br /></td></tr>
+<tr class="separator:a0d734ca48bfae3bf974f06e7824a92a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae37d04b80fd22c8057ef37a6df87dc98" id="r_ae37d04b80fd22c8057ef37a6df87dc98"><td class="memItemLeft" align="right" valign="top"><a id="ae37d04b80fd22c8057ef37a6df87dc98" name="ae37d04b80fd22c8057ef37a6df87dc98"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_delta</b> = 1.</td></tr>
 <tr class="separator:ae37d04b80fd22c8057ef37a6df87dc98"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,9 +189,9 @@ Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>m_ball_c</
 <tr class="memitem:ac619f2fa3d7f7f85cca9ad4f3418734e" id="r_ac619f2fa3d7f7f85cca9ad4f3418734e"><td class="memItemLeft" align="right" valign="top"><a id="ac619f2fa3d7f7f85cca9ad4f3418734e" name="ac619f2fa3d7f7f85cca9ad4f3418734e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_ball_r</b> = -1.</td></tr>
 <tr class="separator:ac619f2fa3d7f7f85cca9ad4f3418734e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aede06712f8ecea10a8c4cf984af846e8" id="r_aede06712f8ecea10a8c4cf984af846e8"><td class="memItemLeft" align="right" valign="top"><a id="aede06712f8ecea10a8c4cf984af846e8" name="aede06712f8ecea10a8c4cf984af846e8"></a>
-std::vector&lt; std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_input_triangles_1_1_ball_candidate.html">InputTriangles::BallCandidate</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ball_cand</b></td></tr>
-<tr class="separator:aede06712f8ecea10a8c4cf984af846e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accbd1c423cc84ef0ddb2c6247e6d3c88" id="r_accbd1c423cc84ef0ddb2c6247e6d3c88"><td class="memItemLeft" align="right" valign="top"><a id="accbd1c423cc84ef0ddb2c6247e6d3c88" name="accbd1c423cc84ef0ddb2c6247e6d3c88"></a>
+std::vector&lt; std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_ball_candidate.html">BallCandidate</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ball_cand</b></td></tr>
+<tr class="separator:accbd1c423cc84ef0ddb2c6247e6d3c88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e827fbc5df1bdd39965fc375b2e6da7" id="r_a2e827fbc5df1bdd39965fc375b2e6da7"><td class="memItemLeft" align="right" valign="top"><a id="a2e827fbc5df1bdd39965fc375b2e6da7" name="a2e827fbc5df1bdd39965fc375b2e6da7"></a>
 std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html">ExactBandIntegral</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_eb</b></td></tr>
 <tr class="memdesc:a2e827fbc5df1bdd39965fc375b2e6da7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a37c38710a56fe6b0b1116f240488aa25" title="EXPERIMENTAL_band_volume_rule &quot;exact&quot;: a cell&#39;s Vol_t m_t becomes J_t / delta, J_t = int_t (d - delta...">set_exact_integral()</a>: the integral, and the last point's value / gradient and Hessian. <br /></td></tr>
@@ -243,11 +248,11 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
 <p>Vol_t(x) = (q1 - x) . ((q2 - q1) x (q3 - q1)) / 6 is affine in x: its gradient is -(q2 - q1) x (q3 - q1) / 6 and its Hessian zero. The gradient and Hessian of m_t are the minimising triangle P's: grad m_t = grad d_P(x) / (4 delta), hess m_t = hess d_P(x) / (4 delta). So grad E_t = m_t grad Vol + Vol grad m_t and hess E_t = grad Vol grad m_t^T + grad m_t grad Vol^T + Vol hess m_t. The outer-product pair is indefinite in general; polysolve's Newton regularises, and the AMIPS term beside it carries the shape.</p>
 <p>Every value, gradient and Hessian equals, bit for bit, that of a min_mean_distance() call per cell and evaluation; the work behind them is cut twice (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a4a50a31b8845320a324a87938117734c" title="m_min_md and m_min_tri at x (see the class comment).">exact_minima()</a>):</p><ul>
 <li>the last point's minima are kept, so value, gradient and Hessian at one x (polysolve asks for each separately, and again in its line search) search once;</li>
-<li>each cell searches only its certified candidates (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html#a2292db298e2809876de1ce3bbce7fa3d">InputTriangles::ball_candidates()</a>), valid at every x in a ball around the point they were built at. r, the ball's radius, is the distance from that point to the nearest plane through a cell's three fixed corners: the largest ball around it in which none of these cells can invert. The solver evaluates only points where no ring cell is inverted (polysolve tests is_step_valid() before each trial value), so it leaves this ball only away from the nearest face. Correctness does not depend on r, only the speed. Outside the ball the candidates are rebuilt around the new point; where no ball can be certified there (r &lt;= 0 or not finite), that evaluation searches the whole tree. Measured on the cube (cube_on, 3 turns, serial): 7.45M evaluations, 57% at the last point; of the rest 96% inside the ball, with 1.37 candidates per cell; the whole tree 8 times. Smoothing 68 s -&gt; 15 s, the run 76 s -&gt; 23 s, the output bit-identical. </li>
+<li>each cell searches only its certified candidates (ball_candidates()), valid at every x in a ball around the point they were built at. r, the ball's radius, is the distance from that point to the nearest plane through a cell's three fixed corners: the largest ball around it in which none of these cells can invert. The solver evaluates only points where no ring cell is inverted (polysolve tests is_step_valid() before each trial value), so it leaves this ball only away from the nearest face. Correctness does not depend on r, only the speed. Outside the ball the candidates are rebuilt around the new point; where no ball can be certified there (r &lt;= 0 or not finite), that evaluation runs min_mean_distance() itself. Measured on the cube (cube_on, 3 turns, serial): 7.45M evaluations, 57% at the last point; of the rest 96% inside the ball, with 1.37 candidates per cell; the whole tree 8 times. Smoothing 68 s -&gt; 15 s, the run 76 s -&gt; 23 s, the output bit-identical. </li>
 </ul>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae672366aa06c2779ceae8c336045bc08" name="ae672366aa06c2779ceae8c336045bc08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae672366aa06c2779ceae8c336045bc08">&#9670;&#160;</a></span>BandVolumeEnergy3D()</h2>
+<a id="a7e4a02e2d9e30cbdcec61bd17245dd8e" name="a7e4a02e2d9e30cbdcec61bd17245dd8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e4a02e2d9e30cbdcec61bd17245dd8e">&#9670;&#160;</a></span>BandVolumeEnergy3D()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -255,8 +260,14 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
         <tr>
           <td class="memname">wmtk::components::topological_offset::BandVolumeEnergy3D::BandVolumeEnergy3D </td>
           <td>(</td>
-          <td class="paramtype">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_input_triangles.html">InputTriangles</a> &gt;&#160;</td>
-          <td class="paramname"><em>tris</em>, </td>
+          <td class="paramtype">std::shared_ptr&lt; const <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>pad</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -283,7 +294,7 @@ m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
         </tr>
       </table>
 </div><div class="memdoc">
-<p>x0: the moving vertex's current position. Each cell's corners are ordered here so that its volume at x0 is positive (the ring the smoother starts from is valid). delta = target_distance. </p>
+<p>env and pad: the input's primitives and input_pad() of its vertices (the band term's searches). x0: the moving vertex's current position. Each cell's corners are ordered here so that its volume at x0 is positive (the ring the smoother starts from is valid). delta = target_distance. </p>
 
 </div>
 </div>
