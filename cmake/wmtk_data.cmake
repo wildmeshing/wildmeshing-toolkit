@@ -68,8 +68,12 @@ ExternalProject_Add(
     # max_expected_iterations goes from 20 to 25 as well: with the open-boundary erosion fixes
     # (#1096) this model, whose input has its own open boundary (7 open edges), takes 21
     # iterations on Windows Release; on macOS its output is byte-identical to main.
+    # At 67e29e7 (2026-10-15, branch uday/hybrid-demos off 1a7cbf5) seven models for tetwild's hybrid
+    # output tests: hybrid_demo_cube, hybrid_demo2_{sheet,helix,points} and
+    # hybrid_demo4_{sheet_S1,sheet_S2,wire} (the feature demos: a cube with a cantilever sheet and
+    # a rod; a cube with two sheets and one wire through all of them). No config changes.
     #
-    GIT_TAG 1a7cbf563e360bc6418fd79ab2e2b49788446d00
+    GIT_TAG 67e29e77d8dcb0285b5e97243eb7c27dd59917cb
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

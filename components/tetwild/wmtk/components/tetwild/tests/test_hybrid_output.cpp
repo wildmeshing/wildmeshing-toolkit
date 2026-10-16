@@ -27,6 +27,8 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -480,4 +482,221 @@ TEST_CASE("hybrid-thingi-volume-and-open-surface", "[tetwild][hybrid][thingi][.]
     // No curves or points were given.
     CHECK(h.edges.empty());
     CHECK(h.points.empty());
+}
+
+// ---- Connected scenes: the feature demos ------------------------------------------------------
+//
+// TetWild meshes every input into one tet mesh, so where a sheet meets the volume, or a curve
+// enters it or lies on a sheet, the meeting points are shared mesh vertices. _hybrid.msh writes
+// each block with its own vertex array, all copied from the mesh's double positions, so a shared
+// vertex appears in every block that uses it with bit-identical coordinates. "Connected" is
+// checked that way: exact coordinate equality between blocks.
+//
+// The scenes are the feature demos the hybrid output was built on (hybrid-data/feature_demo2
+// and feature_demo4), all on the cube [0,2]^3:
+//   demo2: a cantilever sheet at z = 1 sticking out of the x = 2 face (x 2..3.5, y 0.7..1.3); a
+//          helix rod leaving the y = 0 face; a point inside the cube and one in free space.
+//   demo4: sheets S1 (out of the x = 2 face, x 2..3.2, y 0.4..1.6) and S2 (out of the y = 0
+//          face, y -1.2..0, x 0.4..1.6), both at z = 1; one wire that starts on S2, enters the
+//          cube through y = 0, loops inside, leaves through x = 2, runs as an arc in S1,
+//          re-enters, loops again, leaves through y = 0 and ends on S2.
+
+namespace {
+
+using Key = std::array<double, 3>;
+Key key_of(const Vector3d& p)
+{
+    return {{p[0], p[1], p[2]}};
+}
+
+std::set<Key> vertex_set(const std::vector<Vector3d>& V)
+{
+    std::set<Key> s;
+    for (const auto& p : V) s.insert(key_of(p));
+    return s;
+}
+
+// The used vertices of an element block, as positions.
+template <size_t N>
+std::vector<Vector3d> used_vertices(
+    const std::vector<Vector3d>& V,
+    const std::vector<std::array<size_t, N>>& elements)
+{
+    std::set<size_t> ids;
+    for (const auto& e : elements) ids.insert(e.begin(), e.end());
+    std::vector<Vector3d> out;
+    for (const size_t i : ids) out.push_back(V[i]);
+    return out;
+}
+
+fs::path data_model(const std::string& name)
+{
+    return fs::path(WMTK_DATA_DIR) / "models" / name;
+}
+
+// A point is on the closed cube [0,2]^3 up to eps.
+bool in_cube(const Vector3d& p, double eps)
+{
+    for (int k = 0; k < 3; ++k) {
+        if (p[k] < -eps || p[k] > 2 + eps) return false;
+    }
+    return true;
+}
+
+} // namespace
+
+TEST_CASE("hybrid-demo2-cantilever-and-rod", "[tetwild][hybrid][demo][.]")
+{
+    const fs::path d = fs::temp_directory_path() / "wmtk_test_hybrid_demo2";
+    fs::create_directories(d);
+    const nlohmann::json j = {
+        {"application", "tetwild"},
+        {"input",
+         {data_model("hybrid_demo_cube.obj").string(),
+          data_model("hybrid_demo2_sheet.obj").string()}},
+        {"input_roles", {"volume", "surface"}},
+        {"input_edges", {data_model("hybrid_demo2_helix.obj").string()}},
+        {"input_points", {data_model("hybrid_demo2_points.obj").string()}},
+        {"filter", "hybrid"},
+        {"num_threads", 0},
+        {"stop_energy", 10},
+        {"max_iterations", 12},
+        {"output", (d / "out").string()}};
+    REQUIRE_NOTHROW(components::tetwild::tetwild(j));
+    const HybridBlocks h = read_hybrid(d / "out_hybrid.msh");
+    // Input bounding box: x 0..3.5 (the sheet), y -1.2..2 (the helix), z 0..2.
+    const double eps = 1e-3 * Vector3d(3.5, 3.2, 2.0).norm();
+    REQUIRE(!h.tets.empty());
+    REQUIRE(!h.faces.empty());
+    REQUIRE(!h.edges.empty());
+    const std::set<Key> tet_keys = vertex_set(used_vertices(h.tet_v, h.tets));
+
+    // The sheet is attached: the sheet vertices that are also tet vertices -- the shared ones --
+    // lie on the x = 2 face and span the sheet's attached edge, y 0.7..1.3.
+    double y_lo = 10, y_hi = -10;
+    size_t shared = 0;
+    for (const Vector3d& p : used_vertices(h.face_v, h.faces)) {
+        if (tet_keys.count(key_of(p)) == 0) continue;
+        ++shared;
+        CHECK(std::abs(p.x() - 2) <= eps);
+        y_lo = std::min(y_lo, p.y());
+        y_hi = std::max(y_hi, p.y());
+    }
+    CHECK(shared >= 2);
+    CHECK(std::abs(y_lo - 0.7) <= eps);
+    CHECK(std::abs(y_hi - 1.3) <= eps);
+
+    // The rod is attached: its end on the y = 0 face, (1.35, 0, 1), is a vertex of the line block
+    // within the anchor ball, and that vertex is a tet vertex.
+    const Vector3d rod_end(1.35, 0, 1);
+    size_t attached = 0;
+    for (const Vector3d& p : used_vertices(h.edge_v, h.edges)) {
+        if ((p - rod_end).norm() <= 0.5 * eps && tet_keys.count(key_of(p)) == 1) ++attached;
+    }
+    CHECK(attached == 1);
+
+    // The point inside the cube is a tet vertex; both points are anchors within their balls.
+    for (const Vector3d& q : {Vector3d(0.5, 0.5, 0.5), Vector3d(3.2, 1.0, 1.35)}) {
+        double best = std::numeric_limits<double>::infinity();
+        Vector3d at;
+        for (const Vector3d& p : h.points) {
+            if ((p - q).norm() < best) {
+                best = (p - q).norm();
+                at = p;
+            }
+        }
+        CHECK(best <= 0.5 * eps);
+        if (in_cube(q, 0)) CHECK(tet_keys.count(key_of(at)) == 1);
+    }
+}
+
+TEST_CASE("hybrid-demo4-two-sheets-and-a-wire", "[tetwild][hybrid][demo][.]")
+{
+    const fs::path d = fs::temp_directory_path() / "wmtk_test_hybrid_demo4";
+    fs::create_directories(d);
+    const nlohmann::json j = {
+        {"application", "tetwild"},
+        {"input",
+         {data_model("hybrid_demo_cube.obj").string(),
+          data_model("hybrid_demo4_sheet_S1.obj").string(),
+          data_model("hybrid_demo4_sheet_S2.obj").string()}},
+        {"input_roles", {"volume", "surface", "surface"}},
+        {"input_edges", {data_model("hybrid_demo4_wire.obj").string()}},
+        {"filter", "hybrid"},
+        {"num_threads", 0},
+        {"stop_energy", 10},
+        {"max_iterations", 15},
+        {"output", (d / "out").string()}};
+    REQUIRE_NOTHROW(components::tetwild::tetwild(j));
+    const HybridBlocks h = read_hybrid(d / "out_hybrid.msh");
+    // Input bounding box: x 0..3.2 (S1), y -1.2..2 (S2), z 0..2.
+    const double eps = 1e-3 * Vector3d(3.2, 3.2, 2.0).norm();
+    REQUIRE(!h.tets.empty());
+    REQUIRE(!h.faces.empty());
+    REQUIRE(!h.edges.empty());
+    const std::set<Key> tet_keys = vertex_set(used_vertices(h.tet_v, h.tets));
+    const std::vector<Vector3d> sheet_v = used_vertices(h.face_v, h.faces);
+    const std::set<Key> sheet_keys = vertex_set(sheet_v);
+
+    // Both sheets are attached: the sheet vertices that are also tet vertices lie on the face
+    // their sheet leaves from (S1: x = 2, S2: y = 0), and each sheet has some.
+    size_t on_x2 = 0, on_y0 = 0;
+    for (const Vector3d& p : sheet_v) {
+        if (tet_keys.count(key_of(p)) == 0) continue;
+        const bool s1 = std::abs(p.x() - 2) <= eps;
+        const bool s2 = std::abs(p.y()) <= eps;
+        CHECK((s1 || s2));
+        on_x2 += s1;
+        on_y0 += s2;
+    }
+    CHECK(on_x2 >= 2);
+    CHECK(on_y0 >= 2);
+
+    // The wire is shared wherever the input wire is in the cube or on a sheet: each of its vertices
+    // is a tet vertex or a sheet vertex, except along the input's free-space segments -- the
+    // input edges with an endpoint outside the cube and off the sheets' plane z = 1 (the wire
+    // leaves the x = 2 face just below S1 and climbs onto it) -- within the feature tube of them.
+    std::vector<Vector3d> wv;
+    std::vector<std::array<size_t, 2>> we;
+    {
+        std::ifstream in(data_model("hybrid_demo4_wire.obj"));
+        std::string tag;
+        while (in >> tag) {
+            if (tag == "v") {
+                Vector3d p;
+                in >> p[0] >> p[1] >> p[2];
+                wv.push_back(p);
+            } else if (tag == "l") {
+                std::string line;
+                std::getline(in, line);
+                std::istringstream ls(line);
+                std::vector<size_t> ids;
+                size_t i;
+                while (ls >> i) ids.push_back(i - 1);
+                for (size_t k = 0; k + 1 < ids.size(); ++k) we.push_back({{ids[k], ids[k + 1]}});
+            } else {
+                std::string rest;
+                std::getline(in, rest);
+            }
+        }
+    }
+    const auto free_in_input = [&](const Vector3d& p) { return !in_cube(p, 0) && p.z() != 1.0; };
+    size_t unshared_outside_free = 0, on_sheet = 0;
+    for (const Vector3d& p : used_vertices(h.edge_v, h.edges)) {
+        const bool tet = tet_keys.count(key_of(p)) == 1;
+        const bool sheet = sheet_keys.count(key_of(p)) == 1;
+        if (sheet && !in_cube(p, eps)) ++on_sheet;
+        if (tet || sheet) continue;
+        bool near_free = false;
+        for (const auto& e : we) {
+            if ((free_in_input(wv[e[0]]) || free_in_input(wv[e[1]])) &&
+                point_segment_distance(p, wv[e[0]], wv[e[1]]) <= 0.5 * eps) {
+                near_free = true;
+                break;
+            }
+        }
+        if (!near_free) ++unshared_outside_free;
+    }
+    CHECK(unshared_outside_free == 0);
+    CHECK(on_sheet > 0); // the arc in S1 and the ends on S2
 }
