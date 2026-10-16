@@ -33,8 +33,28 @@ namespace wmtk::components::topological_offset {
  */
 
 namespace {
+/// The rows of E that are not an edge of any triangle of F. The extraction's E (m_phi_E) holds
+/// every triangle edge as well as the isolated segments (init_input_complex_bvh()).
+size_t segments_off_triangles(const MatrixXi& E, const MatrixXi& F)
+{
+    std::set<std::pair<int, int>> tri_edges;
+    for (int f = 0; f < F.rows(); ++f) {
+        for (int j = 0; j < 3; ++j) {
+            const int a = F(f, j), b = F(f, (j + 1) % 3);
+            tri_edges.insert({std::min(a, b), std::max(a, b)});
+        }
+    }
+    size_t isolated = 0;
+    for (int e = 0; e < E.rows(); ++e) {
+        const int a = E(e, 0), b = E(e, 1);
+        if (!tri_edges.count({std::min(a, b), std::max(a, b)})) ++isolated;
+    }
+    return isolated;
+}
+
 /// The exact-kind envelope Phi's euclidean twin queries: triangles where there are any,
-/// segments (isolated input points as the degenerate segment (i, i)) otherwise.
+/// segments (isolated input points as the degenerate segment (i, i)) otherwise. Nothing is
+/// dropped: init_input_complex_bvh() refuses a complex with triangles and segments or points.
 std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
     const MatrixXd& V,
     const MatrixXi& E,
@@ -294,6 +314,14 @@ void TopoOffsetTetMesh::build_envelopes()
 {
     // See m_envelope's declaration: one envelope, around every held face, built once.
     m_envelope_eps = m_offset_params.envelope_size;
+    // Always the exact envelope. An eps that is not a positive length has no exact tube to build,
+    // and is an error, where it used to switch to the sampled envelope.
+    if (!(std::isfinite(m_envelope_eps) && m_envelope_eps > 0.)) {
+        log_and_throw_error(
+            "envelope_size {} is not a valid envelope half-width (finite and > 0); set "
+            "envelope_size or envelope_size_rel to a positive length",
+            m_envelope_eps);
+    }
     std::vector<Eigen::Vector3i> tris;
     size_t n_tracked = 0, n_wall = 0;
     for (const Tuple& f : get_faces()) {
@@ -304,7 +332,6 @@ void TopoOffsetTetMesh::build_envelopes()
         const auto vs = get_face_vids(f);
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
     // Kept as built, so the final pass can hold the same surfaces where they were here
     // (build_final_envelopes()).
     m_held_verts.assign(vert_capacity(), Eigen::Vector3d::Zero());
@@ -313,17 +340,16 @@ void TopoOffsetTetMesh::build_envelopes()
     if (tris.empty()) {
         m_envelope = nullptr;
     } else {
-        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
         m_envelope->init(m_held_verts, tris, m_envelope_eps);
     }
     logger().info(
         "\t[envelope] {} of {} tracked faces held ({} on the domain wall; the input complex "
-        "boundary and the wall), eps {:.6g}, {}",
+        "boundary and the wall), eps {:.6g}, EXACT",
         tris.size(),
         n_tracked,
         n_wall,
-        m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)");
+        m_envelope_eps);
 }
 
 void TopoOffsetTetMesh::build_final_envelopes()
@@ -352,8 +378,8 @@ void TopoOffsetTetMesh::build_final_envelopes()
         logger().info("\t[envelope] final pass: no region boundary besides the held surfaces");
         return;
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+    // m_envelope_eps is build_envelopes()'s, which refuses an invalid one.
+    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
     m_envelope->init(verts, tris, m_envelope_eps);
     logger().info(
         "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
@@ -983,6 +1009,41 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     m_phi_point_region.clear();
     for (const int p : P_phi) m_phi_point_region.push_back(comp_of[size_t(p)]);
 
+    // One primitive kind per input complex: triangles (a solid's boundary, a sheet), or segments
+    // and points. The euclidean field's envelope holds one kind (euclidean_query_envelope()),
+    // and it used to keep the triangles of a mixed complex and silently drop its segments and
+    // points. Refused here, before construction.
+    if (m_phi_F.rows() > 0) {
+        const size_t isolated = segments_off_triangles(m_phi_E, m_phi_F);
+        if (isolated > 0 || !m_phi_P.empty()) {
+            log_and_throw_error(
+                "the input complex mixes primitive kinds: {} triangles, {} segments not on a "
+                "triangle, {} isolated points; the offset takes one primitive kind per input "
+                "complex (triangles, or segments and points); change offset_selection",
+                m_phi_F.rows(),
+                isolated,
+                m_phi_P.size());
+        }
+    }
+
+    // The euclidean field's query engine, built here, once, from the final extraction: the
+    // repulsion pass and the predicted front (construct_offset()) read it before
+    // init_offset_potential() builds the field on it. A query engine, not a tolerance:
+    // nearest_point_feature() supplies the foot point and the feature kind the exact derivatives
+    // case on, from the envelope's BVH and its copies of the input. No containment question is
+    // asked of it, so its exact structure is unused, and its eps (target_distance) enters no
+    // query: the potentials built on it at other levels (2 delta for the repulsion, the
+    // predicted front's t) read the same distance as one built at target_distance.
+    m_input_complex_envelope = nullptr;
+    if (m_offset_params.offset_field == "euclidean") {
+        m_input_complex_envelope = euclidean_query_envelope(
+            m_phi_V,
+            m_phi_E,
+            m_phi_F,
+            m_phi_P,
+            m_offset_params.target_distance);
+    }
+
     // The input complex needs no containment envelopes of its own: every simplex of it lies on
     // tag-region boundaries, so the per-tag envelopes already hold all of it.
 }
@@ -996,14 +1057,7 @@ void TopoOffsetTetMesh::init_offset_potential()
     // Both are built from the same extraction (m_phi_V/E/F/P), so whichever is chosen measures
     // the same geometry the diagnostics do.
     if (m_offset_params.offset_field == "euclidean") {
-        // A query engine, not a tolerance: nearest_point_feature() supplies the foot point and
-        // the feature kind the exact derivatives case on, and only the exact kind answers it.
-        m_input_complex_envelope = euclidean_query_envelope(
-            m_phi_V,
-            m_phi_E,
-            m_phi_F,
-            m_phi_P,
-            m_offset_params.target_distance);
+        // On m_input_complex_envelope, built by init_input_complex_bvh().
         if (m_phi_F.rows() > 0) {
             logger().info(
                 "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} triangles",
@@ -1025,18 +1079,7 @@ void TopoOffsetTetMesh::init_offset_potential()
             // its min over (see band_cell_term()). A segment that is an edge of a triangle adds
             // nothing to d; an isolated one, or an isolated point, would be a piece the term does
             // not have.
-            std::set<std::pair<int, int>> tri_edges;
-            for (int f = 0; f < m_phi_F.rows(); ++f) {
-                for (int j = 0; j < 3; ++j) {
-                    const int a = m_phi_F(f, j), b = m_phi_F(f, (j + 1) % 3);
-                    tri_edges.insert({std::min(a, b), std::max(a, b)});
-                }
-            }
-            size_t isolated = 0;
-            for (int e = 0; e < m_phi_E.rows(); ++e) {
-                const int a = m_phi_E(e, 0), b = m_phi_E(e, 1);
-                if (!tri_edges.count({std::min(a, b), std::max(a, b)})) ++isolated;
-            }
+            const size_t isolated = segments_off_triangles(m_phi_E, m_phi_F);
             if (m_phi_F.rows() == 0 || isolated > 0 || !m_phi_P.empty()) {
                 log_and_throw_error(
                     "the energy's band term needs an input complex of triangles only ({} "
@@ -1551,11 +1594,11 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         logger().info("\t[repulsion] no edge to march, no pass");
         return;
     }
-    // The march's own distance (the same input-complex arrays as m_input_complex_bvh), at level
-    // 2 delta. Non-null switches the repulsion on (is_repulsion_vertex()).
-    m_repulsion_potential = std::make_shared<EuclideanOffsetPotential3D>(
-        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, 2. * delta),
-        2. * delta);
+    // The march's own distance (m_input_complex_envelope, the same input-complex arrays as
+    // m_input_complex_bvh), at level 2 delta. Non-null switches the repulsion on
+    // (is_repulsion_vertex()).
+    m_repulsion_potential =
+        std::make_shared<EuclideanOffsetPotential3D>(m_input_complex_envelope, 2. * delta);
     m_repulsion_term = std::make_shared<OffsetEnergy3D>(
         m_repulsion_potential,
         4. * offset_term_weight(),
@@ -1817,9 +1860,7 @@ TopoOffsetTetMesh::PredictedFront TopoOffsetTetMesh::predict_front(const double 
     // triangles is over the bar. halve: the sizing scalar is halved at the corners of every cell
     // over, by refine_front_by_halving(), as the loop halves.
     PredictedFront s;
-    const auto pot = std::make_shared<EuclideanOffsetPotential3D>(
-        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, t),
-        t);
+    const auto pot = std::make_shared<EuclideanOffsetPotential3D>(m_input_complex_envelope, t);
     const double d_saved = m_construction_distance;
     m_construction_distance = t; // what edge_split_sphere_trace() traces to
     std::map<std::pair<size_t, size_t>, std::optional<Vector3d>> cut;
