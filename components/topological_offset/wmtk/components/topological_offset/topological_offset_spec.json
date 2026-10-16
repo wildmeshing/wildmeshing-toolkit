@@ -34,7 +34,6 @@
       "init_optimize",
       "repulsion_smoothing_passes",
       "repulsion_rounds",
-      "EXPERIMENTAL_repulsion_refine",
       "EXPERIMENTAL_split_energy_gate",
       "EXPERIMENTAL_band_volume_rule",
       "EXPERIMENTAL_settle_refinement",
@@ -323,12 +322,6 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL (2026-10-09), 3D. Every split of the optimisation loop (not the march's) is committed only if the energy E, summed over the cells it changes -- the parents before, the children after -- strictly falls, judged right after the split and before any smoothing; otherwise it is rolled back. A split never raises the energy's band term, so a split passes where the bound tightens by more than the AMIPS term rises (bisecting a well-shaped tet makes worse-shaped children), and is refused where the bound is already exact. Strict, since every split adds cells. What proposes splits is unchanged (the sizing field and its refinement). false (the default) = splits are not judged by the energy."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_repulsion_refine",
-    "type": "bool",
-    "default": false,
-    "doc": "EXPERIMENTAL (2026-10-07), 3D, euclidean offset_field only, needs repulsion_rounds > 0. The repulsion also refines, before the march, where the front the march would cut fails the loop's own face measure. At every report (before the passes, after each pass and each round) the front at target_distance (the construction target) is predicted: on every marched edge the split point is the sphere trace's, the point the march creates; in every cell with a marched edge these points bound the cell's front piece, a triangle, or a quad measured in both triangulations because the march's split order picks its diagonal; each triangle is measured by the loop's face measure (face_offset_term(): stencil_order, front_conv). The sizing scalar is halved, and graded, at the corners of every cell whose piece is over the bar, as the loop halves. The rounds' split pass realizes it, refusing marched edges as always, so the refinement runs along the input and the outer ends and never across the future band; the rounds have no collapse group; the repulsion term keeps the outer ends beyond target_distance. The passes and rounds stop once every outer end is beyond target_distance + front_conv AND no predicted piece is over the bar (or none is unmeasurable). The lowered sizing field carries into the loop. Why: on Thingi10K 100026 the slot-end band cells that cover a slot's mid-plane reach 3.6 x the construction target along the slot, whatever the target, because the march's split points slide along fixed background edges running across and along the slot; refining after the march splits those cells' front edges, whose midpoints land in the gap. false (the default) = the rounds as before."
   },
   {
     "pointer": "/check_manifoldness",

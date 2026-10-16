@@ -1367,28 +1367,6 @@ public:
     /// pass.
     optimization::NewtonCounters m_newton_repulsion;
     std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
-    /// EXPERIMENTAL_repulsion_refine: the front the march would cut at target t, measured before
-    /// it exists (predict_front()).
-    struct PredictedFront
-    {
-        size_t n_cells = 0; ///< cells with a marched edge
-        size_t n_over = 0; ///< of them, cells whose front piece is over the bar
-        size_t n_unreached = 0; ///< cells with a marched edge whose outer end is within t
-        size_t n_unmeasurable = 0;
-        double max_measure = 0.; ///< the worst piece's face measure, 1 at the bar
-        size_t n_halved = 0; ///< vertices whose sizing scalar was halved
-    };
-    PredictedFront predict_front(double t, bool halve);
-    /// EXPERIMENTAL_repulsion_refine: whether splitting edge (v1, v2) would make an outer end
-    /// within target_distance + front_conv (split_edge_before() refuses it, split_edge_is_due()
-    /// never offers it).
-    bool repulsion_split_makes_close_outer_end(size_t v1, size_t v2) const;
-    /// EXPERIMENTAL_repulsion_refine: false when a cell of `tids` has a complex corner and a
-    /// non-complex corner within target_distance + front_conv, i.e. an outer end the march could
-    /// not trace past (the swaps refuse such cells). True whenever the key is off.
-    bool repulsion_outer_ends_kept(const std::vector<size_t>& tids) const;
-    /// Operations EXPERIMENTAL_repulsion_refine refused for that reason, per pass or round.
-    mutable std::atomic<size_t> m_repulsion_close_refused{0};
     /// The edges marching_tets() splits: exactly one end in the input complex (label != 0).
     bool is_marched_edge(const size_t a, const size_t b) const
     {
