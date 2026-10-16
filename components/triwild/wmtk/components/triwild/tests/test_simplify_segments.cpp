@@ -13,7 +13,7 @@ using namespace wmtk;
 namespace {
 
 /// Build an envelope of thickness `eps` around (V, E).
-SampleEnvelope make_envelope(const MatrixXd& V, const MatrixXi& E, double eps)
+Envelope make_envelope(const MatrixXd& V, const MatrixXi& E, double eps)
 {
     std::vector<Vector2d> v(V.rows());
     for (int i = 0; i < V.rows(); ++i) {
@@ -23,7 +23,7 @@ SampleEnvelope make_envelope(const MatrixXd& V, const MatrixXi& E, double eps)
     for (int i = 0; i < E.rows(); ++i) {
         e[i] = Vector2i(E(i, 0), E(i, 1));
     }
-    SampleEnvelope env;
+    Envelope env;
     env.init(v, e, eps);
     return env;
 }
@@ -111,7 +111,7 @@ TEST_CASE("simplify-segments-dense-circle", "[triwild_operation][simplify]")
     const MatrixXi E0 = E;
 
     const double eps = 1e-2;
-    const SampleEnvelope env = make_envelope(V, E, eps);
+    const Envelope env = make_envelope(V, E, eps);
 
     const size_t removed = wmtk::utils::simplify_segments(V, E, env);
 
@@ -146,7 +146,7 @@ TEST_CASE("simplify-segments-keeps-corners", "[triwild_operation][simplify]")
     auto [V, E] = closed_loop(pts);
 
     const double eps = 1e-3; // far smaller than the corner deviation
-    const SampleEnvelope env = make_envelope(V, E, eps);
+    const Envelope env = make_envelope(V, E, eps);
     wmtk::utils::simplify_segments(V, E, env);
 
     check_well_formed(V, E);
@@ -175,7 +175,7 @@ TEST_CASE("simplify-segments-keeps-open-endpoints", "[triwild_operation][simplif
     }
     auto [V, E] = open_chain(pts);
 
-    const SampleEnvelope env = make_envelope(V, E, 1e-3);
+    const Envelope env = make_envelope(V, E, 1e-3);
     wmtk::utils::simplify_segments(V, E, env);
 
     check_well_formed(V, E);
@@ -216,7 +216,7 @@ TEST_CASE("simplify-segments-keeps-junction", "[triwild_operation][simplify]")
         E.row(i) = segs[i];
     }
 
-    const SampleEnvelope env = make_envelope(V, E, 1e-3);
+    const Envelope env = make_envelope(V, E, 1e-3);
     wmtk::utils::simplify_segments(V, E, env);
 
     check_well_formed(V, E);
@@ -247,7 +247,7 @@ TEST_CASE("simplify-segments-keeps-free-points", "[triwild_operation][simplify]"
     V.row(n) = Vector2d(0.0, 0.0);
     V.row(n + 1) = Vector2d(0.3, 0.2);
 
-    const SampleEnvelope env = make_envelope(V, E, 1e-2);
+    const Envelope env = make_envelope(V, E, 1e-2);
     wmtk::utils::simplify_segments(V, E, env);
 
     check_well_formed(V, E);
@@ -268,8 +268,8 @@ TEST_CASE("simplify-segments-deterministic", "[triwild_operation][simplify]")
     MatrixXd V2 = V1;
     MatrixXi E2 = E1;
 
-    const SampleEnvelope env1 = make_envelope(V1, E1, 5e-3);
-    const SampleEnvelope env2 = make_envelope(V2, E2, 5e-3);
+    const Envelope env1 = make_envelope(V1, E1, 5e-3);
+    const Envelope env2 = make_envelope(V2, E2, 5e-3);
     const size_t r1 = wmtk::utils::simplify_segments(V1, E1, env1);
     const size_t r2 = wmtk::utils::simplify_segments(V2, E2, env2);
 
@@ -287,7 +287,7 @@ TEST_CASE("simplify-segments-already-coarse", "[triwild_operation][simplify]")
     const MatrixXd V0 = V;
     const MatrixXi E0 = E;
 
-    const SampleEnvelope env = make_envelope(V, E, 1e-3);
+    const Envelope env = make_envelope(V, E, 1e-3);
     const size_t removed = wmtk::utils::simplify_segments(V, E, env);
 
     CHECK(removed == 0);

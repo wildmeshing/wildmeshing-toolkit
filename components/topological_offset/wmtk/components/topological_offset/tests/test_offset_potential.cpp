@@ -1309,7 +1309,7 @@ TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
 
 TEST_CASE("envelope-primitive-queries-match-input-triangles", "[offset][potential]")
 {
-    // SampleEnvelope's per-primitive queries are to replace InputTriangles: on the same triangles
+    // Envelope's per-primitive queries are to replace InputTriangles: on the same triangles
     // they run the same operations, and must agree with it to rounding -- value, gradient and
     // Hessian of the point distance, and the triangle-to-triangle distance.
     //
@@ -1338,9 +1338,9 @@ TEST_CASE("envelope-primitive-queries-match-input-triangles", "[offset][potentia
     const double eps = std::numeric_limits<double>::epsilon();
     for (const TriSoup& s : {cube(1.0), uv_sphere(1.0, 6, 9)}) {
         const InputTriangles tris(s.V, s.F);
-        SampleEnvelope env(true);
+        Envelope env(true);
         env.init(s.V, s.F, 1e-3);
-        REQUIRE(env.kind() == SampleEnvelope::Kind::Triangles3d);
+        REQUIRE(env.kind() == Envelope::Kind::Triangles3d);
 
         std::mt19937 rng(3);
         std::uniform_real_distribution<double> U(-1.6, 1.6), D(-0.3, 0.3), W(0, 1), E(-12, -1);

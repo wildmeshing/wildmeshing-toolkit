@@ -1173,7 +1173,7 @@ const Vector3d kApex(0., 10., 0.);
 
 std::shared_ptr<EuclideanOffsetPotential3D> plane_field()
 {
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->use_exact = true;
     const std::vector<Eigen::Vector3d> verts = {{-10., -10., 0.}, {10., -10., 0.}, kApex};
     const std::vector<Eigen::Vector3i> tris = {{0, 1, 2}};

@@ -346,7 +346,7 @@ public:
      * copies of the input, which every init() fills. Its eps is irrelevant and no containment test
      * is run against it.
      */
-    EuclideanOffsetPotential(const std::shared_ptr<SampleEnvelope>& envelope, double delta);
+    EuclideanOffsetPotential(const std::shared_ptr<Envelope>& envelope, double delta);
 
     /**
      * @brief Build over the input-complex BVH. The 2D path, and 2D-only -- checked at runtime,
@@ -396,7 +396,7 @@ private:
 
     /// Exactly one of these is set, by whichever constructor ran: the envelope by the 3D path,
     /// the BVH by the 2D path. Every query branches on m_bvh.
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     std::shared_ptr<SimplicialComplexBVH> m_bvh;
 };
 

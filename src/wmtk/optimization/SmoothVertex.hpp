@@ -289,7 +289,7 @@ struct SmoothVertexOptions
  *   - smoothing_ring_energy(ring, stored): what the projected step compares for the whole
  *     one-ring (TetOptimizerMesh: the max of smoothing_cell_energy() unless overridden)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
- *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
+ *   - std::shared_ptr<Envelope> smoothing_energy_envelope(size_t vid) const
  *     and smoothing_containment_envelope(size_t vid) const
  *     (null is allowed and means "no envelope term for this vertex"; both dimensions)
  *   - std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(size_t vid) const
@@ -393,7 +393,7 @@ bool smooth_vertex_3d(
     // surface flag alone would smooth it as free and let it walk off its curve. Derived from
     // the edge tags, so it cannot go stale.
     const bool on_feature_curve = m.m_track_feature_edges && m.vertex_has_feature_edge(vid);
-    const std::shared_ptr<SampleEnvelope> pull_env =
+    const std::shared_ptr<Envelope> pull_env =
         (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
@@ -522,7 +522,7 @@ bool smooth_vertex_3d(
 
     // Containment: every surface triangle at this vertex must still be inside. Checked
     // against the containment envelope, which is not necessarily the one it was pulled to.
-    const std::shared_ptr<SampleEnvelope> check_env =
+    const std::shared_ptr<Envelope> check_env =
         VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : nullptr;
     if (check_env) {
         const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
@@ -691,7 +691,7 @@ bool smooth_vertex_2d(
     // Per-vertex rather than the mesh's single m_envelope, and split into the PULL and the
     // CONTAINER exactly as the 3D path above: see TriOptimizerMesh::smoothing_energy_envelope.
     // The defaults return the old expression, so TriWild and SimWild are unaffected.
-    const std::shared_ptr<SampleEnvelope> envelope = m.smoothing_energy_envelope(vid);
+    const std::shared_ptr<Envelope> envelope = m.smoothing_energy_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         const Vector2d x_orig = m.smoothing_position(vid);
@@ -801,7 +801,7 @@ bool smooth_vertex_2d(
 
     // Containment, edge by edge rather than face by face as in 3D -- and against the
     // CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
-    if (const std::shared_ptr<SampleEnvelope> hold_env = m.smoothing_containment_envelope(vid)) {
+    if (const std::shared_ptr<Envelope> hold_env = m.smoothing_containment_envelope(vid)) {
         const Vector2d p = m.smoothing_position(vid);
         for (const Vector2d& q : surf_neighbors) {
             const std::array<Eigen::Vector2d, 2> edge = {{p, q}};

@@ -2,7 +2,7 @@
 
 namespace wmtk::components::simwild {
 
-std::shared_ptr<SampleEnvelope> SimWildMesh::smoothing_energy_envelope(const size_t vid) const
+std::shared_ptr<Envelope> SimWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
     // Match TetWild: order >= 2 is a surface boundary, non-manifold edge, or a junction of
     // such edges, and is pulled toward the feature-edge envelope when one exists.

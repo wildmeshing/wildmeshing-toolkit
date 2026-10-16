@@ -453,7 +453,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
                 nm_v,
                 simplify_use_link_condition ? "on" : "off");
         }
-        // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
+        // Envelope::init builds both the exact structure and the sampled BVH, and
         // is_outside picks between them per query, so switching predicates for the
         // simplification alone is a flag flip with nothing to rebuild. Restoring it
         // afterwards no longer matters to the tet phase -- that now gets its own
@@ -563,7 +563,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         env_around_simplified,
         /*simplification_ran=*/!skip_simplify);
 
-    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
+    auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
     {
         std::vector<Eigen::Vector3d> env_V;
         std::vector<Eigen::Vector3i> env_F;
@@ -718,7 +718,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         for (size_t i = 0; i < feature_edges.size(); ++i) {
             fe_env[i] = Eigen::Vector2i(int(feature_edges[i][0]), int(feature_edges[i][1]));
         }
-        mesh_new.m_feature_envelope = std::make_shared<SampleEnvelope>(!use_sample_envelope);
+        mesh_new.m_feature_envelope = std::make_shared<Envelope>(!use_sample_envelope);
         mesh_new.m_feature_envelope->init(
             feature_edge_vertices,
             fe_env,
@@ -1047,29 +1047,28 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             // an apparent pass. This is opt-in diagnostic code, so pay for a stable answer.
             const int n_samples = 100000;
 
-            SampleEnvelope env_in(true);
+            Envelope env_in(true);
             env_in.init(V, F, params.eps);
 
-            SampleEnvelope env_out(true);
+            Envelope env_out(true);
             env_out.init(matV, matF, params.eps);
 
             // Max distance from points sampled on (Vs,Fs) to the surface behind `target`.
-            const auto max_deviation = [&](const Eigen::MatrixXd& Vs,
-                                           const Eigen::MatrixXi& Fs,
-                                           const SampleEnvelope& target) {
-                Eigen::MatrixXd B;
-                Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
-                Eigen::MatrixXd X;
-                igl::random_points_on_mesh(n_samples, Vs, Fs, B, FI, X);
+            const auto max_deviation =
+                [&](const Eigen::MatrixXd& Vs, const Eigen::MatrixXi& Fs, const Envelope& target) {
+                    Eigen::MatrixXd B;
+                    Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
+                    Eigen::MatrixXd X;
+                    igl::random_points_on_mesh(n_samples, Vs, Fs, B, FI, X);
 
-                double worst = -1;
-                for (int i = 0; i < X.rows(); ++i) {
-                    const Eigen::Vector3d p = X.row(i);
-                    Eigen::Vector3d r;
-                    worst = std::max(worst, target.nearest_point(p, r));
-                }
-                return worst < 0 ? worst : std::sqrt(worst);
-            };
+                    double worst = -1;
+                    for (int i = 0; i < X.rows(); ++i) {
+                        const Eigen::Vector3d p = X.row(i);
+                        Eigen::Vector3d r;
+                        worst = std::max(worst, target.nearest_point(p, r));
+                    }
+                    return worst < 0 ? worst : std::sqrt(worst);
+                };
 
             hausdorff_distance = max_deviation(matV, matF, env_in);
             coverage_distance = max_deviation(V, F, env_out);

@@ -36,8 +36,8 @@ public:
     std::vector<bool>& t_is_removed;
     std::vector<TetQuality>& tet_qualities;
 
-    const SampleEnvelope& geo_sf_tree;
-    const SampleEnvelope& geo_b_tree;
+    const Envelope& geo_sf_tree;
+    const Envelope& geo_b_tree;
 
     int counter = 0;
     int suc_counter = 0;
@@ -49,8 +49,8 @@ public:
         std::vector<bool>& v_is_rm,
         std::vector<bool>& t_is_rm,
         std::vector<TetQuality>& tet_qs,
-        const SampleEnvelope& geo_tree,
-        const SampleEnvelope& b_t,
+        const Envelope& geo_tree,
+        const Envelope& b_t,
         const Args& ar,
         State& st)
         : tet_vertices(t_vs)

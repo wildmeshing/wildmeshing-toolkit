@@ -13,8 +13,12 @@
 
 namespace wmtk::components::qslim {
 
-QSlimMesh::QSlimMesh(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads)
+QSlimMesh::QSlimMesh(
+    std::vector<Eigen::Vector3d> _m_vertex_positions,
+    int num_threads,
+    bool use_exact)
 {
+    m_envelope.use_exact = use_exact;
     p_vertex_attrs = &vertex_attrs;
     p_face_attrs = &face_attrs;
     p_edge_attrs = &edge_attrs;

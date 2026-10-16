@@ -229,7 +229,7 @@ public:
      * (euclidean_query_envelope()), and its exact structure is unused. Built from the same
      * extraction as m_input_complex_bvh, so it describes the same geometry.
      */
-    std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
+    std::shared_ptr<Envelope> m_input_complex_envelope;
 
     /**
      * @brief One field per connected piece of the input complex, and which one each band vertex
@@ -294,7 +294,7 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): a SampleEnvelope of half-width
+     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): an Envelope of half-width
      * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
      * anything moves -- after the simplicial embedding, before the repulsion and the march --
      * and swapped for a wider one only for the frozen-front final pass (build_final_envelopes()).
@@ -333,7 +333,7 @@ public:
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
     /// The loop's m_envelope while the final pass holds its own.
-    std::shared_ptr<SampleEnvelope> m_loop_envelope;
+    std::shared_ptr<Envelope> m_loop_envelope;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -346,7 +346,7 @@ public:
      * check), so it is one triangle set with no junctions: a face is either on it or not, and
      * surface_envelope_for_face() answers an offset face with this envelope alone.
      */
-    std::shared_ptr<SampleEnvelope> m_offset_envelope;
+    std::shared_ptr<Envelope> m_offset_envelope;
     void build_offset_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
@@ -1617,7 +1617,7 @@ public:
      * The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other
      * tracked face: m_envelope when it is held (face_is_held()), else nothing.
      */
-    std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+    std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
         const auto found = try_tuple_from_face(vids);
@@ -1686,13 +1686,13 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled to and contained in m_envelope -- a real SampleEnvelope, as the
+    /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
     /// pull requires. Any other vertex, the front's included, is held by nothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
         return vertex_is_held(vid) ? m_envelope : nullptr;
     }
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
     {
         return vertex_is_held(vid) ? m_envelope : nullptr;
     }

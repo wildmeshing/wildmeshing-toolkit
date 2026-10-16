@@ -171,7 +171,7 @@ public:
     /// reference to its own Parameters for the rest.
     OptimizerParameters& m_params;
 
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     double m_envelope_eps = -1;
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
@@ -401,18 +401,18 @@ public:
      * optimization exists to move, and a tube around its initial position caps how far it can
      * ever travel.
      *
-     * WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual SampleEnvelope queries --
+     * WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual Envelope queries --
      * nearest_point and the ExactDistanceEnergy2D trio -- so whatever it returns must be a real
      * envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it
      * may be answered by a composite over several envelopes (topological_offset holds a
      * junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook
      * would statically bind a composite's null BVH the moment a junction vertex was pulled.
      */
-    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const
+    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const
     {
         return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
     }
-    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const
+    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
     {
         return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
     }
@@ -623,7 +623,7 @@ public:
      * Keyed on the vertex ids rather than the eid because every caller is a topological
      * operation asking about segments it is ABOUT to create or has just created.
      */
-    virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_edge(
+    virtual std::shared_ptr<Envelope> surface_envelope_for_edge(
         const std::array<size_t, 2>& vids) const
     {
         return m_envelope;
@@ -633,7 +633,7 @@ public:
     /// when it has none. Every surface containment check in the operations goes through here.
     bool surface_segment_is_outside(const size_t a, const size_t b) const
     {
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_edge({{a, b}});
+        const std::shared_ptr<Envelope> env = surface_envelope_for_edge({{a, b}});
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside(std::array<Vector2d, 2>{{VA[a].m_posf, VA[b].m_posf}});
