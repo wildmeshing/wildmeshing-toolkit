@@ -226,7 +226,9 @@ PrismaticMeshInput detail::load_prismatic_vtu(const std::filesystem::path& path)
     for (size_t i : result.offset_vertices) {
         const auto it = id_to_row.find(result.corr_input_vid[i]);
         require(it != id_to_row.end(), "offset vertex has missing or unknown input correspondence");
-        require(result.vertex_tags[it->second] == 1, "correspondence target is not an input vertex");
+        require(
+            result.vertex_tags[it->second] == 1,
+            "correspondence target is not an input vertex");
         result.corr_input_vertex[i] = static_cast<int64_t>(it->second);
         result.input_to_offset_vertices[it->second].push_back(i);
     }

@@ -44,8 +44,7 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
         if (const auto other = face.switch_tetrahedron(*input.mesh))
             touches_band = touches_band || input.offset_tet_tags.at(other->tid(*input.mesh)) == 1;
         if (!touches_band) continue;
-        for (size_t j = 0; j < 3; ++j)
-            ++face_counts[edge_key(vertices[j], vertices[(j + 1) % 3])];
+        for (size_t j = 0; j < 3; ++j) ++face_counts[edge_key(vertices[j], vertices[(j + 1) % 3])];
     }
 
     std::set<Edge> boundary_edges;

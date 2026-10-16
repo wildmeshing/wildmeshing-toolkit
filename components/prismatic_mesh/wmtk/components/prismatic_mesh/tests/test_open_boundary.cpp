@@ -11,9 +11,8 @@ PrismaticMeshInput fixture(std::vector<Tet> tets)
 {
     PrismaticMeshInput data;
     data.vertices.resize(12, 3);
-    data.vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -0.2, 1, -0.2, -0.2, -1,
-        -0.4, -0.3, 0.5, -1, 0.2, 0, 0.1, -1, 0, 0.1, 0.1, -2, 0.3, 0.4, 2,
-        2, 1, 0.5, 1, -2, 1;
+    data.vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -0.2, 1, -0.2, -0.2, -1, -0.4, -0.3, 0.5, -1,
+        0.2, 0, 0.1, -1, 0, 0.1, 0.1, -2, 0.3, 0.4, 2, 2, 1, 0.5, 1, -2, 1;
     data.vertex_tags.assign(12, 1);
     data.source_vertex_ids.resize(12);
     data.corr_input_vid.assign(12, -1);
@@ -217,9 +216,16 @@ TEST_CASE("T junction vertices protect their complete one-rings before open boun
 {
     // Three two-sided input triangles meet along {0,1}. The last three tets are
     // tau31s: two touch just one junction endpoint; the last only touches input 2.
-    auto data = fixture({
-        {0, 1, 2, 3}, {0, 1, 3, 7}, {0, 1, 7, 4}, {0, 1, 4, 8}, {0, 1, 8, 5},
-        {0, 1, 5, 2}, {0, 3, 4, 5}, {1, 3, 4, 9}, {2, 3, 4, 9}});
+    auto data = fixture(
+        {{0, 1, 2, 3},
+         {0, 1, 3, 7},
+         {0, 1, 7, 4},
+         {0, 1, 4, 8},
+         {0, 1, 8, 5},
+         {0, 1, 5, 2},
+         {0, 3, 4, 5},
+         {1, 3, 4, 9},
+         {2, 3, 4, 9}});
     const auto tets = data.tetrahedra;
     const auto stats = handle_open_boundaries(data);
     REQUIRE(stats.open_boundary_edges == 6);
