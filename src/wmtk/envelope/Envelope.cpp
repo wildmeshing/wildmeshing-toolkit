@@ -781,18 +781,16 @@ double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
 
 namespace {
 
-// The per-primitive queries' arithmetic. triangle_foot, segment_distance and
-// segment_crosses_triangle are copies of the helpers of InputTriangles in
-// components/topological_offset/.../OffsetPotential.cpp, operation for operation in the source,
-// because that class is to be replaced by the queries below.
+// The per-primitive queries' arithmetic: the closest point on a triangle and the distance
+// between two segments (Ericson, Real-Time Collision Detection 5.1.5 and 5.1.9), and an exact
+// crossing test of a segment against a triangle or, in 2D, another segment.
 //
-// The source being the same does not make the results bit-identical: the component is compiled
-// with EIGEN_DONT_VECTORIZE, which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake),
-// and this file is not, and the two sum a 3-vector dot product in different orders -- scalar
-// Eigen as x0 y0 + (x1 y1 + x2 y2), vectorized Eigen as (x0 y0 + x1 y1) + x2 y2. MEASURED on
-// arm64: the two dot() differ in 31% of random pairs, norm() in 12%, and InputTriangles::distance()
-// and the copy here in 12% of 20400 (point, triangle) pairs. Nothing here depends on either order;
-// the component's test "envelope-primitive-queries-match-input-triangles" bounds the difference.
+// The same arithmetic does not give the same bits in every target. A component compiled with
+// EIGEN_DONT_VECTORIZE -- which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake) to
+// everything that links it -- sums a 3-vector dot product as x0 y0 + (x1 y1 + x2 y2), and this
+// file, vectorized, as (x0 y0 + x1 y1) + x2 y2. MEASURED on arm64: the two dot() differ in 31% of
+// random pairs, norm() in 12%. Nothing here depends on either order; a caller that compares these
+// results with a copy of the arithmetic built there must allow for rounding.
 
 /// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
 /// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.
@@ -851,7 +849,7 @@ Vec segment_foot(const Vec& a, const Vec& b, const Vec& p, int& kind, Vec& edge)
 }
 
 /// The distance from p to its foot on a feature of kind `kind` (its dimension; direction `edge`
-/// when 1), with InputTriangles::distance()'s derivatives in DIM dimensions: gradient
+/// when 1), with the derivatives of the distance to that feature in DIM dimensions: gradient
 /// u = (p - foot)/d; Hessian 0 on a feature of dimension DIM - 1 (a triangle's interior in 3D, a
 /// segment's interior in 2D: d is affine there), (I - u u^T - e e^T)/d on a 3D edge or segment,
 /// (I - u u^T)/d at a vertex, an endpoint or a point. Both 0 at d = 0. In 2D the interior case
@@ -1070,7 +1068,8 @@ double SampleEnvelope::primitive_triangle_distance(
         }
         return m;
     }
-    // InputTriangles::triangle_distance(), with A the primitive and B the query triangle.
+    // A the primitive, B the query triangle: an exact crossing of an edge of either through the
+    // other gives 0; otherwise the min of the 6 corner-to-triangle and 9 edge-edge distances.
     const Eigen::Vector3i& f = m_f3[size_t(id)];
     const std::array<Eigen::Vector3d, 3> A = {{m_v3[f[0]], m_v3[f[1]], m_v3[f[2]]}};
     const std::array<Eigen::Vector3d, 3>& B = tri;

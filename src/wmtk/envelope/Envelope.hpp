@@ -204,10 +204,9 @@ public:
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
-    // Per-primitive queries, for a caller that needs the distance to each input primitive on
-    // its own rather than to their union -- the band term's convex pieces in
-    // components/topological_offset (OffsetPotential.hpp, InputTriangles), whose corner bound
-    // needs each d_i convex, which the min over i is not.
+    // Per-primitive queries, for a caller that needs the distance d_i to each input primitive i
+    // on its own rather than to their union: each d_i is convex (the distance to a convex set),
+    // and the min over i is not, so a bound that rests on convexity needs the pieces.
     //
     // A primitive is one entry of the list given to init(), and its id is its index in that
     // list: a triangle for Triangles3d, a segment for Edges3d and Edges2d -- including the
@@ -253,11 +252,10 @@ public:
      * at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are
      * reported as 0.
      *
-     * For triangles this is InputTriangles::distance() -- the same foot (Ericson, Real-Time
-     * Collision Detection 5.1.5), the same operations -- and agrees with it to rounding: the
-     * component compiles Eigen without vectorization and this file with it, which reorders the
-     * sums (see Envelope.cpp). The segment foot is nearest_point_feature()'s, clamped at both
-     * ends.
+     * The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic
+     * compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the
+     * dot products in another order (see Envelope.cpp). The segment foot is
+     * nearest_point_feature()'s, clamped at both ends.
      */
     double primitive_distance(
         int64_t id,
@@ -288,7 +286,7 @@ public:
      * point on an edge of each; two that meet without such a crossing (a corner on the other's
      * plane, or coplanar) have one of those at 0.
      *
-     * For triangles this is InputTriangles::triangle_distance(), to rounding, as above.
+     * The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above.
      */
     double primitive_triangle_distance(int64_t id, const std::array<Eigen::Vector3d, 3>& tri) const;
 
