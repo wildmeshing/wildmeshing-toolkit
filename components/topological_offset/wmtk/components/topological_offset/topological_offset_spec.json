@@ -42,6 +42,7 @@
       "EXPERIMENTAL_gap_refinement",
       "EXPERIMENTAL_damping",
       "EXPERIMENTAL_damping_factor",
+      "EXPERIMENTAL_construction_tetwild_run",
       "TESTING_allow_mult_comp",
       "check_manifoldness",
       "save_vtu",
@@ -327,6 +328,12 @@
     "min": 0,
     "default": 0.5,
     "doc": "EXPERIMENTAL (2026-10-15), 3D, with EXPERIMENTAL_damping. The damping bound as a factor of the shortest edge at the vertex: each smoothing solve may move its vertex at most this times the length of its shortest edge (to any vertex of its one-ring), at the positions when the solve started. Must be > 0; a value other than the default with EXPERIMENTAL_damping false is refused with an error. 0.5 (the default) = half the shortest edge, the bound EXPERIMENTAL_damping had before this key existed."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_construction_tetwild_run",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-16), 3D. true: before the loop (and before an init_optimize loop), TetWild's own pass runs on the mesh as constructed, as the frozen-front final pass runs it: every tracked surface is held -- the offset surface in its tube (offset_envelope), never smoothed; the domain wall, the input complex's boundary and every other region boundary in the envelope (envelope_size) -- and every cell's AMIPS is against the regular tet (no plastic medium, whatever use_rest_pose says). It runs up to max_iterations iterations of TetWild's operation groups, stopping once max AMIPS < stop_energy, and ends with TetWild's coarsening. The loop then starts on the result, with the vertex order recomputed and, under use_rest_pose, the plastic rests stamped again. Logged as [construction tetwild], plus '[energy step] turn 0 start' before it and '[energy step] turn 0 tetwild' after it; its debug frames are labelled cr0F<n>_<operation>, then cr0S_end for the mesh it hands to the loop. false (the default): the loop starts on the mesh as constructed."
   },
   {
     "pointer": "/TESTING_allow_mult_comp",

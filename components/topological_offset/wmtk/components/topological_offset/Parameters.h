@@ -192,6 +192,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
+    /// EXPERIMENTAL (2026-10-16), 3D: before the loop, TetWild's own pass on the mesh as
+    /// constructed, run as the frozen-front final pass runs it
+    /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
+    bool construction_tetwild_run = false;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -325,6 +329,7 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
                 damping_factor);
         }
+        construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {

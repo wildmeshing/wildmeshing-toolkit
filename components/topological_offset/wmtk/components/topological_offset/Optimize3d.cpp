@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -4758,24 +4759,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                // The final pass's envelopes -- the front's tube, and m_envelope widened to every
-                // region boundary as placement left them (build_final_envelopes()). Every cell
-                // elastic: no plastic medium, so AMIPS is against the regular tet, the quality the
-                // pass is driving down.
-                build_final_envelopes();
-                m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
-                mesh_improvement(a_iters);
-                logger().info(
-                    "\t[split order] final pass: waited {} | committed off the longest edge {}",
-                    m_split_order_waits.exchange(0),
-                    m_split_off_longest.exchange(0));
-                m_plastic_active = plastic_was;
-                m_freeze_front = false;
-                release_final_envelopes();
-                assign_band_regions();
-                const double final_amips = std::get<0>(optimization_quality_stats());
+                const double final_amips = frozen_front_tetwild_pass("final pass", a_iters);
                 m_quality_max_amips = final_amips;
                 m_quality_converged = final_amips < m_params.stop_energy;
                 logger().log(
@@ -4801,6 +4785,80 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                           m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
     return false;
+}
+
+double TopoOffsetTetMesh::frozen_front_tetwild_pass(const char* what, const int max_its)
+{
+    // The final pass's envelopes -- the front's tube, and m_envelope widened to every region
+    // boundary as placement left them (build_final_envelopes()). Every cell elastic: no plastic
+    // medium, so AMIPS is against the regular tet, the quality the pass is driving down.
+    build_final_envelopes();
+    m_freeze_front = true;
+    const bool plastic_was = m_plastic_active;
+    m_plastic_active = false;
+    mesh_improvement(max_its);
+    logger().info(
+        "\t[split order] {}: waited {} | committed off the longest edge {}",
+        what,
+        m_split_order_waits.exchange(0),
+        m_split_off_longest.exchange(0));
+    m_plastic_active = plastic_was;
+    m_freeze_front = false;
+    release_final_envelopes();
+    assign_band_regions();
+    return std::get<0>(optimization_quality_stats());
+}
+
+void TopoOffsetTetMesh::construction_tetwild_run()
+{
+    // See the declaration and the spec doc (EXPERIMENTAL_construction_tetwild_run).
+    const auto t0 = std::chrono::steady_clock::now();
+    const double amips0 = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "======== [construction tetwild] TetWild on the mesh as constructed, every tracked "
+        "surface held (the offset surface to eps {:.6g}, the rest to eps {:.6g}): max AMIPS "
+        "{:.6g}, stop_energy {} | #V {}, #T {} ========",
+        m_offset_params.offset_envelope,
+        m_envelope_eps,
+        amips0,
+        m_params.stop_energy,
+        vertex_size(),
+        tet_size());
+    log_energy_step("start");
+    m_frame_prefix = "c";
+    m_round = 0;
+    const double amips1 = frozen_front_tetwild_pass(
+        "construction tetwild",
+        std::max(1, m_offset_params.max_iterations));
+    // The loop's setup, redone on what the pass left: a compact mesh, the band regions on it, the
+    // vertex order, and under use_rest_pose the rests the loop measures plastic cells against.
+    consolidate_mesh();
+    assign_band_regions();
+    init_vertex_order();
+    stamp_plastic_rests();
+    log_energy_step("tetwild");
+    if (m_params.debug_output) write_optimization_debug_output("end_construction_tetwild");
+    m_frame_prefix.clear();
+    double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
+    for (const Tuple& v : get_vertices()) {
+        const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+        s_min = std::min(s_min, s);
+        s_max = std::max(s_max, s);
+    }
+    const bool under = amips1 < m_params.stop_energy;
+    logger().log(
+        under ? spdlog::level::info : spdlog::level::warn,
+        "\t[construction tetwild] max AMIPS {:.6g} -> {:.6g} (stop {}){} | #V {}, #T {} | sizing "
+        "scalar {:.6g} .. {:.6g} | {:.3g} s",
+        amips0,
+        amips1,
+        m_params.stop_energy,
+        under ? "" : ", STILL OVER stop_energy",
+        vertex_size(),
+        tet_size(),
+        s_min,
+        s_max,
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 }
 
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -4883,6 +4941,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_debug_pass_name = "construction";
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
+
+    if (m_offset_params.construction_tetwild_run) construction_tetwild_run();
 
     if (m_init_optimize) {
         // init_optimize (see marching_tets()): the loop first runs to

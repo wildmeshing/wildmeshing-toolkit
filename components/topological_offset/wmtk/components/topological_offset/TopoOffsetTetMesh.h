@@ -326,6 +326,15 @@ public:
     /// then). release_final_envelopes() puts the loop's envelope back.
     void build_final_envelopes();
     void release_final_envelopes();
+    /// TetWild's pass with every tracked surface held: the final envelopes, the front frozen,
+    /// no plastic medium, mesh_improvement(max_its), everything put back and the band regions
+    /// re-derived. Returns the max AMIPS after it. The frozen-front final pass and
+    /// construction_tetwild_run() both run it; `what` names it in the log.
+    double frozen_front_tetwild_pass(const char* what, int max_its);
+    /// EXPERIMENTAL_construction_tetwild_run: frozen_front_tetwild_pass() on the mesh as
+    /// constructed, before the loop, then the loop's setup redone on its result (vertex order,
+    /// plastic rests).
+    void construction_tetwild_run();
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
