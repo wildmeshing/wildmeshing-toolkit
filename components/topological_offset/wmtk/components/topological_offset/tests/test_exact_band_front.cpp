@@ -42,6 +42,18 @@ using Vec3 = Eigen::Vector3d;
 using Tet = std::array<Vec3, 4>;
 using Tri = std::array<Vec3, 3>;
 
+/// The input envelope of the triangles (V, F), as TopoOffsetTetMesh::m_input_complex_envelope is
+/// to the band term's searches (OffsetPotential.hpp). eps 0 builds no containment structure,
+/// which no search reads.
+std::shared_ptr<const wmtk::Envelope> triangle_envelope(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F)
+{
+    auto env = std::make_shared<wmtk::Envelope>(true);
+    env->init(V, F, 0.);
+    return env;
+}
+
 Eigen::MatrixXd mat_V(const double* V, const int n)
 {
     Eigen::MatrixXd M(n, 3);
@@ -259,13 +271,14 @@ Ring ring_at(const Vec3& ctr, const Vec3& dx, const Vec3& dy, const Vec3& dz)
 void check_energy(
     const char* name,
     const std::shared_ptr<const ExactBandIntegral>& eb,
-    const std::shared_ptr<const InputTriangles>& tris,
+    const std::shared_ptr<const wmtk::Envelope>& tris,
+    const double pad,
     const Ring& r,
     const Vec3& ctr,
     const Vec3& x,
     const double delta)
 {
-    BandVolumeEnergy3D ff(tris, r.cells, ctr, delta), ex(tris, r.cells, ctr, delta);
+    BandVolumeEnergy3D ff(tris, pad, r.cells, ctr, delta), ex(tris, pad, r.cells, ctr, delta);
     ff.set_front_flux(eb, delta, r.faces);
     ex.set_exact_integral(eb, delta);
     const Eigen::VectorXd xv = x;
@@ -338,19 +351,44 @@ TEST_CASE("exact-band-front-energy", "[offset][exact_band][front_flux]")
         mat_F(sc.F, sc.nF),
         std::vector<int8_t>(size_t(sc.nF), 1),
         sc.sigma);
-    const auto tris = std::make_shared<const InputTriangles>(V, F);
+    const auto tris = triangle_envelope(V, F);
+    const double pad = input_pad(V);
     const double delta = c.delta;
     const Vec3 X = Vec3::UnitX(), Y = Vec3::UnitY(), Z = Vec3::UnitZ();
     {
         const Vec3 ctr(0.52, 0.1, 0.515); // beyond the edge x = z = 0.5
         const Ring r = ring_at(ctr, 0.02 * X, 0.02 * Y, 0.02 * Z);
-        check_energy("edge, no side", plain, tris, r, ctr, ctr + Vec3(0.002, 0.001, 0.004), delta);
-        check_energy("edge, side", sided, tris, r, ctr, ctr + Vec3(0.002, 0.001, 0.004), delta);
+        check_energy(
+            "edge, no side",
+            plain,
+            tris,
+            pad,
+            r,
+            ctr,
+            ctr + Vec3(0.002, 0.001, 0.004),
+            delta);
+        check_energy(
+            "edge, side",
+            sided,
+            tris,
+            pad,
+            r,
+            ctr,
+            ctr + Vec3(0.002, 0.001, 0.004),
+            delta);
     }
     {
         const Vec3 ctr(0.515, 0.52, 0.51); // beyond the corner (0.5, 0.5, 0.5)
         const Ring r = ring_at(ctr, 0.015 * X, 0.015 * Y, 0.015 * Z);
-        check_energy("corner, side", sided, tris, r, ctr, ctr + Vec3(0.001, -0.002, 0.001), delta);
+        check_energy(
+            "corner, side",
+            sided,
+            tris,
+            pad,
+            r,
+            ctr,
+            ctr + Vec3(0.001, -0.002, 0.001),
+            delta);
     }
     {
         // x just inside the face z = 0.5, the ring's other corners above it: every boundary face
@@ -361,6 +399,7 @@ TEST_CASE("exact-band-front-energy", "[offset][exact_band][front_flux]")
             "astride a face, side",
             sided,
             tris,
+            pad,
             r,
             ctr,
             ctr + Vec3(0.001, 0.0005, -0.0005),
@@ -444,7 +483,8 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
     auto eb_m = std::make_shared<ExactBandIntegral>(V, F, side, 1);
     eb_m->prepare_front_flux(delta);
     const std::shared_ptr<const ExactBandIntegral> eb = eb_m;
-    const auto tris = std::make_shared<const InputTriangles>(V, F);
+    const auto tris = triangle_envelope(V, F);
+    const double pad = input_pad(V);
 
     // unique vertices (exact coordinates), cells as vertex ids
     std::vector<Vec3> P;
@@ -562,12 +602,12 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
             e.value(xv);
             out.push_back(std::chrono::duration<double, std::micro>(clk::now() - t0).count());
         };
-        BandVolumeEnergy3D e(tris, cells, x, delta);
+        BandVolumeEnergy3D e(tris, pad, cells, x, delta);
         timed_value(e, v_cb);
-        BandVolumeEnergy3D e2(tris, cells, x, delta);
+        BandVolumeEnergy3D e2(tris, pad, cells, x, delta);
         e2.set_exact_integral(eb, delta);
         timed_value(e2, v_ex);
-        BandVolumeEnergy3D e3(tris, cells, x, delta);
+        BandVolumeEnergy3D e3(tris, pad, cells, x, delta);
         e3.set_front_flux(eb, delta, faces);
         double vo = std::numeric_limits<double>::quiet_NaN();
         try {
@@ -604,7 +644,7 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
         Eigen::VectorXd g;
         Eigen::MatrixXd H;
         double der = 0.;
-        BandVolumeEnergy3D e(tris, cells_of(v), P[size_t(v)], delta);
+        BandVolumeEnergy3D e(tris, pad, cells_of(v), P[size_t(v)], delta);
         e.set_exact_integral(eb, delta);
         timed(e, xv, g, H, t_ex, der);
         ge_all.push_back(g);
@@ -621,13 +661,13 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
         put(&vo_all[iv], 1);
         double der = 0.;
         {
-            BandVolumeEnergy3D e(tris, cells, x, delta);
+            BandVolumeEnergy3D e(tris, pad, cells, x, delta);
             timed(e, xv, g, H, t_cb, der);
         }
         const Eigen::VectorXd& ge = ge_all[iv];
         const Eigen::MatrixXd& He = He_all[iv];
         try {
-            BandVolumeEnergy3D e(tris, cells, x, delta);
+            BandVolumeEnergy3D e(tris, pad, cells, x, delta);
             e.set_front_flux(eb, delta, faces);
             const double val = timed(e, xv, g, H, t_ff, der);
             t_ff_der.push_back(der);
@@ -687,7 +727,7 @@ TEST_CASE("exact-band-front-bench", "[.bench_front]")
                 Eigen::Matrix3d Hf, He2;
                 for (int k = 0; k < 3; ++k) {
                     Eigen::VectorXd gp, gm;
-                    BandVolumeEnergy3D a(tris, cells, x, delta), b(tris, cells, x, delta);
+                    BandVolumeEnergy3D a(tris, pad, cells, x, delta), b(tris, pad, cells, x, delta);
                     a.set_front_flux(eb, delta, faces);
                     b.set_exact_integral(eb, delta);
                     Eigen::VectorXd xp = xv, xm = xv;

@@ -271,6 +271,16 @@ std::vector<Vector3d> face_normal_samples(const TriSoup& s, const double dhat)
     return out;
 }
 
+/// The input envelope of the triangles (V, F), V n x 3, as TopoOffsetTetMesh::
+/// m_input_complex_envelope is to the band term's searches (OffsetPotential.hpp): its BVH and its
+/// copies of the input. eps 0 builds no containment structure, which no search reads.
+std::shared_ptr<const Envelope> triangle_envelope(const MatrixXd& V, const MatrixXi& F)
+{
+    auto env = std::make_shared<Envelope>(true);
+    env->init(V, F, 0.);
+    return env;
+}
+
 } // namespace
 
 
@@ -1257,19 +1267,21 @@ TEST_CASE("vol-amips-energy-3d", "[offset][potential]")
     }
 }
 
-TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
+TEST_CASE("input-envelope-nearest-and-distance", "[offset][potential]")
 {
-    // InputTriangles, the band term's convex pieces, on a cube of half-size 1: the nearest
-    // triangle is the nearest by brute force, and the per-triangle distance's gradient and Hessian
-    // match central differences in a face, an edge and a vertex region.
+    // The band term's convex pieces on the input envelope, on a cube of half-size 1: the nearest
+    // primitive (nearest_primitive()) is the nearest by brute force, and the per-primitive
+    // distance's gradient and Hessian match central differences in a face, an edge and a vertex
+    // region.
     const TriSoup s = cube(1.0);
     Eigen::MatrixXd V(s.V.rows(), 3);
     for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
     Eigen::MatrixXi F = s.F;
-    const auto tris = std::make_shared<const InputTriangles>(V, F);
+    const auto env = triangle_envelope(V, F);
+    const double pad = input_pad(V);
     const auto d_all = [&](const Vector3d& p) {
         double m = std::numeric_limits<double>::infinity();
-        for (size_t t = 0; t < tris->size(); ++t) m = std::min(m, tris->distance(int64_t(t), p));
+        for (int64_t t = 0; t < F.rows(); ++t) m = std::min(m, env->primitive_distance(t, p));
         return m;
     };
     std::mt19937 rng(7);
@@ -1279,27 +1291,29 @@ TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
     {
         for (int k = 0; k < 200; ++k) {
             const Vector3d p(U(rng), U(rng), U(rng));
-            const int64_t t = tris->nearest(p);
-            CHECK(tris->distance(t, p) == Catch::Approx(d_all(p)).margin(1e-12));
+            const int64_t t = nearest_primitive(*env, pad, p);
+            CHECK(env->primitive_distance(t, p) == Catch::Approx(d_all(p)).margin(1e-12));
         }
         const double h = 1e-6;
         // a face region, an edge region and a vertex region of triangle-nearest features
         for (const Vector3d& p :
              {Vector3d(0.2, 0.3, 1.25), Vector3d(1.2, 0.1, 1.15), Vector3d(1.1, 1.2, 1.3)}) {
-            const int64_t t = tris->nearest(p);
+            const int64_t t = nearest_primitive(*env, pad, p);
             Vector3d g;
             Eigen::Matrix3d H;
-            tris->distance(t, p, &g, &H);
+            env->primitive_distance(t, p, &g, &H);
             for (int j = 0; j < 3; ++j) {
                 Vector3d pp = p, pm = p;
                 pp[j] += h;
                 pm[j] -= h;
                 CHECK(
-                    std::abs((tris->distance(t, pp) - tris->distance(t, pm)) / (2 * h) - g[j]) <=
-                    1e-6);
+                    std::abs(
+                        (env->primitive_distance(t, pp) - env->primitive_distance(t, pm)) /
+                            (2 * h) -
+                        g[j]) <= 1e-6);
                 Vector3d gp, gm;
-                tris->distance(t, pp, &gp);
-                tris->distance(t, pm, &gm);
+                env->primitive_distance(t, pp, &gp);
+                env->primitive_distance(t, pm, &gm);
                 for (int i = 0; i < 3; ++i)
                     CHECK(std::abs((gp[i] - gm[i]) / (2 * h) - H(i, j)) <= 1e-5);
             }
@@ -1307,100 +1321,9 @@ TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
     }
 }
 
-TEST_CASE("envelope-primitive-queries-match-input-triangles", "[offset][potential]")
-{
-    // Envelope's per-primitive queries are to replace InputTriangles: on the same triangles
-    // they run the same operations, and must agree with it to rounding -- value, gradient and
-    // Hessian of the point distance, and the triangle-to-triangle distance.
-    //
-    // Not bit for bit: this component is compiled with EIGEN_DONT_VECTORIZE (ipc-toolkit exports
-    // it PUBLIC) and the engine is not, and the two sum each 3-term dot product in a different
-    // order. Both orders lie within gamma_2 sum_i |x_i y_i| of the exact sum (Higham, Accuracy and
-    // Stability of Numerical Algorithms, 2002, eq. 3.5; gamma_2 ~ eps), so they differ by up to
-    // about 2 eps |x| |y| -- an amount in the scale L of the coordinates, not relative to the
-    // result: the foot point moves by O(eps L), so d and the triangle distance by O(eps L),
-    // u = (p - foot)/d by O(eps L / d), and the Hessian, ~ 1/d, by O(eps L / d) of its norm. In
-    // ulps of the quantity itself the difference is unbounded as d -> 0: MEASURED 245 ulps of d
-    // at the random points below and 3.6e11 at points 1e-12 above the sphere's faces, while
-    // |d0 - d1| stayed within 2.93 eps L. So the tolerances are in those scales. Their constants
-    // are measured, not derived -- the amplification from the dot products to the foot depends
-    // on the triangle's shape (the interior foot divides by twice its squared area) -- as the
-    // maxima over 408000 (point, triangle) pairs of both meshes, the two point sets below with
-    // 2000 points each (this test runs 200 of each): 2.93 eps L for d, 3.14 for the triangle distance, 3.01 eps L / d for the
-    // gradient, 5.87 eps L / d times |H| for the Hessian. The tolerances are 8 and 16, about 2.5
-    // times those. What does not depend on any sum's order is checked with ==: a 0 from the exact
-    // crossing test, and which pairs have a zero Hessian (the foot's region).
-    //
-    // A cube (axis-aligned: many exact intermediates) and a UV sphere (none); random points
-    // around them and points 1e-12 .. 1e-1 above random points of their faces; query triangles
-    // ~0.3 across from each point, so that both the crossing (0) and the min over the 15
-    // distances come up.
-    const double eps = std::numeric_limits<double>::epsilon();
-    for (const TriSoup& s : {cube(1.0), uv_sphere(1.0, 6, 9)}) {
-        const InputTriangles tris(s.V, s.F);
-        Envelope env(true);
-        env.init(s.V, s.F, 1e-3);
-        REQUIRE(env.kind() == Envelope::Kind::Triangles3d);
-
-        std::mt19937 rng(3);
-        std::uniform_real_distribution<double> U(-1.6, 1.6), D(-0.3, 0.3), W(0, 1), E(-12, -1);
-        double max_d = 0., max_g = 0., max_h = 0., max_t = 0.;
-        size_t zeros = 0, separate = 0;
-        for (int k = 0; k < 400; ++k) {
-            Vector3d p(U(rng), U(rng), U(rng));
-            if (k % 2 == 1) {
-                const int f = int(rng() % uint32_t(s.F.rows()));
-                double w0 = W(rng), w1 = W(rng);
-                if (w0 + w1 > 1) w0 = 1 - w0, w1 = 1 - w1;
-                const Vector3d A = s.V.row(s.F(f, 0)), B = s.V.row(s.F(f, 1)),
-                               C = s.V.row(s.F(f, 2));
-                p = A + w0 * (B - A) + w1 * (C - A) +
-                    std::pow(10., E(rng)) * (B - A).cross(C - A).normalized();
-            }
-            const std::array<Vector3d, 3> q = {
-                {p, p + Vector3d(D(rng), D(rng), D(rng)), p + Vector3d(D(rng), D(rng), D(rng))}};
-            // The coordinates' scale: the input lies in [-1, 1]^3.
-            const double L = std::max(1., p.cwiseAbs().maxCoeff());
-            const double Lq =
-                std::max(L, std::max(q[1].cwiseAbs().maxCoeff(), q[2].cwiseAbs().maxCoeff()));
-            for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
-                Vector3d g0, g1;
-                Eigen::Matrix3d H0, H1;
-                const double d0 = tris.distance(t, p, &g0, &H0);
-                const double d1 = env.primitive_distance(t, p, &g1, &H1);
-                max_d = std::max(max_d, std::abs(d0 - d1) / (eps * L));
-                if (d0 > 0. && d1 > 0.) {
-                    const double r = eps * L / std::max(d0, d1);
-                    max_g = std::max(max_g, (g0 - g1).cwiseAbs().maxCoeff() / r);
-                    CHECK(H0.isZero(0) == H1.isZero(0));
-                    if (!H0.isZero(0)) {
-                        max_h = std::max(max_h, (H0 - H1).cwiseAbs().maxCoeff() / (r * H0.norm()));
-                    }
-                }
-
-                const double td0 = tris.triangle_distance(t, q[0], q[1], q[2]);
-                const double td1 = env.primitive_triangle_distance(t, q);
-                if (td0 == 0. || td1 == 0.) {
-                    CHECK(td0 == td1);
-                    ++zeros;
-                } else {
-                    max_t = std::max(max_t, std::abs(td0 - td1) / (eps * Lq));
-                    ++separate;
-                }
-            }
-        }
-        CHECK(max_d <= 8.);
-        CHECK(max_t <= 8.);
-        CHECK(max_g <= 8.);
-        CHECK(max_h <= 16.);
-        CHECK(zeros > 0);
-        CHECK(separate > 0);
-    }
-}
-
 TEST_CASE("band-volume-exact-min", "[offset][potential]")
 {
-    // The band term's min: InputTriangles::min_mean_distance() is the min over ALL triangles of
+    // The band term's min: min_mean_distance() is the min over ALL triangles of
     // the corner mean of d_P (brute force, lowest index on a tie, whatever the starting point), on
     // a cube and on a random soup; the cell term built on it is an upper bound on a dense
     // integral, no split raises it, and BandVolumeEnergy3D has its value and derivatives.
@@ -1423,38 +1346,40 @@ TEST_CASE("band-volume-exact-min", "[offset][potential]")
     for (const auto& [V, F, name] :
          {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
         INFO(name);
-        const InputTriangles tris(V, F);
+        const auto env = triangle_envelope(V, F);
+        const double pad = input_pad(V);
         for (int k = 0; k < 300; ++k) {
             const Vector3d c(U(rng), U(rng), U(rng));
             std::array<Vector3d, 4> q;
             for (auto& p : q) p = c + 2. * Vector3d(J(rng), J(rng), J(rng));
             double want = std::numeric_limits<double>::infinity();
             int64_t wbest = -1;
-            for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
+            for (int64_t t = 0; t < int64_t(F.rows()); ++t) {
                 double sum = 0.;
-                for (const Vector3d& p : q) sum += tris.distance(t, p);
+                for (const Vector3d& p : q) sum += env->primitive_distance(t, p);
                 sum /= 4;
                 if (sum < want) want = sum, wbest = t;
             }
-            for (const int64_t hint : {int64_t(-1), int64_t(k % int(tris.size()))}) {
+            for (const int64_t hint : {int64_t(-1), int64_t(k % int(F.rows()))}) {
                 int64_t best = -1;
-                const double got = tris.min_mean_distance(q.data(), 4, best, hint);
+                const double got = min_mean_distance(*env, pad, q.data(), 4, best, hint);
                 CHECK(got == want);
                 CHECK(best == wbest);
             }
         }
     }
 
-    const auto tris = std::make_shared<const InputTriangles>(Vc, Fc);
+    const auto env = triangle_envelope(Vc, Fc);
+    const double pad = input_pad(Vc);
     const auto rule = [&](const std::array<Vector3d, 4>& q) {
         int64_t best = -1;
-        const double md = tris->min_mean_distance(q.data(), 4, best);
+        const double md = min_mean_distance(*env, pad, q.data(), 4, best);
         return std::abs((q[1] - q[0]).dot((q[2] - q[0]).cross(q[3] - q[0]))) / 6. *
                ((md - delta) / delta);
     };
     const auto d_all = [&](const Vector3d& p) {
         double m = std::numeric_limits<double>::infinity();
-        for (size_t t = 0; t < tris->size(); ++t) m = std::min(m, tris->distance(int64_t(t), p));
+        for (int64_t t = 0; t < Fc.rows(); ++t) m = std::min(m, env->primitive_distance(t, p));
         return m;
     };
     SECTION("an upper bound, and no split raises it")
@@ -1513,7 +1438,7 @@ TEST_CASE("band-volume-exact-min", "[offset][potential]")
                     cells.push_back(cl);
                 }
         const auto cells_copy = cells;
-        BandVolumeEnergy3D energy(tris, cells, ctr, delta);
+        BandVolumeEnergy3D energy(env, pad, cells, ctr, delta);
         const VectorXd xv = ctr + Vector3d(0.002, 0.001, -0.003);
         double want = 0.;
         for (const auto& cl : cells_copy) want += rule({Vector3d(xv), cl.q1, cl.q2, cl.q3});
@@ -1540,7 +1465,7 @@ TEST_CASE("band-volume-exact-min", "[offset][potential]")
 TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
 {
     // BandVolumeEnergy3D keeps the last point's minima and scans each cell's certified
-    // candidates (InputTriangles::ball_candidates()). Its
+    // candidates (ball_candidates()). Its
     // value, gradient and Hessian equal, bit for bit, the rule without either -- one
     // min_mean_distance() call per cell and evaluation -- inside the certified ball, exactly on
     // its boundary, outside it (rebuilt there, or the whole tree where no ball exists), around the
@@ -1576,7 +1501,8 @@ TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
     for (const auto& [V, F, name] :
          {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
         INFO(name);
-        const auto tris = std::make_shared<const InputTriangles>(V, F);
+        const auto env = triangle_envelope(V, F);
+        const double pad = input_pad(V);
         // The rule before the cache, verbatim (BandVolumeEnergy3D's constructor orients each cell
         // positive at x0); `P` gets each cell's minimiser, `ties` counts cells whose minimum two
         // triangles share.
@@ -1599,13 +1525,13 @@ TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
                 const Vector3d gvol = -N / 6.;
                 const std::array<Vector3d, 4> pts = {{x, c.q1, c.q2, c.q3}};
                 int64_t P = -1;
-                const double md = tris->min_mean_distance(pts.data(), 4, P);
+                const double md = min_mean_distance(*env, pad, pts.data(), 4, P);
                 if (P_out) P_out->push_back(P);
                 if (ties) {
                     int n = 0;
-                    for (int64_t t = 0; t < int64_t(tris->size()); ++t) {
+                    for (int64_t t = 0; t < int64_t(F.rows()); ++t) {
                         double sm = 0.;
-                        for (const Vector3d& p : pts) sm += tris->distance(t, p);
+                        for (const Vector3d& p : pts) sm += env->primitive_distance(t, p);
                         sm /= 4;
                         if (sm == md) ++n;
                     }
@@ -1617,7 +1543,7 @@ TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
                 if (need >= 1) {
                     Vector3d gd;
                     Eigen::Matrix3d hd;
-                    tris->distance(P, x, &gd, need >= 2 ? &hd : nullptr);
+                    env->primitive_distance(P, x, &gd, need >= 2 ? &hd : nullptr);
                     const Vector3d gm = gd / (4. * delta);
                     g += best * gvol + vol * gm;
                     if (need >= 2) {
@@ -1661,7 +1587,7 @@ TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
                         cl.q3 = arm[size_t(4 + sz)];
                         cells.push_back(cl);
                     }
-            BandVolumeEnergy3D energy(tris, cells, x0, delta);
+            BandVolumeEnergy3D energy(env, pad, cells, x0, delta);
 
             // value, gradient and Hessian at x in the order `order` (repeats included), each
             // against the reference.
@@ -1801,7 +1727,7 @@ TEST_CASE("band-volume-exact-min-cached", "[offset][potential]")
 
 TEST_CASE("face-mean-sq-cos", "[offset][potential]")
 {
-    // EXPERIMENTAL_settle_mark "rms": InputTriangles::face_mean_sq_cos() against a dense lattice
+    // EXPERIMENTAL_settle_mark "rms": face_mean_sq_cos() against a dense lattice
     // mean of (d - delta)^2 (n . grad d) over the face, on a cube of half-size 1. Over the top
     // face's interior (d = z - 1 affine, grad d = +z) the 3-edge-midpoint rule is exact, level or
     // tilted; across the rounded region around the edge x = z = 1 it is close.
@@ -1809,7 +1735,8 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
     const TriSoup s = cube(1.0);
     Eigen::MatrixXd V(s.V.rows(), 3);
     for (int i = 0; i < s.V.rows(); ++i) V.row(i) = s.V.row(i).head<3>();
-    const InputTriangles tris(V, s.F);
+    const auto env = triangle_envelope(V, s.F);
+    const double pad = input_pad(V);
     const auto dense =
         [&](const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& n) {
             const int K = 60;
@@ -1819,7 +1746,8 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
                 for (int j = 0; i + j <= K; ++j) {
                     const Vector3d q = a + (b - a) * (double(i) / K) + (c - a) * (double(j) / K);
                     Vector3d g;
-                    const double d = tris.distance(tris.nearest(q), q, &g);
+                    const double d =
+                        env->primitive_distance(nearest_primitive(*env, pad, q), q, &g);
                     sum += (d - delta) * (d - delta) * n.dot(g);
                     ++cnt;
                 }
@@ -1837,7 +1765,7 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
                 const double z = 0.5 * (u.z() + v.z());
                 want += (z - 1. - delta) * (z - 1. - delta) * n.z() / 3.;
             }
-            const double got = tris.face_mean_sq_cos(a, b, c, n, delta);
+            const double got = face_mean_sq_cos(*env, pad, a, b, c, n, delta);
             CHECK(got == Catch::Approx(want).epsilon(1e-12));
             // and the lattice mean converges to it (lattice error ~ 1/K)
             CHECK(dense(a, b, c, n) == Catch::Approx(got).epsilon(5e-2));
@@ -1859,7 +1787,7 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
             const Vector3d a = P(t0, -0.5 * L), b = P(t0, 0.5 * L), c = P(t1, 0.);
             Vector3d n = (b - a).cross(c - a).normalized();
             if (n.dot(Vector3d(1, 0, 1)) < 0.) n = -n;
-            return std::pair{tris.face_mean_sq_cos(a, b, c, n, delta), dense(a, b, c, n)};
+            return std::pair{face_mean_sq_cos(*env, pad, a, b, c, n, delta), dense(a, b, c, n)};
         };
         const auto [on_got, on_ref] = face(delta, 0.04);
         CHECK(on_got / on_ref == Catch::Approx(1.25).margin(0.03));
@@ -1870,11 +1798,12 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
 
 TEST_CASE("front-face-max-distance", "[offset][potential]")
 {
-    // EXPERIMENTAL_settle_refinement's face test. InputTriangles::min_triangle_distance() is the
-    // min over ALL triangles of triangle_distance(), and min_max_corner_distance() the min over
-    // ALL triangles of the max corner distance (brute force, on a cube and on a random soup);
-    // triangle_distance() is the distance between two triangles: h for parallel ones h apart, 0
-    // for crossing ones, never above a dense sampling of both and within a few percent of it.
+    // EXPERIMENTAL_settle_refinement's face test. min_triangle_distance() is the min over ALL
+    // triangles of Envelope::primitive_triangle_distance(), and min_max_corner_distance()
+    // the min over ALL triangles of the max corner distance (brute force, on a cube and on a
+    // random soup); primitive_triangle_distance() is the distance between two triangles: h for
+    // parallel ones h apart, 0 for crossing ones, never above a dense sampling of both and within
+    // a few percent of it.
     const TriSoup s = cube(1.0);
     Eigen::MatrixXd Vc(s.V.rows(), 3);
     for (int i = 0; i < s.V.rows(); ++i) Vc.row(i) = s.V.row(i).head<3>();
@@ -1897,7 +1826,14 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
         V.row(2) = c.transpose();
         Eigen::MatrixXi F(1, 3);
         F << 0, 1, 2;
-        return InputTriangles(V, F);
+        return triangle_envelope(V, F);
+    };
+    /// The distance between primitive 0 of `env` and the triangle abc.
+    const auto triangle_distance = [](const std::shared_ptr<const Envelope>& env,
+                                      const Vector3d& a,
+                                      const Vector3d& b,
+                                      const Vector3d& c) {
+        return env->primitive_triangle_distance(0, {{a, b, c}});
     };
 
     SECTION("the pruned searches are the brute force")
@@ -1905,7 +1841,8 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
         for (const auto& [V, F, name] :
              {std::tuple{Vc, Fc, "cube"}, std::tuple{Vr, Fr, "random soup"}}) {
             INFO(name);
-            const InputTriangles tris(V, F);
+            const auto env = triangle_envelope(V, F);
+            const double pad = input_pad(V);
             int n_zero = 0, n_positive = 0;
             for (int k = 0; k < 300; ++k) {
                 // Query triangles from the soup's size to ten times it.
@@ -1915,14 +1852,14 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
                 for (auto& p : q) p = c + scale * Vector3d(J(rng), J(rng), J(rng));
                 double want_min = std::numeric_limits<double>::infinity();
                 double want_max = std::numeric_limits<double>::infinity();
-                for (int64_t t = 0; t < int64_t(tris.size()); ++t) {
-                    want_min = std::min(want_min, tris.triangle_distance(t, q[0], q[1], q[2]));
+                for (int64_t t = 0; t < int64_t(F.rows()); ++t) {
+                    want_min = std::min(want_min, env->primitive_triangle_distance(t, q));
                     double m = 0.;
-                    for (const Vector3d& p : q) m = std::max(m, tris.distance(t, p));
+                    for (const Vector3d& p : q) m = std::max(m, env->primitive_distance(t, p));
                     want_max = std::min(want_max, m);
                 }
-                CHECK(tris.min_triangle_distance(q[0], q[1], q[2]) == want_min);
-                CHECK(tris.min_max_corner_distance(q.data(), 3) == want_max);
+                CHECK(min_triangle_distance(*env, pad, q[0], q[1], q[2]) == want_min);
+                CHECK(min_max_corner_distance(*env, pad, q.data(), 3) == want_max);
                 (want_min == 0. ? n_zero : n_positive) += 1;
             }
             // Both kinds of query: some cross the input, some do not.
@@ -1933,16 +1870,16 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
     SECTION("triangle-to-triangle distance")
     {
         const Vector3d a(0., 0., 0.), b(1., 0., 0.), c(0., 1., 0.);
-        const InputTriangles one = one_triangle(a, b, c);
+        const auto one = one_triangle(a, b, c);
         for (const double h : {1e-3, 0.1, 0.7}) {
             for (const double side : {-1., 1.}) {
                 const Vector3d up(0., 0., side * h);
                 CHECK(
-                    one.triangle_distance(0, a + up, b + up, c + up) ==
+                    triangle_distance(one, a + up, b + up, c + up) ==
                     Catch::Approx(h).margin(1e-15));
                 CHECK(
-                    one.triangle_distance(
-                        0,
+                    triangle_distance(
+                        one,
                         Vector3d(0.1, 0.1, 0.) + up,
                         Vector3d(0.6, 0.1, 0.) + up,
                         Vector3d(0.1, 0.6, 0.) + up) == Catch::Approx(h).margin(1e-15));
@@ -1951,14 +1888,14 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
         // An edge of the query through the triangle's interior, and the triangle's edges through
         // the query's interior (the query's own edges miss the triangle).
         CHECK(
-            one.triangle_distance(
-                0,
+            triangle_distance(
+                one,
                 Vector3d(0.2, 0.2, -0.5),
                 Vector3d(0.3, 0.2, 0.5),
                 Vector3d(0.2, 0.3, 0.5)) == 0.);
         CHECK(
-            one.triangle_distance(
-                0,
+            triangle_distance(
+                one,
                 Vector3d(0.5, -1., -1.),
                 Vector3d(0.5, 2., -1.),
                 Vector3d(0.5, 0.25, 2.)) == 0.);
@@ -1977,8 +1914,8 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
             if (std::abs(u.normalized().dot(n.normalized())) < 0.3) continue;
             u *= 0.5 / u.norm();
             const Vector3d w = x + random_point() - Vector3d::Constant(0.5);
-            CHECK(one_triangle(p0, p1, p2).triangle_distance(0, x - u, x + u, w) == 0.);
-            CHECK(one_triangle(x - u, x + u, w).triangle_distance(0, p0, p1, p2) == 0.);
+            CHECK(triangle_distance(one_triangle(p0, p1, p2), x - u, x + u, w) == 0.);
+            CHECK(triangle_distance(one_triangle(x - u, x + u, w), p0, p1, p2) == 0.);
             ++n_crossing;
         }
         CHECK(n_crossing > 50);
@@ -1994,7 +1931,7 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
             const std::array<Vector3d, 3> Q = {
                 {random_point() + off, random_point() + off, random_point() + off}};
             const double exact =
-                one_triangle(P[0], P[1], P[2]).triangle_distance(0, Q[0], Q[1], Q[2]);
+                triangle_distance(one_triangle(P[0], P[1], P[2]), Q[0], Q[1], Q[2]);
             const int K = 24;
             std::vector<Vector3d> sp, sq;
             for (int i = 0; i <= K; ++i)
