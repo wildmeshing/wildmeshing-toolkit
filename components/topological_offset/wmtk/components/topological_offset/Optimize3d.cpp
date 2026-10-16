@@ -824,10 +824,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             ++m_repulsion_embed_refused;
             return false;
         }
-        if (!repulsion_outer_ends_kept(tids)) {
-            ++m_repulsion_close_refused;
-            return false;
-        }
         if (!energy_lowered()) return false;
         ++iter_cnt_swap;
         return true;
@@ -858,10 +854,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
-        return false;
-    }
-    if (!repulsion_outer_ends_kept(tids)) {
-        ++m_repulsion_close_refused;
         return false;
     }
     if (!energy_lowered()) return false;
