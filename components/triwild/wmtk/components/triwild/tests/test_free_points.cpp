@@ -128,7 +128,9 @@ TEST_CASE("free-point-coincident-with-endpoint", "[triwild_operation][free_point
     REQUIRE(mesh.m_feature_points.size() == 2);
     // The shared vertex carries the endpoint's id (the first registered), and both anchors
     // are covered geometrically.
-    CHECK(mesh.m_vertex_extra[size_t(point_map[0])].m_feature_id != NO_FEATURE);
+    CHECK(
+        mesh.m_feature_point_attribute[size_t(point_map[0])].m_feature_point_id !=
+        TriWildMesh::NO_FEATURE_POINT);
     const auto [kept, total] = mesh.feature_retention();
     CHECK(kept == 2);
     CHECK(total == 2);
@@ -172,7 +174,7 @@ TEST_CASE("init-mesh-registers-free-points", "[triwild_operation][free_points]")
     // anchor.
     REQUIRE(mesh.m_feature_points.size() == 1);
     CHECK(mesh.m_feature_points[0] == Vector2d(2, 2));
-    CHECK(mesh.m_vertex_extra[size_t(point_map[4])].m_feature_id == 0);
+    CHECK(mesh.m_feature_point_attribute[size_t(point_map[4])].m_feature_point_id == 0);
 
     // And the retention audit sees it.
     const auto [kept, total] = mesh.feature_retention();
