@@ -56,11 +56,10 @@ struct EdgeAttributes
 class QSlimMesh : public wmtk::TriMesh
 {
 public:
-    /// Sampled, on purpose: 378236c138 ("Use sample envelope instead of exact one in QSLIM")
-    /// switched QSlim from the exact envelope to the sampled one. Kept explicit now that the
-    /// envelope defaults to exact, pending its author's confirmation. The boundary envelope
-    /// takes the same mode in create_mesh(), so it stays sampled too.
-    wmtk::Envelope m_envelope{/*exact=*/false};
+    /// Exact or sampled as the constructor's use_exact says; the qslim application passes
+    /// !use_sample_envelope, whose default is in qslim_spec.json. The boundary envelope takes
+    /// the same mode in create_mesh().
+    wmtk::Envelope m_envelope;
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), when that gets a
     /// positive boundary_eps. See there. initialized() is false otherwise, and for a closed input.
@@ -70,7 +69,10 @@ public:
     wmtk::AttributeCollection<EdgeAttributes> edge_attrs;
 
     int retry_limit = 10;
-    QSlimMesh(std::vector<Eigen::Vector3d> _m_vertex_positions, int num_threads = 1);
+    QSlimMesh(
+        std::vector<Eigen::Vector3d> _m_vertex_positions,
+        int num_threads = 1,
+        bool use_exact = true);
     void set_freeze(TriMesh::Tuple& v);
 
     ~QSlimMesh() {}

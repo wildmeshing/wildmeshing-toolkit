@@ -193,7 +193,7 @@
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": true,
-    "doc": "Use the sampled envelope instead of the exact one for the simplification after insertion only (operation remeshing with preserve_topology, unless skip_simplify); the optimization keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only -- of the input surface before insertion without preserve_topology, of the tet mesh after insertion with it (operation remeshing), either way unless skip_simplify; the optimization keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
   },
   {
     "pointer": "/num_threads",

@@ -381,6 +381,7 @@ EmbedSurface::EmbedSurface(
 
 void EmbedSurface::simplify_surface(
     const double eps,
+    const bool use_exact,
     const int num_threads,
     const double boundary_eps)
 {
@@ -388,7 +389,7 @@ void EmbedSurface::simplify_surface(
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
     std::vector<std::array<size_t, 3>> tris = F_surf_to_vector();
 
-    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, false);
+    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, use_exact);
 
     // must be a small envelope to ensure correct tet tags later on
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps, boundary_eps);
