@@ -104,11 +104,32 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # background mesh. It also pins NFG a35198d and Delaunay3D c9b3eec (wildmeshing forks).
 # FetchContent keeps VolumeRemesher's NFG declaration, so fast-envelope builds against a35198d
 # too; its own recipe still names the older commit until fast-envelope follows.
+#
+# Then #32 and #33. Neither changes any output here: all 50 registered configs are
+# byte-identical across them.
+#
+#   - #32 (c8329b3) adds the Python bindings: the CLI's writers are split into in-memory
+#     snapshots (BSPcomplex::extractSurface/extractVolume), parallel_blocks rethrows a worker's
+#     exception on the calling thread, and NFG moves to 2330267 -- upstream main
+#     (MarcoAttene/NFG#6 merged) plus MarcoAttene/NFG#7, under which ip_error throws when
+#     NFG_IP_ERROR_THROWS is defined. Nothing here defines it, and embed_tri_in_poly_mesh /
+#     embed_seg_in_tri_mesh call none of the rewritten writers. fast-envelope builds against
+#     2330267 too (VolumeRemesher's declaration wins; its own recipe still names 05f99ea).
+#   - #33 (57e7753) moves Delaunay3D to upstream main e18e96a, which inserts the vertices of
+#     tetrahedrize() in Morton order above 1150 of them, plus MarcoAttene/Delaunay3D#2 and #3
+#     (wildmeshing/Delaunay3D f1c7c19); #3 breaks ties between points in the same Morton cell
+#     by index, so the insertion order does not depend on the standard library's sort. It
+#     changes the order the tets are created in, not which tets are created: symbolic
+#     perturbation makes the set order-independent. VolumeRemesher's embedding never calls
+#     tetrahedrize() (it inserts into our background mesh), and our own delaunay3D -- the
+#     tetwild/simwild background grid, src/wmtk/utils/Delaunay.cpp -- sorts the tets it
+#     returns, so neither sees the new order. Measured on crown, octocat and thingi 36075, the
+#     background-grid Delaunay is 10-30 ms faster.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 9e74ca7119ff8f5e1db40498f08f4a60d89a4ab3
+    GIT_TAG 57e7753521c98554129fd08545a5b3458228e5ba
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
