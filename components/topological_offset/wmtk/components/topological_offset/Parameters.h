@@ -38,9 +38,12 @@ struct Parameters : public wmtk::OptimizerParameters
     bool optimize_offset;
     // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
     // input complex's included, and the domain wall; see the spec doc).
-    // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
-    double envelope_size;
-    double envelope_size_rel;
+    // Absolute; if <= 0, computed from envelope_size_rel (relative to the bbox diagonal) by
+    // init(). The spec's defaults, so a Parameters built without init() (the unit tests) holds
+    // defined values rather than uninitialized ones; its envelope_size is then -1, which the
+    // envelope build refuses, so such a test sets envelope_size itself.
+    double envelope_size = -1.0;
+    double envelope_size_rel = 1e-3;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset

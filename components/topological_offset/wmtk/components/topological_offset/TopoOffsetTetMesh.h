@@ -219,12 +219,15 @@ public:
 
     /**
      * @brief The exact-kind envelope of the input complex, built only for offset_field
-     * "euclidean". Null otherwise.
+     * "euclidean", once, by init_input_complex_bvh(). Null otherwise. The repulsion pass, the
+     * predicted front and m_offset_potential all query it.
      *
-     * Not a containment envelope and never used as one: no operation tests against it. It exists
-     * because nearest_point_feature() -- the foot point plus the feature kind the exact distance
-     * derivatives case on -- is only answered by the exact path. Built from the same extraction
-     * as m_input_complex_bvh, so it describes the same geometry.
+     * A query engine for the field, never asked a containment question: no operation tests
+     * against it. It answers nearest_point_feature() -- the foot point plus the feature kind the
+     * exact distance derivatives case on -- which reads only the envelope's BVH and its copies of
+     * the input, filled by every init() (src/wmtk/envelope/Envelope.cpp). It is built exact
+     * (euclidean_query_envelope()), and its exact structure is unused. Built from the same
+     * extraction as m_input_complex_bvh, so it describes the same geometry.
      */
     std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
 
@@ -2293,7 +2296,8 @@ public:
 
     /**
      * @brief Build the input complex's BVH and keep the extraction the potential needs, and
-     * number the complex's connected pieces. Must be called after init_from_image(...) and
+     * number the complex's connected pieces; for offset_field "euclidean", build
+     * m_input_complex_envelope from the extraction. Must be called after init_from_image(...) and
      * label_input_complex().
      */
     void init_input_complex_bvh();
