@@ -1398,8 +1398,8 @@ public:
      * so the edges radiating from it are tag boundaries and its boundary mask carries several
      * bits. smoothing_containment_envelope() therefore hands the smoother an IntersectionEnvelope
      * -- within eps of every curve it lies on -- which pins it to the junction, and the pull
-     * toward the most-violated member drags it back if it strays. The base's hook is pure virtual,
-     * so this stays as the honest constant rather than being deleted outright.
+     * toward the most-violated member drags it back if it strays. Kept as the honest constant:
+     * the base's default asks the feature-point anchors, which this mesh never turns on.
      */
     bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
     {
