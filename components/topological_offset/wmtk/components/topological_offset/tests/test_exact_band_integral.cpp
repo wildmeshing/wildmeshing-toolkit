@@ -889,8 +889,17 @@ TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
  * inputs, outward and inward, the triangles oriented out of the selection region, and the two
  * plates of side_counterexample.py. Checks: value and derivatives match the Python; a cell with
  * nothing clipped gives the unclipped value bit for bit; every clip result is closed; on the
- * plates the value is never below the true clipped integral (0 for the cell wholly inside the
- * lower plate); the gradient and Hessian match central differences on the clipped cells.
+ * plates a cell wholly inside the lower plate gives 0; the gradient and Hessian match central
+ * differences on the clipped cells.
+ *
+ * Except on cells with a part where the members' planes disagree (D, ExactBandIntegral's class
+ * doc): there the Python took the former D bound, an upper bound of the integral, where value()
+ * now takes the side of the member nearest at the part's centroid (2026-10-14). On those the
+ * check is that value() is at most the Python's bound and that value_grad_hess() gives the same
+ * J. MEASURED against a quadrature of chi (d - delta) over the same pieces (scratchpad replay/,
+ * 2026-10-14): the 24 plates cells that changed match it to 2.2e-18 delta vol where the Python
+ * was up to 0.78 delta vol above it; the 4 geneva cells that changed moved by at most 2.6e-5
+ * delta vol, below the quadrature's own accuracy there (1.2e-4).
  */
 TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
 {
@@ -906,16 +915,24 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
         ExactBandIntegral::Stats st;
         st.check_closed = true;
         double e_J = 0., e_dJ = 0., e_G = 0., e_H = 0., fd_g = 0., fd_h = 0.;
-        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0;
+        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0, n_D_cells = 0;
         for (int k = 0; k < c.ncells; ++k) {
             const SCell& sc = c.cells[k];
             const Tet T = tet_of(sc.T);
             INFO(c.name << " cell " << k);
             const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
             const double unit = sc.delta * vol; // J is of size delta vol
+            const int64_t D_before = st.side_D;
             const double J = eb.value(T, sc.delta, &st);
-            CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
-            e_J = std::max(e_J, std::abs(J - sc.J) / unit);
+            // a part where the members' planes disagree: the Python's J is the former D bound
+            const bool has_D = st.side_D > D_before;
+            n_D_cells += has_D;
+            if (has_D) {
+                CHECK(J <= sc.J + 1e-12 * unit);
+            } else {
+                CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
+                e_J = std::max(e_J, std::abs(J - sc.J) / unit);
+            }
             if (sc.clipped) {
                 ++n_clipped;
             } else {
@@ -932,20 +949,27 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             const double eg = (G - Gr).norm() / std::max(Gr.norm(), 1e-300);
             const double eh =
                 (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
-            CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
-            CHECK(eg <= 1e-10);
-            CHECK(eh <= 1e-9);
-            e_dJ = std::max(e_dJ, std::abs(Jd - sc.Jd) / unit);
-            e_G = std::max(e_G, eg);
-            e_H = std::max(e_H, eh);
-            if (std::string(c.name) == "plates" && k % 4 == 0 && k < 16) {
-                // the cells wholly inside the lower plate (true value 0) never go below it
-                if (k % 8 == 4) CHECK(J >= 0.);
+            if (has_D) {
+                CHECK(std::abs(Jd - J) <= 1e-12 * unit);
+            } else {
+                CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
+                CHECK(eg <= 1e-10);
+                CHECK(eh <= 1e-9);
+                e_dJ = std::max(e_dJ, std::abs(Jd - sc.Jd) / unit);
+                e_G = std::max(e_G, eg);
+                e_H = std::max(e_H, eh);
             }
-            if (!sc.clipped || n_fd >= 24 || (std::string(c.name) == "plates" && (k / 4) % 2 == 0))
-                continue;
-            // central differences on clipped cells (the plates' unjittered cells sit on ties of the
-            // D bound's vertex max, where the bound has a kink: skipped)
+            if (std::string(c.name) == "plates") {
+                // a cell wholly inside the lower plate [0, 1]^2 x [0, 0.1] (true value 0)
+                bool inside = true;
+                for (const Vec3& p : T) {
+                    inside = inside && p[0] >= 0. && p[0] <= 1. && p[1] >= 0. && p[1] <= 1. &&
+                             p[2] >= 0. && p[2] <= 0.1;
+                }
+                if (inside) CHECK(J == 0.);
+            }
+            if (!sc.clipped || n_fd >= 24) continue;
+            // central differences on clipped cells
             ++n_fd;
             double L = 0.;
             for (int i = 0; i < 4; ++i) {
@@ -977,8 +1001,8 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
         }
         CHECK(st.open_results == 0);
         std::printf(
-            "  %-13s %2d cells (%d clipped; D parts %lld, %lld positive): J vs the Python %.1e "
-            "(delta vol);"
+            "  %-13s %2d cells (%d clipped; D parts %lld, %lld kept, in %d cells): J vs the Python "
+            "%.1e (delta vol);"
             " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences "
             "on %d"
             " clipped cells G %.1e H %.1e; %lld clip results closed, %lld open\n",
@@ -987,6 +1011,7 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             n_clipped,
             (long long)st.side_D,
             (long long)st.side_D_pos,
+            n_D_cells,
             e_J,
             n_bits,
             n_unclipped,
@@ -999,6 +1024,149 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             (long long)st.closed_checked,
             (long long)st.open_results);
     }
+}
+
+/**
+ * Two configurations where value() was not the integral, found on 100033 (plates 2.9 thick, delta
+ * 2.49; 2026-10-14), each against its exact value: next to a slab's face, inside its footprint and
+ * away from its walls, that face is nearest everywhere, so J = vol (its mean distance - delta).
+ *  - parallel faces: a box 10 x 2.9 x 10 and cells under it spanning 4.0, 2.5 and 1.5 along y, the
+ *    faces given top first and bottom first. Below the box the two horizontal faces have one slope;
+ *    faces_min_pieces() took them for one function and gave the piece to the lower index, so with
+ *    the top face first and a span over 2.9 (the top face not pruned) value() was 0.
+ *  - a grooved bottom: the box's bottom folded up 0.2 along x = 5, a reflex edge whose region
+ *    opens up through the box; a cell above the top face spanning 4.0 has the groove edge for a
+ *    member with the top face, its plane putting the cell on the far side: the part where the two
+ *    disagree took the D bound, positive here against a true value below 0.
+ */
+TEST_CASE("exact-band-integral-plates", "[offset][exact_band]")
+{
+    const double delta = 2.4857853714681912, H = 2.9;
+    // a solid of the triangles `tris`, its face sides from its centroid (both solids are
+    // star-shaped about it)
+    const auto build = [](const std::vector<Vec3>& P, const std::vector<std::array<int, 3>>& tris) {
+        Eigen::MatrixXd V(int(P.size()), 3);
+        Vec3 c = Vec3::Zero();
+        for (size_t i = 0; i < P.size(); ++i) {
+            V.row(int(i)) = P[i].transpose();
+            c += P[i] / double(P.size());
+        }
+        Eigen::MatrixXi F(int(tris.size()), 3);
+        std::vector<int8_t> side(tris.size());
+        for (size_t f = 0; f < tris.size(); ++f) {
+            const auto& t = tris[f];
+            F.row(int(f)) << t[0], t[1], t[2];
+            const Vec3 n =
+                (P[size_t(t[1])] - P[size_t(t[0])]).cross(P[size_t(t[2])] - P[size_t(t[0])]);
+            const Vec3 m = (P[size_t(t[0])] + P[size_t(t[1])] + P[size_t(t[2])]) / 3.;
+            side[f] = n.dot(m - c) > 0 ? 1 : -1;
+        }
+        return ExactBandIntegral(V, F, side, 1);
+    };
+    const auto quad = [](std::vector<std::array<int, 3>>& tris, const std::array<int, 4>& q) {
+        tris.push_back({q[0], q[1], q[2]});
+        tris.push_back({q[0], q[2], q[3]});
+    };
+    // value() and value_grad_hess() against J = vol (mean of y_sign (y - y_face) - delta)
+    const auto check = [&](const ExactBandIntegral& eb,
+                           const Tet& T,
+                           const double y_face,
+                           const double y_sign,
+                           const char* what,
+                           ExactBandIntegral::Stats* st) {
+        const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
+        const double ybar = (T[0][1] + T[1][1] + T[2][1] + T[3][1]) / 4.;
+        const double exact = vol * (y_sign * (ybar - y_face) - delta);
+        const double unit = delta * vol;
+        INFO(what);
+        const double J = eb.value(T, delta, st);
+        CHECK(std::abs(J - exact) <= 1e-12 * unit);
+        Vec3 G;
+        Eigen::Matrix3d Hs;
+        const double Jd = eb.value_grad_hess(T, 3, delta, G, Hs);
+        CHECK(std::abs(Jd - exact) <= 1e-12 * unit);
+        // the gradient in the apex against central differences of value()
+        Vec3 gf;
+        const double h = 1e-5;
+        for (int d = 0; d < 3; ++d) {
+            Tet Tp = T, Tm = T;
+            Tp[3][d] += h;
+            Tm[3][d] -= h;
+            gf[d] = (eb.value(Tp, delta) - eb.value(Tm, delta)) / (2. * h);
+        }
+        CHECK((G - gf).norm() <= 1e-6 * std::max(gf.norm(), 1.));
+        std::printf(
+            "  %-34s J %+.12f exact %+.12f (|diff| %.1e delta vol); gradient vs central "
+            "differences %.1e\n",
+            what,
+            J,
+            exact,
+            std::abs(J - exact) / unit,
+            (G - gf).norm() / std::max(gf.norm(), 1.));
+    };
+    std::printf("exact-band-integral-plates: value() on plates against the exact value\n");
+
+    // parallel faces: the box [0, 10] x [0, H] x [0, 10], corner i = (x, y, z) bits of i
+    std::vector<Vec3> P(8);
+    for (int i = 0; i < 8; ++i) {
+        P[size_t(i)] = Vec3(10. * (i & 1), H * ((i >> 1) & 1), 10. * ((i >> 2) & 1));
+    }
+    const std::array<int, 4> top = {2, 6, 7, 3}, bottom = {0, 1, 5, 4};
+    const std::array<std::array<int, 4>, 4> walls = {
+        {{0, 4, 6, 2}, {1, 3, 7, 5}, {0, 2, 3, 1}, {4, 5, 7, 6}}};
+    for (const bool top_first : {true, false}) {
+        std::vector<std::array<int, 3>> tris;
+        quad(tris, top_first ? top : bottom);
+        quad(tris, top_first ? bottom : top);
+        for (const auto& q : walls) quad(tris, q);
+        const ExactBandIntegral eb = build(P, tris);
+        for (const double y_lo : {-4.5, -3., -2.}) {
+            const Tet T = {
+                {Vec3(3., -0.5, 3.), Vec3(7., -0.5, 3.5), Vec3(4., -0.5, 7.), Vec3(5., y_lo, 5.)}};
+            const std::string what =
+                std::string(top_first ? "top face first" : "bottom face first") + ", span " +
+                std::to_string(-0.5 - y_lo).substr(0, 3);
+            check(eb, T, 0., -1., what.c_str(), nullptr);
+        }
+    }
+
+    // a grooved bottom: y = 0 at x = 0 and 10, y = g along x = 5 (the edge 1-4)
+    const double g = 0.2;
+    const std::vector<Vec3> Q = {
+        Vec3(0., 0., 0.),
+        Vec3(5., g, 0.),
+        Vec3(10., 0., 0.),
+        Vec3(0., 0., 10.),
+        Vec3(5., g, 10.),
+        Vec3(10., 0., 10.),
+        Vec3(0., H, 0.),
+        Vec3(10., H, 0.),
+        Vec3(0., H, 10.),
+        Vec3(10., H, 10.)};
+    std::vector<std::array<int, 3>> tris;
+    quad(tris, {0, 1, 4, 3}); // the bottom's two halves, meeting at the groove
+    quad(tris, {1, 2, 5, 4});
+    quad(tris, {6, 8, 9, 7}); // top
+    quad(tris, {0, 3, 8, 6}); // x = 0
+    quad(tris, {2, 7, 9, 5}); // x = 10
+    // the z = 0 and z = 10 walls, fans from the groove's ends
+    for (const std::array<int, 3>& t : {std::array<int, 3>{1, 2, 7}, {1, 7, 6}, {1, 6, 0}}) {
+        tris.push_back(t);
+    }
+    for (const std::array<int, 3>& t : {std::array<int, 3>{4, 5, 9}, {4, 9, 8}, {4, 8, 3}}) {
+        tris.push_back(t);
+    }
+    const ExactBandIntegral eb = build(Q, tris);
+    const Tet T = {
+        {Vec3(4., H + 0.5, 4.),
+         Vec3(6., H + 0.5, 4.5),
+         Vec3(5., H + 0.5, 6.5),
+         Vec3(5., H + 4.5, 5.)}};
+    ExactBandIntegral::Stats st;
+    check(eb, T, H, 1., "grooved bottom, cell above, span 4.0", &st);
+    // the case exercises a part where the members' planes disagree
+    CHECK(st.side_D > 0);
+    std::printf("  grooved bottom: %lld parts where the planes disagree\n", (long long)st.side_D);
 }
 
 namespace {
@@ -1316,4 +1484,461 @@ TEST_CASE("exact-band-replay", "[.replay]")
         }
         ++k;
     }
+}
+
+namespace {
+
+/// A stored band (exact-band-hessian-states): the input triangles, delta, and the band cells as
+/// vertex ids into P (vertices merged by exact coordinates).
+struct BandState
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    double delta = 0.;
+    std::vector<Vec3> P;
+    std::vector<std::array<int, 4>> cell;
+};
+
+/// int32 nV, nF, nT; double delta; V (nV x 3 doubles); F (nF x 3 int32); nT cells of 12 doubles.
+BandState read_band_state(const char* file)
+{
+    std::ifstream in(file, std::ios::binary);
+    REQUIRE(in.good());
+    int32_t hdr[3];
+    BandState s;
+    in.read(reinterpret_cast<char*>(hdr), sizeof(hdr));
+    in.read(reinterpret_cast<char*>(&s.delta), sizeof(s.delta));
+    const int nV = hdr[0], nF = hdr[1], nT = hdr[2];
+    std::vector<double> Vb(size_t(3 * nV)), Tb(size_t(12 * nT));
+    std::vector<int32_t> Fb(size_t(3 * nF));
+    in.read(reinterpret_cast<char*>(Vb.data()), std::streamsize(Vb.size() * sizeof(double)));
+    in.read(reinterpret_cast<char*>(Fb.data()), std::streamsize(Fb.size() * sizeof(int32_t)));
+    in.read(reinterpret_cast<char*>(Tb.data()), std::streamsize(Tb.size() * sizeof(double)));
+    REQUIRE(in.good());
+    s.V.resize(nV, 3);
+    for (int i = 0; i < nV; ++i)
+        s.V.row(i) << Vb[size_t(3 * i)], Vb[size_t(3 * i + 1)], Vb[size_t(3 * i + 2)];
+    s.F.resize(nF, 3);
+    for (int i = 0; i < nF; ++i)
+        s.F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
+    std::vector<std::pair<std::array<double, 3>, int>> pts;
+    for (int t = 0; t < nT; ++t) {
+        for (int j = 0; j < 4; ++j) {
+            const double* p = &Tb[size_t(12 * t + 3 * j)];
+            pts.push_back({{p[0], p[1], p[2]}, 4 * t + j});
+        }
+    }
+    std::sort(pts.begin(), pts.end());
+    s.cell.resize(size_t(nT));
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (i == 0 || pts[i].first != pts[i - 1].first)
+            s.P.push_back(Vec3(pts[i].first[0], pts[i].first[1], pts[i].first[2]));
+        s.cell[size_t(pts[i].second / 4)][size_t(pts[i].second % 4)] = int(s.P.size()) - 1;
+    }
+    return s;
+}
+
+/// The one-vertex energy of the "exact" rule at x = the moving corner: sum over the ring cells
+/// of value_grad_hess() (x in its slot kv of each cell).
+struct RingCell
+{
+    Tet T;
+    int kv = 0;
+};
+void ring_grad_hess(
+    const ExactBandIntegral& eb,
+    const std::vector<RingCell>& ring,
+    const Vec3& x,
+    const double delta,
+    Vec3& G,
+    Eigen::Matrix3d& H)
+{
+    G.setZero();
+    H.setZero();
+    for (const RingCell& rc : ring) {
+        Tet T = rc.T;
+        T[size_t(rc.kv)] = x;
+        Vec3 g;
+        Eigen::Matrix3d h;
+        eb.value_grad_hess(T, rc.kv, delta, g, h);
+        G += g;
+        H += h;
+    }
+}
+
+/// |H_fd - H| / |H| for central differences of the gradient at the steps hs (absolute).
+std::vector<double> ring_fd_errors(
+    const ExactBandIntegral& eb,
+    const std::vector<RingCell>& ring,
+    const Vec3& x,
+    const double delta,
+    const std::vector<double>& hs,
+    double* kink = nullptr)
+{
+    Vec3 G;
+    Eigen::Matrix3d H;
+    ring_grad_hess(eb, ring, x, delta, G, H);
+    std::vector<double> out;
+    for (const double h : hs) {
+        Eigen::Matrix3d Hf;
+        for (int k = 0; k < 3; ++k) {
+            Vec3 gp, gm;
+            Eigen::Matrix3d hp, hm;
+            ring_grad_hess(eb, ring, x + h * Vec3::Unit(k), delta, gp, hp);
+            ring_grad_hess(eb, ring, x - h * Vec3::Unit(k), delta, gm, hm);
+            Hf.col(k) = (gp - gm) / (2. * h);
+        }
+        out.push_back((Hf - H).norm() / std::max(H.norm(), 1e-300));
+    }
+    if (kink) { // |H_fwd - H_bwd| / |H| at the step hs[2]: a kink of the gradient at x
+        const double h = hs[2];
+        Eigen::Matrix3d Hp, Hm;
+        for (int k = 0; k < 3; ++k) {
+            Vec3 gp, gm;
+            Eigen::Matrix3d hp, hm;
+            ring_grad_hess(eb, ring, x + h * Vec3::Unit(k), delta, gp, hp);
+            ring_grad_hess(eb, ring, x - h * Vec3::Unit(k), delta, gm, hm);
+            Hp.col(k) = (gp - G) / h;
+            Hm.col(k) = (G - gm) / h;
+        }
+        *kink = (Hp - Hm).norm() / std::max(H.norm(), 1e-300);
+    }
+    return out;
+}
+
+} // namespace
+
+namespace {
+/// A stored cube band of turn 1 (offset outward): the input, 14 vertices (8 corners, 6 face
+/// centres) and 24 triangles, and the 15 cells of one front vertex x, which lies on the symmetry
+/// plane x = y (exact-band-integral-hessian-contact).
+// clang-format off
+constexpr double kContactDelta = 0x1.1bc779ef0d4e8p-5;
+constexpr double kContactV[] = {
+    -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+    -0x1.0000000000000p-1, -0x1.0000000000000p-1, 0x1.0000000000000p-1,
+    -0x1.0000000000000p-1, 0x0.0p+0, 0x0.0p+0,
+    -0x1.0000000000000p-1, 0x1.0000000000000p-1, -0x1.0000000000000p-1,
+    -0x1.0000000000000p-1, 0x1.0000000000000p-1, 0x1.0000000000000p-1,
+    0x0.0p+0, -0x1.0000000000000p-1, 0x0.0p+0,
+    0x0.0p+0, 0x0.0p+0, -0x1.0000000000000p-1,
+    0x0.0p+0, 0x0.0p+0, 0x1.0000000000000p-1,
+    0x0.0p+0, 0x1.0000000000000p-1, 0x0.0p+0,
+    0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+    0x1.0000000000000p-1, -0x1.0000000000000p-1, 0x1.0000000000000p-1,
+    0x1.0000000000000p-1, 0x0.0p+0, 0x0.0p+0,
+    0x1.0000000000000p-1, 0x1.0000000000000p-1, -0x1.0000000000000p-1,
+    0x1.0000000000000p-1, 0x1.0000000000000p-1, 0x1.0000000000000p-1,
+};
+constexpr int kContactF[] = {
+    2, 0, 1, 0, 5, 1, 2, 1, 4, 7, 4, 1,
+    5, 10, 1, 7, 1, 10, 0, 2, 3, 0, 3, 6,
+    5, 0, 9, 6, 9, 0, 2, 4, 3, 3, 4, 8,
+    13, 8, 4, 13, 4, 7, 3, 8, 12, 6, 3, 12,
+    10, 9, 11, 10, 5, 9, 13, 10, 11, 13, 7, 10,
+    12, 11, 9, 12, 9, 6, 11, 12, 13, 8, 13, 12,
+};
+/// Per cell its 4 corners, then the slot of x among them.
+constexpr double kContactRing[][13] = {
+    {
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.0a3d70a3d70a4p-1, -0x1.0a3d70a3d70a4p-1, -0x1.0a3d70a3d70a4p-1,
+        -0x1.0c76c19b42d22p-1, -0x1.e7127cc97a5bcp-2, -0x1.0c76c19b42d22p-1,
+        1},
+    {
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.8000000000000p-2, -0x1.8000000000000p-2, -0x1.0000000000000p-1,
+        -0x1.c89bde16d8882p-2, -0x1.f1c480592d32dp-2, -0x1.11a3b340ffb6ep-1,
+        1},
+    {
+        -0x1.c89bde16d8882p-2, -0x1.f1c480592d32dp-2, -0x1.11a3b340ffb6ep-1,
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.e7127cc97a5bcp-2, -0x1.0c76c19b42d22p-1, -0x1.0c76c19b42d22p-1,
+        2},
+    {
+        -0x1.ee5907c8bbb0fp-2, -0x1.cb0b175a3312ep-2, -0x1.11a6f837444f1p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.83327d842a3dep-2, -0x1.7a6248ef1bf90p-2, -0x1.11ae688e51928p-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        1},
+    {
+        -0x1.0000000000000p-1, -0x1.11bc779ef0d4ep-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.e7127cc97a5bcp-2, -0x1.0c76c19b42d22p-1, -0x1.0c76c19b42d22p-1,
+        1},
+    {
+        -0x1.0a3d70a3d70a4p-1, -0x1.0a3d70a3d70a4p-1, -0x1.0a3d70a3d70a4p-1,
+        -0x1.0000000000000p-1, -0x1.11bc779ef0d4ep-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        2},
+    {
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.8737ae835726ep-2, -0x1.8737ae835726ep-2, -0x1.11b06f410de05p-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        -0x1.79bfaf56e1458p-2, -0x1.84110bd449126p-2, -0x1.11b25154f6ec7p-1,
+        0},
+    {
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.8737ae835726ep-2, -0x1.8737ae835726ep-2, -0x1.11b06f410de05p-1,
+        -0x1.83327d842a3dep-2, -0x1.7a6248ef1bf90p-2, -0x1.11ae688e51928p-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        0},
+    {
+        -0x1.0c76c19b42d22p-1, -0x1.e7127cc97a5bcp-2, -0x1.0c76c19b42d22p-1,
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.ee5907c8bbb0fp-2, -0x1.cb0b175a3312ep-2, -0x1.11a6f837444f1p-1,
+        2},
+    {
+        -0x1.0000000000000p-1, -0x1.0000000000000p-1, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.ee5907c8bbb0fp-2, -0x1.cb0b175a3312ep-2, -0x1.11a6f837444f1p-1,
+        -0x1.8000000000000p-2, -0x1.8000000000000p-2, -0x1.0000000000000p-1,
+        1},
+    {
+        -0x1.c89bde16d8882p-2, -0x1.f1c480592d32dp-2, -0x1.11a3b340ffb6ep-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        -0x1.79bfaf56e1458p-2, -0x1.84110bd449126p-2, -0x1.11b25154f6ec7p-1,
+        1},
+    {
+        -0x1.7f31977bc2125p-2, -0x1.7f31977bc2125p-2, -0x1.08d9898286f56p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        -0x1.c89bde16d8882p-2, -0x1.f1c480592d32dp-2, -0x1.11a3b340ffb6ep-1,
+        1},
+    {
+        -0x1.7f31977bc2125p-2, -0x1.7f31977bc2125p-2, -0x1.08d9898286f56p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.ee5907c8bbb0fp-2, -0x1.cb0b175a3312ep-2, -0x1.11a6f837444f1p-1,
+        -0x1.7eca6339a31b8p-2, -0x1.7eca6339a31b8p-2, -0x1.0d464e43ca701p-1,
+        1},
+    {
+        -0x1.8000000000000p-2, -0x1.8000000000000p-2, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.7f31977bc2125p-2, -0x1.7f31977bc2125p-2, -0x1.08d9898286f56p-1,
+        -0x1.c89bde16d8882p-2, -0x1.f1c480592d32dp-2, -0x1.11a3b340ffb6ep-1,
+        1},
+    {
+        -0x1.8000000000000p-2, -0x1.8000000000000p-2, -0x1.0000000000000p-1,
+        -0x1.fe632ef78424ap-2, -0x1.fe632ef78424ap-2, -0x1.11b313050deacp-1,
+        -0x1.ee5907c8bbb0fp-2, -0x1.cb0b175a3312ep-2, -0x1.11a6f837444f1p-1,
+        -0x1.7f31977bc2125p-2, -0x1.7f31977bc2125p-2, -0x1.08d9898286f56p-1,
+        1},
+};
+// clang-format on
+} // namespace
+
+/**
+ * The one-vertex Hessian where a face of a cell through x holds a line on which two fixed planes
+ * of the partition meet (ExactBandIntegral::value_grad_hess(), the cut terms of a piece touching
+ * that face along an edge only): the ring of a front vertex x of the stored cube band on the
+ * symmetry plane x = y. Two of its cells have the face (x, v, .) in that plane, v the cube's corner
+ * (-1/2, -1/2, -1/2), which holds the line x = y = -1/2 below v, where the bottom face's prism,
+ * the cone of v and an edge's region meet. Checks every cell's Hessian and the ring's against
+ * central differences of the gradient (min over h = 1e-5, 1e-6 delta). Before the edge-contact
+ * term: those two cells 98% and 94% off, the ring 57%; the other cells within 4e-7.
+ */
+TEST_CASE("exact-band-integral-hessian-contact", "[offset][exact_band]")
+{
+    const int nV = int(std::size(kContactV)) / 3, nF = int(std::size(kContactF)) / 3;
+    Eigen::MatrixXd V(nV, 3);
+    for (int i = 0; i < nV; ++i)
+        V.row(i) << kContactV[3 * i], kContactV[3 * i + 1], kContactV[3 * i + 2];
+    Eigen::MatrixXi F(nF, 3);
+    for (int i = 0; i < nF; ++i)
+        F.row(i) << kContactF[3 * i], kContactF[3 * i + 1], kContactF[3 * i + 2];
+    // the solid's side from the triangles' orientation (out of the cube here), the band outside
+    double vol6 = 0.;
+    for (int i = 0; i < nF; ++i) {
+        const Vec3 a = V.row(F(i, 0)), b = V.row(F(i, 1)), c = V.row(F(i, 2));
+        vol6 += a.dot(b.cross(c));
+    }
+    const ExactBandIntegral eb(V, F, std::vector<int8_t>(size_t(nF), vol6 > 0. ? 1 : -1), 1);
+    const double delta = kContactDelta;
+    std::vector<RingCell> ring;
+    for (const auto& r : kContactRing) {
+        RingCell rc;
+        rc.T = tet_of(r);
+        rc.kv = int(r[12]);
+        ring.push_back(rc);
+    }
+    const Vec3 x = ring[0].T[size_t(ring[0].kv)];
+    const std::vector<double> hs = {1e-5 * delta, 1e-6 * delta};
+    double worst = 0.;
+    for (const RingCell& rc : ring) {
+        const std::vector<double> e = ring_fd_errors(eb, {rc}, x, delta, hs);
+        const double b = std::min(e[0], e[1]);
+        CHECK(b <= 1e-6);
+        worst = std::max(worst, b);
+    }
+    const std::vector<double> e = ring_fd_errors(eb, ring, x, delta, hs);
+    const double b = std::min(e[0], e[1]);
+    CHECK(b <= 1e-6);
+    std::printf(
+        "exact-band-integral-hessian-contact: %zu cells, Hessian vs central differences: worst "
+        "cell %.1e, the ring %.1e\n",
+        ring.size(),
+        worst,
+        b);
+}
+
+/**
+ * Hidden check of the "exact" rule's one-vertex Hessian on a stored band:
+ * EXACT_HESS_STATE=<band>.bin ./wmtk_test_topological_offset "[.hess_states]". The file is the
+ * front-flux bench's (int32 nV, nF, nT; double delta; V; F; the band cells, 12 doubles each; the
+ * band outside the input, sigma +1). For every front vertex (a vertex of a boundary face of the
+ * band with d > delta / 2) the sum over its ring cells of value_grad_hess() against central
+ * differences of that sum's gradient at steps h = 1e-3 .. 1e-7 delta; the error of a vertex is
+ * the min over h. EXACT_HESS_VERTEX=<k>: per ring cell of the k-th front vertex, the same
+ * errors, and the cell in hex floats.
+ */
+TEST_CASE("exact-band-hessian-states", "[.hess_states]")
+{
+    const char* file = std::getenv("EXACT_HESS_STATE");
+    if (!file) {
+        WARN("EXACT_HESS_STATE not set");
+        return;
+    }
+    const BandState s = read_band_state(file);
+    double vol6 = 0.;
+    for (int i = 0; i < s.F.rows(); ++i) {
+        const Vec3 a = s.V.row(s.F(i, 0)), b = s.V.row(s.F(i, 1)), c = s.V.row(s.F(i, 2));
+        vol6 += a.dot(b.cross(c));
+    }
+    const ExactBandIntegral eb(
+        s.V,
+        s.F,
+        std::vector<int8_t>(size_t(s.F.rows()), vol6 > 0. ? 1 : -1),
+        1);
+    const InputTriangles tris(s.V, s.F);
+    const auto dist = [&](const Vec3& p) { return tris.distance(tris.nearest(p), p); };
+    std::map<std::array<int, 3>, int> nface;
+    std::vector<std::vector<int>> ring(s.P.size());
+    for (size_t t = 0; t < s.cell.size(); ++t) {
+        for (int i = 0; i < 4; ++i) {
+            std::array<int, 3> k;
+            int c = 0;
+            for (int j = 0; j < 4; ++j) {
+                if (j != i) k[size_t(c++)] = s.cell[t][size_t(j)];
+            }
+            std::sort(k.begin(), k.end());
+            ++nface[k];
+            ring[size_t(s.cell[t][size_t(i)])].push_back(int(t));
+        }
+    }
+    std::vector<char> on_boundary(s.P.size(), 0);
+    for (const auto& [k, n] : nface) {
+        if (n == 1)
+            for (const int v : k) on_boundary[size_t(v)] = 1;
+    }
+    std::vector<int> front;
+    for (size_t v = 0; v < s.P.size(); ++v) {
+        if (on_boundary[v] && dist(s.P[v]) > 0.5 * s.delta) front.push_back(int(v));
+    }
+    const std::vector<double> hs =
+        {1e-3 * s.delta, 1e-4 * s.delta, 1e-5 * s.delta, 1e-6 * s.delta, 1e-7 * s.delta};
+    const auto ring_of = [&](const int v) {
+        std::vector<RingCell> r;
+        for (const int t : ring[size_t(v)]) {
+            RingCell rc;
+            for (int j = 0; j < 4; ++j) {
+                rc.T[size_t(j)] = s.P[size_t(s.cell[size_t(t)][size_t(j)])];
+                if (s.cell[size_t(t)][size_t(j)] == v) rc.kv = j;
+            }
+            r.push_back(rc);
+        }
+        return r;
+    };
+    const char* one = std::getenv("EXACT_HESS_VERTEX");
+    if (one) {
+        const int k = std::atoi(one);
+        REQUIRE(k >= 0);
+        REQUIRE(size_t(k) < front.size());
+        const int v = front[size_t(k)];
+        const std::vector<RingCell> r = ring_of(v);
+        std::printf(
+            "front vertex %d (id %d) x = (%a, %a, %a), d/delta %.6f, %zu ring cells, delta %a\n",
+            k,
+            v,
+            s.P[size_t(v)][0],
+            s.P[size_t(v)][1],
+            s.P[size_t(v)][2],
+            dist(s.P[size_t(v)]) / s.delta,
+            r.size(),
+            s.delta);
+        for (size_t i = 0; i < r.size(); ++i) {
+            double kink = 0.;
+            const std::vector<double> e =
+                ring_fd_errors(eb, {r[i]}, s.P[size_t(v)], s.delta, hs, &kink);
+            Vec3 G;
+            Eigen::Matrix3d H;
+            ring_grad_hess(eb, {r[i]}, s.P[size_t(v)], s.delta, G, H);
+            double dmin = 1e300;
+            for (const Vec3& p : r[i].T) dmin = std::min(dmin, dist(p));
+            ExactBandIntegral::Stats st;
+            eb.value(r[i].T, s.delta, &st);
+            std::printf(
+                "  cell %zu kv %d |H| %.3e min corner d/delta %.3e pieces %lld rule_a %lld "
+                "side_clipped %lld D %lld | err h=1e-3..1e-7 delta: %.1e %.1e %.1e %.1e %.1e kink "
+                "%.1e\n   ",
+                i,
+                r[i].kv,
+                H.norm(),
+                dmin / s.delta,
+                (long long)st.pieces,
+                (long long)st.rule_a_pieces,
+                (long long)st.side_clipped,
+                (long long)st.side_D,
+                e[0],
+                e[1],
+                e[2],
+                e[3],
+                e[4],
+                kink);
+            for (const Vec3& p : r[i].T) std::printf(" %a %a %a", p[0], p[1], p[2]);
+            std::printf("\n");
+        }
+    }
+    std::vector<double> best;
+    int over = 0;
+    for (size_t k = 0; k < front.size(); ++k) {
+        const int v = front[k];
+        double kink = 0.;
+        const std::vector<double> e =
+            ring_fd_errors(eb, ring_of(v), s.P[size_t(v)], s.delta, hs, &kink);
+        const double b = *std::min_element(e.begin(), e.end());
+        best.push_back(b);
+        if (b > 1e-6) {
+            ++over;
+            std::printf(
+                "  front vertex %zu (id %d): err h=1e-3..1e-7 delta: %.1e %.1e %.1e %.1e %.1e "
+                "kink %.1e\n",
+                k,
+                v,
+                e[0],
+                e[1],
+                e[2],
+                e[3],
+                e[4],
+                kink);
+        }
+    }
+    std::vector<double> sorted = best;
+    std::sort(sorted.begin(), sorted.end());
+    std::printf(
+        "exact-band-hessian-states: %s: %zu band cells, %zu front vertices; Hessian vs central "
+        "differences (min over h): median %.1e max %.1e; %d over 1e-6\n",
+        file,
+        s.cell.size(),
+        front.size(),
+        sorted.empty() ? 0. : sorted[sorted.size() / 2],
+        sorted.empty() ? 0. : sorted.back(),
+        over);
+    CHECK(over == 0);
 }

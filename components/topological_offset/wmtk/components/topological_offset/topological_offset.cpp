@@ -70,6 +70,13 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params(json_params);
+    // Both dimensions: the correspondence is recorded by the march and indexes vertices the
+    // optimization would split, collapse and renumber.
+    if (params.save_offset_correspondence && params.optimize_offset) {
+        log_and_throw_error(
+            "save_offset_correspondence requires optimize_offset false: corr_input_vid is "
+            "recorded by the march and not carried through the optimization");
+    }
     const std::string offset_selection_str = json_params["offset_selection"];
     bool check_manifoldness = json_params["check_manifoldness"];
 
@@ -352,18 +359,6 @@ void topological_offset(nlohmann::json json_params)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        // The plastic medium's rest-shape AMIPS is not part of the energy E
-        // (TopoOffsetTetMesh::tet_energy()), and it is dimensionless (about 3 per cell) while E's
-        // band term is a volume: added to a front vertex's objective it outweighs E. Measured
-        // (cube outward, target 1e-2, tolerance 1e-4, turn 3): objective 12-24 from the rest term
-        // against a band-volume gradient of ~3e-5, so each Newton step moved the vertex ~1e-10
-        // (1e-7 tolerances) and fronts stayed 7-15 tolerances inside the level set.
-        if (params.deform_others) {
-            log_and_throw_error(
-                "deform_others is not available in 3D: the plastic medium's rest-shape term is "
-                "not part of the energy");
-        }
-
         // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
         check_envelope_leash(params);
 

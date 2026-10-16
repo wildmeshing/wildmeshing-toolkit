@@ -222,9 +222,9 @@ bool TetMesh::substructure_link_condition(const Tuple& e_tuple) const
 
     using namespace simplex;
 
-    const size_t edge_order = get_order_of_edge({{u_id, v_id}});
-    const size_t u_order = get_order_of_vertex(u_id);
-    const size_t v_order = get_order_of_vertex(v_id);
+    const size_t edge_order = substructure_order_of_edge({{u_id, v_id}});
+    const size_t u_order = substructure_order_of_vertex(u_id);
+    const size_t v_order = substructure_order_of_vertex(v_id);
 
     // If the edge is lower order than both vertices, we know for sure that this edge must not
     // be collapsed. Example: edge in space (order 0) connecting two surfaces (order 1).
@@ -283,17 +283,26 @@ bool TetMesh::substructure_link_condition(const Tuple& e_tuple) const
             const auto& [ev0, ev1] = e_opp.vertices();
 
             // collect order 2 edges
-            if (u_order > 1 || get_order_of_vertex(ev0) > 1) {
+            if (u_order > 1 || substructure_order_of_vertex(ev0) > 1) {
                 const Edge e0(u_id, ev0);
-                if (get_order_of_edge(e0.vertices()) > 1) {
+                if (substructure_order_of_edge(e0.vertices()) > 1) {
                     order2_edges.add(e0);
                 }
             }
-            if (u_order > 1 || get_order_of_vertex(ev1) > 1) {
+            if (u_order > 1 || substructure_order_of_vertex(ev1) > 1) {
                 const Edge e1(u_id, ev1);
-                if (get_order_of_edge(e1.vertices()) > 1) {
+                if (substructure_order_of_edge(e1.vertices()) > 1) {
                     order2_edges.add(e1);
                 }
+            }
+        }
+        // Feature edges are 1D substructure whether or not any surface face touches them;
+        // the loop above walks surface faces and cannot see an interior feature edge.
+        {
+            std::vector<size_t> feat;
+            substructure_feature_neighbors(u_id, feat);
+            for (const size_t x : feat) {
+                order2_edges.add(Edge(u_id, x));
             }
         }
         order2_edges.sort_and_clean();
@@ -338,17 +347,24 @@ bool TetMesh::substructure_link_condition(const Tuple& e_tuple) const
             const auto& [ev0, ev1] = e_opp.vertices();
 
             // collect order 2 edges
-            if (v_order > 1 || get_order_of_vertex(ev0) > 1) {
+            if (v_order > 1 || substructure_order_of_vertex(ev0) > 1) {
                 const Edge e0(v_id, ev0);
-                if (get_order_of_edge(e0.vertices()) > 1) {
+                if (substructure_order_of_edge(e0.vertices()) > 1) {
                     order2_edges.add(e0);
                 }
             }
-            if (v_order > 1 || get_order_of_vertex(ev1) > 1) {
+            if (v_order > 1 || substructure_order_of_vertex(ev1) > 1) {
                 const Edge e1(v_id, ev1);
-                if (get_order_of_edge(e1.vertices()) > 1) {
+                if (substructure_order_of_edge(e1.vertices()) > 1) {
                     order2_edges.add(e1);
                 }
+            }
+        }
+        {
+            std::vector<size_t> feat;
+            substructure_feature_neighbors(v_id, feat);
+            for (const size_t x : feat) {
+                order2_edges.add(Edge(v_id, x));
             }
         }
         order2_edges.sort_and_clean();

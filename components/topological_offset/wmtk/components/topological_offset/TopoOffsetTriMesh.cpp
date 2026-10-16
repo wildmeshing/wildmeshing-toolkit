@@ -2092,6 +2092,14 @@ void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
         Vector2d p2 = m_vertex_attribute[i].m_posf;
         return Vector3d(p2(0), p2(1), 0);
     });
+    // save_offset_correspondence: attached to the block just added, as MshData requires. Valid as
+    // written because the run stopped at the construction, which removes no vertex, so
+    // consolidate_mesh() above kept every id the field holds. As in 3D.
+    if (m_offset_params.save_offset_correspondence) {
+        msh.add_face_vertex_attribute<1>("corr_input_vid", [&](size_t k) {
+            return double(m_vertex_extra[verts[k].vid(*this)].m_corr_input_vid);
+        });
+    }
 
     std::vector<Tuple> faces_with_tag;
     faces_with_tag.reserve(faces.size());

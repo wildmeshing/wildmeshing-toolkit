@@ -6,6 +6,7 @@
 #include <wmtk/envelope/Envelope.hpp>
 
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "ExactBandIntegral.hpp"
 #include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -675,6 +676,75 @@ private:
 };
 
 /**
+ * @brief The per-tet energy's AMIPS term for cells measured against a REFERENCE shape R, at one
+ * moving vertex x (use_rest_pose: a plastic cell against its stamped rest,
+ * TopoOffsetTetMesh::cell_is_plastic()):
+ *
+ *     E(x) = weight * sum over the cells t of  vol_t(x) A_t(x)^3
+ *
+ * A_t the AMIPS of F = E_t R^-1, E_t the edge matrix (columns q_k - x, the moving vertex first,
+ * positively oriented). With f = |F|_F^2 and g = det E_t:
+ *
+ *     A = f / J^(2/3),  J = det F = g / det R,  vol = g / 6,  so  vol A^3 = c f^3 / g,
+ *     c = det(R)^2 / 6
+ *
+ * -- no determinant of F and no volume taken apart from the AMIPS. g is affine in x, so grad g is
+ * constant and hess g = 0; f is quadratic, grad f = -2 F s with s = R^-T 1, hess f = 2 |s|^2 I.
+ * The derivatives are exact:
+ *
+ *     grad = c (3 f^2 grad f / g - f^3 grad g / g^2)
+ *     hess = c (6 f grad f grad f^T / g + 3 f^2 hess f / g
+ *               - 3 f^2 (grad f grad g^T + grad g grad f^T) / g^2 + 2 f^3 grad g grad g^T / g^3)
+ *
+ * A cell with g <= 0 makes the energy +inf and the step invalid. Against regular_rest() it is
+ * the same quantity CubedAMIPSEnergy3D computes from the edge lengths. value_of() is one cell's
+ * vol A^3 from its corners, which TopoOffsetTetMesh::tet_energy() reads for a plastic cell, so
+ * the rules and the smoother compare one number. Ported from archive/spenbert-offset
+ * (VolAMIPSEnergy<3>).
+ */
+class VolAMIPSEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One cell at the moving vertex: its other corners in the oriented order after it, and its
+    /// reference (cell()).
+    struct Cell
+    {
+        std::array<Eigen::Vector3d, 3> q;
+        Eigen::Matrix3d rest_inv;
+        Eigen::Vector3d s; ///< rest_inv^T 1
+        double c; ///< det(R)^2 / 6
+    };
+    /// A cell with reference edge matrix R (columns r_k - r_0, the moving vertex's rest first);
+    /// false when R is not positively oriented.
+    static bool cell(const std::array<Eigen::Vector3d, 3>& q, const Eigen::Matrix3d& R, Cell& out);
+    /// The regular tet's edge matrix (unit edges): the elastic reference.
+    static Eigen::Matrix3d regular_rest();
+    /// vol A^3 of the tet p[0..3] against reference R: +inf when p is not positively oriented,
+    /// or when R is not.
+    static double value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R);
+
+    VolAMIPSEnergy3D(std::vector<Cell> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::vector<Cell> m_cells;
+    double m_weight;
+};
+
+/**
  * @brief The input's triangles as convex primitives, for the energy's band term.
  *
  * The distance d to the input is the min over its triangles i of d_i, the distance to triangle i
@@ -787,8 +857,6 @@ private:
     int build_node(int begin, int end, const std::vector<Eigen::Vector3d>& centroid, double pad);
 };
 
-class ExactBandIntegral;
-
 /**
  * @brief A vertex's part of the energy's band term (TopoOffsetTetMesh::band_cell_term()), the
  * vertex moving:
@@ -865,6 +933,40 @@ public:
      * certified ball are not used.
      */
     void set_exact_integral(std::shared_ptr<const ExactBandIntegral> eb, double delta);
+    /// A boundary face of the band through x, its other two corners: (x, a, b) ordered with its
+    /// normal (a - x) x (b - x) out of the band.
+    struct Face
+    {
+        Eigen::Vector3d a, b;
+    };
+    /**
+     * @brief EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same band term
+     * (ExactBandIntegral.hpp): the value is
+     *     (sum over the band's boundary faces f through x of int_f G.n dA
+     *      + sum over the cells t of D_t, for the flagged cells) / delta,
+     * which differs from the "exact" rule's sum over the cells of J_t / delta by the flux through
+     * the faces that do not hold x, a constant in x: a face holding x lies in two cells of x's
+     * ring, so its fluxes cancel unless one side is not a band cell. Gradient and Hessian are
+     * those of E(B) / delta in x (ExactBandIntegral::front_face(), summed over `faces`); they have
+     * no D_t term. D_t is evaluated for a cell flagged by ExactBandIntegral::front_flux_flag(),
+     * or whose bound on d exceeds front_flux_reach() (the flag's polytopes hold the bisector
+     * points with d <= reach only): U_t = ExactBandIntegral::distance_bound(), kept per cell with
+     * the x it was computed at and read as U_t + |x - x_U| at a later x, a bound too (each d_P is
+     * 1-Lipschitz and only x moves), the search repeated where that exceeds the reach. Why U_t and
+     * not d(x) + max |q - x| (d 1-Lipschitz): MEASURED (stored cube_out band, 52957 cells, reach
+     * 2 delta), the latter put 10618 band cells beyond the reach, 5.0 D_t evaluations per front
+     * vertex, where the cube outward has no region overlaps on its offset side at all. The
+     * certified ball and the exact rule's integrals are not used. Any exception from the band term
+     * is kept (front_flux_error()) before it propagates: the shared smoother takes an exception out
+     * of a solve for a failed line search.
+     */
+    void set_front_flux(
+        std::shared_ptr<const ExactBandIntegral> eb,
+        double delta,
+        std::vector<Face> faces);
+    /// The message of the last exception the front-flux band term threw on this thread, until
+    /// the caller clears it (smooth_front_vertex() rethrows it after the solve).
+    static std::string& front_flux_error();
     /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
     std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
 
@@ -891,12 +993,28 @@ private:
     mutable std::vector<std::vector<InputTriangles::BallCandidate>> m_ball_cand;
     /// set_exact_integral(): the integral, and the last point's value / gradient and Hessian.
     std::shared_ptr<const ExactBandIntegral> m_eb;
+    /// Per cell its partition at the last x it was evaluated at, shared by value() and
+    /// value_grad_hess() (ExactBandIntegral::Partition).
+    mutable std::vector<ExactBandIntegral::Partition> m_eb_parts;
     mutable bool m_eb_val_set = false, m_eb_der_set = false;
     mutable Eigen::Vector3d m_eb_val_x = Eigen::Vector3d::Zero();
     mutable Eigen::Vector3d m_eb_der_x = Eigen::Vector3d::Zero();
     mutable double m_eb_E = 0.;
     mutable Eigen::Vector3d m_eb_g = Eigen::Vector3d::Zero();
     mutable Eigen::Matrix3d m_eb_H = Eigen::Matrix3d::Zero();
+    /// set_front_flux(): on, and the band's boundary faces through x; per cell its bound U_t on d
+    /// and the x it was computed at (m_ff_Ux_set: computed).
+    bool m_ff = false;
+    std::vector<Face> m_ff_faces;
+    /// per face its labelled parts at the last x (ExactBandIntegral::FaceParts), shared by the
+    /// value and the derivatives
+    mutable std::vector<ExactBandIntegral::FaceParts> m_ff_fparts;
+    mutable std::vector<double> m_ff_U;
+    mutable std::vector<Eigen::Vector3d> m_ff_Ux;
+    mutable std::vector<char> m_ff_Ux_set;
+    /// The front form's value / derivatives at x (eval()).
+    double ff_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)
+        const;
 
     std::vector<Cell> m_cells;
 };
