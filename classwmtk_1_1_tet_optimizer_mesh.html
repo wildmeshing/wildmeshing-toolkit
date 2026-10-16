@@ -226,9 +226,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</
 <tr class="separator:a57e8283626156be030f7cd47147babca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a895405765b9ba04f157b5eead4c68768" id="r_a895405765b9ba04f157b5eead4c68768"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a895405765b9ba04f157b5eead4c68768">split_edge_is_due</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:a895405765b9ba04f157b5eead4c68768"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac7bd1bcc48753f4a9d4ab0e851e3c3d" id="r_aac7bd1bcc48753f4a9d4ab0e851e3c3d"><td class="memItemLeft" align="right" valign="top"><a id="aac7bd1bcc48753f4a9d4ab0e851e3c3d" name="aac7bd1bcc48753f4a9d4ab0e851e3c3d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TetOptimizerMesh</b> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; env)</td></tr>
-<tr class="separator:aac7bd1bcc48753f4a9d4ab0e851e3c3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e1082e9a7f8bcbb3a3f60579b10b3ef" id="r_a8e1082e9a7f8bcbb3a3f60579b10b3ef"><td class="memItemLeft" align="right" valign="top"><a id="a8e1082e9a7f8bcbb3a3f60579b10b3ef" name="a8e1082e9a7f8bcbb3a3f60579b10b3ef"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TetOptimizerMesh</b> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; env)</td></tr>
+<tr class="separator:a8e1082e9a7f8bcbb3a3f60579b10b3ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a591913486d64d18d27b226d6cd9a19a9" id="r_a591913486d64d18d27b226d6cd9a19a9"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a591913486d64d18d27b226d6cd9a19a9">cell_quality</a> (const size_t tid) const =0</td></tr>
 <tr class="memdesc:a591913486d64d18d27b226d6cd9a19a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The quality of cell <code>tid</code>, and how to write it.  <br /></td></tr>
 <tr class="separator:a591913486d64d18d27b226d6cd9a19a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -293,9 +293,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a88fe0eeba385539398ea620a99418a92" id="r_a88fe0eeba385539398ea620a99418a92"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a88fe0eeba385539398ea620a99418a92">edge_incident_surface_face_count</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e)</td></tr>
 <tr class="memdesc:a88fe0eeba385539398ea620a99418a92"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the faces incident to edge <code>e</code> are on the tracked surface.  <br /></td></tr>
 <tr class="separator:a88fe0eeba385539398ea620a99418a92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1449fb08e36da2e02d5e1316674b1d23" id="r_a1449fb08e36da2e02d5e1316674b1d23"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1449fb08e36da2e02d5e1316674b1d23">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
-<tr class="memdesc:a1449fb08e36da2e02d5e1316674b1d23"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside.  <br /></td></tr>
-<tr class="separator:a1449fb08e36da2e02d5e1316674b1d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebd345cce38dc0eb1a071c4750aa33ea" id="r_aebd345cce38dc0eb1a071c4750aa33ea"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aebd345cce38dc0eb1a071c4750aa33ea">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:aebd345cce38dc0eb1a071c4750aa33ea"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside.  <br /></td></tr>
+<tr class="separator:aebd345cce38dc0eb1a071c4750aa33ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a491b19bab0edf5e47c56aa606317b4bc" id="r_a491b19bab0edf5e47c56aa606317b4bc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a491b19bab0edf5e47c56aa606317b4bc">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c) const</td></tr>
 <tr class="separator:a491b19bab0edf5e47c56aa606317b4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c216b0a1b2f288f2d01fdaa4145b232" id="r_a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
@@ -406,11 +406,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="memitem:a6afae375ecb270d675871e991c259e88" id="r_a6afae375ecb270d675871e991c259e88"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6afae375ecb270d675871e991c259e88">swap_edge_56_energy</a> (const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;tets, const int op_case) override</td></tr>
 <tr class="memdesc:a6afae375ecb270d675871e991c259e88"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified energy to decide which of the 5 possible orientations should be chosen.  <br /></td></tr>
 <tr class="separator:a6afae375ecb270d675871e991c259e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bfbb89bfe162368e6b418cc987c6188" id="r_a9bfbb89bfe162368e6b418cc987c6188"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9bfbb89bfe162368e6b418cc987c6188">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
-<tr class="memdesc:a9bfbb89bfe162368e6b418cc987c6188"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
-<tr class="separator:a9bfbb89bfe162368e6b418cc987c6188"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7a3ed8b2edc2d0e871f060fe26d8f9f" id="r_ae7a3ed8b2edc2d0e871f060fe26d8f9f"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ae7a3ed8b2edc2d0e871f060fe26d8f9f">smoothing_energy_envelope</a> (const size_t vid) const =0</td></tr>
-<tr class="separator:ae7a3ed8b2edc2d0e871f060fe26d8f9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e4c11ad1e91214a72707840cc45fc67" id="r_a2e4c11ad1e91214a72707840cc45fc67"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2e4c11ad1e91214a72707840cc45fc67">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a2e4c11ad1e91214a72707840cc45fc67"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
+<tr class="separator:a2e4c11ad1e91214a72707840cc45fc67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a234db64e096d5e1217a1d578577c7400" id="r_a234db64e096d5e1217a1d578577c7400"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a234db64e096d5e1217a1d578577c7400">smoothing_energy_envelope</a> (const size_t vid) const =0</td></tr>
+<tr class="separator:a234db64e096d5e1217a1d578577c7400"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
 <tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b6cb95cf16a2904fcf5ae94ec066246" id="r_a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246">smoothing_extra_energy</a> (const size_t) const</td></tr>
@@ -833,15 +833,15 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a9532be6b6cd814173db356a4c8ba118e" id="r_a9532be6b6cd814173db356a4c8ba118e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9532be6b6cd814173db356a4c8ba118e">m_track_feature_edges</a> = false</td></tr>
 <tr class="memdesc:a9532be6b6cd814173db356a4c8ba118e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the shared operations maintain m_feature_edge_attribute.  <br /></td></tr>
 <tr class="separator:a9532be6b6cd814173db356a4c8ba118e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fe594736ded8904be57ea0b76701fc9" id="r_a9fe594736ded8904be57ea0b76701fc9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9fe594736ded8904be57ea0b76701fc9">m_feature_envelope</a></td></tr>
-<tr class="memdesc:a9fe594736ded8904be57ea0b76701fc9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
-<tr class="separator:a9fe594736ded8904be57ea0b76701fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59caca6953b90a9aa3160a67156e9b4c" id="r_a59caca6953b90a9aa3160a67156e9b4c"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a59caca6953b90a9aa3160a67156e9b4c">m_feature_envelope</a></td></tr>
+<tr class="memdesc:a59caca6953b90a9aa3160a67156e9b4c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
+<tr class="separator:a59caca6953b90a9aa3160a67156e9b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3575ab09676dbf58dfe83f39323e6c" id="r_add3575ab09676dbf58dfe83f39323e6c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#add3575ab09676dbf58dfe83f39323e6c">m_params</a></td></tr>
 <tr class="separator:add3575ab09676dbf58dfe83f39323e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae78cbaa3d12307aa044d4dee7663483c" id="r_ae78cbaa3d12307aa044d4dee7663483c"><td class="memItemLeft" align="right" valign="top"><a id="ae78cbaa3d12307aa044d4dee7663483c" name="ae78cbaa3d12307aa044d4dee7663483c"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="memdesc:ae78cbaa3d12307aa044d4dee7663483c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
-<tr class="separator:ae78cbaa3d12307aa044d4dee7663483c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0a3b868d05a21b160ef476c02b02433" id="r_af0a3b868d05a21b160ef476c02b02433"><td class="memItemLeft" align="right" valign="top"><a id="af0a3b868d05a21b160ef476c02b02433" name="af0a3b868d05a21b160ef476c02b02433"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
+<tr class="memdesc:af0a3b868d05a21b160ef476c02b02433"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
+<tr class="separator:af0a3b868d05a21b160ef476c02b02433"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0c84e47f57f6f934b290de93a282426" id="r_ad0c84e47f57f6f934b290de93a282426"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad0c84e47f57f6f934b290de93a282426">m_s_amips</a> = 1.</td></tr>
 <tr class="separator:ad0c84e47f57f6f934b290de93a282426"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a206b57f986b46d496c4f7e9811241796" id="r_a206b57f986b46d496c4f7e9811241796"><td class="memItemLeft" align="right" valign="top"><a id="a206b57f986b46d496c4f7e9811241796" name="a206b57f986b46d496c4f7e9811241796"></a>
@@ -2589,8 +2589,8 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a9bfbb89bfe162368e6b418cc987c6188" name="a9bfbb89bfe162368e6b418cc987c6188"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9bfbb89bfe162368e6b418cc987c6188">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
+<a id="a2e4c11ad1e91214a72707840cc45fc67" name="a2e4c11ad1e91214a72707840cc45fc67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e4c11ad1e91214a72707840cc45fc67">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2599,7 +2599,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_containment_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_containment_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -2616,12 +2616,12 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. </p>
 <p>The surface envelope is shared by both applications. A derived mesh may additionally select an order-2 feature envelope for the pull energy. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6115b5238cab25e3aa74b7e5effed54a">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8bf390e6c30762db6cd4d902f372098a">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
-<a id="ae7a3ed8b2edc2d0e871f060fe26d8f9f" name="ae7a3ed8b2edc2d0e871f060fe26d8f9f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7a3ed8b2edc2d0e871f060fe26d8f9f">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
+<a id="a234db64e096d5e1217a1d578577c7400" name="a234db64e096d5e1217a1d578577c7400"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a234db64e096d5e1217a1d578577c7400">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2630,7 +2630,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_energy_envelope </td>
+          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_energy_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -2644,7 +2644,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ac0e488dfe0114de84bde95640bada707">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a86385958cca555a65f3fcb6749bf693b">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2ea1ae319d8407c940d7019db5b8e126">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a2aef162d1dcaaedbfc99489818fd5bcc">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a7ddb5210954e1348d60ef0e9ed3cf7df">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a823346cec868dc9046db538614e9bd02">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -3229,8 +3229,8 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a1449fb08e36da2e02d5e1316674b1d23" name="a1449fb08e36da2e02d5e1316674b1d23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1449fb08e36da2e02d5e1316674b1d23">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
+<a id="aebd345cce38dc0eb1a071c4750aa33ea" name="aebd345cce38dc0eb1a071c4750aa33ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebd345cce38dc0eb1a071c4750aa33ea">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3239,7 +3239,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::TetOptimizerMesh::surface_envelope_for_face </td>
+          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::surface_envelope_for_face </td>
           <td>(</td>
           <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
           <td class="paramname"><em>vids</em></td><td>)</td>
@@ -3257,7 +3257,7 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 <p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
 <p>Keyed on the vertex ids rather than the fid because every caller is a topological operation asking about the triangles it is ABOUT to create or has just created, where only the vids are known for certain. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -4139,14 +4139,14 @@ static <a class="el" href="structwmtk_1_1_tet_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a9fe594736ded8904be57ea0b76701fc9" name="a9fe594736ded8904be57ea0b76701fc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9fe594736ded8904be57ea0b76701fc9">&#9670;&#160;</a></span>m_feature_envelope</h2>
+<a id="a59caca6953b90a9aa3160a67156e9b4c" name="a59caca6953b90a9aa3160a67156e9b4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59caca6953b90a9aa3160a67156e9b4c">&#9670;&#160;</a></span>m_feature_envelope</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; wmtk::TetOptimizerMesh::m_feature_envelope</td>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; wmtk::TetOptimizerMesh::m_feature_envelope</td>
         </tr>
       </table>
 </div><div class="memdoc">

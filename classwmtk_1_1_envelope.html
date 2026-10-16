@@ -74,7 +74,11 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1_envelope-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::Envelope Class Reference</div></div>
 </div><!--header-->
@@ -85,27 +89,856 @@ Inheritance diagram for wmtk::Envelope:</div>
  <div class="center">
   <img src="classwmtk_1_1_envelope.png" usemap="#wmtk::Envelope_map" alt=""/>
   <map id="wmtk::Envelope_map" name="wmtk::Envelope_map">
-<area href="classwmtk_1_1_exact_envelope.html" alt="wmtk::ExactEnvelope" shape="rect" coords="0,56,341,80"/>
-<area href="classwmtk_1_1_sample_envelope.html" alt="wmtk::SampleEnvelope" shape="rect" coords="351,56,692,80"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html" alt="wmtk::components::topological_offset::IntersectionEnvelope" shape="rect" coords="175,112,516,136"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html" alt="wmtk::components::topological_offset::UnionEnvelope" shape="rect" coords="526,112,867,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html" alt="wmtk::components::topological_offset::IntersectionEnvelope" shape="rect" coords="0,56,341,80"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html" alt="wmtk::components::topological_offset::UnionEnvelope" shape="rect" coords="351,56,692,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:acf5af81c1642d6ab84f557d193ec3769" id="r_acf5af81c1642d6ab84f557d193ec3769"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">Kind</a> { <b>Uninitialized</b>
+, <b>Triangles3d</b>
+, <b>Edges3d</b>
+, <b>Edges2d</b>
+ }</td></tr>
+<tr class="separator:acf5af81c1642d6ab84f557d193ec3769"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:abcbd004048057b573b60f7bebab8b430" id="r_abcbd004048057b573b60f7bebab8b430"><td class="memItemLeft" align="right" valign="top"><a id="abcbd004048057b573b60f7bebab8b430" name="abcbd004048057b573b60f7bebab8b430"></a>
+<tr class="memitem:a40062e0f2e06b84c87ea693759181166" id="r_a40062e0f2e06b84c87ea693759181166"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a40062e0f2e06b84c87ea693759181166">Envelope</a> (bool exact=true)</td></tr>
+<tr class="separator:a40062e0f2e06b84c87ea693759181166"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42d1e1a8f2ab19816ca52ad1f3862720" id="r_a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a42d1e1a8f2ab19816ca52ad1f3862720">set_max_threads</a> (int n)</td></tr>
+<tr class="memdesc:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread.  <br /></td></tr>
+<tr class="separator:a42d1e1a8f2ab19816ca52ad1f3862720"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fbbb54adbbbd6c23d6e772da36cdd37" id="r_a4fbbb54adbbbd6c23d6e772da36cdd37"><td class="memItemLeft" align="right" valign="top"><a id="a4fbbb54adbbbd6c23d6e772da36cdd37" name="a4fbbb54adbbbd6c23d6e772da36cdd37"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector3i &gt; &amp;m_faces, const double)</td></tr>
-<tr class="separator:abcbd004048057b573b60f7bebab8b430"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1deac1df70fc7d2ea608f9877d3239d5" id="r_a1deac1df70fc7d2ea608f9877d3239d5"><td class="memItemLeft" align="right" valign="top"><a id="a1deac1df70fc7d2ea608f9877d3239d5" name="a1deac1df70fc7d2ea608f9877d3239d5"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris) const</td></tr>
-<tr class="separator:a1deac1df70fc7d2ea608f9877d3239d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a364390e1e0e9ea0ebe19c97bd7985917" id="r_a364390e1e0e9ea0ebe19c97bd7985917"><td class="memItemLeft" align="right" valign="top"><a id="a364390e1e0e9ea0ebe19c97bd7985917" name="a364390e1e0e9ea0ebe19c97bd7985917"></a>
+<tr class="separator:a4fbbb54adbbbd6c23d6e772da36cdd37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5e9b494a464ccad9d302f10a6042fb6" id="r_ad5e9b494a464ccad9d302f10a6042fb6"><td class="memItemLeft" align="right" valign="top"><a id="ad5e9b494a464ccad9d302f10a6042fb6" name="ad5e9b494a464ccad9d302f10a6042fb6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector2i &gt; &amp;m_edges, const double)</td></tr>
+<tr class="separator:ad5e9b494a464ccad9d302f10a6042fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb4a33f51acd1771f42e4ac756d88a13" id="r_acb4a33f51acd1771f42e4ac756d88a13"><td class="memItemLeft" align="right" valign="top"><a id="acb4a33f51acd1771f42e4ac756d88a13" name="acb4a33f51acd1771f42e4ac756d88a13"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector2d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector2i &gt; &amp;m_edges, const double)</td></tr>
+<tr class="separator:acb4a33f51acd1771f42e4ac756d88a13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c5305415fa180bbe78b191caf6084f3" id="r_a9c5305415fa180bbe78b191caf6084f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a9c5305415fa180bbe78b191caf6084f3">init</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const double eps)</td></tr>
+<tr class="memdesc:a9c5305415fa180bbe78b191caf6084f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same, from Eigen matrices, dispatching on the column counts.  <br /></td></tr>
+<tr class="separator:a9c5305415fa180bbe78b191caf6084f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac104bbd60fa4355f303e543ba624e22b" id="r_ac104bbd60fa4355f303e543ba624e22b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#ac104bbd60fa4355f303e543ba624e22b">is_outside</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris) const</td></tr>
+<tr class="separator:ac104bbd60fa4355f303e543ba624e22b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0c17f53afe10c74237d2a8efd3084a4" id="r_ad0c17f53afe10c74237d2a8efd3084a4"><td class="memItemLeft" align="right" valign="top"><a id="ad0c17f53afe10c74237d2a8efd3084a4" name="ad0c17f53afe10c74237d2a8efd3084a4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector3d, 2 &gt; &amp;edge) const</td></tr>
+<tr class="separator:ad0c17f53afe10c74237d2a8efd3084a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02e84f37efcd656a0b8ecadc3528a5da" id="r_a02e84f37efcd656a0b8ecadc3528a5da"><td class="memItemLeft" align="right" valign="top"><a id="a02e84f37efcd656a0b8ecadc3528a5da" name="a02e84f37efcd656a0b8ecadc3528a5da"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;edge) const</td></tr>
+<tr class="separator:a02e84f37efcd656a0b8ecadc3528a5da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57708f163d980da6dca10208980125fb" id="r_a57708f163d980da6dca10208980125fb"><td class="memItemLeft" align="right" valign="top"><a id="a57708f163d980da6dca10208980125fb" name="a57708f163d980da6dca10208980125fb"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector3d &amp;pts) const</td></tr>
-<tr class="separator:a364390e1e0e9ea0ebe19c97bd7985917"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a57708f163d980da6dca10208980125fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08fe830e30eb7cc40d418d6ff0bf8841" id="r_a08fe830e30eb7cc40d418d6ff0bf8841"><td class="memItemLeft" align="right" valign="top"><a id="a08fe830e30eb7cc40d418d6ff0bf8841" name="a08fe830e30eb7cc40d418d6ff0bf8841"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector2d &amp;pts) const</td></tr>
+<tr class="separator:a08fe830e30eb7cc40d418d6ff0bf8841"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69cfa7f2e9fd2f57a73621e3e8ee3d59" id="r_a69cfa7f2e9fd2f57a73621e3e8ee3d59"><td class="memItemLeft" align="right" valign="top"><a id="a69cfa7f2e9fd2f57a73621e3e8ee3d59" name="a69cfa7f2e9fd2f57a73621e3e8ee3d59"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (const Eigen::Vector3d &amp;pts, Eigen::Vector3d &amp;result) const</td></tr>
+<tr class="separator:a69cfa7f2e9fd2f57a73621e3e8ee3d59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecf3ebdd8cb26b940a45529f1b988550" id="r_aecf3ebdd8cb26b940a45529f1b988550"><td class="memItemLeft" align="right" valign="top"><a id="aecf3ebdd8cb26b940a45529f1b988550" name="aecf3ebdd8cb26b940a45529f1b988550"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (const Eigen::Vector2d &amp;pts, Eigen::Vector2d &amp;result) const</td></tr>
+<tr class="separator:aecf3ebdd8cb26b940a45529f1b988550"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7028f4f4cd30cd51faa84a6f913332b6" id="r_a7028f4f4cd30cd51faa84a6f913332b6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a7028f4f4cd30cd51faa84a6f913332b6">nearest_point_feature</a> (const Eigen::Vector2d &amp;p, Eigen::Vector2d &amp;result, bool &amp;on_corner, Eigen::Vector2d &amp;seg_normal, int &amp;feature_id) const</td></tr>
+<tr class="separator:a7028f4f4cd30cd51faa84a6f913332b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98bb6c83c1df5c2ad92173f6fc2c460e" id="r_a98bb6c83c1df5c2ad92173f6fc2c460e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a98bb6c83c1df5c2ad92173f6fc2c460e">nearest_point_feature</a> (const Eigen::Vector3d &amp;p, Eigen::Vector3d &amp;result, int &amp;feature_dim, Eigen::Vector3d &amp;dir, long long &amp;feature_id) const</td></tr>
+<tr class="separator:a98bb6c83c1df5c2ad92173f6fc2c460e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18d4b40188b71da1718b539196696e43" id="r_a18d4b40188b71da1718b539196696e43"><td class="memItemLeft" align="right" valign="top"><a id="a18d4b40188b71da1718b539196696e43" name="a18d4b40188b71da1718b539196696e43"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>initialized</b> ()</td></tr>
+<tr class="separator:a18d4b40188b71da1718b539196696e43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a932945940fb316f8ab5626efcf762c85" id="r_a932945940fb316f8ab5626efcf762c85"><td class="memItemLeft" align="right" valign="top"><a id="a932945940fb316f8ab5626efcf762c85" name="a932945940fb316f8ab5626efcf762c85"></a>
+<a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">Kind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>kind</b> () const</td></tr>
+<tr class="separator:a932945940fb316f8ab5626efcf762c85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d8f1c4a08ce59c882085ca1dc9ad2d3" id="r_a9d8f1c4a08ce59c882085ca1dc9ad2d3"><td class="memItemLeft" align="right" valign="top"><a id="a9d8f1c4a08ce59c882085ca1dc9ad2d3" name="a9d8f1c4a08ce59c882085ca1dc9ad2d3"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_distance</b> (const Eigen::Vector3d &amp;p) const</td></tr>
+<tr class="separator:a9d8f1c4a08ce59c882085ca1dc9ad2d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab47a54e77414bb37a7f5fc8642903bed" id="r_ab47a54e77414bb37a7f5fc8642903bed"><td class="memItemLeft" align="right" valign="top"><a id="ab47a54e77414bb37a7f5fc8642903bed" name="ab47a54e77414bb37a7f5fc8642903bed"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_distance</b> (const Eigen::Vector2d &amp;p) const</td></tr>
+<tr class="separator:ab47a54e77414bb37a7f5fc8642903bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2624fa220098adceb28b7a2b44ca060c" id="r_a2624fa220098adceb28b7a2b44ca060c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a2624fa220098adceb28b7a2b44ca060c">primitives_in_box</a> (const Eigen::Vector3d &amp;lo, const Eigen::Vector3d &amp;hi, std::vector&lt; int64_t &gt; &amp;ids) const</td></tr>
+<tr class="memdesc:a2624fa220098adceb28b7a2b44ca060c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ids of every primitive whose bounding box meets the closed box [lo, hi], ascending, each once.  <br /></td></tr>
+<tr class="separator:a2624fa220098adceb28b7a2b44ca060c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac4337e80929f5af97fcc40d8626ac30" id="r_aac4337e80929f5af97fcc40d8626ac30"><td class="memItemLeft" align="right" valign="top"><a id="aac4337e80929f5af97fcc40d8626ac30" name="aac4337e80929f5af97fcc40d8626ac30"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>primitives_in_box</b> (const Eigen::Vector2d &amp;lo, const Eigen::Vector2d &amp;hi, std::vector&lt; int64_t &gt; &amp;ids) const</td></tr>
+<tr class="memdesc:aac4337e80929f5af97fcc40d8626ac30"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 2D counterpart, for Edges2d: the same tree, which holds the 2D input lifted to z = 0. <br /></td></tr>
+<tr class="separator:aac4337e80929f5af97fcc40d8626ac30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81b53a6ad6f7d9eaea2ce0bcf50ff639" id="r_a81b53a6ad6f7d9eaea2ce0bcf50ff639"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a81b53a6ad6f7d9eaea2ce0bcf50ff639">primitive_distance</a> (int64_t id, const Eigen::Vector3d &amp;p, Eigen::Vector3d *grad=nullptr, Eigen::Matrix3d *hess=nullptr) const</td></tr>
+<tr class="memdesc:a81b53a6ad6f7d9eaea2ce0bcf50ff639"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance d from p to primitive <code>id</code> alone, with its gradient and Hessian when asked for (nullptr = not wanted).  <br /></td></tr>
+<tr class="separator:a81b53a6ad6f7d9eaea2ce0bcf50ff639"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c466a3e6725d2e2712416e679443ff2" id="r_a7c466a3e6725d2e2712416e679443ff2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a7c466a3e6725d2e2712416e679443ff2">primitive_distance</a> (int64_t id, const Eigen::Vector2d &amp;p, Eigen::Vector2d *grad=nullptr, Eigen::Matrix2d *hess=nullptr) const</td></tr>
+<tr class="separator:a7c466a3e6725d2e2712416e679443ff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a972371ba6a6cebcbf5970c8050bafa7a" id="r_a972371ba6a6cebcbf5970c8050bafa7a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a972371ba6a6cebcbf5970c8050bafa7a">primitive_triangle_distance</a> (int64_t id, const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tri) const</td></tr>
+<tr class="memdesc:a972371ba6a6cebcbf5970c8050bafa7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance between the triangle <code>tri</code> and primitive <code>id</code> alone.  <br /></td></tr>
+<tr class="separator:a972371ba6a6cebcbf5970c8050bafa7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a44713e51f85c25571c12bc5649d993" id="r_a0a44713e51f85c25571c12bc5649d993"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a0a44713e51f85c25571c12bc5649d993">primitive_segment_distance</a> (int64_t id, const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;seg) const</td></tr>
+<tr class="memdesc:a0a44713e51f85c25571c12bc5649d993"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 2D counterpart, for Edges2d: the distance between the segment <code>seg</code> and primitive <code>id</code> alone &ndash; a 2D front edge where the 3D query takes a front face.  <br /></td></tr>
+<tr class="separator:a0a44713e51f85c25571c12bc5649d993"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a6c242e84f2c28ecaae122147c31b4e47" id="r_a6c242e84f2c28ecaae122147c31b4e47"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47">eps2</a> = 1e-6</td></tr>
+<tr class="separator:a6c242e84f2c28ecaae122147c31b4e47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad98dac6e590cbeb35b394d4cf12fd44d" id="r_ad98dac6e590cbeb35b394d4cf12fd44d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d">eps2_edge</a> = 1e-6</td></tr>
+<tr class="separator:ad98dac6e590cbeb35b394d4cf12fd44d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a159e6073180b22b5398c86cb27298146" id="r_a159e6073180b22b5398c86cb27298146"><td class="memItemLeft" align="right" valign="top"><a id="a159e6073180b22b5398c86cb27298146" name="a159e6073180b22b5398c86cb27298146"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sampling_dist</b> = 1e-3</td></tr>
+<tr class="separator:a159e6073180b22b5398c86cb27298146"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a497a3d3fc142af8ffc34d858e9937216" id="r_a497a3d3fc142af8ffc34d858e9937216"><td class="memItemLeft" align="right" valign="top"><a id="a497a3d3fc142af8ffc34d858e9937216" name="a497a3d3fc142af8ffc34d858e9937216"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_exact</b> = true</td></tr>
+<tr class="separator:a497a3d3fc142af8ffc34d858e9937216"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa44c3ad1ae6d6b18179c765beb558cdb" id="r_aa44c3ad1ae6d6b18179c765beb558cdb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#aa44c3ad1ae6d6b18179c765beb558cdb">disabled</a> = false</td></tr>
+<tr class="separator:aa44c3ad1ae6d6b18179c765beb558cdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:ac429072a6850fbd03155871fbeaee302" id="r_ac429072a6850fbd03155871fbeaee302"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#ac429072a6850fbd03155871fbeaee302">require_primitive_query</a> (int dim, const char *query) const</td></tr>
+<tr class="separator:ac429072a6850fbd03155871fbeaee302"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4e28c875018de5b233d458d318366e4" id="r_ab4e28c875018de5b233d458d318366e4"><td class="memItemLeft" align="right" valign="top"><a id="ab4e28c875018de5b233d458d318366e4" name="ab4e28c875018de5b233d458d318366e4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>require_primitive</b> (int64_t id, int dim, const char *query) const</td></tr>
+<tr class="separator:ab4e28c875018de5b233d458d318366e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4580cb643e056698e12281267d8b1e8f" id="r_a4580cb643e056698e12281267d8b1e8f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a4580cb643e056698e12281267d8b1e8f">require_exact_kind</a> (<a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">Kind</a> expected, const char *query) const</td></tr>
+<tr class="separator:a4580cb643e056698e12281267d8b1e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a637a9e1db5f68e6502efc31a81842a4b" id="r_a637a9e1db5f68e6502efc31a81842a4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a637a9e1db5f68e6502efc31a81842a4b">require_exact_3d</a> (const char *query) const</td></tr>
+<tr class="separator:a637a9e1db5f68e6502efc31a81842a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecb57004e67149b9295cf29a599893a4" id="r_aecb57004e67149b9295cf29a599893a4"><td class="memItemLeft" align="right" valign="top"><a id="aecb57004e67149b9295cf29a599893a4" name="aecb57004e67149b9295cf29a599893a4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>require_exact_built</b> (const char *query) const</td></tr>
+<tr class="separator:aecb57004e67149b9295cf29a599893a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f9e885a8db76cfc177568bc417890e6" id="r_a3f9e885a8db76cfc177568bc417890e6"><td class="memTemplParams" colspan="2">template&lt;typename VertexList &gt; </td></tr>
+<tr class="memitem:a3f9e885a8db76cfc177568bc417890e6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a3f9e885a8db76cfc177568bc417890e6">init_exact_edges</a> (const VertexList &amp;V, const std::vector&lt; Eigen::Vector2i &gt; &amp;F, const double _eps)</td></tr>
+<tr class="separator:a3f9e885a8db76cfc177568bc417890e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c956990e29695ef7ed2a60161e3b93e" id="r_a7c956990e29695ef7ed2a60161e3b93e"><td class="memItemLeft" align="right" valign="top"><a id="a7c956990e29695ef7ed2a60161e3b93e" name="a7c956990e29695ef7ed2a60161e3b93e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>samples_outside_parallel</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;ps) const</td></tr>
+<tr class="memdesc:a7c956990e29695ef7ed2a60161e3b93e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sampled triangle query's loop over <code>ps</code>, split among idle workers. <br /></td></tr>
+<tr class="separator:a7c956990e29695ef7ed2a60161e3b93e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a65ee2ec44745fd49ebc108cbc887a139" id="r_a65ee2ec44745fd49ebc108cbc887a139"><td class="memItemLeft" align="right" valign="top"><a id="a65ee2ec44745fd49ebc108cbc887a139" name="a65ee2ec44745fd49ebc108cbc887a139"></a>
+std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_vertex_ind</b></td></tr>
+<tr class="separator:a65ee2ec44745fd49ebc108cbc887a139"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5693036fcc5172aba487d959153b7338" id="r_a5693036fcc5172aba487d959153b7338"><td class="memItemLeft" align="right" valign="top"><a id="a5693036fcc5172aba487d959153b7338" name="a5693036fcc5172aba487d959153b7338"></a>
+std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_face_ind</b></td></tr>
+<tr class="separator:a5693036fcc5172aba487d959153b7338"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5126ea1a76fdde203c4322d6353e4b8" id="r_ae5126ea1a76fdde203c4322d6353e4b8"><td class="memItemLeft" align="right" valign="top"><a id="ae5126ea1a76fdde203c4322d6353e4b8" name="ae5126ea1a76fdde203c4322d6353e4b8"></a>
+std::vector&lt; Eigen::Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_v2</b></td></tr>
+<tr class="memdesc:ae5126ea1a76fdde203c4322d6353e4b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input copies backing nearest_point_feature (filled by the matching init only). <br /></td></tr>
+<tr class="separator:ae5126ea1a76fdde203c4322d6353e4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa15a5724ff97aa24e4345c6ae08e15b6" id="r_aa15a5724ff97aa24e4345c6ae08e15b6"><td class="memItemLeft" align="right" valign="top"><a id="aa15a5724ff97aa24e4345c6ae08e15b6" name="aa15a5724ff97aa24e4345c6ae08e15b6"></a>
+std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_e2</b></td></tr>
+<tr class="separator:aa15a5724ff97aa24e4345c6ae08e15b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac27f76d4706f7727a869a0fed6f2a5f2" id="r_ac27f76d4706f7727a869a0fed6f2a5f2"><td class="memItemLeft" align="right" valign="top"><a id="ac27f76d4706f7727a869a0fed6f2a5f2" name="ac27f76d4706f7727a869a0fed6f2a5f2"></a>
+std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_v3</b></td></tr>
+<tr class="separator:ac27f76d4706f7727a869a0fed6f2a5f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e5faea81d2b805f7173f78a8e929b0a" id="r_a4e5faea81d2b805f7173f78a8e929b0a"><td class="memItemLeft" align="right" valign="top"><a id="a4e5faea81d2b805f7173f78a8e929b0a" name="a4e5faea81d2b805f7173f78a8e929b0a"></a>
+std::vector&lt; Eigen::Vector3i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_f3</b></td></tr>
+<tr class="separator:a4e5faea81d2b805f7173f78a8e929b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a935fa4646cce58432d1f4e3d37bc20d6" id="r_a935fa4646cce58432d1f4e3d37bc20d6"><td class="memItemLeft" align="right" valign="top"><a id="a935fa4646cce58432d1f4e3d37bc20d6" name="a935fa4646cce58432d1f4e3d37bc20d6"></a>
+std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_e3</b></td></tr>
+<tr class="separator:a935fa4646cce58432d1f4e3d37bc20d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a637fe493943fe3392664705dfabda7de" id="r_a637fe493943fe3392664705dfabda7de"><td class="memItemLeft" align="right" valign="top"><a id="a637fe493943fe3392664705dfabda7de" name="a637fe493943fe3392664705dfabda7de"></a>
+std::shared_ptr&lt; SimpleBVH::BVH &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_bvh</b></td></tr>
+<tr class="separator:a637fe493943fe3392664705dfabda7de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b819a394e4be36ecf52a900d8a79a9b" id="r_a3b819a394e4be36ecf52a900d8a79a9b"><td class="memItemLeft" align="right" valign="top"><a id="a3b819a394e4be36ecf52a900d8a79a9b" name="a3b819a394e4be36ecf52a900d8a79a9b"></a>
+fastEnvelope::FastEnvelope&#160;</td><td class="memItemRight" valign="bottom"><b>exact_envelope</b></td></tr>
+<tr class="memdesc:a3b819a394e4be36ecf52a900d8a79a9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serves both Triangles3d and Edges3d: FastEnvelope has an init() for each. <br /></td></tr>
+<tr class="separator:a3b819a394e4be36ecf52a900d8a79a9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a424353c86fb2be23fea23f15d02c5aa3" id="r_a424353c86fb2be23fea23f15d02c5aa3"><td class="memItemLeft" align="right" valign="top"><a id="a424353c86fb2be23fea23f15d02c5aa3" name="a424353c86fb2be23fea23f15d02c5aa3"></a>
+fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom"><b>exact_envelope_2d</b></td></tr>
+<tr class="memdesc:a424353c86fb2be23fea23f15d02c5aa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Edges2d only. A separate class upstream, not an overload. <br /></td></tr>
+<tr class="separator:a424353c86fb2be23fea23f15d02c5aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1626538612e6046993456421641c4b88" id="r_a1626538612e6046993456421641c4b88"><td class="memItemLeft" align="right" valign="top"><a id="a1626538612e6046993456421641c4b88" name="a1626538612e6046993456421641c4b88"></a>
+<a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">Kind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_kind</b> = Kind::Uninitialized</td></tr>
+<tr class="separator:a1626538612e6046993456421641c4b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d2707894852b6600d5a8d70892bca7f" id="r_a2d2707894852b6600d5a8d70892bca7f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#a2d2707894852b6600d5a8d70892bca7f">m_exact_built</a> = false</td></tr>
+<tr class="separator:a2d2707894852b6600d5a8d70892bca7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba976ee3b78b760ceda5ee1618558b2a" id="r_aba976ee3b78b760ceda5ee1618558b2a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_envelope.html#aba976ee3b78b760ceda5ee1618558b2a">m_max_threads</a> = 1</td></tr>
+<tr class="separator:aba976ee3b78b760ceda5ee1618558b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following file:<ul>
+<h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="acf5af81c1642d6ab84f557d193ec3769" name="acf5af81c1642d6ab84f557d193ec3769"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf5af81c1642d6ab84f557d193ec3769">&#9670;&#160;</a></span>Kind</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">wmtk::Envelope::Kind</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Which of the three init() overloads built this envelope.</p>
+<p>The sampled path does not need it &ndash; every overload ends up in the same BVH, and a 2D query is answered by lifting to z = 0. The exact path does: a triangle-built and an edge-built FastEnvelope are different objects, a 2D envelope is a different class again, and only init() knows which one was filled in. Without this, is_outside(Vector2d) would lift to 3D and query a FastEnvelope that was never initialized, which answers "outside" for everything rather than failing. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a40062e0f2e06b84c87ea693759181166" name="a40062e0f2e06b84c87ea693759181166"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40062e0f2e06b84c87ea693759181166">&#9670;&#160;</a></span>Envelope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::Envelope::Envelope </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exact</em> = <code>true</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Exact by default. The sampled predicate tests points laid along the query against a shrunk radius and still cannot see between two samples; the exact one decides containment in the full eps-neighbourhood. A caller that wants the cheaper sampled test asks for it with exact = false. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a9c5305415fa180bbe78b191caf6084f3" name="a9c5305415fa180bbe78b191caf6084f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c5305415fa180bbe78b191caf6084f3">&#9670;&#160;</a></span>init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::init </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixXi &amp;&#160;</td>
+          <td class="paramname"><em>F</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>eps</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same, from Eigen matrices, dispatching on the column counts. </p>
+<p>V Nx3, F Mx3 -&gt; a 3D triangle envelope V Nx3, F Mx2 -&gt; a 3D edge envelope V Nx2, F Mx2 -&gt; a 2D edge envelope</p>
+<p>Marshals into the vector form above. Most callers already hold matrices and were each writing the same ten-line copy loop; this is that loop, once. </p>
+
+</div>
+</div>
+<a id="a3f9e885a8db76cfc177568bc417890e6" name="a3f9e885a8db76cfc177568bc417890e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f9e885a8db76cfc177568bc417890e6">&#9670;&#160;</a></span>init_exact_edges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename VertexList &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::init_exact_edges </td>
+          <td>(</td>
+          <td class="paramtype">const VertexList &amp;&#160;</td>
+          <td class="paramname"><em>V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Eigen::Vector2i &gt; &amp;&#160;</td>
+          <td class="paramname"><em>F</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>_eps</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Build the exact edge envelope, when there is one to build and anything will ask for it.</p>
+<p>Unlike the triangle overload, this is conditional on use_exact. The triangle envelope has to carry both structures because callers flip the flag on an already-initialized envelope &ndash; tetwild does that around its simplification, simwild around its insertion &ndash; but every one of those toggles is on a triangle envelope. Building the hexahedra or rectangles for a sampled edge envelope is pure cost: it added ~12% to the integration suite when this was unconditional. A toggle that arrives afterwards anyway is caught by m_exact_built rather than silently answering "outside" against an empty structure.</p>
+<p>The rule for eps &lt;= 0 is the triangle overload's: such an envelope serves nearest queries only, and a containment query against it refuses, through require_exact_built(). A zero epsilon is a legitimate way to ask for an envelope that will only ever be used for nearest_point() &ndash; triwild's Delaunay seeding does it, to reject grid points that fall too close to the input curves &ndash; and with use_exact the default, that request arrives here in exact mode. There is no such thing as a zero-width exact envelope: the 2D construction asserts on it, and a containment query against one would answer "outside" for everything not exactly on the input. So skip the build rather than throw at init, which refused the nearest-only use too, and let a containment query fail rather than quietly reject everything. </p>
+
+</div>
+</div>
+<a id="ac104bbd60fa4355f303e543ba624e22b" name="ac104bbd60fa4355f303e543ba624e22b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac104bbd60fa4355f303e543ba624e22b">&#9670;&#160;</a></span>is_outside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Envelope::is_outside </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Four containment queries are VIRTUAL &ndash; the 3D triangle, the 3D point, the 2D segment and the 2D point &ndash; so a containment-only composite over several envelopes can answer them. They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a composite must never reach the NON-virtual queries, whose BVH it does not have. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html#a291d4ac0f66752d6b07e9e2181c87ea3">wmtk::components::topological_offset::IntersectionEnvelope</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html#ab0fe9843c33dde516fc32f5172c0d771">wmtk::components::topological_offset::UnionEnvelope</a>.</p>
+
+</div>
+</div>
+<a id="a7028f4f4cd30cd51faa84a6f913332b6" name="a7028f4f4cd30cd51faa84a6f913332b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7028f4f4cd30cd51faa84a6f913332b6">&#9670;&#160;</a></span>nearest_point_feature() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::nearest_point_feature </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &amp;&#160;</td>
+          <td class="paramname"><em>on_corner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>seg_normal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &amp;&#160;</td>
+          <td class="paramname"><em>feature_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Nearest point plus which feature of the input carries it, for the TRUE Hessian of the squared distance: within each closest-feature region the distance to a piecewise- linear input is exactly quadratic, and the region's kind decides the Hessian's rank.</p>
+<p>2D polylines: on_corner reports a polyline-vertex foot; seg_normal is the segment's unit normal (valid when !on_corner, sign arbitrary); feature_id is the polyline vertex index or the segment index &ndash; canonical, so two queries compare as "did the closest
+feature change". </p>
+
+</div>
+</div>
+<a id="a98bb6c83c1df5c2ad92173f6fc2c460e" name="a98bb6c83c1df5c2ad92173f6fc2c460e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98bb6c83c1df5c2ad92173f6fc2c460e">&#9670;&#160;</a></span>nearest_point_feature() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::nearest_point_feature </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &amp;&#160;</td>
+          <td class="paramname"><em>feature_dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long long &amp;&#160;</td>
+          <td class="paramname"><em>feature_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>3D counterpart, for triangle envelopes AND edge (curve) envelopes. feature_dim: 2 = face interior, 1 = edge/segment interior, 0 = vertex. dir is the face normal (dim 2) or the edge direction (dim 1), unit length, sign arbitrary. feature_id is canonical across adjacent primitives (face index / sorted vertex pair packed as min * n_vertices + max / vertex index). </p>
+
+</div>
+</div>
+<a id="a7c466a3e6725d2e2712416e679443ff2" name="a7c466a3e6725d2e2712416e679443ff2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c466a3e6725d2e2712416e679443ff2">&#9670;&#160;</a></span>primitive_distance() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::primitive_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d *&#160;</td>
+          <td class="paramname"><em>grad</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Matrix2d *&#160;</td>
+          <td class="paramname"><em>hess</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The 2D counterpart, for Edges2d: the same segment foot and the same derivatives in 2D, where a segment's interior has Hessian 0 &ndash; d is affine there, I - u u^T - e e^T vanishing with u and e orthonormal &ndash; as EuclideanOffsetPotential&lt;2&gt;::hessian() has it; (I - u u^T)/d at an endpoint or a point. </p>
+
+</div>
+</div>
+<a id="a81b53a6ad6f7d9eaea2ce0bcf50ff639" name="a81b53a6ad6f7d9eaea2ce0bcf50ff639"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81b53a6ad6f7d9eaea2ce0bcf50ff639">&#9670;&#160;</a></span>primitive_distance() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::primitive_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d *&#160;</td>
+          <td class="paramname"><em>grad</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Matrix3d *&#160;</td>
+          <td class="paramname"><em>hess</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The distance d from p to primitive <code>id</code> alone, with its gradient and Hessian when asked for (nullptr = not wanted). </p>
+<p>The derivatives are those of the distance to the feature the foot point lies on: gradient u = (p - foot)/d; Hessian 0 when the foot is inside a triangle, (I - u u^T - e e^T)/d when it is on a triangle's edge or inside a segment (e the unit edge direction), (I - u u^T)/d at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are reported as 0.</p>
+<p>The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the dot products in another order (see Envelope.cpp). The segment foot is <a class="el" href="classwmtk_1_1_envelope.html#a7028f4f4cd30cd51faa84a6f913332b6">nearest_point_feature()</a>'s, clamped at both ends. </p>
+
+</div>
+</div>
+<a id="a0a44713e51f85c25571c12bc5649d993" name="a0a44713e51f85c25571c12bc5649d993"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a44713e51f85c25571c12bc5649d993">&#9670;&#160;</a></span>primitive_segment_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::primitive_segment_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The 2D counterpart, for Edges2d: the distance between the segment <code>seg</code> and primitive <code>id</code> alone &ndash; a 2D front edge where the 3D query takes a front face. </p>
+<p>0 when the two cross, each one's endpoints strictly on the two sides of the other's line, by exact orientation signs as in 3D. Otherwise the segment-segment distance (Ericson 5.1.9), whose closest pair for disjoint segments has an endpoint of one; a contact without a crossing (an endpoint on the other segment, or collinear overlap) is such an endpoint at 0. A point primitive gives its distance to seg. </p>
+
+</div>
+</div>
+<a id="a972371ba6a6cebcbf5970c8050bafa7a" name="a972371ba6a6cebcbf5970c8050bafa7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a972371ba6a6cebcbf5970c8050bafa7a">&#9670;&#160;</a></span>primitive_triangle_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::primitive_triangle_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tri</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The distance between the triangle <code>tri</code> and primitive <code>id</code> alone. </p>
+<p>0 when an edge of one crosses the other (a segment primitive: when it crosses tri) &ndash; its endpoints strictly on the two sides of the other's plane, by exact orientation signs. Otherwise, against a triangle primitive, the min of the 6 corner-to-other-triangle distances and the 9 edge-edge distances (Ericson 5.1.9); against a segment, the min of its 2 endpoint-to-tri distances and its 3 distances to the edges of tri; against a point, its distance to tri. Two disjoint convex primitives' closest pair has a corner of one, or a point on an edge of each; two that meet without such a crossing (a corner on the other's plane, or coplanar) have one of those at 0.</p>
+<p>The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above. </p>
+
+</div>
+</div>
+<a id="a2624fa220098adceb28b7a2b44ca060c" name="a2624fa220098adceb28b7a2b44ca060c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2624fa220098adceb28b7a2b44ca060c">&#9670;&#160;</a></span>primitives_in_box()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::primitives_in_box </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>lo</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>hi</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The ids of every primitive whose bounding box meets the closed box [lo, hi], ascending, each once. </p>
+<p>A wrapper of SimpleBVH::BVH::intersect_box, which already maps its leaves back to input ids (nearest_facet does not &ndash; see <a class="el" href="classwmtk_1_1_envelope.html#a7028f4f4cd30cd51faa84a6f913332b6">nearest_point_feature()</a>) and visits each leaf once, so the result has no duplicates; but it lists them in the BVH's own Morton order, so they are sorted here. The boxes are the primitives' exact bounding boxes (the BVH is built with zero padding), compared closed: a box that only touches [lo, hi] counts. A caller that needs every primitive within r of a point passes the point's box grown by r, padded by its own rounding allowance. </p>
+
+</div>
+</div>
+<a id="a637a9e1db5f68e6502efc31a81842a4b" name="a637a9e1db5f68e6502efc31a81842a4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a637a9e1db5f68e6502efc31a81842a4b">&#9670;&#160;</a></span>require_exact_3d()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::require_exact_3d </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The 3D point and segment queries work against either 3D envelope, so they check only that this is not the 2D one &ndash; and that its exact structure actually exists. </p>
+
+</div>
+</div>
+<a id="a4580cb643e056698e12281267d8b1e8f" name="a4580cb643e056698e12281267d8b1e8f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4580cb643e056698e12281267d8b1e8f">&#9670;&#160;</a></span>require_exact_kind()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::require_exact_kind </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769">Kind</a>&#160;</td>
+          <td class="paramname"><em>expected</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An exact query must be answered by the structure the matching init() built.</p>
+<p>Getting this wrong is silent and dangerous rather than noisy: a default-constructed FastEnvelope has no prisms, and a query against no prisms answers "outside" for every point &ndash; so a mismatched envelope does not crash, it just vetoes every operation and looks like an optimization that cannot move. </p>
+
+</div>
+</div>
+<a id="ac429072a6850fbd03155871fbeaee302" name="ac429072a6850fbd03155871fbeaee302"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac429072a6850fbd03155871fbeaee302">&#9670;&#160;</a></span>require_primitive_query()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::require_primitive_query </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The checks of the per-primitive queries: an initialized envelope of dimension <code>dim</code>, and for the second an id in range. </p>
+
+</div>
+</div>
+<a id="a42d1e1a8f2ab19816ca52ad1f3862720" name="a42d1e1a8f2ab19816ca52ad1f3862720"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42d1e1a8f2ab19816ca52ad1f3862720">&#9670;&#160;</a></span>set_max_threads()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::Envelope::set_max_threads </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>How many threads one triangle query may use. 1, the default: every sample is checked on the calling thread. </p>
+<p>A triangle many times longer than eps samples to thousands of points, and its query costs milliseconds. Above n = 1, such a query splits its samples among idle workers of the thread pool, up to n threads in all, counting the caller. It takes only workers that are idle at that moment and waits for none, so in a parallel pass that keeps every thread busy nothing changes; the queries left running at the end get the threads that ran out of work. The answer is the same either way. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="aa44c3ad1ae6d6b18179c765beb558cdb" name="aa44c3ad1ae6d6b18179c765beb558cdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa44c3ad1ae6d6b18179c765beb558cdb">&#9670;&#160;</a></span>disabled</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Envelope::disabled = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Debug escape hatch: when set, every <a class="el" href="classwmtk_1_1_envelope.html#ac104bbd60fa4355f303e543ba624e22b">is_outside()</a> answers "inside".</p>
+<p>The envelope is the only thing that can reject an operation for geometric rather than combinatorial reasons, so turning it off tells you whether a stalled optimization is blocked by the envelope or by the mesh itself. It removes the containment guarantee entirely &ndash; the output is not usable, only diagnostic.</p>
+<p>Note nearest_point() is unaffected, so EnvelopeEnergy still pulls surface vertices toward the input while smoothing. Only the veto goes away, which is the point: it separates "the optimizer cannot move because the envelope forbids it" from "the
+optimizer cannot move at all". </p>
+
+</div>
+</div>
+<a id="a6c242e84f2c28ecaae122147c31b4e47" name="a6c242e84f2c28ecaae122147c31b4e47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c242e84f2c28ecaae122147c31b4e47">&#9670;&#160;</a></span>eps2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::eps2 = 1e-6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.</p>
+<p>eps shrunk by the covering radius of sampleTriangle's lattice, sampling_dist/sqrt(3). A point query needs no shrink at all and is therefore merely conservative here; it is left as it is because every 3D operation goes through it and widening it would change tetwild's behaviour everywhere, which belongs in its own change. </p>
+
+</div>
+</div>
+<a id="ad98dac6e590cbeb35b394d4cf12fd44d" name="ad98dac6e590cbeb35b394d4cf12fd44d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad98dac6e590cbeb35b394d4cf12fd44d">&#9670;&#160;</a></span>eps2_edge</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::Envelope::eps2_edge = 1e-6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The same, for EDGE queries, where the covering radius is different.</p>
+<p>is_outside(edge) samples the segment at N+1 evenly spaced points with N = floor(L/sampling_dist) + 1 &gt; L/sampling_dist, so the spacing is L/N &lt; sampling_dist and every point of the segment lies within sampling_dist/2 of a sample. Distance to a set is 1-Lipschitz, so "every sample within r" implies "every point within
+r + sampling_dist/2"; for that to imply containment in eps, </p><pre class="fragment">r = eps - sampling_dist / 2      (= eps/2, since sampling_dist = eps)
+</pre><p> The lattice constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is simply the wrong figure here: it is 0.4226*eps against the correct 0.5*eps, so using it made the edge test 18% stricter than the geometry requires. That is safe on its own &ndash; but it also made the simplification's own guarantee (r_s + sampling_dist_s/2 = eps_s) exceed the acceptance threshold of the coarser envelope the optimizer checks against, so a correctly simplified input could be rejected by the init sanity check. It was, once in 15665 models. </p>
+
+</div>
+</div>
+<a id="a2d2707894852b6600d5a8d70892bca7f" name="a2d2707894852b6600d5a8d70892bca7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d2707894852b6600d5a8d70892bca7f">&#9670;&#160;</a></span>m_exact_built</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Envelope::m_exact_built = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the edge/2D exact structure was actually built. Always false for Triangles3d, which builds its exact envelope unconditionally and is checked by kind alone. </p>
+
+</div>
+</div>
+<a id="aba976ee3b78b760ceda5ee1618558b2a" name="aba976ee3b78b760ceda5ee1618558b2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba976ee3b78b760ceda5ee1618558b2a">&#9670;&#160;</a></span>m_max_threads</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::Envelope::m_max_threads = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>see <a class="el" href="classwmtk_1_1_envelope.html#a42d1e1a8f2ab19816ca52ad1f3862720" title="How many threads one triangle query may use. 1, the default: every sample is checked on the calling t...">set_max_threads()</a> </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/envelope/<a class="el" href="_envelope_8hpp_source.html">Envelope.hpp</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/envelope/<b>Envelope.cpp</b></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

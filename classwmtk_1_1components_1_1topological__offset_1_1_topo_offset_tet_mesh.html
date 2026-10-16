@@ -274,7 +274,7 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="memdesc:a664197dd42ffe565c318a843972d3cbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">The field of the band cell a live offset face belongs to. <br /></td></tr>
 <tr class="separator:a664197dd42ffe565c318a843972d3cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59fda2963e3ce48edb6a8c482784bf4c" id="r_a59fda2963e3ce48edb6a8c482784bf4c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c">face_is_held</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
-<tr class="memdesc:a59fda2963e3ce48edb6a8c482784bf4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">THE ENVELOPES. One, m_envelope (the base's pointer): a <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>), built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for a wider one only for the frozen-front final pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only the final pass holds it, to m_offset_envelope.  <br /></td></tr>
+<tr class="memdesc:a59fda2963e3ce48edb6a8c482784bf4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">THE ENVELOPES. One, m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>), built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for a wider one only for the frozen-front final pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only the final pass holds it, to m_offset_envelope.  <br /></td></tr>
 <tr class="separator:a59fda2963e3ce48edb6a8c482784bf4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ff51ab72cc1d6dc9bc97d03db8fe887" id="r_a4ff51ab72cc1d6dc9bc97d03db8fe887"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4ff51ab72cc1d6dc9bc97d03db8fe887">vertex_is_held</a> (size_t vid) const</td></tr>
 <tr class="separator:a4ff51ab72cc1d6dc9bc97d03db8fe887"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -489,7 +489,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_tra
 <tr class="separator:a09ec58b0f505f9b4349b40de78494a65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af73224d67c178a003138208607dd62be" id="r_af73224d67c178a003138208607dd62be"><td class="memItemLeft" align="right" valign="top"><a id="af73224d67c178a003138208607dd62be" name="af73224d67c178a003138208607dd62be"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
-<tr class="memdesc:af73224d67c178a003138208607dd62be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Classify every region boundary and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. A region boundary is a face whose two incident tets carry different tag sets, a sheet-group face, or a face with one incident tet (the domain wall); each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>'s, and the envelope is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>'s. <br /></td></tr>
+<tr class="memdesc:af73224d67c178a003138208607dd62be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Classify every region boundary and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. A region boundary is a face whose two incident tets carry different tag sets, a sheet-group face, or a face with one incident tet (the domain wall); each becomes a tracked face (m_is_surface_fs). Which of them an envelope holds is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>'s, and the envelope is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a>'s. <br /></td></tr>
 <tr class="separator:af73224d67c178a003138208607dd62be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80a495adc59ffb61e404dcde756884fc" id="r_a80a495adc59ffb61e404dcde756884fc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a80a495adc59ffb61e404dcde756884fc">is_edge_on_region</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
 <tr class="separator:a80a495adc59ffb61e404dcde756884fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -569,9 +569,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> 
 <tr class="separator:a6dc77311b403237b2e365b632f3cb4ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5e911115e883825c397b75ff1afbca3" id="r_ad5e911115e883825c397b75ff1afbca3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad5e911115e883825c397b75ff1afbca3">vertex_is_on_region</a> (const size_t vid) const</td></tr>
 <tr class="separator:ad5e911115e883825c397b75ff1afbca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa868fa301486f2278da5603fa746b1a7" id="r_aa868fa301486f2278da5603fa746b1a7"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const override</td></tr>
-<tr class="memdesc:aa868fa301486f2278da5603fa746b1a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment of a tracked face an operation has just made (the base asks only after the fact). A wall face: m_envelope, band or not &ndash; nothing leaves the domain box. The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other tracked face: m_envelope when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>), else nothing.  <br /></td></tr>
-<tr class="separator:aa868fa301486f2278da5603fa746b1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b48250dc81c766f943f5f1b2e4ac911" id="r_a6b48250dc81c766f943f5f1b2e4ac911"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const override</td></tr>
+<tr class="memdesc:a6b48250dc81c766f943f5f1b2e4ac911"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment of a tracked face an operation has just made (the base asks only after the fact). A wall face: m_envelope, band or not &ndash; nothing leaves the domain box. The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other tracked face: m_envelope when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>), else nothing.  <br /></td></tr>
+<tr class="separator:a6b48250dc81c766f943f5f1b2e4ac911"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaaae353c7e13d0a070a6c320fa77ab94" id="r_aaaae353c7e13d0a070a6c320fa77ab94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaaae353c7e13d0a070a6c320fa77ab94">allow_surface_swap</a> () const override</td></tr>
 <tr class="separator:aaaae353c7e13d0a070a6c320fa77ab94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b0605797071dfe82dbe0c97cec4d9ad" id="r_a5b0605797071dfe82dbe0c97cec4d9ad"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5b0605797071dfe82dbe0c97cec4d9ad">swap_quality_allowed</a> (double, double, bool) const override</td></tr>
@@ -588,11 +588,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> 
 <tr class="separator:a6d2f651d55f0472a674dc924fe693105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca67019a3cd54b67461efa4a45e41259" id="r_aca67019a3cd54b67461efa4a45e41259"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aca67019a3cd54b67461efa4a45e41259">check_surface_topology</a> () const override</td></tr>
 <tr class="separator:aca67019a3cd54b67461efa4a45e41259"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ea1ae319d8407c940d7019db5b8e126" id="r_a2ea1ae319d8407c940d7019db5b8e126"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2ea1ae319d8407c940d7019db5b8e126">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
-<tr class="separator:a2ea1ae319d8407c940d7019db5b8e126"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6115b5238cab25e3aa74b7e5effed54a" id="r_a6115b5238cab25e3aa74b7e5effed54a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6115b5238cab25e3aa74b7e5effed54a">smoothing_containment_envelope</a> (const size_t vid) const override</td></tr>
-<tr class="memdesc:a6115b5238cab25e3aa74b7e5effed54a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
-<tr class="separator:a6115b5238cab25e3aa74b7e5effed54a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a823346cec868dc9046db538614e9bd02" id="r_a823346cec868dc9046db538614e9bd02"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a823346cec868dc9046db538614e9bd02">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
+<tr class="separator:a823346cec868dc9046db538614e9bd02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bf390e6c30762db6cd4d902f372098a" id="r_a8bf390e6c30762db6cd4d902f372098a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8bf390e6c30762db6cd4d902f372098a">smoothing_containment_envelope</a> (const size_t vid) const override</td></tr>
+<tr class="memdesc:a8bf390e6c30762db6cd4d902f372098a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
+<tr class="separator:a8bf390e6c30762db6cd4d902f372098a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5602a54e56b82f019a3546e1da2b4af0" id="r_a5602a54e56b82f019a3546e1da2b4af0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5602a54e56b82f019a3546e1da2b4af0">smooth_front_vertex</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:a5602a54e56b82f019a3546e1da2b4af0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Placement of a front vertex: the shared smoother with the offset's options. See FrontSmooth3d.cpp.  <br /></td></tr>
 <tr class="separator:a5602a54e56b82f019a3546e1da2b4af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -882,9 +882,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</
 <tr class="separator:a57e8283626156be030f7cd47147babca inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a895405765b9ba04f157b5eead4c68768 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a895405765b9ba04f157b5eead4c68768"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a895405765b9ba04f157b5eead4c68768">split_edge_is_due</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:a895405765b9ba04f157b5eead4c68768 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac7bd1bcc48753f4a9d4ab0e851e3c3d inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aac7bd1bcc48753f4a9d4ab0e851e3c3d"><td class="memItemLeft" align="right" valign="top">
-&#160;</td><td class="memItemRight" valign="bottom"><b>TetOptimizerMesh</b> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; env)</td></tr>
-<tr class="separator:aac7bd1bcc48753f4a9d4ab0e851e3c3d inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e1082e9a7f8bcbb3a3f60579b10b3ef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a8e1082e9a7f8bcbb3a3f60579b10b3ef"><td class="memItemLeft" align="right" valign="top">
+&#160;</td><td class="memItemRight" valign="bottom"><b>TetOptimizerMesh</b> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; env)</td></tr>
+<tr class="separator:a8e1082e9a7f8bcbb3a3f60579b10b3ef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8064539f6fb7190d5284d26c469c45be inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a8064539f6fb7190d5284d26c469c45be"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8064539f6fb7190d5284d26c469c45be">quality_rel</a> (const size_t tid) const</td></tr>
 <tr class="memdesc:a8064539f6fb7190d5284d26c469c45be inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">A cell's quality relative to the quality it is required to reach; &lt;= 1 means it meets it.  <br /></td></tr>
 <tr class="separator:a8064539f6fb7190d5284d26c469c45be inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1436,9 +1436,9 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_sheet_F</b></td
 <tr class="memitem:a4abc4baa13f8058d556ac3218d9c2044" id="r_a4abc4baa13f8058d556ac3218d9c2044"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html">OffsetPotential3D</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4abc4baa13f8058d556ac3218d9c2044">m_offset_potential</a></td></tr>
 <tr class="memdesc:a4abc4baa13f8058d556ac3218d9c2044"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smooth offset potential, and with it the definition of the offset itself.  <br /></td></tr>
 <tr class="separator:a4abc4baa13f8058d556ac3218d9c2044"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54735f7248dc493ce7575393e1ea4e45" id="r_a54735f7248dc493ce7575393e1ea4e45"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a54735f7248dc493ce7575393e1ea4e45">m_input_complex_envelope</a></td></tr>
-<tr class="memdesc:a54735f7248dc493ce7575393e1ea4e45"><td class="mdescLeft">&#160;</td><td class="mdescRight">The exact-kind envelope of the input complex, built only for offset_field "euclidean", once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>. Null otherwise. The repulsion pass, the predicted front and m_offset_potential all query it.  <br /></td></tr>
-<tr class="separator:a54735f7248dc493ce7575393e1ea4e45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a075eb2093d76cb1962bd65e7b1a7d361" id="r_a075eb2093d76cb1962bd65e7b1a7d361"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a075eb2093d76cb1962bd65e7b1a7d361">m_input_complex_envelope</a></td></tr>
+<tr class="memdesc:a075eb2093d76cb1962bd65e7b1a7d361"><td class="mdescLeft">&#160;</td><td class="mdescRight">The exact-kind envelope of the input complex, built only for offset_field "euclidean", once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>. Null otherwise. The repulsion pass, the predicted front and m_offset_potential all query it.  <br /></td></tr>
+<tr class="separator:a075eb2093d76cb1962bd65e7b1a7d361"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afac3821e0edc3ce11f7bc134a505c1e6" id="r_afac3821e0edc3ce11f7bc134a505c1e6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afac3821e0edc3ce11f7bc134a505c1e6">m_n_regions</a> = 0</td></tr>
 <tr class="memdesc:afac3821e0edc3ce11f7bc134a505c1e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">One field per connected piece of the input complex, and which one each band vertex is placed on. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa2bbf96b1216dd1f8b187ffe770a912a" title="one per piece">TopoOffsetTriMesh::m_region_potentials</a> for the full argument.  <br /></td></tr>
 <tr class="separator:afac3821e0edc3ce11f7bc134a505c1e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1477,18 +1477,18 @@ std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="
 <tr class="memitem:ac8a3106e80ae18b0ac16bb433341b4a4" id="r_ac8a3106e80ae18b0ac16bb433341b4a4"><td class="memItemLeft" align="right" valign="top"><a id="ac8a3106e80ae18b0ac16bb433341b4a4" name="ac8a3106e80ae18b0ac16bb433341b4a4"></a>
 std::vector&lt; Eigen::Vector3i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_held_tris</b></td></tr>
 <tr class="separator:ac8a3106e80ae18b0ac16bb433341b4a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e345cd88cf99bd8fb71b29d0bc6631d" id="r_a1e345cd88cf99bd8fb71b29d0bc6631d"><td class="memItemLeft" align="right" valign="top"><a id="a1e345cd88cf99bd8fb71b29d0bc6631d" name="a1e345cd88cf99bd8fb71b29d0bc6631d"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_loop_envelope</b></td></tr>
-<tr class="memdesc:a1e345cd88cf99bd8fb71b29d0bc6631d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The loop's m_envelope while the final pass holds its own. <br /></td></tr>
-<tr class="separator:a1e345cd88cf99bd8fb71b29d0bc6631d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe88b78cf3984f41b36f5ed020ee1fb0" id="r_abe88b78cf3984f41b36f5ed020ee1fb0"><td class="memItemLeft" align="right" valign="top"><a id="abe88b78cf3984f41b36f5ed020ee1fb0" name="abe88b78cf3984f41b36f5ed020ee1fb0"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_loop_envelope</b></td></tr>
+<tr class="memdesc:abe88b78cf3984f41b36f5ed020ee1fb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The loop's m_envelope while the final pass holds its own. <br /></td></tr>
+<tr class="separator:abe88b78cf3984f41b36f5ed020ee1fb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d00245ae5eb2f8835b06a23099d4be3" id="r_a9d00245ae5eb2f8835b06a23099d4be3"><td class="memItemLeft" align="right" valign="top"><a id="a9d00245ae5eb2f8835b06a23099d4be3" name="a9d00245ae5eb2f8835b06a23099d4be3"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_freeze_front</b> = false</td></tr>
 <tr class="memdesc:a9d00245ae5eb2f8835b06a23099d4be3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The final pass: front vertices are not smoothed (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653" title="The smoothing hooks. A derived class overriding them – or invariants(), which a smooth also runs – mu...">smooth_before()</a>). <br /></td></tr>
 <tr class="separator:a9d00245ae5eb2f8835b06a23099d4be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85c86f8703d43d00214b5ad8d2fcecb6" id="r_a85c86f8703d43d00214b5ad8d2fcecb6"><td class="memItemLeft" align="right" valign="top"><a id="a85c86f8703d43d00214b5ad8d2fcecb6" name="a85c86f8703d43d00214b5ad8d2fcecb6"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
-<tr class="memdesc:a85c86f8703d43d00214b5ad8d2fcecb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset surface may not leave during the frozen-front final pass, of half-width offset_envelope, built by build_offset_envelope() from the surface as the loop left it, just before that pass. Null until then: the loop holds the offset surface to no envelope. The surface is a closed manifold by then (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d9859872eee73b99d0f762cc4acdd5d" title="verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.">offset_is_manifold()</a> is the driver's check), so it is one triangle set with no junctions: a face is either on it or not, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a> answers an offset face with this envelope alone. <br /></td></tr>
-<tr class="separator:a85c86f8703d43d00214b5ad8d2fcecb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a182ee16f1201bff6ff0d9e1bb1db04ad" id="r_a182ee16f1201bff6ff0d9e1bb1db04ad"><td class="memItemLeft" align="right" valign="top"><a id="a182ee16f1201bff6ff0d9e1bb1db04ad" name="a182ee16f1201bff6ff0d9e1bb1db04ad"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
+<tr class="memdesc:a182ee16f1201bff6ff0d9e1bb1db04ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset surface may not leave during the frozen-front final pass, of half-width offset_envelope, built by build_offset_envelope() from the surface as the loop left it, just before that pass. Null until then: the loop holds the offset surface to no envelope. The surface is a closed manifold by then (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d9859872eee73b99d0f762cc4acdd5d" title="verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.">offset_is_manifold()</a> is the driver's check), so it is one triangle set with no junctions: a face is either on it or not, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a> answers an offset face with this envelope alone. <br /></td></tr>
+<tr class="separator:a182ee16f1201bff6ff0d9e1bb1db04ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b1044a96b21a68ef6a640c0f83f7fee" id="r_a0b1044a96b21a68ef6a640c0f83f7fee"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0b1044a96b21a68ef6a640c0f83f7fee">m_init_optimize</a> = false</td></tr>
 <tr class="separator:a0b1044a96b21a68ef6a640c0f83f7fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0afbabe05b343fedfe00de75764269fc" id="r_a0afbabe05b343fedfe00de75764269fc"><td class="memItemLeft" align="right" valign="top"><a id="a0afbabe05b343fedfe00de75764269fc" name="a0afbabe05b343fedfe00de75764269fc"></a>
@@ -1834,15 +1834,15 @@ std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <tr class="memitem:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a9532be6b6cd814173db356a4c8ba118e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9532be6b6cd814173db356a4c8ba118e">m_track_feature_edges</a> = false</td></tr>
 <tr class="memdesc:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the shared operations maintain m_feature_edge_attribute.  <br /></td></tr>
 <tr class="separator:a9532be6b6cd814173db356a4c8ba118e inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a9fe594736ded8904be57ea0b76701fc9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9fe594736ded8904be57ea0b76701fc9">m_feature_envelope</a></td></tr>
-<tr class="memdesc:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
-<tr class="separator:a9fe594736ded8904be57ea0b76701fc9 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59caca6953b90a9aa3160a67156e9b4c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a59caca6953b90a9aa3160a67156e9b4c"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a59caca6953b90a9aa3160a67156e9b4c">m_feature_envelope</a></td></tr>
+<tr class="memdesc:a59caca6953b90a9aa3160a67156e9b4c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the input feature curves: the tube a tagged edge must stay in.  <br /></td></tr>
+<tr class="separator:a59caca6953b90a9aa3160a67156e9b4c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3575ab09676dbf58dfe83f39323e6c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_add3575ab09676dbf58dfe83f39323e6c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#add3575ab09676dbf58dfe83f39323e6c">m_params</a></td></tr>
 <tr class="separator:add3575ab09676dbf58dfe83f39323e6c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae78cbaa3d12307aa044d4dee7663483c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ae78cbaa3d12307aa044d4dee7663483c"><td class="memItemLeft" align="right" valign="top">
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="memdesc:ae78cbaa3d12307aa044d4dee7663483c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
-<tr class="separator:ae78cbaa3d12307aa044d4dee7663483c inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0a3b868d05a21b160ef476c02b02433 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_af0a3b868d05a21b160ef476c02b02433"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
+<tr class="memdesc:af0a3b868d05a21b160ef476c02b02433 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
+<tr class="separator:af0a3b868d05a21b160ef476c02b02433 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0c84e47f57f6f934b290de93a282426 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ad0c84e47f57f6f934b290de93a282426"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad0c84e47f57f6f934b290de93a282426">m_s_amips</a> = 1.</td></tr>
 <tr class="separator:ad0c84e47f57f6f934b290de93a282426 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a206b57f986b46d496c4f7e9811241796 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a206b57f986b46d496c4f7e9811241796"><td class="memItemLeft" align="right" valign="top">
@@ -2340,7 +2340,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The offset's tet mesh, on the shared 3D optimizer. </p>
 <p>Mirrors <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html" title="The offset&#39;s 2D mesh, on the shared 2D optimizer.">TopoOffsetTriMesh</a> one dimension up: the construction phase (simplicial embedding, marching tets, growing the band) is entirely its own, and the optimization phase that follows is <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>'s, with the offset supplying only policy through the hooks.</p>
-<p>Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included) keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ. Which class-0 faces an envelope holds, and when, is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>'s; only the offset surface is driven toward target_distance. </p>
+<p>Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included) keeps the primary class 0; the offset surface is OFFSET_SURFACE_CLASS, the faces across which the incident tet labels differ. Which class-0 faces an envelope holds, and when, is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>'s; only the offset surface is driven toward target_distance. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="aaaae353c7e13d0a070a6c320fa77ab94" name="aaaae353c7e13d0a070a6c320fa77ab94"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaaae353c7e13d0a070a6c320fa77ab94">&#9670;&#160;</a></span>allow_surface_swap()</h2>
@@ -2575,7 +2575,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Build m_envelope from the held faces. Called once, from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afed322b62cb7a70307e3e90ed31be0fc">construct_offset()</a>, after the simplicial embedding: the complex has to be labelled for <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>, and it has to precede the march, whose band replaces the tags of the cells it covers. </p>
+<p>Build m_envelope from the held faces. Called once, from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afed322b62cb7a70307e3e90ed31be0fc">construct_offset()</a>, after the simplicial embedding: the complex has to be labelled for <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>, and it has to precede the march, whose band replaces the tags of the cells it covers. </p>
 
 </div>
 </div>
@@ -3256,7 +3256,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 
-<p>THE ENVELOPES. One, m_envelope (the base's pointer): a <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>), built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for a wider one only for the frozen-front final pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only the final pass holds it, to m_offset_envelope. </p>
+<p>THE ENVELOPES. One, m_envelope (the base's pointer): an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> of half-width envelope_size around every HELD face (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>), built by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381">build_envelopes()</a> before anything moves &ndash; after the simplicial embedding, before the repulsion and the march &ndash; and swapped for a wider one only for the frozen-front final pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00">build_final_envelopes()</a>). The offset surface is held by nothing in the loop; only the final pass holds it, to m_offset_envelope. </p>
 <p>Which faces are held, asked live of the mesh (the operations carry the cell tags and labels it reads), never stored:</p><ul>
 <li>a domain-wall face (no opposite tet), always;</li>
 <li>the input complex's boundary (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac07f99d0f9e68ea7faa820ffce250106">face_is_complex_boundary()</a>), always;</li>
@@ -4890,8 +4890,8 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="a6115b5238cab25e3aa74b7e5effed54a" name="a6115b5238cab25e3aa74b7e5effed54a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6115b5238cab25e3aa74b7e5effed54a">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
+<a id="a8bf390e6c30762db6cd4d902f372098a" name="a8bf390e6c30762db6cd4d902f372098a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8bf390e6c30762db6cd4d902f372098a">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4900,7 +4900,7 @@ template&lt;typename Visit &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::smoothing_containment_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::smoothing_containment_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -4917,12 +4917,12 @@ template&lt;typename Visit &gt; </div>
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. </p>
 <p>The surface envelope is shared by both applications. A derived mesh may additionally select an order-2 feature envelope for the pull energy. </p>
 
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a9bfbb89bfe162368e6b418cc987c6188">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2e4c11ad1e91214a72707840cc45fc67">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
-<a id="a2ea1ae319d8407c940d7019db5b8e126" name="a2ea1ae319d8407c940d7019db5b8e126"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ea1ae319d8407c940d7019db5b8e126">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
+<a id="a823346cec868dc9046db538614e9bd02" name="a823346cec868dc9046db538614e9bd02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a823346cec868dc9046db538614e9bd02">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4931,7 +4931,7 @@ template&lt;typename Visit &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::smoothing_energy_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::smoothing_energy_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -4944,7 +4944,7 @@ template&lt;typename Visit &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>A held vertex is pulled to and contained in m_envelope &ndash; a real <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>, as the pull requires. Any other vertex, the front's included, is held by nothing. </p>
+<p>A held vertex is pulled to and contained in m_envelope &ndash; a real <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>, as the pull requires. Any other vertex, the front's included, is held by nothing. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
 
@@ -5576,8 +5576,8 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="aa868fa301486f2278da5603fa746b1a7" name="aa868fa301486f2278da5603fa746b1a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa868fa301486f2278da5603fa746b1a7">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
+<a id="a6b48250dc81c766f943f5f1b2e4ac911" name="a6b48250dc81c766f943f5f1b2e4ac911"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b48250dc81c766f943f5f1b2e4ac911">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5586,7 +5586,7 @@ template&lt;typename Visit &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::surface_envelope_for_face </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::surface_envelope_for_face </td>
           <td>(</td>
           <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
           <td class="paramname"><em>vids</em></td><td>)</td>
@@ -5600,9 +5600,9 @@ template&lt;typename Visit &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>The containment of a tracked face an operation has just made (the base asks only after the fact). A wall face: m_envelope, band or not &ndash; nothing leaves the domain box. The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other tracked face: m_envelope when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>), else nothing. </p>
+<p>The containment of a tracked face an operation has just made (the base asks only after the fact). A wall face: m_envelope, band or not &ndash; nothing leaves the domain box. The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other tracked face: m_envelope when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>), else nothing. </p>
 
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1449fb08e36da2e02d5e1316674b1d23">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aebd345cce38dc0eb1a071c4750aa33ea">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -6148,7 +6148,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>A vertex is held when one of its tracked faces is (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>): the smoother then pulls it to and contains it in m_envelope. Asked of the mesh, like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>. </p>
+<p>A vertex is held when one of its tracked faces is (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>): the smoother then pulls it to and contains it in m_envelope. Asked of the mesh, like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>. </p>
 
 </div>
 </div>
@@ -6177,7 +6177,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 </div><div class="memdoc">
 
 <p>Identification only &ndash; no operation refuses the domain wall through these. </p>
-<p>The wall is a tracked region boundary like every other one: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and tag the domain wall – once, from the input mesh,...">init_surfaces_and_boundaries()</a> tags its faces m_is_surface_fs and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a> always holds them, so refinement, coarsening, flips and smoothing are governed by the same containment, merge rules and link conditions that govern the input complex. </p>
+<p>The wall is a tracked region boundary like every other one: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary and tag the domain wall – once, from the input mesh,...">init_surfaces_and_boundaries()</a> tags its faces m_is_surface_fs and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a> always holds them, so refinement, coarsening, flips and smoothing are governed by the same containment, merge rules and link conditions that govern the input complex. </p>
 
 </div>
 </div>
@@ -6510,7 +6510,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 </div><div class="memdoc">
 
 <p><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>: which of the two tracked surfaces a face belongs to. Same scheme as 2D. </p>
-<p>OFFSET is the surface the optimization places at target_distance. Everything else &ndash; the input complex, another body's boundary, the domain wall &ndash; keeps the primary class 0 and is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): a SampleEnvelope of half-width envelope_size aro...">face_is_held()</a>). </p>
+<p>OFFSET is the surface the optimization places at target_distance. Everything else &ndash; the input complex, another body's boundary, the domain wall &ndash; keeps the primary class 0 and is envelope-checked by the shared operations exactly as in tetwild and simwild, when it is held (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59fda2963e3ce48edb6a8c482784bf4c" title="THE ENVELOPES. One, m_envelope (the base&#39;s pointer): an Envelope of half-width envelope_size around e...">face_is_held()</a>). </p>
 
 </div>
 </div>
@@ -6832,14 +6832,14 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
-<a id="a54735f7248dc493ce7575393e1ea4e45" name="a54735f7248dc493ce7575393e1ea4e45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54735f7248dc493ce7575393e1ea4e45">&#9670;&#160;</a></span>m_input_complex_envelope</h2>
+<a id="a075eb2093d76cb1962bd65e7b1a7d361" name="a075eb2093d76cb1962bd65e7b1a7d361"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a075eb2093d76cb1962bd65e7b1a7d361">&#9670;&#160;</a></span>m_input_complex_envelope</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_input_complex_envelope</td>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_input_complex_envelope</td>
         </tr>
       </table>
 </div><div class="memdoc">

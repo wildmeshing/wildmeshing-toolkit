@@ -214,9 +214,9 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="memitem:a8614ff8264cea4a15a1fb9884b2321ed" id="r_a8614ff8264cea4a15a1fb9884b2321ed"><td class="memItemLeft" align="right" valign="top"><a id="a8614ff8264cea4a15a1fb9884b2321ed" name="a8614ff8264cea4a15a1fb9884b2321ed"></a>
 const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html">OffsetPotential2D</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>potential_for_face</b> (const size_t fid) const</td></tr>
 <tr class="separator:a8614ff8264cea4a15a1fb9884b2321ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa116ede4d90b8a30f27030069651db44" id="r_aa116ede4d90b8a30f27030069651db44"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44">containment_for</a> (uint64_t region_mask, bool on_offset) const</td></tr>
-<tr class="memdesc:aa116ede4d90b8a30f27030069651db44"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment a simplex with this region mask, on/off the offset front, must satisfy &ndash; the intersection of everything that holds it, or null if nothing does.  <br /></td></tr>
-<tr class="separator:aa116ede4d90b8a30f27030069651db44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9068a7ab84d0a4db381b9cb758cc22d" id="r_ad9068a7ab84d0a4db381b9cb758cc22d"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad9068a7ab84d0a4db381b9cb758cc22d">containment_for</a> (uint64_t region_mask, bool on_offset) const</td></tr>
+<tr class="memdesc:ad9068a7ab84d0a4db381b9cb758cc22d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The containment a simplex with this region mask, on/off the offset front, must satisfy &ndash; the intersection of everything that holds it, or null if nothing does.  <br /></td></tr>
+<tr class="separator:ad9068a7ab84d0a4db381b9cb758cc22d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d88481f1ff6e1011779e1068adf10e9" id="r_a4d88481f1ff6e1011779e1068adf10e9"><td class="memItemLeft" align="right" valign="top"><a id="a4d88481f1ff6e1011779e1068adf10e9" name="a4d88481f1ff6e1011779e1068adf10e9"></a>
 <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a>&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_setup</b> () const</td></tr>
 <tr class="separator:a4d88481f1ff6e1011779e1068adf10e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -444,20 +444,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> 
 <tr class="memitem:a692a75252506deeaae63703716bdf129" id="r_a692a75252506deeaae63703716bdf129"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a692a75252506deeaae63703716bdf129">edge_boundary_bits</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="memdesc:a692a75252506deeaae63703716bdf129"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diagnostic only: which tag boundaries the incident faces say this edge lies on right now &ndash; the same symmetric difference <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#adcf5a59758fd47fda26157e9bcb0dc90" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">init_surfaces_and_boundaries()</a> classified by.  <br /></td></tr>
 <tr class="separator:a692a75252506deeaae63703716bdf129"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f91771a9d6de4aad0370ddb9a7333df" id="r_a5f91771a9d6de4aad0370ddb9a7333df"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5f91771a9d6de4aad0370ddb9a7333df">envelope_for_mask</a> (uint64_t mask) const</td></tr>
-<tr class="memdesc:a5f91771a9d6de4aad0370ddb9a7333df"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope a simplex with this boundary mask is contained in, or null.  <br /></td></tr>
-<tr class="separator:a5f91771a9d6de4aad0370ddb9a7333df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8649b76f6e0afee7a3803ea9671e6545" id="r_a8649b76f6e0afee7a3803ea9671e6545"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545">surface_envelope_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
-<tr class="memdesc:a8649b76f6e0afee7a3803ea9671e6545"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class-0 segments &ndash; every region boundary, the input complex and the domain wall included &ndash; carry a containment requirement, and so does the offset boundary in the frozen-front final pass: m_offset_envelope holds it where the loop left it (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>).  <br /></td></tr>
-<tr class="separator:a8649b76f6e0afee7a3803ea9671e6545"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ec14a36c8d75f0c5b52457435551ab9" id="r_a7ec14a36c8d75f0c5b52457435551ab9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ec14a36c8d75f0c5b52457435551ab9">envelope_for_mask</a> (uint64_t mask) const</td></tr>
+<tr class="memdesc:a7ec14a36c8d75f0c5b52457435551ab9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope a simplex with this boundary mask is contained in, or null.  <br /></td></tr>
+<tr class="separator:a7ec14a36c8d75f0c5b52457435551ab9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae24924bf1344b212a89975673ec99622" id="r_ae24924bf1344b212a89975673ec99622"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae24924bf1344b212a89975673ec99622">surface_envelope_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
+<tr class="memdesc:ae24924bf1344b212a89975673ec99622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class-0 segments &ndash; every region boundary, the input complex and the domain wall included &ndash; carry a containment requirement, and so does the offset boundary in the frozen-front final pass: m_offset_envelope holds it where the loop left it (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad9068a7ab84d0a4db381b9cb758cc22d" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>).  <br /></td></tr>
+<tr class="separator:ae24924bf1344b212a89975673ec99622"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c0a32d6e1d34a156b09c24fd00ce335" id="r_a8c0a32d6e1d34a156b09c24fd00ce335"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8c0a32d6e1d34a156b09c24fd00ce335">smoothing_position_is_allowed</a> (const size_t, const Vector2d &amp;) const override</td></tr>
 <tr class="memdesc:a8c0a32d6e1d34a156b09c24fd00ce335"><td class="mdescLeft">&#160;</td><td class="mdescRight">No per-vertex positional constraint. The per-tag envelopes close that hole structurally &ndash; the same deletion 3D made to its lower-strata point refusal.  <br /></td></tr>
 <tr class="separator:a8c0a32d6e1d34a156b09c24fd00ce335"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb04c5eb85f5ce4a24832549592e8b0e" id="r_aeb04c5eb85f5ce4a24832549592e8b0e"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb04c5eb85f5ce4a24832549592e8b0e">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
-<tr class="memdesc:aeb04c5eb85f5ce4a24832549592e8b0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The offset boundary is the one tracked surface with no envelope, in either role.  <br /></td></tr>
-<tr class="separator:aeb04c5eb85f5ce4a24832549592e8b0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae652720bbb7928bf4c75e46339f48f2a" id="r_ae652720bbb7928bf4c75e46339f48f2a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae652720bbb7928bf4c75e46339f48f2a">smoothing_containment_envelope</a> (const size_t vid) const override</td></tr>
-<tr class="separator:ae652720bbb7928bf4c75e46339f48f2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7d24138d8269113c17e05dfd65e817f" id="r_af7d24138d8269113c17e05dfd65e817f"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af7d24138d8269113c17e05dfd65e817f">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
+<tr class="memdesc:af7d24138d8269113c17e05dfd65e817f"><td class="mdescLeft">&#160;</td><td class="mdescRight">The offset boundary is the one tracked surface with no envelope, in either role.  <br /></td></tr>
+<tr class="separator:af7d24138d8269113c17e05dfd65e817f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15205945f3ac0f6f0be14cbcb13e5125" id="r_a15205945f3ac0f6f0be14cbcb13e5125"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a15205945f3ac0f6f0be14cbcb13e5125">smoothing_containment_envelope</a> (const size_t vid) const override</td></tr>
+<tr class="separator:a15205945f3ac0f6f0be14cbcb13e5125"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabbc70a3fb574eb2391aff10d5ef7251" id="r_aabbc70a3fb574eb2391aff10d5ef7251"><td class="memItemLeft" align="right" valign="top"><a id="aabbc70a3fb574eb2391aff10d5ef7251" name="aabbc70a3fb574eb2391aff10d5ef7251"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_front_vertex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:aabbc70a3fb574eb2391aff10d5ef7251"><td class="mdescLeft">&#160;</td><td class="mdescRight">Placement of a front vertex: the shared smoother with the offset's options. See FrontSmooth2d.cpp. <br /></td></tr>
@@ -502,8 +502,8 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_norm
 <tr class="separator:ae61d6dccec99e5ce0f310b0481adec76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c2c87ee7038a5c3c08f4b7ab31c2138" id="r_a1c2c87ee7038a5c3c08f4b7ab31c2138"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1c2c87ee7038a5c3c08f4b7ab31c2138">smoothing_extra_energy</a> (const size_t vid) const override</td></tr>
 <tr class="separator:a1c2c87ee7038a5c3c08f4b7ab31c2138"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3173b4dc275a4484da598bfc92cdaa6c" id="r_a3173b4dc275a4484da598bfc92cdaa6c"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3173b4dc275a4484da598bfc92cdaa6c">released_envelope</a> () const</td></tr>
-<tr class="separator:a3173b4dc275a4484da598bfc92cdaa6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fa190113f32ac5548950ed2c6c7b5b7" id="r_a3fa190113f32ac5548950ed2c6c7b5b7"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3fa190113f32ac5548950ed2c6c7b5b7">released_envelope</a> () const</td></tr>
+<tr class="separator:a3fa190113f32ac5548950ed2c6c7b5b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba349ed25ce26c2bf521d98672aead6f" id="r_aba349ed25ce26c2bf521d98672aead6f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aba349ed25ce26c2bf521d98672aead6f">edge_borders_released_boundary</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:aba349ed25ce26c2bf521d98672aead6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a430c39a73b53fb9eb9f4040e2ec6f00d" id="r_a430c39a73b53fb9eb9f4040e2ec6f00d"><td class="memItemLeft" align="right" valign="top"><a id="a430c39a73b53fb9eb9f4040e2ec6f00d" name="a430c39a73b53fb9eb9f4040e2ec6f00d"></a>
@@ -1230,27 +1230,27 @@ std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_region</b></td></tr>
 <tr class="memdesc:a4c90d405b1b5b16f360674101c26bba2"><td class="mdescLeft">&#160;</td><td class="mdescRight">per vertex: region of its band faces, -1 / -2 as above <br /></td></tr>
 <tr class="separator:a4c90d405b1b5b16f360674101c26bba2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabce61d6ec34953d72f830c4f79a2451" id="r_aabce61d6ec34953d72f830c4f79a2451"><td class="memItemLeft" align="right" valign="top">std::map&lt; int64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aabce61d6ec34953d72f830c4f79a2451">m_tag_envelopes</a></td></tr>
-<tr class="memdesc:aabce61d6ec34953d72f830c4f79a2451"><td class="mdescLeft">&#160;</td><td class="mdescRight">One containment envelope per input tag, ambient included. Both phases.  <br /></td></tr>
-<tr class="separator:aabce61d6ec34953d72f830c4f79a2451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0645d9701278346c59ff42a5efa1330" id="r_ac0645d9701278346c59ff42a5efa1330"><td class="memItemLeft" align="right" valign="top">std::map&lt; int64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0645d9701278346c59ff42a5efa1330">m_tag_envelopes</a></td></tr>
+<tr class="memdesc:ac0645d9701278346c59ff42a5efa1330"><td class="mdescLeft">&#160;</td><td class="mdescRight">One containment envelope per input tag, ambient included. Both phases.  <br /></td></tr>
+<tr class="separator:ac0645d9701278346c59ff42a5efa1330"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a251e258bb63e4c876dcb86de90aecaeb" id="r_a251e258bb63e4c876dcb86de90aecaeb"><td class="memItemLeft" align="right" valign="top">std::map&lt; int64_t, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a251e258bb63e4c876dcb86de90aecaeb">m_tag_bit</a></td></tr>
 <tr class="separator:a251e258bb63e4c876dcb86de90aecaeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1b59b6e94e9130e97eaff8488831f14" id="r_ab1b59b6e94e9130e97eaff8488831f14"><td class="memItemLeft" align="right" valign="top">std::map&lt; uint64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab1b59b6e94e9130e97eaff8488831f14">m_isect_cache</a></td></tr>
-<tr class="separator:ab1b59b6e94e9130e97eaff8488831f14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad617c5171b5d08cb50c9a66fd34657d8" id="r_ad617c5171b5d08cb50c9a66fd34657d8"><td class="memItemLeft" align="right" valign="top">std::map&lt; uint64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad617c5171b5d08cb50c9a66fd34657d8">m_isect_cache</a></td></tr>
+<tr class="separator:ad617c5171b5d08cb50c9a66fd34657d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba8f021a716b6aa52ee7fd6c75afc120" id="r_aba8f021a716b6aa52ee7fd6c75afc120"><td class="memItemLeft" align="right" valign="top"><a id="aba8f021a716b6aa52ee7fd6c75afc120" name="aba8f021a716b6aa52ee7fd6c75afc120"></a>
 std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>m_isect_mutex</b></td></tr>
 <tr class="separator:aba8f021a716b6aa52ee7fd6c75afc120"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46736c9862029b018fb0199e30ed75e1" id="r_a46736c9862029b018fb0199e30ed75e1"><td class="memItemLeft" align="right" valign="top">std::map&lt; uint64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a46736c9862029b018fb0199e30ed75e1">m_offset_isect_cache</a></td></tr>
-<tr class="memdesc:a46736c9862029b018fb0199e30ed75e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Memoized "region tubes AND the offset envelope", keyed by the region mask.  <br /></td></tr>
-<tr class="separator:a46736c9862029b018fb0199e30ed75e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad962719321721ab7806abde6b0dbd0b9" id="r_ad962719321721ab7806abde6b0dbd0b9"><td class="memItemLeft" align="right" valign="top">std::map&lt; uint64_t, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad962719321721ab7806abde6b0dbd0b9">m_offset_isect_cache</a></td></tr>
+<tr class="memdesc:ad962719321721ab7806abde6b0dbd0b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Memoized "region tubes AND the offset envelope", keyed by the region mask.  <br /></td></tr>
+<tr class="separator:ad962719321721ab7806abde6b0dbd0b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5772d8d4b6e90bcb343181b460066d56" id="r_a5772d8d4b6e90bcb343181b460066d56"><td class="memItemLeft" align="right" valign="top"><a id="a5772d8d4b6e90bcb343181b460066d56" name="a5772d8d4b6e90bcb343181b460066d56"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_freeze_front</b> = false</td></tr>
 <tr class="memdesc:a5772d8d4b6e90bcb343181b460066d56"><td class="mdescLeft">&#160;</td><td class="mdescRight">The final pass: front vertices are not smoothed (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a857f472b0f93529a3c47e6e91f20cd02" title="User specified preparations and desideratas for an edge smooth.">smooth_before()</a>). <br /></td></tr>
 <tr class="separator:a5772d8d4b6e90bcb343181b460066d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef7134ae7a54476fbd97024ae83afe97" id="r_aef7134ae7a54476fbd97024ae83afe97"><td class="memItemLeft" align="right" valign="top"><a id="aef7134ae7a54476fbd97024ae83afe97" name="aef7134ae7a54476fbd97024ae83afe97"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
-<tr class="memdesc:aef7134ae7a54476fbd97024ae83afe97"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset boundary may not leave during the frozen-front final pass, of half-width offset_envelope, built from the boundary as the loop left it just before that pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a> holds the final pass's operations to it). Null until then: the loop holds the offset boundary to no envelope. Unlike m_tag_envelopes, which must never be rebuilt. As in 3D. <br /></td></tr>
-<tr class="separator:aef7134ae7a54476fbd97024ae83afe97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c5610d01cc7f1649e6d460b941382c2" id="r_a3c5610d01cc7f1649e6d460b941382c2"><td class="memItemLeft" align="right" valign="top"><a id="a3c5610d01cc7f1649e6d460b941382c2" name="a3c5610d01cc7f1649e6d460b941382c2"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
+<tr class="memdesc:a3c5610d01cc7f1649e6d460b941382c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset boundary may not leave during the frozen-front final pass, of half-width offset_envelope, built from the boundary as the loop left it just before that pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad9068a7ab84d0a4db381b9cb758cc22d" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a> holds the final pass's operations to it). Null until then: the loop holds the offset boundary to no envelope. Unlike m_tag_envelopes, which must never be rebuilt. As in 3D. <br /></td></tr>
+<tr class="separator:a3c5610d01cc7f1649e6d460b941382c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bbf8877a0b07fd733d8e657a30bfe60" id="r_a3bbf8877a0b07fd733d8e657a30bfe60"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3bbf8877a0b07fd733d8e657a30bfe60">m_init_optimize</a> = false</td></tr>
 <tr class="separator:a3bbf8877a0b07fd733d8e657a30bfe60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aecdc5cfffc4cf6479852c1e5588904ea" id="r_aecdc5cfffc4cf6479852c1e5588904ea"><td class="memItemLeft" align="right" valign="top"><a id="aecdc5cfffc4cf6479852c1e5588904ea" name="aecdc5cfffc4cf6479852c1e5588904ea"></a>
@@ -1488,8 +1488,8 @@ std::set&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>
 <tr class="separator:a5e59d20573c78d23fd23c03eb936528d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20027eeb0d11210f0f82566fa082d35b" id="r_a20027eeb0d11210f0f82566fa082d35b"><td class="memItemLeft" align="right" valign="top">std::set&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a20027eeb0d11210f0f82566fa082d35b">m_source_tags</a></td></tr>
 <tr class="separator:a20027eeb0d11210f0f82566fa082d35b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a312a8ab4a27ed48023fec8876b5fceef" id="r_a312a8ab4a27ed48023fec8876b5fceef"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a312a8ab4a27ed48023fec8876b5fceef">m_released_envelope</a></td></tr>
-<tr class="separator:a312a8ab4a27ed48023fec8876b5fceef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40a65a91004b1a7b64cf7c64aea2f9ff" id="r_a40a65a91004b1a7b64cf7c64aea2f9ff"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a40a65a91004b1a7b64cf7c64aea2f9ff">m_released_envelope</a></td></tr>
+<tr class="separator:a40a65a91004b1a7b64cf7c64aea2f9ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33a66cea8c3e54c588fa94defe9e9f9c" id="r_a33a66cea8c3e54c588fa94defe9e9f9c"><td class="memItemLeft" align="right" valign="top"><a id="a33a66cea8c3e54c588fa94defe9e9f9c" name="a33a66cea8c3e54c588fa94defe9e9f9c"></a>
 std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_released_tube_dirty</b> {false}</td></tr>
 <tr class="separator:a33a66cea8c3e54c588fa94defe9e9f9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1552,9 +1552,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_tracks_orientation<
 <tr class="separator:a988928db6e3bdc6b6021dca12c564b81 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f57778214a8fdf4c20b81055386f2b4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a9f57778214a8fdf4c20b81055386f2b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a9f57778214a8fdf4c20b81055386f2b4">m_params</a></td></tr>
 <tr class="separator:a9f57778214a8fdf4c20b81055386f2b4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dcb86cd9d4f6e1e54abd5cc6840f859 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a9dcb86cd9d4f6e1e54abd5cc6840f859"><td class="memItemLeft" align="right" valign="top">
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="separator:a9dcb86cd9d4f6e1e54abd5cc6840f859 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0dd2f7d893c12629e840a71d0f10e46 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ae0dd2f7d893c12629e840a71d0f10e46"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
+<tr class="separator:ae0dd2f7d893c12629e840a71d0f10e46 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb7836d522c81f89a4c895aad2fb721e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_afb7836d522c81f89a4c895aad2fb721e"><td class="memItemLeft" align="right" valign="top">
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
 <tr class="separator:afb7836d522c81f89a4c895aad2fb721e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2296,14 +2296,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="aa116ede4d90b8a30f27030069651db44" name="aa116ede4d90b8a30f27030069651db44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa116ede4d90b8a30f27030069651db44">&#9670;&#160;</a></span>containment_for()</h2>
+<a id="ad9068a7ab84d0a4db381b9cb758cc22d" name="ad9068a7ab84d0a4db381b9cb758cc22d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9068a7ab84d0a4db381b9cb758cc22d">&#9670;&#160;</a></span>containment_for()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::containment_for </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::containment_for </td>
           <td>(</td>
           <td class="paramtype">uint64_t&#160;</td>
           <td class="paramname"><em>region_mask</em>, </td>
@@ -2323,7 +2323,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>The containment a simplex with this region mask, on/off the offset front, must satisfy &ndash; the intersection of everything that holds it, or null if nothing does. </p>
-<p>The single place the two containment families are composed. <code>region_mask</code> dispatches through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5f91771a9d6de4aad0370ddb9a7333df" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> (itself an intersection when the mask is multi-bit, which is what pins a junction to the junction); <code>on_offset</code> adds m_offset_envelope, in the frozen-front final pass only. Every operation's containment check reaches this through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a>, so in the final pass split, collapse and swap hold the offset boundary to its tube; in the loop they do not. The smoother asks with <code>on_offset</code> false (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae652720bbb7928bf4c75e46339f48f2a">smoothing_containment_envelope()</a>): placing the front is what moves the offset boundary, and a tube around where it currently sits would cap how far it can travel. As in 3D. </p>
+<p>The single place the two containment families are composed. <code>region_mask</code> dispatches through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ec14a36c8d75f0c5b52457435551ab9" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> (itself an intersection when the mask is multi-bit, which is what pins a junction to the junction); <code>on_offset</code> adds m_offset_envelope, in the frozen-front final pass only. Every operation's containment check reaches this through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae24924bf1344b212a89975673ec99622" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a>, so in the final pass split, collapse and swap hold the offset boundary to its tube; in the loop they do not. The smoother asks with <code>on_offset</code> false (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a15205945f3ac0f6f0be14cbcb13e5125">smoothing_containment_envelope()</a>): placing the front is what moves the offset boundary, and a tube around where it currently sits would cap how far it can travel. As in 3D. </p>
 
 </div>
 </div>
@@ -2590,14 +2590,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a5f91771a9d6de4aad0370ddb9a7333df" name="a5f91771a9d6de4aad0370ddb9a7333df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f91771a9d6de4aad0370ddb9a7333df">&#9670;&#160;</a></span>envelope_for_mask()</h2>
+<a id="a7ec14a36c8d75f0c5b52457435551ab9" name="a7ec14a36c8d75f0c5b52457435551ab9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ec14a36c8d75f0c5b52457435551ab9">&#9670;&#160;</a></span>envelope_for_mask()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::envelope_for_mask </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::envelope_for_mask </td>
           <td>(</td>
           <td class="paramtype">uint64_t&#160;</td>
           <td class="paramname"><em>mask</em></td><td>)</td>
@@ -2607,7 +2607,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>The envelope a simplex with this boundary mask is contained in, or null. </p>
-<p>Zero bits: no boundary, no container. One bit: that tag's own envelope. Several bits: a memoized <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> over the members &ndash; inside means inside every tube, which pins junction geometry to the junction. Containment-only for the multi-bit case: the composite implements just the virtual is_outside queries, so it must never be returned from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb04c5eb85f5ce4a24832549592e8b0e" title="The offset boundary is the one tracked surface with no envelope, in either role.">smoothing_energy_envelope()</a>, whose pull calls the non-virtual nearest_point. </p>
+<p>Zero bits: no boundary, no container. One bit: that tag's own envelope. Several bits: a memoized <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> over the members &ndash; inside means inside every tube, which pins junction geometry to the junction. Containment-only for the multi-bit case: the composite implements just the virtual is_outside queries, so it must never be returned from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af7d24138d8269113c17e05dfd65e817f" title="The offset boundary is the one tracked surface with no envelope, in either role.">smoothing_energy_envelope()</a>, whose pull calls the non-virtual nearest_point. </p>
 
 </div>
 </div>
@@ -3331,7 +3331,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
 </div><div class="memdoc">
 
 <p>Are the tracked region boundaries actually contained by anything? </p>
-<p>A class-0 edge is dispatched to an envelope by its boundary mask, the symmetric difference of its two faces' tags. An edge whose faces carry the same tags has an empty difference, so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5f91771a9d6de4aad0370ddb9a7333df" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> gives it nullptr: tracked as a region boundary and held by nothing. Construction cannot produce one, so a non-zero count here is a hole opened afterwards. Called at construction. </p>
+<p>A class-0 edge is dispatched to an envelope by its boundary mask, the symmetric difference of its two faces' tags. An edge whose faces carry the same tags has an empty difference, so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ec14a36c8d75f0c5b52457435551ab9" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> gives it nullptr: tracked as a region boundary and held by nothing. Construction cannot produce one, so a non-zero count here is a hole opened afterwards. Called at construction. </p>
 
 </div>
 </div>
@@ -3827,7 +3827,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Rebuild deform_others' released-boundary tube now, between passes (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3173b4dc275a4484da598bfc92cdaa6c">released_envelope()</a>, which never rebuilds mid-operation). </p>
+<p>Rebuild deform_others' released-boundary tube now, between passes (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3fa190113f32ac5548950ed2c6c7b5b7">released_envelope()</a>, which never rebuilds mid-operation). </p>
 
 </div>
 </div>
@@ -3867,14 +3867,14 @@ stopping the mesh from fixing them", the question that matters when the final pa
 
 </div>
 </div>
-<a id="a3173b4dc275a4484da598bfc92cdaa6c" name="a3173b4dc275a4484da598bfc92cdaa6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3173b4dc275a4484da598bfc92cdaa6c">&#9670;&#160;</a></span>released_envelope()</h2>
+<a id="a3fa190113f32ac5548950ed2c6c7b5b7" name="a3fa190113f32ac5548950ed2c6c7b5b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fa190113f32ac5548950ed2c6c7b5b7">&#9670;&#160;</a></span>released_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::released_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::released_envelope </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -4367,8 +4367,8 @@ stopping the mesh from fixing them", the question that matters when the final pa
 
 </div>
 </div>
-<a id="ae652720bbb7928bf4c75e46339f48f2a" name="ae652720bbb7928bf4c75e46339f48f2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae652720bbb7928bf4c75e46339f48f2a">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
+<a id="a15205945f3ac0f6f0be14cbcb13e5125" name="a15205945f3ac0f6f0be14cbcb13e5125"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15205945f3ac0f6f0be14cbcb13e5125">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4377,7 +4377,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::smoothing_containment_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::smoothing_containment_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -4390,14 +4390,14 @@ stopping the mesh from fixing them", the question that matters when the final pa
   </tr>
 </table>
 </div><div class="memdoc">
-<p>... and it is not contained by the offset tube either: placing the front is what moves the offset boundary, so the smoother asks for the region tubes alone. The operations hold the offset boundary to its tube through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> in the final pass; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>. As in 3D. </p>
+<p>... and it is not contained by the offset tube either: placing the front is what moves the offset boundary, so the smoother asks for the region tubes alone. The operations hold the offset boundary to its tube through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae24924bf1344b212a89975673ec99622" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> in the final pass; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad9068a7ab84d0a4db381b9cb758cc22d" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>. As in 3D. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
-<a id="aeb04c5eb85f5ce4a24832549592e8b0e" name="aeb04c5eb85f5ce4a24832549592e8b0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb04c5eb85f5ce4a24832549592e8b0e">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
+<a id="af7d24138d8269113c17e05dfd65e817f" name="af7d24138d8269113c17e05dfd65e817f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7d24138d8269113c17e05dfd65e817f">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4406,7 +4406,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::smoothing_energy_envelope </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::smoothing_energy_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>vid</em></td><td>)</td>
@@ -4422,9 +4422,9 @@ stopping the mesh from fixing them", the question that matters when the final pa
 
 <p>The offset boundary is the one tracked surface with no envelope, in either role. </p>
 <p>It is the surface the optimization exists to move: a tube around wherever construction left it would cap how far it can ever travel toward the level set. What holds it is the offset term in the objective, not a container.</p>
-<p>The pull must be a real envelope, never a composite: this hook's consumers call the non-virtual <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; which on a composite would bind to the base's null BVH. So a junction vertex (several mask bits) is pulled toward its most-violated member tube instead, one real envelope per attempt, while the containment intersection below enforces the full constraint. </p>
+<p>The pull must be a real envelope, never a composite: this hook's consumers call the non-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; which on a composite would bind to the base's null BVH. So a junction vertex (several mask bits) is pulled toward its most-violated member tube instead, one real envelope per attempt, while the containment intersection below enforces the full constraint. </p>
 
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a6c4b78cef6291b1a35f30d9f05b9c684">wmtk::TriOptimizerMesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a84527f36a7bfcd3d3b78ec7672939ace">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -4492,7 +4492,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
 </div><div class="memdoc">
 
 <p>No per-vertex positional constraint. The per-tag envelopes close that hole structurally &ndash; the same deletion 3D made to its lower-strata point refusal. </p>
-<p>An isolated point of the complex only ever arises where two or more selected tags meet (the boolean selection can only label an isolated simplex whose face star is tag-heterogeneous), so the edges radiating from it are tag boundaries and its boundary mask carries several bits. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae652720bbb7928bf4c75e46339f48f2a">smoothing_containment_envelope()</a> therefore hands the smoother an <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> &ndash; within eps of every curve it lies on &ndash; which pins it to the junction, and the pull toward the most-violated member drags it back if it strays. The base's hook is pure virtual, so this stays as the honest constant rather than being deleted outright. </p>
+<p>An isolated point of the complex only ever arises where two or more selected tags meet (the boolean selection can only label an isolated simplex whose face star is tag-heterogeneous), so the edges radiating from it are tag boundaries and its boundary mask carries several bits. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a15205945f3ac0f6f0be14cbcb13e5125">smoothing_containment_envelope()</a> therefore hands the smoother an <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> &ndash; within eps of every curve it lies on &ndash; which pins it to the junction, and the pull toward the most-violated member drags it back if it strays. The base's hook is pure virtual, so this stays as the honest constant rather than being deleted outright. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
 
@@ -4551,7 +4551,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
 </div><div class="memdoc">
 
 <p>Carry each parent's region label onto the two children it became. </p>
-<p>Bookkeeping, not positioning, and it lives here because of when the base calls the hooks: the containment check inside <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a69203c47154411d70120dfb9c59afc2a" title="User specified modifications and desideratas after an edge split.">split_edge_after()</a> runs on both new segments and so reaches <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> and the endpoints' boundary masks. split_after_vertex() runs after that check; this hook is the last one the base offers before it.</p>
+<p>Bookkeeping, not positioning, and it lives here because of when the base calls the hooks: the containment check inside <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a69203c47154411d70120dfb9c59afc2a" title="User specified modifications and desideratas after an edge split.">split_edge_after()</a> runs on both new segments and so reaches <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae24924bf1344b212a89975673ec99622" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> and the endpoints' boundary masks. split_after_vertex() runs after that check; this hook is the last one the base offers before it.</p>
 <p>Getting it wrong is silent in the dangerous direction: children still holding whatever occupied their recycled fid slots classify as "not a region boundary", which yields a null envelope, and a null envelope makes <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ad5168dc1d54ac89a08941a8b6e7143">surface_segment_is_outside()</a> return false &ndash; containment skipped rather than failed, so the offset polyline decays unchecked.</p>
 <p>Position is left entirely to the base; this always returns its result unchanged. </p>
 
@@ -4780,8 +4780,8 @@ stopping the mesh from fixing them", the question that matters when the final pa
 
 </div>
 </div>
-<a id="a8649b76f6e0afee7a3803ea9671e6545" name="a8649b76f6e0afee7a3803ea9671e6545"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8649b76f6e0afee7a3803ea9671e6545">&#9670;&#160;</a></span>surface_envelope_for_edge()</h2>
+<a id="ae24924bf1344b212a89975673ec99622" name="ae24924bf1344b212a89975673ec99622"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae24924bf1344b212a89975673ec99622">&#9670;&#160;</a></span>surface_envelope_for_edge()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4790,7 +4790,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::surface_envelope_for_edge </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::surface_envelope_for_edge </td>
           <td>(</td>
           <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
           <td class="paramname"><em>vids</em></td><td>)</td>
@@ -4804,11 +4804,11 @@ stopping the mesh from fixing them", the question that matters when the final pa
 </table>
 </div><div class="memdoc">
 
-<p>Class-0 segments &ndash; every region boundary, the input complex and the domain wall included &ndash; carry a containment requirement, and so does the offset boundary in the frozen-front final pass: m_offset_envelope holds it where the loop left it (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>). </p>
-<p>The envelope holds the other tag regions where they are, and the input complex too. That half is exactly TriWild's input envelope: the complex may be split, collapsed and smoothed, and this is what bounds how far the result may drift from the geometry as loaded. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">TopoOffsetTetMesh::surface_envelope_for_face()</a>.</p>
+<p>Class-0 segments &ndash; every region boundary, the input complex and the domain wall included &ndash; carry a containment requirement, and so does the offset boundary in the frozen-front final pass: m_offset_envelope holds it where the loop left it (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad9068a7ab84d0a4db381b9cb758cc22d" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>). </p>
+<p>The envelope holds the other tag regions where they are, and the input complex too. That half is exactly TriWild's input envelope: the complex may be split, collapsed and smoothed, and this is what bounds how far the result may drift from the geometry as loaded. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">TopoOffsetTetMesh::surface_envelope_for_face()</a>.</p>
 <p>Null means "no containment requirement", which the base handles by skipping the check. </p>
 
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a410bbb7857ffef7e474d39906fc4b733">wmtk::TriOptimizerMesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a30c6e56858f152545490ac39edea253a">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -4942,7 +4942,7 @@ stopping the mesh from fixing them", the question that matters when the final pa
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The three helpers of the per-tag envelope dispatch. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d48025e2cbe001b3bbb3f3f34bbf29a">tag_bits()</a> and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a871fdae834e0a83403d3f7cc49bed4b2">edge_mask()</a> are trivial; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5f91771a9d6de4aad0370ddb9a7333df" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> is out of line (it builds IntersectionEnvelopes lazily). </p>
+<p>The three helpers of the per-tag envelope dispatch. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d48025e2cbe001b3bbb3f3f34bbf29a">tag_bits()</a> and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a871fdae834e0a83403d3f7cc49bed4b2">edge_mask()</a> are trivial; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ec14a36c8d75f0c5b52457435551ab9" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a> is out of line (it builds IntersectionEnvelopes lazily). </p>
 
 </div>
 </div>
@@ -5717,8 +5717,8 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
 
 </div>
 </div>
-<a id="ab1b59b6e94e9130e97eaff8488831f14" name="ab1b59b6e94e9130e97eaff8488831f14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab1b59b6e94e9130e97eaff8488831f14">&#9670;&#160;</a></span>m_isect_cache</h2>
+<a id="ad617c5171b5d08cb50c9a66fd34657d8" name="ad617c5171b5d08cb50c9a66fd34657d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad617c5171b5d08cb50c9a66fd34657d8">&#9670;&#160;</a></span>m_isect_cache</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5727,7 +5727,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;uint64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_isect_cache</td>
+          <td class="memname">std::map&lt;uint64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_isect_cache</td>
         </tr>
       </table>
   </td>
@@ -5838,8 +5838,8 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
 
 </div>
 </div>
-<a id="a46736c9862029b018fb0199e30ed75e1" name="a46736c9862029b018fb0199e30ed75e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46736c9862029b018fb0199e30ed75e1">&#9670;&#160;</a></span>m_offset_isect_cache</h2>
+<a id="ad962719321721ab7806abde6b0dbd0b9" name="ad962719321721ab7806abde6b0dbd0b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad962719321721ab7806abde6b0dbd0b9">&#9670;&#160;</a></span>m_offset_isect_cache</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5848,7 +5848,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;uint64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_offset_isect_cache</td>
+          <td class="memname">std::map&lt;uint64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_offset_isect_cache</td>
         </tr>
       </table>
   </td>
@@ -5929,8 +5929,8 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
 
 </div>
 </div>
-<a id="a312a8ab4a27ed48023fec8876b5fceef" name="a312a8ab4a27ed48023fec8876b5fceef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a312a8ab4a27ed48023fec8876b5fceef">&#9670;&#160;</a></span>m_released_envelope</h2>
+<a id="a40a65a91004b1a7b64cf7c64aea2f9ff" name="a40a65a91004b1a7b64cf7c64aea2f9ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40a65a91004b1a7b64cf7c64aea2f9ff">&#9670;&#160;</a></span>m_released_envelope</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5939,7 +5939,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_released_envelope</td>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_released_envelope</td>
         </tr>
       </table>
   </td>
@@ -5948,7 +5948,7 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The released boundaries' ops-only tube: a <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> around the current deformed boundaries, consulted only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> &ndash; the dispatch every operation containment check goes through and no smoothing path does &ndash; so operations preserve the current shape through remeshing while smoothing stays free to carry the object. Rebuilt lazily by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3173b4dc275a4484da598bfc92cdaa6c">released_envelope()</a> when m_released_tube_dirty says a smoothing accept may have moved the boundary. </p>
+<p>The released boundaries' ops-only tube: an <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> around the current deformed boundaries, consulted only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae24924bf1344b212a89975673ec99622" title="Class-0 segments – every region boundary, the input complex and the domain wall included – carry a co...">surface_envelope_for_edge()</a> &ndash; the dispatch every operation containment check goes through and no smoothing path does &ndash; so operations preserve the current shape through remeshing while smoothing stays free to carry the object. Rebuilt lazily by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3fa190113f32ac5548950ed2c6c7b5b7">released_envelope()</a> when m_released_tube_dirty says a smoothing accept may have moved the boundary. </p>
 
 </div>
 </div>
@@ -6065,20 +6065,20 @@ O(e) = (1/N) sum_i (relative_residual(q_i) / front_conv_frac())^2
 
 </div>
 </div>
-<a id="aabce61d6ec34953d72f830c4f79a2451" name="aabce61d6ec34953d72f830c4f79a2451"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabce61d6ec34953d72f830c4f79a2451">&#9670;&#160;</a></span>m_tag_envelopes</h2>
+<a id="ac0645d9701278346c59ff42a5efa1330" name="ac0645d9701278346c59ff42a5efa1330"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0645d9701278346c59ff42a5efa1330">&#9670;&#160;</a></span>m_tag_envelopes</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;int64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_tag_envelopes</td>
+          <td class="memname">std::map&lt;int64_t, std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_envelope.html">Envelope</a>&gt; &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_tag_envelopes</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>One containment envelope per input tag, ambient included. Both phases. </p>
-<p>E_t is a tube of half-width m_envelope_eps around region t's boundary segments as the input mesh carried them, built in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#adcf5a59758fd47fda26157e9bcb0dc90" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">init_surfaces_and_boundaries()</a> before offset construction: the band's tags replace a face's own, so an envelope built later would be a tube around a curve truncated at the band. A simplex on several boundaries is held by the intersection of its tags' tubes (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5f91771a9d6de4aad0370ddb9a7333df" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a>), which pins junction points to the junction itself.</p>
+<p>E_t is a tube of half-width m_envelope_eps around region t's boundary segments as the input mesh carried them, built in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#adcf5a59758fd47fda26157e9bcb0dc90" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">init_surfaces_and_boundaries()</a> before offset construction: the band's tags replace a face's own, so an envelope built later would be a tube around a curve truncated at the band. A simplex on several boundaries is held by the intersection of its tags' tubes (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ec14a36c8d75f0c5b52457435551ab9" title="The envelope a simplex with this boundary mask is contained in, or null.">envelope_for_mask()</a>), which pins junction points to the junction itself.</p>
 <p>m_envelope (the base's pointer) survives as a <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html">UnionEnvelope</a> over these members, purely so the shared engine's direct uses of it &ndash; the collapse_edge_before point check and the "segment does not exist yet" fallback here &ndash; keep union semantics.</p>
 <p>Interior edges of a region are not held by these: identical tag sets on both sides land in no bucket, so a filled complex's interior is free to optimise. </p>
 

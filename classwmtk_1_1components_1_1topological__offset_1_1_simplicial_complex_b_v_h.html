@@ -291,7 +291,7 @@ std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="
 </div><div class="memdoc">
 
 <p>2D: the nearest point of the complex together with which feature it is. </p>
-<p>The same algorithm <a class="el" href="classwmtk_1_1_sample_envelope.html#af9d39f16a034fc45f83cd5b73573a335">SampleEnvelope::nearest_point_feature</a> runs (Envelope.cpp). nearest_facet seeds the search, and the foot is then re-derived on every box candidate from the input arrays, so classification and the returned point come from the same arithmetic &ndash; the BVH's own foot can differ in the last ulp. A hit at t &lt;= 0 or t &gt;= 1 is the endpoint itself: on_corner, with the polyline vertex index as the feature id, canonical across the two segments sharing it. A pseudo-edge (i, i) has len2 == 0 and lands on the corner branch.</p>
+<p>The same algorithm <a class="el" href="classwmtk_1_1_envelope.html#a7028f4f4cd30cd51faa84a6f913332b6">Envelope::nearest_point_feature</a> runs (Envelope.cpp). nearest_facet seeds the search, and the foot is then re-derived on every box candidate from the input arrays, so classification and the returned point come from the same arithmetic &ndash; the BVH's own foot can differ in the last ulp. A hit at t &lt;= 0 or t &gt;= 1 is the endpoint itself: on_corner, with the polyline vertex index as the feature id, canonical across the two segments sharing it. A pseudo-edge (i, i) has len2 == 0 and lands on the corner branch.</p>
 <dl class="section return"><dt>Returns</dt><dd>squared distance to the returned foot point. </dd></dl>
 
 </div>

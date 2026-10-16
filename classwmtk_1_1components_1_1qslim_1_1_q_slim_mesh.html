@@ -100,9 +100,9 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a655b52daece3d967fcc83684cebcd893" id="r_a655b52daece3d967fcc83684cebcd893"><td class="memItemLeft" align="right" valign="top"><a id="a655b52daece3d967fcc83684cebcd893" name="a655b52daece3d967fcc83684cebcd893"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>QSlimMesh</b> (std::vector&lt; Eigen::Vector3d &gt; _m_vertex_positions, int num_threads=1)</td></tr>
-<tr class="separator:a655b52daece3d967fcc83684cebcd893"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa525397706d32d7fd505cbc39552eff8" id="r_aa525397706d32d7fd505cbc39552eff8"><td class="memItemLeft" align="right" valign="top"><a id="aa525397706d32d7fd505cbc39552eff8" name="aa525397706d32d7fd505cbc39552eff8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>QSlimMesh</b> (std::vector&lt; Eigen::Vector3d &gt; _m_vertex_positions, int num_threads=1, bool use_exact=true)</td></tr>
+<tr class="separator:aa525397706d32d7fd505cbc39552eff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3fef45d7096068407a122c62881a643" id="r_aa3fef45d7096068407a122c62881a643"><td class="memItemLeft" align="right" valign="top"><a id="aa3fef45d7096068407a122c62881a643" name="aa3fef45d7096068407a122c62881a643"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_freeze</b> (<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &amp;v)</td></tr>
 <tr class="separator:aa3fef45d7096068407a122c62881a643"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -472,9 +472,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capaci
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a2a3514a700fe16dc25c661d8e2c180f2" id="r_a2a3514a700fe16dc25c661d8e2c180f2"><td class="memItemLeft" align="right" valign="top"><a id="a2a3514a700fe16dc25c661d8e2c180f2" name="a2a3514a700fe16dc25c661d8e2c180f2"></a>
-<a class="el" href="classwmtk_1_1_sample_envelope.html">wmtk::SampleEnvelope</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="separator:a2a3514a700fe16dc25c661d8e2c180f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9ec48c949a47aae9029b4510403bcb1" id="r_ab9ec48c949a47aae9029b4510403bcb1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1qslim_1_1_q_slim_mesh.html#ab9ec48c949a47aae9029b4510403bcb1">m_envelope</a></td></tr>
+<tr class="separator:ab9ec48c949a47aae9029b4510403bcb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6dc23d66281c0f841b72973190f6848b" id="r_a6dc23d66281c0f841b72973190f6848b"><td class="memItemLeft" align="right" valign="top"><a id="a6dc23d66281c0f841b72973190f6848b" name="a6dc23d66281c0f841b72973190f6848b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = false</td></tr>
 <tr class="separator:a6dc23d66281c0f841b72973190f6848b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -735,6 +734,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
       </table>
 </div><div class="memdoc">
 <p>Tube around the boundary edges of the mesh given to <a class="el" href="classwmtk_1_1components_1_1qslim_1_1_q_slim_mesh.html#a19d6a9853c4bef14756cdbd218d3996f">create_mesh()</a>, when that gets a positive boundary_eps. See there. initialized() is false otherwise, and for a closed input. </p>
+
+</div>
+</div>
+<a id="ab9ec48c949a47aae9029b4510403bcb1" name="ab9ec48c949a47aae9029b4510403bcb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9ec48c949a47aae9029b4510403bcb1">&#9670;&#160;</a></span>m_envelope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> wmtk::components::qslim::QSlimMesh::m_envelope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Exact or sampled as the constructor's use_exact says; the qslim application passes !use_sample_envelope, whose default is in qslim_spec.json. The boundary envelope takes the same mode in <a class="el" href="classwmtk_1_1components_1_1qslim_1_1_q_slim_mesh.html#a19d6a9853c4bef14756cdbd218d3996f">create_mesh()</a>. </p>
 
 </div>
 </div>

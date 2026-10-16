@@ -16,7 +16,7 @@ var searchData=
   ['dhat_13',['dhat',['../classwmtk_1_1components_1_1topological__offset_1_1_offset_potential.html#a96ab13db3efc45b215853193391cef4e',1,'wmtk::components::topological_offset::OffsetPotential']]],
   ['difference_20wmtk_20and_20original_20tetwild_14',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md34',1,'']]],
   ['dimensions_15',['One pipeline, two dimensions',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md46',1,'']]],
-  ['disabled_16',['disabled',['../classwmtk_1_1_sample_envelope.html#a02b553658ee2d7a77bbdc652321f7191',1,'wmtk::SampleEnvelope']]],
+  ['disabled_16',['disabled',['../classwmtk_1_1_envelope.html#aa44c3ad1ae6d6b18179c765beb558cdb',1,'wmtk::Envelope']]],
   ['disk_17',['Worked example: offsetting a disk',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md51',1,'']]],
   ['dist_5fto_5fsegments_18',['dist_to_segments',['../namespacevisualize__error__field.html#a3de41d72e95cfd0b8ba0ce4c56032e6a',1,'visualize_error_field.dist_to_segments()'],['../namespacevisualize__offset.html#a946c3d0246b1337f9552f480452d4d19',1,'visualize_offset.dist_to_segments(q, a, b)']]],
   ['dist_5fto_5ftriangles_19',['dist_to_triangles',['../namespacevisualize__offset.html#a9375667b94fc06c15d975eeb5579cd5b',1,'visualize_offset']]],

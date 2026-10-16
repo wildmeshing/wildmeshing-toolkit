@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kind_0',['Kind',['../classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9',1,'wmtk::SampleEnvelope']]]
+  ['kind_0',['Kind',['../classwmtk_1_1_envelope.html#acf5af81c1642d6ab84f557d193ec3769',1,'wmtk::Envelope']]]
 ];

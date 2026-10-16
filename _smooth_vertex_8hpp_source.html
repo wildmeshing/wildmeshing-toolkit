@@ -341,7 +341,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>    <span class="comment">// surface flag alone would smooth it as free and let it walk off its curve. Derived from</span></div>
 <div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>    <span class="comment">// the edge tags, so it cannot go stale.</span></div>
 <div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>    <span class="keyword">const</span> <span class="keywordtype">bool</span> on_feature_curve = m.m_track_feature_edges &amp;&amp; m.vertex_has_feature_edge(vid);</div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; pull_env =</div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keyword">const</span> std::shared_ptr&lt;Envelope&gt; pull_env =</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>        (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid) : <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span> </div>
 <div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>    <span class="keywordflow">if</span> (pull_env &amp;&amp; opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {</div>
@@ -470,7 +470,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span> </div>
 <div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>    <span class="comment">// Containment: every surface triangle at this vertex must still be inside. Checked</span></div>
 <div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>    <span class="comment">// against the containment envelope, which is not necessarily the one it was pulled to.</span></div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>    <span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; check_env =</div>
+<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>    <span class="keyword">const</span> std::shared_ptr&lt;Envelope&gt; check_env =</div>
 <div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>    <span class="keywordflow">if</span> (check_env) {</div>
 <div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span>        <span class="keyword">const</span> simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);</div>
@@ -620,7 +620,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>    <span class="comment">// Per-vertex rather than the mesh&#39;s single m_envelope, and split into the PULL and the</span></div>
 <div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>    <span class="comment">// CONTAINER exactly as the 3D path above: see TriOptimizerMesh::smoothing_energy_envelope.</span></div>
 <div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>    <span class="comment">// The defaults return the old expression, so TriWild and SimWild are unaffected.</span></div>
-<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>    <span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; envelope = m.smoothing_energy_envelope(vid);</div>
+<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>    <span class="keyword">const</span> std::shared_ptr&lt;Envelope&gt; envelope = m.smoothing_energy_envelope(vid);</div>
 <div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span> </div>
 <div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span>    <span class="keywordflow">if</span> (envelope &amp;&amp; opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {</div>
 <div class="line"><a id="l00697" name="l00697"></a><span class="lineno">  697</span>        <span class="keyword">const</span> Vector2d x_orig = m.smoothing_position(vid);</div>
@@ -730,7 +730,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00801" name="l00801"></a><span class="lineno">  801</span> </div>
 <div class="line"><a id="l00802" name="l00802"></a><span class="lineno">  802</span>    <span class="comment">// Containment, edge by edge rather than face by face as in 3D -- and against the</span></div>
 <div class="line"><a id="l00803" name="l00803"></a><span class="lineno">  803</span>    <span class="comment">// CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.</span></div>
-<div class="line"><a id="l00804" name="l00804"></a><span class="lineno">  804</span>    <span class="keywordflow">if</span> (<span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; hold_env = m.smoothing_containment_envelope(vid)) {</div>
+<div class="line"><a id="l00804" name="l00804"></a><span class="lineno">  804</span>    <span class="keywordflow">if</span> (<span class="keyword">const</span> std::shared_ptr&lt;Envelope&gt; hold_env = m.smoothing_containment_envelope(vid)) {</div>
 <div class="line"><a id="l00805" name="l00805"></a><span class="lineno">  805</span>        <span class="keyword">const</span> Vector2d p = m.smoothing_position(vid);</div>
 <div class="line"><a id="l00806" name="l00806"></a><span class="lineno">  806</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> Vector2d&amp; q : surf_neighbors) {</div>
 <div class="line"><a id="l00807" name="l00807"></a><span class="lineno">  807</span>            <span class="keyword">const</span> std::array&lt;Eigen::Vector2d, 2&gt; edge = {{p, q}};</div>

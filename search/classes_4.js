@@ -96,11 +96,10 @@ var searchData=
   ['exactbandintegral_93',['ExactBandIntegral',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html',1,'wmtk::components::topological_offset']]],
   ['exactdistanceenergy2d_94',['ExactDistanceEnergy2D',['../classwmtk_1_1optimization_1_1_exact_distance_energy2_d.html',1,'wmtk::optimization']]],
   ['exactdistanceenergy3d_95',['ExactDistanceEnergy3D',['../classwmtk_1_1optimization_1_1_exact_distance_energy3_d.html',1,'wmtk::optimization']]],
-  ['exactenvelope_96',['ExactEnvelope',['../classwmtk_1_1_exact_envelope.html',1,'wmtk']]],
-  ['exactposition_97',['ExactPosition',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['exactposition_3c_20vector2r_2c_20vector2d_20_3e_98',['ExactPosition&lt; Vector2r, Vector2d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['exactposition_3c_20vector3r_2c_20vector3d_20_3e_99',['ExactPosition&lt; Vector3r, Vector3d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['executepass_100',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
-  ['exportstruct_101',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['expression_102',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
+  ['exactposition_96',['ExactPosition',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['exactposition_3c_20vector2r_2c_20vector2d_20_3e_97',['ExactPosition&lt; Vector2r, Vector2d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['exactposition_3c_20vector3r_2c_20vector3d_20_3e_98',['ExactPosition&lt; Vector3r, Vector3d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
+  ['executepass_99',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
+  ['exportstruct_100',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['expression_101',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
 ];
