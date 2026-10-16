@@ -12,10 +12,6 @@
 using namespace wmtk;
 using namespace wmtk::components::simwild;
 
-// The envelopes these tests construct directly are sampled (exact = false), passed
-// explicitly: that was the default when they were written, so they keep testing what they
-// tested then.
-
 // ---------------------------------------------------------------------------
 // simwild's surface is the interface between differently tagged tets: a face is
 // tagged m_is_surface_fs exactly when its two tets carry different tags (see
@@ -204,7 +200,7 @@ TEST_CASE("simwild-swap-tags-32", "[simwild][3D][swap][tags]")
     REQUIRE_FALSE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 3);
@@ -241,7 +237,7 @@ TEST_CASE("simwild-swap-tags-44", "[simwild][3D][swap][tags]")
     REQUIRE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 4);
@@ -282,7 +278,7 @@ TEST_CASE("simwild-swap-tags-56", "[simwild][3D][swap][tags]")
     REQUIRE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 5);

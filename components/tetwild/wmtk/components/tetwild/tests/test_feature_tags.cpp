@@ -11,10 +11,6 @@
 using namespace wmtk;
 using namespace components::tetwild;
 
-// The envelopes these tests construct directly are sampled (exact = false), passed
-// explicitly: that was the default when they were written, so they keep testing what they
-// tested then.
-
 // Feature-edge tag PROPAGATION through the shared operations.
 //
 // The failure this hunts is silent: an edge attribute's slot is (lowest incident tet) * 6 +
@@ -98,7 +94,7 @@ FeatureScene build_scene()
         for (size_t i = 0; i < sc.fe.size(); ++i) {
             fe_env[i] = Eigen::Vector2i(int(sc.fe[i][0]), int(sc.fe[i][1]));
         }
-        sc.mesh->m_feature_envelope = std::make_shared<Envelope>(/*exact=*/false);
+        sc.mesh->m_feature_envelope = std::make_shared<Envelope>();
         sc.mesh->m_feature_envelope->init(sc.fe_verts, fe_env, 0.05);
         sc.mesh->m_feature_eps = 0.05;
     }

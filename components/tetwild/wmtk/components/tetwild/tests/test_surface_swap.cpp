@@ -12,10 +12,6 @@
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
-// The envelopes these tests construct directly are sampled (exact = false), passed
-// explicitly: that was the default when they were written, so they keep testing what they
-// tested then.
-
 // ---------------------------------------------------------------------------
 // Minimal fixture for the surface 3->2 edge flip.
 //
@@ -117,7 +113,7 @@ TEST_CASE("surface-flip-topology-signature", "[tetwild_operation][surface_swap]"
 {
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_loose_envelope(*env);
     TetWildMesh mesh(params, env, 1);
     build_ring(mesh);
@@ -139,7 +135,7 @@ TEST_CASE("surface-flip-correctness", "[tetwild_operation][surface_swap]")
 {
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_loose_envelope(*env);
     TetWildMesh mesh(params, env, 1);
     build_ring(mesh);
@@ -197,7 +193,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
     SECTION("disabled by param -> no surface swap")
     {
         params.allow_surface_swap = false;
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
@@ -216,7 +212,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("non-manifold edge (3 surface faces) -> rejected")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
@@ -234,7 +230,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("new surface face already tagged -> rejected")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
@@ -251,7 +247,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("energy would not improve -> rejected")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
@@ -286,7 +282,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         // flag is only written in four places and the collapse rule ORs it, so it
         // cannot silently drop. Poking the attribute by hand therefore built a state
         // the code cannot reach, and the test failed against correct behaviour.
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
 
@@ -331,7 +327,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("new surface outside envelope -> rejected")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         // Tight envelope around the *original* surface (a,b,c),(a,b,d). The
         // flipped faces (a,c,d),(b,c,d) deviate from it by ~0.29 (their interiors
         // leave the y=0 / (a,b,d) planes), far more than eps, so they are
@@ -448,7 +444,7 @@ TEST_CASE("surface-flip-44-correctness", "[tetwild_operation][surface_swap]")
     // exactly one 4-4 diagonal is (2,4) and the flip is realizable.
     Parameters params;
     params.init(Vector3d(-2, -2, -2000), Vector3d(2, 2, 2000));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     TetWildMesh mesh(params, env, 1);
     build_ring_n(mesh, 4, 1000.0, 1.0);
     for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(4)}) mark_surface_vertex(mesh, v);
@@ -493,7 +489,7 @@ TEST_CASE("surface-flip-44-rejected", "[tetwild_operation][surface_swap]")
     {
         // Surface apexes vids 2 and 3 are ADJACENT in the ring, so neither 4-4
         // diagonal ((2,4) or (3,5)) equals (2,3): the accept-case vetoes both cases.
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         TetWildMesh mesh(params, env, 1);
         build_ring_n(mesh, 4, 1000.0, 1.0);
         for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(3)}) mark_surface_vertex(mesh, v);
@@ -513,7 +509,7 @@ TEST_CASE("surface-flip-44-rejected", "[tetwild_operation][surface_swap]")
     SECTION("disabled by param -> rejected")
     {
         params.allow_surface_swap = false;
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         TetWildMesh mesh(params, env, 1);
         build_ring_n(mesh, 4, 1000.0, 1.0);
         for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(4)}) mark_surface_vertex(mesh, v);
@@ -530,7 +526,7 @@ TEST_CASE("surface-flip-44-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("non-manifold edge (3 surface faces) -> rejected")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         TetWildMesh mesh(params, env, 1);
         build_ring_n(mesh, 4, 1000.0, 1.0);
         for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(3), size_t(4)})
@@ -555,7 +551,7 @@ TEST_CASE("surface-flip-44-routing-stale-flag", "[tetwild_operation][surface_swa
     // so the surface is not silently torn by the interior path.
     Parameters params;
     params.init(Vector3d(-2, -2, -2000), Vector3d(2, 2, 2000));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     TetWildMesh mesh(params, env, 1);
     build_ring_n(mesh, 4, 1000.0, 1.0);
     // Deliberately DO NOT mark any vertex on-surface (all m_is_on_surface stay false),
@@ -583,7 +579,7 @@ TEST_CASE("surface-flip-56-correctness", "[tetwild_operation][surface_swap]")
     // (2,4) and realizes the surface flip.
     Parameters params;
     params.init(Vector3d(-2, -2, -2000), Vector3d(2, 2, 2000));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     TetWildMesh mesh(params, env, 1);
     build_ring_n(mesh, 5, 1000.0, 1.0);
     for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(4)}) mark_surface_vertex(mesh, v);
@@ -625,7 +621,7 @@ TEST_CASE("surface-flip-56-rejected", "[tetwild_operation][surface_swap]")
     // "new surface outside envelope" section of surface-flip-rejected.)
     Parameters params;
     params.init(Vector3d(-2, -2, -2000), Vector3d(2, 2, 2000));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     TetWildMesh mesh(params, env, 1);
     build_ring_n(mesh, 5, 1000.0, 1.0);
     for (size_t v : {size_t(0), size_t(1), size_t(2), size_t(3)}) mark_surface_vertex(mesh, v);
@@ -652,7 +648,7 @@ TEST_CASE("surface-flip-interior-unchanged", "[tetwild_operation][surface_swap]"
 
     SECTION("interior 4-4")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         TetWildMesh mesh(params, env, 1);
         build_ring_n(mesh, 4, 1000.0, 1.0); // no surface faces tagged
         auto t = mesh.tuple_from_edge(std::array<size_t, 2>{{0, 1}});
@@ -665,7 +661,7 @@ TEST_CASE("surface-flip-interior-unchanged", "[tetwild_operation][surface_swap]"
 
     SECTION("interior 5-6")
     {
-        auto env = std::make_shared<Envelope>(/*exact=*/false);
+        auto env = std::make_shared<Envelope>();
         TetWildMesh mesh(params, env, 1);
         build_ring_n(mesh, 5, 1000.0, 1.0);
         auto t = mesh.tuple_from_edge(std::array<size_t, 2>{{0, 1}});
@@ -683,7 +679,7 @@ TEST_CASE("surface-face-swap-excluded", "[tetwild_operation][surface_swap]")
     // tracked surface). Confirm it is rejected and the surface is unchanged.
     Parameters params;
     params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
-    auto env = std::make_shared<Envelope>(/*exact=*/false);
+    auto env = std::make_shared<Envelope>();
     init_loose_envelope(*env);
     TetWildMesh mesh(params, env, 1);
     build_ring(mesh);

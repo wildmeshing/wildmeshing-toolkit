@@ -10,10 +10,6 @@
 
 using namespace wmtk;
 
-// The envelopes these tests construct directly are sampled (exact = false), passed
-// explicitly: that was the default when they were written, so they keep testing what they
-// tested then.
-
 namespace {
 
 /// Build an envelope of thickness `eps` around (V, E).
@@ -27,7 +23,7 @@ Envelope make_envelope(const MatrixXd& V, const MatrixXi& E, double eps)
     for (int i = 0; i < E.rows(); ++i) {
         e[i] = Vector2i(E(i, 0), E(i, 1));
     }
-    Envelope env(/*exact=*/false);
+    Envelope env;
     env.init(v, e, eps);
     return env;
 }
