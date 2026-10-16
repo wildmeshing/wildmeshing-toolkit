@@ -1145,6 +1145,117 @@ TEST_CASE("cubed-amips-energy-3d-volume-weighted", "[offset][potential]")
     }
 }
 
+TEST_CASE("vol-amips-energy-3d", "[offset][potential]")
+{
+    // use_rest_pose's AMIPS term: w sum_t vol(t) A_t^3, A against a reference R. Against the
+    // regular tet it is CubedAMIPSEnergy3D's number; against a rest R it matches value_of() cell
+    // by cell, with gradient and Hessian against central differences; a cell congruent to its
+    // rest reads A = 3, so vol 27; an inverted cell is +inf and an invalid step.
+    const std::array<std::array<Vector3d, 3>, 3> others = {{
+        {{Vector3d(1., 0.1, 0.), Vector3d(0.2, 1.1, 0.05), Vector3d(0.1, 0.3, 0.9)}},
+        {{Vector3d(-0.9, 0.2, 0.1), Vector3d(-0.1, -0.8, 0.3), Vector3d(0.1, 0.1, -1.)}},
+        {{Vector3d(0.3, -1., 0.2), Vector3d(1., 0.2, -0.4), Vector3d(-0.2, 0.1, 1.1)}},
+    }};
+    std::vector<std::array<Vector3d, 3>> qs;
+    std::vector<std::array<double, 12>> cubed;
+    for (auto o : others) {
+        if (!wmtk::utils::orient3d(Vector3d::Zero(), o[0], o[1], o[2])) std::swap(o[1], o[2]);
+        qs.push_back(o);
+        std::array<double, 12> c{};
+        for (int k = 0; k < 3; ++k) {
+            for (int j = 0; j < 3; ++j) c[size_t(3 + 3 * k + j)] = o[size_t(k)][j];
+        }
+        cubed.push_back(c);
+    }
+    const Eigen::Matrix3d Rreg = VolAMIPSEnergy3D::regular_rest();
+    Eigen::Matrix3d Rrest;
+    Rrest.col(0) = Vector3d(1.2, 0.1, 0.);
+    Rrest.col(1) = Vector3d(0.3, 0.8, 0.1);
+    Rrest.col(2) = Vector3d(0.2, 0.2, 0.6);
+    REQUIRE(Rrest.determinant() > 0.);
+    const double w = 0.37;
+
+    // A regular tet: vol A^3 = (sqrt2/12) * 27.
+    {
+        const std::array<Vector3d, 4> p = {
+            {Vector3d::Zero(), Rreg.col(0), Rreg.col(1), Rreg.col(2)}};
+        CHECK(
+            VolAMIPSEnergy3D::value_of(p, Rreg) ==
+            Catch::Approx(std::sqrt(2.) / 12. * 27.).epsilon(1e-12));
+    }
+    // A cell congruent to its rest: A = 3, so vol 27.
+    {
+        const Vector3d o(0.3, -0.2, 0.1);
+        const std::array<Vector3d, 4> p = {
+            {o, o + Rrest.col(0), o + Rrest.col(1), o + Rrest.col(2)}};
+        CHECK(
+            VolAMIPSEnergy3D::value_of(p, Rrest) ==
+            Catch::Approx(27. * Rrest.determinant() / 6.).epsilon(1e-12));
+    }
+
+    const double h = 1e-6;
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        // Against the regular tet: CubedAMIPSEnergy3D's number.
+        {
+            std::vector<VolAMIPSEnergy3D::Cell> cells;
+            for (const auto& q : qs) {
+                VolAMIPSEnergy3D::Cell c;
+                REQUIRE(VolAMIPSEnergy3D::cell(q, Rreg, c));
+                cells.push_back(c);
+            }
+            VolAMIPSEnergy3D e(cells, w);
+            CubedAMIPSEnergy3D ref(cubed, w);
+            CHECK(e.value(xv) == Catch::Approx(ref.value(xv)).epsilon(1e-10));
+        }
+        // Against a rest: value_of() cell by cell, and the derivatives.
+        std::vector<VolAMIPSEnergy3D::Cell> cells;
+        double want = 0.;
+        for (const auto& q : qs) {
+            VolAMIPSEnergy3D::Cell c;
+            REQUIRE(VolAMIPSEnergy3D::cell(q, Rrest, c));
+            cells.push_back(c);
+            want += VolAMIPSEnergy3D::value_of({{x, q[0], q[1], q[2]}}, Rrest);
+        }
+        VolAMIPSEnergy3D energy(cells, w);
+        CHECK(energy.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
+
+    // An inverted cell: x beyond the plane of the first cell's other three corners.
+    {
+        VolAMIPSEnergy3D::Cell c;
+        REQUIRE(VolAMIPSEnergy3D::cell(qs[0], Rreg, c));
+        VolAMIPSEnergy3D e({c}, 1.);
+        const VectorXd inside = Vector3d(0., 0., 0.);
+        const VectorXd beyond = Vector3d(2., 2., 2.);
+        CHECK(std::isfinite(e.value(inside)));
+        CHECK(e.is_step_valid(inside, inside));
+        CHECK(std::isinf(e.value(beyond)));
+        CHECK(!e.is_step_valid(inside, beyond));
+    }
+}
+
 TEST_CASE("input-triangles-nearest-and-distance", "[offset][potential]")
 {
     // InputTriangles, the band term's convex pieces, on a cube of half-size 1: the nearest

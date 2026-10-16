@@ -889,8 +889,17 @@ TEST_CASE("exact-band-integral-geneva", "[offset][exact_band]")
  * inputs, outward and inward, the triangles oriented out of the selection region, and the two
  * plates of side_counterexample.py. Checks: value and derivatives match the Python; a cell with
  * nothing clipped gives the unclipped value bit for bit; every clip result is closed; on the
- * plates the value is never below the true clipped integral (0 for the cell wholly inside the
- * lower plate); the gradient and Hessian match central differences on the clipped cells.
+ * plates a cell wholly inside the lower plate gives 0; the gradient and Hessian match central
+ * differences on the clipped cells.
+ *
+ * Except on cells with a part where the members' planes disagree (D, ExactBandIntegral's class
+ * doc): there the Python took the former D bound, an upper bound of the integral, where value()
+ * now takes the side of the member nearest at the part's centroid (2026-10-14). On those the
+ * check is that value() is at most the Python's bound and that value_grad_hess() gives the same
+ * J. MEASURED against a quadrature of chi (d - delta) over the same pieces (scratchpad replay/,
+ * 2026-10-14): the 24 plates cells that changed match it to 2.2e-18 delta vol where the Python
+ * was up to 0.78 delta vol above it; the 4 geneva cells that changed moved by at most 2.6e-5
+ * delta vol, below the quadrature's own accuracy there (1.2e-4).
  */
 TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
 {
@@ -906,16 +915,24 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
         ExactBandIntegral::Stats st;
         st.check_closed = true;
         double e_J = 0., e_dJ = 0., e_G = 0., e_H = 0., fd_g = 0., fd_h = 0.;
-        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0;
+        int n_clipped = 0, n_bits = 0, n_unclipped = 0, n_fd = 0, n_D_cells = 0;
         for (int k = 0; k < c.ncells; ++k) {
             const SCell& sc = c.cells[k];
             const Tet T = tet_of(sc.T);
             INFO(c.name << " cell " << k);
             const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
             const double unit = sc.delta * vol; // J is of size delta vol
+            const int64_t D_before = st.side_D;
             const double J = eb.value(T, sc.delta, &st);
-            CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
-            e_J = std::max(e_J, std::abs(J - sc.J) / unit);
+            // a part where the members' planes disagree: the Python's J is the former D bound
+            const bool has_D = st.side_D > D_before;
+            n_D_cells += has_D;
+            if (has_D) {
+                CHECK(J <= sc.J + 1e-12 * unit);
+            } else {
+                CHECK(std::abs(J - sc.J) <= 1e-12 * unit);
+                e_J = std::max(e_J, std::abs(J - sc.J) / unit);
+            }
             if (sc.clipped) {
                 ++n_clipped;
             } else {
@@ -932,20 +949,27 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             const double eg = (G - Gr).norm() / std::max(Gr.norm(), 1e-300);
             const double eh =
                 (H - Eigen::Matrix3d(Hr)).norm() / std::max(Eigen::Matrix3d(Hr).norm(), 1e-300);
-            CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
-            CHECK(eg <= 1e-10);
-            CHECK(eh <= 1e-9);
-            e_dJ = std::max(e_dJ, std::abs(Jd - sc.Jd) / unit);
-            e_G = std::max(e_G, eg);
-            e_H = std::max(e_H, eh);
-            if (std::string(c.name) == "plates" && k % 4 == 0 && k < 16) {
-                // the cells wholly inside the lower plate (true value 0) never go below it
-                if (k % 8 == 4) CHECK(J >= 0.);
+            if (has_D) {
+                CHECK(std::abs(Jd - J) <= 1e-12 * unit);
+            } else {
+                CHECK(std::abs(Jd - sc.Jd) <= 1e-12 * unit);
+                CHECK(eg <= 1e-10);
+                CHECK(eh <= 1e-9);
+                e_dJ = std::max(e_dJ, std::abs(Jd - sc.Jd) / unit);
+                e_G = std::max(e_G, eg);
+                e_H = std::max(e_H, eh);
             }
-            if (!sc.clipped || n_fd >= 24 || (std::string(c.name) == "plates" && (k / 4) % 2 == 0))
-                continue;
-            // central differences on clipped cells (the plates' unjittered cells sit on ties of the
-            // D bound's vertex max, where the bound has a kink: skipped)
+            if (std::string(c.name) == "plates") {
+                // a cell wholly inside the lower plate [0, 1]^2 x [0, 0.1] (true value 0)
+                bool inside = true;
+                for (const Vec3& p : T) {
+                    inside = inside && p[0] >= 0. && p[0] <= 1. && p[1] >= 0. && p[1] <= 1. &&
+                             p[2] >= 0. && p[2] <= 0.1;
+                }
+                if (inside) CHECK(J == 0.);
+            }
+            if (!sc.clipped || n_fd >= 24) continue;
+            // central differences on clipped cells
             ++n_fd;
             double L = 0.;
             for (int i = 0; i < 4; ++i) {
@@ -977,8 +1001,8 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
         }
         CHECK(st.open_results == 0);
         std::printf(
-            "  %-13s %2d cells (%d clipped; D parts %lld, %lld positive): J vs the Python %.1e "
-            "(delta vol);"
+            "  %-13s %2d cells (%d clipped; D parts %lld, %lld kept, in %d cells): J vs the Python "
+            "%.1e (delta vol);"
             " unclipped bit for bit %d/%d; derivatives J %.1e G %.1e H %.1e; central differences "
             "on %d"
             " clipped cells G %.1e H %.1e; %lld clip results closed, %lld open\n",
@@ -987,6 +1011,7 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             n_clipped,
             (long long)st.side_D,
             (long long)st.side_D_pos,
+            n_D_cells,
             e_J,
             n_bits,
             n_unclipped,
@@ -999,6 +1024,149 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
             (long long)st.closed_checked,
             (long long)st.open_results);
     }
+}
+
+/**
+ * Two configurations where value() was not the integral, found on 100033 (plates 2.9 thick, delta
+ * 2.49; 2026-10-14), each against its exact value: next to a slab's face, inside its footprint and
+ * away from its walls, that face is nearest everywhere, so J = vol (its mean distance - delta).
+ *  - parallel faces: a box 10 x 2.9 x 10 and cells under it spanning 4.0, 2.5 and 1.5 along y, the
+ *    faces given top first and bottom first. Below the box the two horizontal faces have one slope;
+ *    faces_min_pieces() took them for one function and gave the piece to the lower index, so with
+ *    the top face first and a span over 2.9 (the top face not pruned) value() was 0.
+ *  - a grooved bottom: the box's bottom folded up 0.2 along x = 5, a reflex edge whose region
+ *    opens up through the box; a cell above the top face spanning 4.0 has the groove edge for a
+ *    member with the top face, its plane putting the cell on the far side: the part where the two
+ *    disagree took the D bound, positive here against a true value below 0.
+ */
+TEST_CASE("exact-band-integral-plates", "[offset][exact_band]")
+{
+    const double delta = 2.4857853714681912, H = 2.9;
+    // a solid of the triangles `tris`, its face sides from its centroid (both solids are
+    // star-shaped about it)
+    const auto build = [](const std::vector<Vec3>& P, const std::vector<std::array<int, 3>>& tris) {
+        Eigen::MatrixXd V(int(P.size()), 3);
+        Vec3 c = Vec3::Zero();
+        for (size_t i = 0; i < P.size(); ++i) {
+            V.row(int(i)) = P[i].transpose();
+            c += P[i] / double(P.size());
+        }
+        Eigen::MatrixXi F(int(tris.size()), 3);
+        std::vector<int8_t> side(tris.size());
+        for (size_t f = 0; f < tris.size(); ++f) {
+            const auto& t = tris[f];
+            F.row(int(f)) << t[0], t[1], t[2];
+            const Vec3 n =
+                (P[size_t(t[1])] - P[size_t(t[0])]).cross(P[size_t(t[2])] - P[size_t(t[0])]);
+            const Vec3 m = (P[size_t(t[0])] + P[size_t(t[1])] + P[size_t(t[2])]) / 3.;
+            side[f] = n.dot(m - c) > 0 ? 1 : -1;
+        }
+        return ExactBandIntegral(V, F, side, 1);
+    };
+    const auto quad = [](std::vector<std::array<int, 3>>& tris, const std::array<int, 4>& q) {
+        tris.push_back({q[0], q[1], q[2]});
+        tris.push_back({q[0], q[2], q[3]});
+    };
+    // value() and value_grad_hess() against J = vol (mean of y_sign (y - y_face) - delta)
+    const auto check = [&](const ExactBandIntegral& eb,
+                           const Tet& T,
+                           const double y_face,
+                           const double y_sign,
+                           const char* what,
+                           ExactBandIntegral::Stats* st) {
+        const double vol = std::abs((T[1] - T[0]).dot((T[2] - T[0]).cross(T[3] - T[0]))) / 6.;
+        const double ybar = (T[0][1] + T[1][1] + T[2][1] + T[3][1]) / 4.;
+        const double exact = vol * (y_sign * (ybar - y_face) - delta);
+        const double unit = delta * vol;
+        INFO(what);
+        const double J = eb.value(T, delta, st);
+        CHECK(std::abs(J - exact) <= 1e-12 * unit);
+        Vec3 G;
+        Eigen::Matrix3d Hs;
+        const double Jd = eb.value_grad_hess(T, 3, delta, G, Hs);
+        CHECK(std::abs(Jd - exact) <= 1e-12 * unit);
+        // the gradient in the apex against central differences of value()
+        Vec3 gf;
+        const double h = 1e-5;
+        for (int d = 0; d < 3; ++d) {
+            Tet Tp = T, Tm = T;
+            Tp[3][d] += h;
+            Tm[3][d] -= h;
+            gf[d] = (eb.value(Tp, delta) - eb.value(Tm, delta)) / (2. * h);
+        }
+        CHECK((G - gf).norm() <= 1e-6 * std::max(gf.norm(), 1.));
+        std::printf(
+            "  %-34s J %+.12f exact %+.12f (|diff| %.1e delta vol); gradient vs central "
+            "differences %.1e\n",
+            what,
+            J,
+            exact,
+            std::abs(J - exact) / unit,
+            (G - gf).norm() / std::max(gf.norm(), 1.));
+    };
+    std::printf("exact-band-integral-plates: value() on plates against the exact value\n");
+
+    // parallel faces: the box [0, 10] x [0, H] x [0, 10], corner i = (x, y, z) bits of i
+    std::vector<Vec3> P(8);
+    for (int i = 0; i < 8; ++i) {
+        P[size_t(i)] = Vec3(10. * (i & 1), H * ((i >> 1) & 1), 10. * ((i >> 2) & 1));
+    }
+    const std::array<int, 4> top = {2, 6, 7, 3}, bottom = {0, 1, 5, 4};
+    const std::array<std::array<int, 4>, 4> walls = {
+        {{0, 4, 6, 2}, {1, 3, 7, 5}, {0, 2, 3, 1}, {4, 5, 7, 6}}};
+    for (const bool top_first : {true, false}) {
+        std::vector<std::array<int, 3>> tris;
+        quad(tris, top_first ? top : bottom);
+        quad(tris, top_first ? bottom : top);
+        for (const auto& q : walls) quad(tris, q);
+        const ExactBandIntegral eb = build(P, tris);
+        for (const double y_lo : {-4.5, -3., -2.}) {
+            const Tet T = {
+                {Vec3(3., -0.5, 3.), Vec3(7., -0.5, 3.5), Vec3(4., -0.5, 7.), Vec3(5., y_lo, 5.)}};
+            const std::string what =
+                std::string(top_first ? "top face first" : "bottom face first") + ", span " +
+                std::to_string(-0.5 - y_lo).substr(0, 3);
+            check(eb, T, 0., -1., what.c_str(), nullptr);
+        }
+    }
+
+    // a grooved bottom: y = 0 at x = 0 and 10, y = g along x = 5 (the edge 1-4)
+    const double g = 0.2;
+    const std::vector<Vec3> Q = {
+        Vec3(0., 0., 0.),
+        Vec3(5., g, 0.),
+        Vec3(10., 0., 0.),
+        Vec3(0., 0., 10.),
+        Vec3(5., g, 10.),
+        Vec3(10., 0., 10.),
+        Vec3(0., H, 0.),
+        Vec3(10., H, 0.),
+        Vec3(0., H, 10.),
+        Vec3(10., H, 10.)};
+    std::vector<std::array<int, 3>> tris;
+    quad(tris, {0, 1, 4, 3}); // the bottom's two halves, meeting at the groove
+    quad(tris, {1, 2, 5, 4});
+    quad(tris, {6, 8, 9, 7}); // top
+    quad(tris, {0, 3, 8, 6}); // x = 0
+    quad(tris, {2, 7, 9, 5}); // x = 10
+    // the z = 0 and z = 10 walls, fans from the groove's ends
+    for (const std::array<int, 3>& t : {std::array<int, 3>{1, 2, 7}, {1, 7, 6}, {1, 6, 0}}) {
+        tris.push_back(t);
+    }
+    for (const std::array<int, 3>& t : {std::array<int, 3>{4, 5, 9}, {4, 9, 8}, {4, 8, 3}}) {
+        tris.push_back(t);
+    }
+    const ExactBandIntegral eb = build(Q, tris);
+    const Tet T = {
+        {Vec3(4., H + 0.5, 4.),
+         Vec3(6., H + 0.5, 4.5),
+         Vec3(5., H + 0.5, 6.5),
+         Vec3(5., H + 4.5, 5.)}};
+    ExactBandIntegral::Stats st;
+    check(eb, T, H, 1., "grooved bottom, cell above, span 4.0", &st);
+    // the case exercises a part where the members' planes disagree
+    CHECK(st.side_D > 0);
+    std::printf("  grooved bottom: %lld parts where the planes disagree\n", (long long)st.side_D);
 }
 
 namespace {

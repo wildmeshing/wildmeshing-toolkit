@@ -93,9 +93,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
     bool sizing_collapse_min = true;
-    /// The medium outside the band deforms (plastic, against its rest shape), and only the input
-    /// complex boundary and the domain wall are envelope-held. 3D refuses it. See the spec doc.
-    bool deform_others = false;
+    /// 3D: the medium outside the band and the input complex is plastic during the loop -- its
+    /// AMIPS term against a rest shape stamped before every operation group and smoothing block.
+    /// false: equilateral AMIPS for every cell. See the spec doc.
+    bool use_rest_pose = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
@@ -236,15 +237,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly
     /// to 1 at distance 1.8 l, applied within that ball only.
     std::string sizing_gradation_mode;
-    /// See the spec: the interleaved smoothing of each operation group runs until the front's
-    /// Newton-step ratio converges or stalls AND the background's step settles, instead of a
-    /// fixed interleaved_smoothing_passes.
-    bool adaptive_smoothing;
-    int adaptive_smoothing_max_passes; ///< cap on the passes per group
-    double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
-    double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
-    /// smoothing) before the first turn of the loop.
+    /// See the spec: true runs one smoothing block (the fixed interleaved count) before the first
+    /// turn of the loop.
     bool pre_smooth;
 
     VectorXd box_min;
@@ -332,10 +326,6 @@ struct Parameters : public wmtk::OptimizerParameters
         max_sizing_scalar = json_params["max_sizing_scalar"];
         sizing_gradation = json_params["sizing_gradation"];
         sizing_gradation_mode = json_params["sizing_gradation_mode"];
-        adaptive_smoothing = json_params["adaptive_smoothing"];
-        adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
-        adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
-        adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
@@ -371,7 +361,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
-        deform_others = json_params["deform_others"];
+        use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];

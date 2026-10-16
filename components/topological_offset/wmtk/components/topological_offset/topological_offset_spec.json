@@ -52,10 +52,6 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "colored_smoothing",
-      "adaptive_smoothing",
-      "adaptive_smoothing_max_passes",
-      "adaptive_smoothing_stall_rel",
-      "adaptive_smoothing_step_rel",
       "pre_smooth",
       "max_iterations",
       "offset_envelope",
@@ -93,7 +89,7 @@
       "offset_amips_weight",
       "DEBUG_crossings",
       "perform_sanity_checks",
-      "deform_others"
+      "use_rest_pose"
     ]
   },
   {
@@ -191,7 +187,7 @@
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
-    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built once after the simplicial embedding, before the repulsion and the march: the domain wall and every region boundary, the input complex's included (see deform_others). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
+    "doc": "Half-width, relative to the bounding box diagonal, of the envelope that holds the held surfaces during optimization; any operation that would push a held face outside it is rejected, and a held vertex is smoothed toward it. 3D: ONE envelope around every held face, built after the simplicial embedding, before the repulsion and the march: during the loop the domain wall and the input complex's boundary; in the frozen-front final pass every other region boundary as well, at its position as the loop left it (see use_rest_pose). The offset surface is never in it. 2D: one tube per region tag, as before. Ignored if envelope_size >= 0."
   },
   {
     "pointer": "/envelope_size",
@@ -290,7 +286,7 @@
     "type": "int",
     "default": 0,
     "min": 0,
-    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says (adaptive smoothing is not used). No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
+    "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says. No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
   },
   {
     "pointer": "/EXPERIMENTAL_band_volume_rule",
@@ -302,7 +298,11 @@
   {
     "pointer": "/EXPERIMENTAL_settle_mark",
     "type": "string",
-    "options": ["max", "rms", "vertex"],
+    "options": [
+      "max",
+      "rms",
+      "vertex"
+    ],
     "default": "vertex",
     "doc": "EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: which test marks a front face on a settled turn (the settle, the halving and the exit are unchanged). \"max\": the face's largest distance from the level set, max(inside_f, outside_f), exceeds front_conv (exact up to rounding, see EXPERIMENTAL_settle_refinement). \"rms\": the face's share of the offset term's excess exceeds the bar energy of its area. The share, to first order in d - target_distance (divergence theorem on G = (1/2)(d - delta)^2 grad d; exact for any band shape, folds included, up to the curvature and medial-axis term), is X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA, theta the angle between the face's normal (pointing out of the band) and grad d, signed; the bar energy of the face is front_conv^2 area(f) / (2 delta). So f is marked when the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2. The mean is taken by the 3-edge-midpoint rule (weights 1/3), exact for quadratic integrands, so exact over a face whose points all have one input face's interior as nearest feature (d affine, grad d constant). Near an input edge or vertex (d curved) it is an approximation. Across a ridge of d (the medial axis, where two input faces are equally near: the inward offset of a convex edge, the outward offset of a concave one) it can miss the face's excess entirely: measured on the prism inward (2026-10-09), one face read 0.24 bar by this rule and 7.46 bars over a 91-point grid. A face along grad d (cos theta near 0) or turned back (cos theta < 0) has a share near 0 or negative and is not marked; the max test catches such a face. \"vertex\": a front vertex v is marked when |d(v) - target_distance| exceeds front_conv (d over all input triangles, exact at v), and its own sizing is halved; it says nothing about the points of a face between its corners. All three tests' numbers are logged on every settled turn, whichever marks (under \"rms\" and \"vertex\" the max test's outside_f is the former corner bound, see EXPERIMENTAL_settle_refinement). Read only under EXPERIMENTAL_settle_refinement. \"vertex\" is the default."
   },
@@ -383,7 +383,7 @@
     "pointer": "/num_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05; only when adaptive_smoothing is also off), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
+    "doc": "Smoothing passes after the ONE combined split+collapse+swap round when interleaved_smoothing is OFF (the default is ON since 2026-09-28) -- in the loop (3D since 2026-09-25, 2D since 2026-10-05), and in the shared optimization loop, which in this component is the frozen-front finishing pass, 2D and 3D alike. The default turn is therefore split, collapse, swap, then 2 smoothing passes. Not read when interleaving is on: the count is then interleaved_smoothing_passes, everywhere. TriWild's key and TriWild's default."
   },
   {
     "pointer": "/length_rel",
@@ -431,7 +431,7 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the loop this fixed count is only used when adaptive_smoothing is false."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result."
   },
   {
     "pointer": "/colored_smoothing",
@@ -440,34 +440,10 @@
     "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way. Default false for the offset: on the Geneva mechanism base (inward, target 1e-3 of the largest body, 2026-10-12) the colored order left the front folded -- 129-179 vertices flagged by offset_foldover after turn 1 against 0-6 with the partitioned pass, one thread or six, the same count with one thread as with six, so it is the order and not a race; on the outward cube with every other key at its default (10 threads, 2026-10-13) colored smoothing did not resolve in 40 turns and left 51 flagged vertices standing from turn 15, where the partitioned pass resolved at turn 20 with none in any frame."
   },
   {
-    "pointer": "/adaptive_smoothing",
-    "type": "bool",
-    "default": false,
-    "doc": "The loop only, not the final pass. Run the smoothing after each operation group pass by pass until it has converged or stalled, instead of a fixed count: after the one combined group under interleaved_smoothing false in place of num_smoothing_passes, and after each of the three groups (split, collapse, swap) under true (the default) in place of interleaved_smoothing_passes. 2D and 3D alike. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the vertex's own relative error over the bar -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-finite residual) are counted and left out of the maximum."
-  },
-  {
-    "pointer": "/adaptive_smoothing_max_passes",
-    "type": "int",
-    "default": 20,
-    "doc": "Upper bound on the smoothing passes of one operation group under adaptive_smoothing; at least 1 pass always runs."
-  },
-  {
-    "pointer": "/adaptive_smoothing_stall_rel",
-    "type": "float",
-    "default": 0.1,
-    "doc": "Under adaptive_smoothing the front counts as stalled when a pass lowered the maximum convergence ratio by less than this fraction of its value before the pass (0.1 = less than 10 percent). Never applied to the first pass of a group."
-  },
-  {
-    "pointer": "/adaptive_smoothing_step_rel",
-    "type": "float",
-    "default": 0.01,
-    "doc": "Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
-  },
-  {
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike; or the adaptive smoothing when adaptive_smoothing is on -- (2D: with the plastic rests stamped before it and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "The loop only, not the final pass. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: num_smoothing_passes sweeps under interleaved_smoothing false and interleaved_smoothing_passes under true (the default), 2D and 3D alike -- (2D: with the plastic rests stamped before it and the released-boundary tube refreshed after it), so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/coarsen_pass",
@@ -628,7 +604,7 @@
     "type": "float",
     "default": 1.0,
     "min": 0.0,
-    "doc": "The weight w of AMIPS in the per-cell energy. 3D: THE energy E is the sum over the cells of tet_energy (TopoOffsetTetMesh::tet_energy()) = (w / stop_energy^3) vol AMIPS^3, plus for a band cell b = vol * min over the input triangles P of the mean over its four corners of (d_P - target_distance) / target_distance, d_P the distance to triangle P alone (EXPERIMENTAL_band_volume_rule \"corner_bound\", the default; \"exact\" takes the cell's closed-form integral of (d - target_distance) / target_distance); MAX_ENERGY where the engine cannot score the cell's AMIPS. b is the cell's part of the integral over the band of (d - target_distance) / target_distance, as an upper bound that no split raises (d_P is convex and d <= d_P). Both terms are volumes, so E converges under refinement; a cell at the stop energy costs about w vol in AMIPS. Every operation compares the SUM of tet_energy over the cells it changes, before against after: a collapse may not raise it (a tie passes); a swap -- 3-2, 4-4, 5-6, the face swap, and the 4-4 / 5-6 case search and the face swap's gate that pick and gate the cells it makes -- must strictly lower it; a smoothing move may not raise it over the vertex's ring; a split is judged only under EXPERIMENTAL_split_energy_gate. The engine's own AMIPS^3 rules for collapses and swaps are off. The smoother minimises the vertex's part of E: the AMIPS term over its ring and, unless an input envelope holds the vertex, the band term of its band cells. Needs one input region, an input complex of triangles only, offset_field 'euclidean' and deform_others false (refused otherwise). Why the corner bound with the min over all triangles, and why a vertex held on the input carries no band term: see TopoOffsetTetMesh::band_cell_term() and smoothing_extra_energy(). DEFAULT 1, the weight the band-volume runs used (the eight-case suite of 2026-10-09 among them). The default before, 1e-4, was chosen 2026-09-30 for the energy this replaced (AMIPS^3 plus the front faces' squared measures, compared by maxima); here it would make the AMIPS term 1e-10 vol AMIPS^3. 2D: the same weight multiplies AMIPS (the 2D engine's cell quality) in tri_energy = w AMIPS + the offset terms of the front chords, and in the 2D front smoother."
+    "doc": "The weight w of AMIPS in the per-cell energy. 3D: THE energy E is the sum over the cells of tet_energy (TopoOffsetTetMesh::tet_energy()) = (w / stop_energy^3) vol AMIPS^3 (AMIPS against the cell's rest shape for a plastic cell under use_rest_pose), plus for a band cell b = vol * min over the input triangles P of the mean over its four corners of (d_P - target_distance) / target_distance, d_P the distance to triangle P alone (EXPERIMENTAL_band_volume_rule \"corner_bound\", the default; \"exact\" takes the cell's closed-form integral of (d - target_distance) / target_distance); MAX_ENERGY where the engine cannot score the cell's AMIPS. b is the cell's part of the integral over the band of (d - target_distance) / target_distance, as an upper bound that no split raises (d_P is convex and d <= d_P). Both terms are volumes, so E converges under refinement; a cell at the stop energy costs about w vol in AMIPS. Every operation compares the SUM of tet_energy over the cells it changes, before against after: a collapse may not raise it (a tie passes); a swap -- 3-2, 4-4, 5-6, the face swap, and the 4-4 / 5-6 case search and the face swap's gate that pick and gate the cells it makes -- must strictly lower it; a smoothing move may not raise it over the vertex's ring; a split is judged only under EXPERIMENTAL_split_energy_gate. The engine's own AMIPS^3 rules for collapses and swaps are off. The smoother minimises the vertex's part of E: the AMIPS term over its ring and, unless an input envelope holds the vertex, the band term of its band cells. Needs one input region, an input complex of triangles only, and offset_field 'euclidean' (refused otherwise). Why the corner bound with the min over all triangles, and why a vertex held on the input carries no band term: see TopoOffsetTetMesh::band_cell_term() and smoothing_extra_energy(). DEFAULT 1, the weight the band-volume runs used (the eight-case suite of 2026-10-09 among them). The default before, 1e-4, was chosen 2026-09-30 for the energy this replaced (AMIPS^3 plus the front faces' squared measures, compared by maxima); here it would make the AMIPS term 1e-10 vol AMIPS^3. 2D: the same weight multiplies AMIPS (the 2D engine's cell quality) in tri_energy = w AMIPS + the offset terms of the front chords, and in the 2D front smoother."
   },
   {
     "pointer": "/DEBUG_crossings",
@@ -659,9 +635,9 @@
     "doc": "Check after every operation pass that no element is inverted and no tracked-surface simplex left its envelope. Slow; for debugging."
   },
   {
-    "pointer": "/deform_others",
+    "pointer": "/use_rest_pose",
     "default": false,
     "type": "bool",
-    "doc": "Whether everything outside the offset band deforms when the optimization pushes it. 3D refuses true: the plastic medium's rest-shape term is not part of the energy and outweighs it. 3D, false: every region boundary, the input complex's included, and the domain wall are held, in one envelope (see envelope_size_rel); the medium outside the band has no rest shape, and its vertices are smoothed on the energy like every other vertex (see offset_amips_weight). The offset surface is held by nothing during the loop; only the frozen-front final pass holds it, to offset_envelope. 2D: true drops the other regions' per-tag envelopes at the top of optimize_offset() and releases them, as before."
+    "doc": "3D. Which AMIPS the energy (see offset_amips_weight) uses for the cells outside the offset band and the input complex during the loop; the band and the complex are always measured against the regular tet. true: the plastic medium -- each such cell's AMIPS term is vol A^3 with A its AMIPS against its rest shape, stamped when the loop starts, after every smoothing pass (between passes and after the last, not before the first), and, in the operations, on every cell a split or a swap creates or a collapse changes, before that operation's energy rule reads it; so every rule reads up-to-date rests, and a smoothing pass resists only what it moves itself. When an operation's cells before and after are all plastic (no band or input-complex cell), its energy is exactly the same before and after (A = 3 everywhere, one total volume), which floating point does not reproduce (TopoOffsetTetMesh::plastic_tie()). The equality is taken instead: such a swap is refused outright, and such a collapse is not gated by the energy, only by the length gate, the inversion test and the other refusals. Logged per group as [plastic tie]. The rules (tet_energy()), the swap candidates and the smoother all read the same term. false (the default): the regular tet for every cell. Off in the final pass either way. Envelopes, either way: during the loop only the domain wall and the input complex's boundary are held (envelope_size); every other region boundary is a tracked face nothing holds, and is held, as the loop left it, only in the frozen-front final pass. Replaces deform_others (removed 2026-10-13; 2D hard-wires its old default, false, until the 2D port)."
   }
 ]
