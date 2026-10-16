@@ -406,7 +406,8 @@ void topological_offset(nlohmann::json json_params)
 
         // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
-        // vertices at plain edge midpoints. So the potential is built after the offset exists.
+        // vertices at plain edge midpoints. So the potential is built after the offset exists,
+        // and only when the optimization runs.
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -426,10 +427,6 @@ void topological_offset(nlohmann::json json_params)
         igl::Timer timer;
         timer.start();
         mesh.construct_offset(output_filename);
-
-        // Now that the offset exists, the potential can be built against it.
-        mesh.init_offset_potential();
-        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
         // checks
         {
@@ -484,6 +481,11 @@ void topological_offset(nlohmann::json json_params)
         // coarser offset but one whose defining property is unmet at an error set by the input
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
+            // The potential, against the constructed offset. Only the optimization reads it, so
+            // a construction-only run builds none.
+            mesh.init_offset_potential();
+            mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+
             mesh.optimize_offset(output_filename);
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
@@ -501,6 +503,12 @@ void topological_offset(nlohmann::json json_params)
             logger().info(
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
+            if (mesh.m_offset_params.phi_grid_resolution >= 2) {
+                logger().warn(
+                    "phi_grid_resolution {} ignored: the offset potential is built only for the "
+                    "optimization",
+                    mesh.m_offset_params.phi_grid_resolution);
+            }
         }
         // The last debug frame is written in the background (write_debug_frame()); no frame
         // follows, so the run waits for it here.

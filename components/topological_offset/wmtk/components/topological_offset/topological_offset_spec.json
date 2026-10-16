@@ -184,7 +184,7 @@
     "pointer": "/optimize_offset",
     "type": "bool",
     "default": true,
-    "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted. The offset potential is built only for the optimization, so with false phi_grid_resolution is ignored (with a warning) and the save_vtu file's energy and distance fields are NaN."
   },
   {
     "pointer": "/envelope_size_rel",
@@ -332,7 +332,7 @@
     "pointer": "/TESTING_allow_mult_comp",
     "type": "bool",
     "default": false,
-    "doc": "TESTING (2026-10-16), 3D. true = an input complex of more than one connected piece (connected components under vertex connectivity; the count is logged as 'Input complex: N connected piece(s)') is accepted. false (the default) = such an input is refused with an error when the offset potential is built, right after the construction, so also with optimize_offset false. Accepted, the energy's band term (every EXPERIMENTAL_band_volume_rule) reads the distance to all the input's triangles, every piece at once, as it does for one piece, and a warning is logged."
+    "doc": "TESTING (2026-10-16), 3D. true = an input complex of more than one connected piece (connected components under vertex connectivity; the count is logged as 'Input complex: N connected piece(s)') is accepted. false (the default) = such an input is refused with an error when the offset potential is built, after the construction and before the optimization; with optimize_offset false no potential is built and nothing is refused. Accepted, the energy's band term (every EXPERIMENTAL_band_volume_rule) reads the distance to all the input's triangles, every piece at once, as it does for one piece, and a warning is logged."
   },
   {
     "pointer": "/EXPERIMENTAL_settle_refinement",
@@ -368,7 +368,7 @@
     "pointer": "/phi_grid_resolution",
     "type": "int",
     "default": 0,
-    "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. The grid is the plane through the box centre normal to the box's shortest extent (the whole domain when the domain is planar). Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface."
+    "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. The grid is the plane through the box centre normal to the box's shortest extent (the whole domain when the domain is planar). Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface. Written only when the optimization runs (optimize_offset true): the potential is built for it alone."
   },
   {
     "pointer": "/DEBUG_output",
