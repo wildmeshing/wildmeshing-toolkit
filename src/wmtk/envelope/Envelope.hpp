@@ -95,6 +95,19 @@ public:
      */
     double eps2_edge = 1e-6;
     double sampling_dist = 1e-3;
+
+    /**
+     * @brief How many threads one triangle query may use. 1, the default: every sample is
+     * checked on the calling thread.
+     *
+     * A triangle many times longer than eps samples to thousands of points, and its query costs
+     * milliseconds. Above n = 1, such a query splits its samples among idle workers of the
+     * thread pool, up to n threads in all, counting the caller. It takes only workers that are
+     * idle at that moment and waits for none, so in a parallel pass that keeps every thread
+     * busy nothing changes; the queries left running at the end get the threads that ran out
+     * of work. The answer is the same either way.
+     */
+    void set_max_threads(int n) { m_max_threads = n < 1 ? 1 : n; }
     bool use_exact = false;
 
     /**
@@ -216,5 +229,9 @@ private:
     /// Whether the edge/2D exact structure was actually built. Always false for Triangles3d,
     /// which builds its exact envelope unconditionally and is checked by kind alone.
     bool m_exact_built = false;
+
+    int m_max_threads = 1; ///< see set_max_threads()
+    /// The sampled triangle query's loop over @p ps, split among idle workers.
+    bool samples_outside_parallel(const std::vector<Eigen::Vector3d>& ps) const;
 };
 } // namespace wmtk

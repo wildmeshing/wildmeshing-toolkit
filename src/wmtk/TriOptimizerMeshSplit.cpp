@@ -60,27 +60,49 @@ void TriOptimizerMesh::split_all_edges()
                 if (length != weight) {
                     return false;
                 }
-                //
-                size_t v1_id = tup.vid(*this);
-                size_t v2_id = tup.switch_vertex(*this).vid(*this);
-                // Force-split: a worst triangle's longest edge (queued by
-                // refine_sizing_around_worst when the max energy stalls) is split once
-                // regardless of the length gate, to unstick a sliver without changing the
-                // sizing field. The new midpoint is not in m_force_split_edges, so the two
-                // halves are NOT force-split again -- exactly one split per edge.
-                if (is_force_split_edge(v1_id, v2_id)) {
-                    return true;
+                return split_edge_is_due(tup);
+            };
+            // Longest-edge order. The serial pass pops the longest edge first, so by the time it
+            // reaches an edge, every longer due edge of the same triangles has been tried: split,
+            // or refused. The parallel pass loses that order: an edge that cannot lock its ring is
+            // set aside, and the thread goes on to shorter edges, among them edges of the same
+            // triangles, which are then bisected off their longest edge. So a split waits while a
+            // longer due edge of one of its triangles is still queued -- not yet tried, and not
+            // dropped. A refused edge is no longer queued, so nothing waits on it, exactly as in
+            // the serial pass; a serial run never waits at all (see ExecutePass::must_wait).
+            //
+            // Measured on the 16 TriWild challenging models at 10 threads, one run each: without
+            // the wait, 283 to 2,946 splits per model were committed while a longer due edge of
+            // the same triangles was still queued (0 in every serial pass). Over five runs of
+            // 162463, 191265, 194286 and 196407, one split pass raised the max energy more than
+            // 10x in 15 of 20 runs, and in 3 of them made faces too small to score (MAX_ENERGY,
+            // 1e+50); serially the largest rise on these models is 1.3x. With the wait: never, at
+            // most 1.6x. Serial output is byte-identical with and without it on all 30
+            // challenging models.
+            const auto edge_key = [&](const Tuple& e) {
+                return wmtk::edge_queue_key(e.vid(*this), e.switch_vertex(*this).vid(*this));
+            };
+            executor.queue_key = [&](const auto&, const auto&, const Tuple& e) -> uint64_t {
+                return split_edge_is_due(e) ? edge_key(e) : 0;
+            };
+            executor.must_wait = [&](const auto&, const auto&, const Tuple& e) {
+                const double l2 = get_length2(e);
+                for (const size_t fid : get_incident_fids_for_edge(e)) {
+                    for (int j = 0; j < 3; ++j) {
+                        const Tuple f = tuple_from_edge(fid, j);
+                        if (get_length2(f) > l2 && split_edge_is_due(f) &&
+                            executor.is_queued(edge_key(f))) {
+                            return true;
+                        }
+                    }
                 }
-                const auto& VA = m_vertex_attribute;
-                double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
-                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                    return false;
-                }
-                return true;
+                return false;
             };
             // Retry a failed split only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            wmtk::run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
+            m_split_order_waits = executor.waits();
+            m_split_order_wait_defects = executor.wait_defects();
         });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
@@ -94,8 +116,35 @@ void TriOptimizerMesh::split_all_edges()
             n,
             m_params.split_high_valence_threshold);
     }
+    if (m_split_order_waits > 0) {
+        wmtk::logger().info(
+            "[longest-edge order] {} splits set aside to wait for a longer queued edge",
+            m_split_order_waits);
+    }
+    if (m_split_order_wait_defects > 0) {
+        wmtk::logger().warn(
+            "[longest-edge order] {} splits still had a longer queued edge in a serial run, and "
+            "were refused",
+            m_split_order_wait_defects);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
+}
+
+bool TriOptimizerMesh::split_edge_is_due(const Tuple& e) const
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+    // Force-split: a worst triangle's longest edge (queued by refine_sizing_around_worst when the
+    // max energy stalls) is split once regardless of the length gate, to unstick a sliver without
+    // changing the sizing field. The new midpoint is not in m_force_split_edges, so the two halves
+    // are NOT force-split again -- exactly one split per edge.
+    if (is_force_split_edge(v1_id, v2_id)) {
+        return true;
+    }
+    const auto& VA = m_vertex_attribute;
+    const double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
+    return !(get_length2(e) < m_params.splitting_l2 * sizing_ratio * sizing_ratio);
 }
 
 bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
@@ -138,8 +187,11 @@ bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
         }
         // Claim only once the whole link is known to be free, so a refusal late in the loop
         // does not burn the budget of a vertex found earlier.
-        for (const size_t vid : to_claim) {
-            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        // A dry run only checks: claiming here would make the real attempt refuse itself.
+        if (!dry_run()) {
+            for (const size_t vid : to_claim) {
+                m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+            }
         }
     }
 
@@ -188,7 +240,7 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_rounded = true;
 
     // this has to be done before the inversion check
-    m_vertex_attribute[v_id].m_pos = to_rational(p);
+    m_vertex_attribute[v_id].set_pos_to_posf();
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
@@ -204,7 +256,8 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // at the EXACT rational midpoint of the two endpoints instead. That midpoint lies on
         // the shared edge, so it can never invert a previously-valid incident triangle: the
         // split always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
+        // it.
         //
         // This used to apply only when an endpoint was already rational, to stop a split
         // between two rounded endpoints from reintroducing exact coordinates into a
@@ -220,12 +273,12 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // smoothing never do), the post-optimization pass is collapse-only, and
         // mesh_improvement does not stop until every vertex is rounded as well as the energy
         // target being met.
-        m_vertex_attribute[v_id].m_pos =
-            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        m_vertex_attribute[v_id].set_pos(
+            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
         // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
         // itself un-rounded, the rounded midpoint of the two *approximations* is a worse
         // approximation of the exact midpoint than rounding the exact midpoint once.
-        p = to_double(m_vertex_attribute[v_id].m_pos);
+        p = to_double(m_vertex_attribute[v_id].pos());
         // Guard against a pre-existing inverted incident triangle: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path). This check
         // was missing, so a split could leave an inverted triangle behind.
@@ -301,6 +354,10 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
 
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
+        // (v1,v2) -> (v1,v) + (v,v2), each carrying the parent's direction.
+        const int o = cache.old_e_attrs.orientation_along(std::array<size_t, 2>{{v1_id, v2_id}});
+        m_edge_attribute[eid1].set_orientation_along(std::array<size_t, 2>{{v1_id, v_id}}, o);
+        m_edge_attribute[eid2].set_orientation_along(std::array<size_t, 2>{{v_id, v2_id}}, o);
         for (const auto& [vid, _] : cache.faces) {
             const auto [_tup, eid] = tuple_from_edge({{v_id, vid}});
             m_edge_attribute[eid].reset();

@@ -62,7 +62,7 @@ void SimWildMeshTri::init_from_image(
     // Only a split can un-round one after this.
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_posf = V.row(i);
-        m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
+        m_vertex_attribute[i].set_pos_to_posf();
         m_vertex_attribute[i].m_is_rounded = true;
     }
 
@@ -131,9 +131,15 @@ void SimWildMeshTri::init_from_image(
     size_t n_indirect = 0;
     for (int i = 0; i < vert_capacity(); i++) {
         VertexAttributes& va = m_vertex_attribute[i];
-        va.m_pos = V.row(i);
-        va.m_posf = to_double(va.m_pos);
-        va.m_is_rounded = (to_rational(va.m_posf) == va.m_pos);
+        const Vector2r r = V.row(i);
+        va.m_posf = to_double(r);
+        va.m_is_rounded = (to_rational(va.m_posf) == r);
+        // A representable position needs no exact copy; see ExactPosition.
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(r);
+        }
         if (!va.m_is_rounded) {
             ++n_indirect;
         }
@@ -280,13 +286,13 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         // boundary can round off it, or off it can round onto it, and the bbox tag is what
         // keeps the domain from collapsing.
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_min[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_min[k])) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].pos_coord_equals(k, m_sim_params.box_max[k]) &&
+                m_vertex_attribute[vids[1]].pos_coord_equals(k, m_sim_params.box_max[k])) {
                 on_bbox = k * 2 + 1;
                 break;
             }
@@ -915,7 +921,7 @@ bool SimWildMeshTri::split_adjust_position(const size_t v_new, const std::vector
 
     for (int i = 0; i < 20; ++i) {
         p = 0.5 * (p0 + p1);
-        m_vertex_attribute[v_new].m_pos = to_rational(p);
+        m_vertex_attribute[v_new].set_pos_to_posf(); // p aliases m_posf
         bool inverted = false;
         for (const Tuple& child : children) {
             if (is_inverted(child)) {
@@ -935,7 +941,7 @@ bool SimWildMeshTri::split_adjust_position(const size_t v_new, const std::vector
         if (!is_inverted(child)) continue;
         logger().warn("Voronoi split inverted a face; reverting to the TriWild midpoint");
         p = 0.5 * (m_vertex_attribute[v1].m_posf + m_vertex_attribute[v2].m_posf);
-        m_vertex_attribute[v_new].m_pos = to_rational(p);
+        m_vertex_attribute[v_new].set_pos_to_posf(); // p aliases m_posf
         break;
     }
     return true;

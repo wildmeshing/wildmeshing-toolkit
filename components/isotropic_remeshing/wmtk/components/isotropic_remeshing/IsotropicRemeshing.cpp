@@ -51,7 +51,8 @@ void IsotropicRemeshing::create_mesh(
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
     bool m_freeze,
-    double eps)
+    double eps,
+    double boundary_eps)
 {
     wmtk::TriMesh::init(n_vertices, tris);
     std::vector<Eigen::Vector3d> V(n_vertices);
@@ -73,6 +74,11 @@ void IsotropicRemeshing::create_mesh(
         for (auto v : frozen_verts) {
             vertex_attrs[v].freeze = true;
         }
+    }
+    if (boundary_eps > 0) {
+        // Same predicate as the surface envelope; see BoundaryEnvelope::init.
+        m_boundary_envelope.init(*this, vertex_attrs, boundary_eps, m_envelope.use_exact);
+    } else if (m_freeze) {
         for (auto e : get_edges()) {
             if (is_boundary_edge(e)) {
                 vertex_attrs[e.vid(*this)].freeze = true;
@@ -91,6 +97,10 @@ void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
 
 bool IsotropicRemeshing::invariants(const std::vector<Tuple>& new_tris)
 {
+    // First: it touches only boundary edges, and is far cheaper than the surface test.
+    if (!m_boundary_envelope.boundary_edges_inside(*this, vertex_attrs, new_tris)) {
+        return false;
+    }
     if (m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
@@ -203,16 +213,32 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
     if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     cache_edge_positions(t);
+    // Read on the connectivity before the collapse, for the placement in collapse_edge_after.
+    auto& cache = position_cache.local();
+    const Tuple t2 = t.switch_vertex(*this);
+    cache.v1_input_boundary = vertex_attrs[t.vid(*this)].input_boundary;
+    cache.v2_input_boundary = vertex_attrs[t2.vid(*this)].input_boundary;
+    cache.v1_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t);
+    cache.v2_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t2);
     return true;
 }
 
 
 bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    const auto& cache = position_cache.local();
+    // Onto the midpoint, unless exactly one endpoint is on the input's boundary: then onto that
+    // one, as in ShortestEdgeCollapse. The midpoint would pull the outline into the surface,
+    // which the boundary envelope refuses, so the collapse would be lost rather than taken.
+    // Without a boundary envelope both flags are false and this is the midpoint, as before.
+    const Eigen::Vector3d p = cache.v1_on_boundary && !cache.v2_on_boundary ? cache.v1p
+                              : cache.v2_on_boundary && !cache.v1_on_boundary
+                                  ? cache.v2p
+                                  : (cache.v1p + cache.v2p) / 2.0;
     auto vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
-    vertex_attrs[vid].partition_id = position_cache.local().partition_id;
+    vertex_attrs[vid].partition_id = cache.partition_id;
+    vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
     return true;
 }
@@ -221,16 +247,26 @@ bool IsotropicRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) return false;
     cache_edge_positions(t);
+    // The new vertex continues a boundary edge the tube judges, so it carries the lineage on:
+    // otherwise the half between it and an unflagged endpoint would escape the tube. A split
+    // of an interior edge puts it inside the surface, where it has nothing to carry.
+    auto& cache = position_cache.local();
+    cache.split_input_boundary = m_boundary_envelope.initialized() &&
+                                 (vertex_attrs[t.vid(*this)].input_boundary ||
+                                  vertex_attrs[t.switch_vertex(*this).vid(*this)].input_boundary) &&
+                                 is_boundary_edge(t);
     return true;
 }
 
 
 bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
+    const auto& cache = position_cache.local();
+    const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
     auto vid = t.switch_vertex(*this).vid(*this);
     vertex_attrs[vid].pos = p;
-    vertex_attrs[vid].partition_id = position_cache.local().partition_id;
+    vertex_attrs[vid].partition_id = cache.partition_id;
+    vertex_attrs[vid].input_boundary = cache.split_input_boundary;
     return true;
 }
 

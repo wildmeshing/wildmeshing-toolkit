@@ -12,7 +12,10 @@ set(SRC_FILES
     test_simplify_segments.cpp
     test_winding_tags.cpp
     test_feature_points.cpp
+    test_free_points.cpp
     test_coarsen_pass.cpp
+    test_orientation_2d.cpp
+    test_colored_smoothing.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

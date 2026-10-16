@@ -35,7 +35,7 @@ void build_two_tris(TriWildMesh& mesh)
     for (int i = 0; i < 6; ++i) {
         auto& va = mesh.m_vertex_attribute[i];
         va.m_is_rounded = true;
-        va.m_pos = to_rational(va.m_posf);
+        va.set_pos_to_posf();
         va.m_sizing_scalar = 1.0;
     }
 }

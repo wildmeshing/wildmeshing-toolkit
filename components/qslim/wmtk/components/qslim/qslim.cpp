@@ -59,6 +59,7 @@ void qslim(nlohmann::json json_params)
     const std::string input_path = resolve_path(root, json_params["input"]).string();
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
+    const double boundary_env_rel = json_params["boundary_eps_rel"];
     const double target_rel = json_params["target_rel"];
     const int num_thread = json_params["num_threads"];
     double target_abs = json_params["target_abs"];
@@ -80,10 +81,19 @@ void qslim(nlohmann::json json_params)
 
     const double diag = (box_minmax.first - box_minmax.second).norm();
     const double envelope_size = env_rel * diag;
+    const double boundary_envelope_size = boundary_env_rel > 0 ? boundary_env_rel * diag : 0;
+    if (boundary_envelope_size > 0) {
+        logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
+    }
 
     QSlimMesh m(verts, num_thread);
     wmtk::set_preallocation_factor_from_json(m, json_params);
-    m.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size);
+    m.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        envelope_size,
+        boundary_envelope_size);
     assert(m.check_mesh_connectivity_validity());
     logger().info("collapsing mesh {}", input_path);
     if (target_abs < 0) {

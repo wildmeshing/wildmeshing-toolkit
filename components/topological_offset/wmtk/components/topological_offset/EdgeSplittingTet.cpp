@@ -1,5 +1,6 @@
 #include "TopoOffsetTetMesh.h"
 
+#include <algorithm>
 #include <set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
@@ -15,7 +16,44 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
+        // repulsion_rounds, before the march: a marched edge is never split -- its midpoint would
+        // be a new outer end nearer the input than the one the rounds push out.
+        if (m_repulsion_potential && is_marched_edge(t.vid(*this), switch_vertex(t).vid(*this))) {
+            return false;
+        }
+        // EXPERIMENTAL_repulsion_refine: nor any split whose midpoint would be an outer end
+        // within target_distance + front_conv, for the same reason.
+        if (repulsion_split_makes_close_outer_end(t.vid(*this), switch_vertex(t).vid(*this))) {
+            return false;
+        }
+        if (is_edge_on_offset(t) && !dry_run()) ++iter_cnt_split_offset_before;
+        // Longest-edge order: a split waits while one of the tets incident to its edge has a
+        // strictly longer edge that is itself over the split gate. Bisecting a tet on a shorter
+        // edge than its longest flattens it; its edges stay over the gate and it is bisected
+        // again, compounding. The serial pass never does this, because its max-heap on length
+        // pops every longer edge first. The parallel pass does: an operation that cannot lock
+        // its ring is deferred, long edges sit in busy neighbourhoods and lose that race, and
+        // shorter edges of the same tets are split first. On the cube at 1e-2 / 1e-4, 10 threads,
+        // 570 of turn 1's first 810 splits were off a parent's longest edge (serial: 0 of 789)
+        // and the split passes' max energy reached 1e8..1e11.
+        //
+        // A waiting split is not lost. When the longer edge is split, the renewal re-queues every
+        // edge of the new tets, this one among them, and run_localized_to_convergence retries a
+        // failure whose endpoints a success touched.
+        const double l2 = get_length2(t);
+        bool off_longest = false;
+        for (const Tuple& tet : get_incident_tets_for_edge(t)) {
+            for (int j = 0; j < 6; ++j) {
+                const Tuple f = tuple_from_edge(tet.tid(*this), j);
+                if (!(get_length2(f) > l2)) continue;
+                if (split_edge_is_due(f)) {
+                    ++m_split_order_waits;
+                    return false;
+                }
+                off_longest = true; // longer, but under the gate
+            }
+        }
+        split_off_longest() = off_longest;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
         // input complex and the domain wall alike, the wall being a region boundary like any
@@ -26,6 +64,84 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         return TetOptimizerMesh::split_edge_before(t);
     }
     return marching_split_edge_before(t);
+}
+
+bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
+{
+    // Must stay the shared pass's own test, or the order above waits on edges the pass will never
+    // split: an edge is due when length^2 >= splitting_l2 * s^2, s the mean of its endpoints'
+    // sizing scalars, and a force-split edge always is. Both the mean and the length are
+    // symmetric in IEEE arithmetic, so the endpoint order of `e` does not matter.
+    const size_t v1 = e.vid(*this);
+    const size_t v2 = e.switch_vertex(*this).vid(*this);
+    // repulsion_rounds: split_edge_before() refuses a marched edge, so it is never due, and no
+    // shorter edge waits on it.
+    if (m_repulsion_potential && is_marched_edge(v1, v2)) return false;
+    if (repulsion_split_makes_close_outer_end(v1, v2)) return false;
+    if (is_force_split_edge(v1, v2)) return true;
+    const double s =
+        (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
+    return !(get_length2(e) < m_params.splitting_l2 * s * s);
+}
+
+bool TopoOffsetTetMesh::repulsion_split_makes_close_outer_end(const size_t v1, const size_t v2)
+    const
+{
+    // EXPERIMENTAL_repulsion_refine. The rounds keep every outer end beyond target_distance +
+    // front_conv, the march's precondition. A split's midpoint becomes an outer end when a cell
+    // around the edge has a complex corner off the edge (an edge with a complex end is marched,
+    // or on the complex, whose midpoint is complex); it is refused when that midpoint is within
+    // target_distance + front_conv. Measured on the one-slot model without this refusal: the
+    // rounds' split passes made 0, 0, 11, 69, 596, 2502 such outer ends in rounds 1-6, the
+    // smoothing pushed most out, and 0, 0, 0, 4, 86, 633 stayed within, until the march could no
+    // longer reach the target.
+    if (!m_repulsion_potential || !m_offset_params.repulsion_refine) return false;
+    if (m_vertex_extra[v1].label != 0 || m_vertex_extra[v2].label != 0) return false;
+    bool beside_complex = false;
+    for (const Tuple& tet : get_incident_tets_for_edge(v1, v2)) {
+        for (const size_t u : oriented_tet_vids(tet.tid(*this))) {
+            beside_complex = beside_complex || m_vertex_extra[u].label != 0;
+        }
+    }
+    if (!beside_complex) return false;
+    const Vector3d mid = 0.5 * (m_vertex_attribute[v1].m_posf + m_vertex_attribute[v2].m_posf);
+    return m_input_complex_bvh->dist(mid) <=
+           m_offset_params.target_distance + m_offset_params.front_conv;
+}
+
+bool TopoOffsetTetMesh::repulsion_outer_ends_kept(const std::vector<size_t>& tids) const
+{
+    // EXPERIMENTAL_repulsion_refine, the swaps' half of the rule repulsion_split_makes_close_
+    // outer_end() states for splits: a swap rewires cells, and a cell that joins a complex corner
+    // to a corner within target_distance + front_conv makes that corner an outer end the march
+    // cannot trace past. Measured on the one-slot model with the split refusal alone: the swap
+    // passes of rounds 4 and 5 made 8 and 104 such outer ends.
+    if (!m_repulsion_potential || !m_offset_params.repulsion_refine) return true;
+    const double stop = m_offset_params.target_distance + m_offset_params.front_conv;
+    for (const size_t tid : tids) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        bool has_complex = false;
+        for (const size_t v : vs) has_complex = has_complex || m_vertex_extra[v].label != 0;
+        if (!has_complex) continue;
+        for (const size_t v : vs) {
+            if (m_vertex_extra[v].label != 0) continue;
+            if (m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf) <= stop) return false;
+        }
+    }
+    return true;
+}
+
+void TopoOffsetTetMesh::op_event(const OpKind k, const OpEvent e) const
+{
+    TetOptimizerMesh::op_event(k, e);
+    if (k != OpKind::split) return;
+    // Counted here because `committed` is the one place a split is known to have survived both
+    // hooks and invariants(); the flag is cleared at `attempt`, so a marching split never counts.
+    if (e == OpEvent::attempt) {
+        split_off_longest() = false;
+    } else if (e == OpEvent::committed && split_off_longest()) {
+        m_split_off_longest.fetch_add(1, std::memory_order_relaxed);
+    }
 }
 
 bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
@@ -55,10 +171,9 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
-    // Midpoint: no target_distance enters construction at all, and carrying the offset surface
-    // out to the level set is the optimization phase's job. SphereTrace (marching_tets under
-    // sphere_trace_initialization): the vertex goes to the point of the edge where d(x) reaches
-    // target_distance within the tolerance, and to the midpoint when the trace leaves the edge.
+    // Midpoint: the plain edge midpoint. SphereTrace (marching_tets(), see construction_mode):
+    // the vertex goes to the point of the edge where d(x) reaches m_construction_distance within
+    // the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
@@ -84,9 +199,16 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra();
     cache.new_v_extra.label = m_edge_attribute[e_id].label;
-    // On both boundaries only if the whole edge was: the midpoint's mask is the AND.
-    cache.new_v_extra.m_boundary_mask =
-        m_vertex_extra[cache.v1_id].m_boundary_mask & m_vertex_extra[cache.v2_id].m_boundary_mask;
+    // The march splits exactly the edges with one endpoint labelled 0 (marching_tets()), and the
+    // other endpoint is on the input complex: that endpoint is the new vertex's correspondence.
+    // The simplicial embedding's edge splits pass through here too; their edges have both
+    // endpoints on the complex and record none. As in 2D.
+    {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        cache.new_v_extra.m_corr_input_vid =
+            (in1 != in2) ? int64_t(in1 ? cache.v1_id : cache.v2_id) : int64_t(-1);
+    }
 
     // split edge
     cache.split_e = m_edge_attribute[e_id];
@@ -153,12 +275,13 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     Vector3d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
-    // d = target_distance is at least target_distance - d away in every direction, and stepping
-    // exactly that far along the edge can never cross it. The step is positive while the trace
-    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
-    // the loop ends within L / tol steps, one way or the other.
-    const double D = m_offset_params.target_distance;
+    // Sphere tracing to D = m_construction_distance (target_distance, or the construction_mode
+    // fallback; see the marching): d is 1-Lipschitz, so from a point at distance d the level set
+    // d = D is at least D - d away in every direction, and stepping exactly that far along the
+    // edge can never cross it. The step is positive while the trace has not converged
+    // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
+    // steps, one way or the other.
+    const double D = m_construction_distance;
     const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();
@@ -184,7 +307,14 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        if (!TetOptimizerMesh::split_edge_after(t)) {
+        if (!TetOptimizerMesh::split_edge_after(t)) return false;
+        // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
+        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
+        // engine rolls a refused split back.
+        if (m_offset_params.split_energy_gate &&
+            !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
+              m_split_energy_before.local())) {
+            ++m_volume_reject_split;
             return false;
         }
         ++iter_cnt_split;
@@ -383,13 +513,6 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
-    // Interior to the split face, so on exactly the boundaries the whole face is on: the AND of
-    // its corners. Assigned, not OR'd -- the slot may be recycled. No surface flags are derived
-    // here and none need to be: split_face() runs only from simplicial_embedding(), during
-    // construction, so the surfaces this vertex could be on do not exist yet.
-    m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
-                                           m_vertex_extra[v2_id].m_boundary_mask &
-                                           m_vertex_extra[v3_id].m_boundary_mask;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -432,9 +555,16 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
             Tuple tet = tuple_from_vids(v_id, opp_vid, curr_v1_id, curr_v2_id);
             m_tet_attribute[tet.tid(*this)] = pair.second;
 
-            // new face
+            // new face: a fresh snapshot carrying the tet's label alone, as split_edge_after()
+            // writes its interior faces and the 2D face split resets its new edges
+            // (EdgeSplittingTri.cpp). Writing only the label left whatever surface tags the
+            // reused slot held. Measured on the Geneva base (simplicial embedding): an input
+            // face's tracked tag landed on a new interior face whose new vertex lies 0.48 delta
+            // off the input, and that face held the march's vertices on it.
+            FaceSnapshot new_f;
+            new_f.extra.label = pair.second.label;
             auto [_, glob_fid] = tuple_from_face({{v_id, curr_v1_id, opp_vid}});
-            m_face_extra[glob_fid].label = pair.second.label;
+            restore_face(glob_fid, new_f);
 
             // existing face
             auto [_2, glob_fid2] = tuple_from_face({{opp_vid, curr_v1_id, curr_v2_id}});
@@ -504,10 +634,6 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
-    // Strictly interior to a tet: on no boundary at all. Assigned -- the slot may be recycled.
-    // As in split_face_after(), split_tet() runs only during construction, so there are no
-    // surface flags to derive; nothing in the optimization creates a tet-interior vertex.
-    m_vertex_extra[v_id].m_boundary_mask = 0;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
@@ -538,13 +664,110 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
             size_t glob_eid = tuple_from_edge({{v1, v2}}).eid(*this);
             m_edge_attribute[glob_eid] = cache.existing_e[simplex::Edge(v1, v2)];
 
-            // new face
+            // new face: a fresh snapshot carrying the tet's label alone (see split_face_after())
+            FaceSnapshot new_f;
+            new_f.extra.label = tet_label;
             auto [_, glob_fid] = tuple_from_face({{v1, v2, v_id}});
-            m_face_extra[glob_fid].label = tet_label;
+            restore_face(glob_fid, new_f);
         }
     }
 
     return true;
+}
+
+void TopoOffsetTetMesh::face_extra_capture(const std::vector<size_t>& tids, FaceExtraMap& out) const
+{
+    // See the declaration: the base's face_attribute_tracker() (TetOptimizerMeshSwaps.cpp).
+    out.clear();
+    for (const size_t tid : tids) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            auto vids = get_face_vids(f);
+            std::sort(vids.begin(), vids.end());
+            out.try_emplace(vids, m_face_extra[f.fid(*this)]);
+        }
+    }
+}
+
+void TopoOffsetTetMesh::face_extra_assign(
+    const std::vector<size_t>& tids,
+    const FaceExtraMap& captured)
+{
+    // See the declaration: the base's tracker_assign_after() (TetOptimizerMeshSwaps.cpp).
+    for (const size_t tid : tids) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            auto vids = get_face_vids(f);
+            std::sort(vids.begin(), vids.end());
+            const auto it = captured.find(vids);
+            m_face_extra[f.fid(*this)] = it != captured.end() ? it->second : FaceExtra{};
+        }
+    }
+}
+
+void TopoOffsetTetMesh::edge_label_capture(
+    const std::vector<size_t>& tids,
+    EdgeLabelMap& out,
+    const size_t from,
+    const size_t to) const
+{
+    out.clear();
+    for (const size_t tid : tids) {
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            std::array<size_t, 2> key{{e.vid(*this), switch_vertex(e).vid(*this)}};
+            for (size_t& u : key) {
+                if (u == from) u = to;
+            }
+            if (key[0] == key[1]) continue; // the collapsed edge itself
+            std::sort(key.begin(), key.end());
+            const int l = m_edge_attribute[e.eid(*this)].label;
+            const auto [it, fresh] = out.try_emplace(key, l);
+            if (!fresh) it->second = closed_label(it->second, l);
+        }
+    }
+}
+
+void TopoOffsetTetMesh::edge_label_assign(
+    const std::vector<size_t>& tids,
+    const EdgeLabelMap& captured)
+{
+    for (const size_t tid : tids) {
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            std::array<size_t, 2> key{{e.vid(*this), switch_vertex(e).vid(*this)}};
+            std::sort(key.begin(), key.end());
+            const auto it = captured.find(key);
+            m_edge_attribute[e.eid(*this)].label = it != captured.end() ? it->second : 0;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::close_labels(const std::vector<size_t>& tids)
+{
+    for (const size_t tid : tids) {
+        const int lt = m_tet_attribute[tid].label;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            int& lf = m_face_extra[f.fid(*this)].label;
+            lf = closed_label(lf, lt);
+            // The face's three edges, as label_input_complex() walks them.
+            for (const Tuple& e :
+                 {f, f.switch_edge(*this), f.switch_vertex(*this).switch_edge(*this)}) {
+                int& le = m_edge_attribute[e.eid(*this)].label;
+                le = closed_label(le, lf);
+                for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
+                    int& lv = m_vertex_extra[v].label;
+                    lv = closed_label(lv, le);
+                }
+            }
+        }
+    }
+    for (const size_t tid : tids) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            m_vertex_extra[v].m_is_on_input = m_vertex_extra[v].label == 1;
+        }
+    }
 }
 
 /**
@@ -557,7 +780,12 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     auto& cache = m_opt_split_cache.local();
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
-    cache.is_edge_on_offset = is_edge_on_offset(edge);
+    // THE LIVE predicate, not is_edge_on_offset(): that one short-circuits on m_is_on_offset of
+    // both endpoints, and this value is what writes that flag on the child. Deriving the flag
+    // from itself could never correct a wrong one. edge_is_offset_surface_live() reads cell
+    // labels only.
+    cache.is_edge_on_offset =
+        edge_is_offset_surface_live(edge.vid(*this), edge.switch_vertex(*this).vid(*this));
     // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
     // came from a parent that was already unscoreable, or from a healthy one.
     cache.parent_q_max = -1.;
@@ -573,6 +801,20 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     for (const Tuple& tt : parents) {
         cache.tets[simplex_from_tet(tt).opposite_edge(e)] = m_tet_attribute.at(tt.tid(*this));
     }
+    // The parents' faces and edges, for m_face_extra and the edge label in split_after_cells().
+    {
+        std::vector<size_t> tids;
+        for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
+        face_extra_capture(tids, m_face_extra_split.local());
+        edge_label_capture(tids, m_edge_label_split.local());
+    }
+    // EXPERIMENTAL_split_energy_gate: the parents' sum of tet_energy(), which split_edge_after()
+    // compares the children's against.
+    if (m_offset_params.split_energy_gate) {
+        std::vector<size_t> tids;
+        for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
+        m_split_energy_before.local() = tet_energy_sum(tids);
+    }
     return true;
 }
 
@@ -582,28 +824,24 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
-    // The new vertex's offset membership is derived from its endpoints, never from the cache: a
-    // vertex placed on an edge lies on whichever tracked surfaces both endpoints lie on. 3D marks
-    // m_is_on_offset once in optimize_offset() and has no fallback, unlike 2D which re-derives
-    // the whole front from the face labels every iteration.
-    m_vertex_extra[v_id].m_is_on_offset =
-        m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
-    // The input complex, the same way: a midpoint is on it only if the whole edge was. Written
-    // here because this is the hook that has the endpoints, and because the AND keeps the
-    // never-both invariant true across a split -- an edge running from the complex to the offset
-    // surface produces a midpoint on neither, which is what it geometrically is.
-    m_vertex_extra[v_id].m_is_on_input =
-        m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
-    // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
-    // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
-    m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
-    if (m_op_epoch != 0) ++iter_cnt_split_born;
-    // The boundary mask follows the same AND rule: the midpoint is on a tag boundary only if the
-    // whole edge was. Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's
-    // bits. Runs before the shared split's containment check, which reads the mask through
-    // face_mask() on the two child triangles.
-    m_vertex_extra[v_id].m_boundary_mask =
-        m_vertex_extra[v1_id].m_boundary_mask & m_vertex_extra[v2_id].m_boundary_mask;
+    // Every field of the new vertex's VertexExtra is written here, as the base writes every field
+    // of its VertexAttributes (TetOptimizerMesh::split_edge_after()): v_id may be a slot past a
+    // consolidation's end, which still holds a dead vertex's values.
+    VertexExtra ve;
+    // The label (and m_is_on_input with it) is left 0 here: close_labels() at the end gives the
+    // midpoint the split edge's, which the two halves carry.
+    // The new vertex is on the offset surface exactly when the edge it was placed on was: a
+    // split subdivides the surface's faces and moves none of them, so the child inherits the
+    // EDGE's membership. split_before_cells() measured that live, before the split. (It used to
+    // be the AND of the endpoints' flags, which over-approximates: two surface vertices joined by
+    // an edge through the band interior are not a surface edge.)
+    ve.m_is_on_offset = m_opt_split_cache.local().is_edge_on_offset;
+    // The other tag regions, from the edge (split_adjust_position() wrote the same before).
+    ve.m_is_on_region = m_opt_split_cache.local().is_edge_on_region;
+    // Read by the needle diagnostics.
+    ve.m_born_epoch = m_op_epoch;
+    // m_corr_input_vid -1 (the march did not make it), no front solve yet: the defaults.
+    m_vertex_extra[v_id] = ve;
 
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {
@@ -617,6 +855,60 @@ bool TopoOffsetTetMesh::split_after_cells(
             m_tet_attribute[tt.tid(*this)] = it->second;
         }
     }
+    // m_face_extra, as the base's split writes m_face_attribute: a child face without the
+    // midpoint is a parent face and keeps its value; a half (v_end, v, c) of a parent face
+    // (v1, v2, c) takes that face's; a face (a, b, v) with a, b in the edge's link is new, reset
+    // (and then closed below).
+    const std::vector<size_t> children = get_one_ring_tids_for_vertex(v_id);
+    const FaceExtraMap& faces = m_face_extra_split.local();
+    for (const size_t tid : children) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            auto vids = get_face_vids(f);
+            std::array<size_t, 3> key = vids;
+            const auto at_v = std::find(vids.begin(), vids.end(), v_id);
+            if (at_v != vids.end()) {
+                bool half = false;
+                for (const size_t u : vids) {
+                    if (u == v_id) continue;
+                    if (u == v1_id || u == v2_id) half = true;
+                }
+                if (!half) {
+                    m_face_extra[f.fid(*this)] = FaceExtra{};
+                    continue;
+                }
+                // The parent: the midpoint replaced by whichever endpoint the face lacks.
+                const bool has_v1 = std::find(vids.begin(), vids.end(), v1_id) != vids.end();
+                key[size_t(at_v - vids.begin())] = has_v1 ? v2_id : v1_id;
+            }
+            std::sort(key.begin(), key.end());
+            const auto it = faces.find(key);
+            if (it != faces.end()) m_face_extra[f.fid(*this)] = it->second;
+        }
+    }
+    // The edge label the same way: an edge without the midpoint keeps its value, the halves
+    // (v1, v) and (v2, v) take the split edge's, an edge (v, l) to the link is new, 0.
+    const EdgeLabelMap& edges = m_edge_label_split.local();
+    const std::array<size_t, 2> split_key{{std::min(v1_id, v2_id), std::max(v1_id, v2_id)}};
+    for (const size_t tid : children) {
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            const size_t a = e.vid(*this), b = switch_vertex(e).vid(*this);
+            std::array<size_t, 2> key{{std::min(a, b), std::max(a, b)}};
+            if (a == v_id || b == v_id) {
+                const size_t u = a == v_id ? b : a;
+                if (u != v1_id && u != v2_id) {
+                    m_edge_attribute[e.eid(*this)].label = 0;
+                    continue;
+                }
+                key = split_key;
+            }
+            const auto it = edges.find(key);
+            m_edge_attribute[e.eid(*this)].label = it != edges.end() ? it->second : 0;
+        }
+    }
+    // The children's labels onto their faces, edges and corners; the midpoint's comes from here.
+    close_labels(children);
     return true;
 }
 

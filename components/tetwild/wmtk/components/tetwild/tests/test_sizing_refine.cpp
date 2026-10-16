@@ -34,7 +34,7 @@ void build_two_tets(TetWildMesh& mesh)
     }
     for (int i = 0; i < 8; ++i) {
         va[i].m_is_rounded = true;
-        va[i].m_pos = to_rational(va[i].m_posf);
+        va[i].set_pos_to_posf();
         va[i].m_sizing_scalar = 1.0;
     }
     std::vector<TetAttributes> ta(2);

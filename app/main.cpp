@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <map>
 #include <nlohmann/json.hpp>
+#include <wmtk/utils/HeapTrimmer.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 // components
@@ -23,6 +24,8 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    // Return freed heap to the system while the component runs; see HeapTrimmer.
+    const HeapTrimmer heap_trimmer;
 
     std::map<std::string, std::function<void(nlohmann::json)>> components_map;
     // include auto-generated map

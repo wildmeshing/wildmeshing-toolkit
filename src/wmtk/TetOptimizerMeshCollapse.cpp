@@ -88,8 +88,11 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(
             };
             // Retry a failed collapse only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            accepted =
-                wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops, max_passes);
+            accepted = wmtk::run_localized_to_convergence(
+                mesh,
+                executor,
+                std::move(collect_all_ops),
+                max_passes);
         });
     return accepted;
 }
@@ -103,6 +106,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.changed_tids.clear();
     cache.changed_energies.clear();
     cache.surface_faces.clear();
+    cache.renamed_orientations.clear();
     cache.boundary_edges.clear();
 
     size_t v1_id = loc.vid(*this);
@@ -122,20 +126,22 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
     if (m_coarsen_mode && !m_params.coarsen_unbounded) {
         if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
-            return false;
+            return collapse_reject(CollapseReject::coarsen_length);
         }
     }
 
     ///check if on bbox/surface/boundary
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
-        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) return false;
+        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) {
+            return collapse_reject(CollapseReject::bbox);
+        }
         for (int on_bbox : VA[v1_id].on_bbox_faces)
             if (std::find(
                     VA[v2_id].on_bbox_faces.begin(),
                     VA[v2_id].on_bbox_faces.end(),
                     on_bbox) == VA[v2_id].on_bbox_faces.end()) {
-                return false;
+                return collapse_reject(CollapseReject::bbox);
             }
     }
 
@@ -147,10 +153,11 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // that reach here always have one, so the guard never fires for them.
         if (!VA[v2_id].m_is_on_surface &&
             (!m_envelope || m_envelope->is_outside(VA[v2_id].m_posf))) {
-            return false;
+            return collapse_reject(CollapseReject::surface_leaves_envelope);
         }
     }
 
+    // The application counts its own reasons (CollapseReject::app_*).
     if (!collapse_before_vertex(v1_id, v2_id, cache.edge_length)) {
         return false;
     }
@@ -181,7 +188,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         }
 
         if (is_inverted(vs)) {
-            return false;
+            return collapse_reject(CollapseReject::inverted);
         }
         double q = get_quality(vs);
         // The coarsening pass deliberately skips the quality gate and decides on the region
@@ -189,7 +196,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // above still applies: an inverted cell is not something smoothing can repair, since
         // smooth_vertex_3d refuses to start from one.
         if (!m_coarsen_mode && !collapse_quality_allowed(v1_id, q, cache.max_energy)) {
-            return false;
+            return collapse_reject(CollapseReject::quality);
         }
         cache.changed_energies.emplace_back(q);
     }
@@ -212,7 +219,51 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
         auto f_attr = m_face_attribute.at(global_fid1);
         f_attr.merge(m_face_attribute.at(global_fid2));
+        // (v1,l1,l2) and (v2,l1,l2) become one face (v2,l1,l2): renaming v1 to v2 keeps the
+        // first one's orientation along that order, and the two sheets add up.
+        const std::array<size_t, 3> merged{{v2_id, f_vids[1], f_vids[2]}};
+        f_attr.set_orientation_along(
+            merged,
+            m_face_attribute.at(global_fid1).orientation_along(f_vids) +
+                m_face_attribute.at(global_fid2).orientation_along(merged));
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
+    }
+
+    // Feature-edge tags: cache every edge of every tet incident to v1 -- the tets that get
+    // rewired or deleted. This includes the deleted tets' link edges (la,lb), which contain
+    // neither endpoint and can live on in tets outside any region enumerable after the
+    // collapse; that is why the restore walks the cache, not a region.
+    if (m_track_feature_edges) {
+        feature_edges_cache(n1_locs, cache.changed_edges);
+
+        // The geometric guard: every tagged edge, as the collapse would leave it (v1 renamed
+        // to v2, which does not move), must stay inside the feature-curve tube. This is what
+        // lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in the
+        // tube and passes -- while a collapse that would drag the curve sideways, or weld
+        // two curves farther apart than the tube width, is refused. The exact counterpart of
+        // the surface-split's surface_triangle_is_outside check, and of the open-boundary
+        // collapse guard.
+        if (m_feature_envelope) {
+            for (const auto& [pair, tag] : cache.changed_edges) {
+                if (!tag) {
+                    continue;
+                }
+                std::array<size_t, 2> p = pair;
+                for (size_t& v : p) {
+                    if (v == v1_id) {
+                        v = v2_id;
+                    }
+                }
+                if (p[0] == p[1]) {
+                    continue; // the collapsed edge itself; it disappears
+                }
+                if (m_feature_envelope->is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                    return collapse_reject(CollapseReject::feature_leaves_tube);
+                }
+            }
+        }
     }
 
     if (VA[v1_id].m_is_on_surface) {
@@ -245,6 +296,9 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                     if (!m_face_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
+                    }
+                    if (const int o = m_face_attribute.at(fid).orientation_along(f); o != 0) {
+                        cache.renamed_orientations.push_back({{{v2_id, va, vb}}, o});
                     }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
@@ -307,7 +361,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
         if (!substructure_link_condition(loc)) {
-            return false;
+            return collapse_reject(CollapseReject::substructure_link);
         }
     }
 
@@ -334,11 +388,11 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         // wmtk::logger().info("edge {} not pass connectivity after check", loc.fid(*this));
         // if (debug_flag) std::cout << "connectivity reject" << std::endl;
 
-        return false;
+        return collapse_reject(CollapseReject::after_base);
     }
 
     if (!collapse_after_connectivity(v1_id, v2_id, cache.boundary_edges)) {
-        return false;
+        return collapse_reject(CollapseReject::after_connectivity);
     }
     // auto& VA = m_vertex_attribute;
     // auto& cache = collapse_cache.local();
@@ -354,7 +408,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         for (auto& vids : cache.surface_faces) {
             // surface envelope
             if (surface_triangle_is_outside(vids[0], vids[1], vids[2])) {
-                return false;
+                return collapse_reject(CollapseReject::after_envelope);
             }
 
             // // open boundary envelope
@@ -375,24 +429,31 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             //         return false;
             // }
         }
-        // for (const auto& vids : cache.boundary_edges) {
-        //     if (!is_open_boundary_edge(vids)) {
-        //        // edge was an open boundary before (that is why it got cached) but is not anymore
-        //        // after collapse
-        //        return false;
-        //    }
-        //}
+        // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
+        // caching time, must still BE order-2 substructure -- flags and containment in the
+        // order-2 envelope included. Without it a sheet erodes IN-PLANE from its open
+        // boundary: boundary-to-boundary collapses cut corners with triangles lying exactly
+        // on the sheet's plane, invisible to the one-sided surface envelope (measured:
+        // 14% of a flat sheet's area gone, a corner receded 150x the order-2 tube). The
+        // check was live from the 2025-10-10 open-boundary fixes until the collapse
+        // refactoring (cb9b81a66c) parked it -- the shared base could not call tetwild's
+        // is_open_boundary_edge -- while giving its caching half the virtual below. This is
+        // that predicate, restored through the same virtual.
+        for (const auto& vids : cache.boundary_edges) {
+            if (!collapse_is_order_2_edge(vids)) {
+                // The edge was order-2 before the collapse (that is why it was cached) but
+                // is not anymore -- the collapse moved it off its curve.
+                return collapse_reject(CollapseReject::after_order2_chord);
+            }
+        }
     }
 
-    // Must run HERE, before the attribute updates below -- not at the end of the function.
-    // tetwild's override asks is_vertex_on_boundary(v2), which reads BOTH
-    // m_vertex_attribute[..].m_is_on_surface and m_face_attribute[..].m_is_surface_fs
-    // (TetWildMesh.cpp), and the two blocks below overwrite exactly those: the vertex flag is
-    // OR-ed from v1 just after round(), and the cached face attributes are written onto the
-    // post-collapse faces. Asking afterwards is asking a different question, and it changes
-    // which vertices keep their open-boundary flag -- and therefore which later collapses are
-    // allowed.
-    collapse_after_vertex(v1_id, v2_id);
+    // (collapse_after_vertex runs below, after the attribute write-back: tetwild's override
+    // asks is_vertex_on_boundary(v2), which counts the surface faces around v2's edges, and
+    // the write-back is what gives the faces that came from v1 their tags. Asked before it,
+    // the test read a half-updated state and cleared open-boundary flags on genuine sheet
+    // corners -- measured on feature_demo4: three corners lost their flags, every boundary
+    // guard went blind to them, and the coarsening pass collapsed them away, 0.5 deep.)
 
     //// update attrs
     // tet attr
@@ -408,16 +469,42 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
 
     // no need to update on_bbox_faces
     // face attr
+    // Faces renamed in place keep their slot but not their vertex set; re-express their
+    // orientation against the new one. First, so the merged faces below -- which are among them
+    // when the face (v1,l1,l2) also bounds a tet of v1's ring -- overwrite with the sum.
+    for (const auto& [f, o] : cache.renamed_orientations) {
+        if (const auto found = try_tuple_from_face(f); found.has_value()) {
+            m_face_attribute[std::get<1>(found.value())].set_orientation_along(f, o);
+        }
+    }
     for (auto& info : cache.changed_faces) {
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         //
         const auto found = try_tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
         if (!found.has_value()) {
-            return false; // the collapse removed the face this attribute was to land on
+            // the collapse removed the face this attribute was to land on
+            return collapse_reject(CollapseReject::after_face_attribute);
         }
         m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
+
+    // Feature-edge tags: cache-driven restore with v1 renamed to v2 (see the cache comment
+    // in collapse_edge_before). False means a tagged edge no longer exists -- abort, the
+    // rollback undoes everything.
+    if (m_track_feature_edges) {
+        if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
+            return collapse_reject(CollapseReject::after_feature_edge);
+        }
+        // After the restore, not in collapse_after_vertex: what the survivor's feature state
+        // is depends on the edge tags around it, and those are the post-collapse truth only
+        // from here on.
+        collapse_after_features(v1_id, v2_id);
+    }
+
+    // Now that the vertex flag OR (above) and the face tags (the loop above) are the
+    // post-collapse truth, decide whether the survivor keeps its open-boundary flag.
+    collapse_after_vertex(v1_id, v2_id);
 
     if (!m_coarsen_mode) {
         return true;
@@ -448,7 +535,37 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // exactly the global one: max energy cannot have risen. Measured relative to each cell's
     // own target -- see quality_rel for why a raw comparison would not hold when an
     // application gives different regions different targets.
-    return region_max_quality_rel(scr.ring) <= cache.region_max_rel_before;
+    if (region_max_quality_rel(scr.ring) <= cache.region_max_rel_before) return true;
+    return collapse_reject(CollapseReject::after_coarsen_region);
+}
+
+const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
+{
+    switch (r) {
+    case CollapseReject::coarsen_length: return "coarsen_length";
+    case CollapseReject::bbox: return "bbox";
+    case CollapseReject::surface_leaves_envelope: return "surface_leaves_envelope";
+    case CollapseReject::inverted: return "inverted";
+    case CollapseReject::quality: return "quality";
+    case CollapseReject::substructure_link: return "substructure_link";
+    case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
+    case CollapseReject::app_both_surfaces: return "app_both_surfaces";
+    case CollapseReject::app_front_unlimited: return "app_front_unlimited";
+    case CollapseReject::app_leaves_input: return "app_leaves_input";
+    case CollapseReject::app_leaves_offset: return "app_leaves_offset";
+    case CollapseReject::app_leaves_region: return "app_leaves_region";
+    case CollapseReject::app_order2: return "app_order2";
+    case CollapseReject::app_substructure_link: return "app_substructure_link";
+    case CollapseReject::app_ops_guard: return "app_ops_guard";
+    case CollapseReject::after_base: return "after_base";
+    case CollapseReject::after_connectivity: return "after_connectivity";
+    case CollapseReject::after_envelope: return "after_envelope";
+    case CollapseReject::after_face_attribute: return "after_face_attribute";
+    case CollapseReject::after_order2_chord: return "after_order2_chord";
+    case CollapseReject::after_feature_edge: return "after_feature_edge";
+    case CollapseReject::after_coarsen_region: return "after_coarsen_region";
+    default: return "?";
+    }
 }
 
 const std::vector<size_t>& TetOptimizerMesh::collect_vertex_ball(
@@ -603,7 +720,8 @@ size_t TetOptimizerMesh::coarsen_mesh()
         //
         // Every collapse above is kept only if the region it disturbed came out no worse
         // (collapse_edge_after, coarsen branch). This smoothing has no such test, and with
-        // smooth_quality_veto off -- which is topological_offset's default -- smooth_vertex_3d
+        // smooth_quality_veto off -- topological_offset's default when this was written; on
+        // today -- smooth_vertex_3d
         // accepts any move that neither inverts a cell nor leaves the envelope, however much it
         // degrades one. So the pass could hand back a mesh worse than it was given, which is the
         // one thing it promises not to do.

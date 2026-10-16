@@ -22,6 +22,8 @@ struct EmbedTrianglesOptions
     /// the remesher's older colour-derived `facets_on_input`. Diagnostic only -- the surface
     /// always comes from provenance; this just counts the disagreement.
     bool check_surface_provenance = false;
+    /// Threads for the parts that run in parallel (so far the tracked surface's orientation).
+    int num_threads = 1;
 };
 
 /**
@@ -46,6 +48,40 @@ struct EmbedTrianglesProvenance
     /// Per input triangle (same indexing as `triangle_indices`): its coplanar group, or
     /// UINT32_MAX if it was degenerate and dropped before the arrangement.
     std::vector<uint32_t> triangle_group;
+};
+
+/**
+ * @brief Extra 1D/0D features to force into the output mesh, exactly.
+ *
+ * The remesher pins each edge as the shared crease of two forcing triangles and each point
+ * as the apex of a corner of three, then tracks them through the arrangement like the
+ * surface. Flat arrays, same conventions as the surface inputs. Everything -- the features
+ * AND the forcing-triangle apexes, which stick out by up to 0.1x the edge length -- must lie
+ * inside the background tet mesh's domain.
+ */
+struct EmbedFeaturesInput
+{
+    /// feature-edge vertices, 3 doubles each, xyz-interleaved
+    std::vector<double> edge_vrt_coord;
+    /// feature edges, 2 vertex ids each, into edge_vrt_coord
+    std::vector<uint32_t> edge_indices;
+    /// feature points, 3 doubles each, xyz-interleaved
+    std::vector<double> point_coord;
+};
+
+/**
+ * @brief Where each feature ended up, in the COMPACTED output numbering (the same ids
+ * `tets_after` uses).
+ */
+struct EmbedFeaturesResult
+{
+    /// Per input edge: the output tet edges tiling it, as vertex pairs. Empty only if the
+    /// edge was degenerate.
+    std::vector<std::vector<std::array<size_t, 2>>> edge_tiling;
+    /// Per input point: the output vertex exactly equal to it, or -1 if it was dropped
+    /// (which the remesher does not do for a valid point -- the -1 exists so a caller can
+    /// assert that rather than assume it).
+    std::vector<int64_t> point_vertex;
 };
 
 /**
@@ -82,6 +118,21 @@ struct EmbedTrianglesProvenance
  * @param[out] tets_after    output tets
  * @param[out] tet_face_on_input_surface  4 flags per tet, in WMTK local face order
  * @param[out] provenance    optional: which input triangles each surface face came from
+ * @param[out] tet_face_orientation  optional: 4 values per tet, in WMTK local face order -- the
+ *     input's orientation on that face, as the signed number of input sheets covering it,
+ *     measured against the face's vertices in ascending id order (see
+ *     SurfaceTagAttributes::m_orientation). A sheet is a coplanar group of input triangles:
+ *     its overlapping same-facing triangles (duplicates above all) count once, distinct groups
+ *     add, and opposite ones cancel -- 0 off the surface and where touching solids meet.
+ *     Computed exactly from the input triangles, not from the remesher's facet vertex order,
+ *     which carries no orientation; then made consistent patch by patch, by area-weighted
+ *     majority, which repairs triangles flipped against their neighbours and changes nothing
+ *     on a consistently oriented input.
+ * @param features           optional: feature edges and points to force into the output
+ * @param[out] features_out  optional: where each feature ended up, in the compacted output
+ *                           numbering. Required when `features` is non-null -- forcing
+ *                           features in and dropping where they went would leave the caller
+ *                           unable to tag them.
  */
 void embed_triangles_in_tets(
     const std::vector<double>& tri_vrt_coord,
@@ -95,6 +146,9 @@ void embed_triangles_in_tets(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts = {},
-    EmbedTrianglesProvenance* provenance = nullptr);
+    EmbedTrianglesProvenance* provenance = nullptr,
+    std::vector<int8_t>* tet_face_orientation = nullptr,
+    const EmbedFeaturesInput* features = nullptr,
+    EmbedFeaturesResult* features_out = nullptr);
 
 } // namespace wmtk::utils

@@ -15,6 +15,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace wmtk::optimization {
@@ -53,6 +54,108 @@ struct SmoothRejectCounters
             envelope.load(),
             inverted.load(),
             quality.load());
+    }
+};
+
+/**
+ * @brief How the vertex solves of a smoothing pass ended: Newton iterations taken and the status
+ * polysolve stopped on, counted per pass.
+ *
+ * The solver runs basic_nonlinear_solver_params (solver.hpp): DenseNewton, at most 10
+ * iterations, allow_out_of_iterations, rel_grad_norm_tol 0. So a solve stops on an absolute
+ * tolerance, on the iteration cap without complaint, or on a failure polysolve reports by
+ * throwing (a failed line search on the last strategy, a NaN). The accepted / rejected line
+ * cannot tell a pass whose solves all hit the cap from one whose solves converge in two
+ * iterations; this does.
+ *
+ * Read from the solver object, not from info(): status() and current_criteria().iterations are
+ * set before polysolve throws, while info() is not updated on that path, so a thrown solve is
+ * still classified by the status it stopped on.
+ */
+struct NewtonCounters
+{
+    /// 0 .. 10 iterations, and one bucket for more than 10.
+    static constexpr size_t kIterBuckets = 12;
+    /// polysolve::nonlinear::Status, NotStarted (-1) .. UpdateDirectionFailed (12), shifted by 1.
+    static constexpr size_t kStatuses = 14;
+    static_assert(
+        int(polysolve::nonlinear::Status::UpdateDirectionFailed) == int(kStatuses) - 2,
+        "polysolve's Status enum changed; update kStatuses and status_name()");
+
+    std::array<std::atomic<size_t>, kIterBuckets> iterations{};
+    std::array<std::atomic<size_t>, kStatuses> status{};
+    std::atomic<size_t> iterations_total{0};
+    std::atomic<size_t> threw{0};
+
+    /// One solve that just returned from minimize(), or threw out of it (@p did_throw).
+    void record(const polysolve::nonlinear::Solver& s, const bool did_throw)
+    {
+        const size_t it = s.current_criteria().iterations;
+        iterations[std::min(it, kIterBuckets - 1)].fetch_add(1, std::memory_order_relaxed);
+        iterations_total.fetch_add(it, std::memory_order_relaxed);
+        const int st = int(s.status()) + 1;
+        if (st >= 0 && size_t(st) < kStatuses) {
+            status[size_t(st)].fetch_add(1, std::memory_order_relaxed);
+        }
+        if (did_throw) threw.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    size_t solves() const
+    {
+        size_t n = 0;
+        for (const auto& c : iterations) n += c.load();
+        return n;
+    }
+
+    void reset()
+    {
+        for (auto& c : iterations) c = 0;
+        for (auto& c : status) c = 0;
+        iterations_total = 0;
+        threw = 0;
+    }
+
+    static const char* status_name(const size_t i)
+    {
+        static constexpr std::array<const char*, kStatuses> names = {
+            {"NotStarted",
+             "Continue",
+             "IterationLimit",
+             "XDeltaTolerance",
+             "RelXDeltaTolerance",
+             "FDeltaTolerance",
+             "GradNormTolerance",
+             "RelGradNormTolerance",
+             "NewtonDecrementTolerance",
+             "ObjectiveCustomStop",
+             "NanEncountered",
+             "NotDescentDirection",
+             "LineSearchFailed",
+             "UpdateDirectionFailed"}};
+        return i < kStatuses ? names[i] : "?";
+    }
+
+    /// `solves=N mean_iterations=m | iterations 0=a 1=b ... 10=k >10=l | stop <nonzero statuses> |
+    /// threw=t`. Every iteration bucket is printed, zeros included, so the histogram's shape reads
+    /// at a glance.
+    std::string to_string() const
+    {
+        const size_t n = solves();
+        std::string out = fmt::format(
+            "solves={} mean_iterations={:.3g} | iterations",
+            n,
+            n > 0 ? double(iterations_total.load()) / double(n) : 0.);
+        for (size_t i = 0; i < kIterBuckets; ++i) {
+            out += i + 1 < kIterBuckets ? fmt::format(" {}={}", i, iterations[i].load())
+                                        : fmt::format(" >{}={}", i - 1, iterations[i].load());
+        }
+        out += " | stop";
+        for (size_t i = 0; i < kStatuses; ++i) {
+            if (status[i].load() != 0)
+                out += fmt::format(" {}={}", status_name(i), status[i].load());
+        }
+        out += fmt::format(" | threw={}", threw.load());
+        return out;
     }
 };
 
@@ -179,8 +282,12 @@ struct SmoothVertexOptions
  * which test whole incident faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
- *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
+ *   - m_vertex_attribute[vid].{m_posf, set_pos_to_posf(), m_is_on_surface}
  *   - cell_quality(tid) / set_cell_quality(tid, quality)
+ *   - smoothing_cell_energy(tid, quality): what the quality veto compares per cell
+ *     (TetOptimizerMesh: the quality itself unless an application overrides)
+ *   - smoothing_ring_energy(ring, stored): what the projected step compares for the whole
+ *     one-ring (TetOptimizerMesh: the max of smoothing_cell_energy() unless overridden)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
  *     and smoothing_containment_envelope(size_t vid) const
@@ -196,24 +303,41 @@ bool smooth_vertex_3d(
     const typename Mesh::Tuple& t,
     const SmoothVertexOptions& opts,
     std::unique_ptr<polysolve::nonlinear::Solver>& solver,
-    SmoothRejectCounters* counters = nullptr)
+    SmoothRejectCounters* counters = nullptr,
+    NewtonCounters* newton = nullptr)
 {
     using Tuple = typename Mesh::Tuple;
 
     const size_t vid = t.vid(m);
     auto& VA = m.m_vertex_attribute;
+    // Every OTHER vertex is read through this const view. A non-const AttributeCollection access
+    // made while the operation is protected records the entry, and a rejected smooth writes every
+    // recorded entry back -- so reading a neighbour through `VA` would also write it. Under the
+    // one-ring lock that was only wasted copying; when non-adjacent vertices smooth concurrently
+    // (colored smoothing), two of them can share a neighbour and would write it back at once.
+    const auto& VA_read = std::as_const(m.m_vertex_attribute);
     const auto locs = m.get_one_ring_tets_for_vertex(t);
     assert(!locs.empty());
 
-    double max_quality = 0.;
+    // Here and below, every cell's inversion test runs before any cell's energy is read: an
+    // application's smoothing_cell_energy() or smoothing_ring_energy() may read cells beyond the
+    // one it scores, which must all be valid when it does. Measured: a field of the topological
+    // offset (since removed) that walked from a front face through other cells, at a non-front
+    // vertex's trial position, walked into a later cell of the same ring, inverted there, before
+    // that cell's test (one-slot model, stage 1). A refused move rolls back the stored qualities
+    // either way, so the order changes no result.
     for (const Tuple& tet : locs) {
-        max_quality = std::max(max_quality, m.cell_quality(tet.tid(m)));
         if (m.is_inverted_f(tet)) {
             // A neighbour that is not rounded can leave a tet inverted in floats even
             // though it is fine in exact arithmetic; there is nothing to optimize from.
             if (counters) ++counters->already_inverted;
             return false;
         }
+    }
+    double max_quality = 0.;
+    for (const Tuple& tet : locs) {
+        max_quality =
+            std::max(max_quality, m.smoothing_cell_energy(tet.tid(m), m.cell_quality(tet.tid(m))));
     }
 
     // AMIPS wants each tet as 12 doubles with the moving vertex first, so that the solver
@@ -224,7 +348,7 @@ bool smooth_vertex_3d(
         local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
         for (int k = 0; k < 4; k++) {
             for (int j = 0; j < 3; j++) {
-                assembles[i][k * 3 + j] = VA[local_verts[k]].m_posf[j];
+                assembles[i][k * 3 + j] = VA_read[local_verts[k]].m_posf[j];
             }
         }
     }
@@ -253,38 +377,47 @@ bool smooth_vertex_3d(
 
     auto solve = [&]() {
         VectorXd x = VA[vid].m_posf;
+        bool threw = false;
         try {
             solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
             // polysolve reports a failed line search by throwing; the position it reached
             // is still the best it found, and the checks below decide whether to keep it.
+            threw = true;
         }
+        if (newton) newton->record(*solver, threw);
         VA[vid].m_posf = x;
     };
 
+    // A feature-curve vertex needs pulling and containment even when it is INTERIOR: the
+    // surface flag alone would smooth it as free and let it walk off its curve. Derived from
+    // the edge tags, so it cannot go stale.
+    const bool on_feature_curve = m.m_track_feature_edges && m.vertex_has_feature_edge(vid);
     const std::shared_ptr<SampleEnvelope> pull_env =
-        VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
+        (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
-        // Smooth as if the vertex were interior, then walk back onto the input.
+        // Smooth as if the vertex were interior, then walk back onto the input. The ring's value
+        // before the move is read here, before the solve moves the vertex (see
+        // smoothing_ring_energy()); by default it is max_quality.
         const Vector3d x_orig = VA[vid].m_posf;
+        const double ring_before = m.smoothing_ring_energy(locs, true);
         total_energy = base_energy;
         solve();
         const Vector3d x_new = VA[vid].m_posf;
 
-        // Place a candidate and report the worst incident quality, or infinity if it
-        // inverts. is_inverted is exact, so the rational position tracks every candidate.
+        // Place a candidate and report the ring's value there (smoothing_ring_energy()), or
+        // infinity if it inverts. is_inverted is exact, so the rational position tracks every
+        // candidate.
         const auto worst_at = [&](const Vector3d& p) {
             VA[vid].m_posf = p;
-            VA[vid].m_pos = to_rational(p);
-            double mq = 0.;
+            VA[vid].set_pos_to_posf();
             for (const Tuple& loc : locs) {
                 if (m.is_inverted(loc)) {
                     return std::numeric_limits<double>::infinity();
                 }
-                mq = std::max(mq, m.get_quality(loc));
             }
-            return mq;
+            return m.smoothing_ring_energy(locs, false);
         };
 
         bool accepted = false;
@@ -297,7 +430,7 @@ bool smooth_vertex_3d(
             pull_env->nearest_point(p, q);
             interp.push_back(p);
             proj.push_back(q);
-            if (worst_at(q) < max_quality) {
+            if (worst_at(q) < ring_before) {
                 accepted = true;
                 break;
             }
@@ -318,7 +451,7 @@ bool smooth_vertex_3d(
                 for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
                     const double mid = 0.5 * (lo + hi);
                     const Vector3d cand = interp[k] + mid * (proj[k] - interp[k]);
-                    if (worst_at(cand) < max_quality) {
+                    if (worst_at(cand) < ring_before) {
                         lo = mid;
                         best = cand;
                         found = true;
@@ -336,7 +469,7 @@ bool smooth_vertex_3d(
         }
         if (!accepted) {
             VA[vid].m_posf = x_orig;
-            VA[vid].m_pos = to_rational(x_orig);
+            VA[vid].set_pos_to_posf();
             if (counters) ++counters->quality;
             return false;
         }
@@ -363,6 +496,30 @@ bool smooth_vertex_3d(
         solve();
     }
 
+    // Per-vertex positional constraint (a 0-dimensional feature anchor's ball). Same hook
+    // and same placement as the 2D path.
+    if (!m.smoothing_position_is_allowed(vid, VA[vid].m_posf)) {
+        if (counters) ++counters->envelope;
+        return false;
+    }
+
+    // Feature containment: every tagged edge at this vertex must stay inside the feature
+    // tube, at the candidate position (already written into the vertex attribute here).
+    if (on_feature_curve && !m.feature_edges_at_vertex_inside(vid)) {
+        if (counters) ++counters->envelope;
+        return false;
+    }
+
+    // Open-boundary containment, the same test for the DERIVED order-2 curves: every open
+    // boundary edge at this vertex must stay inside the order-2 tube. Without it smoothing
+    // walks boundary vertices along the boundary -- each step legal for the vertex, no check
+    // on the edges -- and the coarsening composite's mass smoothing contracts an open sheet
+    // boundary far past its tube (measured: a corner walked 0.5, 14% of the sheet gone).
+    if (!m.boundary_edges_at_vertex_inside(vid)) {
+        if (counters) ++counters->envelope;
+        return false;
+    }
+
     // Containment: every surface triangle at this vertex must still be inside. Checked
     // against the containment envelope, which is not necessarily the one it was pulled to.
     const std::shared_ptr<SampleEnvelope> check_env =
@@ -371,9 +528,9 @@ bool smooth_vertex_3d(
         const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
         for (const simplex::Face& f : surf.faces()) {
             const std::array<Eigen::Vector3d, 3> face = {
-                {VA[f.vertices()[0]].m_posf,
-                 VA[f.vertices()[1]].m_posf,
-                 VA[f.vertices()[2]].m_posf}};
+                {VA_read[f.vertices()[0]].m_posf,
+                 VA_read[f.vertices()[1]].m_posf,
+                 VA_read[f.vertices()[2]].m_posf}};
             if (check_env->is_outside(face)) {
                 if (counters) ++counters->envelope;
                 return false;
@@ -382,18 +539,20 @@ bool smooth_vertex_3d(
     }
 
     // The rational position must be current before the exact inversion test.
-    VA[vid].m_pos = to_rational(VA[vid].m_posf);
+    VA[vid].set_pos_to_posf();
 
-    double max_after_quality = 0.;
     for (const Tuple& loc : locs) {
         if (m.is_inverted(loc)) {
             if (counters) ++counters->inverted;
             return false;
         }
+    }
+    double max_after_quality = 0.;
+    for (const Tuple& loc : locs) {
         const size_t tid = loc.tid(m);
         const double quality = m.get_quality(loc);
         m.set_cell_quality(tid, quality);
-        max_after_quality = std::max(max_after_quality, quality);
+        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(tid, quality));
     }
 
     if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
@@ -420,6 +579,8 @@ bool smooth_vertex_3d(
  * `Mesh` must provide, on top of what wmtk::TriMesh already gives:
  *   - m_vertex_attribute[vid].m_is_on_surface, m_face_attribute[fid].m_quality
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
+ *   - smoothing_cell_energy(fid, quality): what the projected step and the quality veto
+ *     compare per face (TriOptimizerMesh: the quality itself unless an application overrides)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
  *       writes the working position and its exact/rational copy together
@@ -440,15 +601,18 @@ bool smooth_vertex_2d(
     const std::vector<size_t>& locs = m.get_one_ring_fids_for_vertex(t);
     assert(!locs.empty());
 
-    double max_quality = 0.;
+    // Every cell's inversion test before any cell's energy, as in smooth_vertex_3d().
     for (const size_t fid : locs) {
-        max_quality = std::max(max_quality, FA[fid].m_quality);
         if (m.is_inverted_f(fid)) {
             // Nothing to optimize from: a neighbour that is not rounded can leave a face
             // inverted in floats even when it is fine exactly.
             if (counters) ++counters->already_inverted;
             return false;
         }
+    }
+    double max_quality = 0.;
+    for (const size_t fid : locs) {
+        max_quality = std::max(max_quality, m.smoothing_cell_energy(fid, FA[fid].m_quality));
     }
 
     // AMIPS wants each face as 6 doubles with the moving vertex first, keeping the winding.
@@ -539,12 +703,14 @@ bool smooth_vertex_2d(
         // is_inverted below depends on.
         const auto worst_at = [&](const Vector2d& p) {
             m.set_smoothing_position(vid, p);
-            double mq = 0.;
             for (const size_t fid : locs) {
                 if (m.is_inverted(fid)) {
                     return std::numeric_limits<double>::infinity();
                 }
-                mq = std::max(mq, m.get_quality(fid));
+            }
+            double mq = 0.;
+            for (const size_t fid : locs) {
+                mq = std::max(mq, m.smoothing_cell_energy(fid, m.get_quality(fid)));
             }
             return mq;
         };
@@ -646,15 +812,17 @@ bool smooth_vertex_2d(
         }
     }
 
-    double max_after_quality = 0.;
     for (const size_t fid : locs) {
         if (m.is_inverted(fid)) {
             if (counters) ++counters->inverted;
             return false;
         }
+    }
+    double max_after_quality = 0.;
+    for (const size_t fid : locs) {
         const double q = m.get_quality(fid);
         FA[fid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
+        max_after_quality = std::max(max_after_quality, m.smoothing_cell_energy(fid, q));
     }
 
     if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {

@@ -2,9 +2,9 @@
 # License: MIT
 #
 # Public mirror of fsichetti/ipc-toolkit@upstream-merge, published in the wildmeshing
-# organisation with the author's permission. What wmtk uses from it is the `high_order_contact`
-# subtree: the smooth (offset geometric contact) potential and its analytic gradient and
-# Hessian, which the topological_offset component evaluates as its offset field.
+# organisation with the author's permission. What wmtk uses from it is the `esp` subtree: the
+# Extremum-Sum Potential evaluated at arbitrary points (ArbitraryPointESP) and its analytic
+# gradient and Hessian, which the topological_offset component evaluates as its offset field.
 #
 # Only the topological_offset component links this. Core wmtk::toolkit does not, so nothing
 # here reaches tetwild, triwild or simwild.
@@ -36,7 +36,7 @@ include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
     GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 3a76d751aa3d6b38f6328edaa0b1a438f08c703b
+    GIT_TAG 626e27e11ac64c68f1e00859fec86c4688fde51c
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
@@ -48,9 +48,9 @@ CPMAddPackage(
 # target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
 #
 # -- PUBLIC, with a comment saying the author does not know why making it private crashes. It
-# is not optional for us either: high_order_contact, the subtree wmtk actually uses, carries a
+# is not optional for us either: esp, the subtree wmtk actually uses, carries a
 # static_assert(packet_traits<double>::size == 1, "Eigen vectorization is NOT disabled!") in
-# HighOrderCollisionTemplate's constructor, so building it with vectorization on does not
+# ESPCollisionTemplate's constructor, so building it with vectorization on does not
 # compile. IPC_TOOLKIT_WITH_SIMD must therefore stay at its default ON.
 #
 # On its own that definition splits the build's Eigen ABI in half, because it reaches only the
@@ -85,13 +85,17 @@ endforeach()
 
 # ipc-toolkit compiles itself for the CPU of whatever machine ran cmake: its cmake/find/FindSIMD
 # settles on -march=native for GCC and for Clang >= 15, publishes it as the SIMD_CXX_FLAGS cache
-# variable, and applies it as target_compile_options(ipc_toolkit PRIVATE ${SIMD_CXX_FLAGS}). An
-# object built that way carries the instruction set of the machine that produced it, so it is only
-# valid there. CI hands such objects between runners through ccache -- whose hash covers the
-# command line and the sources but not the CPU -- and an object compiled where AVX-512 exists,
-# restored onto a runner where it does not, dies on its first EVEX instruction: SIGILL in
-# wmtk_test_topological_offset and wmtk_test_manifold_extraction, the only two binaries that link
-# ipc, crashing inside an inline spdlog function whose copy came from one of these objects.
+# variable, and (as of 626e27e1) applies it as
+#
+#   target_compile_options(ipc_toolkit PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${SIMD_CXX_FLAGS}>")
+#
+# PUBLIC, so it also reaches everything that links the topological_offset component: wmtk_app, the
+# Python module, manifold_extraction and the test binaries. An object built that way carries the
+# instruction set of the machine that produced it, so it is only valid there. CI hands such objects
+# between runners through ccache -- whose hash covers the command line and the sources but not the
+# CPU -- and an object restored onto a runner whose CPU lacks one of its instructions dies with
+# SIGILL: in wmtk_test_topological_offset and wmtk_test_manifold_extraction inside an inline spdlog
+# function, and in wmtk_test_topological_offset inside ipc::CollisionMesh's constructor.
 # recipes/volumeremesher.cmake does the same thing for the same class of problem, one step further
 # on (there the flags were PUBLIC and split Eigen's alignment across the binary).
 #
@@ -102,9 +106,24 @@ endforeach()
 #   if (SIMD_CXX_FLAGS) ... else() set(IPC_TOOLKIT_WITH_SIMD OFF CACHE BOOL "Enable SIMD" FORCE)
 #
 # so an empty value turns SIMD off, and with it the EIGEN_DONT_VECTORIZE definition that
-# high_order_contact's static_assert demands (see the block above).
-get_target_property(_ipc_opts ipc_toolkit COMPILE_OPTIONS)
-if(_ipc_opts)
-    list(FILTER _ipc_opts EXCLUDE REGEX "^(-m(arch|tune)=|-mavx|-mfma|-msse|/arch:)")
-    set_target_properties(ipc_toolkit PROPERTIES COMPILE_OPTIONS "${_ipc_opts}")
-endif()
+# esp's static_assert demands (see the block above).
+#
+# Strip both COMPILE_OPTIONS and INTERFACE_COMPILE_OPTIONS, and match the flag inside the generator
+# expression, not only at the start of an option. Through 3a76d751 ipc added it PRIVATE and bare,
+# which a filter anchored at ^-march= removed; against 626e27e1's form that filter matched nothing,
+# silently, and the SIGILL came back. Both sides, because ipc's headers carry xsimd batch types
+# (ipc/utils/simd.hpp), so ipc and the code including them have to agree on the instruction set.
+# The STATUS line names what came off, so a configure log shows whether the strip worked.
+set(_ipc_isa_regex "(^|:)(-m(arch|tune)=|-mavx|-mfma|-msse|/arch:)")
+foreach(_ipc_prop COMPILE_OPTIONS INTERFACE_COMPILE_OPTIONS)
+    get_target_property(_ipc_opts ipc_toolkit ${_ipc_prop})
+    if(_ipc_opts)
+        set(_ipc_isa_opts "${_ipc_opts}")
+        list(FILTER _ipc_isa_opts INCLUDE REGEX "${_ipc_isa_regex}")
+        list(FILTER _ipc_opts EXCLUDE REGEX "${_ipc_isa_regex}")
+        set_target_properties(ipc_toolkit PROPERTIES ${_ipc_prop} "${_ipc_opts}")
+        if(_ipc_isa_opts)
+            message(STATUS "Third-party: ipc_toolkit ${_ipc_prop}: stripped ${_ipc_isa_opts}")
+        endif()
+    endif()
+endforeach()

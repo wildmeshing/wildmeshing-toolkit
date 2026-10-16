@@ -2,6 +2,7 @@
 #include <igl/Timer.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
+#include <algorithm>
 #include <topological_offset_spec.hpp>
 #include <vector>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
@@ -17,6 +18,25 @@ using namespace wmtk::components::simwild;
 
 
 namespace wmtk::components::topological_offset {
+namespace {
+/// The operation corridor (offset_envelope) may not be wider than the convergence epsilon.
+/// Same test in both dimensions; see the 2D call site for why. Both are absolute lengths
+/// resolved in init(), so the comparison needs no conversion.
+void check_envelope_leash(const Parameters& params)
+{
+    if (params.offset_envelope > params.front_conv) {
+        log_and_throw_error(
+            "offset_envelope {} ({} x the bbox diagonal) must be <= the convergence epsilon "
+            "front_conv {}: the operation corridor (the leash) cannot be wider than the "
+            "convergence accuracy, or the operations keep denting the front past the resolution "
+            "threshold and the loop chases the damage forever",
+            params.offset_envelope,
+            params.offset_envelope_rel,
+            params.front_conv);
+    }
+}
+} // namespace
+
 void topological_offset(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
@@ -50,6 +70,13 @@ void topological_offset(nlohmann::json json_params)
 
     // load params
     Parameters params(json_params);
+    // Both dimensions: the correspondence is recorded by the march and indexes vertices the
+    // optimization would split, collapse and renumber.
+    if (params.save_offset_correspondence && params.optimize_offset) {
+        log_and_throw_error(
+            "save_offset_correspondence requires optimize_offset false: corr_input_vid is "
+            "recorded by the march and not carried through the optimization");
+    }
     const std::string offset_selection_str = json_params["offset_selection"];
     bool check_manifoldness = json_params["check_manifoldness"];
 
@@ -76,26 +103,33 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
-        logger().info("front_conv_rel: {}", params.front_conv_rel);
+        logger().info(
+            "front_conv: {} ({} x the bbox diagonal)",
+            params.front_conv,
+            params.front_conv_rel);
+        logger().info("stencil_order: {}", params.stencil_order);
+        logger().info(
+            "offset_envelope: {} ({} x the bbox diagonal)",
+            params.offset_envelope,
+            params.offset_envelope_rel);
         logger().info("===============================");
     }
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
+        // The 3D energy (TopoOffsetTetMesh::tet_energy()) has no 2D twin yet. The 2D pipeline
+        // below is kept, unrun, until it is brought into lock-step with 3D.
+        log_and_throw_error(
+            "2D input refused: the 2D offset is not up to date and is being brought into "
+            "lock-step with 3D");
 
-        // front_conv_rel is the accuracy -- the vertex bar and the chord-resolution threshold
-        // alike -- and offset_envelope_rel is only the leash on the operation passes. Accuracy
-        // finer than the leash is unreachable: operations licensed to dent the front by more than
-        // the threshold mint new refinable edges every turn. Hence a hard requirement.
-        if (params.offset_envelope_rel > params.front_conv_rel) {
-            log_and_throw_error(
-                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
-                "(the leash) cannot be wider than the convergence accuracy, or the operations "
-                "keep denting the front past the resolution threshold and the loop chases the "
-                "damage forever",
-                params.offset_envelope_rel,
-                params.front_conv_rel);
-        }
+        // front_conv is the accuracy -- one bar for placement and resolution alike -- and
+        // offset_envelope_rel is only the leash on the operation passes.
+        // Accuracy finer than the leash is unreachable: operations licensed to dent the front by
+        // more than the threshold mint new refinable edges every turn. Hence a hard requirement.
+        // The leash is a fraction of target_distance and the epsilon is an absolute length, so
+        // the comparison is made in model units.
+        check_envelope_leash(params);
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
@@ -136,7 +170,10 @@ void topological_offset(nlohmann::json json_params)
         }
         tris_before.clear();
 
-        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // initial number of connected components
+        size_t initial_num_comps = mesh.flood_fill();
+
+        // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
         // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
@@ -154,14 +191,14 @@ void topological_offset(nlohmann::json json_params)
         }
 
         // The per-tag containment envelopes must be captured in init_from_image(), while the
-        // region tags are still the input's own: execute_offset() replaces the tags of every face
+        // region tags are still the input's own: construct_offset() replaces the tags of every face
         // the band grows through, and a tube built afterwards would pin the junction where a
         // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
 
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
@@ -198,6 +235,21 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
+        // connected components check, as in 3D
+        {
+            size_t final_num_comps = mesh.flood_fill();
+            if (final_num_comps != initial_num_comps) {
+                log_and_throw_error(
+                    "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
+                    initial_num_comps,
+                    final_num_comps);
+            } else {
+                logger().info(
+                    "connected components check passed. (# components={})",
+                    initial_num_comps);
+            }
+        }
+
         // optimize_offset (json, default true). Construction leaves the band boundary on
         // background-cell boundaries, so skipping the optimization does not yield a coarser
         // offset but one whose defining property is unmet at an error set by the input mesh's
@@ -218,6 +270,22 @@ void topological_offset(nlohmann::json json_params)
             logger().info(
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
+        }
+
+        // inversion check, after the optimization as well. As in 3D.
+        {
+            auto tris_after = mesh.get_faces();
+            if (!mesh.invariants(tris_after)) {
+                std::string bad_tris_str = "";
+                for (const TriMesh::Tuple& t : tris_after) {
+                    std::vector<TriMesh::Tuple> tvec;
+                    tvec.push_back(t);
+                    if (!mesh.invariants(tvec)) {
+                        bad_tris_str += (" " + std::to_string(t.fid(mesh)));
+                    }
+                }
+                log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
+            }
         }
 
         double time = timer.getElapsedTime();
@@ -263,35 +331,11 @@ void topological_offset(nlohmann::json json_params)
                 report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
                 report["optimization_metrics"]["max_grad_in_edge"] = max_grad_in_edge;
 
-                std::vector<int> splits, collapses, swaps;
-                for (const auto& c : mesh.op_counts) {
-                    splits.push_back(c[0]);
-                    collapses.push_back(c[1]);
-                    swaps.push_back(c[2]);
-                }
-                report["op_counts"]["splits"] = splits;
-                report["op_counts"]["collapses"] = collapses;
-                report["op_counts"]["swaps"] = swaps;
-
-                std::vector<int> born, recollapsed, recollapsed_same_pass;
-                for (const auto& c : mesh.churn_counts) {
-                    born.push_back(c[0]);
-                    recollapsed.push_back(c[1]);
-                    recollapsed_same_pass.push_back(c[2]);
-                }
-                report["churn"]["split_born"] = born;
-                report["churn"]["recollapsed"] = recollapsed;
-                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
 
                 // Read from the run, never recomputed from the arrays: optimize_offset() breaks
                 // out of the loop the moment it converges, so its own verdict cannot drift from
                 // the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
-                // The measured scale that tolerance is a fraction of; without it the tolerance is
-                // an unreadable absolute number.
-                report["gradient_reference"] = mesh.gradient_reference();
-                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
@@ -307,17 +351,16 @@ void topological_offset(nlohmann::json json_params)
         wmtk::logger().info("======= finish =========");
     } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
-
-        // As in 2D: the leash cannot be wider than the accuracy. See the 2D branch.
-        if (params.offset_envelope_rel > params.front_conv_rel) {
+        // The energy's band term reads the euclidean distance to the input's triangles; the
+        // smooth field has no band term of its own yet.
+        if (params.offset_field != "euclidean") {
             log_and_throw_error(
-                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
-                "(the leash) cannot be wider than the convergence accuracy, or the operations "
-                "keep denting the front past the resolution threshold and the loop chases the "
-                "damage forever",
-                params.offset_envelope_rel,
-                params.front_conv_rel);
+                "offset_field \"{}\" is not available in 3D: the energy's band term reads the "
+                "euclidean distance to the input, and this field has no band term yet",
+                params.offset_field);
         }
+        // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
+        check_envelope_leash(params);
 
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
@@ -360,9 +403,8 @@ void topological_offset(nlohmann::json json_params)
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
-        mesh.reset_connected_components();
 
-        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
         // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
@@ -383,7 +425,7 @@ void topological_offset(nlohmann::json json_params)
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.execute_offset(output_filename);
+        mesh.construct_offset(output_filename);
 
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
@@ -425,7 +467,6 @@ void topological_offset(nlohmann::json json_params)
 
             // connected components check
             size_t final_num_comps = mesh.flood_fill();
-            mesh.reset_connected_components();
             if (final_num_comps != initial_num_comps) {
                 log_and_throw_error(
                     "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
@@ -461,6 +502,9 @@ void topological_offset(nlohmann::json json_params)
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
         }
+        // The last debug frame is written in the background (write_debug_frame()); no frame
+        // follows, so the run waits for it here.
+        mesh.wait_debug_frame_write();
 
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
@@ -522,34 +566,11 @@ void topological_offset(nlohmann::json json_params)
                 report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
                 report["optimization_metrics"]["max_grad_in_face"] = max_grad_in_face;
 
-                std::vector<int> splits, collapses, swaps;
-                for (const auto& c : mesh.op_counts) {
-                    splits.push_back(c[0]);
-                    collapses.push_back(c[1]);
-                    swaps.push_back(c[2]);
-                }
-                report["op_counts"]["splits"] = splits;
-                report["op_counts"]["collapses"] = collapses;
-                report["op_counts"]["swaps"] = swaps;
-
-                std::vector<int> born, recollapsed, recollapsed_same_pass;
-                for (const auto& c : mesh.churn_counts) {
-                    born.push_back(c[0]);
-                    recollapsed.push_back(c[1]);
-                    recollapsed_same_pass.push_back(c[2]);
-                }
-                report["churn"]["split_born"] = born;
-                report["churn"]["recollapsed"] = recollapsed;
-                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
 
                 // Read from the run, never recomputed from the arrays: optimize_offset() breaks
                 // out of the loop the moment it converges, so its own verdict cannot drift from
                 // the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
-                // The measured scale that tolerance is a fraction of, as in 2D.
-                report["gradient_reference"] = mesh.gradient_reference();
-                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }

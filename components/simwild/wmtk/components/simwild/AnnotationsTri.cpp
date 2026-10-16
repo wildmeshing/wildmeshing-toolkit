@@ -375,6 +375,7 @@ void SimWildMeshTri::seal_connected_components(
         std::unordered_set<size_t> new_vertices;
         for (const simplex::Edge& e : split_edges) {
             const auto [t, eid] = tuple_from_edge(e.vertices());
+            reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
             if (!split_edge(t, new_tris)) {
                 continue;
             }

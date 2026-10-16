@@ -4,6 +4,7 @@
 #include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -14,6 +15,7 @@
 
 #include <igl/Timer.h>
 
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <functional>
@@ -46,7 +48,6 @@ class TetOptimizerMesh : public wmtk::TetMesh, public wmtk::RationalPositions
 public:
     struct VertexAttributes
     {
-        Vector3r m_pos; // exact position in rational
         Vector3d m_posf; // position as double
         /**
          * If a vertex cannot be rounded without inverting a tet, the exact position must be
@@ -71,6 +72,25 @@ public:
         /// Required for multi-threading.
         size_t partition_id = 0;
 
+        /**
+         * @name Exact position
+         *
+         * Stored only while it differs from m_posf; see ExactPosition. Read it with pos() (or
+         * pos_coord_equals() for one coordinate); set it with set_pos() when it is a genuinely
+         * exact value, or set_pos_to_posf() when it is m_posf -- a rounded vertex, or one
+         * placed at a double position.
+         * @{
+         */
+        Vector3r pos() const { return m_exact.value(m_posf); }
+        bool pos_coord_equals(int k, const Rational& r) const
+        {
+            return m_exact.coord_equals(k, m_posf, r);
+        }
+        void set_pos(const Vector3r& p) { m_exact.store(p); }
+        void set_pos_to_posf() { m_exact.clear(); }
+        ExactPosition<Vector3r, Vector3d> m_exact;
+        /** @} */
+
         VertexAttributes() {}
         VertexAttributes(const Vector3r& p);
     };
@@ -82,6 +102,48 @@ public:
 
     VertAttCol m_vertex_attribute;
     FaceAttCol m_face_attribute;
+
+    /**
+     * @brief The application set FaceAttributes::m_orientation at insertion, so the tracked
+     * surface carries the input's orientation and the operations keep it.
+     *
+     * The operations maintain the orientation whether or not this is set (it is 0 everywhere on
+     * a mesh that never set it, and stays 0); the flag says whether a consumer may trust it. See
+     * tracked_surface_boundary() for the invariant it obeys. The orientation never changes
+     * which operations run: it only feeds the tracked winding number.
+     */
+    bool m_tracks_orientation = false;
+
+    /**
+     * @brief Surface flips that joined two faces not oriented alike (a fold of the tracked
+     * surface, or unequal multiplicities).
+     *
+     * The flip runs anyway -- orientation must not change the operations -- so the oriented
+     * surface no longer has the input's boundary there, and the tracked winding number is not
+     * an integer near the flipped faces. Nonzero only on a tracked surface that was folded or
+     * inconsistently oriented to begin with.
+     */
+    std::atomic<size_t> m_inconsistent_orientation_flips = 0;
+
+    /**
+     * @brief The tracked surface as an oriented soup: each tracked face emitted |m_orientation|
+     * times, in the orientation the input gave it. Faces whose sheets cancel are left out.
+     * Vertex ids index m_vertex_attribute.
+     */
+    std::vector<std::array<size_t, 3>> oriented_tracked_faces() const;
+
+    /**
+     * @brief Mesh edges where the oriented tracked surface has a boundary.
+     *
+     * The tracked surface is an integer 2-chain, and every operation preserves its boundary --
+     * except a surface flip of two faces not oriented alike, which is counted in
+     * m_inconsistent_orientation_flips: a closed input stays a cycle (signed sum of incident
+     * oriented tracked faces is 0 on every edge), and an open one keeps its boundary on the
+     * input's open boundary. Returns the edges
+     * with a nonzero sum, each with that sum, for the caller to compare with what the input
+     * allows. One pass over every face, then a map over the tracked faces' edges.
+     */
+    std::vector<std::pair<std::array<size_t, 2>, int>> tracked_surface_boundary() const;
 
     /**
      * @brief What p_vertex_attrs points at, so a derived class can register more.
@@ -105,6 +167,76 @@ public:
      * changing shape, but its values are the registering application's to maintain.
      */
     AttributeContainerGroup m_face_attr_group;
+
+    /**
+     * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
+     *
+     * A single union bool, deliberately, mirroring how the tracked surface is one
+     * m_is_surface_fs for every input file and sheet. Which curve an edge belongs to is not
+     * carried through the optimization anywhere in this codebase; identity questions are
+     * answered at the boundaries -- provenance at insertion, combinatorial and geometric
+     * audits at the end.
+     */
+    struct FeatureEdgeAttributes
+    {
+        bool m_is_feature_edge = false;
+    };
+    using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
+    /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
+    EdgeAttCol m_feature_edge_attribute;
+
+    /**
+     * @brief Whether the shared operations maintain m_feature_edge_attribute.
+     *
+     * The operations are guarded by THIS flag, never by `p_edge_attrs != nullptr`:
+     * topological_offset also registers an edge collection there, with its own attribute
+     * type, and reinterpreting it as feature tags would corrupt it.
+     */
+    bool m_track_feature_edges = false;
+
+    /**
+     * @brief Envelope around the input feature curves: the tube a tagged edge must stay in.
+     *
+     * The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface
+     * envelope and the order-2 envelope: merging would let feature curves vouch for open
+     * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
+     * but not geometrically constrained.
+     */
+    std::shared_ptr<SampleEnvelope> m_feature_envelope;
+
+    /// Turn on feature-edge tracking. Must run before init() so the connectivity init sizes
+    /// the collection; refuses to share p_edge_attrs with an application that already uses it.
+    void enable_feature_edge_tracking()
+    {
+        if (p_edge_attrs != nullptr && p_edge_attrs != &m_feature_edge_attribute) {
+            log_and_throw_error(
+                "enable_feature_edge_tracking: p_edge_attrs is already registered by the "
+                "application; feature tracking cannot share it");
+        }
+        p_edge_attrs = &m_feature_edge_attribute;
+        m_track_feature_edges = true;
+    }
+
+    /// Does any edge incident to `vid` carry the feature tag? Derived from the edge tags
+    /// rather than from a vertex flag, so it cannot go stale.
+    bool vertex_has_feature_edge(size_t vid) const;
+
+    // Substructure widening for the link condition (preserve_topology): a tagged feature
+    // edge is order-2 substructure, a vertex with two incident tagged edges is on a curve
+    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
+    // meaning of get_order_of_* is untouched.
+    size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
+    size_t substructure_order_of_vertex(size_t vid) const override;
+    void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
+    /// Are all tagged edges at `vid` inside the feature tube, at the CURRENT positions?
+    /// True when tracking or the tube is off. Smoothing calls this with the candidate
+    /// position already written into the vertex attribute.
+    bool feature_edges_at_vertex_inside(size_t vid) const;
+
+    /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
+    /// TriOptimizerMesh's hook of the same name. An application uses this to pin a vertex to
+    /// a 0-dimensional feature it stands for, within a ball. Default: no constraint.
+    virtual bool smoothing_position_is_allowed(size_t, const Vector3d&) const { return true; }
 
     /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
@@ -137,6 +269,10 @@ public:
 
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
+    /// How the solves smooth_after() makes ended -- iterations and stop status -- reported and
+    /// reset once per pass, beside m_smooth_rejects. An application that solves on a path of its
+    /// own keeps its own counters and reports them from log_smoothing_pass_accounting().
+    optimization::NewtonCounters m_newton;
 
     /// Whether the current collapse pass applies the target-length limit; read by
     /// collapse_edge_before, which is where that limit is enforced.
@@ -158,6 +294,36 @@ public:
     std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
     size_t m_high_valence_claim_size = 0;
     std::atomic<size_t> m_high_valence_rejects = 0;
+
+    /// Every pass grows the storage at its serial points -- between operations when serial,
+    /// between rounds when parallel (see ExecutePass) -- so the optimizer only keeps a small
+    /// slack instead of the preallocation factor.
+    bool storage_grows_on_demand() const override { return true; }
+
+protected:
+    /// The high-valence claims are indexed by vertex id and sized to the storage at the start
+    /// of a split pass; a split pass that grows the storage has to grow them with it, or the
+    /// vertices it creates would fall outside the gate. Existing claims are kept.
+    void on_slot_storage_grown() override
+    {
+        if (!m_high_valence_claim) return;
+        const size_t n = std::max(vert_capacity(), m_vertex_attribute.size());
+        if (n <= m_high_valence_claim_size) return;
+        auto grown = std::make_unique<std::atomic<int>[]>(n);
+        for (size_t i = 0; i < m_high_valence_claim_size; ++i) {
+            grown[i].store(m_high_valence_claim[i].load(std::memory_order_relaxed));
+        }
+        m_high_valence_claim = std::move(grown);
+        m_high_valence_claim_size = n;
+    }
+
+public:
+    /// split_all_edges's gate: length^2 >= splitting_l2 * s^2, s the mean of the endpoints'
+    /// sizing scalars, or a force-split edge.
+    bool split_edge_is_due(const Tuple& e) const;
+    /// The current split pass's ExecutePass::waits() and wait_defects().
+    size_t m_split_order_waits = 0;
+    size_t m_split_order_wait_defects = 0;
 
     explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
         : m_params(params)
@@ -443,6 +609,12 @@ public:
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
+    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
+    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
+    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
+    /// membership test self-disables the moment geometry leaves the tube.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
+
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.
      *
@@ -462,9 +634,74 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The number the shared smoother compares for one cell, given the cell's quality
+     * (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the
+     * ring before and after the move, and the default smoothing_ring_energy() is the same max.
+     *
+     * The quality itself by default, so TetWild and SimWild compare exactly what they compared
+     * before. An application whose smoother minimises another per-cell energy (through
+     * smoothing_extra_energy()) overrides it, so that the smoother's tests judge a move by that
+     * same energy. The 2D twin is TriOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*tid*/, const double quality) const
+    {
+        return quality;
+    }
+
+    /**
+     * @brief The number the shared smoother's projected step compares for a whole one-ring: a
+     * vertex held on a surface takes the first projected candidate whose value is strictly below
+     * the value before the move.
+     *
+     * `stored` true: the ring before the move, read from the stored cell qualities; it is asked
+     * before the solve moves the vertex, so the mesh as it is is that ring too. `stored` false: the
+     * ring at the candidate position, every cell of it already tested for inversion.
+     *
+     * By default the max over the ring of smoothing_cell_energy() -- what the projected step
+     * compared before this hook existed -- so TetWild and SimWild are unchanged. An application
+     * whose rules compare a sum of a per-cell energy over the cells a move changes overrides it
+     * with that sum, so that the projected step picks its candidate by the same rule. 3D only.
+     */
+    virtual double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool stored) const
+    {
+        double m = 0.;
+        for (const Tuple& loc : ring) {
+            const size_t tid = loc.tid(*this);
+            m = std::max(
+                m,
+                smoothing_cell_energy(tid, stored ? cell_quality(tid) : get_quality(loc)));
+        }
+        return m;
+    }
+
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access,
+     * e.g. `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
+    /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
+    /// that solves some vertices on a path of its own logs, and then resets, its counters here.
+    virtual void log_smoothing_pass_accounting() {}
+    /// Called by smooth_all_vertices() at the end of EVERY smoothing pass, after its accounting
+    /// (log_smoothing_pass_accounting()) and before its debug frame: an application that keeps
+    /// state derived from the positions the pass just moved refreshes it here. Not called before
+    /// the first pass.
+    virtual void smoothing_pass_done() {}
 
     bool invariants(const std::vector<Tuple>& t) override;
 
@@ -541,6 +778,9 @@ protected:
         return true;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
+    /// Called once the feature-edge tags are restored after a collapse of v1 into v2, only
+    /// when feature edges are tracked: the survivor's feature state is decided here.
+    virtual void collapse_after_features(size_t, size_t) {}
 
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
@@ -567,14 +807,231 @@ protected:
     /// Propagate application data to the cells made by a successful topological swap.
     virtual bool swap_after_cells(const std::vector<size_t>&, bool) { return true; }
 
+    // ---- SWAP REJECTION INSTRUMENTATION (debug; see swap_reject_report()) ----
+    // Every place a proposed swap can be turned down, counted. Added to find out why an offset
+    // surface flip is never accepted; the counters cost one relaxed atomic increment on a path
+    // that is already refusing the operation, and nothing reads them unless a caller asks.
+    //
+    // The refusals TetMesh makes itself, below every hook (the valence re-test, an open ring, a
+    // face or edge that already exists, no allowed 4-4 / 5-6 case beating the current cells, out
+    // of slots, a duplicate tet), were once visible here only as before_pass - after_enter. They
+    // are now reported one by one through TetMesh::op_event(); see op_accounting_report(). The
+    // per-turn line of this block still prints that difference as `connectivity`.
+    //
+    // Face swaps count their own reasons (face_*, and base_before / interior_hook / base_after /
+    // after_cells on their path) in the per-kind table alone -- swap_reject_kind_only() -- so
+    // swap_reject_report(), which has only ever described edge swaps, keeps meaning what it meant.
+    enum class SwapReject : int {
+        base_before, // TetMesh::swap_*_before said no
+        base_after, // TetMesh::swap_*_after said no
+        valence, // wrong incident-tet count for this swap kind
+        bbox, // edge on the bounding box
+        surface_not_allowed, // has surface faces and allow_surface_swap() is false
+        feature_edge, // the swap would delete a tagged feature edge (it is the operated edge)
+        prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
+        interior_hook, // swap_before_interior() refused
+        flip_open_boundary, // flipping would change the surface's boundary loops
+        flip_not_two_surf, // not exactly two incident surface faces
+        flip_nonmanifold_edge, // more than two incident surface faces
+        flip_cd_nonmanifold, // a surface face already sits on the new edge (c,d)
+        flip_new_face_surface, // (a,c,d) or (b,c,d) is already tagged surface
+        flip_app_refused, // swap_before_surface() refused (see the app_* reasons)
+        flip_wrong_case, // 4-4 / 5-6: the retetrahedralization is not the one that makes
+        // the surface diagonal (c,d), so this case is not the flip
+        app_capture_label, // application: the swap ring spans two construction labels
+        app_capture_tag, // application: the swap ring spans two cell tags
+        app_fid_missing, // application: a face of the pair could not be found
+        app_class_mismatch, // application: the two faces are different tracked surfaces
+        app_mask_mismatch, // application: the two faces carry different boundary masks
+        app_sag_raised, // application: the flip would raise the local sag
+        after_inverted, // a created cell is inverted
+        after_quality, // swap_quality_allowed() said no
+        after_cells, // swap_after_cells() refused (see the app_after_* reasons)
+        app_after_side_conflict, // application: two ring vertices of a new cell sit on two sides
+        app_after_no_side, // application: a new cell holds no ring vertex to take a side from
+        after_envelope, // a new surface triangle left the envelope
+        face_tracked_surface, // face swap: the face is a tracked surface face
+        face_tracked_bbox, // face swap: the face is on the bounding box
+        face_inverted, // face swap: one of the three new cells would be inverted
+        face_not_better, // face swap: a new cell is not strictly better than the two old ones
+        COUNT
+    };
+    /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
+    /// entered the surface branch at all, so "the surface never even presents a candidate" is
+    /// distinguishable from "candidates are presented and refused".
+    ///
+    /// In a screened pass (ExecutePass::screen_before_commit) the stages up to before_pass are
+    /// counted by the dry run as well as by the real attempt. `screened` counts the dry runs
+    /// that passed every check, i.e. the before_pass counts a real attempt repeats.
+    enum class SwapStage : int {
+        attempt,
+        surface_attempt,
+        before_pass,
+        after_enter,
+        accepted,
+        screened,
+        COUNT
+    };
+
+    static const char* swap_reject_name(SwapReject r);
+    static const char* swap_stage_name(SwapStage s);
+    bool swap_reject(SwapReject r) const
+    {
+        m_swap_reject[size_t(r)].fetch_add(1, std::memory_order_relaxed);
+        return swap_reject_kind_only(r);
+    }
+    /// The per-kind table alone (see op_accounting_report()), charged to the operation running
+    /// on this thread. Face swaps use it directly; swap_reject() calls it for edge swaps.
+    bool swap_reject_kind_only(SwapReject r) const
+    {
+        m_swap_reject_by_kind[size_t(current_op_kind())][size_t(r)].fetch_add(
+            1,
+            std::memory_order_relaxed);
+        return false;
+    }
+    void swap_stage(SwapStage s) const
+    {
+        m_swap_stage[size_t(s)].fetch_add(1, std::memory_order_relaxed);
+    }
+    void swap_counters_reset();
+    /// One line per nonzero counter, for a per-turn log. Does not reset.
+    std::string swap_reject_report() const;
+
+    mutable std::array<std::atomic<long>, size_t(SwapReject::COUNT)> m_swap_reject{};
+    mutable std::array<std::atomic<long>, size_t(SwapStage::COUNT)> m_swap_stage{};
+
+    // ---- COLLAPSE REJECTION INSTRUMENTATION (see op_accounting_report()) ----
+    // Every place a collapse is turned down in a hook, counted once, at the place that decided.
+    // Before this, 85% of the collapse attempts on the deliverable cube (target_distance_rel 1e-2
+    // / front_conv_rel 1e-4, turn 5: 213k of 232k) were refused with nothing recorded but the
+    // ops guard's 367. What TetMesh refuses below the hooks (the link condition, a duplicate tet)
+    // arrives through op_event(). Before-hook reasons come first, after-hook reasons from
+    // after_base on.
+    enum class CollapseReject : int {
+        coarsen_length, // coarsening pass only: the edge is at or above the collapse target
+        bbox, // v1 sits on a bounding-box face that v2 does not
+        surface_leaves_envelope, // v1 on the surface, v2 not, and v2 not inside the envelope
+        inverted, // a cell the collapse reshapes would invert
+        quality, // collapse_quality_allowed() said no
+        substructure_link, // preserve_topology, both ends on the surface: substructure link
+        feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
+        app_both_surfaces, // application: an end on the input complex and an end on the offset
+        app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
+        app_leaves_input, // application: v1 on the input complex, v2 not
+        app_leaves_offset, // application: v1 on the offset surface, v2 not
+        app_leaves_region, // application: v1 on a region boundary, v2 not
+        app_order2, // application: an order-2 vertex would merge into a lower-order one
+        app_substructure_link, // application: the substructure link condition, unconditional
+        app_ops_guard, // application: the ops divergence guard
+        after_base, // TetMesh::collapse_edge_after said no
+        after_connectivity, // collapse_after_connectivity() said no
+        after_envelope, // a surface face the survivor keeps left the envelope
+        after_face_attribute, // a face attribute found no face left to land on
+        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
+        after_feature_edge, // a tagged feature edge found no edge left to land on
+        after_coarsen_region, // coarsening only: the region's worst quality rose
+        COUNT
+    };
+    static const char* collapse_reject_name(CollapseReject r);
+    bool collapse_reject(CollapseReject r) const
+    {
+        m_collapse_reject[size_t(r)].fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    mutable std::array<std::atomic<long>, size_t(CollapseReject::COUNT)> m_collapse_reject{};
+
+    // ---- OPERATION ACCOUNTING (counting only) ----
+    // TetMesh reports every operation's attempt and its one outcome through op_event(); this
+    // counts them per kind. op_accounting_report() then checks, per kind, that the outcomes add
+    // up to the attempts, and that the before- and after-hook refusals add up to the reasons the
+    // hooks counted (SwapReject / CollapseReject). A nonzero remainder is a refusal nobody named.
+    void op_event(OpKind k, OpEvent e) const override
+    {
+        if (e == OpEvent::attempt) current_op_kind() = k;
+        m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+        // The edge swaps whose hooks count SwapStage; see swap_reject_report().
+        if (e == OpEvent::screened &&
+            (k == OpKind::swap_32 || k == OpKind::swap_44 || k == OpKind::swap_56)) {
+            swap_stage(SwapStage::screened);
+        }
+    }
+    /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
+    /// can be charged to the right kind without passing the kind through every hook. COUNT
+    /// (its own row, never reported) until the thread's first operation.
+    static OpKind& current_op_kind()
+    {
+        static thread_local OpKind k = OpKind::COUNT;
+        return k;
+    }
+    /// One line for kind @p k: attempts, the outcome partition, each hook's refusals split by
+    /// reason, and the two remainders that must be 0. Does not reset.
+    std::string op_accounting_report(OpKind k) const;
+    /// True when the report for @p k has a nonzero remainder: a refusal no counter named.
+    bool op_accounting_unexplained(OpKind k) const;
+    void op_accounting_reset();
+    static const char* op_kind_name(OpKind k);
+    static const char* op_event_name(OpEvent e);
+
+    /// Where a SwapReject is decided, for the partition. A LEAF is the one place a refusal was
+    /// decided and is counted once. A WRAPPER re-counts on its way out a refusal a leaf further
+    /// in already counted: prepare_flip around the flip_* leaves and flip_app_refused,
+    /// flip_app_refused around the app_* leaves, interior_hook around app_capture_*, after_cells
+    /// around app_after_*. flip_wrong_case is counted once per candidate CASE inside TetMesh's
+    /// case loop, not once per operation, so it is in neither sum.
+    enum class SwapRejectRole { before_leaf, after_leaf, wrapper, per_case };
+    static SwapRejectRole swap_reject_role(SwapReject r);
+    /// A kind's hook refusals by reason: the nonzero leaves as "name=n" and their sums.
+    struct OpHookReasons
+    {
+        std::string before, after;
+        long before_sum = 0, after_sum = 0;
+        bool counted = true; // false: this kind's hooks count no reasons (split)
+    };
+    OpHookReasons op_hook_reasons(OpKind k) const;
+    long op_event_count(const OpKind k, const OpEvent e) const
+    {
+        return m_op_events[size_t(k)][size_t(e)].load(std::memory_order_relaxed);
+    }
+    /// Attempts minus every outcome: 0 unless an exit of the TetMesh operation reports nothing.
+    long op_unaccounted(OpKind k) const;
+
+    mutable std::array<std::array<std::atomic<long>, size_t(OpEvent::COUNT)>, size_t(OpKind::COUNT)>
+        m_op_events{};
+    mutable std::
+        array<std::array<std::atomic<long>, size_t(SwapReject::COUNT)>, size_t(OpKind::COUNT) + 1>
+            m_swap_reject_by_kind{};
+
+    /// Whether a swap's quality outcome is acceptable, given the max cell energy over the cells
+    /// it creates and over the cells it destroyed. The default is STRICT improvement, which is
+    /// what every swap here required before this hook existed, so a subclass that does not
+    /// override it sees no change.
+    ///
+    /// `is_surface_flip` distinguishes a surface diagonal flip (see prepare_surface_flip) from an
+    /// interior swap, so an application can relax the rule for the surface it tracks without
+    /// touching interior swaps. The twin on the collapse side is collapse_quality_allowed().
+    ///
+    /// NOT consulted by swap_edge_56_after(), which has never had a quality gate: it computes a
+    /// max energy and discards it. That is pre-existing and is left alone rather than silently
+    /// changed, since it would move 5-6 behaviour for every consumer of this class.
+    virtual bool swap_quality_allowed(double after, double before, bool /*is_surface_flip*/) const
+    {
+        return after < before;
+    }
+
     struct SwapInfoCache
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
+        /// Orientation of the flipped pair, measured along [a,b,c] (and so along [b,a,d]).
+        int sf_orientation = 0;
+        /// The pair's two faces were not oriented alike; see prepare_surface_flip.
+        bool sf_orientation_mismatch = false;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
@@ -584,8 +1041,11 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        bool is_edge_on_feature = false;
         size_t edge_order = 0;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -597,14 +1057,62 @@ protected:
         double edge_length = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         std::vector<std::array<size_t, 3>> surface_faces;
+        /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
+        /// the orientation measured along that order. Their attribute stays in its slot, so
+        /// without this the value would be read against the wrong vertex set.
+        std::vector<std::pair<std::array<size_t, 3>, int>> renamed_orientations;
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+    // ---- Feature-edge tag propagation (m_track_feature_edges) ----------------------------
+    //
+    // An edge attribute's slot is (lowest incident tet id) * 6 + local index, so it moves
+    // whenever that tet dies. Any edge whose slot can move is an edge of an affected tet
+    // (deleted tets are affected; created tets only affect their own six edges), so caching
+    // every edge of every affected tet before the operation and rewriting afterwards covers
+    // every slot that can move -- the same argument the face tags rely on.
+    //
+    // Restore comes in two forms because the operations differ in what they create:
+    //  * split and the swaps CREATE tets, whose slots may be reused and hold stale values;
+    //    restore_region walks every edge of every created tet and writes the cached value or
+    //    the default. The created region provably contains every surviving cached edge.
+    //  * collapse creates NO tets, and its link edges (la,lb) -- which contain neither
+    //    endpoint, a case a tet FACE cannot exhibit -- can live on in tets outside any
+    //    enumerable region. restore_remap walks the CACHE instead: remaps v1 -> v2, OR-merges
+    //    colliding pairs, and writes each surviving edge wherever its slot now is. Returns
+    //    false if a TAGGED cached edge no longer exists (the caller aborts, mirroring the
+    //    face path's try_tuple_from_face bailout).
+
+    /// Cache the feature tag of every edge of every tet in `tids`.
+    void feature_edges_cache(
+        const std::vector<size_t>& tids,
+        std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags over every edge of every tet in `tets` (created regions).
+    void feature_edges_restore_region(
+        const std::vector<Tuple>& tets,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    void feature_edges_restore_region(
+        const std::vector<size_t>& tids,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
+    bool feature_edges_restore_remap(
+        const std::map<std::array<size_t, 2>, bool>& cache,
+        size_t v_old,
+        size_t v_new);
+
+    /// Hook: the split vertex was created on a feature edge (or not). Runs only when
+    /// m_track_feature_edges is set; the counterpart of split_after_vertex for the feature
+    /// flag, separate so existing overrides keep their signature.
+    virtual void split_after_vertex_feature(size_t, bool) {}
+
 
     /// Set for the duration of coarsen_mesh(); read-only while a pass is running.
     bool m_coarsen_mode = false;

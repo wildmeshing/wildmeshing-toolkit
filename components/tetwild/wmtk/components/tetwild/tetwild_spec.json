@@ -6,6 +6,8 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_edges",
+      "input_points",
       "input_names",
       "input_dir",
       "write_vtu",
@@ -14,8 +16,13 @@
       "simplify_use_link_condition",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
+      "simplify_boundary_envelope",
       "optimize_envelope_around_simplified",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
+      "preserve_feature_points",
+      "allow_junction_cleanup",
+      "DEBUG_feature_retention",
       "use_sample_envelope",
       "use_legacy_code",
       "num_threads",
@@ -33,6 +40,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "colored_smoothing",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -62,7 +70,9 @@
       "stuck_refine_force_split",
       "skip_good_regions",
       "skip_good_regions_margin",
-      "skip_winding_number"
+      "skip_winding_number",
+      "compute_tracked_winding_number",
+      "compute_flood_fill"
     ]
   },
   {
@@ -81,6 +91,52 @@
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_edges",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
+  },
+  {
+    "pointer": "/input_edges/*",
+    "type": "string",
+    "doc": "One input feature edge mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). The optimization preserves them: see feature_envelope_ratio (the tube the curves stay in) and preserve_feature_points (the anchors)."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input feature point file (only the vertices are used)."
+  },
+  {
+    "pointer": "/preserve_feature_points",
+    "type": "bool",
+    "default": true,
+    "doc": "Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them. Some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Without this an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it. Mirrors triwild's parameter of the same name."
+  },
+  {
+    "pointer": "/allow_junction_cleanup",
+    "type": "bool",
+    "default": true,
+    "doc": "Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube. The erosion the anchor exists for is an ENDPOINT property -- a curve eats its own tip -- and does not apply to a junction, where every curve through it stays constrained. Mirrors triwild."
+  },
+  {
+    "pointer": "/DEBUG_feature_retention",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius. The invariant preserve_feature_points maintains, measured rather than assumed."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps. Kept below 1 for the same measured reason as order2_envelope_ratio: on a curve a wider envelope relieves no blockage, it is only freedom for the curve to wander, i.e. more geometry to resolve at the same final quality."
   },
   {
     "pointer": "/output",
@@ -143,6 +199,12 @@
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
   },
   {
+    "pointer": "/simplify_boundary_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Let the input simplification move the open boundary of the surface, as long as every boundary edge stays within order2_envelope_ratio * simplify_envelope_ratio * eps of the input's boundary edges. When false, every boundary vertex is frozen, which also freezes whatever lies between boundary loops packed too tightly to leave a free vertex: on Thingi10K 55928 a 0.02-wide knot holding all 130 boundary edges of the model survives the simplification as a non-manifold tangle and ends up as a cluster of tets three orders of magnitude below the target size. With the envelope, holes and slits narrower than the tube close (when the surface envelope admits the triangles that cover them). Boundary that the simplification opens away from the input's is not judged by the tube, as before. Ignored under preserve_topology, which keeps the boundary frozen."
+  },
+  {
     "pointer": "/optimize_envelope_around_simplified",
     "type": "bool",
     "default": false,
@@ -183,13 +245,25 @@
     "type": "string",
     "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
   },
   {
     "pointer": "/skip_winding_number",
     "type": "bool",
     "default": false,
-    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-tet quantities are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields; the (three) winding-number evaluations dominate the finalize phase on large meshes. When set, they are skipped and the corresponding output fields are left at their defaults. Ignored (with a warning) when filter != 'none', which requires them."
+    "doc": "Skip the finalize-phase winding numbers of the input: the whole input's (winding_number_input) and each input's (wn_<i>). They are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields, which are then left out. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
+    "pointer": "/compute_tracked_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Compute the winding number with respect to the tracked surface and write it (winding_number_tracked) even when filter is not 'tracked', which computes it anyway. Left out of the output otherwise."
+  },
+  {
+    "pointer": "/compute_flood_fill",
+    "type": "bool",
+    "default": false,
+    "doc": "Compute the flood-fill parts -- the regions the tracked surface separates -- and write them (part) even when filter is not 'flood', which computes them anyway. A serial pass over every tet; left out of the output otherwise."
   },
   {
     "pointer": "/eps_rel",
@@ -257,6 +331,12 @@
     "type": "int",
     "default": 1,
     "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
     "pointer": "/preserve_topology",

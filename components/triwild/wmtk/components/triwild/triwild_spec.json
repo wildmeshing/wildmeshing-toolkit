@@ -6,6 +6,7 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_points",
       "input_names",
       "input_dir",
       "num_threads",
@@ -19,6 +20,7 @@
       "use_sample_envelope",
       "filter",
       "skip_winding_number",
+      "compute_flood_fill",
       "eps_rel",
       "length_rel",
       "stop_energy",
@@ -30,6 +32,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "colored_smoothing",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -81,6 +84,17 @@
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input POINT files: every vertex of each file is a feature point to preserve, whether or not the file also has edges (they are ignored). Each point is inserted as a vertex of the triangulation and anchored like a polyline endpoint: some output vertex stays within eps of it, collapses that would break that are refused, and smoothing may move the carrying vertex only within the eps ball. Free points can also be supplied inline: a vertex of an /input curve file with no incident edge is anchored the same way. A point lying in a region the /filter discards leaves the triangle mesh with that region, but survives in the <output>_features.obj feature output, and DEBUG_feature_retention reports the PRE-filter state -- a feature preserved through the optimization is never reported lost because extraction discarded its region."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input point file (any edge-mesh format; only the vertices are used)."
   },
   {
     "pointer": "/output",
@@ -156,15 +170,21 @@
   {
     "pointer": "/filter",
     "type": "string",
-    "options": ["flood", "input", "none"],
+    "options": ["flood", "input", "tracked", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'none': Do not filter. Both filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'tracked': winding number w.r.t. the tracked curves, oriented as the input was -- the curves the mesh conforms to rather than the input, all inputs at once (coincident curves add up, opposite ones cancel); faces at most 1/2 are dropped. 'none': Do not filter. All three filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
   },
   {
     "pointer": "/skip_winding_number",
     "type": "bool",
     "default": false,
-    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-face quantities are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+    "doc": "Skip the finalize-phase winding numbers of the inputs. They are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
+    "pointer": "/compute_flood_fill",
+    "type": "bool",
+    "default": false,
+    "doc": "Compute the flood-fill parts -- the regions the tracked curves separate -- and write them (the VTU field flood_fill) even when filter is not 'flood', which computes them anyway. A serial pass over every face; left out of the output otherwise."
   },
   {
     "pointer": "/eps_rel",
@@ -268,6 +288,12 @@
     "type": "int",
     "default": 1,
     "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
+  },
+  {
+    "pointer": "/colored_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Parallel smoothing (num_threads > 0) by color class: the vertices are split into classes of pairwise non-adjacent vertices, smoothed one class after another, each class fully in parallel without locks. The result does not depend on the number of threads. false: the locked, partitioned smoothing pass, whose result depends on the thread schedule. Serial runs (num_threads 0) are the same either way."
   },
   {
     "pointer": "/preserve_feature_points",

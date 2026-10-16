@@ -47,6 +47,13 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
         lock_ring,
         "edge collapse",
         [&](auto& executor, auto& mesh) {
+            // The one pass that is not screened (ExecutePass::screen_before_commit). In 2D a
+            // collapse's time goes into the attempts that pass their pre-checks -- the queue
+            // already turns the refusals away cheaply, with no 3D-sized ring to lock -- so
+            // screening only added the dry runs, and the attempts that a stale snapshot
+            // multiplies: triwild 191265 collapsed in 8.8-9.7s screened, 5.8-6.2s not (main
+            // 6.2-6.4s), 190586 in 11.8-13.6s against 9.8-11.1s.
+            executor.screen_before_commit = false;
             executor.renew_neighbor_tuples =
                 [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
                     std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
@@ -87,7 +94,7 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
             // list from get_edges() after every pass and re-ran the expensive geometric
             // pre-checks on every failure, even where nothing could have changed.
             const size_t total_success =
-                wmtk::run_localized_to_convergence(mesh, executor, all_ops, max_passes);
+                wmtk::run_localized_to_convergence(mesh, executor, std::move(all_ops), max_passes);
             logger().info("collapse success: {}", total_success);
             collapse_pass_end(total_success);
             accepted = total_success;
@@ -104,6 +111,7 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     cache.changed_fids.clear();
     cache.changed_energies.clear();
     cache.surface_edges.clear();
+    cache.renamed_orientations.clear();
 
     size_t v1_id = loc.vid(*this);
     auto loc1 = switch_vertex(loc);
@@ -226,6 +234,12 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         auto [_2, global_eid2] = tuple_from_edge({{v2_id, e_vids[1]}});
         auto e_attr = m_edge_attribute.at(global_eid1);
         e_attr.merge(m_edge_attribute.at(global_eid2));
+        // (v1,x) and (v2,x) become one edge (v2,x); their directions add up along it.
+        const std::array<size_t, 2> merged{{v2_id, e_vids[1]}};
+        e_attr.set_orientation_along(
+            merged,
+            m_edge_attribute.at(global_eid1).orientation_along(e_vids) +
+                m_edge_attribute.at(global_eid2).orientation_along(merged));
         cache.changed_edges.push_back(std::make_pair(e_attr, e_vids));
     }
 
@@ -258,6 +272,9 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                     if (!m_edge_attribute.at(fid).m_is_surface_fs) {
                         // check if this face is actually on the surface
                         continue;
+                    }
+                    if (const int o = m_edge_attribute.at(fid).orientation_along(f); o != 0) {
+                        cache.renamed_orientations.push_back({{{v2_id, va}}, o});
                     }
                     std::sort(f.begin(), f.end());
                     fs.push_back(f);
@@ -328,6 +345,13 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     VA[v2_id].m_sizing_scalar =
         std::min(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     // no need to update on_bbox_faces
+    // Edges renamed in place keep their slot but not their vertex pair; re-express their
+    // direction against the new one, before the merged link edges below overwrite theirs.
+    for (const auto& [e, o] : cache.renamed_orientations) {
+        if (const auto found = try_tuple_from_edge(e); found.has_value()) {
+            m_edge_attribute[std::get<1>(found.value())].set_orientation_along(e, o);
+        }
+    }
     // face attr
     for (auto& info : cache.changed_edges) {
         auto& f_attr = info.first;

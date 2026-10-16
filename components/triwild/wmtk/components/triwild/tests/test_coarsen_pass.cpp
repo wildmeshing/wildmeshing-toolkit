@@ -40,7 +40,7 @@ void build_grid(TriWildMesh& mesh, const size_t w, const size_t h)
         for (size_t i = 0; i <= w; ++i) {
             auto& va = mesh.m_vertex_attribute[vid(i, j)];
             va.m_posf = Vector2d(double(i), double(j));
-            va.m_pos = to_rational(va.m_posf);
+            va.set_pos_to_posf();
             va.m_is_rounded = true;
             va.m_is_on_surface = false;
             va.m_sizing_scalar = 1.0;
@@ -91,7 +91,7 @@ void build_lattice(TriWildMesh& mesh, const size_t w, const size_t h)
         for (size_t i = 0; i <= w; ++i) {
             auto& va = mesh.m_vertex_attribute[vid(i, j)];
             va.m_posf = pos(i, j);
-            va.m_pos = to_rational(va.m_posf);
+            va.set_pos_to_posf();
             va.m_is_rounded = true;
             va.m_is_on_surface = false;
             va.m_sizing_scalar = 1.0;

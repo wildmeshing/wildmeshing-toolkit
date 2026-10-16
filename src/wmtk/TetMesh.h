@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/OperationDryRun.hpp>
 #include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -23,14 +24,17 @@
 namespace wmtk {
 class TetMesh
 {
-private:
+protected:
     /**
      * @brief local edges within a tet
      *
+     * Protected rather than private: TetOptimizerMesh's feature-edge tracker enumerates a
+     * tet's six edges by local id.
      */
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
 
+private:
     static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
     static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
@@ -80,6 +84,9 @@ public:
          * the tet id can't be -1
          */
         bool is_valid(const TetMesh& m) const;
+        /// is_valid() for a check made without holding the tet's ring; see
+        /// TriMesh::Tuple::is_valid_unlocked(). The 3D is_valid() has no debug-only checks.
+        bool is_valid_unlocked(const TetMesh& m) const { return is_valid(m); }
         /**
          * Check if the current tuple the refers to an edge is on the boundary
          *
@@ -286,8 +293,12 @@ public:
          * that it is stale. Only ever compared for equality against a Tuple's cached copy --
          * no code reads the value itself, and the rollback path decrements it, which is why it
          * is unsigned: the wrap at 0 is defined, where signed underflow would not be.
+         *
+         * 32 bits, packed next to m_is_removed: the struct is 40 bytes instead of 48, and there
+         * are six of them per live tet in the preallocated storage. A slot would have to be
+         * modified 2^32 times between a Tuple being minted and checked for that to alias.
          */
-        size_t hash = 0;
+        uint32_t hash = 0;
 
         size_t& operator[](size_t index)
         {
@@ -379,6 +390,7 @@ public:
     static constexpr int EDGES_PER_CELL = 6;
     static constexpr int FACES_PER_CELL = 4;
     size_t cell_capacity() const { return tet_capacity(); }
+    size_t cell_storage_capacity() const { return m_tet_connectivity.capacity(); }
     Tuple tuple_from_cell(size_t cid) const { return tuple_from_tet(cid); }
     /** @} */
 
@@ -543,6 +555,21 @@ public:
      * @return if smooth succeed
      */
     bool smooth_vertex(const Tuple& t);
+    /**
+     * @brief While true, smooth_vertex() checks that the smooth recorded nothing outside the
+     * vertex's star -- the vertex itself and the edges, faces and cells incident to it -- and
+     * throws if it did.
+     *
+     * Set by a pass that smooths several vertices at once without locks (colored smoothing, see
+     * TetOptimizerMesh::smooth_vertices_colored). Two vertices it runs together share no simplex of
+     * their stars, but they can share a neighbour. A smoothing hook that reaches an attribute entry
+     * through non-const access records it, and a rejected smooth writes every recorded entry
+     * back -- so an entry outside the star, such as a neighbour read as `m_vertex_attribute[u]`
+     * instead of through a const view, would be written by two threads at once. Hooks must read
+     * everything outside the star through const access; this turns a hook that does not into an
+     * error on its first such read, instead of a rare race.
+     */
+    bool m_check_smoothing_stays_in_star = false;
 
     /**
      * @brief Split a tet in 4 tets.
@@ -710,6 +737,56 @@ public:
     size_t request_tet_slots(size_t n);
     size_t request_vert_slots(size_t n);
 
+    /**
+     * @name Growing the storage at serial points
+     *
+     * The storage cannot grow while operations run in parallel -- growing reallocates it out
+     * from under concurrent readers -- which is why it is preallocated. A serial pass has no
+     * concurrent readers, and between two of its operations nothing holds a reference into the
+     * storage either: so it can grow there, and only there, with no synchronisation at all.
+     *
+     * The scheduler does exactly that: before each operation of a serial pass it reserves
+     * cell_slot_bound() cells and one vertex. Every local operation creates its cells inside
+     * the stars of the vertices of its tuple's cell and adds at most one vertex, so the
+     * reservation covers whatever the operation requests, and a serial pass never refuses
+     * an operation for want of slots. The ids handed out are unchanged -- the same counter, in
+     * the same order -- so the result is the one an unbounded preallocation would give.
+     *
+     * With that in place a serial mesh only needs a small slack at init/consolidate, instead
+     * of the preallocation factor (see storage_grows_on_demand()).
+     * @{
+     */
+    /// Upper bound on the fresh cell slots one local operation on `t` can take: the sum of the
+    /// star sizes of the vertices of t's cell. `t` must be valid.
+    size_t cell_slot_bound(const Tuple& t) const;
+    /// Serial points only: make `cells` fresh cell slots and `verts` fresh vertex slots
+    /// available, growing the storage (connectivity and attributes) by at least half if not.
+    void reserve_free_slots(size_t cells, size_t verts);
+    /// Whether this mesh's passes run serially and so grow the storage on demand; if so,
+    /// init/consolidate reserve a small slack instead of the preallocation factor.
+    virtual bool storage_grows_on_demand() const { return false; }
+
+    /// Cell and vertex slots this thread has taken from meshes of this type, ever; see
+    /// SlotPool::taken_by_this_thread. Differences measure what an operation consumed.
+    struct SlotUsage
+    {
+        size_t cells = 0;
+        size_t verts = 0;
+    };
+    static SlotUsage slot_usage_of_this_thread()
+    {
+        return {
+            SlotPool<TetrahedronConnectivity>::taken_by_this_thread(),
+            SlotPool<VertexConnectivity>::taken_by_this_thread()};
+    }
+    /** @} */
+
+protected:
+    /// Called after reserve_free_slots() grew the storage, for derived classes that keep
+    /// per-slot side arrays.
+    virtual void on_slot_storage_grown() {}
+
+public:
     // Construction/insertion helpers (single-threaded ONLY): guarantee at least
     // `extra` free tet/vertex slots beyond the current used count, growing the
     // storage geometrically if necessary. Unlike request_*_slots these never fail;
@@ -740,7 +817,9 @@ private:
     size_t reserved_capacity(size_t live_count) const
     {
         const size_t floor = 64;
-        double c = std::ceil(m_preallocation_factor * static_cast<double>(live_count));
+        // A mesh that grows on demand only needs room for the passes not to grow at once.
+        const double factor = storage_grows_on_demand() ? 1.25 : m_preallocation_factor;
+        double c = std::ceil(factor * static_cast<double>(live_count));
         size_t capacity = static_cast<size_t>(c);
         if (capacity < live_count) capacity = live_count;
         return capacity < floor ? floor : capacity;
@@ -778,6 +857,56 @@ private:
 
 public:
     virtual bool invariants(const std::vector<Tuple>&) { return true; }
+
+    // ---- OPERATION ACCOUNTING (counting only) ----
+    // Every call into split_edge, collapse_edge, swap_edge, swap_edge_44, swap_edge_56 and
+    // swap_face reports `attempt` on entry and exactly ONE other event on the way out: `committed`,
+    // or the place that refused it. The application's hooks are two of those places (before_hook,
+    // after_hook); why a hook said no is the hook's own to count. So for each kind, attempt equals
+    // the sum of the other events, and a subclass that counts can check both that identity and a
+    // hook's refusals against the reasons the hook counted. Added because the refusals made here,
+    // below every hook, were visible only as a difference: on the deliverable cube at
+    // target_distance_rel 1e-2 / front_conv_rel 1e-4, 521142 of the 542123 edge swaps that
+    // passed every before-hook in turn 5 were refused inside this class with no reason recorded.
+    //
+    // The default does nothing and no site reads a count: the mesh behaves identically with or
+    // without an override.
+    enum class OpKind : int { split, collapse, swap_32, swap_44, swap_56, swap_face, COUNT };
+    enum class OpEvent : int {
+        attempt,
+        before_hook, // the application's *_before said no
+        link_condition, // collapse: the classical link condition (m_collapse_check_link_condition)
+        no_return_tet, // collapse: both probes for the return tuple hit a boundary face
+        duplicate_tet, // a new tet repeats an existing one (collapse manifold check, 4-4, 5-6)
+        topology, // collapse: m_collapse_check_topology found a face missing
+        valence, // edge swap: the edge does not have this swap's number of tets around it
+        boundary, // edge swap: the edge's ring of tets is open; face swap: a boundary face
+        exists, // 3-2: the new face already exists; face swap: the new edge already exists
+        no_case_allowed, // 4-4 / 5-6: every candidate was vetoed by *_accept_case
+        no_better_case, // 4-4 / 5-6: no allowed candidate scored below the current cells
+        out_of_slots, // the preallocated vertex or tet slots ran out
+        after_hook, // the application's *_after said no, so the operation was rolled back
+        invariants, // invariants() said no after the after-hook passed; rolled back
+        committed,
+        screened, // a dry run passed every check that precedes the change (see dry_run())
+        COUNT
+    };
+    virtual void op_event(OpKind, OpEvent) const {}
+    /// op_event() for a refusal, returning false so a site reads `return op_refused(...)`.
+    bool op_refused(const OpKind k, const OpEvent e) const
+    {
+        op_event(k, e);
+        return false;
+    }
+
+    /// Whether operations on this thread are dry runs (see wmtk/OperationDryRun.hpp).
+    static bool dry_run() { return operation_dry_run(); }
+    /// The end of a dry run that would have gone on to change the mesh: true, and counted.
+    bool op_screened(const OpKind k) const
+    {
+        op_event(k, OpEvent::screened);
+        return true;
+    }
 
 protected:
     virtual bool triangle_insertion_before(const std::vector<Tuple>& faces) { return true; }
@@ -1234,6 +1363,95 @@ public:
      */
     void remove_tets_by_ids(const std::vector<size_t>& tids)
     {
+        // A face or edge attribute lives at ONE canonical slot, (lowest incident tet) * 4
+        // or 6 + local index. Deleting a tet that is a simplex's canonical owner silently
+        // re-canonicalizes the simplex onto a surviving tet whose cell was never
+        // maintained -- the operations only ever write the canonical slot -- so the
+        // surviving cell holds stale garbage. Measured: after filtering, interior faces
+        // read back m_is_surface_fs = true 0.12 (eps 0.09) from the real surface, and the
+        // extracted "tracked surface" grows phantom triangles. Migrate every attribute
+        // whose owner dies to the simplex's new owner BEFORE touching the connectivity.
+        if (p_face_attrs != nullptr || p_edge_attrs != nullptr) {
+            std::vector<bool> removed(tet_capacity(), false);
+            for (const size_t tid : tids) {
+                removed[tid] = true;
+            }
+            for (const size_t tid : tids) {
+                const auto& tconn = m_tet_connectivity[tid];
+                if (p_face_attrs != nullptr) {
+                    for (int lf = 0; lf < 4; ++lf) {
+                        std::array<size_t, 3> vids = {
+                            {tconn[m_local_faces[lf][0]],
+                             tconn[m_local_faces[lf][1]],
+                             tconn[m_local_faces[lf][2]]}};
+                        // The face's other incident tet, if any.
+                        auto common = set_intersection(
+                            m_vertex_connectivity[vids[0]].m_conn_tets,
+                            m_vertex_connectivity[vids[1]].m_conn_tets);
+                        common =
+                            set_intersection(common, m_vertex_connectivity[vids[2]].m_conn_tets);
+                        size_t other = std::numeric_limits<size_t>::max();
+                        for (const size_t t : common) {
+                            if (t != tid) {
+                                other = t;
+                            }
+                        }
+                        // Migrate only when this tet was the canonical owner (tid < other)
+                        // and the other side survives; other < tid means the attribute
+                        // already lives on the survivor.
+                        if (other == std::numeric_limits<size_t>::max() || removed[other] ||
+                            other < tid) {
+                            continue;
+                        }
+                        std::array<size_t, 3> sorted = vids;
+                        std::sort(sorted.begin(), sorted.end());
+                        for (int lo = 0; lo < 4; ++lo) {
+                            std::array<size_t, 3> ovids = {
+                                {m_tet_connectivity[other][m_local_faces[lo][0]],
+                                 m_tet_connectivity[other][m_local_faces[lo][1]],
+                                 m_tet_connectivity[other][m_local_faces[lo][2]]}};
+                            std::sort(ovids.begin(), ovids.end());
+                            if (ovids == sorted) {
+                                p_face_attrs->move(tid * 4 + lf, other * 4 + lo);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (p_edge_attrs != nullptr) {
+                    for (int le = 0; le < 6; ++le) {
+                        const size_t v0 = tconn[m_local_edges[le][0]];
+                        const size_t v1 = tconn[m_local_edges[le][1]];
+                        const auto fan = set_intersection(
+                            m_vertex_connectivity[v0].m_conn_tets,
+                            m_vertex_connectivity[v1].m_conn_tets);
+                        // Only the canonical owner migrates, once, to the lowest survivor.
+                        if (fan.empty() || fan.front() != tid) {
+                            continue;
+                        }
+                        size_t new_owner = std::numeric_limits<size_t>::max();
+                        for (const size_t t : fan) {
+                            if (!removed[t]) {
+                                new_owner = t; // fan is sorted ascending; first kept wins
+                                break;
+                            }
+                        }
+                        if (new_owner == std::numeric_limits<size_t>::max()) {
+                            continue; // the edge dies with its whole fan
+                        }
+                        for (int lo = 0; lo < 6; ++lo) {
+                            const size_t w0 = m_tet_connectivity[new_owner][m_local_edges[lo][0]];
+                            const size_t w1 = m_tet_connectivity[new_owner][m_local_edges[lo][1]];
+                            if ((w0 == v0 && w1 == v1) || (w0 == v1 && w1 == v0)) {
+                                p_edge_attrs->move(tid * 6 + le, new_owner * 6 + lo);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (size_t tid : tids) {
             m_tet_connectivity[tid].m_is_removed = true;
             for (int j = 0; j < 4; j++)
@@ -1367,6 +1585,9 @@ private:
 
     /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
     bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);
+
+    /// See m_check_smoothing_stays_in_star; throws, after dropping the record, if the check fails.
+    void check_smoothing_stayed_in_star(size_t vid);
 
 protected:
     void resize_vertex_mutex(size_t v)
@@ -1570,6 +1791,30 @@ public:
      * @param vids The vertex IDs of the edge
      */
     size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief The orders substructure_link_condition consults, overridable so an application
+     * can widen the 1D substructure beyond what the surface complex derives.
+     *
+     * The paper's condition is written in terms of simplex orders; TetOptimizerMesh overrides
+     * these so an input FEATURE edge counts as order 2 (and its endpoints accordingly) without
+     * touching the meaning of get_order_of_* anywhere else -- the feature tags are
+     * deliberately not part of the order classification.
+     */
+    virtual size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const
+    {
+        return get_order_of_edge(vids);
+    }
+    virtual size_t substructure_order_of_vertex(const size_t vid) const
+    {
+        return get_order_of_vertex(vid);
+    }
+    /**
+     * @brief One-ring vertices x of `vid` where (vid, x) is 1D substructure NOT derivable
+     * from the surface complex (feature edges through the interior, for instance). The link
+     * condition's order-2 edge collection walks surface faces and would never see them.
+     */
+    virtual void substructure_feature_neighbors(size_t, std::vector<size_t>&) const {}
 
     /**
      * @brief Link condition that also considers substructures.

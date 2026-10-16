@@ -89,8 +89,12 @@ public:
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
+     * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
+     *        within a tube of this radius around the input's boundary edges. See
+     *        ShortestEdgeCollapse::create_mesh.
      */
-    void simplify_surface(const double eps, const int num_threads = 0);
+    void
+    simplify_surface(const double eps, const int num_threads = 0, const double boundary_eps = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.
@@ -148,6 +152,11 @@ private:
     void V_surf_from_vector(const std::vector<Eigen::Vector3d>& verts);
     void F_surf_from_vector(const std::vector<std::array<size_t, 3>>& tris);
 
+    /**
+     * @brief One binary tag column per input, set where that input's winding number at a tet
+     * barycenter is at least 0.5. Auto-corrects an inside-out input and warns when an input
+     * claims nothing, as the 2D EmbedCurves::tag_from_winding_number does.
+     */
     void tag_from_winding_number();
 
     /**
