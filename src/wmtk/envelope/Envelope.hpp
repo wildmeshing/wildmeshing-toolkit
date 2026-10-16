@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <array>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -201,7 +204,109 @@ public:
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
+    // Per-primitive queries, for a caller that needs the distance d_i to each input primitive i
+    // on its own rather than to their union: each d_i is convex (the distance to a convex set),
+    // and the min over i is not, so a bound that rests on convexity needs the pieces.
+    //
+    // A primitive is one entry of the list given to init(), and its id is its index in that
+    // list: a triangle for Triangles3d, a segment for Edges3d and Edges2d -- including the
+    // degenerate (i, i) entries that stand for isolated points. squared_distance(), and
+    // nearest_point(), which returns the same squared distance, is the square of the min over
+    // all primitives of primitive_distance(), up to rounding: the BVH computes its own foot point
+    // with different arithmetic.
+    //
+    // Each query comes in the dimension of the init() that built the envelope: the 3D ones on
+    // Triangles3d and Edges3d, the 2D ones on Edges2d. Either asked of the other kind, or of an
+    // envelope no init() has filled in, throws rather than answering against the wrong copy of
+    // the input or dereferencing an empty BVH.
+
+    /**
+     * @brief The ids of every primitive whose bounding box meets the closed box [lo, hi],
+     * ascending, each once.
+     *
+     * A wrapper of SimpleBVH::BVH::intersect_box, which already maps its leaves back to input ids
+     * (nearest_facet does not -- see nearest_point_feature()) and visits each leaf once, so the
+     * result has no duplicates; but it lists them in the BVH's own Morton order, so they are
+     * sorted here. The boxes are the primitives' exact bounding boxes (the BVH is built with zero
+     * padding), compared closed: a box that only touches [lo, hi] counts. A caller that needs
+     * every primitive within r of a point passes the point's box grown by r, padded by its own
+     * rounding allowance.
+     */
+    void primitives_in_box(
+        const Eigen::Vector3d& lo,
+        const Eigen::Vector3d& hi,
+        std::vector<int64_t>& ids) const;
+    /// The 2D counterpart, for Edges2d: the same tree, which holds the 2D input lifted to z = 0.
+    void primitives_in_box(
+        const Eigen::Vector2d& lo,
+        const Eigen::Vector2d& hi,
+        std::vector<int64_t>& ids) const;
+
+    /**
+     * @brief The distance d from p to primitive `id` alone, with its gradient and Hessian when
+     * asked for (nullptr = not wanted).
+     *
+     * The derivatives are those of the distance to the feature the foot point lies on: gradient
+     * u = (p - foot)/d; Hessian 0 when the foot is inside a triangle, (I - u u^T - e e^T)/d when
+     * it is on a triangle's edge or inside a segment (e the unit edge direction), (I - u u^T)/d
+     * at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are
+     * reported as 0.
+     *
+     * The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic
+     * compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the
+     * dot products in another order (see Envelope.cpp). The segment foot is
+     * nearest_point_feature()'s, clamped at both ends.
+     */
+    double primitive_distance(
+        int64_t id,
+        const Eigen::Vector3d& p,
+        Eigen::Vector3d* grad = nullptr,
+        Eigen::Matrix3d* hess = nullptr) const;
+    /**
+     * The 2D counterpart, for Edges2d: the same segment foot and the same derivatives in 2D, where
+     * a segment's interior has Hessian 0 -- d is affine there, I - u u^T - e e^T vanishing with
+     * u and e orthonormal -- as EuclideanOffsetPotential<2>::hessian() has it; (I - u u^T)/d at an
+     * endpoint or a point.
+     */
+    double primitive_distance(
+        int64_t id,
+        const Eigen::Vector2d& p,
+        Eigen::Vector2d* grad = nullptr,
+        Eigen::Matrix2d* hess = nullptr) const;
+
+    /**
+     * @brief The distance between the triangle `tri` and primitive `id` alone.
+     *
+     * 0 when an edge of one crosses the other (a segment primitive: when it crosses tri) -- its
+     * endpoints strictly on the two sides of the other's plane, by exact orientation signs.
+     * Otherwise, against a triangle primitive, the min of the 6 corner-to-other-triangle
+     * distances and the 9 edge-edge distances (Ericson 5.1.9); against a segment, the min of its
+     * 2 endpoint-to-tri distances and its 3 distances to the edges of tri; against a point, its
+     * distance to tri. Two disjoint convex primitives' closest pair has a corner of one, or a
+     * point on an edge of each; two that meet without such a crossing (a corner on the other's
+     * plane, or coplanar) have one of those at 0.
+     *
+     * The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above.
+     */
+    double primitive_triangle_distance(int64_t id, const std::array<Eigen::Vector3d, 3>& tri) const;
+
+    /**
+     * @brief The 2D counterpart, for Edges2d: the distance between the segment `seg` and
+     * primitive `id` alone -- a 2D front edge where the 3D query takes a front face.
+     *
+     * 0 when the two cross, each one's endpoints strictly on the two sides of the other's line, by
+     * exact orientation signs as in 3D. Otherwise the segment-segment distance (Ericson 5.1.9),
+     * whose closest pair for disjoint segments has an endpoint of one; a contact without a
+     * crossing (an endpoint on the other segment, or collinear overlap) is such an endpoint at 0.
+     * A point primitive gives its distance to seg.
+     */
+    double primitive_segment_distance(int64_t id, const std::array<Eigen::Vector2d, 2>& seg) const;
+
 private:
+    /// The checks of the per-primitive queries: an initialized envelope of dimension `dim`, and
+    /// for the second an id in range.
+    void require_primitive_query(int dim, const char* query) const;
+    void require_primitive(int64_t id, int dim, const char* query) const;
     void require_exact_kind(Kind expected, const char* query) const;
     void require_exact_3d(const char* query) const;
     void require_exact_built(const char* query) const;
