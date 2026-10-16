@@ -18,42 +18,6 @@ namespace wmtk {
 class Envelope
 {
 public:
-    virtual ~Envelope() = default;
-    virtual void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double) {};
-    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const { return false; };
-    virtual bool is_outside(const Eigen::Vector3d& pts) const { return false; };
-};
-
-class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
-{
-public:
-    ExactEnvelope()
-        : fastEnvelope::FastEnvelope::FastEnvelope() {};
-    ~ExactEnvelope() {};
-    void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double eps)
-    {
-        fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);
-    }
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(tris);
-    }
-    bool is_outside(const Eigen::Vector3d& pts) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(pts);
-    }
-};
-
-
-class SampleEnvelope : public wmtk::Envelope
-{
-public:
     /**
      * Which of the three init() overloads built this envelope.
      *
@@ -66,8 +30,15 @@ public:
      */
     enum class Kind { Uninitialized, Triangles3d, Edges3d, Edges2d };
 
-    SampleEnvelope(bool exact = false)
+    /**
+     * Exact by default. The sampled predicate tests points laid along the query against a
+     * shrunk radius and still cannot see between two samples; the exact one decides
+     * containment in the full eps-neighbourhood. A caller that wants the cheaper sampled test
+     * asks for it with exact = false.
+     */
+    Envelope(bool exact = true)
         : use_exact(exact) {};
+    virtual ~Envelope() = default;
     /**
      * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
      *
@@ -111,7 +82,7 @@ public:
      * of work. The answer is the same either way.
      */
     void set_max_threads(int n) { m_max_threads = n < 1 ? 1 : n; }
-    bool use_exact = false;
+    bool use_exact = true;
 
     /**
      * Debug escape hatch: when set, every is_outside() answers "inside".
@@ -127,7 +98,7 @@ public:
      * optimizer cannot move at all".
      */
     bool disabled = false;
-    void init(
+    virtual void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
         const double);
@@ -151,18 +122,18 @@ public:
      * writing the same ten-line copy loop; this is that loop, once.
      */
     void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
-    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     /**
-     * The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite
-     * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
-     * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
-     * containment path asks these two instead. See the composites in
-     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
-     * composite must never reach the NON-virtual queries below, whose BVH it does not have.
+     * Four containment queries are VIRTUAL -- the 3D triangle, the 3D point, the 2D segment and
+     * the 2D point -- so a containment-only composite over several envelopes can answer them.
+     * They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is
+     * not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp,
+     * and the invariant stated there: a composite must never reach the NON-virtual queries,
+     * whose BVH it does not have.
      */
+    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
+    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
-    bool is_outside(const Eigen::Vector3d& pts) const;
+    virtual bool is_outside(const Eigen::Vector3d& pts) const;
     virtual bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
@@ -204,10 +175,9 @@ public:
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
-    // Per-primitive queries, for a caller that needs the distance to each input primitive on
-    // its own rather than to their union -- the band term's convex pieces in
-    // components/topological_offset (OffsetPotential.hpp, InputTriangles), whose corner bound
-    // needs each d_i convex, which the min over i is not.
+    // Per-primitive queries, for a caller that needs the distance d_i to each input primitive i
+    // on its own rather than to their union: each d_i is convex (the distance to a convex set),
+    // and the min over i is not, so a bound that rests on convexity needs the pieces.
     //
     // A primitive is one entry of the list given to init(), and its id is its index in that
     // list: a triangle for Triangles3d, a segment for Edges3d and Edges2d -- including the
@@ -253,11 +223,10 @@ public:
      * at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are
      * reported as 0.
      *
-     * For triangles this is InputTriangles::distance() -- the same foot (Ericson, Real-Time
-     * Collision Detection 5.1.5), the same operations -- and agrees with it to rounding: the
-     * component compiles Eigen without vectorization and this file with it, which reorders the
-     * sums (see Envelope.cpp). The segment foot is nearest_point_feature()'s, clamped at both
-     * ends.
+     * The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic
+     * compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the
+     * dot products in another order (see Envelope.cpp). The segment foot is
+     * nearest_point_feature()'s, clamped at both ends.
      */
     double primitive_distance(
         int64_t id,
@@ -288,7 +257,7 @@ public:
      * point on an edge of each; two that meet without such a crossing (a corner on the other's
      * plane, or coplanar) have one of those at 0.
      *
-     * For triangles this is InputTriangles::triangle_distance(), to rounding, as above.
+     * The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above.
      */
     double primitive_triangle_distance(int64_t id, const std::array<Eigen::Vector3d, 3>& tri) const;
 

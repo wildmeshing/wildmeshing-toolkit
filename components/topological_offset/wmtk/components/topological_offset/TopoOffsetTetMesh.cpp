@@ -56,10 +56,9 @@ size_t segments_off_triangles(const MatrixXi& E, const MatrixXi& F)
 /// The envelope Phi's euclidean twin queries: triangles where there are any, segments (isolated
 /// input points as the degenerate segment (i, i)) otherwise. Nothing is dropped:
 /// init_input_complex_bvh() refuses a complex with triangles and segments or points. Always exact:
-/// with eps <= 0 a triangle envelope is the query engine alone (the BVH and the copies of the
-/// input), whose containment queries throw (SampleEnvelope::init); a segment envelope refuses
-/// eps <= 0 at init.
-std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
+/// with eps <= 0 either kind is the query engine alone (the BVH and the copies of the input), the
+/// exact build skipped, and its containment queries throw (Envelope::init).
+std::shared_ptr<Envelope> euclidean_query_envelope(
     const MatrixXd& V,
     const MatrixXi& E,
     const MatrixXi& F,
@@ -70,7 +69,7 @@ std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
     for (int i = 0; i < V.rows(); ++i) {
         verts[size_t(i)] = V.row(i).head<3>();
     }
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->use_exact = true;
     if (F.rows() > 0) {
         std::vector<Eigen::Vector3i> tris(size_t(F.rows()));
@@ -344,7 +343,7 @@ void TopoOffsetTetMesh::build_envelopes()
     if (tris.empty()) {
         m_envelope = nullptr;
     } else {
-        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+        m_envelope = std::make_shared<Envelope>(/*exact=*/true);
         m_envelope->init(m_held_verts, tris, m_envelope_eps);
     }
     logger().info(
@@ -383,7 +382,7 @@ void TopoOffsetTetMesh::build_final_envelopes()
         return;
     }
     // m_envelope_eps is build_envelopes()'s, which refuses an invalid one.
-    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+    m_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_envelope->init(verts, tris, m_envelope_eps);
     logger().info(
         "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
@@ -448,7 +447,7 @@ void TopoOffsetTetMesh::classify_sheet_faces()
     std::vector<Eigen::Vector3i> sf(m_sheet_F.rows());
     for (int i = 0; i < m_sheet_F.rows(); ++i)
         sf[i] = Eigen::Vector3i(m_sheet_F(i, 0), m_sheet_F(i, 1), m_sheet_F(i, 2));
-    SampleEnvelope sheet(/*exact=*/true);
+    Envelope sheet(/*exact=*/true);
     sheet.init(sv, sf, eps);
     size_t n_on = 0;
     for (const Tuple& f : get_faces()) {
@@ -1027,15 +1026,15 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
 
     // The input complex's query engine (m_input_complex_envelope), built here, once, from the
     // final extraction -- a fresh object rather than clear+reinit, so anything still holding the
-    // old one keeps a coherent view. The march, the repulsion pass and the predicted front
-    // (construct_offset()) read it before init_offset_potential() builds the field on it. A
-    // query engine, not a tolerance: nearest_point_feature() supplies the foot point and the
-    // feature kind the exact derivatives case on, from the envelope's BVH and its copies of the
-    // input. No containment question is asked of it, so its exact structure is unused, and its
-    // eps (target_distance) enters no query: the potentials built on it at other levels (2 delta
-    // for the repulsion, the predicted front's t) read the same distance as one built at
-    // target_distance. Any other field than "euclidean" (refused by the 3D app; the unit tests'
-    // meshes have none, nor a target_distance) gets the query engine alone (eps 0).
+    // old one keeps a coherent view. The march and the repulsion pass (construct_offset()) read
+    // it before init_offset_potential() builds the field on it. A query engine, not a tolerance:
+    // nearest_point_feature() supplies the foot point and the feature kind the exact derivatives
+    // case on, from the envelope's BVH and its copies of the input. No containment question is
+    // asked of it, so its exact structure is unused, and its eps (target_distance) enters no
+    // query: a potential built on it at another level (2 delta for the repulsion) reads the same
+    // distance as one built at target_distance. Any other field than "euclidean" (refused by the
+    // 3D app; the unit tests' meshes have none, nor a target_distance) gets the query engine alone
+    // (eps 0).
     m_input_complex_envelope = euclidean_query_envelope(
         m_phi_V,
         m_phi_E,
@@ -1670,64 +1669,26 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     const auto log_newton = [&](const std::string& what) {
         const size_t refused = m_repulsion_embed_refused.exchange(0);
         logger().info(
-            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}{}",
+            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
             what,
             m_newton_repulsion.to_string(),
             m_repulsion_veto_fired.exchange(0),
             m_repulsion_veto_asked.exchange(0),
             n_rounds > 0
                 ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
-                : std::string(),
-            m_offset_params.repulsion_refine
-                ? fmt::format(
-                      " | refused for making an outer end within target_distance + front_conv: "
-                      "{} swap(s)",
-                      m_repulsion_close_refused.exchange(0))
                 : std::string());
         m_newton_repulsion.reset();
     };
 
-    // EXPERIMENTAL_repulsion_refine: the front the march would cut at delta is measured with the
-    // loop's face measure (predict_front()) at every report, the sizing scalar halved at the
-    // corners of the cells whose piece is over the bar, and the stop test also asks that no
-    // piece be over. The rounds' split pass realizes the halving, still refusing marched edges;
-    // the rounds do not collapse (the collapses are what emptied the slots: on the one-slot model
-    // every vertex inside the slot, on Thingi10K 100026 40% of them).
-    const bool refine = m_offset_params.repulsion_refine;
-    if (refine && m_offset_params.offset_field != "euclidean") {
-        log_and_throw_error("EXPERIMENTAL_repulsion_refine: offset_field euclidean only");
-    }
-    const auto predicted_ok = [&](const std::string& when) {
-        const PredictedFront f = predict_front(delta, /*halve=*/true);
-        logger().info(
-            "\t[repulsion] {}: front predicted at {:.6g}: {} cells with a marched edge, {} over "
-            "the bar (worst {:.4g}x), {} with an outer end within it, {} unmeasurable -> sizing "
-            "scalar halved at {} vertices",
-            when,
-            delta,
-            f.n_cells,
-            f.n_over,
-            f.max_measure,
-            f.n_unreached,
-            f.n_unmeasurable,
-            f.n_halved);
-        return f.n_over == 0 && f.n_unmeasurable == 0;
-    };
-    const auto all_ok = [&](const std::string& when) {
-        const bool outer_ok = report(when);
-        return (!refine || predicted_ok(when)) && outer_ok;
-    };
-
     logger().info(
         "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
-        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}{}, at "
+        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
         "most {} pass(es)",
         outer.size() - n_held,
         2. * delta,
         stop,
-        refine ? " and no predicted front piece is over the bar" : "",
         n_passes);
-    bool done = all_ok("before");
+    bool done = report("before");
     // The engine's per-pass frames are the loop's numbered series; these passes write their own.
     // m_params and m_offset_params are one object, so the flag is read before it is switched off.
     const bool frames = m_params.debug_output;
@@ -1737,7 +1698,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         ++k;
         smooth_all_vertices(1);
         log_newton(fmt::format("pass {}", k));
-        done = all_ok(fmt::format("after pass {}", k));
+        done = report(fmt::format("after pass {}", k));
         if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
     }
     if (n_passes > 0) {
@@ -1760,8 +1721,6 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     // every operation aims at the base edge length) and no split of a marched edge
     // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
     // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
-    // Under EXPERIMENTAL_repulsion_refine the field is lowered where the predicted front is over
-    // the bar (all_ok() above) and there is no collapse group.
     int r = 0;
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
@@ -1781,18 +1740,14 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
         const std::vector<std::array<int, 4>> groups =
             interleaved
-                ? (refine
-                       ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 0, 1, ks}}}
-                       : std::vector<
-                             std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}})
-                : std::vector<std::array<int, 4>>{{{1, refine ? 0 : 1, 1, ks}}};
+                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
+                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
         logger().info(
-            "\t[repulsion] up to {} round(s): split, {}swap{}; {}, no marched-edge split",
+            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
+            "marched-edge split",
             n_rounds,
-            refine ? "" : "collapse, ",
             interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
-                        : fmt::format(" back to back, then {} smoothing pass(es)", ks),
-            refine ? "refinement where the predicted front is over the bar" : "no refinement");
+                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
         op_accounting_reset(); // the [ops accounting] lines below are per round
         swap_counters_reset();
         while (!done && r < n_rounds) {
@@ -1841,7 +1796,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             }
             op_accounting_reset();
             log_newton(fmt::format("round {}", r));
-            done = all_ok(fmt::format("after round {}", r));
+            done = report(fmt::format("after round {}", r));
             if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
         }
         // Every group above leaves the complex embedded and smoothing changes no topology, so
@@ -1857,106 +1812,19 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         consolidate_mesh();
         if (done) {
             logger().info(
-                "\t[repulsion] every outer end is beyond target_distance + front_conv{} after {} "
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
                 "round(s)",
-                refine ? " and no predicted front piece is over the bar" : "",
                 r);
         } else {
             logger().info(
                 "\t[repulsion] {} round(s), the cap: some outer end is still within "
-                "target_distance + front_conv{}",
-                r,
-                refine ? ", or some predicted front piece is over the bar" : "");
+                "target_distance + front_conv",
+                r);
         }
     }
     m_params.debug_output = frames;
     m_repulsion_potential.reset();
     m_repulsion_term.reset();
-}
-
-TopoOffsetTetMesh::PredictedFront TopoOffsetTetMesh::predict_front(const double t, const bool halve)
-{
-    // EXPERIMENTAL_repulsion_refine. The front the march would cut at t, measured before it
-    // exists. On every marched edge (one end on the complex) the split point is the sphere
-    // trace's, the point marching_tets() creates there; in every cell with marched edges these
-    // points bound the cell's front piece -- a triangle (one or three complex corners) or a quad
-    // (two), whose diagonal the march's split order decides, so a quad is measured in both
-    // triangulations. Each triangle is measured by face_offset_term() at level t: the loop's own
-    // face measure, stencil_order and front_conv included. A cell is over when any of its
-    // triangles is over the bar. halve: the sizing scalar is halved at the corners of every cell
-    // over, by refine_front_by_halving(), as the loop halves.
-    PredictedFront s;
-    const auto pot = std::make_shared<EuclideanOffsetPotential3D>(m_input_complex_envelope, t);
-    const double d_saved = m_construction_distance;
-    m_construction_distance = t; // what edge_split_sphere_trace() traces to
-    std::map<std::pair<size_t, size_t>, std::optional<Vector3d>> cut;
-    const auto cut_point = [&](const size_t vin, const size_t vout) {
-        const auto key = std::make_pair(vin, vout);
-        if (const auto it = cut.find(key); it != cut.end()) return it->second;
-        Vector3d p;
-        size_t steps = 0;
-        std::optional<Vector3d> r;
-        if (edge_split_sphere_trace(
-                m_vertex_attribute[vin].m_posf,
-                m_vertex_attribute[vout].m_posf,
-                p,
-                steps)) {
-            r = p;
-        }
-        cut.emplace(key, r);
-        return r;
-    };
-    std::vector<size_t> corners;
-    for (const Tuple& tt : get_tets()) {
-        const std::array<size_t, 4> vs = oriented_tet_vids(tt.tid(*this));
-        std::vector<size_t> in, out;
-        for (const size_t v : vs) (m_vertex_extra[v].label != 0 ? in : out).push_back(v);
-        if (in.empty() || out.empty()) continue;
-        ++s.n_cells;
-        bool reached = true;
-        const auto P = [&](const size_t a, const size_t b) {
-            const std::optional<Vector3d> p = cut_point(a, b);
-            if (!p) reached = false;
-            return p ? *p : Vector3d(Vector3d::Zero());
-        };
-        std::vector<std::array<Vector3d, 3>> tris;
-        if (in.size() == 1) {
-            tris.push_back({{P(in[0], out[0]), P(in[0], out[1]), P(in[0], out[2])}});
-        } else if (in.size() == 3) {
-            tris.push_back({{P(in[0], out[0]), P(in[1], out[0]), P(in[2], out[0])}});
-        } else {
-            // The quad's corners in cyclic order: consecutive ones share a face of the cell.
-            const Vector3d a = P(in[0], out[0]), b = P(in[0], out[1]), c = P(in[1], out[1]),
-                           d = P(in[1], out[0]);
-            tris = {{{a, b, c}}, {{a, c, d}}, {{a, b, d}}, {{b, c, d}}};
-        }
-        if (!reached) {
-            ++s.n_unreached;
-            continue;
-        }
-        double worst = 0.;
-        bool measurable = true;
-        for (const auto& tri : tris) {
-            const double m2 = face_offset_term(*pot, tri[0], tri[1], tri[2]);
-            if (!(m2 >= 0.)) {
-                measurable = false;
-                break;
-            }
-            worst = std::max(worst, m2);
-        }
-        if (!measurable) {
-            ++s.n_unmeasurable;
-            continue;
-        }
-        s.max_measure = std::max(s.max_measure, std::sqrt(worst));
-        if (worst > 1.) {
-            ++s.n_over;
-            if (halve) corners.insert(corners.end(), vs.begin(), vs.end());
-        }
-    }
-    m_construction_distance = d_saved;
-    if (halve && !corners.empty()) s.n_halved = refine_front_by_halving(corners);
-    return s;
 }
 
 bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) const
@@ -2498,7 +2366,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // The band term's input: m_input_complex_envelope, once init_offset_potential() has built the
     // field (and refused an input the band term cannot take). The construction frames come
     // before it.
-    const SampleEnvelope* band_env =
+    const Envelope* band_env =
         m_offset_potential && m_input_complex_envelope ? m_input_complex_envelope.get() : nullptr;
     const bool energy_fields = band_env && m_n_regions <= 1 &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);

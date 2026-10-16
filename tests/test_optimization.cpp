@@ -180,7 +180,7 @@ TEST_CASE("exact_distance_energy_2d", "[energies]")
     // corner. Within each closest-feature region the distance is exactly quadratic, so the
     // energy must pass full FD checks there, with the rank of the hessian reporting the
     // feature: rank one (segment normal) over an interior, isotropic at the corner.
-    auto env = std::make_shared<SampleEnvelope>(false);
+    auto env = std::make_shared<Envelope>(false);
     const std::vector<Eigen::Vector2d> V = {
         Eigen::Vector2d(0, 0),
         Eigen::Vector2d(4, 0),
@@ -240,7 +240,7 @@ TEST_CASE("exact_distance_energy_3d", "[energies]")
     // ridge as a convex crease. The three closest-feature kinds get one probe each; within
     // each region the energy is exactly quadratic, so full FD checks must pass, and the
     // hessian's rank reports the feature.
-    auto env = std::make_shared<SampleEnvelope>(false);
+    auto env = std::make_shared<Envelope>(false);
     const std::vector<Eigen::Vector3d> V = {
         Eigen::Vector3d(0, 0, 0),
         Eigen::Vector3d(4, 0, 0),

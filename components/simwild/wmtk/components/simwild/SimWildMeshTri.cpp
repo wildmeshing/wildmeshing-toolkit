@@ -242,7 +242,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_E_envelope = tempE;
-        m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
         logger().info(
             "Envelope: {} (eps {:.6})",
@@ -334,7 +334,7 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         m_E_envelope[i] = E.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+    m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
     logger().info(
         "Envelope: {} (eps {:.6})",

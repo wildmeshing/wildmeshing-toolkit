@@ -686,7 +686,7 @@ void TetWildMesh::find_open_boundary()
     // so having `use_sample_envelope: false` hold for the surface but not for its boundary
     // curves was an accident of the exact envelope not supporting edges until now.
     if (!m_order2_envelope) {
-        m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
+        m_order2_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
     }
     // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
     // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a

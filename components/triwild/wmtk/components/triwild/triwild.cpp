@@ -114,7 +114,7 @@ struct Deviation
 };
 
 Deviation
-deviation_stats(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target, int n_samples)
+deviation_stats(const MatrixXd& V, const MatrixXi& E, const Envelope& target, int n_samples)
 {
     double total_length = 0;
     for (int i = 0; i < E.rows(); ++i) {
@@ -160,7 +160,7 @@ deviation_stats(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& targ
  * Reported alongside the edge figure so a saturating edge deviation can be attributed to one
  * or the other rather than guessed at.
  */
-Deviation vertex_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target)
+Deviation vertex_deviation(const MatrixXd& V, const MatrixXi& E, const Envelope& target)
 {
     std::vector<bool> used(V.rows(), false);
     for (int i = 0; i < E.rows(); ++i) {
@@ -209,7 +209,7 @@ void tracked_edges(const TriWildMesh& mesh, MatrixXd& V, MatrixXi& E)
  * @brief Build a 2D envelope over the segments (V, E). eps is irrelevant here: only
  * nearest_point() is used, and that ignores the thickness.
  */
-std::shared_ptr<SampleEnvelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
+std::shared_ptr<Envelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
 {
     std::vector<Vector2d> v(V.rows());
     for (int i = 0; i < V.rows(); ++i) {
@@ -219,7 +219,7 @@ std::shared_ptr<SampleEnvelope> envelope_over(const MatrixXd& V, const MatrixXi&
     for (int i = 0; i < E.rows(); ++i) {
         e[i] = E.row(i);
     }
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->init(v, e, 0);
     return env;
 }
@@ -367,7 +367,7 @@ void triwild(nlohmann::json json_params)
     if (skip_simplify) {
         logger().info("skip simplification");
     } else {
-        SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
+        Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,

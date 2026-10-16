@@ -346,7 +346,7 @@ public:
      * copies of the input, which every init() fills. Its eps is irrelevant and no containment test
      * is run against it.
      */
-    EuclideanOffsetPotential(const std::shared_ptr<SampleEnvelope>& envelope, double delta);
+    EuclideanOffsetPotential(const std::shared_ptr<Envelope>& envelope, double delta);
 
     /**
      * @brief Build over the input-complex BVH. The 2D path, and 2D-only -- checked at runtime,
@@ -396,7 +396,7 @@ private:
 
     /// Exactly one of these is set, by whichever constructor ran: the envelope by the 3D path,
     /// the BVH by the 2D path. Every query branches on m_bvh.
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     std::shared_ptr<SimplicialComplexBVH> m_bvh;
 };
 
@@ -750,15 +750,15 @@ private:
  *
  * The distance d to the input is the min over its primitives P (the triangles of
  * TopoOffsetTetMesh::m_input_complex_envelope) of d_P, the distance to P alone,
- * SampleEnvelope::primitive_distance(). Each d_P is convex (the distance to a convex set), which
+ * Envelope::primitive_distance(). Each d_P is convex (the distance to a convex set), which
  * the band term's corner bound needs (TopoOffsetTetMesh::band_cell_term()). These are the
  * searches the band term, the settle loop's face tests and the debug frames run over the P, on
- * SampleEnvelope's per-primitive queries.
+ * Envelope's per-primitive queries.
  *
  * Every search is exact, by one argument: a starting primitive gives a value m that the result
  * cannot exceed; every primitive that could reach m has a point within m (or a stated bound) of
  * one of the query points, so its bounding box meets the query points' box grown by that bound;
- * SampleEnvelope::primitives_in_box() lists every such primitive, ascending, and the result is
+ * Envelope::primitives_in_box() lists every such primitive, ascending, and the result is
  * the min over them, the lowest index on a tie. The start changes only how many are listed.
  * The grown box is padded for rounding by `pad`, input_pad() of the input's vertices: the
  * computed d_P carries a few ulps of the coordinates, and a primitive whose computed value
@@ -779,7 +779,7 @@ double input_pad(const Eigen::MatrixXd& V);
 /// The primitive nearest to p, the lowest index on a tie: d from the envelope's nearest point
 /// (its BVH), then the min of primitive_distance() over the primitives in p's box grown by
 /// d + pad -- any primitive at distance d from p has a point within d of p, so it is listed.
-int64_t nearest_primitive(const SampleEnvelope& env, double pad, const Eigen::Vector3d& p);
+int64_t nearest_primitive(const Envelope& env, double pad, const Eigen::Vector3d& p);
 
 /// The band term's min: min over ALL primitives P of (1/n) sum_i d_P(p_i), n points (the cell's
 /// corners), and the minimiser in `best` (the lowest index on a tie). Starts from `hint` when
@@ -787,7 +787,7 @@ int64_t nearest_primitive(const SampleEnvelope& env, double pad, const Eigen::Ve
 /// some p_i with d_P(p_i) <= m, so P meets the points' box grown by m; the min is taken over the
 /// primitives listed there. The result does not depend on the start.
 double min_mean_distance(
-    const SampleEnvelope& env,
+    const Envelope& env,
     double pad,
     const Eigen::Vector3d* p,
     int n,
@@ -806,7 +806,7 @@ struct BallCandidate
 /// min_mean_distance()'s order and scanned with its comparison, is min_mean_distance() bit for
 /// bit at every such x (proof in the .cpp).
 void ball_candidates(
-    const SampleEnvelope& env,
+    const Envelope& env,
     double pad,
     const Eigen::Vector3d& c,
     double r,
@@ -814,11 +814,11 @@ void ball_candidates(
     std::vector<BallCandidate>& out);
 
 /// EXPERIMENTAL_settle_refinement: min over ALL primitives P of the distance between P and the
-/// triangle abc (SampleEnvelope::primitive_triangle_distance()), i.e. min over the triangle abc of
+/// triangle abc (Envelope::primitive_triangle_distance()), i.e. min over the triangle abc of
 /// d. Starts from min over the corners of d, an upper bound m on the min over the triangle; a P
 /// within m of abc meets abc's box grown by m.
 double min_triangle_distance(
-    const SampleEnvelope& env,
+    const Envelope& env,
     double pad,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -829,8 +829,7 @@ double min_triangle_distance(
 /// max over the triangle is at a corner, and d <= d_P. Starts from the points' nearest
 /// primitives; a P with max <= m has every point, p[0] among them, within m, so it meets p[0]'s
 /// box grown by m.
-double
-min_max_corner_distance(const SampleEnvelope& env, double pad, const Eigen::Vector3d* p, int n);
+double min_max_corner_distance(const Envelope& env, double pad, const Eigen::Vector3d* p, int n);
 
 /// EXPERIMENTAL_settle_mark "rms": the mean over triangle abc of (d - delta)^2 (n . grad d),
 /// n the face's unit normal (pointing out of the band), by the 3-edge-midpoint rule (weights
@@ -838,7 +837,7 @@ min_max_corner_distance(const SampleEnvelope& env, double pad, const Eigen::Vect
 /// face's interior as nearest feature (d affine, grad d constant there). grad d is the nearest
 /// primitive's (nearest_primitive()).
 double face_mean_sq_cos(
-    const SampleEnvelope& env,
+    const Envelope& env,
     double pad,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -900,7 +899,7 @@ public:
     /// so that its volume at x0 is positive (the ring the smoother starts from is valid). delta =
     /// target_distance.
     BandVolumeEnergy3D(
-        std::shared_ptr<const SampleEnvelope> env,
+        std::shared_ptr<const Envelope> env,
         double pad,
         std::vector<Cell> cells,
         const Eigen::Vector3d& x0,
@@ -971,7 +970,7 @@ private:
     /// Centre the certified ball at x, when its radius there is positive and finite; false (the
     /// old ball kept) otherwise.
     bool certify_ball(const Eigen::Vector3d& x) const;
-    std::shared_ptr<const SampleEnvelope> m_env; ///< the input's primitives
+    std::shared_ptr<const Envelope> m_env; ///< the input's primitives
     double m_pad = 0.; ///< input_pad() of the input
     double m_delta = 1.;
     mutable std::vector<int64_t> m_hint; ///< per cell: the last minimiser (search start only)

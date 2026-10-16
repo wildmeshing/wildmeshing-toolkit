@@ -45,11 +45,11 @@ using Tri = std::array<Vec3, 3>;
 /// The input envelope of the triangles (V, F), as TopoOffsetTetMesh::m_input_complex_envelope is
 /// to the band term's searches (OffsetPotential.hpp). eps 0 builds no containment structure,
 /// which no search reads.
-std::shared_ptr<const wmtk::SampleEnvelope> triangle_envelope(
+std::shared_ptr<const wmtk::Envelope> triangle_envelope(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F)
 {
-    auto env = std::make_shared<wmtk::SampleEnvelope>(true);
+    auto env = std::make_shared<wmtk::Envelope>(true);
     env->init(V, F, 0.);
     return env;
 }
@@ -271,7 +271,7 @@ Ring ring_at(const Vec3& ctr, const Vec3& dx, const Vec3& dy, const Vec3& dz)
 void check_energy(
     const char* name,
     const std::shared_ptr<const ExactBandIntegral>& eb,
-    const std::shared_ptr<const wmtk::SampleEnvelope>& tris,
+    const std::shared_ptr<const wmtk::Envelope>& tris,
     const double pad,
     const Ring& r,
     const Vec3& ctr,

@@ -476,7 +476,7 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_F_envelope[i] = F.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+    m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     logger().info(
         "Envelope: {} (eps {:.6})",

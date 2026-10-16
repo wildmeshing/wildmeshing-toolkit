@@ -75,10 +75,10 @@ public:
 
     // for open boundary
     /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
-    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope;
+    std::shared_ptr<Envelope> m_order_2_edge_envelope;
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.

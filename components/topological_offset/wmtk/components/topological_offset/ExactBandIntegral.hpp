@@ -117,7 +117,7 @@ public:
     /// value_slots > 0: value() keeps a table of its results of at least that many slots (the
     /// value table, value()).
     /// envelope: the triangles' box queries, for U and the candidate query -- a Triangles3d
-    /// SampleEnvelope whose primitive i is row i of F (TopoOffsetTetMesh passes
+    /// Envelope whose primitive i is row i of F (TopoOffsetTetMesh passes
     /// m_input_complex_envelope, built from the same rows); null: one is built here from V and F.
     ExactBandIntegral(
         const Eigen::MatrixXd& V,
@@ -125,7 +125,7 @@ public:
         const std::vector<int8_t>& face_side,
         int sigma,
         size_t value_slots = 0,
-        std::shared_ptr<const wmtk::SampleEnvelope> envelope = nullptr);
+        std::shared_ptr<const wmtk::Envelope> envelope = nullptr);
 
     /// Counters, volumes and (when `timing`) times of value() calls, ADDED to on every call (never
     /// reset by value()).
@@ -476,9 +476,9 @@ private:
     std::vector<Eigen::Vector3d> m_side_n, m_side_q;
 
     /// The triangles' boxes, for U and the candidate query: the envelope's
-    /// SampleEnvelope::primitives_in_box(), primitive f being face f. Until 2026-10-15 a tree of
+    /// Envelope::primitives_in_box(), primitive f being face f. Until 2026-10-15 a tree of
     /// this class's own over the same boxes, beside the envelope's.
-    std::shared_ptr<const wmtk::SampleEnvelope> m_env;
+    std::shared_ptr<const wmtk::Envelope> m_env;
     /// 1e-9 of the input's diagonal: what a box query is grown by, so that a triangle whose
     /// distance reaches a bound by rounding is never left out of it.
     double m_pad = 0.;

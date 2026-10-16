@@ -43,11 +43,11 @@ using Tet = std::array<Vec3, 4>;
 /// The input envelope of the triangles (V, F), as TopoOffsetTetMesh::m_input_complex_envelope is
 /// to the band term's searches (OffsetPotential.hpp). eps 0 builds no containment structure,
 /// which no search reads.
-std::shared_ptr<const wmtk::SampleEnvelope> triangle_envelope(
+std::shared_ptr<const wmtk::Envelope> triangle_envelope(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F)
 {
-    auto env = std::make_shared<wmtk::SampleEnvelope>(true);
+    auto env = std::make_shared<wmtk::Envelope>(true);
     env->init(V, F, 0.);
     return env;
 }

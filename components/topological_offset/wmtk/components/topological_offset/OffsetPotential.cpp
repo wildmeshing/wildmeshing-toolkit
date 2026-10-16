@@ -540,7 +540,7 @@ void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 
 template <int DIM>
 EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
-    const std::shared_ptr<SampleEnvelope>& envelope,
+    const std::shared_ptr<Envelope>& envelope,
     const double delta)
     // No support limit: d is defined everywhere, so the runaway guard that exists for Phi's compact
     // support has nothing to catch. Infinity says so, rather than a large finite number something
@@ -1126,7 +1126,7 @@ double input_pad(const Eigen::MatrixXd& V)
     return 1e-9 * std::max((hi - lo).norm(), 1e-300);
 }
 
-int64_t nearest_primitive(const SampleEnvelope& env, const double pad, const Eigen::Vector3d& p)
+int64_t nearest_primitive(const Envelope& env, const double pad, const Eigen::Vector3d& p)
 {
     // The BVH's nearest_facet reports its own (reordered) primitive index; its box query reports
     // the input's. So: the distance d from the BVH; every primitive at distance d from p has a
@@ -1147,7 +1147,7 @@ int64_t nearest_primitive(const SampleEnvelope& env, const double pad, const Eig
 }
 
 double min_mean_distance(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const double pad,
     const Eigen::Vector3d* p,
     const int n,
@@ -1183,7 +1183,7 @@ double min_mean_distance(
 }
 
 void ball_candidates(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const double pad,
     const Eigen::Vector3d& c,
     const double r,
@@ -1259,7 +1259,7 @@ void ball_candidates(
 }
 
 double min_triangle_distance(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const double pad,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -1282,7 +1282,7 @@ double min_triangle_distance(
 }
 
 double min_max_corner_distance(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const double pad,
     const Eigen::Vector3d* p,
     const int n)
@@ -1307,7 +1307,7 @@ double min_max_corner_distance(
 }
 
 double face_mean_sq_cos(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const double pad,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -1331,7 +1331,7 @@ double face_mean_sq_cos(
 // ---------------------------------------------------------------------------------------------
 
 BandVolumeEnergy3D::BandVolumeEnergy3D(
-    std::shared_ptr<const SampleEnvelope> env,
+    std::shared_ptr<const Envelope> env,
     const double pad,
     std::vector<Cell> cells,
     const Eigen::Vector3d& x0,

@@ -100,7 +100,7 @@ std::pair<size_t, size_t> TetWildMesh::feature_retention(double* worst_ratio) co
     return {kept, m_feature_points.size()};
 }
 
-std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
+std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
     // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
     // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
@@ -122,10 +122,10 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
-    // a no-op left over from when it was held as the Envelope base.
-    SampleEnvelope* env = m_envelope.get();
-    SampleEnvelope* env_b = m_envelope.get();
+    // m_envelope is an Envelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the abstract envelope base, since removed.
+    Envelope* env = m_envelope.get();
+    Envelope* env_b = m_envelope.get();
     if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }

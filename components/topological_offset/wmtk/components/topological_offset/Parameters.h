@@ -156,10 +156,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
     /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
     int repulsion_rounds = 0;
-    /// EXPERIMENTAL (2026-10-07), 3D, with repulsion_rounds. Each round also refines where the
-    /// front the march would cut fails the loop's face measure, and the rounds do not collapse.
-    /// See the spec doc.
-    bool repulsion_refine = false;
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
@@ -173,7 +169,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// at the vertex, plus the bisector jumps D_t of its flagged cells). See the spec doc.
     std::string band_volume_rule = "corner_bound";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
-    /// turn is settled when E fell by less than the bar energy
+    /// turn is settled when the offset energy (E without its AMIPS term) fell by less than the bar
+    /// energy
     /// b = front_conv^2 A / (2 target_distance), A the front's area -- the
     /// offset term's excess for a front lying front_conv off the level set. On a settled turn
     /// every front face whose distance from the level set (the face's min of d, and its max of d,
@@ -288,10 +285,6 @@ struct Parameters : public wmtk::OptimizerParameters
         init_optimize = json_params["init_optimize"];
         repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         repulsion_rounds = json_params["repulsion_rounds"];
-        repulsion_refine = json_params["EXPERIMENTAL_repulsion_refine"];
-        if (repulsion_refine && repulsion_rounds <= 0) {
-            log_and_throw_error("EXPERIMENTAL_repulsion_refine needs repulsion_rounds > 0");
-        }
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
         if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&

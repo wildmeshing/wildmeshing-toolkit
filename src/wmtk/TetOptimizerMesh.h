@@ -202,7 +202,7 @@ public:
      * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
      * but not geometrically constrained.
      */
-    std::shared_ptr<SampleEnvelope> m_feature_envelope;
+    std::shared_ptr<Envelope> m_feature_envelope;
 
     /// Turn on feature-edge tracking. Must run before init() so the connectivity init sizes
     /// the collection; refuses to share p_edge_attrs with an application that already uses it.
@@ -253,7 +253,7 @@ public:
     OptimizerParameters& m_params;
 
     /// Surface envelope: what a surface vertex is pulled toward and checked against.
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
@@ -325,7 +325,7 @@ public:
     size_t m_split_order_waits = 0;
     size_t m_split_order_wait_defects = 0;
 
-    explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
+    explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<Envelope> env)
         : m_params(params)
         , m_envelope(std::move(env))
     {
@@ -466,7 +466,7 @@ public:
      * operation asking about the triangles it is ABOUT to create or has just created, where
      * only the vids are known for certain.
      */
-    virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+    virtual std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const
     {
         return m_envelope;
@@ -476,7 +476,7 @@ public:
     /// when it has none. Every surface containment check in the operations goes through here.
     bool surface_triangle_is_outside(const size_t a, const size_t b, const size_t c) const
     {
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face({{a, b, c}});
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face({{a, b, c}});
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside({{VA[a].m_posf, VA[b].m_posf, VA[c].m_posf}});
@@ -606,8 +606,8 @@ public:
      * The surface envelope is shared by both applications. A derived mesh may additionally
      * select an order-2 feature envelope for the pull energy.
      */
-    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
-    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
+    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const;
+    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
     /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
     /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is

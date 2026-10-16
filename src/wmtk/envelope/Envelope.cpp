@@ -14,7 +14,7 @@
 namespace wmtk {
 
 namespace {
-// A sampled triangle query splits its samples among idle workers (SampleEnvelope::
+// A sampled triangle query splits its samples among idle workers (Envelope::
 // set_max_threads) from this many samples on, in chunks of kParallelChunk consecutive ones, so
 // that the hinted BVH walk keeps its locality within a chunk. Swept on tetwild's input
 // simplification of a 10-cell EMI surface set at 16 threads: 2048/512 was the best of 1024,
@@ -139,15 +139,19 @@ void sampleTriangle(
  * unconditional. A toggle that arrives afterwards anyway is caught by m_exact_built rather
  * than silently answering "outside" against an empty structure.
  *
- * A zero epsilon is a legitimate way to ask for an envelope that will only ever be used for
+ * The rule for eps <= 0 is the triangle overload's: such an envelope serves nearest queries
+ * only, and a containment query against it refuses, through require_exact_built(). A zero
+ * epsilon is a legitimate way to ask for an envelope that will only ever be used for
  * nearest_point() -- triwild's Delaunay seeding does it, to reject grid points that fall too
- * close to the input curves. There is no such thing as a zero-width exact envelope: the 2D
- * construction asserts on it, and a containment query against one would answer "outside" for
- * everything not exactly on the input. So skip that too, and let the query fail rather than
- * quietly reject everything.
+ * close to the input curves -- and with use_exact the default, that request arrives here in
+ * exact mode. There is no such thing as a zero-width exact envelope: the 2D construction
+ * asserts on it, and a containment query against one would answer "outside" for everything
+ * not exactly on the input. So skip the build rather than throw at init, which refused the
+ * nearest-only use too, and let a containment query fail rather than quietly reject
+ * everything.
  */
 template <typename VertexList>
-void SampleEnvelope::init_exact_edges(
+void Envelope::init_exact_edges(
     const VertexList& V,
     const std::vector<Eigen::Vector2i>& F,
     const double _eps)
@@ -157,7 +161,7 @@ void SampleEnvelope::init_exact_edges(
         return;
     }
     if (!(_eps > 0)) {
-        log_and_throw_error("An exact envelope needs a positive epsilon, got {}.", _eps);
+        return;
     }
 
     if constexpr (std::is_same_v<VertexList, std::vector<Eigen::Vector2d>>) {
@@ -168,7 +172,7 @@ void SampleEnvelope::init_exact_edges(
     m_exact_built = true;
 }
 
-void SampleEnvelope::init(
+void Envelope::init(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<Eigen::Vector3i>& F,
     const double _eps)
@@ -235,7 +239,7 @@ void SampleEnvelope::init(
     m_bvh->init(VV, FF, 0);
 }
 
-void SampleEnvelope::init(
+void Envelope::init(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<Eigen::Vector2i>& F,
     const double _eps)
@@ -270,7 +274,7 @@ void SampleEnvelope::init(
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(VV, FF, 0);
 }
-void SampleEnvelope::init(
+void Envelope::init(
     const std::vector<Eigen::Vector2d>& V,
     const std::vector<Eigen::Vector2i>& F,
     const double _eps)
@@ -314,7 +318,7 @@ void SampleEnvelope::init(
  * point -- so a mismatched envelope does not crash, it just vetoes every operation and
  * looks like an optimization that cannot move.
  */
-void SampleEnvelope::require_exact_kind(Kind expected, const char* query) const
+void Envelope::require_exact_kind(Kind expected, const char* query) const
 {
     if (m_kind != expected) {
         log_and_throw_error(
@@ -330,7 +334,7 @@ void SampleEnvelope::require_exact_kind(Kind expected, const char* query) const
  * The 3D point and segment queries work against either 3D envelope, so they check only that
  * this is not the 2D one -- and that its exact structure actually exists.
  */
-void SampleEnvelope::require_exact_3d(const char* query) const
+void Envelope::require_exact_3d(const char* query) const
 {
     if (m_kind != Kind::Triangles3d && m_kind != Kind::Edges3d) {
         log_and_throw_error(
@@ -341,7 +345,7 @@ void SampleEnvelope::require_exact_3d(const char* query) const
     require_exact_built(query);
 }
 
-void SampleEnvelope::require_exact_built(const char* query) const
+void Envelope::require_exact_built(const char* query) const
 {
     // Two ways to arrive with no exact structure, both silent without this check. The edge and
     // 2D overloads only build theirs when use_exact was already set at init time, so a flag
@@ -358,7 +362,7 @@ void SampleEnvelope::require_exact_built(const char* query) const
     }
 }
 
-bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
+bool Envelope::is_outside(const Eigen::Vector3d& pts) const
 {
     if (disabled) return false;
     if (use_exact) {
@@ -372,7 +376,7 @@ bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
     return (dist2 > eps2);
 }
 
-bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
+bool Envelope::is_outside(const Eigen::Vector2d& pts) const
 {
     // The 2D exact envelope is its own object, so this cannot go through the 3D overload the
     // way the sampled path does -- that would consult an exact_envelope no 2D init ever
@@ -384,7 +388,7 @@ bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
     return is_outside(Vector3d(pts[0], pts[1], 0));
 }
 
-bool SampleEnvelope::samples_outside_parallel(const std::vector<Vector3d>& ps) const
+bool Envelope::samples_outside_parallel(const std::vector<Vector3d>& ps) const
 {
     // The serial loop below visits the samples from the middle on, wrapping around, so that a
     // triangle that leaves the envelope tends to be caught early; chunks follow the same order.
@@ -427,7 +431,7 @@ bool SampleEnvelope::samples_outside_parallel(const std::vector<Vector3d>& ps) c
     return outside.load(std::memory_order_relaxed);
 }
 
-bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
+bool Envelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
     if (disabled) return false;
     if (use_exact) {
@@ -492,7 +496,7 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
     return false;
 }
 
-bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
+bool Envelope::is_outside(const std::array<Vector3d, 2>& edge) const
 {
     if (disabled) return false;
     if (use_exact) {
@@ -531,7 +535,7 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     return false;
 }
 
-bool SampleEnvelope::is_outside(const std::array<Vector2d, 2>& edge) const
+bool Envelope::is_outside(const std::array<Vector2d, 2>& edge) const
 {
     if (!disabled && use_exact && m_kind == Kind::Edges2d) {
         require_exact_built("2D segment");
@@ -545,20 +549,20 @@ bool SampleEnvelope::is_outside(const std::array<Vector2d, 2>& edge) const
 }
 
 
-double SampleEnvelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
+double Envelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
 }
-double SampleEnvelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const
+double Envelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const
 {
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
 }
 
-double SampleEnvelope::nearest_point_feature(
+double Envelope::nearest_point_feature(
     const Eigen::Vector2d& p,
     Eigen::Vector2d& result,
     bool& on_corner,
@@ -623,7 +627,7 @@ double SampleEnvelope::nearest_point_feature(
     return best;
 }
 
-double SampleEnvelope::nearest_point_feature(
+double Envelope::nearest_point_feature(
     const Eigen::Vector3d& p,
     Eigen::Vector3d& result,
     int& feature_dim,
@@ -763,7 +767,7 @@ double SampleEnvelope::nearest_point_feature(
     return best;
 }
 
-double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
+double Envelope::squared_distance(const Eigen::Vector3d& p) const
 {
     double d2;
     SimpleBVH::Vector3d out;
@@ -771,7 +775,7 @@ double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
     return d2;
 }
 
-double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
+double Envelope::squared_distance(const Eigen::Vector2d& p) const
 {
     double d2;
     SimpleBVH::Vector2d out;
@@ -781,18 +785,16 @@ double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
 
 namespace {
 
-// The per-primitive queries' arithmetic. triangle_foot, segment_distance and
-// segment_crosses_triangle are copies of the helpers of InputTriangles in
-// components/topological_offset/.../OffsetPotential.cpp, operation for operation in the source,
-// because that class is to be replaced by the queries below.
+// The per-primitive queries' arithmetic: the closest point on a triangle and the distance
+// between two segments (Ericson, Real-Time Collision Detection 5.1.5 and 5.1.9), and an exact
+// crossing test of a segment against a triangle or, in 2D, another segment.
 //
-// The source being the same does not make the results bit-identical: the component is compiled
-// with EIGEN_DONT_VECTORIZE, which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake),
-// and this file is not, and the two sum a 3-vector dot product in different orders -- scalar
-// Eigen as x0 y0 + (x1 y1 + x2 y2), vectorized Eigen as (x0 y0 + x1 y1) + x2 y2. MEASURED on
-// arm64: the two dot() differ in 31% of random pairs, norm() in 12%, and InputTriangles::distance()
-// and the copy here in 12% of 20400 (point, triangle) pairs. Nothing here depends on either order;
-// the component's test "envelope-primitive-queries-match-input-triangles" bounds the difference.
+// The same arithmetic does not give the same bits in every target. A component compiled with
+// EIGEN_DONT_VECTORIZE -- which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake) to
+// everything that links it -- sums a 3-vector dot product as x0 y0 + (x1 y1 + x2 y2), and this
+// file, vectorized, as (x0 y0 + x1 y1) + x2 y2. MEASURED on arm64: the two dot() differ in 31% of
+// random pairs, norm() in 12%. Nothing here depends on either order; a caller that compares these
+// results with a copy of the arithmetic built there must allow for rounding.
 
 /// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
 /// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.
@@ -851,7 +853,7 @@ Vec segment_foot(const Vec& a, const Vec& b, const Vec& p, int& kind, Vec& edge)
 }
 
 /// The distance from p to its foot on a feature of kind `kind` (its dimension; direction `edge`
-/// when 1), with InputTriangles::distance()'s derivatives in DIM dimensions: gradient
+/// when 1), with the derivatives of the distance to that feature in DIM dimensions: gradient
 /// u = (p - foot)/d; Hessian 0 on a feature of dimension DIM - 1 (a triangle's interior in 3D, a
 /// segment's interior in 2D: d is affine there), (I - u u^T - e e^T)/d on a 3D edge or segment,
 /// (I - u u^T)/d at a vertex, an endpoint or a point. Both 0 at d = 0. In 2D the interior case
@@ -957,7 +959,7 @@ bool segments_cross(
 
 } // namespace
 
-void SampleEnvelope::require_primitive_query(const int dim, const char* query) const
+void Envelope::require_primitive_query(const int dim, const char* query) const
 {
     if (!m_bvh) {
         log_and_throw_error("{} on an envelope no init() has filled in.", query);
@@ -975,7 +977,7 @@ void SampleEnvelope::require_primitive_query(const int dim, const char* query) c
     }
 }
 
-void SampleEnvelope::require_primitive(const int64_t id, const int dim, const char* query) const
+void Envelope::require_primitive(const int64_t id, const int dim, const char* query) const
 {
     require_primitive_query(dim, query);
     const size_t n = m_kind == Kind::Triangles3d ? m_f3.size()
@@ -986,7 +988,7 @@ void SampleEnvelope::require_primitive(const int64_t id, const int dim, const ch
     }
 }
 
-void SampleEnvelope::primitives_in_box(
+void Envelope::primitives_in_box(
     const Eigen::Vector3d& lo,
     const Eigen::Vector3d& hi,
     std::vector<int64_t>& ids) const
@@ -998,7 +1000,7 @@ void SampleEnvelope::primitives_in_box(
     std::sort(ids.begin(), ids.end());
 }
 
-void SampleEnvelope::primitives_in_box(
+void Envelope::primitives_in_box(
     const Eigen::Vector2d& lo,
     const Eigen::Vector2d& hi,
     std::vector<int64_t>& ids) const
@@ -1012,7 +1014,7 @@ void SampleEnvelope::primitives_in_box(
     std::sort(ids.begin(), ids.end());
 }
 
-double SampleEnvelope::primitive_distance(
+double Envelope::primitive_distance(
     const int64_t id,
     const Eigen::Vector3d& p,
     Eigen::Vector3d* grad,
@@ -1032,7 +1034,7 @@ double SampleEnvelope::primitive_distance(
     return feature_distance<3>(p, foot, kind, edge, grad, hess);
 }
 
-double SampleEnvelope::primitive_distance(
+double Envelope::primitive_distance(
     const int64_t id,
     const Eigen::Vector2d& p,
     Eigen::Vector2d* grad,
@@ -1046,7 +1048,7 @@ double SampleEnvelope::primitive_distance(
     return feature_distance<2>(p, foot, kind, edge, grad, hess);
 }
 
-double SampleEnvelope::primitive_triangle_distance(
+double Envelope::primitive_triangle_distance(
     const int64_t id,
     const std::array<Eigen::Vector3d, 3>& tri) const
 {
@@ -1070,7 +1072,8 @@ double SampleEnvelope::primitive_triangle_distance(
         }
         return m;
     }
-    // InputTriangles::triangle_distance(), with A the primitive and B the query triangle.
+    // A the primitive, B the query triangle: an exact crossing of an edge of either through the
+    // other gives 0; otherwise the min of the 6 corner-to-triangle and 9 edge-edge distances.
     const Eigen::Vector3i& f = m_f3[size_t(id)];
     const std::array<Eigen::Vector3d, 3> A = {{m_v3[f[0]], m_v3[f[1]], m_v3[f[2]]}};
     const std::array<Eigen::Vector3d, 3>& B = tri;
@@ -1098,7 +1101,7 @@ double SampleEnvelope::primitive_triangle_distance(
     return m;
 }
 
-double SampleEnvelope::primitive_segment_distance(
+double Envelope::primitive_segment_distance(
     const int64_t id,
     const std::array<Eigen::Vector2d, 2>& seg) const
 {
@@ -1115,7 +1118,7 @@ double SampleEnvelope::primitive_segment_distance(
 }
 
 
-void SampleEnvelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps)
+void Envelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps)
 {
     if (V.cols() == 3 && F.cols() == 3) {
         std::vector<Eigen::Vector3d> v(V.rows());
@@ -1137,7 +1140,7 @@ void SampleEnvelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, co
         init(v, e, eps);
     } else {
         log_and_throw_error(
-            "SampleEnvelope::init: unsupported shape V {}x{}, F {}x{}",
+            "Envelope::init: unsupported shape V {}x{}, F {}x{}",
             V.rows(),
             V.cols(),
             F.rows(),

@@ -322,6 +322,20 @@ double TopoOffsetTetMesh::global_energy() const
     return s;
 }
 
+double TopoOffsetTetMesh::offset_energy() const
+{
+    // int_B (d - delta) / delta dV as band_cell_term() reads it, the band cells only. The settle
+    // test reads this, not E: E's AMIPS term changes wherever the mesh is improved, the front
+    // moving or not. Measured 2026-10-14 (serial, Geneva settings): splits raised E through the
+    // AMIPS term by 0.7-3.6 bar energies per turn on the cube outward.
+    double s = 0.;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (cell_is_offset_band(tid)) s += band_cell_term(oriented_tet_vids(tid));
+    }
+    return s;
+}
+
 void TopoOffsetTetMesh::log_energy_step(const char* step) const
 {
     // See the declaration. A band cell is never plastic (cell_is_plastic()), so its tet_energy()
@@ -1020,10 +1034,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             ++m_repulsion_embed_refused;
             return false;
         }
-        if (!repulsion_outer_ends_kept(tids)) {
-            ++m_repulsion_close_refused;
-            return false;
-        }
         if (!energy_lowered()) return false;
         ++iter_cnt_swap;
         return true;
@@ -1056,10 +1066,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
-        return false;
-    }
-    if (!repulsion_outer_ends_kept(tids)) {
-        ++m_repulsion_close_refused;
         return false;
     }
     if (!energy_lowered()) return false;
@@ -1523,7 +1529,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
     // yes/no, and a face resting on the skin of its tube is the one the next operation pushes
-    // out. Both envelopes are real SampleEnvelopes, so squared_distance() is safe on them.
+    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -1535,7 +1541,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     double worst_frac = 0.;
     std::array<size_t, 5> band{{0, 0, 0, 0, 0}}; // <0.5, <0.9, <0.99, <1, >=1 of eps
     // The farthest a lattice of (k+1)(k+2)/2 points on the triangle is from the envelope.
-    const auto farthest = [](const SampleEnvelope& env, const std::array<Vector3d, 3>& p, int k) {
+    const auto farthest = [](const Envelope& env, const std::array<Vector3d, 3>& p, int k) {
         double d = 0.;
         for (int i = 0; i <= k; ++i) {
             for (int j = 0; j <= k - i; ++j) {
@@ -1550,7 +1556,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 3> vids = get_face_vids(f);
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face(vids);
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face(vids);
         if (!env) continue;
         ++n_held;
         const std::array<Vector3d, 3> p{
@@ -1882,7 +1888,7 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
                         if (!found) continue;
                         const size_t fid = std::get<1>(*found);
                         if (!m_face_attribute[fid].m_is_surface_fs) continue;
-                        const std::shared_ptr<SampleEnvelope> env =
+                        const std::shared_ptr<Envelope> env =
                             surface_envelope_for_face({{a, b, w}});
                         if (!env) continue;
                         const Vector3d mid = 0.5 * (pa + pb);
@@ -3148,7 +3154,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
 {
     const double delta = m_offset_params.target_distance;
     const double eps = m_offset_params.front_conv;
-    const double e_now = global_energy();
+    const double e_now = offset_energy(); // no AMIPS: see offset_energy()
     const double de = e_prev - e_now;
     e_prev = e_now;
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
@@ -3252,7 +3258,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         n_front_vertices = front_vids.size();
         for (const size_t v : front_vids) {
             const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const SampleEnvelope& env = *m_input_complex_envelope;
+            const Envelope& env = *m_input_complex_envelope;
             const double err = std::abs(
                 env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
             max_vertex = std::max(max_vertex, err / eps);
@@ -3291,7 +3297,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                     4,
                     best);
                 const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
-                const SampleEnvelope& env = *m_input_complex_envelope;
+                const Envelope& env = *m_input_complex_envelope;
                 const double dc =
                     env.primitive_distance(nearest_primitive(env, m_input_complex_pad, ctr), ctr);
                 max_gap = std::max(max_gap, (md - dc) / eps);
@@ -3311,7 +3317,8 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     // for good, hence the warning, every turn such faces exist.
     logger().log(
         n_floor > 0 ? spdlog::level::warn : spdlog::level::info,
-        "\t[settle] turn {}: E {:.10g}, dE {:.4g}, bar energy b {:.4g} (front area {:.6g}), "
+        "\t[settle] turn {}: offset energy {:.10g}, its fall {:.4g}, bar energy b {:.4g} (front "
+        "area {:.6g}), "
         "settled {}{}",
         turn,
         e_now,
@@ -3366,9 +3373,10 @@ void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& se
 
 size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
 {
-    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
-    // (attic/app/tetwild/TetWild.cpp): the same R, the same ramp, the same breadth-first walk
-    // that stops at R, the same floor. Two parts of that function are NOT ported on purpose:
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field (the attic/
+    // directory, since deleted; read attic/app/tetwild/TetWild.cpp at 2371c13fe8): the same R,
+    // the same ramp, the same breadth-first walk that stops at R, the same floor. Two parts of
+    // that function are NOT ported on purpose:
     //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
     //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
     //     the value it wants, and halving it again would refine the seed twice.
@@ -4115,7 +4123,7 @@ void TopoOffsetTetMesh::build_offset_envelope()
     // in 2D.
     const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+    m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
     logger().info(
         "\t[offset envelope] built: {} faces, {} (eps {:.6g} = offset_envelope, "
@@ -4382,7 +4390,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     m_swap_scoring_mismatch = 0;
     // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
     // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
-    // settle_e_prev is E at the end of the previous turn, for turn 1 E before its first group.
+    // settle_e_prev is the offset energy at the end of the previous turn, for turn 1 before its
+    // first group.
     const bool settle = m_offset_params.settle_refinement;
     double settle_e_prev = 0.;
     for (int it = 0; it < budget; ++it) {
@@ -4396,7 +4405,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             // ExactBandIntegral::reserve_values()).
             if (m_band_exact) m_band_exact->reserve_values(2 * tet_capacity());
             const double energy_before_group = global_energy();
-            if (settle && it == 0 && gi == 0) settle_e_prev = energy_before_group;
+            if (settle && it == 0 && gi == 0) settle_e_prev = offset_energy();
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();

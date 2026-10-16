@@ -231,9 +231,9 @@ public:
      * @brief The input complex as loaded, as an envelope of its primitives (the rows of m_phi_F,
      * or of m_phi_E and m_phi_P): built once, by init_input_complex_bvh(), never rebuilt. Every
      * 3D distance to the input reads it: the euclidean field (m_offset_potential), the repulsion
-     * pass, the predicted front, the band term's searches (OffsetPotential.hpp), the exact
-     * integral's box queries (m_band_exact), the march and the diagnostics (with
-     * input_complex_distance()'s inside test where a distance must be 0 inside the solid).
+     * pass, the band term's searches (OffsetPotential.hpp), the exact integral's box queries
+     * (m_band_exact), the march and the diagnostics (with input_complex_distance()'s inside test
+     * where a distance must be 0 inside the solid).
      *
      * init_input_complex_bvh() has one call site, before construct_offset() runs, so this holds
      * the original geometry however the elements representing the complex are later remeshed.
@@ -247,9 +247,10 @@ public:
      * and its copies of the input, filled by every init() (src/wmtk/envelope/Envelope.cpp). Under
      * offset_field "euclidean" it is built exact at target_distance (euclidean_query_envelope()),
      * and its exact structure is unused; under any other field (refused by the 3D app; unit tests
-     * build meshes with none) it is the query engine alone.
+     * build meshes with none) it is built with eps 0, the query engine alone, whose containment
+     * queries throw.
      */
-    std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
+    std::shared_ptr<Envelope> m_input_complex_envelope;
     /// input_pad() of m_phi_V, computed once beside m_input_complex_envelope: the rounding
     /// allowance of the band term's box searches on it (OffsetPotential.hpp).
     double m_input_complex_pad = 0.;
@@ -270,7 +271,7 @@ public:
     /// m_input_complex_envelope): what assign_band_regions() reads a seed vertex's piece off
     /// (nearest piece), and the euclidean per-piece field's engine. 2D answers the same question
     /// through its BVH's feature ids.
-    std::vector<std::shared_ptr<SampleEnvelope>> m_region_envelopes;
+    std::vector<std::shared_ptr<Envelope>> m_region_envelopes;
     std::vector<int64_t> m_phi_vert_region; ///< per m_phi_V row: region index
     std::vector<int64_t> m_phi_seg_region; ///< per m_phi_E row: region index, -1 unknown
     std::vector<int64_t> m_phi_face_region; ///< per m_phi_F row: region index, -1 unknown
@@ -318,7 +319,7 @@ public:
     const OffsetPotential3D& potential_for_face(const Tuple& f) const;
 
     /**
-     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): a SampleEnvelope of half-width
+     * @brief THE ENVELOPES. One, m_envelope (the base's pointer): an Envelope of half-width
      * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
      * anything moves -- after the simplicial embedding, before the repulsion and the march --
      * and swapped for a wider one only for the frozen-front final pass (build_final_envelopes()).
@@ -357,7 +358,7 @@ public:
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
     /// The loop's m_envelope while the final pass holds its own.
-    std::shared_ptr<SampleEnvelope> m_loop_envelope;
+    std::shared_ptr<Envelope> m_loop_envelope;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -370,7 +371,7 @@ public:
      * check), so it is one triangle set with no junctions: a face is either on it or not, and
      * surface_envelope_for_face() answers an offset face with this envelope alone.
      */
-    std::shared_ptr<SampleEnvelope> m_offset_envelope;
+    std::shared_ptr<Envelope> m_offset_envelope;
     void build_offset_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
@@ -788,9 +789,11 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
     mutable std::atomic<int> m_volume_reject_split{0};
 
-    /// E, the sum of tet_energy() over every live tet: the settle test's E and the
-    /// [band volume energy] lines'.
+    /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'.
     double global_energy() const;
+    /// The offset energy: band_cell_term() summed over the band cells, E without its AMIPS term.
+    /// What the settle test compares (settle_refinement_turn()).
+    double offset_energy() const;
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The scale of face_offset_term() and of the repulsion term.
     double offset_term_weight() const
@@ -1390,28 +1393,6 @@ public:
     /// pass.
     optimization::NewtonCounters m_newton_repulsion;
     std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
-    /// EXPERIMENTAL_repulsion_refine: the front the march would cut at target t, measured before
-    /// it exists (predict_front()).
-    struct PredictedFront
-    {
-        size_t n_cells = 0; ///< cells with a marched edge
-        size_t n_over = 0; ///< of them, cells whose front piece is over the bar
-        size_t n_unreached = 0; ///< cells with a marched edge whose outer end is within t
-        size_t n_unmeasurable = 0;
-        double max_measure = 0.; ///< the worst piece's face measure, 1 at the bar
-        size_t n_halved = 0; ///< vertices whose sizing scalar was halved
-    };
-    PredictedFront predict_front(double t, bool halve);
-    /// EXPERIMENTAL_repulsion_refine: whether splitting edge (v1, v2) would make an outer end
-    /// within target_distance + front_conv (split_edge_before() refuses it, split_edge_is_due()
-    /// never offers it).
-    bool repulsion_split_makes_close_outer_end(size_t v1, size_t v2) const;
-    /// EXPERIMENTAL_repulsion_refine: false when a cell of `tids` has a complex corner and a
-    /// non-complex corner within target_distance + front_conv, i.e. an outer end the march could
-    /// not trace past (the swaps refuse such cells). True whenever the key is off.
-    bool repulsion_outer_ends_kept(const std::vector<size_t>& tids) const;
-    /// Operations EXPERIMENTAL_repulsion_refine refused for that reason, per pass or round.
-    mutable std::atomic<size_t> m_repulsion_close_refused{0};
     /// The edges marching_tets() splits: exactly one end in the input complex (label != 0).
     bool is_marched_edge(const size_t a, const size_t b) const
     {
@@ -1659,7 +1640,7 @@ public:
      * The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other
      * tracked face: m_envelope when it is held (face_is_held()), else nothing.
      */
-    std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+    std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
         const auto found = try_tuple_from_face(vids);
@@ -1728,13 +1709,13 @@ public:
     bool swap_face_before(const Tuple& t) override;
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// A held vertex is pulled to and contained in m_envelope -- a real SampleEnvelope, as the
+    /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
     /// pull requires. Any other vertex, the front's included, is held by nothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
         return vertex_is_held(vid) ? m_envelope : nullptr;
     }
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
     {
         return vertex_is_held(vid) ? m_envelope : nullptr;
     }
@@ -2173,10 +2154,11 @@ public:
     /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
     /// the bar.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
-    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when E fell by
-    /// less than the bar energy b = front_conv^2 A / (2 target_distance)
-    /// since `e_prev` (E at the end of the previous turn, turn 1: before its first group; set to
-    /// E now). Only a settled turn tests the front faces (min_triangle_distance()
+    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when the offset
+    /// energy (offset_energy(), no AMIPS) fell by less than the bar energy
+    /// b = front_conv^2 A / (2 target_distance) since `e_prev` (the offset energy at the end of
+    /// the previous turn, turn 1: before its first group; set to the offset energy now). Only a
+    /// settled turn tests the front faces (min_triangle_distance()
     /// and, settle_mark "max", ExactBandIntegral::max_distance()) and halves the corners of those
     /// more than front_conv from the level set, when `refine_now`. Logs the turn's [settle] line.
     /// Returns settled and no face marked: the loop's exit. See the spec doc.

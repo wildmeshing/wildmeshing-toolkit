@@ -1173,7 +1173,7 @@ const Vector3d kApex(0., 10., 0.);
 
 std::shared_ptr<EuclideanOffsetPotential3D> plane_field()
 {
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->use_exact = true;
     const std::vector<Eigen::Vector3d> verts = {{-10., -10., 0.}, {10., -10., 0.}, kApex};
     const std::vector<Eigen::Vector3i> tris = {{0, 1, 2}};
@@ -1191,12 +1191,12 @@ Eigen::MatrixXd plane_vertices()
 
 /// The same triangle as the band term's convex pieces (TopoOffsetTetMesh::
 /// m_input_complex_envelope, which the band term searches).
-std::shared_ptr<SampleEnvelope> plane_triangles()
+std::shared_ptr<Envelope> plane_triangles()
 {
     const Eigen::MatrixXd V = plane_vertices();
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
-    auto env = std::make_shared<SampleEnvelope>(true);
+    auto env = std::make_shared<Envelope>(true);
     env->init(V, F, kEnergyDelta);
     return env;
 }

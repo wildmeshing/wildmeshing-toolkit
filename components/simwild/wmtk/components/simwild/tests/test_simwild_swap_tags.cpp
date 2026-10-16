@@ -142,7 +142,7 @@ std::vector<std::array<size_t, 4>> tets_with_tag(SimWildMesh& mesh, const CellTa
     return out;
 }
 
-void init_env_from_surface(SampleEnvelope& env, SimWildMesh& mesh, double eps)
+void init_env_from_surface(Envelope& env, SimWildMesh& mesh, double eps)
 {
     std::vector<Vector3d> v(mesh.vert_capacity());
     for (size_t i = 0; i < mesh.vert_capacity(); ++i) v[i] = mesh.m_vertex_attribute[i].m_posf;
@@ -200,7 +200,7 @@ TEST_CASE("simwild-swap-tags-32", "[simwild][3D][swap][tags]")
     REQUIRE_FALSE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 3);
@@ -237,7 +237,7 @@ TEST_CASE("simwild-swap-tags-44", "[simwild][3D][swap][tags]")
     REQUIRE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 4);
@@ -278,7 +278,7 @@ TEST_CASE("simwild-swap-tags-56", "[simwild][3D][swap][tags]")
     REQUIRE(is_surface(mesh, 0, 1, 4));
     check_surface_matches_tags(mesh);
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     init_env_from_surface(*env, mesh, 50.0);
     mesh.m_envelope = env;
     inflate_quality(mesh, 5);
@@ -322,7 +322,7 @@ TEST_CASE("simwild-swap-tags-interior", "[simwild][3D][swap][tags]")
     }
 
     // No envelope on purpose: there is no surface here, and the envelope is only consulted
-    // on the surface-flip path. (Handing SampleEnvelope an empty face set recurses forever.)
+    // on the surface-flip path. (Handing Envelope an empty face set recurses forever.)
     inflate_quality(mesh, 4);
 
     auto t = mesh.tuple_from_edge(std::array<size_t, 2>{{0, 1}});

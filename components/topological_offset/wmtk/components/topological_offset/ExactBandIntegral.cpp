@@ -3058,7 +3058,7 @@ ExactBandIntegral::ExactBandIntegral(
     const std::vector<int8_t>& face_side,
     const int sigma,
     const size_t value_slots,
-    std::shared_ptr<const wmtk::SampleEnvelope> envelope)
+    std::shared_ptr<const wmtk::Envelope> envelope)
 {
     static std::atomic<uint64_t> n_constructed{0};
     m_id = ++n_constructed;
@@ -3265,7 +3265,7 @@ ExactBandIntegral::ExactBandIntegral(
     }
     m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
     if (envelope) {
-        if (envelope->kind() != wmtk::SampleEnvelope::Kind::Triangles3d) {
+        if (envelope->kind() != wmtk::Envelope::Kind::Triangles3d) {
             log_and_throw_error("ExactBandIntegral: the envelope given does not hold triangles");
         }
         m_env = std::move(envelope);
@@ -3280,7 +3280,7 @@ ExactBandIntegral::ExactBandIntegral(
             corners.push_back(m_C[size_t(f)]);
             faces.emplace_back(3 * f, 3 * f + 1, 3 * f + 2);
         }
-        auto env = std::make_shared<wmtk::SampleEnvelope>(true);
+        auto env = std::make_shared<wmtk::Envelope>(true);
         env->init(corners, faces, 0.);
         m_env = std::move(env);
     }

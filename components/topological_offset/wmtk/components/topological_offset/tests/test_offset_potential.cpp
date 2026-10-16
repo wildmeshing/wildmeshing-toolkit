@@ -274,9 +274,9 @@ std::vector<Vector3d> face_normal_samples(const TriSoup& s, const double dhat)
 /// The input envelope of the triangles (V, F), V n x 3, as TopoOffsetTetMesh::
 /// m_input_complex_envelope is to the band term's searches (OffsetPotential.hpp): its BVH and its
 /// copies of the input. eps 0 builds no containment structure, which no search reads.
-std::shared_ptr<const SampleEnvelope> triangle_envelope(const MatrixXd& V, const MatrixXi& F)
+std::shared_ptr<const Envelope> triangle_envelope(const MatrixXd& V, const MatrixXi& F)
 {
-    auto env = std::make_shared<SampleEnvelope>(true);
+    auto env = std::make_shared<Envelope>(true);
     env->init(V, F, 0.);
     return env;
 }
@@ -1799,7 +1799,7 @@ TEST_CASE("face-mean-sq-cos", "[offset][potential]")
 TEST_CASE("front-face-max-distance", "[offset][potential]")
 {
     // EXPERIMENTAL_settle_refinement's face test. min_triangle_distance() is the min over ALL
-    // triangles of SampleEnvelope::primitive_triangle_distance(), and min_max_corner_distance()
+    // triangles of Envelope::primitive_triangle_distance(), and min_max_corner_distance()
     // the min over ALL triangles of the max corner distance (brute force, on a cube and on a
     // random soup); primitive_triangle_distance() is the distance between two triangles: h for
     // parallel ones h apart, 0 for crossing ones, never above a dense sampling of both and within
@@ -1829,7 +1829,7 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
         return triangle_envelope(V, F);
     };
     /// The distance between primitive 0 of `env` and the triangle abc.
-    const auto triangle_distance = [](const std::shared_ptr<const SampleEnvelope>& env,
+    const auto triangle_distance = [](const std::shared_ptr<const Envelope>& env,
                                       const Vector3d& a,
                                       const Vector3d& b,
                                       const Vector3d& c) {

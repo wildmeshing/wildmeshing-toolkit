@@ -37,7 +37,7 @@ struct VertexAttributes
 class ShortestEdgeCollapse : public wmtk::TriMesh
 {
 public:
-    wmtk::SampleEnvelope m_envelope;
+    wmtk::Envelope m_envelope;
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), used instead of
     /// freezing the boundary when create_mesh() gets a positive boundary_eps. See there.
