@@ -1861,6 +1861,9 @@ public:
         if (m_tetwild_pass) return sum;
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid));
+            // EXPERIMENTAL_laplacian: in this objective and nowhere else -- not in tet_energy(),
+            // so the veto after the solve still judges the move by E alone.
+            if (const auto lap = front_laplacian_energy(vid)) sum->add_energy(lap);
         } else if (!vertex_is_held(vid)) {
             // E's band term moves with this vertex too -- except a vertex held on the input.
             // There d = 0 at the vertex and d has a kink: the term's slope along the input's
@@ -1883,6 +1886,30 @@ public:
     /// The band term (band_cell_term()) of vid's band cells with vid moving (BandVolumeEnergy3D),
     /// null when vid has none. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> band_volume_energy_at(size_t vid) const;
+    /**
+     * @brief EXPERIMENTAL_laplacian: front vertex vid's pull toward the Laplace-Beltrami
+     * (cotangent) weighted centroid of its front neighbours (LaplacianEnergy3D), for its smoothing
+     * solve only; null when the key is 0, the turn's factor is 0 or vid has no live front face.
+     * Defined in FrontSmooth3d.cpp.
+     *
+     *     mu = laplacian x m_laplacian_factor x lbar,   stiffness mu W
+     *
+     * lbar is the mean length of vid's front edges, so mu is a length: the term is a volume, as
+     * every term of E is, and its force mu W |x - c| scales as l^2, like the band and AMIPS
+     * forces, whatever the front's resolution. Frozen for the solve: the weights, the centroid
+     * and the stiffness are read once, at the position the solve starts from.
+     */
+    std::shared_ptr<polysolve::nonlinear::Problem> front_laplacian_energy(size_t vid) const;
+    /**
+     * @brief EXPERIMENTAL_laplacian's factor for the running turn, set by the loop at each turn's
+     * start: 1 for turns 1 and 2, then min(1, |dE_{t-1}| / |dE_1|), dE_t the offset energy's
+     * change over turn t (offset_energy(), the settle test's dE). It dies down as the offset
+     * term settles. Proportional to dE, the weights' sum over the run is bounded by the offset
+     * energy's total variation: a summable perturbation of the smoother, which is what keeps the
+     * limit points of the descent those of E (.claude/foldover_findings_2026-10-16.md, section
+     * 7). Read only by front_laplacian_energy().
+     */
+    double m_laplacian_factor = 1.;
 
 
     /// Samples per offset face; see offset_face_samples().

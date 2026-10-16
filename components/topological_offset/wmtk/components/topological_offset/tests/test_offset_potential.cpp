@@ -2015,3 +2015,94 @@ TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
         CHECK(d == Catch::Approx(delta).epsilon(0.02));
     }
 }
+
+/**
+ * EXPERIMENTAL_laplacian's term (LaplacianEnergy3D): the weights of a vertex's fan, and the
+ * spring they make. A regular hexagonal fan around a vertex lifted off its plane has six equal
+ * weights by symmetry, so the centroid is the hexagon's centre; a fan with obtuse and degenerate
+ * corners keeps every weight inside [kWeightMin, kWeightMax]; the value, gradient and Hessian
+ * agree, and the energy alone is minimised at the centroid.
+ */
+TEST_CASE("laplacian-energy-3d", "[offset][potential]")
+{
+    using LE = LaplacianEnergy3D;
+    const auto hexagon_fan = [](std::vector<std::array<size_t, 2>>& ids,
+                                std::vector<std::array<Eigen::Vector3d, 2>>& pos) {
+        ids.clear();
+        pos.clear();
+        for (size_t i = 0; i < 6; ++i) {
+            const size_t j = (i + 1) % 6;
+            const double ai = M_PI / 3. * double(i), aj = M_PI / 3. * double(j);
+            ids.push_back({{i, j}});
+            pos.push_back(
+                {{Eigen::Vector3d(std::cos(ai), std::sin(ai), 0.),
+                  Eigen::Vector3d(std::cos(aj), std::sin(aj), 0.)}});
+        }
+    };
+    std::vector<std::array<size_t, 2>> ids;
+    std::vector<std::array<Eigen::Vector3d, 2>> pos;
+    Eigen::Vector3d c;
+    double W = 0., lbar = 0.;
+
+    SECTION("regular fan: equal weights, centroid at the centre")
+    {
+        hexagon_fan(ids, pos);
+        // In the plane each weight is (cot 60 + cot 60) / 2 = 1 / sqrt 3.
+        REQUIRE(LE::fan_weights(Eigen::Vector3d::Zero(), ids, pos, c, W, lbar));
+        CHECK(W == Catch::Approx(6. / std::sqrt(3.)).epsilon(1e-12));
+        CHECK(c.norm() == Catch::Approx(0.).margin(1e-12));
+        CHECK(lbar == Catch::Approx(1.).epsilon(1e-12));
+        // Lifted off the plane, still symmetric: the centroid stays at the centre.
+        REQUIRE(LE::fan_weights(Eigen::Vector3d(0., 0., 0.3), ids, pos, c, W, lbar));
+        CHECK(c.norm() == Catch::Approx(0.).margin(1e-12));
+        CHECK(lbar == Catch::Approx(std::sqrt(1.09)).epsilon(1e-12));
+    }
+
+    SECTION("obtuse and degenerate corners stay inside the clamp")
+    {
+        // Two faces sharing neighbour 1, one with a corner of almost 180 degrees (a negative
+        // cotangent), one degenerate (a corner of zero area).
+        ids = {{{0, 1}}, {{1, 2}}, {{2, 3}}};
+        pos = {
+            {{Eigen::Vector3d(1., 0., 0.), Eigen::Vector3d(0.02, 1., 0.)}},
+            {{Eigen::Vector3d(0.02, 1., 0.), Eigen::Vector3d(-1., 0., 0.)}},
+            {{Eigen::Vector3d(-1., 0., 0.), Eigen::Vector3d(-2., 0., 0.)}}};
+        REQUIRE(LE::fan_weights(Eigen::Vector3d(0., 0.01, 0.), ids, pos, c, W, lbar));
+        CHECK(W >= 4. * LE::kWeightMin);
+        CHECK(W <= 4. * LE::kWeightMax);
+        CHECK(std::isfinite(c.norm()));
+    }
+
+    SECTION("an empty fan has no term")
+    {
+        ids.clear();
+        pos.clear();
+        CHECK_FALSE(LE::fan_weights(Eigen::Vector3d::Zero(), ids, pos, c, W, lbar));
+    }
+
+    SECTION("value, gradient, Hessian and minimiser")
+    {
+        const Eigen::Vector3d centre(0.3, -0.2, 0.5);
+        const double k = 2.7;
+        LE e(centre, k);
+        Eigen::VectorXd x(3);
+        x << 1.1, 0.4, -0.3;
+        Eigen::VectorXd g(3);
+        e.gradient(x, g);
+        const double h = 1e-6;
+        for (int i = 0; i < 3; ++i) {
+            Eigen::VectorXd xp = x, xm = x;
+            xp(i) += h;
+            xm(i) -= h;
+            CHECK(g(i) == Catch::Approx((e.value(xp) - e.value(xm)) / (2. * h)).epsilon(1e-6));
+        }
+        Eigen::MatrixXd H;
+        e.hessian(x, H);
+        CHECK((H - k * Eigen::MatrixXd::Identity(3, 3)).norm() == Catch::Approx(0.).margin(1e-14));
+        Eigen::VectorXd xc(3);
+        xc << centre(0), centre(1), centre(2);
+        CHECK(e.value(xc) == Catch::Approx(0.).margin(1e-14));
+        e.gradient(xc, g);
+        CHECK(g.norm() == Catch::Approx(0.).margin(1e-14));
+    }
+}

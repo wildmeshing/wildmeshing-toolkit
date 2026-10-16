@@ -1733,4 +1733,83 @@ void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
     hess = m_weight * H;
 }
 
+LaplacianEnergy3D::LaplacianEnergy3D(const Eigen::Vector3d& centroid, const double stiffness)
+    : m_c(centroid)
+    , m_k(stiffness)
+{}
+
+double LaplacianEnergy3D::value(const TVector& x)
+{
+    return 0.5 * m_k * (Eigen::Vector3d(x.head<3>()) - m_c).squaredNorm();
+}
+
+void LaplacianEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    gradv = m_k * (Eigen::Vector3d(x.head<3>()) - m_c);
+}
+
+void LaplacianEnergy3D::hessian(const TVector&, MatrixXd& hessian)
+{
+    hessian = m_k * MatrixXd::Identity(3, 3);
+}
+
+bool LaplacianEnergy3D::fan_weights(
+    const Eigen::Vector3d& x,
+    const std::vector<std::array<size_t, 2>>& face_ids,
+    const std::vector<std::array<Eigen::Vector3d, 2>>& face_pos,
+    Eigen::Vector3d& centroid,
+    double& weight_sum,
+    double& mean_edge)
+{
+    // Per neighbour: its id, its position and its half-cotangents summed over the fan.
+    std::vector<size_t> ids;
+    std::vector<Eigen::Vector3d> pos;
+    std::vector<double> w;
+    const auto slot = [&](const size_t id, const Eigen::Vector3d& p) {
+        for (size_t i = 0; i < ids.size(); ++i) {
+            if (ids[i] == id) return i;
+        }
+        ids.push_back(id);
+        pos.push_back(p);
+        w.push_back(0.);
+        return ids.size() - 1;
+    };
+    // Half the cotangent of the angle at corner o between p - o and q - o. A corner whose sides
+    // are parallel reads +-infinity, which the clamp below turns into a bound.
+    const auto half_cot =
+        [](const Eigen::Vector3d& o, const Eigen::Vector3d& p, const Eigen::Vector3d& q) {
+            const Eigen::Vector3d u = p - o, v = q - o;
+            const double s = u.cross(v).norm();
+            const double c = u.dot(v);
+            if (!(s > 0.)) {
+                return c > 0. ? std::numeric_limits<double>::infinity()
+                              : -std::numeric_limits<double>::infinity();
+            }
+            return 0.5 * c / s;
+        };
+    for (size_t f = 0; f < face_ids.size() && f < face_pos.size(); ++f) {
+        const Eigen::Vector3d& b = face_pos[f][0];
+        const Eigen::Vector3d& c = face_pos[f][1];
+        // In face (x, b, c) the angle opposite edge (x, b) is at c, and opposite (x, c) at b.
+        const size_t ib = slot(face_ids[f][0], b);
+        const size_t ic = slot(face_ids[f][1], c);
+        w[ib] += half_cot(c, x, b);
+        w[ic] += half_cot(b, x, c);
+    }
+    if (ids.empty()) return false;
+    centroid.setZero();
+    weight_sum = 0.;
+    mean_edge = 0.;
+    for (size_t i = 0; i < ids.size(); ++i) {
+        // A NaN (+infinity and -infinity from two degenerate corners) reads as the weakest pull.
+        const double wi = std::isnan(w[i]) ? kWeightMin : std::clamp(w[i], kWeightMin, kWeightMax);
+        centroid += wi * pos[i];
+        weight_sum += wi;
+        mean_edge += (pos[i] - x).norm();
+    }
+    centroid /= weight_sum;
+    mean_edge /= double(ids.size());
+    return true;
+}
+
 } // namespace wmtk::components::topological_offset

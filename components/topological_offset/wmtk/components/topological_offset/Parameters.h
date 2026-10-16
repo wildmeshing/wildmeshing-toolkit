@@ -192,6 +192,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
+    /// EXPERIMENTAL (2026-10-16), 3D: the weight lambda of a Laplace-Beltrami pull in each front
+    /// vertex's smoothing objective only, scaled per turn by the offset energy's last change
+    /// (TopoOffsetTetMesh::front_laplacian_energy(), m_laplacian_factor). 0 (the default): off.
+    /// See the spec doc.
+    double laplacian = 0.;
     /// EXPERIMENTAL (2026-10-16), 3D: before the loop, TetWild's own pass on the mesh as
     /// constructed, run as the final TetWild pass runs it
     /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
@@ -324,6 +329,10 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error(
                 "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
                 damping_factor);
+        }
+        laplacian = json_params["EXPERIMENTAL_laplacian"];
+        if (!(laplacian >= 0.)) {
+            log_and_throw_error("EXPERIMENTAL_laplacian must be >= 0, not {}", laplacian);
         }
         construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];

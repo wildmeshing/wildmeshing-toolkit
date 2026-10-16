@@ -41,6 +41,7 @@
       "EXPERIMENTAL_gap_refinement",
       "EXPERIMENTAL_damping",
       "EXPERIMENTAL_damping_factor",
+      "EXPERIMENTAL_laplacian",
       "EXPERIMENTAL_construction_tetwild_run",
       "TESTING_allow_mult_comp",
       "check_manifoldness",
@@ -327,6 +328,13 @@
     "min": 0,
     "default": 0.5,
     "doc": "EXPERIMENTAL (2026-10-15), 3D, with EXPERIMENTAL_damping. The damping bound as a factor of the shortest edge at the vertex: each smoothing solve may move its vertex at most this times the length of its shortest edge (to any vertex of its one-ring), at the positions when the solve started. Must be > 0; a value other than the default with EXPERIMENTAL_damping false is refused with an error. 0.5 (the default) = half the shortest edge, the bound EXPERIMENTAL_damping had before this key existed."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_laplacian",
+    "type": "float",
+    "min": 0,
+    "default": 0.0,
+    "doc": "EXPERIMENTAL (2026-10-16), 3D. The weight lambda of a Laplace-Beltrami pull in the smoothing solve of every front vertex the loop places against the offset term (not one an envelope holds, not in a TetWild pass), and in nothing else: not in the per-tet energy, the operations' rules, the veto after the solve, the settle test or the debug fields, so a move is still accepted only if E does not rise and the term only changes which E-lowering move a vertex takes. The term is (mu / 2) sum_j w_j |x - x_j|^2 over the vertex's front neighbours j, w_j the cotangent (Laplace-Beltrami) weights (cot alpha + cot beta) / 2 of the front faces at edge (x, j), clamped to [0.01, 10] (positive, as a fold-free convex-combination map needs; bounded against sliver faces), frozen for the solve: a pull toward the weights' centroid. mu = lambda x lbar x f_t: lbar the mean length of the vertex's front edges (so the pull scales as the band and AMIPS forces do, whatever the resolution), f_t the turn's factor: 1 in turns 1 and 2, then min(1, |dE_{t-1}| / |dE_1|), dE_t the offset energy's change over turn t (the settle test's dE). The factor dies down as the offset term settles; proportional to dE, its sum over the run is bounded by the offset energy's total variation, a summable perturbation of the descent (.claude/foldover_findings_2026-10-16.md, section 7). Logged once per turn as [laplacian]. Must be >= 0; 0 (the default): off."
   },
   {
     "pointer": "/EXPERIMENTAL_construction_tetwild_run",

@@ -4434,9 +4434,32 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // first group.
     const bool settle = m_offset_params.settle_refinement;
     double settle_e_prev = 0.;
+    // EXPERIMENTAL_laplacian: each turn's factor (m_laplacian_factor) from the offset energy's
+    // change over the turns before it, as the settle test measures it: 1 for turns 1 and 2, then
+    // min(1, |dE_{t-1}| / |dE_1|). lap_e_start is the offset energy at the running turn's start.
+    const bool laplacian = m_offset_params.laplacian > 0.;
+    double lap_e_start = 0., lap_de_first = 0., lap_de_last = 0.;
+    m_laplacian_factor = 1.;
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
+        if (laplacian) {
+            if (it == 0) {
+                logger().info(
+                    "\t[laplacian] turn 1: factor 1 (lambda {}; no change measured yet)",
+                    m_offset_params.laplacian);
+            } else {
+                logger().info(
+                    "\t[laplacian] turn {}: factor {:.6g} (lambda {}; |dE| of turn {} {:.6g}, of "
+                    "turn 1 {:.6g})",
+                    it + 1,
+                    m_laplacian_factor,
+                    m_offset_params.laplacian,
+                    it,
+                    lap_de_last,
+                    lap_de_first);
+            }
+        }
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             ++m_smooth_group; // see VertexExtra::m_front_change
             // E before and after each group, the descent check (a collapse or swap group may not
@@ -4446,6 +4469,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             if (m_band_exact) m_band_exact->reserve_values(2 * tet_capacity());
             const double energy_before_group = global_energy();
             if (settle && it == 0 && gi == 0) settle_e_prev = offset_energy();
+            if (laplacian && it == 0 && gi == 0) {
+                lap_e_start = settle ? settle_e_prev : offset_energy();
+            }
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
@@ -4693,6 +4719,16 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
         // when the loop may exit, which then replaces EnergyCriterion::converged() below.
         const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // EXPERIMENTAL_laplacian: this turn's change of the offset energy sets the next turn's
+        // factor. settle_refinement_turn() has just moved settle_e_prev to the energy now.
+        if (laplacian) {
+            const double e_end = settle ? settle_e_prev : offset_energy();
+            lap_de_last = std::abs(lap_e_start - e_end);
+            if (it == 0) lap_de_first = lap_de_last;
+            m_laplacian_factor = lap_de_first > 0. ? std::min(1., lap_de_last / lap_de_first)
+                                                   : (lap_de_last > 0. ? 1. : 0.);
+            lap_e_start = e_end;
+        }
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.

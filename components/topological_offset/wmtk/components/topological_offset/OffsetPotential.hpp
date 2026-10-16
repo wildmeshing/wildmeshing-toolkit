@@ -1012,4 +1012,61 @@ private:
     std::vector<Cell> m_cells;
 };
 
+/**
+ * @brief EXPERIMENTAL_laplacian: a front vertex's pull toward the cotangent-weighted centroid of
+ * its front neighbours, in the vertex's smoothing objective ONLY
+ * (TopoOffsetTetMesh::front_laplacian_energy()). No acceptance test, no tet_energy(), no
+ * operation and no exit test reads it, so it changes which E-lowering move a vertex takes, never
+ * whether E may rise.
+ *
+ *     E(x) = (k / 2) |x - c|^2,   c = sum_j w_j x_j / W,   W = sum_j w_j,   k = mu W
+ *
+ * which is mu (1/2) sum_j w_j |x - x_j|^2 up to a constant: the vertex's part of the front's
+ * Dirichlet energy with its weights frozen for the solve, whose gradient is mu times the
+ * (negated) Laplace-Beltrami operator of the position at the vertex. The weights are
+ * fan_weights()'s.
+ */
+class LaplacianEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// The clamp of each neighbour's weight. Strictly positive: Tutte's and Floater's theorems
+    /// (a convex-combination map is fold-free) need positive weights, and a cotangent pair goes
+    /// negative across an obtuse, non-Delaunay edge. Bounded: a sliver face's cotangent grows
+    /// without bound. An equilateral fan's weight is cot 60 deg = 0.577.
+    static constexpr double kWeightMin = 1e-2;
+    static constexpr double kWeightMax = 1e1;
+    /// centroid c and stiffness k = mu W, both frozen for the solve.
+    LaplacianEnergy3D(const Eigen::Vector3d& centroid, double stiffness);
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+    /**
+     * @brief The Laplace-Beltrami (cotangent) weights of the vertex at x over its fan of faces
+     * (x, b, c), each given by its other two corners' vertex ids and positions. Per neighbour j:
+     * w_j = the sum, over the fan's faces holding edge (x, j), of half the cotangent of the angle
+     * opposite that edge, then clamped to [kWeightMin, kWeightMax]. Out: the weighted centroid,
+     * the weights' sum W and the mean distance from x to its neighbours. False for an empty fan.
+     */
+    static bool fan_weights(
+        const Eigen::Vector3d& x,
+        const std::vector<std::array<size_t, 2>>& face_ids,
+        const std::vector<std::array<Eigen::Vector3d, 2>>& face_pos,
+        Eigen::Vector3d& centroid,
+        double& weight_sum,
+        double& mean_edge);
+
+private:
+    Eigen::Vector3d m_c;
+    double m_k;
+};
+
 } // namespace wmtk::components::topological_offset

@@ -375,4 +375,31 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     return e;
 }
 
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_laplacian_energy(
+    const size_t vid) const
+{
+    // See the declaration.
+    const double scale = m_offset_params.laplacian * m_laplacian_factor;
+    if (!(scale > 0.)) return nullptr;
+    const Vector3d& x = m_vertex_attribute[vid].m_posf;
+    // vid's live front faces, each as its two other corners. Every corner lies in vid's one-ring,
+    // which the smoothing pass holds for this solve.
+    std::vector<std::array<size_t, 2>> ids;
+    std::vector<std::array<Vector3d, 2>> pos;
+    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+        std::array<size_t, 2> o{{0, 0}};
+        int k = 0;
+        for (const size_t u : get_face_vids(f)) {
+            if (u != vid && k < 2) o[size_t(k++)] = u;
+        }
+        if (k != 2) continue;
+        ids.push_back(o);
+        pos.push_back({{m_vertex_attribute[o[0]].m_posf, m_vertex_attribute[o[1]].m_posf}});
+    }
+    Vector3d c;
+    double weight_sum = 0., lbar = 0.;
+    if (!LaplacianEnergy3D::fan_weights(x, ids, pos, c, weight_sum, lbar)) return nullptr;
+    return std::make_shared<LaplacianEnergy3D>(c, scale * lbar * weight_sum);
+}
+
 } // namespace wmtk::components::topological_offset
