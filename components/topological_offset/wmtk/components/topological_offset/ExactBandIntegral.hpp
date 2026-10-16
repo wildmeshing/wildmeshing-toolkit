@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <wmtk/envelope/Envelope.hpp>
+
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -36,7 +38,7 @@ namespace wmtk::components::topological_offset {
  * Per cell:
  *  0. Candidates: U = min over triangles P of max over t's corners of d_P is an upper bound of
  *     d on t (d_P convex), so every feature whose bounding box is within U of t's box is kept.
- *     U is the exact min over ALL triangles (a tree search); the Python takes the min over the 32
+ *     U is the exact min over ALL triangles (a box search); the Python takes the min over the 32
  *     triangles nearest t by box distance, MEASURED equal on all 14180 cells checked (the five
  *     stored cases, sample + 3000 random each), although ties at rank 32 occur in up to 634 of
  *     3240 cells, where numpy's sort order decides which 32 it takes.
@@ -114,12 +116,16 @@ public:
     /// is outside of for offset_out and offset_in alike, so it passes +1.
     /// value_slots > 0: value() keeps a table of its results of at least that many slots (the
     /// value table, value()).
+    /// envelope: the triangles' box queries, for U and the candidate query -- a Triangles3d
+    /// SampleEnvelope whose primitive i is row i of F (TopoOffsetTetMesh passes
+    /// m_input_complex_envelope, built from the same rows); null: one is built here from V and F.
     ExactBandIntegral(
         const Eigen::MatrixXd& V,
         const Eigen::MatrixXi& F,
         const std::vector<int8_t>& face_side,
         int sigma,
-        size_t value_slots = 0);
+        size_t value_slots = 0,
+        std::shared_ptr<const wmtk::SampleEnvelope> envelope = nullptr);
 
     /// Counters, volumes and (when `timing`) times of value() calls, ADDED to on every call (never
     /// reset by value()).
@@ -469,17 +475,20 @@ private:
     std::vector<char> m_side_has;
     std::vector<Eigen::Vector3d> m_side_n, m_side_q;
 
-    /// A tree over the triangles' boxes (median split on the longest axis of the centroids, as
-    /// InputTriangles' tree), for U and the candidate query. Boxes padded by 1e-9 of the input's
-    /// diagonal, so a box distance never exceeds a triangle distance by rounding.
+    /// The triangles' boxes, for U and the candidate query: the envelope's
+    /// SampleEnvelope::primitives_in_box(), primitive f being face f. Until 2026-10-15 a tree of
+    /// this class's own over the same boxes, beside the envelope's.
+    std::shared_ptr<const wmtk::SampleEnvelope> m_env;
+    /// 1e-9 of the input's diagonal: what a box query is grown by, so that a triangle whose
+    /// distance reaches a bound by rounding is never left out of it.
+    double m_pad = 0.;
+    /// A node of prepare_front_flux()'s tree over the kept polytopes' boxes: its box holds boxes
+    /// m_ff_order[begin, end); a leaf has left < 0.
     struct Node
     {
         Eigen::Vector3d lo, hi;
         int left = -1, right = -1, begin = 0, end = 0;
     };
-    std::vector<Node> m_nodes;
-    std::vector<int> m_order;
-    int build_node(int begin, int end, const std::vector<Eigen::Vector3d>& centroid, double pad);
 
     /// Per-call scratch of the partitions (defined in the .cpp): the candidates in the frame of a
     /// cell or front face (Local), and the pieces of a cell (Work) or of a face (TriWork).
@@ -554,7 +563,7 @@ private:
     /// f's labelled parts, from `keep` when it holds f's, else made (into keep, or a scratch).
     const FaceWork& face_parts(const std::array<Eigen::Vector3d, 3>& f, FaceParts* keep) const;
     /// prepare_front_flux(): the kept polytopes' boxes and face planes {x : g.x <= h} (global
-    /// coordinates), and a tree over the boxes (as m_nodes, over m_ff_order).
+    /// coordinates), and a tree over the boxes (Node, over m_ff_order).
     struct FFBox
     {
         Eigen::Vector3d lo, hi;

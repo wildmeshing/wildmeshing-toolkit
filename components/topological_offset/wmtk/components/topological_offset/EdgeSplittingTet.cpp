@@ -105,7 +105,7 @@ bool TopoOffsetTetMesh::repulsion_split_makes_close_outer_end(const size_t v1, c
     }
     if (!beside_complex) return false;
     const Vector3d mid = 0.5 * (m_vertex_attribute[v1].m_posf + m_vertex_attribute[v2].m_posf);
-    return m_input_complex_bvh->dist(mid) <=
+    return input_complex_distance(mid) <=
            m_offset_params.target_distance + m_offset_params.front_conv;
 }
 
@@ -125,7 +125,7 @@ bool TopoOffsetTetMesh::repulsion_outer_ends_kept(const std::vector<size_t>& tid
         if (!has_complex) continue;
         for (const size_t v : vs) {
             if (m_vertex_extra[v].label != 0) continue;
-            if (m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf) <= stop) return false;
+            if (input_complex_distance(m_vertex_attribute[v].m_posf) <= stop) return false;
         }
     }
     return true;
@@ -291,7 +291,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
-        const double d = m_input_complex_bvh->dist(p);
+        const double d = input_complex_distance(p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;

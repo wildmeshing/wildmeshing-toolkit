@@ -979,11 +979,11 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector3d q(1.0, 1.0, 1.0);
-    double dist = mesh.m_input_complex_bvh->dist(q);
+    double dist = mesh.input_complex_distance(q);
     REQUIRE(fabs(dist - sqrt(3.0)) < pow(10, -6));
 
     Vector3d q0(0.0, 0.0, 0.0);
-    dist = mesh.m_input_complex_bvh->dist(q0);
+    dist = mesh.input_complex_distance(q0);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     // label faces, edges, and vertices as input
@@ -999,29 +999,29 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     mesh.init_input_complex_bvh();
 
     Vector3d q1(1.0, 1.0, 1.0);
-    dist = mesh.m_input_complex_bvh->dist(q1);
+    dist = mesh.input_complex_distance(q1);
     REQUIRE(fabs(dist - (2.0 / sqrt(3.0))) < pow(10, -6));
 
     Vector3d q2(0.0, 0.0, 0.0);
-    dist = mesh.m_input_complex_bvh->dist(q2);
+    dist = mesh.input_complex_distance(q2);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     Vector3d q3(10.0, 2.0, 1.0);
-    dist = mesh.m_input_complex_bvh->dist(q3);
+    dist = mesh.input_complex_distance(q3);
     REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
 
     Vector3d q4(0.1, 0.2, 0.3);
-    dist = mesh.m_input_complex_bvh->dist(q4);
+    dist = mesh.input_complex_distance(q4);
     REQUIRE(fabs(dist - 0.1) < pow(10, -6));
 
     // label tet as input
     mesh.m_tet_attribute[0].label = 1;
     mesh.init_input_complex_bvh();
 
-    dist = mesh.m_input_complex_bvh->dist(q4);
+    dist = mesh.input_complex_distance(q4);
     REQUIRE(fabs(dist) < pow(10, -6));
 
-    dist = mesh.m_input_complex_bvh->dist(q3);
+    dist = mesh.input_complex_distance(q3);
     REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
 }
 
@@ -1156,7 +1156,7 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
 // The per-tet energy (TopoOffsetTetMesh::tet_energy()) and the face measure.
 //
 // Fixtures share one input: a large triangle in the plane z = 0, the euclidean field of its
-// distance at level delta = 0.5, and the same triangle as the band term's InputTriangles. Above
+// distance at level delta = 0.5, and the same triangle as the band term's input envelope. Above
 // the triangle's interior d = z, affine, so relative_residual(q) = (z - 0.5) / 0.5 and the band
 // term's corner mean is exact. Beyond its apex (0, 10, 0) -- y > 10, |x| < 2 (y - 10) -- d is the
 // distance to the apex, curved, and the corner mean is an upper bound that depends on how a
@@ -1181,14 +1181,24 @@ std::shared_ptr<EuclideanOffsetPotential3D> plane_field()
     return std::make_shared<EuclideanOffsetPotential3D>(env, kEnergyDelta);
 }
 
-/// The same triangle as the band term's convex pieces (TopoOffsetTetMesh::m_band_tris).
-std::shared_ptr<InputTriangles> plane_triangles()
+/// The triangle's corners.
+Eigen::MatrixXd plane_vertices()
 {
     Eigen::MatrixXd V(3, 3);
     V << -10., -10., 0., 10., -10., 0., kApex.x(), kApex.y(), kApex.z();
+    return V;
+}
+
+/// The same triangle as the band term's convex pieces (TopoOffsetTetMesh::
+/// m_input_complex_envelope, which the band term searches).
+std::shared_ptr<SampleEnvelope> plane_triangles()
+{
+    const Eigen::MatrixXd V = plane_vertices();
     Eigen::MatrixXi F(1, 3);
     F << 0, 1, 2;
-    return std::make_shared<InputTriangles>(V, F);
+    auto env = std::make_shared<SampleEnvelope>(true);
+    env->init(V, F, kEnergyDelta);
+    return env;
 }
 
 /// The distance to the triangle at a point above its interior or beyond its apex, the two
@@ -1284,7 +1294,8 @@ std::unique_ptr<TopoOffsetTetMesh> energy_mesh(
         mesh->m_tet_attribute[i].label = labels[i];
     }
     mesh->m_offset_potential = pot;
-    mesh->m_band_tris = plane_triangles();
+    mesh->m_input_complex_envelope = plane_triangles();
+    mesh->m_input_complex_pad = input_pad(plane_vertices());
     return mesh;
 }
 
@@ -2478,7 +2489,7 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
     REQUIRE(mesh.m_marching_midpoint_splits == 0);
     mesh.write_msh_groups(out.string());
     check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 3, [&](const Vector3d& p) {
-        return mesh.m_input_complex_bvh->dist(p);
+        return mesh.input_complex_distance(p);
     });
     std::filesystem::remove(out.string() + ".msh");
 

@@ -40,6 +40,18 @@ namespace {
 using Vec3 = Eigen::Vector3d;
 using Tet = std::array<Vec3, 4>;
 
+/// The input envelope of the triangles (V, F), as TopoOffsetTetMesh::m_input_complex_envelope is
+/// to the band term's searches (OffsetPotential.hpp). eps 0 builds no containment structure,
+/// which no search reads.
+std::shared_ptr<const wmtk::SampleEnvelope> triangle_envelope(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F)
+{
+    auto env = std::make_shared<wmtk::SampleEnvelope>(true);
+    env->init(V, F, 0.);
+    return env;
+}
+
 Tet tet_of(const double* T)
 {
     Tet t;
@@ -468,7 +480,8 @@ TEST_CASE("exact-band-integral-energy", "[offset][exact_band]")
     for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
     const auto eb = std::make_shared<const ExactBandIntegral>(V, F);
     const double delta = c.delta;
-    const auto tris = std::make_shared<const InputTriangles>(V, F);
+    const auto tris = triangle_envelope(V, F);
+    const double pad = input_pad(V);
     const Vec3 ctr(0.52, 0.1, 0.515); // beyond the edge x = z = 0.5
     const double rad = 0.02;
     std::vector<BandVolumeEnergy3D::Cell> cells;
@@ -481,7 +494,7 @@ TEST_CASE("exact-band-integral-energy", "[offset][exact_band]")
             cells.push_back(cl);
         }
     }
-    BandVolumeEnergy3D energy(tris, cells, ctr, delta);
+    BandVolumeEnergy3D energy(tris, pad, cells, ctr, delta);
     energy.set_exact_integral(eb, delta);
     const Eigen::VectorXd xv = ctr + Vec3(0.002, 0.001, 0.004);
     const Vec3 x = xv;
@@ -568,7 +581,8 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
         auto t0 = clk::now();
         const ExactBandIntegral eb(V, F);
         const double t_build = std::chrono::duration<double>(clk::now() - t0).count();
-        const auto tris = std::make_shared<InputTriangles>(V, F);
+        const auto tris = triangle_envelope(V, F);
+        const double pad = input_pad(V);
 
         std::printf(
             "== %s: %d triangles (build %.2f ms), delta %.6g\n",
@@ -730,12 +744,12 @@ TEST_CASE("exact-band-integral-bench", "[.bench]")
                         1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
                 }
             }
-            // the corner bound's search on the same cells (InputTriangles::min_mean_distance)
+            // the corner bound's search on the same cells (min_mean_distance())
             for (int r = 0; r < REP; ++r) {
                 for (int i = 0; i < n; ++i) {
                     int64_t best;
                     const auto a = clk::now();
-                    sink += tris->min_mean_distance(cells[size_t(i)].data(), 4, best);
+                    sink += min_mean_distance(*tris, pad, cells[size_t(i)].data(), 4, best);
                     cb[size_t(i)] +=
                         1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
                 }
@@ -1212,7 +1226,7 @@ double ref_distance(const Vec3& x, const Eigen::MatrixXd& V, const Eigen::Matrix
  *  - parity: the max, U and the partition's counts equal the Python's;
  *  - upper bound: d on a 24-per-side barycentric grid never exceeds the max;
  *  - exact: d at the returned point equals the max, where it does not come from a rule-(a) piece;
- *  - cube8: the former settle bound (U = InputTriangles::min_max_corner_distance) marked all 8
+ *  - cube8: the former settle bound (U = min_max_corner_distance()) marked all 8
  *    faces, the exact max marks none.
  */
 TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
@@ -1227,7 +1241,8 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
         Eigen::MatrixXi F(c.nF, 3);
         for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
         const ExactBandIntegral eb(V, F);
-        const InputTriangles tris(V, F);
+        const auto tris = triangle_envelope(V, F);
+        const double pad = input_pad(V);
         double w_par = 0., w_U = 0., w_at = 0., w_ub = -std::numeric_limits<double>::infinity(),
                w_eq = 0.;
         int n_ra = 0;
@@ -1278,7 +1293,7 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
                 w_eq = std::max(w_eq, e);
             }
             if (cube8) {
-                const double former = tris.min_max_corner_distance(P.data(), 3);
+                const double former = min_max_corner_distance(*tris, pad, P.data(), 3);
                 CHECK(
                     std::abs(former - info.U) <= 64. * unit); // the settle loop's former bound is U
                 const double ob = (former - c.delta) / c.eps, nb = (m - c.delta) / c.eps;
@@ -1306,7 +1321,7 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
  * Hidden: EXACT_BAND_BENCH_DIR=<dir> ./wmtk_test_topological_offset "[.bench_max]". Reads
  * <dir>/<case>_max.bin (gen_max_data.py: the full input and every face of test_max_on_triangle.py
  * with the Python's max and U), prints the parity over all faces and the time per face of
- * max_distance() and of the former bound (InputTriangles::min_max_corner_distance) on them.
+ * max_distance() and of the former bound (min_max_corner_distance()) on them.
  */
 TEST_CASE("exact-band-max-bench", "[.bench_max]")
 {
@@ -1353,7 +1368,8 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
         for (int i = 0; i < nF; ++i)
             F.row(i) << Fb[size_t(3 * i)], Fb[size_t(3 * i + 1)], Fb[size_t(3 * i + 2)];
         const ExactBandIntegral eb(V, F);
-        const InputTriangles tris(V, F);
+        const auto tris = triangle_envelope(V, F);
+        const double pad = input_pad(V);
         std::vector<std::array<Vec3, 3>> faces(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -1386,7 +1402,7 @@ TEST_CASE("exact-band-max-bench", "[.bench_max]")
                 sink += eb.max_distance(faces[size_t(i)]);
                 us[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
                 a = clk::now();
-                sink += tris.min_max_corner_distance(faces[size_t(i)].data(), 3);
+                sink += min_max_corner_distance(*tris, pad, faces[size_t(i)].data(), 3);
                 ub[size_t(i)] += 1e6 * std::chrono::duration<double>(clk::now() - a).count() / REP;
             }
         }
@@ -1816,8 +1832,11 @@ TEST_CASE("exact-band-hessian-states", "[.hess_states]")
         s.F,
         std::vector<int8_t>(size_t(s.F.rows()), vol6 > 0. ? 1 : -1),
         1);
-    const InputTriangles tris(s.V, s.F);
-    const auto dist = [&](const Vec3& p) { return tris.distance(tris.nearest(p), p); };
+    const auto tris = triangle_envelope(s.V, s.F);
+    const double pad = input_pad(s.V);
+    const auto dist = [&](const Vec3& p) {
+        return tris->primitive_distance(nearest_primitive(*tris, pad, p), p);
+    };
     std::map<std::array<int, 3>, int> nface;
     std::vector<std::vector<int>> ring(s.P.size());
     for (size_t t = 0; t < s.cell.size(); ++t) {
