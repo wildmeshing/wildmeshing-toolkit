@@ -6,6 +6,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -780,6 +781,340 @@ double Envelope::squared_distance(const Eigen::Vector2d& p) const
     SimpleBVH::Vector2d out;
     m_bvh->nearest_facet(p, out, d2);
     return d2;
+}
+
+namespace {
+
+// The per-primitive queries' arithmetic: the closest point on a triangle and the distance
+// between two segments (Ericson, Real-Time Collision Detection 5.1.5 and 5.1.9), and an exact
+// crossing test of a segment against a triangle or, in 2D, another segment.
+//
+// The same arithmetic does not give the same bits in every target. A component compiled with
+// EIGEN_DONT_VECTORIZE -- which ipc-toolkit exports PUBLIC (cmake/recipes/ipc_toolkit.cmake) to
+// everything that links it -- sums a 3-vector dot product as x0 y0 + (x1 y1 + x2 y2), and this
+// file, vectorized, as (x0 y0 + x1 y1) + x2 y2. MEASURED on arm64: the two dot() differ in 31% of
+// random pairs, norm() in 12%. Nothing here depends on either order; a caller that compares these
+// results with a copy of the arithmetic built there must allow for rounding.
+
+/// The point of triangle abc closest to p and the feature it lies on (Ericson, Real-Time
+/// Collision Detection 5.1.5): kind 0 a vertex, 1 an edge of direction `edge`, 2 the interior.
+Eigen::Vector3d triangle_foot(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector3d& p,
+    int& kind,
+    Eigen::Vector3d& edge)
+{
+    const Eigen::Vector3d ab = b - a, ac = c - a, ap = p - a;
+    Eigen::Vector3d foot;
+    kind = 2;
+    edge = Eigen::Vector3d::Zero();
+    const double d1 = ab.dot(ap), d2 = ac.dot(ap);
+    const Eigen::Vector3d bp = p - b;
+    const double d3 = ab.dot(bp), d4 = ac.dot(bp);
+    const Eigen::Vector3d cp = p - c;
+    const double d5 = ab.dot(cp), d6 = ac.dot(cp);
+    const double vc = d1 * d4 - d3 * d2, vb = d5 * d2 - d1 * d6, va = d3 * d6 - d5 * d4;
+    if (d1 <= 0. && d2 <= 0.) {
+        foot = a, kind = 0;
+    } else if (d3 >= 0. && d4 <= d3) {
+        foot = b, kind = 0;
+    } else if (vc <= 0. && d1 >= 0. && d3 <= 0.) {
+        foot = a + d1 / (d1 - d3) * ab, kind = 1, edge = ab;
+    } else if (d6 >= 0. && d5 <= d6) {
+        foot = c, kind = 0;
+    } else if (vb <= 0. && d2 >= 0. && d6 <= 0.) {
+        foot = a + d2 / (d2 - d6) * ac, kind = 1, edge = ac;
+    } else if (va <= 0. && (d4 - d3) >= 0. && (d5 - d6) >= 0.) {
+        foot = b + (d4 - d3) / ((d4 - d3) + (d5 - d6)) * (c - b), kind = 1, edge = c - b;
+    } else {
+        const double den = 1. / (va + vb + vc);
+        foot = a + ab * (vb * den) + ac * (vc * den);
+    }
+    return foot;
+}
+
+/// The point of segment ab closest to p, by nearest_point_feature()'s arithmetic (either
+/// dimension): kind 0 an endpoint (or the point, when a = b), 1 the interior, of direction `edge`.
+template <typename Vec>
+Vec segment_foot(const Vec& a, const Vec& b, const Vec& p, int& kind, Vec& edge)
+{
+    const Vec ab = b - a;
+    const double len2 = ab.squaredNorm();
+    const double t = len2 > 0 ? (p - a).dot(ab) / len2 : 0.0;
+    kind = 0;
+    edge = Vec::Zero();
+    if (len2 <= 0 || t <= 0) return a;
+    if (t >= 1) return b;
+    kind = 1;
+    edge = ab;
+    return a + t * ab;
+}
+
+/// The distance from p to its foot on a feature of kind `kind` (its dimension; direction `edge`
+/// when 1), with the derivatives of the distance to that feature in DIM dimensions: gradient
+/// u = (p - foot)/d; Hessian 0 on a feature of dimension DIM - 1 (a triangle's interior in 3D, a
+/// segment's interior in 2D: d is affine there), (I - u u^T - e e^T)/d on a 3D edge or segment,
+/// (I - u u^T)/d at a vertex, an endpoint or a point. Both 0 at d = 0. In 2D the interior case
+/// is the zero matrix exactly, as EuclideanOffsetPotential<2>::hessian() returns it, rather
+/// than I - u u^T - e e^T, which is 0 only up to rounding.
+template <int DIM>
+double feature_distance(
+    const Eigen::Matrix<double, DIM, 1>& p,
+    const Eigen::Matrix<double, DIM, 1>& foot,
+    const int kind,
+    const Eigen::Matrix<double, DIM, 1>& edge,
+    Eigen::Matrix<double, DIM, 1>* grad,
+    Eigen::Matrix<double, DIM, DIM>* hess)
+{
+    using Vec = Eigen::Matrix<double, DIM, 1>;
+    using Mat = Eigen::Matrix<double, DIM, DIM>;
+    const double d = (p - foot).norm();
+    if (grad) *grad = d > 0. ? Vec((p - foot) / d) : Vec::Zero();
+    if (hess) {
+        hess->setZero();
+        if (d > 0. && kind < DIM - 1) {
+            const Vec u = (p - foot) / d;
+            *hess = Mat::Identity() - u * u.transpose();
+            if (kind == 1) {
+                const Vec e = edge.normalized();
+                *hess -= e * e.transpose();
+            }
+            *hess /= d;
+        }
+    }
+    return d;
+}
+
+/// The distance between segments p1 q1 and p2 q2, in either dimension: the closest pair of their
+/// lines clamped to both segments (Ericson, Real-Time Collision Detection 5.1.9). A zero-length
+/// segment is its point; parallel segments (a e - b^2 = 0, or below 0 by rounding) start from
+/// s = 0, and the clamping then finds the pair at an endpoint, where parallel segments attain
+/// their distance.
+template <typename Vec>
+double segment_distance(const Vec& p1, const Vec& q1, const Vec& p2, const Vec& q2)
+{
+    const Vec d1 = q1 - p1, d2 = q2 - p2, r = p1 - p2;
+    const double a = d1.squaredNorm(), e = d2.squaredNorm(), f = d2.dot(r);
+    if (a == 0. && e == 0.) return r.norm();
+    double s = 0., t = 0.;
+    if (a == 0.) {
+        t = std::clamp(f / e, 0., 1.);
+    } else {
+        const double c = d1.dot(r);
+        if (e == 0.) {
+            s = std::clamp(-c / a, 0., 1.);
+        } else {
+            const double b = d1.dot(d2), denom = a * e - b * b;
+            if (denom > 0.) s = std::clamp((b * f - c * e) / denom, 0., 1.);
+            t = (b * s + f) / e;
+            if (t < 0.) {
+                t = 0.;
+                s = std::clamp(-c / a, 0., 1.);
+            } else if (t > 1.) {
+                t = 1.;
+                s = std::clamp((b - c) / a, 0., 1.);
+            }
+        }
+    }
+    return ((p1 + s * d1) - (p2 + t * d2)).norm();
+}
+
+/// Whether segment pq crosses triangle abc: p and q strictly on opposite sides of its plane, and
+/// the line pq through the closed triangle (the three orientations of pq against its edges of
+/// one sign or 0). Exact signs: a crossing is never decided on rounding. A contact with p or q on
+/// the plane is not a crossing here; it is a corner-to-triangle distance at 0.
+bool segment_crosses_triangle(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& q,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+    using wmtk::utils::predicates::orient3d;
+    const int sp = int(orient3d(a, b, c, p)), sq = int(orient3d(a, b, c, q));
+    if (sp * sq >= 0) return false;
+    const int s1 = int(orient3d(p, q, a, b)), s2 = int(orient3d(p, q, b, c)),
+              s3 = int(orient3d(p, q, c, a));
+    return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+}
+
+/// The 2D counterpart: whether segments pq and ab cross, each one's endpoints strictly on the
+/// two sides of the other's line. Exact signs, as above. A contact with an endpoint on the other
+/// segment (touching, or collinear overlap) is not a crossing here; it is an endpoint distance at
+/// 0, which segment_distance() finds.
+bool segments_cross(
+    const Eigen::Vector2d& p,
+    const Eigen::Vector2d& q,
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b)
+{
+    using wmtk::utils::predicates::orient2d;
+    const int sa = int(orient2d(p, q, a)), sb = int(orient2d(p, q, b));
+    if (sa * sb >= 0) return false;
+    const int sp = int(orient2d(a, b, p)), sq = int(orient2d(a, b, q));
+    return sp * sq < 0;
+}
+
+} // namespace
+
+void Envelope::require_primitive_query(const int dim, const char* query) const
+{
+    if (!m_bvh) {
+        log_and_throw_error("{} on an envelope no init() has filled in.", query);
+    }
+    const bool built_2d = m_kind == Kind::Edges2d;
+    if (dim == 3 && built_2d) {
+        log_and_throw_error(
+            "{} is a 3D query, and this envelope was built from 2D segments; use the 2D one.",
+            query);
+    }
+    if (dim == 2 && !built_2d) {
+        log_and_throw_error(
+            "{} is a 2D query, and this envelope was built from 3D primitives; use the 3D one.",
+            query);
+    }
+}
+
+void Envelope::require_primitive(const int64_t id, const int dim, const char* query) const
+{
+    require_primitive_query(dim, query);
+    const size_t n = m_kind == Kind::Triangles3d ? m_f3.size()
+                     : m_kind == Kind::Edges3d   ? m_e3.size()
+                                                 : m_e2.size();
+    if (id < 0 || size_t(id) >= n) {
+        log_and_throw_error("{}: primitive id {} out of range [0, {}).", query, id, n);
+    }
+}
+
+void Envelope::primitives_in_box(
+    const Eigen::Vector3d& lo,
+    const Eigen::Vector3d& hi,
+    std::vector<int64_t>& ids) const
+{
+    require_primitive_query(3, "primitives_in_box (3D)");
+    std::vector<unsigned int> list;
+    m_bvh->intersect_box(lo, hi, list);
+    ids.assign(list.begin(), list.end());
+    std::sort(ids.begin(), ids.end());
+}
+
+void Envelope::primitives_in_box(
+    const Eigen::Vector2d& lo,
+    const Eigen::Vector2d& hi,
+    std::vector<int64_t>& ids) const
+{
+    require_primitive_query(2, "primitives_in_box (2D)");
+    // The tree holds the 2D input lifted to z = 0, with boxes of zero thickness there, so the
+    // query box is lifted the same way; the closed comparison keeps z in [0, 0] meeting them.
+    std::vector<unsigned int> list;
+    m_bvh->intersect_box(Eigen::Vector3d(lo[0], lo[1], 0), Eigen::Vector3d(hi[0], hi[1], 0), list);
+    ids.assign(list.begin(), list.end());
+    std::sort(ids.begin(), ids.end());
+}
+
+double Envelope::primitive_distance(
+    const int64_t id,
+    const Eigen::Vector3d& p,
+    Eigen::Vector3d* grad,
+    Eigen::Matrix3d* hess) const
+{
+    require_primitive(id, 3, "primitive_distance (3D)");
+    int kind = 2; // 0 vertex, 1 edge (direction `edge`), 2 interior
+    Eigen::Vector3d edge;
+    Eigen::Vector3d foot;
+    if (m_kind == Kind::Triangles3d) {
+        const Eigen::Vector3i& f = m_f3[size_t(id)];
+        foot = triangle_foot(m_v3[f[0]], m_v3[f[1]], m_v3[f[2]], p, kind, edge);
+    } else {
+        const Eigen::Vector2i& e = m_e3[size_t(id)];
+        foot = segment_foot(m_v3[e[0]], m_v3[e[1]], p, kind, edge);
+    }
+    return feature_distance<3>(p, foot, kind, edge, grad, hess);
+}
+
+double Envelope::primitive_distance(
+    const int64_t id,
+    const Eigen::Vector2d& p,
+    Eigen::Vector2d* grad,
+    Eigen::Matrix2d* hess) const
+{
+    require_primitive(id, 2, "primitive_distance (2D)");
+    int kind = 0; // 0 endpoint or point, 1 interior (direction `edge`)
+    Eigen::Vector2d edge;
+    const Eigen::Vector2i& e = m_e2[size_t(id)];
+    const Eigen::Vector2d foot = segment_foot(m_v2[e[0]], m_v2[e[1]], p, kind, edge);
+    return feature_distance<2>(p, foot, kind, edge, grad, hess);
+}
+
+double Envelope::primitive_triangle_distance(
+    const int64_t id,
+    const std::array<Eigen::Vector3d, 3>& tri) const
+{
+    require_primitive(id, 3, "primitive_triangle_distance");
+    const Eigen::Vector3d &a = tri[0], &b = tri[1], &c = tri[2];
+    int kind = 2;
+    Eigen::Vector3d edge;
+    if (m_kind == Kind::Edges3d) {
+        const Eigen::Vector2i& e = m_e3[size_t(id)];
+        const Eigen::Vector3d& s0 = m_v3[e[0]];
+        const Eigen::Vector3d& s1 = m_v3[e[1]];
+        // A point primitive: its distance to tri, and nothing else. The segment terms below
+        // would reduce to point-to-edge distances, never smaller than this one but for rounding.
+        if (e[0] == e[1]) return (s0 - triangle_foot(a, b, c, s0, kind, edge)).norm();
+        if (segment_crosses_triangle(s0, s1, a, b, c)) return 0.;
+        double m = std::numeric_limits<double>::infinity();
+        m = std::min(m, (s0 - triangle_foot(a, b, c, s0, kind, edge)).norm());
+        m = std::min(m, (s1 - triangle_foot(a, b, c, s1, kind, edge)).norm());
+        for (int k = 0; k < 3; ++k) {
+            m = std::min(m, segment_distance(s0, s1, tri[size_t(k)], tri[size_t((k + 1) % 3)]));
+        }
+        return m;
+    }
+    // A the primitive, B the query triangle: an exact crossing of an edge of either through the
+    // other gives 0; otherwise the min of the 6 corner-to-triangle and 9 edge-edge distances.
+    const Eigen::Vector3i& f = m_f3[size_t(id)];
+    const std::array<Eigen::Vector3d, 3> A = {{m_v3[f[0]], m_v3[f[1]], m_v3[f[2]]}};
+    const std::array<Eigen::Vector3d, 3>& B = tri;
+    for (int i = 0; i < 3; ++i) {
+        const int j = (i + 1) % 3;
+        if (segment_crosses_triangle(A[size_t(i)], A[size_t(j)], a, b, c) ||
+            segment_crosses_triangle(B[size_t(i)], B[size_t(j)], A[0], A[1], A[2])) {
+            return 0.;
+        }
+    }
+    double m = std::numeric_limits<double>::infinity();
+    for (int i = 0; i < 3; ++i) {
+        m = std::min(m, primitive_distance(id, B[size_t(i)]));
+        m = std::min(m, (A[size_t(i)] - triangle_foot(a, b, c, A[size_t(i)], kind, edge)).norm());
+        for (int k = 0; k < 3; ++k) {
+            m = std::min(
+                m,
+                segment_distance(
+                    A[size_t(i)],
+                    A[size_t((i + 1) % 3)],
+                    B[size_t(k)],
+                    B[size_t((k + 1) % 3)]));
+        }
+    }
+    return m;
+}
+
+double Envelope::primitive_segment_distance(
+    const int64_t id,
+    const std::array<Eigen::Vector2d, 2>& seg) const
+{
+    require_primitive(id, 2, "primitive_segment_distance");
+    // The 2D counterpart of primitive_triangle_distance(): 0 on an exact crossing, else the
+    // distance between the two segments, which for disjoint segments has an endpoint of one in
+    // its closest pair -- and a contact without a crossing is such an endpoint at 0. A point
+    // primitive is a zero-length segment, which segment_distance() takes as its point.
+    const Eigen::Vector2i& e = m_e2[size_t(id)];
+    const Eigen::Vector2d& s0 = m_v2[e[0]];
+    const Eigen::Vector2d& s1 = m_v2[e[1]];
+    if (segments_cross(s0, s1, seg[0], seg[1])) return 0.;
+    return segment_distance(s0, s1, seg[0], seg[1]);
 }
 
 

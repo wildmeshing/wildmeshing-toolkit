@@ -342,8 +342,9 @@ public:
      * @brief Build over an exact-kind envelope of the input complex. The 3D path.
      *
      * The envelope is the query engine here, not a tolerance: nearest_point_feature() supplies the
-     * foot point and the feature kind the derivatives are cased on, and only the exact kind answers
-     * it. Its eps is irrelevant and no containment test is run against it.
+     * foot point and the feature kind the derivatives are cased on, from the envelope's BVH and its
+     * copies of the input, which every init() fills. Its eps is irrelevant and no containment test
+     * is run against it.
      */
     EuclideanOffsetPotential(const std::shared_ptr<Envelope>& envelope, double delta);
 
