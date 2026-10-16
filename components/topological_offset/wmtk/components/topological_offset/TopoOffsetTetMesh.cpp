@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <exception>
 #include <limits>
 #include <queue>
 #include <unordered_map>
@@ -290,9 +291,9 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
     if (!f.switch_tetrahedron(*this)) return true; // the domain wall
     if (face_is_offset_surface_live(f)) return false;
-    // The loop holds the input complex's boundary only; the final pass every other tracked face
+    // The loop holds the input complex's boundary only; a TetWild pass every other tracked face
     // too, the region boundaries (build_final_envelopes()).
-    return m_freeze_front || face_is_complex_boundary(f);
+    return m_tetwild_pass || face_is_complex_boundary(f);
 }
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
@@ -1124,10 +1125,18 @@ void TopoOffsetTetMesh::init_offset_potential()
         // The band term reads one distance, to the whole input; with several connected
         // pieces each has a field of its own, and the term does not choose between them.
         // Refused here, before the loop, rather than at the term's first evaluation.
-        if (m_n_regions > 1) {
+        // TESTING_allow_mult_comp lets it through: the term then reads the distance to all
+        // the pieces at once.
+        if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
             log_and_throw_error(
                 "the energy's band term reads one field, and this input complex has {} "
                 "connected pieces",
+                m_n_regions);
+        }
+        if (m_n_regions > 1) {
+            logger().warn(
+                "\tTESTING_allow_mult_comp: the input complex has {} connected pieces; the "
+                "energy's band term reads the distance to all of them at once",
                 m_n_regions);
         }
         // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
@@ -2368,8 +2377,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // before it.
     const Envelope* band_env =
         m_offset_potential && m_input_complex_envelope ? m_input_complex_envelope.get() : nullptr;
-    const bool energy_fields = band_env && m_n_regions <= 1 &&
+    const bool energy_fields = band_env && (m_n_regions <= 1 || m_offset_params.allow_mult_comp) &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);
+    size_t n_gap_threw = 0; // band cells whose exact integral threw: band_gap_bars NaN
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
@@ -2396,10 +2406,25 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
         const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
         if (!(vol > 0.)) continue;
+        // A frame never ends the run: a cell whose exact integral throws (its partition failed a
+        // check, ExactBandIntegral::check_cell_pieces()) keeps NaN and is counted.
+        double exact = 0.;
+        try {
+            exact = m_band_exact->value(p, delta);
+        } catch (const std::exception&) {
+            ++n_gap_threw;
+            continue;
+        }
         int64_t best = -1;
-        const double gap =
-            band_cell_corner_bound(vids, best) - m_band_exact->value(p, delta) / delta;
+        const double gap = band_cell_corner_bound(vids, best) - exact / delta;
         fr.band_gap[k] = gap / vol * delta / front_conv;
+    }
+    if (n_gap_threw > 0) {
+        logger().warn(
+            "\t[frame] {}: band_gap_bars NaN on {} band cell(s), whose exact integral threw (each "
+            "logged as an error above); the run goes on",
+            path,
+            n_gap_threw);
     }
     for (int64_t i = 0; i < m_tags_count; i++) {
         fr.tag_names.push_back(m_tag_id_to_name[i]);
@@ -2551,6 +2576,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
+        size_t n_outside_threw = 0; // faces whose exact max threw: settle_outside_bars NaN
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
             const bool all_front = front(a) && front(b) && front(c);
@@ -2564,12 +2590,21 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 fr.f_inside[i] =
                     (delta - min_triangle_distance(*band_env, m_input_complex_pad, pa, pb, pc)) /
                     front_conv;
-                fr.f_outside[i] =
-                    ((m_band_exact
-                          ? m_band_exact->max_distance(p)
-                          : min_max_corner_distance(*band_env, m_input_complex_pad, p.data(), 3)) -
-                     delta) /
-                    front_conv;
+                // A frame never ends the run: a face whose exact max throws (its partition failed
+                // a check, ExactBandIntegral::check_face_pieces()) keeps NaN and is counted.
+                // MEASURED: 70565 debug1 and debug2 (2026-10-16) each aborted on one such face.
+                try {
+                    fr.f_outside[i] = ((m_band_exact ? m_band_exact->max_distance(p)
+                                                     : min_max_corner_distance(
+                                                           *band_env,
+                                                           m_input_complex_pad,
+                                                           p.data(),
+                                                           3)) -
+                                       delta) /
+                                      front_conv;
+                } catch (const std::exception&) {
+                    ++n_outside_threw;
+                }
             }
             if (all_front) {
                 for (const size_t u : {a, b, c}) {
@@ -2586,6 +2621,13 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
             if (ring_bad[vid] || !(v_ring_n[int(vid)] > 0.)) continue;
             fr.ring[int(vid)] = std::sqrt(v_ring_sum[int(vid)] / v_ring_n[int(vid)]);
+        }
+        if (n_outside_threw > 0) {
+            logger().warn(
+                "\t[frame] {}: settle_outside_bars NaN on {} offset face(s), whose exact max threw "
+                "(each logged as an error above); the run goes on",
+                path,
+                n_outside_threw);
         }
         logger().info("Write {}", path + "_off.vtu");
     }

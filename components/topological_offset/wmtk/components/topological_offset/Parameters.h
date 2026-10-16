@@ -184,6 +184,21 @@ struct Parameters : public wmtk::OptimizerParameters
     /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
     /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
     bool gap_refinement = false;
+    /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve may move its vertex at most
+    /// damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
+    /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
+    /// SmoothVertexOptions::max_step). See the spec doc.
+    bool damping = false;
+    /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
+    /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
+    double damping_factor = 0.5;
+    /// EXPERIMENTAL (2026-10-16), 3D: before the loop, TetWild's own pass on the mesh as
+    /// constructed, run as the final TetWild pass runs it
+    /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
+    bool construction_tetwild_run = false;
+    /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
+    /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
+    bool allow_mult_comp = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
     /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
     /// exceeds front_conv; its sizing is halved. "max": a face's max of
@@ -202,11 +217,11 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
-    /// frozen-front finishing pass.
+    /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
+    /// pass, and in 3D the construction pass (EXPERIMENTAL_construction_tetwild_run).
     int max_iterations;
-    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
-    // final pass, built once before it (3D: build_offset_envelope(); 2D:
+    // The offset envelope half-width: the leash the front is kept inside during a TetWild pass,
+    // built just before it (3D: build_offset_envelope(); 2D:
     // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
     // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
     // tying it to target_distance made every change of the offset distance a silent change of the
@@ -299,6 +314,19 @@ struct Parameters : public wmtk::OptimizerParameters
         if (gap_refinement && !settle_refinement) {
             log_and_throw_error("EXPERIMENTAL_gap_refinement needs EXPERIMENTAL_settle_refinement");
         }
+        damping = json_params["EXPERIMENTAL_damping"];
+        damping_factor = json_params["EXPERIMENTAL_damping_factor"];
+        if (!(damping_factor > 0.)) {
+            log_and_throw_error("EXPERIMENTAL_damping_factor must be > 0, not {}", damping_factor);
+        }
+        // 0.5 is the spec's default: a factor set to anything else means damping was intended.
+        if (!damping && damping_factor != 0.5) {
+            log_and_throw_error(
+                "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
+                damping_factor);
+        }
+        construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
+        allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(

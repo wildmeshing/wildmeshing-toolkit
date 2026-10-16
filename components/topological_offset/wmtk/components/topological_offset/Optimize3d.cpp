@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +23,7 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace wmtk {
@@ -261,7 +263,8 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) con
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    return cell_energy(vids, a3, band_term && cell_is_offset_band(tid));
+    // A TetWild pass scores every cell by its AMIPS term alone (m_tetwild_pass).
+    return cell_energy(vids, a3, band_term && !m_tetwild_pass && cell_is_offset_band(tid));
 }
 
 bool TopoOffsetTetMesh::plastic_rest(const size_t tid, Eigen::Matrix3d& R) const
@@ -408,8 +411,9 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS).
-    return cell_energy(vids, a3, label == 2 && !rec.band_cancels);
+    // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS), as a
+    // TetWild pass leaves it out of every cell.
+    return cell_energy(vids, a3, label == 2 && !rec.band_cancels && !m_tetwild_pass);
 }
 
 void TopoOffsetTetMesh::swap_record_fill(const bool flip)
@@ -726,6 +730,8 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
+    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     // The rule is E itself: the sum of tet_energy() over the ring may not rise. A vertex held on a
     // surface takes the engine's projected step, whose acceptance is that rule already
     // (smoothing_ring_energy(): strictly below), so it needs no veto here. Every other vertex is
@@ -755,7 +761,10 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
-    if (projected) return true;
+    if (projected) {
+        count_damped_move(vid, x0, opts.max_step);
+        return true;
+    }
     const bool cancels = cancels_before && band_term_cancels(ring);
     const double after = tet_energy_sum(ring, !cancels);
     if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
@@ -763,7 +772,34 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         ++m_smooth_rejects.quality;
         return false;
     }
+    count_damped_move(vid, x0, opts.max_step);
     return true;
+}
+
+double TopoOffsetTetMesh::damping_step(const size_t vid) const
+{
+    // See the declaration. Every edge at vid lies in a cell of its one-ring, so the ring's corners
+    // other than vid are exactly its neighbours.
+    if (!m_offset_params.damping) return std::numeric_limits<double>::infinity();
+    const Vector3d& x = m_vertex_attribute[vid].m_posf;
+    double shortest = std::numeric_limits<double>::infinity();
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (const size_t u : oriented_tet_vids(tid)) {
+            if (u != vid) shortest = std::min(shortest, (m_vertex_attribute[u].m_posf - x).norm());
+        }
+    }
+    return m_offset_params.damping_factor * shortest;
+}
+
+void TopoOffsetTetMesh::count_damped_move(
+    const size_t vid,
+    const Vector3d& x0,
+    const double max_step)
+{
+    if (!m_offset_params.damping) return;
+    ++m_damping_moves;
+    const double moved = (std::as_const(m_vertex_attribute)[vid].m_posf - x0).norm();
+    if (moved >= max_step * (1. - 1e-9)) ++m_damping_bounded;
 }
 
 double TopoOffsetTetMesh::swap_edge_44_energy(
@@ -1403,10 +1439,6 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
-    // The final pass does not move the front: it is converged by then, its smoothing there
-    // would be AMIPS alone with the front free anywhere inside the offset tube, and nothing
-    // follows to put it back.
-    if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
 
     // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
     // counted, and smooth_after() reads this back.
@@ -1498,11 +1530,10 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // tests as every other vertex -- with the offset's options: its objective carries the offset
     // terms (smoothing_extra_energy), and the veto is on the ring's sum of tet_energy() instead
     // of AMIPS, since a front vertex must be able to worsen its ring's shape on the way to the
-    // level set but not the energy, which charges both (see smooth_front_vertex()). A front
-    // vertex reaches here only outside the final pass: smooth_before() refuses it while
-    // m_freeze_front is set. Every other vertex minimises the same energy
-    // (smooth_nonfront_vertex()).
-    if (ve.m_is_on_offset) {
+    // level set but not the energy, which charges both (see smooth_front_vertex()). Every other
+    // vertex minimises the same energy (smooth_nonfront_vertex()) -- and in a TetWild pass the
+    // front too, as a vertex held in its tube (smoothing_envelope()) whose energy is AMIPS alone.
+    if (ve.m_is_on_offset && !m_tetwild_pass) {
         const bool ok = smooth_front_vertex(t);
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
@@ -1752,6 +1783,16 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         "\tfront veto: fired {} of {} front moves that reached it (ring sum of tet_energy rose)",
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
+    if (m_offset_params.damping) {
+        const size_t bounded = m_damping_bounded.exchange(0);
+        const size_t moves = m_damping_moves.exchange(0);
+        logger().info(
+            "\t[damping] {} of {} accepted smoothing moves ended on the bound ({} x the shortest "
+            "edge at the vertex)",
+            bounded,
+            moves,
+            m_offset_params.damping_factor);
+    }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
         // value; the first bin is "<= 0 or below the range".
@@ -3582,9 +3623,8 @@ double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
 {
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
-    // same way, seeding the same force-split edges. Final pass only, by construction:
-    // mesh_improvement() is this function's one caller, and the driver only ever runs that for
-    // the frozen-front finishing pass.
+    // same way, seeding the same force-split edges. TetWild passes only, by construction:
+    // mesh_improvement() is this function's one caller, and only tetwild_pass() runs that.
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
 
@@ -3715,8 +3755,8 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     const char* fate = "TetWild's smooth_after(): AMIPS, no offset term";
     if (!m_vertex_attribute[vid].m_is_rounded) {
         fate = "REFUSED by smooth_before: not rounded";
-    } else if (m_freeze_front && ve.m_is_on_offset) {
-        fate = "REFUSED by smooth_before: front frozen in the final pass";
+    } else if (m_tetwild_pass && ve.m_is_on_offset) {
+        fate = "a TetWild pass: AMIPS alone, held in the offset tube (smooth_nonfront_vertex)";
     } else if (ve.m_is_on_offset) {
         fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
     }
@@ -4310,8 +4350,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No offset tube
-    // holds the front in the loop, neither the operations nor the smoothing; only the frozen-front
-    // final pass is held to one (build_offset_envelope()).
+    // holds the front in the loop, neither the operations nor the smoothing; only a TetWild pass
+    // holds it to one (build_offset_envelope()).
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
@@ -4660,9 +4700,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             write_optimization_debug_output(fmt::format("end_{}S", it + 1));
         }
         // Termination: every offset face's measure within the bar and nothing unmeasurable
-        // (EnergyCriterion::converged()) -- then quality with the front frozen (below). The face
-        // measure is the one quantity the smoothing minimises and the refinement reads; the
-        // vertex measure is reported on the turn line and in the verdict, and tested nowhere.
+        // (EnergyCriterion::converged()) -- then quality with the front held in its tube (below).
+        // The face measure is the one quantity the smoothing minimises and the refinement reads;
+        // the vertex measure is reported on the turn line and in the verdict, and tested nowhere.
         // Nothing refinable is implied, a refinable face being over the bar. Under front_measure
         // "vertex_ring" the tested measure is every front vertex's ring measure instead, and the
         // face measure joins the vertex measure as a diagnostic (EnergyCriterion::ring_exit).
@@ -4745,29 +4785,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             }
             if (amips >= bar) {
                 logger().info(
-                    "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
+                    "======== final pass, TetWild with the front held in its tube: max AMIPS "
+                    "{:.6g} >= stop_energy {} "
                     "========",
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                // The final pass's envelopes -- the front's tube, and m_envelope widened to every
-                // region boundary as placement left them (build_final_envelopes()). Every cell
-                // elastic: no plastic medium, so AMIPS is against the regular tet, the quality the
-                // pass is driving down.
-                build_final_envelopes();
-                m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
-                mesh_improvement(a_iters);
-                logger().info(
-                    "\t[split order] final pass: waited {} | committed off the longest edge {}",
-                    m_split_order_waits.exchange(0),
-                    m_split_off_longest.exchange(0));
-                m_plastic_active = plastic_was;
-                m_freeze_front = false;
-                release_final_envelopes();
-                assign_band_regions();
-                const double final_amips = std::get<0>(optimization_quality_stats());
+                const double final_amips = tetwild_pass("final pass", a_iters);
                 m_quality_max_amips = final_amips;
                 m_quality_converged = final_amips < m_params.stop_energy;
                 logger().log(
@@ -4793,6 +4817,80 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                           m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
     return false;
+}
+
+double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
+{
+    // The final envelopes -- the front's tube, and m_envelope widened to every region boundary
+    // as placement left them (build_final_envelopes()). Every cell's energy its AMIPS term alone
+    // (m_tetwild_pass: no band term; no plastic medium, so AMIPS is against the regular tet), the
+    // quality the pass is driving down; the front smoothed inside its tube like any held vertex.
+    build_final_envelopes();
+    m_tetwild_pass = true;
+    const bool plastic_was = m_plastic_active;
+    m_plastic_active = false;
+    mesh_improvement(max_its);
+    logger().info(
+        "\t[split order] {}: waited {} | committed off the longest edge {}",
+        what,
+        m_split_order_waits.exchange(0),
+        m_split_off_longest.exchange(0));
+    m_plastic_active = plastic_was;
+    m_tetwild_pass = false;
+    release_final_envelopes();
+    assign_band_regions();
+    return std::get<0>(optimization_quality_stats());
+}
+
+void TopoOffsetTetMesh::construction_tetwild_run()
+{
+    // See the declaration and the spec doc (EXPERIMENTAL_construction_tetwild_run).
+    const auto t0 = std::chrono::steady_clock::now();
+    const double amips0 = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "======== [construction tetwild] TetWild on the mesh as constructed, every tracked "
+        "surface held (the offset surface to eps {:.6g}, the rest to eps {:.6g}): max AMIPS "
+        "{:.6g}, stop_energy {} | #V {}, #T {} ========",
+        m_offset_params.offset_envelope,
+        m_envelope_eps,
+        amips0,
+        m_params.stop_energy,
+        vertex_size(),
+        tet_size());
+    log_energy_step("start");
+    m_frame_prefix = "c";
+    m_round = 0;
+    const double amips1 =
+        tetwild_pass("construction tetwild", std::max(1, m_offset_params.max_iterations));
+    // The loop's setup, redone on what the pass left: a compact mesh, the band regions on it, the
+    // vertex order, and under use_rest_pose the rests the loop measures plastic cells against.
+    consolidate_mesh();
+    assign_band_regions();
+    init_vertex_order();
+    stamp_plastic_rests();
+    log_energy_step("tetwild");
+    if (m_params.debug_output) write_optimization_debug_output("end_construction_tetwild");
+    m_frame_prefix.clear();
+    double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
+    for (const Tuple& v : get_vertices()) {
+        const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+        s_min = std::min(s_min, s);
+        s_max = std::max(s_max, s);
+    }
+    const bool under = amips1 < m_params.stop_energy;
+    logger().log(
+        under ? spdlog::level::info : spdlog::level::warn,
+        "\t[construction tetwild] max AMIPS {:.6g} -> {:.6g} (stop {}){} | #V {}, #T {} | sizing "
+        "scalar {:.6g} .. {:.6g} | {:.3g} s",
+        amips0,
+        amips1,
+        m_params.stop_energy,
+        under ? "" : ", STILL OVER stop_energy",
+        vertex_size(),
+        tet_size(),
+        s_min,
+        s_max,
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 }
 
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -4875,6 +4973,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_debug_pass_name = "construction";
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
+
+    if (m_offset_params.construction_tetwild_run) construction_tetwild_run();
 
     if (m_init_optimize) {
         // init_optimize (see marching_tets()): the loop first runs to

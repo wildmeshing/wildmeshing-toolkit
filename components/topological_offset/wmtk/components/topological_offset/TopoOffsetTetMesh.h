@@ -322,15 +322,15 @@ public:
      * @brief THE ENVELOPES. One, m_envelope (the base's pointer): an Envelope of half-width
      * envelope_size around every HELD face (face_is_held()), built by build_envelopes() before
      * anything moves -- after the simplicial embedding, before the repulsion and the march --
-     * and swapped for a wider one only for the frozen-front final pass (build_final_envelopes()).
-     * The offset surface is held by nothing in the loop; only the final pass holds it, to
+     * and swapped for a wider one only for a TetWild pass (build_final_envelopes()).
+     * The offset surface is held by nothing in the loop; only a TetWild pass holds it, to
      * m_offset_envelope.
      *
      * Which faces are held, asked live of the mesh (the operations carry the cell tags and
      * labels it reads), never stored:
      * - a domain-wall face (no opposite tet), always;
      * - the input complex's boundary (face_is_complex_boundary()), always;
-     * - every other region boundary, only in the final pass (m_freeze_front), where
+     * - every other region boundary, only in a TetWild pass (m_tetwild_pass), where
      *   build_final_envelopes() adds them to m_envelope at their position then. In the loop they
      *   stay tracked faces -- the operations preserve their topology -- but nothing holds them.
      * One envelope for all of them, as TetWild's: where two held surfaces meet, a vertex is kept
@@ -354,19 +354,32 @@ public:
     /// then). release_final_envelopes() puts the loop's envelope back.
     void build_final_envelopes();
     void release_final_envelopes();
+    /// A TetWild pass: every tracked surface held (the final envelopes; the front in its tube,
+    /// smoothed like any held vertex), every cell's energy its equilateral AMIPS term alone
+    /// (m_tetwild_pass), mesh_improvement(max_its), everything put back and the band regions
+    /// re-derived. Returns the max AMIPS after it. The final pass and
+    /// construction_tetwild_run() both run it; `what` names it in the log.
+    double tetwild_pass(const char* what, int max_its);
+    /// EXPERIMENTAL_construction_tetwild_run: tetwild_pass() on the mesh as constructed, before
+    /// the loop, then the loop's setup redone on its result (vertex order, plastic rests).
+    void construction_tetwild_run();
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
     /// The loop's m_envelope while the final pass holds its own.
     std::shared_ptr<Envelope> m_loop_envelope;
 
-    /// The final pass: front vertices are not smoothed (see smooth_before()).
-    bool m_freeze_front = false;
+    /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
+    /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
+    /// held vertex, pulled to and contained in its tube (smoothing_energy_envelope()); and every
+    /// cell's energy is its equilateral AMIPS term alone, no band term (tet_energy(),
+    /// candidate_energy(), smoothing_extra_energy()). The plastic medium is off as well.
+    bool m_tetwild_pass = false;
 
     /**
-     * @brief The tube the offset surface may not leave during the frozen-front final pass, of
-     * half-width offset_envelope, built by build_offset_envelope() from the surface as the loop
-     * left it, just before that pass. Null until then: the loop holds the offset surface to no
+     * @brief The tube the offset surface may not leave during a TetWild pass (tetwild_pass()), of
+     * half-width offset_envelope, built by build_offset_envelope() from the surface as it is just
+     * before that pass. Null until then: the loop holds the offset surface to no
      * envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
      * check), so it is one triangle set with no junctions: a face is either on it or not, and
      * surface_envelope_for_face() answers an offset face with this envelope alone.
@@ -379,7 +392,7 @@ public:
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// init_optimize loop: it returns on convergence without the frozen-front final pass and
+    /// init_optimize loop: it returns on convergence without the final TetWild pass and
     /// without deciding the verdict.
     /// `refine` false skips the halving. `label` names the loop in its log. Returns whether the
     /// loop converged within max_rounds.
@@ -538,7 +551,8 @@ public:
      * label, nothing hypothetical. E = the sum of E(t) over the live cells (global_energy()) is
      * the one energy of the 3D loop.
      *
-     *     tet_energy(t) = cell_energy(oriented_tet_vids(t), get_quality(t), cell_is_offset_band(t))
+     *     tet_energy(t) = cell_energy(oriented_tet_vids(t), get_quality(t),
+     *                                 cell_is_offset_band(t) && !m_tetwild_pass)
      *
      *     cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 >= MAX_ENERGY
      *                                  = (w / s^3) vol A^3 + [band] b(vids)  otherwise
@@ -723,7 +737,7 @@ public:
      */
     double band_cell_term(const std::array<size_t, 4>& vids) const
     {
-        if (m_n_regions > 1) {
+        if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
             log_and_throw_error(
                 "the energy's band term reads one field, and this input has {} regions",
                 m_n_regions);
@@ -1385,6 +1399,9 @@ public:
     /// tet_energy(). Reported and reset per pass beside the Newton counters. Kept apart from
     /// m_smooth_rejects.quality, which the non-front veto also counts.
     std::atomic<size_t> m_front_veto_asked{0}, m_front_veto_fired{0};
+    /// EXPERIMENTAL_damping, per pass: smoothing moves accepted, and how many of them ended on the
+    /// bound (count_damped_move()). Reported and reset beside the Newton counters.
+    std::atomic<size_t> m_damping_moves{0}, m_damping_bounded{0};
     /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
     /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
     /// untouched.
@@ -1637,7 +1654,7 @@ public:
     /**
      * @brief The containment of a tracked face an operation has just made (the base asks only
      * after the fact). A wall face: m_envelope, band or not -- nothing leaves the domain box.
-     * The offset surface: nothing in the loop, m_offset_envelope in the final pass. Any other
+     * The offset surface: nothing in the loop, m_offset_envelope in a TetWild pass. Any other
      * tracked face: m_envelope when it is held (face_is_held()), else nothing.
      */
     std::shared_ptr<Envelope> surface_envelope_for_face(
@@ -1647,7 +1664,7 @@ public:
         if (!found) return m_envelope; // not reached: every caller asks about an existing face
         const Tuple& f = std::get<0>(*found);
         if (f.switch_tetrahedron(*this) && face_is_offset_surface_live(f)) {
-            return m_freeze_front ? m_offset_envelope : nullptr;
+            return m_tetwild_pass ? m_offset_envelope : nullptr;
         }
         return face_is_held(f) ? m_envelope : nullptr;
     }
@@ -1710,14 +1727,23 @@ public:
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
-    /// pull requires. Any other vertex, the front's included, is held by nothing.
+    /// pull requires. In a TetWild pass a front vertex no other envelope holds is pulled to and
+    /// contained in the front's own tube, m_offset_envelope (one on another held surface too
+    /// keeps m_envelope, which its front faces are not in, so it stays where it is). Any other
+    /// vertex, and the front in the loop, is held by nothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        return vertex_is_held(vid) ? m_envelope : nullptr;
+        return smoothing_envelope(vid);
     }
     std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
     {
-        return vertex_is_held(vid) ? m_envelope : nullptr;
+        return smoothing_envelope(vid);
+    }
+    std::shared_ptr<Envelope> smoothing_envelope(const size_t vid) const
+    {
+        if (vertex_is_held(vid)) return m_envelope;
+        if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
+        return nullptr;
     }
 
     /**
@@ -1741,6 +1767,14 @@ public:
      * may not rise. See Optimize3d.cpp.
      */
     bool smooth_nonfront_vertex(const Tuple& t);
+    /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid,
+    /// EXPERIMENTAL_damping_factor (default 0.5) times the shortest edge from vid to a vertex of its
+    /// one-ring, at the positions before the solve; the three smoothers above pass it as
+    /// SmoothVertexOptions::max_step. Infinity when damping is off.
+    double damping_step(size_t vid) const;
+    /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
+    /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
+    void count_damped_move(size_t vid, const Vector3d& x0, double max_step);
     /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum vol AMIPS^3 (band_amips_weight(),
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
@@ -1798,11 +1832,11 @@ public:
     /// places against the offset term (smoothing_extra_energy()): the AMIPS term over the one-ring
     /// (amips3_energy()) and front_energy(). What front_vertex_normal_gradient() differentiates.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
-    /// Whether the smoother places vid against the offset term: a front vertex, outside the
-    /// frozen-front final pass, that no envelope also holds (vertex_is_held()).
+    /// Whether the smoother places vid against the offset term: a front vertex, outside a
+    /// TetWild pass, that no envelope also holds (vertex_is_held()).
     bool vertex_carries_offset_term(const size_t vid) const
     {
-        return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
+        return !m_tetwild_pass && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                !vertex_is_held(vid);
     }
     /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
@@ -1812,7 +1846,7 @@ public:
     /// ring's band cells (band_volume_energy_at(); through front_energy() for a front vertex the
     /// loop places) unless an input envelope holds vid, or, in the passes before the march, a
     /// repulsion vertex's term once per ring cell that carries it (repulsion_energy(),
-    /// repulsion_cell_term()).
+    /// repulsion_cell_term()). In a TetWild pass the AMIPS term alone, for every vertex.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
@@ -1823,6 +1857,8 @@ public:
             sum->add_energy(repulsion_energy(vid));
             return sum;
         }
+        // A TetWild pass: every cell's energy is its AMIPS term alone (tet_energy()).
+        if (m_tetwild_pass) return sum;
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid));
         } else if (!vertex_is_held(vid)) {
@@ -2255,7 +2291,7 @@ public:
      */
     void write_optimization_debug_output(const std::string& path) override
     {
-        const char ph = m_freeze_front ? 'F' : 'S'; // the final pass, or the loop
+        const char ph = m_tetwild_pass ? 'F' : 'S'; // a TetWild pass, or the loop
         if (m_round != m_debug_last_round || ph != m_debug_last_tag ||
             m_frame_prefix != m_debug_last_prefix) {
             m_debug_last_round = m_round;

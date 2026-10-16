@@ -207,14 +207,14 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     // loop's envelope comes back afterwards.
     const auto loop_env = mesh.m_envelope;
     mesh.build_final_envelopes();
-    mesh.m_freeze_front = true;
+    mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-    mesh.m_freeze_front = false;
+    mesh.m_tetwild_pass = false;
     mesh.release_final_envelopes();
     REQUIRE(mesh.m_envelope == loop_env);
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
@@ -2554,4 +2554,33 @@ TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
         return mesh.m_input_complex_bvh->dist(Vector2d(p.x(), p.y()));
     });
     std::filesystem::remove(out.string() + ".msh");
+}
+
+TEST_CASE("damping-factor-key", "[offset][3d]")
+{
+    // EXPERIMENTAL_damping_factor through the spec, as the app reads it: the default 0.5 (half
+    // the shortest edge, EXPERIMENTAL_damping's bound before the key existed), a value read
+    // through, and the two refusals -- a factor that is not > 0, and a factor other than the
+    // default with EXPERIMENTAL_damping false.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.damping);
+    CHECK(by_default.damping_factor == 0.5);
+    const Parameters set(
+        injected({{"EXPERIMENTAL_damping", true}, {"EXPERIMENTAL_damping_factor", 0.1}}));
+    CHECK(set.damping);
+    CHECK(set.damping_factor == 0.1);
+    const nlohmann::json without_damping = injected({{"EXPERIMENTAL_damping_factor", 0.1}});
+    CHECK_THROWS(Parameters{without_damping});
+    const nlohmann::json zero =
+        injected({{"EXPERIMENTAL_damping", true}, {"EXPERIMENTAL_damping_factor", 0.}});
+    CHECK_THROWS(Parameters{zero});
 }

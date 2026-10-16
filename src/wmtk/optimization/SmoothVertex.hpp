@@ -266,6 +266,15 @@ struct SmoothVertexOptions
      * case.
      */
     int project_line_search_nested_steps = 0;
+
+    /**
+     * The longest move one call may make, as a distance from the vertex's position on entry.
+     * Each solve's result is pulled back along its step onto the ball of this radius, before
+     * any accept check, and the projected path refuses a candidate outside it. Infinity (the
+     * default) bounds nothing, so every caller that does not set it is unchanged. Read by
+     * smooth_vertex_3d only.
+     */
+    double max_step = std::numeric_limits<double>::infinity();
 };
 
 /**
@@ -375,6 +384,8 @@ bool smooth_vertex_3d(
     }
     std::shared_ptr<polysolve::nonlinear::Problem> total_energy = base_energy;
 
+    // opts.max_step is measured from here, the position before any solve of this call.
+    const Vector3d x_entry = VA_read[vid].m_posf;
     auto solve = [&]() {
         VectorXd x = VA[vid].m_posf;
         bool threw = false;
@@ -386,6 +397,9 @@ bool smooth_vertex_3d(
             threw = true;
         }
         if (newton) newton->record(*solver, threw);
+        const Vector3d step = Vector3d(x) - x_entry;
+        const double len = step.norm();
+        if (len > opts.max_step) x = x_entry + step * (opts.max_step / len);
         VA[vid].m_posf = x;
     };
 
@@ -410,6 +424,7 @@ bool smooth_vertex_3d(
         // infinity if it inverts. is_inverted is exact, so the rational position tracks every
         // candidate.
         const auto worst_at = [&](const Vector3d& p) {
+            if ((p - x_orig).norm() > opts.max_step) return std::numeric_limits<double>::infinity();
             VA[vid].m_posf = p;
             VA[vid].set_pos_to_posf();
             for (const Tuple& loc : locs) {
