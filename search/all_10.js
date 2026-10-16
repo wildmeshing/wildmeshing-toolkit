@@ -5,7 +5,7 @@ var searchData=
   ['gcase_2',['GCase',['../structexact__band__geneva__data_1_1_g_case.html',1,'exact_band_geneva_data']]],
   ['gcell_3',['GCell',['../structexact__band__geneva__data_1_1_g_cell.html',1,'exact_band_geneva_data']]],
   ['generate_5fhtml_5freport_4',['generate_html_report',['../namespacerun__tetwild__sweep.html#ab5de54428e050edd9481052f8611032a',1,'run_tetwild_sweep.generate_html_report()'],['../namespacerun__simwild__sweep.html#a1fa1ea0cd608dd0512dc8a25bfd001c7',1,'run_simwild_sweep.generate_html_report()']]],
-  ['generation_20from_20surfaces_5',['1. Mesh Generation from Surfaces',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md9',1,'']]],
+  ['generation_20from_20surfaces_5',['1. Mesh Generation from Surfaces',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md11',1,'']]],
   ['geo_6',['geo',['../namespacegeo.html',1,'']]],
   ['get_5fboundary_5ffaces_5ffor_5fout_5ftets_7',['get_boundary_faces_for_out_tets',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#acd79f1d41fa2517b8122d85760801bf5',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]],
   ['get_5fedges_8',['get_edges',['../classwmtk_1_1_tet_mesh.html#aaf33e8c597e334a7d3bfea6462c0a0e5',1,'wmtk::TetMesh::get_edges()'],['../classwmtk_1_1_tri_mesh.html#aed585e848ce149908ce1e88f6331fc03',1,'wmtk::TriMesh::get_edges()']]],

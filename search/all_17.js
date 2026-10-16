@@ -32,5 +32,5 @@ var searchData=
   ['notexpr_29',['NotExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_not_expr.html',1,'wmtk::components::simwild::expression_parser']]],
   ['num_5fsmoothing_5fpasses_30',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]],
   ['num_5fthreads_31',['num_threads',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a0c7b87023ce71690fb274bca2a3b8154',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['numbers_32',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md58',1,'']]]
+  ['numbers_32',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md60',1,'']]]
 ];

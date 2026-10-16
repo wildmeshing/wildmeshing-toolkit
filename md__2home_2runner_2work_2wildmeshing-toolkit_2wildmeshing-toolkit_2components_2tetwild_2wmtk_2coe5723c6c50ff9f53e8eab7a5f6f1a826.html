@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">tetwild sweep scripts</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md33"></a> Batch-run tetwild over a large 3D dataset, collect per-model results, and report. The 3D counterpart of <a href="../../../../../triwild/wmtk/components/triwild/scripts/">triwild's</a>, and deliberately the same contract, environment and output layout — only the <code>TRIWILD_*</code> variables become <code>TETWILD_*</code>, so a 2D and a 3D sweep can run side by side on the same machine without either one's settings leaking into the other.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md35"></a> Batch-run tetwild over a large 3D dataset, collect per-model results, and report. The 3D counterpart of <a href="../../../../../triwild/wmtk/components/triwild/scripts/">triwild's</a>, and deliberately the same contract, environment and output layout — only the <code>TRIWILD_*</code> variables become <code>TETWILD_*</code>, so a 2D and a 3D sweep can run side by side on the same machine without either one's settings leaking into the other.</p>
 <p>Written for Thingi10K on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -82,14 +82,14 @@ $(function() {
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>sweep.sh</code>   </td><td class="markdownTableBodyNone">tmux wrapper — start / stop / attach / status / report   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md34"></a>
+<h1><a class="anchor" id="autotoc_md36"></a>
 Layout</h1>
 <p>Everything hangs off one root, <code>TETWILD_ROOT</code> (default <code>/u/3/daniele/thingi10k-sweep</code>):</p>
 <div class="fragment"><div class="line">&lt;root&gt;/build/app/wmtk_app     the binary under test</div>
 <div class="line">&lt;root&gt;/data/                  the dataset (.stl .obj .ply .off)</div>
 <div class="line">&lt;root&gt;/runs/&lt;name&gt;/           output: success/  failure/  .work/  report/</div>
 </div><!-- fragment --><p>A model that exits 0 lands in <code>success/&lt;id&gt;/</code>, anything else in <code>failure/&lt;id&gt;/</code> with a <code>status.txt</code> recording the reason. Both keep the config, the log and the <code>report.json</code>.</p>
-<h1><a class="anchor" id="autotoc_md35"></a>
+<h1><a class="anchor" id="autotoc_md37"></a>
 Running</h1>
 <div class="fragment"><div class="line">export TETWILD_ROOT=/path/to/sweep</div>
 <div class="line">./sweep.sh full          # every model</div>
@@ -102,7 +102,7 @@ Running</h1>
 <p>Or drive the runner directly:</p>
 <div class="fragment"><div class="line">TETWILD_ROOT=... TETWILD_PARALLEL=15 TETWILD_THREADS=16 \</div>
 <div class="line">TETWILD_JOB_TIMEOUT=21600 python3 run_tetwild_sweep.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md36"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md38"></a>
 Environment</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -132,7 +132,7 @@ Environment</h2>
 </table>
 <p><code>TETWILD_MEM_GB</code> is a cap <b>per model</b>, not a budget for the sweep — 8 × 128 G is more than most machines have. It is a runaway-killer: it stops one pathological mesh from swapping a shared box, and does nothing in the normal case. It is not hypothetical. On Thingi10K 338910 the cap fires for a real reason: that model leaves insertion with <b>187 M faces and 108 M edges</b> from an input that produced only 796 k Delaunay tets, and <code>get_faces()</code> materialises the face list before the surface-marking loop. Measured peak was 180 GB and still climbing when the run was abandoned, against 81 GB at the moment insertion finished — so the arrangement is not the cost, the post-insertion face pass is.</p>
 <p>The sweep pins only <code>eps_rel</code> (1e-3), <code>filter</code> (none) and <code>num_threads</code>. Everything else comes from the spec defaults of whatever branch <code>build/</code> was built from, which is the point: the sweep tests the defaults rather than a private configuration.</p>
-<h1><a class="anchor" id="autotoc_md37"></a>
+<h1><a class="anchor" id="autotoc_md39"></a>
 Reports</h1>
 <p><code>report/</code> gets three files:</p>
 <ul>
@@ -141,7 +141,7 @@ Reports</h1>
 <li><code>index.html</code> — self-contained: headline stats, distributions, run time vs input size, failures by reason, slowest models. No CDN, no build step.</li>
 </ul>
 <p>The 3D report carries no Hausdorff section because the sweep does not enable <code>DEBUG_hausdorff</code>; the 2D one does, and reports containment and coverage separately.</p>
-<h1><a class="anchor" id="autotoc_md38"></a>
+<h1><a class="anchor" id="autotoc_md40"></a>
 Reading the results</h1>
 <ul>
 <li><b>Final max energy is the raw AMIPS3D value</b>, whose floor for a regular tet is 3 (<code>get_max_avg_energy</code> returns <code>cbrt(m_quality)</code> and <code>m_quality</code> stores the cube). <code>stop_energy</code> defaults to 100, so a converged model typically lands just under it — a median around 87 is the expected shape, not a warning sign.</li>
@@ -149,7 +149,7 @@ Reading the results</h1>
 <li>**<code>killed by signal 6 (SIGABRT)</code> usually means an unreadable input**, not a crash: tetwild reports the defect and throws, and the throw reaches <code>terminate</code>. On Thingi10K that accounts for 8 models — truncated STL headers, non-numeric coordinates, files with no faces. They are corpus defects and will fail on any build.</li>
 <li><b>OOM rows are killed at <code>TETWILD_MEM_GB</code></b>, not by the timeout, and the report buckets them separately for that reason.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md39"></a>
+<h1><a class="anchor" id="autotoc_md41"></a>
 Caveat on comparing runs</h1>
 <p>The report pools whatever is in <code>success/</code>, so a directory filled across several builds yields statistics that mix them. For a quotable dataset, run the whole corpus once on one build. </p>
 </div></div><!-- contents -->
