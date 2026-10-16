@@ -25,8 +25,8 @@ public:
     const Args& args;
     State& state;
 
-    SampleEnvelope& env_sf; // surface envelope
-    SampleEnvelope& env_b; // boundary envelope
+    Envelope& env_sf; // surface envelope
+    Envelope& env_b; // boundary envelope
 
     // init
     std::vector<TetVertex> tet_vertices;
@@ -41,7 +41,7 @@ public:
 
     int old_pass = 0;
 
-    MeshRefinement(SampleEnvelope& env_surf, SampleEnvelope& env_bound, const Args& ar, State& st)
+    MeshRefinement(Envelope& env_surf, Envelope& env_bound, const Args& ar, State& st)
         : env_sf(env_surf)
         , env_b(env_bound)
         , args(ar)

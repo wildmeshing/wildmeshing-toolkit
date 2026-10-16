@@ -541,7 +541,7 @@ void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 
 template <int DIM>
 EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
-    const std::shared_ptr<SampleEnvelope>& envelope,
+    const std::shared_ptr<Envelope>& envelope,
     const double delta)
     // No support limit: d is defined everywhere, so the runaway guard that exists for Phi's compact
     // support has nothing to catch. Infinity says so, rather than a large finite number something

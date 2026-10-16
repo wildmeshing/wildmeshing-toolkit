@@ -65,8 +65,50 @@ void TetWildMesh::optimization_sanity_checks_extra()
     }
 }
 
-std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
+std::pair<size_t, size_t> TetWildMesh::feature_retention(double* worst_ratio) const
 {
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+
+    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
+    // 2D version learned the hard way not to scan every vertex per feature.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
+    for (const Tuple& v : get_vertices()) {
+        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector3d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(anchor, idx, sq);
+        if (sq <= m_feature_eps * m_feature_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+        }
+    }
+    return {kept, m_feature_points.size()};
+}
+
+std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
+    // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
+    // explicit constraint wins. Both are soft pulls; the hard vetoes (the collapse guard and
+    // the tagged-edge containment in smoothing) are unaffected by this order.
+    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
+        return m_feature_envelope;
+    }
     // Order 2 means the vertex is on a surface boundary or a non-manifold edge. This is
     // broader than the old m_is_on_open_boundary flag, which covered only open boundaries.
     if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
@@ -80,10 +122,10 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
-    // a no-op left over from when it was held as the Envelope base.
-    SampleEnvelope* env = m_envelope.get();
-    SampleEnvelope* env_b = m_envelope.get();
+    // m_envelope is an Envelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the abstract envelope base, since removed.
+    Envelope* env = m_envelope.get();
+    Envelope* env_b = m_envelope.get();
     if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }

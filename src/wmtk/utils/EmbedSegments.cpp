@@ -87,7 +87,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
         ds[i].push_back(box_max[i]);
     }
 
-    SampleEnvelope envelope;
+    Envelope envelope;
     envelope.init(V, E, 0);
 
     const double min_dis = voxel_resolution * voxel_resolution / 4;
@@ -174,7 +174,8 @@ void embed_segments(
     MatrixXi& F_out,
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources,
-    std::vector<int>* E_out_orientation)
+    std::vector<int>* E_out_orientation,
+    std::vector<int>* point_map)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -327,6 +328,20 @@ void embed_segments(
     }
     if (E_out_orientation != nullptr) {
         orient_curve_patches(V_out, E_out, *E_out_orientation);
+    }
+
+    // Where did each input point end up? The remesher reports {triangle, vertex} per input
+    // point, in input order; the input points went in first, so the first V.rows() entries
+    // are ours and the background-grid entries after them are dropped.
+    if (point_map != nullptr) {
+        assert(point_provenance.size() >= size_t(V.rows()));
+        point_map->assign(V.rows(), -1);
+        for (int i = 0; i < V.rows(); ++i) {
+            const uint32_t v = point_provenance[i][1];
+            if (v != UINT32_MAX) {
+                (*point_map)[i] = int(v);
+            }
+        }
     }
 
     logger().info(

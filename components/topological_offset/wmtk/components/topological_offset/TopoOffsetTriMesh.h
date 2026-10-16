@@ -264,7 +264,7 @@ public:
      * Interior edges of a region are not held by these: identical tag sets on both sides land in
      * no bucket, so a filled complex's interior is free to optimise.
      */
-    std::map<int64_t, std::shared_ptr<SampleEnvelope>> m_tag_envelopes;
+    std::map<int64_t, std::shared_ptr<Envelope>> m_tag_envelopes;
 
     /// Input tag id -> bit position in VertexExtra2d::m_boundary_mask. Assigned in
     /// init_from_image() once the tag maps are complete; at most 64 input tags.
@@ -272,7 +272,7 @@ public:
 
     /// Memoized IntersectionEnvelope per multi-bit mask. Lazily built under the mutex because
     /// the queries that need them run concurrently under kPartition.
-    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_isect_cache;
+    mutable std::map<uint64_t, std::shared_ptr<Envelope>> m_isect_cache;
     mutable std::mutex m_isect_mutex;
 
     /**
@@ -284,7 +284,7 @@ public:
      * for the whole run, m_offset_envelope is built for the final pass.
      * rebuild_offset_envelope() clears this and must keep doing so. Guarded by m_isect_mutex.
      */
-    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_offset_isect_cache;
+    mutable std::map<uint64_t, std::shared_ptr<Envelope>> m_offset_isect_cache;
 
     /**
      * @brief The containment a simplex with this region mask, on/off the offset front, must
@@ -299,7 +299,7 @@ public:
      * (smoothing_containment_envelope()): placing the front is what moves the offset boundary,
      * and a tube around where it currently sits would cap how far it can travel. As in 3D.
      */
-    std::shared_ptr<SampleEnvelope> containment_for(uint64_t region_mask, bool on_offset) const;
+    std::shared_ptr<Envelope> containment_for(uint64_t region_mask, bool on_offset) const;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -350,7 +350,7 @@ public:
      * loop holds the offset boundary to no envelope. Unlike m_tag_envelopes, which must never be
      * rebuilt. As in 3D.
      */
-    std::shared_ptr<SampleEnvelope> m_offset_envelope;
+    std::shared_ptr<Envelope> m_offset_envelope;
 
     /// Rebuild m_offset_envelope from the current offset-boundary segments, and drop the
     /// intersections memoized against the old one; also refresh_released_envelope().
@@ -1312,7 +1312,7 @@ public:
      * implements just the virtual is_outside queries, so it must never be returned from
      * smoothing_energy_envelope(), whose pull calls the non-virtual nearest_point.
      */
-    std::shared_ptr<SampleEnvelope> envelope_for_mask(uint64_t mask) const;
+    std::shared_ptr<Envelope> envelope_for_mask(uint64_t mask) const;
 
     /**
      * @brief Class-0 segments -- every region boundary, the input complex and the domain wall
@@ -1327,7 +1327,7 @@ public:
      *
      * Null means "no containment requirement", which the base handles by skipping the check.
      */
-    std::shared_ptr<SampleEnvelope> surface_envelope_for_edge(
+    std::shared_ptr<Envelope> surface_envelope_for_edge(
         const std::array<size_t, 2>& vids) const override
     {
         // Boundary geometry first: a segment on any tag-region boundary may not
@@ -1375,7 +1375,7 @@ public:
         // Both families compose: whatever holds this segment holds it at once. The offset side
         // holds only in the frozen-front final pass (see containment_for()); in the loop the
         // front is what the optimization moves, so it contributes nothing there.
-        const std::shared_ptr<SampleEnvelope> base = containment_for(mask, all_offset);
+        const std::shared_ptr<Envelope> base = containment_for(mask, all_offset);
         if (base || m_deform_tags.empty()) return base;
         // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
         // were freed so smoothing can carry the object -- which would leave the operations free
@@ -1414,12 +1414,12 @@ public:
      * term in the objective, not a container.
      *
      * The pull must be a real envelope, never a composite: this hook's consumers call the
-     * non-virtual SampleEnvelope queries -- nearest_point and the ExactDistanceEnergy2D trio --
+     * non-virtual Envelope queries -- nearest_point and the ExactDistanceEnergy2D trio --
      * which on a composite would bind to the base's null BVH. So a junction vertex (several mask
      * bits) is pulled toward its most-violated member tube instead, one real envelope per
      * attempt, while the containment intersection below enforces the full constraint.
      */
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
@@ -1431,7 +1431,7 @@ public:
             // pull is behavior-neutral. Not an error.
             return nullptr;
         }
-        std::shared_ptr<SampleEnvelope> best;
+        std::shared_ptr<Envelope> best;
         double worst_d2 = -1.;
         for (const auto& [tag, env] : m_tag_envelopes) {
             const auto it = m_tag_bit.find(tag);
@@ -1455,7 +1455,7 @@ public:
     /// the offset boundary, so the smoother asks for the region tubes alone. The operations hold
     /// the offset boundary to its tube through surface_envelope_for_edge() in the final pass; see
     /// containment_for(). As in 3D.
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
     {
         return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
     }
@@ -1583,18 +1583,18 @@ public:
     /// The source tags (offset_selection's tags_involved), stored at release so the ops-only
     /// tube's edge classification applies the same never-freed rule the release did.
     std::set<int64_t> m_source_tags;
-    /// The released boundaries' ops-only tube: a SampleEnvelope around the current deformed
+    /// The released boundaries' ops-only tube: an Envelope around the current deformed
     /// boundaries, consulted only by surface_envelope_for_edge() -- the dispatch every operation
     /// containment check goes through and no smoothing path does -- so operations preserve the
     /// current shape through remeshing while smoothing stays free to carry the object. Rebuilt
     /// lazily by released_envelope() when m_released_tube_dirty says a smoothing accept may have
     /// moved the boundary.
-    mutable std::shared_ptr<SampleEnvelope> m_released_envelope;
+    mutable std::shared_ptr<Envelope> m_released_envelope;
     mutable std::atomic<bool> m_released_tube_dirty{false};
     mutable std::mutex m_released_mutex;
     /// The current released-boundary tube, rebuilt first if dirty. Null when nothing is
     /// released or no released-boundary segment exists.
-    std::shared_ptr<SampleEnvelope> released_envelope() const;
+    std::shared_ptr<Envelope> released_envelope() const;
     /// Whether this edge lies on a released region's boundary, by the incident faces' current
     /// tag symmetric difference -- the same test the release freed vertices by.
     bool edge_borders_released_boundary(const Tuple& e) const;

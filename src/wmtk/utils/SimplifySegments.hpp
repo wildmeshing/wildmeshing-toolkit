@@ -60,7 +60,7 @@ namespace wmtk::utils {
 size_t simplify_segments(
     MatrixXd& V,
     MatrixXi& E,
-    const SampleEnvelope& envelope,
+    const Envelope& envelope,
     bool use_link_condition = true,
     std::vector<int>* surviving_edges = nullptr);
 

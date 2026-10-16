@@ -49,7 +49,13 @@ void SimWildMesh::simplify()
     }
     logger().info("===== Simplify =====");
 
-    m_envelope->use_exact = false;
+    // The same switch as tetwild's: the sampled envelope for the simplification alone, the
+    // exact one dominating its cost on a large input. Otherwise the simplification keeps the
+    // mode use_sample_envelope gave m_envelope. Nothing to restore afterwards: the envelope is
+    // rebuilt below, by init_envelope, in that mode.
+    if (m_sim_params.simplify_use_sample_envelope) {
+        m_envelope->use_exact = false;
+    }
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
     /**

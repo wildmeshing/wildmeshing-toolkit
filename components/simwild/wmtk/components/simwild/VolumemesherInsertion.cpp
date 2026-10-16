@@ -305,7 +305,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
     }
 
     auto reinit_envelope = [&]() {
-        m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
         logger().info(
             "Envelope: {} (eps {:.6})",
@@ -441,7 +441,7 @@ void SimWildMesh::find_order_2_edges()
     // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
     // curves. It was hard-wired to sampled only because the exact envelope could not be built
     // from edges until fast-envelope #6.
-    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
+    m_order_2_edge_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
     // A FRACTION of eps here, deliberately, where the surface envelope uses all of it:
     // widening a boundary-curve envelope buys no unblocking and costs elements. See
     // /order2_envelope_ratio in the spec for the measurement.

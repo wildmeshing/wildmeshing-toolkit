@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <array>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -13,42 +16,6 @@
 
 namespace wmtk {
 class Envelope
-{
-public:
-    virtual ~Envelope() = default;
-    virtual void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double) {};
-    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const { return false; };
-    virtual bool is_outside(const Eigen::Vector3d& pts) const { return false; };
-};
-
-class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
-{
-public:
-    ExactEnvelope()
-        : fastEnvelope::FastEnvelope::FastEnvelope() {};
-    ~ExactEnvelope() {};
-    void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double eps)
-    {
-        fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);
-    }
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(tris);
-    }
-    bool is_outside(const Eigen::Vector3d& pts) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(pts);
-    }
-};
-
-
-class SampleEnvelope : public wmtk::Envelope
 {
 public:
     /**
@@ -63,8 +30,15 @@ public:
      */
     enum class Kind { Uninitialized, Triangles3d, Edges3d, Edges2d };
 
-    SampleEnvelope(bool exact = false)
+    /**
+     * Exact by default. The sampled predicate tests points laid along the query against a
+     * shrunk radius and still cannot see between two samples; the exact one decides
+     * containment in the full eps-neighbourhood. A caller that wants the cheaper sampled test
+     * asks for it with exact = false.
+     */
+    Envelope(bool exact = true)
         : use_exact(exact) {};
+    virtual ~Envelope() = default;
     /**
      * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
      *
@@ -108,7 +82,7 @@ public:
      * of work. The answer is the same either way.
      */
     void set_max_threads(int n) { m_max_threads = n < 1 ? 1 : n; }
-    bool use_exact = false;
+    bool use_exact = true;
 
     /**
      * Debug escape hatch: when set, every is_outside() answers "inside".
@@ -124,7 +98,7 @@ public:
      * optimizer cannot move at all".
      */
     bool disabled = false;
-    void init(
+    virtual void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
         const double);
@@ -148,18 +122,18 @@ public:
      * writing the same ten-line copy loop; this is that loop, once.
      */
     void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
-    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     /**
-     * The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite
-     * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
-     * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
-     * containment path asks these two instead. See the composites in
-     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
-     * composite must never reach the NON-virtual queries below, whose BVH it does not have.
+     * Four containment queries are VIRTUAL -- the 3D triangle, the 3D point, the 2D segment and
+     * the 2D point -- so a containment-only composite over several envelopes can answer them.
+     * They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is
+     * not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp,
+     * and the invariant stated there: a composite must never reach the NON-virtual queries,
+     * whose BVH it does not have.
      */
+    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
+    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
-    bool is_outside(const Eigen::Vector3d& pts) const;
+    virtual bool is_outside(const Eigen::Vector3d& pts) const;
     virtual bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
@@ -201,7 +175,109 @@ public:
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
+    // Per-primitive queries, for a caller that needs the distance d_i to each input primitive i
+    // on its own rather than to their union: each d_i is convex (the distance to a convex set),
+    // and the min over i is not, so a bound that rests on convexity needs the pieces.
+    //
+    // A primitive is one entry of the list given to init(), and its id is its index in that
+    // list: a triangle for Triangles3d, a segment for Edges3d and Edges2d -- including the
+    // degenerate (i, i) entries that stand for isolated points. squared_distance(), and
+    // nearest_point(), which returns the same squared distance, is the square of the min over
+    // all primitives of primitive_distance(), up to rounding: the BVH computes its own foot point
+    // with different arithmetic.
+    //
+    // Each query comes in the dimension of the init() that built the envelope: the 3D ones on
+    // Triangles3d and Edges3d, the 2D ones on Edges2d. Either asked of the other kind, or of an
+    // envelope no init() has filled in, throws rather than answering against the wrong copy of
+    // the input or dereferencing an empty BVH.
+
+    /**
+     * @brief The ids of every primitive whose bounding box meets the closed box [lo, hi],
+     * ascending, each once.
+     *
+     * A wrapper of SimpleBVH::BVH::intersect_box, which already maps its leaves back to input ids
+     * (nearest_facet does not -- see nearest_point_feature()) and visits each leaf once, so the
+     * result has no duplicates; but it lists them in the BVH's own Morton order, so they are
+     * sorted here. The boxes are the primitives' exact bounding boxes (the BVH is built with zero
+     * padding), compared closed: a box that only touches [lo, hi] counts. A caller that needs
+     * every primitive within r of a point passes the point's box grown by r, padded by its own
+     * rounding allowance.
+     */
+    void primitives_in_box(
+        const Eigen::Vector3d& lo,
+        const Eigen::Vector3d& hi,
+        std::vector<int64_t>& ids) const;
+    /// The 2D counterpart, for Edges2d: the same tree, which holds the 2D input lifted to z = 0.
+    void primitives_in_box(
+        const Eigen::Vector2d& lo,
+        const Eigen::Vector2d& hi,
+        std::vector<int64_t>& ids) const;
+
+    /**
+     * @brief The distance d from p to primitive `id` alone, with its gradient and Hessian when
+     * asked for (nullptr = not wanted).
+     *
+     * The derivatives are those of the distance to the feature the foot point lies on: gradient
+     * u = (p - foot)/d; Hessian 0 when the foot is inside a triangle, (I - u u^T - e e^T)/d when
+     * it is on a triangle's edge or inside a segment (e the unit edge direction), (I - u u^T)/d
+     * at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are
+     * reported as 0.
+     *
+     * The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic
+     * compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the
+     * dot products in another order (see Envelope.cpp). The segment foot is
+     * nearest_point_feature()'s, clamped at both ends.
+     */
+    double primitive_distance(
+        int64_t id,
+        const Eigen::Vector3d& p,
+        Eigen::Vector3d* grad = nullptr,
+        Eigen::Matrix3d* hess = nullptr) const;
+    /**
+     * The 2D counterpart, for Edges2d: the same segment foot and the same derivatives in 2D, where
+     * a segment's interior has Hessian 0 -- d is affine there, I - u u^T - e e^T vanishing with
+     * u and e orthonormal -- as EuclideanOffsetPotential<2>::hessian() has it; (I - u u^T)/d at an
+     * endpoint or a point.
+     */
+    double primitive_distance(
+        int64_t id,
+        const Eigen::Vector2d& p,
+        Eigen::Vector2d* grad = nullptr,
+        Eigen::Matrix2d* hess = nullptr) const;
+
+    /**
+     * @brief The distance between the triangle `tri` and primitive `id` alone.
+     *
+     * 0 when an edge of one crosses the other (a segment primitive: when it crosses tri) -- its
+     * endpoints strictly on the two sides of the other's plane, by exact orientation signs.
+     * Otherwise, against a triangle primitive, the min of the 6 corner-to-other-triangle
+     * distances and the 9 edge-edge distances (Ericson 5.1.9); against a segment, the min of its
+     * 2 endpoint-to-tri distances and its 3 distances to the edges of tri; against a point, its
+     * distance to tri. Two disjoint convex primitives' closest pair has a corner of one, or a
+     * point on an edge of each; two that meet without such a crossing (a corner on the other's
+     * plane, or coplanar) have one of those at 0.
+     *
+     * The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above.
+     */
+    double primitive_triangle_distance(int64_t id, const std::array<Eigen::Vector3d, 3>& tri) const;
+
+    /**
+     * @brief The 2D counterpart, for Edges2d: the distance between the segment `seg` and
+     * primitive `id` alone -- a 2D front edge where the 3D query takes a front face.
+     *
+     * 0 when the two cross, each one's endpoints strictly on the two sides of the other's line, by
+     * exact orientation signs as in 3D. Otherwise the segment-segment distance (Ericson 5.1.9),
+     * whose closest pair for disjoint segments has an endpoint of one; a contact without a
+     * crossing (an endpoint on the other segment, or collinear overlap) is such an endpoint at 0.
+     * A point primitive gives its distance to seg.
+     */
+    double primitive_segment_distance(int64_t id, const std::array<Eigen::Vector2d, 2>& seg) const;
+
 private:
+    /// The checks of the per-primitive queries: an initialized envelope of dimension `dim`, and
+    /// for the second an id in range.
+    void require_primitive_query(int dim, const char* query) const;
+    void require_primitive(int64_t id, int dim, const char* query) const;
     void require_exact_kind(Kind expected, const char* query) const;
     void require_exact_3d(const char* query) const;
     void require_exact_built(const char* query) const;

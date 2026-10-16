@@ -245,7 +245,7 @@ public:
      *
      * For optional help: work the caller would do alone anyway, split up only if threads are
      * sitting idle, where starting a thread for it would cost more than the split saves. Call
-     * wait() either way. See SampleEnvelope::is_outside() for the use it was written for.
+     * wait() either way. See Envelope::is_outside() for the use it was written for.
      */
     template <typename F>
     bool try_run(F&& f)

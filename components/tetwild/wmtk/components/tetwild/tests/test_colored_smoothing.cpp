@@ -245,7 +245,7 @@ TEST_CASE(
     params.init(v, f);
     components::shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(v, 0);
     surf_mesh.create_mesh(v.size(), f, {}, params.eps);
-    const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
+    const std::shared_ptr<Envelope> env(&surf_mesh.m_envelope, [](Envelope*) {});
 
     std::vector<Vector3r> v_rational;
     std::vector<std::array<size_t, 3>> facets;
