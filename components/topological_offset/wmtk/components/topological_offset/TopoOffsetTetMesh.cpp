@@ -267,9 +267,9 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
     // is surface_envelope_for_face()'s to answer, and is excluded here for vertex_is_held().
     if (!f.switch_tetrahedron(*this)) return true; // the domain wall
     if (face_is_offset_surface_live(f)) return false;
-    // The loop holds the input complex's boundary only; the final pass every other tracked face
+    // The loop holds the input complex's boundary only; a TetWild pass every other tracked face
     // too, the region boundaries (build_final_envelopes()).
-    return m_freeze_front || face_is_complex_boundary(f);
+    return m_tetwild_pass || face_is_complex_boundary(f);
 }
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const

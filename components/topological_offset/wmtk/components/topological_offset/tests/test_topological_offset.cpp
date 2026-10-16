@@ -207,14 +207,14 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     // loop's envelope comes back afterwards.
     const auto loop_env = mesh.m_envelope;
     mesh.build_final_envelopes();
-    mesh.m_freeze_front = true;
+    mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-    mesh.m_freeze_front = false;
+    mesh.m_tetwild_pass = false;
     mesh.release_final_envelopes();
     REQUIRE(mesh.m_envelope == loop_env);
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));

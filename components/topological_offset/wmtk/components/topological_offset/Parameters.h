@@ -193,7 +193,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
     /// EXPERIMENTAL (2026-10-16), 3D: before the loop, TetWild's own pass on the mesh as
-    /// constructed, run as the frozen-front final pass runs it
+    /// constructed, run as the final TetWild pass runs it
     /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
     bool construction_tetwild_run = false;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
@@ -217,11 +217,11 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
-    /// frozen-front finishing pass.
+    /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
+    /// pass, and in 3D the construction pass (EXPERIMENTAL_construction_tetwild_run).
     int max_iterations;
-    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
-    // final pass, built once before it (3D: build_offset_envelope(); 2D:
+    // The offset envelope half-width: the leash the front is kept inside during a TetWild pass,
+    // built just before it (3D: build_offset_envelope(); 2D:
     // rebuild_offset_envelope()). Absolute-or-relative like envelope_size / envelope_size_rel, but
     // against the BOUNDING BOX DIAGONAL -- it is a distance in space, and
     // tying it to target_distance made every change of the offset distance a silent change of the
