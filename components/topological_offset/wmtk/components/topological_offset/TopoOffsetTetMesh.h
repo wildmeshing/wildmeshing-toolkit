@@ -695,7 +695,7 @@ public:
      */
     double band_cell_term(const std::array<size_t, 4>& vids) const
     {
-        if (m_n_regions > 1) {
+        if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
             log_and_throw_error(
                 "the energy's band term reads one field, and this input has {} regions",
                 m_n_regions);

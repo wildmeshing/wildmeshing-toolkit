@@ -294,7 +294,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     const size_t vid) const
 {
     // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
-    if (m_n_regions > 1) {
+    if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
         log_and_throw_error(
             "the energy's band term reads one field, and this input has {} regions",
             m_n_regions);

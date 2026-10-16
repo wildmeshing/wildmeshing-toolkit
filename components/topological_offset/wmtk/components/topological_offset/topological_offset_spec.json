@@ -42,6 +42,7 @@
       "EXPERIMENTAL_gap_refinement",
       "EXPERIMENTAL_damping",
       "EXPERIMENTAL_damping_factor",
+      "TESTING_allow_mult_comp",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -326,6 +327,12 @@
     "min": 0,
     "default": 0.5,
     "doc": "EXPERIMENTAL (2026-10-15), 3D, with EXPERIMENTAL_damping. The damping bound as a factor of the shortest edge at the vertex: each smoothing solve may move its vertex at most this times the length of its shortest edge (to any vertex of its one-ring), at the positions when the solve started. Must be > 0; a value other than the default with EXPERIMENTAL_damping false is refused with an error. 0.5 (the default) = half the shortest edge, the bound EXPERIMENTAL_damping had before this key existed."
+  },
+  {
+    "pointer": "/TESTING_allow_mult_comp",
+    "type": "bool",
+    "default": false,
+    "doc": "TESTING (2026-10-16), 3D. true = an input complex of more than one connected piece (connected components under vertex connectivity; the count is logged as 'Input complex: N connected piece(s)') is accepted. false (the default) = such an input is refused with an error when the offset potential is built, right after the construction, so also with optimize_offset false. Accepted, the energy's band term (every EXPERIMENTAL_band_volume_rule) reads the distance to all the input's triangles, every piece at once, as it does for one piece, and a warning is logged."
   },
   {
     "pointer": "/EXPERIMENTAL_settle_refinement",

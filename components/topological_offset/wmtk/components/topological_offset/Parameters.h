@@ -192,6 +192,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
+    /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
+    /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
+    bool allow_mult_comp = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
     /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
     /// exceeds front_conv; its sizing is halved. "max": a face's max of
@@ -322,6 +325,7 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
                 damping_factor);
         }
+        allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(

@@ -1048,10 +1048,18 @@ void TopoOffsetTetMesh::init_offset_potential()
             // The band term reads one distance, to the whole input; with several connected
             // pieces each has a field of its own, and the term does not choose between them.
             // Refused here, before the loop, rather than at the term's first evaluation.
-            if (m_n_regions > 1) {
+            // TESTING_allow_mult_comp lets it through: the term then reads the distance to all
+            // the pieces at once.
+            if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
                 log_and_throw_error(
                     "the energy's band term reads one field, and this input complex has {} "
                     "connected pieces",
+                    m_n_regions);
+            }
+            if (m_n_regions > 1) {
+                logger().warn(
+                    "\tTESTING_allow_mult_comp: the input complex has {} connected pieces; the "
+                    "energy's band term reads the distance to all of them at once",
                     m_n_regions);
             }
             m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
@@ -2428,7 +2436,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
 
     const double delta = m_offset_params.target_distance;
     const double front_conv = std::max(m_offset_params.front_conv, 1e-300);
-    const bool energy_fields = m_band_tris && m_n_regions <= 1 &&
+    const bool energy_fields = m_band_tris &&
+                               (m_n_regions <= 1 || m_offset_params.allow_mult_comp) &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
