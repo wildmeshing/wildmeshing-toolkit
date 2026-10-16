@@ -43,7 +43,6 @@ TEST_CASE("triangle-insertion", "[tetwild_operation][.]")
     // Parameters params;
     //params.lr = 1 / 15.0;
     // params.init(vertices, faces);
-    // wmtk::ExactEnvelope envelope;
     // wmtk::logger().info("input_surface.params.eps {}", params.eps);
     // envelope.init(vertices, env_faces, params.eps);
     //
@@ -85,7 +84,6 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     //params.lr = 1 / 30.0;
     // params.init(vertices, faces);
     //
-    // wmtk::ExactEnvelope envelope;
     // envelope.init(vertices, env_faces, params.eps);
     //
     // wmtk::remove_duplicates(vertices, faces, params.diag_l);
@@ -218,8 +216,8 @@ TEST_CASE("vertex_order", "[tetwild]")
 
     // TetWildMesh now holds the envelope by shared_ptr; surf_mesh owns this one and
     // outlives both meshes below, so alias it with a no-op deleter rather than copying the
-    // BVH. Same aliasing the old `SampleEnvelope&` parameter gave.
-    const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
+    // BVH. Same aliasing the old `Envelope&` parameter gave.
+    const std::shared_ptr<Envelope> env(&surf_mesh.m_envelope, [](Envelope*) {});
 
     std::vector<Vector3r> v_rational;
     std::vector<std::array<size_t, 3>> facets;
@@ -362,7 +360,7 @@ TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]")
         std::vector<size_t> frozen_verts;
         surf_mesh.create_mesh(vertices.size(), faces, frozen_verts, 0.1);
     }
-    const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
+    const std::shared_ptr<Envelope> env(&surf_mesh.m_envelope, [](Envelope*) {});
 
     // Features: an interior diagonal edge chain (two edges sharing a vertex), an edge lying
     // ON the y = 0 face, an interior point, a point on the surface, and a point exactly at a

@@ -114,7 +114,7 @@ public:
     /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
     /// edge. Named for the order rather than for "open boundary" because that is what
     /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
-    std::shared_ptr<SampleEnvelope> m_order2_envelope;
+    std::shared_ptr<Envelope> m_order2_envelope;
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.
@@ -271,11 +271,8 @@ public:
 
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
-    TetWildMesh(
-        Parameters& _m_params,
-        std::shared_ptr<SampleEnvelope> _m_envelope,
-        int _num_threads = 1)
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
+    TetWildMesh(Parameters& _m_params, std::shared_ptr<Envelope> _m_envelope, int _num_threads = 1)
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)
     {

@@ -41,7 +41,7 @@ TEST_CASE("triangle-insertion", "[tetwild_operation]")
     Parameters params;
     params.lr = 1 / 15.0;
     params.init(vertices, faces);
-    wmtk::ExactEnvelope envelope;
+    wmtk::Envelope envelope(/*exact=*/true);
     wmtk::logger().info("input_surface.params.eps {}", params.eps);
     envelope.init(vertices, env_faces, params.eps);
 
@@ -83,7 +83,7 @@ TEST_CASE("triangle-insertion-parallel", "[tetwild_operation][.]")
     params.lr = 1 / 30.0;
     params.init(vertices, faces);
 
-    wmtk::ExactEnvelope envelope;
+    wmtk::Envelope envelope(/*exact=*/true);
     envelope.init(vertices, env_faces, params.eps);
 
     wmtk::remove_duplicates(vertices, faces, params.diag_l);

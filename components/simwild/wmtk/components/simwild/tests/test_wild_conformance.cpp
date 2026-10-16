@@ -12,6 +12,10 @@
 #include <memory>
 #include <vector>
 
+// The envelopes these tests construct directly are sampled (exact = false), passed
+// explicitly: that was the default when they were written, so they keep testing what they
+// tested then.
+
 namespace {
 
 using wmtk::TriOptimizerMesh;
@@ -661,7 +665,7 @@ TEST_CASE(
         Eigen::Vector3i(0, 1, 2),
         Eigen::Vector3i(0, 1, 3),
         Eigen::Vector3i(0, 1, 4)};
-    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>();
+    auto tet_envelope = std::make_shared<wmtk::Envelope>(/*exact=*/false);
     tet_envelope->init(
         std::vector<Vector3d>(kTetRingVertices.begin(), kTetRingVertices.end()),
         interface_faces,
@@ -822,8 +826,8 @@ TEST_CASE(
     wmtk::components::simwild::Parameters sim_params;
     sim_params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 
-    auto surface = std::make_shared<wmtk::SampleEnvelope>();
-    auto feature = std::make_shared<wmtk::SampleEnvelope>();
+    auto surface = std::make_shared<wmtk::Envelope>(/*exact=*/false);
+    auto feature = std::make_shared<wmtk::Envelope>(/*exact=*/false);
     feature->init(
         std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}},
         std::vector<Eigen::Vector2i>{{0, 1}},

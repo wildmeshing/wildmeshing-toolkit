@@ -42,7 +42,9 @@ void MeshRefinement::prepareData(bool is_init)
         round();
     }
 
-    SampleEnvelope env;
+    // Sampled, as it was before the envelope defaulted to exact: the original-TetWild code is
+    // written against the sampled envelope (see TetWildMesh::mesh_improvement_legacy).
+    Envelope env(/*exact=*/false);
 
     LocalOperations localOperation(
         tet_vertices,

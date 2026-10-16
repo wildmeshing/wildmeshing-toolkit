@@ -1,13 +1,13 @@
 // Containment queries that only the exact envelope can answer.
 //
-// Both of SampleEnvelope's backends describe the SAME envelope: the eps-neighbourhood of the
+// Both of Envelope's backends describe the SAME envelope: the eps-neighbourhood of the
 // input. They are handed the same eps and neither is meant to be wider or narrower than the
 // other. What differs is how much of that eps they manage to use.
 //
 // The sampled one places points along the query and asks the BVH whether each is within some
 // radius of the input. It cannot see what happens between two samples, so to guarantee the
 // whole query is within eps it has to shrink that radius by the sampling's covering radius --
-// eps/sqrt(3) for a triangle, eps/2 for a segment (see SampleEnvelope::eps2 and eps2_edge).
+// eps/sqrt(3) for a triangle, eps/2 for a segment (see Envelope::eps2 and eps2_edge).
 // That shrink is an implementation detail of staying conservative, not a smaller envelope: it
 // costs some of the eps budget, so the sampled test rejects geometry that is genuinely inside.
 //
@@ -39,7 +39,7 @@ using namespace wmtk;
 namespace {
 
 /// A single segment of the x axis, from the origin to (length, 0, 0).
-void init_axis_3d(SampleEnvelope& env, double length, double eps)
+void init_axis_3d(Envelope& env, double length, double eps)
 {
     const std::vector<Eigen::Vector3d> V = {
         Eigen::Vector3d(0, 0, 0),
@@ -49,7 +49,7 @@ void init_axis_3d(SampleEnvelope& env, double length, double eps)
 }
 
 /// The same in 2D.
-void init_axis_2d(SampleEnvelope& env, double length, double eps)
+void init_axis_2d(Envelope& env, double length, double eps)
 {
     const std::vector<Eigen::Vector2d> V = {Eigen::Vector2d(0, 0), Eigen::Vector2d(length, 0)};
     const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1)};
@@ -65,8 +65,8 @@ TEST_CASE("exact and sampled 3D segment envelopes agree away from the boundary",
     // is what says the exact path is wired to the right geometry at all -- a mis-dispatched
     // exact query would answer "outside" for everything, including the queries well inside.
     const double eps = 0.1;
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_3d(sampled, 4.0, eps);
     init_axis_3d(exact, 4.0, eps);
 
@@ -121,8 +121,8 @@ TEST_CASE("the sampled segment envelope is the stricter of the two", "[envelope]
     REQUIRE(offset > eps / 2); // sampled must reject
     REQUIRE(offset <= inscribed); // exact must accept
 
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_3d(sampled, 4.0, eps);
     init_axis_3d(exact, 4.0, eps);
 
@@ -135,8 +135,8 @@ TEST_CASE("the sampled segment envelope is the stricter of the two", "[envelope]
 TEST_CASE("the exact 2D envelope answers point and segment queries", "[envelope]")
 {
     const double eps = 0.1;
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_2d(sampled, 4.0, eps);
     init_axis_2d(exact, 4.0, eps);
 
@@ -192,7 +192,7 @@ TEST_CASE("only the exact envelope sees a gap between two input curves", "[envel
         Eigen::Vector2d(2 + gap, 0)};
     const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1), Eigen::Vector2i(2, 3)};
 
-    SampleEnvelope exact(true);
+    Envelope exact(true);
     exact.init(V, E, eps);
 
     // Inside one component: fine.
@@ -216,7 +216,7 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
 
     SECTION("triangle query against a 2D envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_2d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 3> tri = {
             {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(0, 1, 0)}};
@@ -224,7 +224,7 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
     }
     SECTION("triangle query against a 3D edge envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_3d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 3> tri = {
             {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(0, 1, 0)}};
@@ -232,25 +232,34 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
     }
     SECTION("3D segment query against a 2D envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_2d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 2> e = {
             {Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(3, 0, 0)}};
         CHECK_THROWS(exact.is_outside(e));
     }
-    SECTION("an exact envelope needs a positive epsilon")
+    SECTION("an exact envelope with zero epsilon serves nearest queries and refuses containment")
     {
         // Zero eps is legitimate for a nearest_point-only envelope (triwild's Delaunay
-        // seeding does it), but there is no zero-width exact envelope to build.
-        SampleEnvelope exact(true);
-        CHECK_THROWS(init_axis_2d(exact, 4.0, 0.0));
+        // seeding does it), but there is no zero-width exact envelope to build. So init skips
+        // the exact build instead of throwing, nearest queries go to the BVH as usual, and a
+        // containment query throws rather than answering "outside" for everything.
+        Envelope exact(true);
+        CHECK_NOTHROW(init_axis_2d(exact, 4.0, 0.0));
+        CHECK_THROWS(exact.is_outside(Eigen::Vector2d(1, 0)));
+        CHECK_THROWS(exact.is_outside(
+            std::array<Eigen::Vector2d, 2>{{Eigen::Vector2d(1, 0), Eigen::Vector2d(3, 0)}}));
+        Eigen::Vector2d foot;
+        const double d2 = exact.nearest_point(Eigen::Vector2d(1, 0.5), foot);
+        CHECK(std::abs(d2 - 0.25) < 1e-12);
+        CHECK((foot - Eigen::Vector2d(1, 0)).norm() < 1e-12);
 
-        SampleEnvelope sampled(false);
+        Envelope sampled(false);
         CHECK_NOTHROW(init_axis_2d(sampled, 4.0, 0.0));
     }
     SECTION("the sampled backend accepts every combination, as before")
     {
-        SampleEnvelope sampled(false);
+        Envelope sampled(false);
         init_axis_2d(sampled, 4.0, eps);
         const std::array<Eigen::Vector3d, 2> e = {
             {Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(3, 0, 0)}};
@@ -296,7 +305,7 @@ TEST_CASE("envelope_budget", "[envelope]")
 
     SECTION("a remainder that would be non-positive falls back to the full eps")
     {
-        // Never returns <= 0. SampleEnvelope::init SQUARES its argument, so a negative eps
+        // Never returns <= 0. Envelope::init SQUARES its argument, so a negative eps
         // would come back as a positive eps2 -- a silently smaller envelope rather than an
         // error -- and a zero one vetoes every operation.
         CHECK(optimization_envelope_eps(eps, eps, true, true) == eps);
@@ -325,8 +334,8 @@ TEST_CASE("a large sampled triangle query answers the same on several threads", 
             F.emplace_back(a, a + n + 2, a + n + 1);
         }
     }
-    SampleEnvelope serial(false);
-    SampleEnvelope split(false);
+    Envelope serial(false);
+    Envelope split(false);
     serial.init(V, F, eps);
     split.init(V, F, eps);
     split.set_max_threads(8);

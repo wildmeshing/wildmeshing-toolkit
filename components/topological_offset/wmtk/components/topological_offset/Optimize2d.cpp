@@ -195,11 +195,11 @@ void TopoOffsetTriMesh::warn_if_offset_reaches_domain_boundary() const
         m_offset_params.target_distance);
 }
 
-std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::envelope_for_mask(uint64_t mask) const
+std::shared_ptr<Envelope> TopoOffsetTriMesh::envelope_for_mask(uint64_t mask) const
 {
     if (mask == 0) return nullptr;
     if ((mask & (mask - 1)) == 0) {
-        // Single bit: the member envelope itself -- a real SampleEnvelope, safe on every path
+        // Single bit: the member envelope itself -- a real Envelope, safe on every path
         // including the pull. Linear scan; the tag count is tiny.
         for (const auto& [tag, env] : m_tag_envelopes) {
             const auto it = m_tag_bit.find(tag);
@@ -215,14 +215,14 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::envelope_for_mask(uint64_t ma
         const auto it = m_isect_cache.find(mask);
         if (it != m_isect_cache.end()) return it->second;
     }
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    std::vector<std::shared_ptr<Envelope>> members;
     for (const auto& [tag, env] : m_tag_envelopes) {
         const auto it = m_tag_bit.find(tag);
         if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) {
             members.push_back(env);
         }
     }
-    std::shared_ptr<SampleEnvelope> isect;
+    std::shared_ptr<Envelope> isect;
     if (members.empty()) {
         isect = nullptr; // every bit dangled; nothing to contain in
     } else if (members.size() == 1) {
@@ -235,14 +235,14 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::envelope_for_mask(uint64_t ma
     return isect;
 }
 
-std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::containment_for(
+std::shared_ptr<Envelope> TopoOffsetTriMesh::containment_for(
     const uint64_t region_mask,
     const bool on_offset) const
 {
     // The region side first, and OUTSIDE the lock: envelope_for_mask() takes m_isect_mutex
     // itself and std::mutex is not recursive, so calling it while holding the lock below
     // deadlocks. Nothing here re-enters it after the lock is taken.
-    const std::shared_ptr<SampleEnvelope> region = envelope_for_mask(region_mask);
+    const std::shared_ptr<Envelope> region = envelope_for_mask(region_mask);
 
     // The offset side, for the operations of the frozen-front final pass only: in the loop the
     // offset boundary is held to no envelope, by the operations or the smoother (see
@@ -260,8 +260,8 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::containment_for(
         const auto it = m_offset_isect_cache.find(region_mask);
         if (it != m_offset_isect_cache.end()) return it->second;
     }
-    std::shared_ptr<SampleEnvelope> isect = std::make_shared<IntersectionEnvelope>(
-        std::vector<std::shared_ptr<SampleEnvelope>>{region, m_offset_envelope});
+    std::shared_ptr<Envelope> isect = std::make_shared<IntersectionEnvelope>(
+        std::vector<std::shared_ptr<Envelope>>{region, m_offset_envelope});
     std::lock_guard<std::mutex> lock(m_isect_mutex);
     return m_offset_isect_cache.emplace(region_mask, std::move(isect)).first->second;
 }
@@ -1286,7 +1286,7 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         // not just at the endpoints, because that is what is_outside(edge) does and it is the
         // distinction being drawn: endpoints at distance 0 with a large interior maximum is a
         // chord spanning boundary the tube follows around, not a boundary edge that has drifted.
-        const auto probe = [&](const std::shared_ptr<SampleEnvelope>& env, int tag) {
+        const auto probe = [&](const std::shared_ptr<Envelope>& env, int tag) {
             if (!env) return;
             for (const size_t v : vids) {
                 const double d =
@@ -1660,7 +1660,7 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
                 const auto [_, eid] = tuple_from_edge({{a, b}});
                 v = kFree;
                 if (m_edge_attribute[eid].m_is_surface_fs) {
-                    const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_edge({{a, b}});
+                    const std::shared_ptr<Envelope> env = surface_envelope_for_edge({{a, b}});
                     if (env) {
                         const Vector2d mid = 0.5 * (pa + pb);
                         if (env->is_outside(std::array<Vector2d, 2>{{pa, mid}}) ||
@@ -3775,7 +3775,7 @@ bool TopoOffsetTriMesh::edge_borders_released_boundary(const Tuple& e) const
     return released_here;
 }
 
-std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
+std::shared_ptr<Envelope> TopoOffsetTriMesh::released_envelope() const
 {
     // deform_others' ops-only tube: a tube around the CURRENT released boundaries, consulted by
     // surface_envelope_for_edge() -- the dispatch every operation containment check comes through
@@ -3821,7 +3821,7 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
             verts[i] = m_vertex_attribute[i].m_posf;
         }
         const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
-        m_released_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+        m_released_envelope = std::make_shared<Envelope>(/*exact=*/true);
         m_released_envelope->init(verts, segs, eps);
     }
     m_released_tube_dirty.store(false, std::memory_order_release);
@@ -3867,7 +3867,7 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     // in 3D.
     const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true); // see the tag envelopes
+    m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true); // see the tag envelopes
     m_offset_envelope->init(verts, segs, eps);
     logger().info(
         "\t[offset envelope] rebuilt: {} segments, {} (eps {:.6g} = offset_envelope, "

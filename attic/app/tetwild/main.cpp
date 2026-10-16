@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, params.diag_l);
 
-    wmtk::ExactEnvelope exact_envelope;
+    wmtk::Envelope exact_envelope(/*exact=*/true);
     {
         std::vector<Eigen::Vector3i> tempF(fsimp.size());
         for (auto i = 0; i < tempF.size(); i++) tempF[i] << fsimp[i][0], fsimp[i][1], fsimp[i][2];

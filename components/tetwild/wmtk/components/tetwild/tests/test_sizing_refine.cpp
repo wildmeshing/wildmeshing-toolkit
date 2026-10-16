@@ -11,6 +11,10 @@
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
+// The envelopes these tests construct directly are sampled (exact = false), passed
+// explicitly: that was the default when they were written, so they keep testing what they
+// tested then.
+
 // Two disjoint tets: tet 0 = {0,1,2,3} near the origin, tet 1 = {4,5,6,7} far
 // away. Because the tets share no vertices, a ring-BFS from one never reaches
 // the other, giving a clean "outside the region is untouched" check.
@@ -58,7 +62,7 @@ TEST_CASE("stuck-refine-region-and-factor", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.1;
     params.stuck_refine_gradation = 1.0; // disable smoothing to isolate the refinement
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     // Make tet 0 the single worst element.
@@ -86,7 +90,7 @@ TEST_CASE("stuck-refine-floor-clamp", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.7; // floor above factor*1.0 => clamps
     params.stuck_refine_gradation = 1.0;
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_tet_attribute[0].m_quality = 1e40;
@@ -107,7 +111,7 @@ TEST_CASE("stuck-refine-num-worst", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.01;
     params.stuck_refine_gradation = 1.0;
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_tet_attribute[0].m_quality = 1e40;
@@ -125,7 +129,7 @@ TEST_CASE("stuck-refine-gradation-monotone", "[tetwild_operation][stuck_refine]"
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(12, 2, 2));
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
 
@@ -156,7 +160,7 @@ TEST_CASE("stuck-refine-disabled-noop", "[tetwild_operation][stuck_refine]")
     // grade <= 1 disables the smoothing entirely.
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(12, 2, 2));
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_vertex_attribute[0].m_sizing_scalar = 0.1;
@@ -173,7 +177,7 @@ TEST_CASE("skip-good-regions-active-vertices", "[tetwild_operation][skip_good_re
     params.stop_energy = 100;
     params.skip_good_regions_margin = 0.9; // active energy >= 90 -> m_quality >= 90^3 = 729000
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
 

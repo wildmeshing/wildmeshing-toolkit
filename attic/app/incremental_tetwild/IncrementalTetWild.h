@@ -135,7 +135,7 @@ public:
     sample_envelope::SampleEnvelope& triangles_tree;
 
     // for open boundary
-    wmtk::ExactEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    wmtk::Envelope m_open_boundary_envelope{/*exact=*/true}; // todo: add sample envelope option
     sample_envelope::SampleEnvelope boundaries_tree;
 
     TetWild(

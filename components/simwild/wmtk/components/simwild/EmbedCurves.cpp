@@ -99,7 +99,7 @@ void EmbedCurves::simplify_curves(
     const bool use_exact_envelope,
     const int num_threads)
 {
-    SampleEnvelope envelope(use_exact_envelope);
+    Envelope envelope(use_exact_envelope);
     envelope.init(m_V_curves, m_E_curves, eps);
 
     const int nv_before = int(m_V_curves.rows());

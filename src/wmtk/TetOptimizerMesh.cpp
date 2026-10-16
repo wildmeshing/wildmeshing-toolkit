@@ -471,7 +471,7 @@ void TetOptimizerMesh::smooth_vertices_colored(
     logger().info("vertex smoothing operation time parallel: {:.4}s", timer.getElapsedTime());
 }
 
-std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
+std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
 {
     // Both applications keep one surface envelope. The pull energy may additionally select
     // an order-2 feature envelope, but containment remains against the surface envelope.

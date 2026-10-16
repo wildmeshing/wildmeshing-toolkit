@@ -8,7 +8,7 @@
 namespace wmtk::utils {
 
 void delaunay_box_mesh(
-    const SampleEnvelope& envelope,
+    const Envelope& envelope,
     const Vector3d& bbox_min,
     const Vector3d& bbox_max,
     const double diag,

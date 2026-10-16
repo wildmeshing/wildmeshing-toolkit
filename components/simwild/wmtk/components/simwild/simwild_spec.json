@@ -15,6 +15,7 @@
       "tag_from_winding_number",
       "split_connected_components",
       "use_sample_envelope",
+      "simplify_use_sample_envelope",
       "num_threads",
       "max_iterations",
       "eps_rel",
@@ -187,6 +188,12 @@
     "type": "bool",
     "default": false,
     "doc": "Use the sampled envelope instead of the exact one. Governs both the 3D surface envelope and, since the exact envelope gained support for edges, the order-2 (open boundary and non-manifold) curve envelope and the 2D polyline envelope -- all three are containment tests against the same input at the same epsilon, so they follow one flag. The sampled test places points along the query and asks whether each is within eps of the input, so it cannot see what happens between two samples and shrinks its acceptance radius to compensate; the exact one decides coverage by the union of the eps-neighbourhoods without sampling, so it uses the full eps and is strictly sharper."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Use the sampled envelope instead of the exact one for the simplification after insertion only (operation remeshing with preserve_topology, unless skip_simplify); the optimization keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Note the sampled test cannot see what happens between two samples, and on thin lattice geometry the sampled simplification has been observed to over-collapse badly (in tetwild)."
   },
   {
     "pointer": "/num_threads",

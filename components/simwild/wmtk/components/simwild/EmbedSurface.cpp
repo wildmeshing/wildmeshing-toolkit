@@ -31,7 +31,7 @@
 namespace wmtk::components::simwild {
 
 void delaunay_box_mesh(
-    const wmtk::SampleEnvelope& envelope,
+    const wmtk::Envelope& envelope,
     const MatrixXd& vertices,
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
@@ -470,7 +470,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         eps = 1e-2 * diag;
     }
 
-    std::shared_ptr<SampleEnvelope> ptr_env;
+    std::shared_ptr<Envelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
 
@@ -478,7 +478,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         for (size_t i = 0; i < tempF.size(); ++i) {
             tempF[i] = m_F_surface.row(i);
         }
-        ptr_env = std::make_shared<SampleEnvelope>();
+        ptr_env = std::make_shared<Envelope>();
         ptr_env->use_exact = true;
         ptr_env->init(v_simplified, tempF, eps);
     }

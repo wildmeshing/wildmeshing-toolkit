@@ -35,7 +35,7 @@ namespace wmtk::components::topological_offset {
 namespace {
 /// The exact-kind envelope Phi's euclidean twin queries: triangles where there are any,
 /// segments (isolated input points as the degenerate segment (i, i)) otherwise.
-std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
+std::shared_ptr<Envelope> euclidean_query_envelope(
     const MatrixXd& V,
     const MatrixXi& E,
     const MatrixXi& F,
@@ -46,7 +46,7 @@ std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
     for (int i = 0; i < V.rows(); ++i) {
         verts[size_t(i)] = V.row(i).head<3>();
     }
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->use_exact = true;
     if (F.rows() > 0) {
         std::vector<Eigen::Vector3i> tris(size_t(F.rows()));
@@ -313,7 +313,7 @@ void TopoOffsetTetMesh::build_envelopes()
     if (tris.empty()) {
         m_envelope = nullptr;
     } else {
-        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_envelope = std::make_shared<Envelope>(/*exact=*/exact_ok);
         m_envelope->init(m_held_verts, tris, m_envelope_eps);
     }
     logger().info(
@@ -353,7 +353,7 @@ void TopoOffsetTetMesh::build_final_envelopes()
         return;
     }
     const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+    m_envelope = std::make_shared<Envelope>(/*exact=*/exact_ok);
     m_envelope->init(verts, tris, m_envelope_eps);
     logger().info(
         "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
@@ -418,7 +418,7 @@ void TopoOffsetTetMesh::classify_sheet_faces()
     std::vector<Eigen::Vector3i> sf(m_sheet_F.rows());
     for (int i = 0; i < m_sheet_F.rows(); ++i)
         sf[i] = Eigen::Vector3i(m_sheet_F(i, 0), m_sheet_F(i, 1), m_sheet_F(i, 2));
-    SampleEnvelope sheet(/*exact=*/true);
+    Envelope sheet(/*exact=*/true);
     sheet.init(sv, sf, eps);
     size_t n_on = 0;
     for (const Tuple& f : get_faces()) {

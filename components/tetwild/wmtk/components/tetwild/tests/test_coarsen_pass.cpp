@@ -13,6 +13,10 @@
 using namespace wmtk;
 using namespace wmtk::components::tetwild;
 
+// The envelopes these tests construct directly are sampled (exact = false), passed
+// explicitly: that was the default when they were written, so they keep testing what they
+// tested then.
+
 namespace {
 
 /**
@@ -153,7 +157,7 @@ TEST_CASE("tetwild-coarsen-rejected-collapse-leaves-no-trace", "[tetwild_operati
     Parameters params = make_params();
     params.coarsen_local_smoothing_passes = 0;
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 0);
     build_cube_grid(mesh, 3, 3, 3);
 
@@ -188,7 +192,7 @@ TEST_CASE("tetwild-coarsen-never-raises-max-energy", "[tetwild_operation][coarse
     params.coarsen_local_smoothing_passes = 2;
     params.coarsen_global_smoothing_passes = 1;
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 0);
     build_cube_grid(mesh, 4, 4, 4);
 
@@ -225,7 +229,7 @@ TEST_CASE("tetwild-coarsen-pass-off-is-a-no-op", "[tetwild_operation][coarsen]")
     Parameters params = make_params();
     params.coarsen_pass = false;
 
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>(/*exact=*/false);
     TetWildMesh mesh(params, env, 0);
     build_cube_grid(mesh, 3, 3, 3);
 
@@ -243,7 +247,7 @@ TEST_CASE("tetwild-coarsen-bounded-stops-at-the-target-length", "[tetwild_operat
     const auto run = [](bool unbounded, double collapsing_l2) {
         Parameters params = make_params();
         params.coarsen_unbounded = unbounded;
-        auto env = std::make_shared<SampleEnvelope>();
+        auto env = std::make_shared<Envelope>(/*exact=*/false);
         TetWildMesh mesh(params, env, 0);
         build_cube_grid(mesh, 3, 3, 3);
         // init() derived this from the bounding box; override it after the mesh is built so the

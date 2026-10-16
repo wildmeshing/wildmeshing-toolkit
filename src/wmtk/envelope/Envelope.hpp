@@ -15,42 +15,6 @@ namespace wmtk {
 class Envelope
 {
 public:
-    virtual ~Envelope() = default;
-    virtual void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double) {};
-    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const { return false; };
-    virtual bool is_outside(const Eigen::Vector3d& pts) const { return false; };
-};
-
-class ExactEnvelope : public Envelope, public fastEnvelope::FastEnvelope
-{
-public:
-    ExactEnvelope()
-        : fastEnvelope::FastEnvelope::FastEnvelope() {};
-    ~ExactEnvelope() {};
-    void init(
-        const std::vector<Eigen::Vector3d>& m_ver,
-        const std::vector<Eigen::Vector3i>& m_faces,
-        const double eps)
-    {
-        fastEnvelope::FastEnvelope::init(m_ver, m_faces, eps);
-    }
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(tris);
-    }
-    bool is_outside(const Eigen::Vector3d& pts) const
-    {
-        return fastEnvelope::FastEnvelope::is_outside(pts);
-    }
-};
-
-
-class SampleEnvelope : public wmtk::Envelope
-{
-public:
     /**
      * Which of the three init() overloads built this envelope.
      *
@@ -63,8 +27,15 @@ public:
      */
     enum class Kind { Uninitialized, Triangles3d, Edges3d, Edges2d };
 
-    SampleEnvelope(bool exact = false)
+    /**
+     * Exact by default. The sampled predicate tests points laid along the query against a
+     * shrunk radius and still cannot see between two samples; the exact one decides
+     * containment in the full eps-neighbourhood. A caller that wants the cheaper sampled test
+     * asks for it with exact = false.
+     */
+    Envelope(bool exact = true)
         : use_exact(exact) {};
+    virtual ~Envelope() = default;
     /**
      * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
      *
@@ -108,7 +79,7 @@ public:
      * of work. The answer is the same either way.
      */
     void set_max_threads(int n) { m_max_threads = n < 1 ? 1 : n; }
-    bool use_exact = false;
+    bool use_exact = true;
 
     /**
      * Debug escape hatch: when set, every is_outside() answers "inside".
@@ -124,7 +95,7 @@ public:
      * optimizer cannot move at all".
      */
     bool disabled = false;
-    void init(
+    virtual void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
         const double);
@@ -148,18 +119,18 @@ public:
      * writing the same ten-line copy loop; this is that loop, once.
      */
     void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
-    bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
-    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     /**
-     * The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite
-     * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
-     * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
-     * containment path asks these two instead. See the composites in
-     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
-     * composite must never reach the NON-virtual queries below, whose BVH it does not have.
+     * Four containment queries are VIRTUAL -- the 3D triangle, the 3D point, the 2D segment and
+     * the 2D point -- so a containment-only composite over several envelopes can answer them.
+     * They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is
+     * not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp,
+     * and the invariant stated there: a composite must never reach the NON-virtual queries,
+     * whose BVH it does not have.
      */
+    virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
+    bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
-    bool is_outside(const Eigen::Vector3d& pts) const;
+    virtual bool is_outside(const Eigen::Vector3d& pts) const;
     virtual bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;

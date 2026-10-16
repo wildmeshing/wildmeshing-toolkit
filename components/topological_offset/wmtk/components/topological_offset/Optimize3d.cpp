@@ -1535,7 +1535,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     double worst_frac = 0.;
     std::array<size_t, 5> band{{0, 0, 0, 0, 0}}; // <0.5, <0.9, <0.99, <1, >=1 of eps
     // The farthest a lattice of (k+1)(k+2)/2 points on the triangle is from the envelope.
-    const auto farthest = [](const SampleEnvelope& env, const std::array<Vector3d, 3>& p, int k) {
+    const auto farthest = [](const Envelope& env, const std::array<Vector3d, 3>& p, int k) {
         double d = 0.;
         for (int i = 0; i <= k; ++i) {
             for (int j = 0; j <= k - i; ++j) {
@@ -1550,7 +1550,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 3> vids = get_face_vids(f);
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face(vids);
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face(vids);
         if (!env) continue;
         ++n_held;
         const std::array<Vector3d, 3> p{
@@ -1882,7 +1882,7 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
                         if (!found) continue;
                         const size_t fid = std::get<1>(*found);
                         if (!m_face_attribute[fid].m_is_surface_fs) continue;
-                        const std::shared_ptr<SampleEnvelope> env =
+                        const std::shared_ptr<Envelope> env =
                             surface_envelope_for_face({{a, b, w}});
                         if (!env) continue;
                         const Vector3d mid = 0.5 * (pa + pb);
@@ -4089,7 +4089,7 @@ void TopoOffsetTetMesh::build_offset_envelope()
     // in 2D.
     const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+    m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
     logger().info(
         "\t[offset envelope] built: {} faces, {} (eps {:.6g} = offset_envelope, "

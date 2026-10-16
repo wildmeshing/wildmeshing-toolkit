@@ -56,8 +56,11 @@ struct EdgeAttributes
 class QSlimMesh : public wmtk::TriMesh
 {
 public:
-    // wmtk::ExactEnvelope m_envelope;
-    wmtk::SampleEnvelope m_envelope;
+    /// Sampled, on purpose: 378236c138 ("Use sample envelope instead of exact one in QSLIM")
+    /// switched QSlim from the exact envelope to the sampled one. Kept explicit now that the
+    /// envelope defaults to exact, pending its author's confirmation. The boundary envelope
+    /// takes the same mode in create_mesh(), so it stays sampled too.
+    wmtk::Envelope m_envelope{/*exact=*/false};
     bool m_has_envelope = false;
     /// Tube around the boundary edges of the mesh given to create_mesh(), when that gets a
     /// positive boundary_eps. See there. initialized() is false otherwise, and for a closed input.
