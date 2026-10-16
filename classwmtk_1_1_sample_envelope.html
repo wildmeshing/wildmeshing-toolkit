@@ -157,6 +157,24 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_distance</b
 <tr class="memitem:a427f2e5b1c625ccc83edd0a3df7116c5" id="r_a427f2e5b1c625ccc83edd0a3df7116c5"><td class="memItemLeft" align="right" valign="top"><a id="a427f2e5b1c625ccc83edd0a3df7116c5" name="a427f2e5b1c625ccc83edd0a3df7116c5"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_distance</b> (const Eigen::Vector2d &amp;p) const</td></tr>
 <tr class="separator:a427f2e5b1c625ccc83edd0a3df7116c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d4f46b753b3b7178024330e6960b499" id="r_a8d4f46b753b3b7178024330e6960b499"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a8d4f46b753b3b7178024330e6960b499">primitives_in_box</a> (const Eigen::Vector3d &amp;lo, const Eigen::Vector3d &amp;hi, std::vector&lt; int64_t &gt; &amp;ids) const</td></tr>
+<tr class="memdesc:a8d4f46b753b3b7178024330e6960b499"><td class="mdescLeft">&#160;</td><td class="mdescRight">The ids of every primitive whose bounding box meets the closed box [lo, hi], ascending, each once.  <br /></td></tr>
+<tr class="separator:a8d4f46b753b3b7178024330e6960b499"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae5ff27b44851d71da3d00a50341df7d" id="r_aae5ff27b44851d71da3d00a50341df7d"><td class="memItemLeft" align="right" valign="top"><a id="aae5ff27b44851d71da3d00a50341df7d" name="aae5ff27b44851d71da3d00a50341df7d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>primitives_in_box</b> (const Eigen::Vector2d &amp;lo, const Eigen::Vector2d &amp;hi, std::vector&lt; int64_t &gt; &amp;ids) const</td></tr>
+<tr class="memdesc:aae5ff27b44851d71da3d00a50341df7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 2D counterpart, for Edges2d: the same tree, which holds the 2D input lifted to z = 0. <br /></td></tr>
+<tr class="separator:aae5ff27b44851d71da3d00a50341df7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4f7f72f14bc70f093aa2274b72af45b" id="r_ac4f7f72f14bc70f093aa2274b72af45b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#ac4f7f72f14bc70f093aa2274b72af45b">primitive_distance</a> (int64_t id, const Eigen::Vector3d &amp;p, Eigen::Vector3d *grad=nullptr, Eigen::Matrix3d *hess=nullptr) const</td></tr>
+<tr class="memdesc:ac4f7f72f14bc70f093aa2274b72af45b"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance d from p to primitive <code>id</code> alone, with its gradient and Hessian when asked for (nullptr = not wanted).  <br /></td></tr>
+<tr class="separator:ac4f7f72f14bc70f093aa2274b72af45b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e398317a2ea13611c8326356c698778" id="r_a5e398317a2ea13611c8326356c698778"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a5e398317a2ea13611c8326356c698778">primitive_distance</a> (int64_t id, const Eigen::Vector2d &amp;p, Eigen::Vector2d *grad=nullptr, Eigen::Matrix2d *hess=nullptr) const</td></tr>
+<tr class="separator:a5e398317a2ea13611c8326356c698778"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fa7b23f3f94b861af76291b39f5141d" id="r_a0fa7b23f3f94b861af76291b39f5141d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a0fa7b23f3f94b861af76291b39f5141d">primitive_triangle_distance</a> (int64_t id, const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tri) const</td></tr>
+<tr class="memdesc:a0fa7b23f3f94b861af76291b39f5141d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance between the triangle <code>tri</code> and primitive <code>id</code> alone.  <br /></td></tr>
+<tr class="separator:a0fa7b23f3f94b861af76291b39f5141d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a401428cb2b594139e2d21086477cb87c" id="r_a401428cb2b594139e2d21086477cb87c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a401428cb2b594139e2d21086477cb87c">primitive_segment_distance</a> (int64_t id, const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;seg) const</td></tr>
+<tr class="memdesc:a401428cb2b594139e2d21086477cb87c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 2D counterpart, for Edges2d: the distance between the segment <code>seg</code> and primitive <code>id</code> alone &ndash; a 2D front edge where the 3D query takes a front face.  <br /></td></tr>
+<tr class="separator:a401428cb2b594139e2d21086477cb87c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -175,6 +193,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_exact</b> = false
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:a5bc1077da705ef9aae189021c7632601" id="r_a5bc1077da705ef9aae189021c7632601"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a5bc1077da705ef9aae189021c7632601">require_primitive_query</a> (int dim, const char *query) const</td></tr>
+<tr class="separator:a5bc1077da705ef9aae189021c7632601"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a218e39f25cbe59bf46a68ab26c308dab" id="r_a218e39f25cbe59bf46a68ab26c308dab"><td class="memItemLeft" align="right" valign="top"><a id="a218e39f25cbe59bf46a68ab26c308dab" name="a218e39f25cbe59bf46a68ab26c308dab"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>require_primitive</b> (int64_t id, int dim, const char *query) const</td></tr>
+<tr class="separator:a218e39f25cbe59bf46a68ab26c308dab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc6210eef55570cf228a140a47cd2527" id="r_adc6210eef55570cf228a140a47cd2527"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#adc6210eef55570cf228a140a47cd2527">require_exact_kind</a> (<a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a> expected, const char *query) const</td></tr>
 <tr class="separator:adc6210eef55570cf228a140a47cd2527"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8053619bced13832ad11ab0f1794d4f" id="r_af8053619bced13832ad11ab0f1794d4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#af8053619bced13832ad11ab0f1794d4f">require_exact_3d</a> (const char *query) const</td></tr>
@@ -569,6 +592,191 @@ feature change". </p>
 
 </div>
 </div>
+<a id="a5e398317a2ea13611c8326356c698778" name="a5e398317a2ea13611c8326356c698778"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e398317a2ea13611c8326356c698778">&#9670;&#160;</a></span>primitive_distance() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::primitive_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d *&#160;</td>
+          <td class="paramname"><em>grad</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Matrix2d *&#160;</td>
+          <td class="paramname"><em>hess</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The 2D counterpart, for Edges2d: the same segment foot and the same derivatives in 2D, where a segment's interior has Hessian 0 &ndash; d is affine there, I - u u^T - e e^T vanishing with u and e orthonormal &ndash; as EuclideanOffsetPotential&lt;2&gt;::hessian() has it; (I - u u^T)/d at an endpoint or a point. </p>
+
+</div>
+</div>
+<a id="ac4f7f72f14bc70f093aa2274b72af45b" name="ac4f7f72f14bc70f093aa2274b72af45b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4f7f72f14bc70f093aa2274b72af45b">&#9670;&#160;</a></span>primitive_distance() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::primitive_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d *&#160;</td>
+          <td class="paramname"><em>grad</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Matrix3d *&#160;</td>
+          <td class="paramname"><em>hess</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The distance d from p to primitive <code>id</code> alone, with its gradient and Hessian when asked for (nullptr = not wanted). </p>
+<p>The derivatives are those of the distance to the feature the foot point lies on: gradient u = (p - foot)/d; Hessian 0 when the foot is inside a triangle, (I - u u^T - e e^T)/d when it is on a triangle's edge or inside a segment (e the unit edge direction), (I - u u^T)/d at a triangle's vertex, a segment's endpoint or a point primitive. At d = 0 both are reported as 0.</p>
+<p>The triangle foot is Ericson's (Real-Time Collision Detection 5.1.5). The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees with it only to rounding, because it sums the dot products in another order (see Envelope.cpp). The segment foot is <a class="el" href="classwmtk_1_1_sample_envelope.html#af9d39f16a034fc45f83cd5b73573a335">nearest_point_feature()</a>'s, clamped at both ends. </p>
+
+</div>
+</div>
+<a id="a401428cb2b594139e2d21086477cb87c" name="a401428cb2b594139e2d21086477cb87c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a401428cb2b594139e2d21086477cb87c">&#9670;&#160;</a></span>primitive_segment_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::primitive_segment_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The 2D counterpart, for Edges2d: the distance between the segment <code>seg</code> and primitive <code>id</code> alone &ndash; a 2D front edge where the 3D query takes a front face. </p>
+<p>0 when the two cross, each one's endpoints strictly on the two sides of the other's line, by exact orientation signs as in 3D. Otherwise the segment-segment distance (Ericson 5.1.9), whose closest pair for disjoint segments has an endpoint of one; a contact without a crossing (an endpoint on the other segment, or collinear overlap) is such an endpoint at 0. A point primitive gives its distance to seg. </p>
+
+</div>
+</div>
+<a id="a0fa7b23f3f94b861af76291b39f5141d" name="a0fa7b23f3f94b861af76291b39f5141d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fa7b23f3f94b861af76291b39f5141d">&#9670;&#160;</a></span>primitive_triangle_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::primitive_triangle_distance </td>
+          <td>(</td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tri</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The distance between the triangle <code>tri</code> and primitive <code>id</code> alone. </p>
+<p>0 when an edge of one crosses the other (a segment primitive: when it crosses tri) &ndash; its endpoints strictly on the two sides of the other's plane, by exact orientation signs. Otherwise, against a triangle primitive, the min of the 6 corner-to-other-triangle distances and the 9 edge-edge distances (Ericson 5.1.9); against a segment, the min of its 2 endpoint-to-tri distances and its 3 distances to the edges of tri; against a point, its distance to tri. Two disjoint convex primitives' closest pair has a corner of one, or a point on an edge of each; two that meet without such a crossing (a corner on the other's plane, or coplanar) have one of those at 0.</p>
+<p>The same arithmetic compiled with EIGEN_DONT_VECTORIZE agrees only to rounding, as above. </p>
+
+</div>
+</div>
+<a id="a8d4f46b753b3b7178024330e6960b499" name="a8d4f46b753b3b7178024330e6960b499"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d4f46b753b3b7178024330e6960b499">&#9670;&#160;</a></span>primitives_in_box()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::primitives_in_box </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>lo</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>hi</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The ids of every primitive whose bounding box meets the closed box [lo, hi], ascending, each once. </p>
+<p>A wrapper of SimpleBVH::BVH::intersect_box, which already maps its leaves back to input ids (nearest_facet does not &ndash; see <a class="el" href="classwmtk_1_1_sample_envelope.html#af9d39f16a034fc45f83cd5b73573a335">nearest_point_feature()</a>) and visits each leaf once, so the result has no duplicates; but it lists them in the BVH's own Morton order, so they are sorted here. The boxes are the primitives' exact bounding boxes (the BVH is built with zero padding), compared closed: a box that only touches [lo, hi] counts. A caller that needs every primitive within r of a point passes the point's box grown by r, padded by its own rounding allowance. </p>
+
+</div>
+</div>
 <a id="af8053619bced13832ad11ab0f1794d4f" name="af8053619bced13832ad11ab0f1794d4f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af8053619bced13832ad11ab0f1794d4f">&#9670;&#160;</a></span>require_exact_3d()</h2>
 
@@ -631,6 +839,43 @@ feature change". </p>
 </div><div class="memdoc">
 <p>An exact query must be answered by the structure the matching init() built.</p>
 <p>Getting this wrong is silent and dangerous rather than noisy: a default-constructed FastEnvelope has no prisms, and a query against no prisms answers "outside" for every point &ndash; so a mismatched envelope does not crash, it just vetoes every operation and looks like an optimization that cannot move. </p>
+
+</div>
+</div>
+<a id="a5bc1077da705ef9aae189021c7632601" name="a5bc1077da705ef9aae189021c7632601"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bc1077da705ef9aae189021c7632601">&#9670;&#160;</a></span>require_primitive_query()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::require_primitive_query </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The checks of the per-primitive queries: an initialized envelope of dimension <code>dim</code>, and for the second an id in range. </p>
 
 </div>
 </div>
