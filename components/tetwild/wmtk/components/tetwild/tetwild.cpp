@@ -156,6 +156,39 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     int max_its = json_params["max_iterations"];
     std::string filter_option = json_params["filter"];
 
+    // Roles for the 'hybrid' filter: one entry per input file, "volume" (tet-fill its
+    // inside) or "surface" (keep as an embedded sheet). Curves and points already declare
+    // their dimension by arriving through input_edges / input_points.
+    std::vector<std::string> input_roles = json_params["input_roles"];
+    std::vector<size_t> volume_input_ids;
+    if (filter_option == "hybrid") {
+        const size_t n_inputs = json_params["input"].size();
+        if (input_roles.empty()) {
+            input_roles.assign(n_inputs, "volume");
+        }
+        if (input_roles.size() != n_inputs) {
+            log_and_throw_error(
+                "input_roles has {} entries for {} inputs",
+                input_roles.size(),
+                n_inputs);
+        }
+        for (size_t k = 0; k < input_roles.size(); ++k) {
+            if (input_roles[k] == "volume") {
+                volume_input_ids.push_back(k);
+            } else if (input_roles[k] != "surface") {
+                log_and_throw_error(
+                    "input_roles[{}] = '{}'; must be 'volume' or 'surface'",
+                    k,
+                    input_roles[k]);
+            }
+        }
+        if (volume_input_ids.empty()) {
+            logger().warn("filter='hybrid' with no volume-role input: no tets will be kept.");
+        }
+    } else if (!input_roles.empty()) {
+        logger().warn("input_roles is only used by filter='hybrid'; ignoring it.");
+    }
+
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
     params.order2_envelope_ratio = json_params["order2_envelope_ratio"];
@@ -835,6 +868,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // user input, and a filter discarding the region they live in must not erase them from
     // the feature outputs and audits (they do disappear from the tet mesh itself). Same
     // rule in 2D. With filter='none' nothing is deleted and this equals the final state.
+    std::vector<std::array<Vector3d, 3>> hybrid_sheet_tris; // hybrid filter only
     std::vector<std::array<Vector3d, 2>> hybrid_curve_segs;
     std::vector<Vector3d> hybrid_anchor_pts;
     std::pair<size_t, size_t> hybrid_retention{0, 0};
@@ -926,6 +960,73 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         mesh_new.filter_with_tracked_surface_winding_number();
     } else if (filter_option == "flood") {
         mesh_new.filter_with_flood_fill();
+    } else if (filter_option == "hybrid") {
+        // Collect everything that lives on scaffolding tets BEFORE deleting them: the
+        // surface-role sheets (tracked faces none of whose incident tets stay), every
+        // tagged feature curve, the anchor positions, and the pre-filter retention -- the
+        // audit that means something is the one taken while the features still exist in
+        // the tet mesh.
+        std::vector<bool> keep(mesh_new.tet_capacity(), false);
+        for (const auto& t : mesh_new.get_tets()) {
+            const size_t tid = t.tid(mesh_new);
+            const auto& wn = mesh_new.tet_finalize(tid).m_winding_number_per_input;
+            for (const size_t k : volume_input_ids) {
+                if (k < wn.size() && wmtk::utils::winding_number_inside(wn[k])) {
+                    keep[tid] = true;
+                    break;
+                }
+            }
+        }
+        // A tracked face with no kept tet on either side is a sheet triangle only if it lies on
+        // a surface-role input. The tracked surface is one flag for every input, so membership
+        // is decided by the same containment test the optimizer holds every tracked face to:
+        // inside an envelope of radius tet_eps around the surface-role inputs. tet_eps is that
+        // bound whichever envelope the optimizer used (the input at tet_eps, or the simplified
+        // surface at tet_eps - simplify_eps, itself within simplify_eps of the input). Without
+        // it, a face of a VOLUME-role input whose tets on both sides the filter dropped -- a
+        // part thinner than the tets, whose tet centres test outside -- was written as a
+        // sheet (thingi 104509: 19 such faces with no surface-role input at all).
+        std::vector<Eigen::Vector3i> sheet_faces;
+        for (size_t i = 0; i < tris.size(); ++i) {
+            const bool volume_role =
+                std::find(volume_input_ids.begin(), volume_input_ids.end(), size_t(tri_input[i])) !=
+                volume_input_ids.end();
+            if (!volume_role) {
+                sheet_faces.emplace_back(int(tris[i][0]), int(tris[i][1]), int(tris[i][2]));
+            }
+        }
+        wmtk::SampleEnvelope sheet_envelope(!use_sample_envelope);
+        if (!sheet_faces.empty()) {
+            sheet_envelope.init(verts, sheet_faces, tet_eps);
+        }
+        for (const auto& f : mesh_new.get_faces()) {
+            if (sheet_faces.empty()) {
+                break; // no surface-role input: no sheet triangles
+            }
+            if (!mesh_new.m_face_attribute[f.fid(mesh_new)].m_is_surface_fs) {
+                continue;
+            }
+            bool any_kept = keep[f.tid(mesh_new)];
+            const auto oppo = f.switch_tetrahedron(mesh_new);
+            if (oppo.has_value()) {
+                any_kept = any_kept || keep[(*oppo).tid(mesh_new)];
+            }
+            if (any_kept) {
+                continue; // a volume boundary (or interior) face; the tets represent it
+            }
+            const size_t v1 = f.vid(mesh_new);
+            const size_t v2 = f.switch_vertex(mesh_new).vid(mesh_new);
+            const size_t v3 = f.switch_edge(mesh_new).switch_vertex(mesh_new).vid(mesh_new);
+            const std::array<Vector3d, 3> tri = {
+                {mesh_new.m_vertex_attribute[v1].m_posf,
+                 mesh_new.m_vertex_attribute[v2].m_posf,
+                 mesh_new.m_vertex_attribute[v3].m_posf}};
+            if (sheet_envelope.is_outside(tri)) {
+                continue; // not on a surface-role input
+            }
+            hybrid_sheet_tris.push_back(tri);
+        }
+        mesh_new.filter_with_roles(volume_input_ids);
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
@@ -1286,6 +1387,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     }
 
     mesh_new.output_mesh(output_path + "_final.msh");
+
+    if (filter_option == "hybrid") {
+        mesh_new.output_hybrid_mesh(
+            output_path + "_hybrid.msh",
+            hybrid_sheet_tris,
+            hybrid_curve_segs,
+            hybrid_anchor_pts);
+    }
 
     igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 

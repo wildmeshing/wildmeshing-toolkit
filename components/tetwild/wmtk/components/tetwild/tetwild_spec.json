@@ -8,6 +8,7 @@
       "output",
       "input_edges",
       "input_points",
+      "input_roles",
       "input_names",
       "input_dir",
       "write_vtu",
@@ -113,6 +114,18 @@
     "pointer": "/input_points/*",
     "type": "string",
     "doc": "One input feature point file (only the vertices are used)."
+  },
+  {
+    "pointer": "/input_roles",
+    "type": "list",
+    "default": [],
+    "doc": "For filter='hybrid': one role per /input entry, 'volume' (tetrahedralize its inside, by per-input winding number) or 'surface' (keep as an embedded triangle sheet in the hybrid output). Empty means every input is 'volume'. Curves and points declare their dimension by arriving through /input_edges and /input_points. Ignored (with a warning) by every other filter."
+  },
+  {
+    "pointer": "/input_roles/*",
+    "type": "string",
+    "options": ["volume", "surface"],
+    "doc": "Role of one input mesh."
   },
   {
     "pointer": "/preserve_feature_points",
@@ -243,9 +256,9 @@
   {
     "pointer": "/filter",
     "type": "string",
-    "options": ["flood", "input", "tracked", "none"],
+    "options": ["flood", "input", "tracked", "hybrid", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'hybrid': mixed-dimensional output driven by /input_roles -- tets are kept only inside volume-role inputs, surface-role inputs survive as an embedded triangle sheet and the feature curves as an edge chain, all written together to <output>_hybrid.msh (the plain _final.msh keeps only the volume tets). 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. 'tracked' orients the tracked surface as the input is (coincident surfaces add up, opposite ones cancel -- solids touching face to face merge), repairing triangles flipped against their neighbours, so it needs no consistent global orientation across components but does need each component closed."
   },
   {
     "pointer": "/skip_winding_number",
