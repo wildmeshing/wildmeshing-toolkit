@@ -114,7 +114,7 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 #     (MarcoAttene/NFG#6 merged) plus MarcoAttene/NFG#7, under which ip_error throws when
 #     NFG_IP_ERROR_THROWS is defined. Nothing here defines it, and embed_tri_in_poly_mesh /
 #     embed_seg_in_tri_mesh call none of the rewritten writers. fast-envelope builds against
-#     2330267 too (VolumeRemesher's declaration wins; its own recipe still names 05f99ea).
+#     2330267 too (VolumeRemesher's declaration wins).
 #   - #33 (57e7753) moves Delaunay3D to upstream main e18e96a, which inserts the vertices of
 #     tetrahedrize() in Morton order above 1150 of them, plus MarcoAttene/Delaunay3D#2 and #3
 #     (wildmeshing/Delaunay3D f1c7c19); #3 breaks ties between points in the same Morton cell
@@ -144,7 +144,7 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # from 22bd3fe is upstream 60d00a8: tetrahedrize() returns no tets, instead of stopping in
 # ip_error, when the vertices do not span a volume. Our delaunay3D checks that before calling
 # it (spans_a_volume, src/wmtk/utils/Delaunay.cpp). No output changes: all 50 registered
-# configs are byte-identical to #34.
+# configs are byte-identical to #34. fast-envelope #12 pins the same NFG (fenvelope.cmake).
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
