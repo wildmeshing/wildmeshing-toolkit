@@ -47,6 +47,7 @@
       "EXPERIMENTAL_incremental_growth_steps",
       "EXPERIMENTAL_refine_input",
       "EXPERIMENTAL_refine_input_factor",
+      "EXPERIMENTAL_amips_pow",
       "TESTING_allow_mult_comp",
       "check_manifoldness",
       "save_vtu",
@@ -370,6 +371,12 @@
     "type": "float",
     "default": 10.0,
     "doc": "EXPERIMENTAL (2026-10-19), 3D, with EXPERIMENTAL_refine_input: the factor a in the input boundary's sizing scalar min(a * min(M, target_distance) / l, 1), so its edge target is a * min(M, target_distance). Must be > 0; a value other than the default with EXPERIMENTAL_refine_input false is refused with an error. 10 (the default)."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_amips_pow",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-19), 3D. true: the energy's AMIPS term is (w / stop_energy) vol AMIPS, the first power, in place of (w / stop_energy^3) vol AMIPS^3 (w = offset_amips_weight; see offset_amips_weight), everywhere the energy is read: every cell's tet_energy() (the operations' energy rules, the smoothing vetoes, the TetWild passes -- the final pass, EXPERIMENTAL_construction_tetwild_run and EXPERIMENTAL_refine_input's -- the repulsion passes, the [energy step] lines and the debug frames' energy table) and the smoother's objective (the AMIPS term of every vertex's solve, elastic cells and, under use_rest_pose, plastic cells against their rest, with exact first-power gradients and Hessians). The cell's term is computed as the cubed one is, without a determinant: vol AMIPS = (sqrt2/12) T^(3/2) / sqrt(AMIPS), T = (1/2) the sum of its squared edge lengths. Note what the power does: at fixed edge lengths vol is proportional to AMIPS^(-3/2), so vol AMIPS^3 grows like AMIPS^(3/2) as a cell flattens (a barrier), while vol AMIPS falls like AMIPS^(-1/2), to 0 for a flat cell: under this key the energy does not penalise a flattening cell. The band term, the settle test, front_conv and the stop test (max AMIPS against stop_energy) are unchanged. false (the default): AMIPS^3 / stop_energy^3."
   },
   {
     "pointer": "/TESTING_allow_mult_comp",

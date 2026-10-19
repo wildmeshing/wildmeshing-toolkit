@@ -2673,6 +2673,9 @@ TEST_CASE("refine-input-keys", "[offset][3d]")
     const nlohmann::json zero =
         injected({{"EXPERIMENTAL_refine_input", true}, {"EXPERIMENTAL_refine_input_factor", 0.}});
     CHECK_THROWS(Parameters{zero});
+    // EXPERIMENTAL_amips_pow: off by default, read through.
+    CHECK_FALSE(by_default.amips_pow);
+    CHECK(Parameters(injected({{"EXPERIMENTAL_amips_pow", true}})).amips_pow);
 }
 
 TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")

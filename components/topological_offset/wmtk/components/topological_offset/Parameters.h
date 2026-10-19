@@ -90,6 +90,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
     /// tri_energy = w AMIPS + the offset terms. See the spec.
     double offset_amips_weight = 1.;
+    /// EXPERIMENTAL (2026-10-19), 3D: the energy's AMIPS term to the first power,
+    /// (w / stop_energy) vol AMIPS in place of (w / stop_energy^3) vol AMIPS^3, wherever the energy
+    /// is read (TopoOffsetTetMesh::band_amips_weight(), vol_amips3(), the smoother's
+    /// CubedAMIPSEnergy3D and the plastic VolAMIPSEnergy3D). Default false. See the spec doc.
+    bool amips_pow = false;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -444,6 +449,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
+        amips_pow = json_params["EXPERIMENTAL_amips_pow"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];

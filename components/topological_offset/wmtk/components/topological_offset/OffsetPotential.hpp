@@ -641,6 +641,10 @@ private:
  * smoother's convention: 12 doubles with the moving vertex first, its three entries replaced by
  * x. Derivatives by the chain rule from the engine's first-power AMIPS ones. A step that inverts
  * a cell is invalid, as for the engine's AMIPSEnergy3D.
+ *
+ * `first_power` (EXPERIMENTAL_amips_pow): w * sum vol AMIPS instead, each cell's term
+ * (sqrt2/12) T^(3/2) AMIPS^(-1/2) from the same quantities (first_power_amips_vol_term()). Not a
+ * barrier: at fixed edge lengths it falls to 0 as the cell flattens.
  */
 class CubedAMIPSEnergy3D : public polysolve::nonlinear::Problem
 {
@@ -648,7 +652,10 @@ public:
     using typename polysolve::nonlinear::Problem::Scalar;
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
-    CubedAMIPSEnergy3D(std::vector<std::array<double, 12>> cells, double weight);
+    CubedAMIPSEnergy3D(
+        std::vector<std::array<double, 12>> cells,
+        double weight,
+        bool first_power = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -667,6 +674,7 @@ private:
 
     std::vector<std::array<double, 12>> m_cells;
     double m_weight;
+    bool m_first_power = false;
     bool m_x_set = false;
     Eigen::Vector3d m_x = Eigen::Vector3d::Zero();
     std::vector<double> m_a; ///< per cell: AMIPS at m_x
@@ -702,6 +710,15 @@ private:
  * vol A^3 from its corners, which TopoOffsetTetMesh::tet_energy() reads for a plastic cell, so
  * the rules and the smoother compare one number. Ported from archive/spenbert-offset
  * (VolAMIPSEnergy<3>).
+ *
+ * `first_power` (EXPERIMENTAL_amips_pow): vol A instead, vol A = c1 f g^(1/3), c1 = det(R)^(2/3)
+ * / 6, with
+ *
+ *     grad = c1 (g^(1/3) grad f + (1/3) f g^(-2/3) grad g)
+ *     hess = c1 (g^(1/3) hess f + (1/3) g^(-2/3) (grad f grad g^T + grad g grad f^T)
+ *                - (2/9) f g^(-5/3) grad g grad g^T)
+ *
+ * (CubedAMIPSEnergy3D's first power against regular_rest()).
  */
 class VolAMIPSEnergy3D : public polysolve::nonlinear::Problem
 {
@@ -717,17 +734,21 @@ public:
         Eigen::Matrix3d rest_inv;
         Eigen::Vector3d s; ///< rest_inv^T 1
         double c; ///< det(R)^2 / 6
+        double c1; ///< det(R)^(2/3) / 6, the first power's constant
     };
     /// A cell with reference edge matrix R (columns r_k - r_0, the moving vertex's rest first);
     /// false when R is not positively oriented.
     static bool cell(const std::array<Eigen::Vector3d, 3>& q, const Eigen::Matrix3d& R, Cell& out);
     /// The regular tet's edge matrix (unit edges): the elastic reference.
     static Eigen::Matrix3d regular_rest();
-    /// vol A^3 of the tet p[0..3] against reference R: +inf when p is not positively oriented,
-    /// or when R is not.
-    static double value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R);
+    /// vol A^3 (vol A with `first_power`) of the tet p[0..3] against reference R: +inf when p is
+    /// not positively oriented, or when R is not.
+    static double value_of(
+        const std::array<Eigen::Vector3d, 4>& p,
+        const Eigen::Matrix3d& R,
+        bool first_power = false);
 
-    VolAMIPSEnergy3D(std::vector<Cell> cells, double weight);
+    VolAMIPSEnergy3D(std::vector<Cell> cells, double weight, bool first_power = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -743,6 +764,7 @@ private:
     double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
     std::vector<Cell> m_cells;
     double m_weight;
+    bool m_first_power = false;
 };
 
 /**

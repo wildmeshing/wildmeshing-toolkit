@@ -728,6 +728,8 @@ public:
     /// cancellation). Measured: a nearly flat tet (exact 6V = 1.5e-21, edges ~1.5) whose double
     /// determinant came out 0 was priced at 0 against an exact 1.7e21, and a collapse that made it
     /// passed the rule (one-slot model, stage 2: max AMIPS 1.9e14).
+    /// EXPERIMENTAL_amips_pow: vol AMIPS = (sqrt2/12) tr^(3/2) / sqrt(AMIPS) instead, which a
+    /// flattening cell drives to 0 (see the spec doc).
     double vol_amips3(const std::array<size_t, 4>& vids, const double amips3) const
     {
         double tr = 0.;
@@ -739,6 +741,9 @@ public:
             }
         }
         tr *= 0.5;
+        if (m_offset_params.amips_pow) {
+            return std::sqrt(2.) / 12. * tr * std::sqrt(tr) / std::sqrt(std::cbrt(amips3));
+        }
         return std::sqrt(2.) / 12. * tr * std::sqrt(tr) * std::sqrt(amips3);
     }
 
@@ -819,10 +824,12 @@ public:
     /// exact integral, built once by init_offset_potential() on m_input_complex_envelope.
     std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
-    /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
+    /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy. Under EXPERIMENTAL_amips_pow
+    /// w / s: the term is w vol AMIPS / s (vol_amips3() then gives vol AMIPS).
     double band_amips_weight() const
     {
         const double s = optimization_stop_metric();
+        if (m_offset_params.amips_pow) return m_offset_params.offset_amips_weight / s;
         return m_offset_params.offset_amips_weight / (s * s * s);
     }
     /// One cell's energy from its corners, its AMIPS^3 and its band label; see tet_energy().

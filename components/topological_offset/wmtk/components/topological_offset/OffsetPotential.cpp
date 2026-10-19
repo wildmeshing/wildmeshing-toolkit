@@ -836,9 +836,11 @@ bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 CubedAMIPSEnergy3D::CubedAMIPSEnergy3D(
     std::vector<std::array<double, 12>> cells,
-    const double weight)
+    const double weight,
+    const bool first_power)
     : m_cells(std::move(cells))
     , m_weight(weight)
+    , m_first_power(first_power)
 {}
 
 namespace {
@@ -893,6 +895,58 @@ double cubed_amips_vol_term(
     }
     return f;
 }
+
+/// vol AMIPS of the same cell (EXPERIMENTAL_amips_pow), from the same quantities as
+/// cubed_amips_vol_term(): f = (sqrt2/12) T^(3/2) a^(-1/2), since vol = (sqrt2/12) (T/a)^(3/2).
+double first_power_amips_vol_term(
+    const std::array<double, 12>& c,
+    const double a,
+    const Eigen::Vector3d& ga,
+    const Eigen::Matrix3d& ha,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& h)
+{
+    const Eigen::Vector3d p[4] = {
+        Eigen::Vector3d(c[0], c[1], c[2]),
+        Eigen::Vector3d(c[3], c[4], c[5]),
+        Eigen::Vector3d(c[6], c[7], c[8]),
+        Eigen::Vector3d(c[9], c[10], c[11])};
+    double T = 0.;
+    for (int i = 0; i < 4; ++i)
+        for (int j = i + 1; j < 4; ++j) T += (p[i] - p[j]).squaredNorm();
+    T *= 0.5;
+    const double k = std::sqrt(2.) / 12.;
+    const double sT = std::sqrt(T), sa = std::sqrt(a);
+    const double f = k * T * sT / sa;
+    if (need >= 1) {
+        const Eigen::Vector3d gT = 3. * p[0] - p[1] - p[2] - p[3];
+        g = k * (1.5 * sT / sa * gT - 0.5 * T * sT / (a * sa) * ga);
+        if (need >= 2) {
+            h = k *
+                (0.75 / (sT * sa) * gT * gT.transpose() -
+                 0.75 * sT / (a * sa) * (gT * ga.transpose() + ga * gT.transpose()) +
+                 4.5 * sT / sa * Eigen::Matrix3d::Identity() +
+                 0.75 * T * sT / (a * a * sa) * ga * ga.transpose() - 0.5 * T * sT / (a * sa) * ha);
+        }
+    }
+    return f;
+}
+
+/// The cell term of CubedAMIPSEnergy3D at its power.
+double amips_vol_term(
+    const bool first_power,
+    const std::array<double, 12>& c,
+    const double a,
+    const Eigen::Vector3d& ga,
+    const Eigen::Matrix3d& ha,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& h)
+{
+    return first_power ? first_power_amips_vol_term(c, a, ga, ha, need, g, h)
+                       : cubed_amips_vol_term(c, a, ga, ha, need, g, h);
+}
 } // namespace
 
 void CubedAMIPSEnergy3D::at_point(const TVector& x)
@@ -921,8 +975,15 @@ double CubedAMIPSEnergy3D::value(const TVector& x)
         const double a = m_a[k];
         Eigen::Vector3d g;
         Eigen::Matrix3d h;
-        res +=
-            cubed_amips_vol_term(c, a, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Zero(), 0, g, h);
+        res += amips_vol_term(
+            m_first_power,
+            c,
+            a,
+            Eigen::Vector3d::Zero(),
+            Eigen::Matrix3d::Zero(),
+            0,
+            g,
+            h);
     }
     m_value = m_weight * res;
     m_value_set = true;
@@ -944,7 +1005,7 @@ void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
         wmtk::AMIPS_jacobian(c, g);
         Eigen::Vector3d gf;
         Eigen::Matrix3d hf;
-        cubed_amips_vol_term(c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
+        amips_vol_term(m_first_power, c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
         gradv += gf;
     }
     gradv *= m_weight;
@@ -965,7 +1026,7 @@ void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
         wmtk::AMIPS_hessian(c, h);
         Eigen::Vector3d gf;
         Eigen::Matrix3d hf;
-        cubed_amips_vol_term(c, a, g, h, 2, gf, hf);
+        amips_vol_term(m_first_power, c, a, g, h, 2, gf, hf);
         hessian += hf;
     }
     hessian *= m_weight;
@@ -1023,10 +1084,14 @@ bool VolAMIPSEnergy3D::cell(
     out.rest_inv = R.inverse();
     out.s = out.rest_inv.transpose() * Eigen::Vector3d::Ones();
     out.c = detR * detR / 6.;
+    out.c1 = std::cbrt(detR * detR) / 6.;
     return true;
 }
 
-double VolAMIPSEnergy3D::value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R)
+double VolAMIPSEnergy3D::value_of(
+    const std::array<Eigen::Vector3d, 4>& p,
+    const Eigen::Matrix3d& R,
+    const bool first_power)
 {
     const double detR = R.determinant();
     if (!(detR > 0.)) return std::numeric_limits<double>::infinity();
@@ -1035,13 +1100,18 @@ double VolAMIPSEnergy3D::value_of(const std::array<Eigen::Vector3d, 4>& p, const
     const double g = E.determinant();
     if (!(g > 0.)) return std::numeric_limits<double>::infinity();
     const double f = (E * R.inverse()).squaredNorm();
-    const double v = f * f * f * detR * detR / (6. * g);
+    const double v = first_power ? std::cbrt(detR * detR) / 6. * f * std::cbrt(g)
+                                 : f * f * f * detR * detR / (6. * g);
     return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
 }
 
-VolAMIPSEnergy3D::VolAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
+VolAMIPSEnergy3D::VolAMIPSEnergy3D(
+    std::vector<Cell> cells,
+    const double weight,
+    const bool first_power)
     : m_cells(std::move(cells))
     , m_weight(weight)
+    , m_first_power(first_power)
 {}
 
 double VolAMIPSEnergy3D::eval(
@@ -1062,6 +1132,20 @@ double VolAMIPSEnergy3D::eval(
         if (!(g > 0.)) return std::numeric_limits<double>::infinity();
         const Eigen::Matrix3d F = Em * c.rest_inv;
         const double f = F.squaredNorm();
+        if (m_first_power) {
+            // vol A = c1 f g^(1/3) (see the class doc).
+            const double g13 = std::cbrt(g);
+            E += c.c1 * f * g13;
+            if (need < 1) continue;
+            const Eigen::Vector3d df = -2. * F * c.s;
+            gr += c.c1 * (g13 * df + f / (3. * g13 * g13) * dg);
+            if (need < 2) continue;
+            const Eigen::Matrix3d Hf = 2. * c.s.squaredNorm() * Eigen::Matrix3d::Identity();
+            const double g53 = g13 * g13 * g13 * g13 * g13;
+            H += c.c1 * (g13 * Hf + (df * dg.transpose() + dg * df.transpose()) / (3. * g13 * g13) -
+                         2. * f / (9. * g53) * (dg * dg.transpose()));
+            continue;
+        }
         const double f3 = f * f * f;
         E += c.c * f3 / g;
         if (need < 1) continue;

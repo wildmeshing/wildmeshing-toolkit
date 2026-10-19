@@ -257,7 +257,7 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) con
         // number the smoother's VolAMIPSEnergy3D minimises. Never a band cell (cell_is_plastic()).
         std::array<Vector3d, 4> p;
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vids[size_t(k)]].m_posf;
-        const double v = VolAMIPSEnergy3D::value_of(p, R);
+        const double v = VolAMIPSEnergy3D::value_of(p, R, m_offset_params.amips_pow);
         if (!std::isfinite(v)) return MAX_ENERGY;
         double e = band_amips_weight() * v;
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
@@ -405,7 +405,7 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vids[size_t(k)]].m_posf;
         Eigen::Matrix3d R;
         for (int k = 1; k < 4; ++k) R.col(k - 1) = p[size_t(k)] - p[0];
-        const double v = VolAMIPSEnergy3D::value_of(p, R);
+        const double v = VolAMIPSEnergy3D::value_of(p, R, m_offset_params.amips_pow);
         if (!std::isfinite(v)) return MAX_ENERGY;
         double e = band_amips_weight() * v;
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
@@ -702,12 +702,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
         }
         cells.push_back(c);
     }
-    // (w / s^3) sum vol AMIPS^3, the energy's AMIPS term -- a volume, as the band term is.
-    auto elastic = std::make_shared<CubedAMIPSEnergy3D>(std::move(cells), band_amips_weight());
+    // (w / s^3) sum vol AMIPS^3, the energy's AMIPS term -- a volume, as the band term is; under
+    // EXPERIMENTAL_amips_pow (w / s) sum vol AMIPS.
+    const bool first_power = m_offset_params.amips_pow;
+    auto elastic =
+        std::make_shared<CubedAMIPSEnergy3D>(std::move(cells), band_amips_weight(), first_power);
     if (plastic.empty()) return elastic;
     auto sum = std::make_shared<optimization::EnergySum>();
     sum->add_energy(elastic);
-    sum->add_energy(std::make_shared<VolAMIPSEnergy3D>(std::move(plastic), band_amips_weight()));
+    sum->add_energy(
+        std::make_shared<VolAMIPSEnergy3D>(std::move(plastic), band_amips_weight(), first_power));
     return sum;
 }
 

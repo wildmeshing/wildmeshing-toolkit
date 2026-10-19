@@ -1957,6 +1957,137 @@ TEST_CASE("front-face-max-distance", "[offset][potential]")
     }
 }
 
+TEST_CASE("amips-energy-3d-first-power", "[offset][potential]")
+{
+    // EXPERIMENTAL_amips_pow: CubedAMIPSEnergy3D and VolAMIPSEnergy3D at the first power,
+    // w sum_t vol(t) AMIPS(t). CubedAMIPSEnergy3D's value against vol and AMIPS computed
+    // independently; VolAMIPSEnergy3D against the regular tet is that number, and against a rest
+    // R it matches value_of() cell by cell; a cell congruent to its rest reads vol * 3; gradients
+    // and Hessians of both against central differences.
+    const std::array<std::array<Vector3d, 3>, 3> others = {{
+        {{Vector3d(1., 0.1, 0.), Vector3d(0.2, 1.1, 0.05), Vector3d(0.1, 0.3, 0.9)}},
+        {{Vector3d(-0.9, 0.2, 0.1), Vector3d(-0.1, -0.8, 0.3), Vector3d(0.1, 0.1, -1.)}},
+        {{Vector3d(0.3, -1., 0.2), Vector3d(1., 0.2, -0.4), Vector3d(-0.2, 0.1, 1.1)}},
+    }};
+    std::vector<std::array<Vector3d, 3>> qs;
+    std::vector<std::array<double, 12>> cubed;
+    for (auto o : others) {
+        if (!wmtk::utils::orient3d(Vector3d::Zero(), o[0], o[1], o[2])) std::swap(o[1], o[2]);
+        qs.push_back(o);
+        std::array<double, 12> c{};
+        for (int k = 0; k < 3; ++k) {
+            for (int j = 0; j < 3; ++j) c[size_t(3 + 3 * k + j)] = o[size_t(k)][j];
+        }
+        cubed.push_back(c);
+    }
+    const Eigen::Matrix3d Rreg = VolAMIPSEnergy3D::regular_rest();
+    Eigen::Matrix3d Rrest;
+    Rrest.col(0) = Vector3d(1.2, 0.1, 0.);
+    Rrest.col(1) = Vector3d(0.3, 0.8, 0.1);
+    Rrest.col(2) = Vector3d(0.2, 0.2, 0.6);
+    REQUIRE(Rrest.determinant() > 0.);
+    const double w = 0.37;
+    const double h = 1e-6;
+    const auto check_derivatives = [&](auto& energy, const VectorXd& xv) {
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    };
+
+    // A cell congruent to its rest: A = 3, so 3 vol.
+    {
+        const Vector3d o(0.3, -0.2, 0.1);
+        const std::array<Vector3d, 4> p = {
+            {o, o + Rrest.col(0), o + Rrest.col(1), o + Rrest.col(2)}};
+        CHECK(
+            VolAMIPSEnergy3D::value_of(p, Rrest, true) ==
+            Catch::Approx(3. * Rrest.determinant() / 6.).epsilon(1e-12));
+    }
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        CubedAMIPSEnergy3D elastic(cubed, w, true);
+        double want = 0.;
+        for (auto c : cubed) {
+            c[0] = x[0];
+            c[1] = x[1];
+            c[2] = x[2];
+            const Vector3d p0(c[0], c[1], c[2]), p1(c[3], c[4], c[5]), p2(c[6], c[7], c[8]),
+                p3(c[9], c[10], c[11]);
+            const double vol = std::abs((p1 - p0).dot((p2 - p0).cross(p3 - p0))) / 6.;
+            want += vol * wmtk::AMIPS_energy(c);
+        }
+        CHECK(elastic.value(xv) == Catch::Approx(w * want).epsilon(1e-12));
+        check_derivatives(elastic, xv);
+        // Against the regular tet: CubedAMIPSEnergy3D's number.
+        {
+            std::vector<VolAMIPSEnergy3D::Cell> cells;
+            for (const auto& q : qs) {
+                VolAMIPSEnergy3D::Cell c;
+                REQUIRE(VolAMIPSEnergy3D::cell(q, Rreg, c));
+                cells.push_back(c);
+            }
+            VolAMIPSEnergy3D e(cells, w, true);
+            CHECK(e.value(xv) == Catch::Approx(elastic.value(xv)).epsilon(1e-10));
+        }
+        // Against a rest: value_of() cell by cell, and the derivatives.
+        std::vector<VolAMIPSEnergy3D::Cell> cells;
+        double want_rest = 0.;
+        for (const auto& q : qs) {
+            VolAMIPSEnergy3D::Cell c;
+            REQUIRE(VolAMIPSEnergy3D::cell(q, Rrest, c));
+            cells.push_back(c);
+            want_rest += VolAMIPSEnergy3D::value_of({{x, q[0], q[1], q[2]}}, Rrest, true);
+        }
+        VolAMIPSEnergy3D plastic(cells, w, true);
+        CHECK(plastic.value(xv) == Catch::Approx(w * want_rest).epsilon(1e-12));
+        check_derivatives(plastic, xv);
+    }
+}
+
+TEST_CASE("amips-energy-3d-first-power-flattening", "[offset][potential]")
+{
+    // EXPERIMENTAL_amips_pow's term is not a barrier: a cell flattening at fixed edge lengths has
+    // AMIPS ~ height^(-2/3) and vol ~ height, so vol AMIPS ~ height^(1/3) falls to 0 -- x0.215 per
+    // factor 100 of height -- where vol AMIPS^3 grows like 1/height (the test below).
+    const Vector3d q1(1., 0., 0.), q2(0.5, 0.9, 0.), q3(0.4, 0.3, 0.);
+    double prev = 0.;
+    for (const double hgt : {1e-2, 1e-4, 1e-6, 1e-8}) {
+        std::array<double, 12> c{};
+        Vector3d a = q1, b = q2, d = q3;
+        if (!wmtk::utils::orient3d(Vector3d(0.6, 0.4, hgt), a, b, d)) std::swap(b, d);
+        for (int j = 0; j < 3; ++j) {
+            c[size_t(3 + j)] = a[j];
+            c[size_t(6 + j)] = b[j];
+            c[size_t(9 + j)] = d[j];
+        }
+        CubedAMIPSEnergy3D e({c}, 1., true);
+        const double v = e.value(VectorXd(Vector3d(0.6, 0.4, hgt)));
+        INFO("height " << hgt << " value " << v);
+        CHECK(std::isfinite(v));
+        CHECK(v > 0.);
+        if (prev > 0.) CHECK(v == Catch::Approx(prev * std::cbrt(1e-2)).epsilon(0.02));
+        prev = v;
+    }
+}
+
 TEST_CASE("cubed-amips-energy-3d-volume-weighted-flattening", "[offset][potential]")
 {
     // A cell flattening at fixed edge lengths: vol AMIPS^3 grows like 1/height, never collapses
