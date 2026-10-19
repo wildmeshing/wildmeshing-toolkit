@@ -201,6 +201,15 @@ struct Parameters : public wmtk::OptimizerParameters
     /// constructed, run as the final TetWild pass runs it
     /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
     bool construction_tetwild_run = false;
+    /// EXPERIMENTAL (2026-10-19), 3D: when the march traces the front below target_distance
+    /// (construction_mode "max_marchable_fallback", the target not below the maximum marchable
+    /// distance), the loop runs at the traced distance d_0 first, then at
+    /// d_0 + k (target_distance - d_0) / N for k = 1..N, each to convergence, the last the
+    /// ordinary loop (TopoOffsetTetMesh::incremental_growth()). See the spec doc.
+    bool incremental_growth = false;
+    /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to
+    /// target_distance, so N + 1 loops. At least 1 (the spec's min).
+    int incremental_growth_steps = 4;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -335,6 +344,29 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error("EXPERIMENTAL_laplacian must be >= 0, not {}", laplacian);
         }
         construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
+        incremental_growth = json_params["EXPERIMENTAL_incremental_growth"];
+        incremental_growth_steps = json_params["EXPERIMENTAL_incremental_growth_steps"];
+        // 4 is the spec's default: a count set to anything else means growth was intended.
+        if (!incremental_growth && incremental_growth_steps != 4) {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth_steps {} needs EXPERIMENTAL_incremental_growth "
+                "true",
+                incremental_growth_steps);
+        }
+        // Only max_marchable_fallback traces the front below the target, where the first stage
+        // runs; midpoint_fallback never does.
+        if (incremental_growth && construction_mode != "max_marchable_fallback") {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth needs construction_mode "
+                "\"max_marchable_fallback\", not \"{}\": the first stage runs at the distance the "
+                "march traced the front to, and only that mode traces below target_distance",
+                construction_mode);
+        }
+        if (incremental_growth && init_optimize) {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth and init_optimize both decide the loops that "
+                "follow a march below target_distance: set only one of them");
+        }
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {

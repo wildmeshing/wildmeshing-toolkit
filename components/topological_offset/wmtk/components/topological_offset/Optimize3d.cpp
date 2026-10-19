@@ -4929,6 +4929,98 @@ void TopoOffsetTetMesh::construction_tetwild_run()
         std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 }
 
+double TopoOffsetTetMesh::growth_stage_target(
+    const double d0,
+    const double delta,
+    const int k,
+    const int n)
+{
+    return k >= n ? delta : d0 + double(k) * (delta - d0) / double(n);
+}
+
+void TopoOffsetTetMesh::incremental_growth()
+{
+    // See the declaration and the spec doc (EXPERIMENTAL_incremental_growth). Between stages only
+    // target_distance changes, and what init_offset_potential() builds on it: the field, the
+    // per-piece fields, the exact integral's reach. Every other reader of target_distance (the
+    // band term, the settle test, the measures, the front smoother) asks for it when it runs, and
+    // no pass is running here.
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    const int n = m_offset_params.incremental_growth_steps;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    std::string done; // the stages before the last, for the last one's header
+    for (int k = 0; k < n; ++k) {
+        set_target(growth_stage_target(d0, delta, k, n));
+        m_frame_prefix = fmt::format("g{}", k);
+        logger().info(
+            "======== [incremental growth] stage {} / {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}){} ========",
+            k,
+            n,
+            m_offset_params.target_distance,
+            m_offset_params.target_distance / delta,
+            delta,
+            k == 0 ? ", the distance the march traced to" : "");
+        // Parameters::init() refuses front_conv above target_distance itself; a stage's target
+        // below it is not refused, only said.
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[incremental growth] stage {} / {}: front_conv {:.6g} exceeds the stage's "
+                "target_distance {:.6g}, so its tests read nearly every front vertex as within "
+                "the bar",
+                k,
+                n,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+        const bool converged = optimize_offset_loop(
+            /*final_stage=*/false,
+            /*refine=*/true,
+            fmt::format("incremental growth stage {} / {}", k, n));
+        // The loop sets m_iterations_used every turn, and a stage before the last has no final
+        // pass to reset it: its turns.
+        done += fmt::format(
+            "{}stage {} at {:.6g} in {} turn(s)",
+            k == 0 ? "" : ", ",
+            k,
+            m_offset_params.target_distance,
+            m_iterations_used);
+        m_converged = false;
+        m_energy_verdict.reset();
+        if (!converged) {
+            m_frame_prefix.clear();
+            // The verdict and the report measure this mesh against target_distance itself.
+            set_target(delta);
+            logger().warn(
+                "[incremental growth] stage {} / {} at target_distance {:.6g} did not converge in "
+                "max_rounds {} turns: the run stops here, stages {}..{} not run; the verdict "
+                "measures this mesh against target_distance {:.6g}",
+                k,
+                n,
+                growth_stage_target(d0, delta, k, n),
+                m_offset_params.max_rounds,
+                k + 1,
+                n,
+                delta);
+            return;
+        }
+    }
+    m_frame_prefix.clear();
+    set_target(delta);
+    logger().info(
+        "======== [incremental growth] stage {} / {}: target_distance {:.6g}, the ordinary loop "
+        "(converged before it: {}) ========",
+        n,
+        n,
+        delta,
+        done);
+    optimize_offset_loop();
+}
+
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
 {
     logger().info("Optimizing offset (3D)...");
@@ -5034,7 +5126,13 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.stencil_order);
     }
 
-    optimize_offset_loop();
+    // EXPERIMENTAL_incremental_growth (see marching_tets()): the loop in stages, the last of them
+    // the ordinary loop at target_distance.
+    if (m_growth_start > 0.) {
+        incremental_growth();
+    } else {
+        optimize_offset_loop();
+    }
 
     log_smooth_trace();
     logger().info(

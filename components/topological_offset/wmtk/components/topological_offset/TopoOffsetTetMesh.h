@@ -405,8 +405,19 @@ public:
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
     /// marchable distance.
     bool m_init_optimize = false;
-    /// Leads every debug frame label: i during the init_optimize loop, empty otherwise.
+    /// Leads every debug frame label: i during the init_optimize loop, g<k> during
+    /// EXPERIMENTAL_incremental_growth's stage k < N, empty otherwise.
     std::string m_frame_prefix;
+    /// EXPERIMENTAL_incremental_growth: stages k = 0..N (N = incremental_growth_steps), stage k at
+    /// growth_stage_target(m_growth_start, target_distance, k, N). Before each stage
+    /// target_distance is set to its target and the field rebuilt on it (init_offset_potential());
+    /// stages before the last are optimize_offset_loop(false, true) to convergence, their frames
+    /// led by g<k>; stage N is the ordinary loop. A stage before the last that does not converge
+    /// stops the run there, target_distance and the field set back for the verdict.
+    void incremental_growth();
+    /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n
+    /// (not the formula, which rounding can leave a hair off it).
+    static double growth_stage_target(double d0, double delta, int k, int n);
 
     /// Max over the front vertices of ||grad F . n||, F the vertex's front objective
     /// (front_objective()). Logged as the loop's gradient reference.
@@ -1223,6 +1234,11 @@ public:
     /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
     /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
     double m_construction_distance = 0.;
+    /// EXPERIMENTAL_incremental_growth: d_0, the distance the march traced the front to when that
+    /// is below target_distance (m_construction_distance, half the maximum marchable distance).
+    /// Set by marching_tets() with the key on and optimize_offset true; 0 otherwise, and
+    /// optimize_offset() then runs the loop once, at target_distance.
+    double m_growth_start = 0.;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition, remember the

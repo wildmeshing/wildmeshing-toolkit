@@ -2584,3 +2584,65 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
         injected({{"EXPERIMENTAL_damping", true}, {"EXPERIMENTAL_damping_factor", 0.}});
     CHECK_THROWS(Parameters{zero});
 }
+
+TEST_CASE("incremental-growth-keys", "[offset][3d]")
+{
+    // EXPERIMENTAL_incremental_growth and EXPERIMENTAL_incremental_growth_steps through the spec,
+    // as the app reads them: the defaults (off, 4 steps), values read through, and the refusals
+    // -- a step count other than the default with growth off, growth with construction_mode
+    // "midpoint_fallback" or with init_optimize, a step count below 1 (the spec's min). Then the
+    // stage targets.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto with_app = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](const nlohmann::json& j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(with_app(j), spec));
+        return spec_engine.inject_defaults(with_app(j), spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.incremental_growth);
+    CHECK(by_default.incremental_growth_steps == 4);
+    const Parameters set(injected(
+        {{"EXPERIMENTAL_incremental_growth", true}, {"EXPERIMENTAL_incremental_growth_steps", 1}}));
+    CHECK(set.incremental_growth);
+    CHECK(set.incremental_growth_steps == 1);
+    const nlohmann::json without_growth = injected({{"EXPERIMENTAL_incremental_growth_steps", 2}});
+    CHECK_THROWS(Parameters{without_growth});
+    const nlohmann::json midpoint = injected(
+        {{"EXPERIMENTAL_incremental_growth", true}, {"construction_mode", "midpoint_fallback"}});
+    CHECK_THROWS(Parameters{midpoint});
+    const nlohmann::json with_init_optimize =
+        injected({{"EXPERIMENTAL_incremental_growth", true}, {"init_optimize", true}});
+    CHECK_THROWS(Parameters{with_init_optimize});
+    {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(
+            with_app(
+                {{"EXPERIMENTAL_incremental_growth", true},
+                 {"EXPERIMENTAL_incremental_growth_steps", 0}}),
+            spec));
+    }
+
+    // Stage k of n at d0 + k (delta - d0) / n: d0 at k = 0, delta at k = n. With n = 1, two
+    // loops: at d0, then at delta.
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.3, 0.7, 0, 1) == 0.3);
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.3, 0.7, 1, 1) == 0.7);
+    const std::vector<double> quarters = {0.5, 1., 1.5, 2., 2.5};
+    for (int k = 0; k <= 4; ++k) {
+        CHECK(TopoOffsetTetMesh::growth_stage_target(0.5, 2.5, k, 4) == quarters[size_t(k)]);
+    }
+    // The last stage is delta itself, which the formula can miss by rounding (in IEEE double,
+    // 0.1 + 3 x (0.9 - 0.1) / 3 = 0.9000000000000001); the stages increase.
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, 3, 3) == 0.9);
+    for (int k = 0; k < 7; ++k) {
+        CHECK(
+            TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, k, 7) <
+            TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, k + 1, 7));
+    }
+}

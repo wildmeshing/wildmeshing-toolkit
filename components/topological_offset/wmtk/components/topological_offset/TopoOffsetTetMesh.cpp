@@ -1996,6 +1996,37 @@ void TopoOffsetTetMesh::marching_tets()
         }
     }
 
+    // EXPERIMENTAL_incremental_growth: the loop grows the offset from the distance traced here,
+    // when that is below the target (optimize_offset(), incremental_growth()).
+    m_growth_start = 0.;
+    if (m_offset_params.incremental_growth && m_offset_params.optimize_offset) {
+        const int n = m_offset_params.incremental_growth_steps;
+        if (e_to_split.empty()) {
+            logger().info(
+                "\t[incremental growth] not done: no edge to march; the loop runs at "
+                "target_distance as usual");
+        } else if (reachable) {
+            logger().info(
+                "\t[incremental growth] not done: the march traces to target_distance itself; the "
+                "loop runs at it as usual");
+        } else if (m_edge_split_mode != EdgeSplitMode::SphereTrace) {
+            logger().warn(
+                "\t[incremental growth] not done: every marched edge is split at its midpoint, so "
+                "the front is at no single distance to grow from; the loop runs at "
+                "target_distance as usual");
+        } else {
+            m_growth_start = m_construction_distance;
+            logger().info(
+                "\t[incremental growth] {} loops: at the traced distance {:.6g} first, then in {} "
+                "step(s) of {:.6g} to target_distance {:.6g}, each to convergence",
+                n + 1,
+                m_growth_start,
+                n,
+                (target - m_growth_start) / double(n),
+                target);
+        }
+    }
+
     // actually split edges
     std::vector<Tuple> garbage;
     std::vector<size_t> frontier_verts; // one ring of these verts are in offset
