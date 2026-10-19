@@ -19,6 +19,7 @@
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/utils/WindingNumberHierarchy.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <algorithm>
 #include <array>
@@ -27,6 +28,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <queue>
 #include <set>
 #include <sstream>
 #include <string>
@@ -437,53 +439,6 @@ TEST_CASE("hybrid-thingi-volume-curves-points", "[tetwild][hybrid][thingi][.]")
     }
 }
 
-TEST_CASE("hybrid-thingi-volume-and-open-surface", "[tetwild][hybrid][thingi][.]")
-{
-    // Thingi10K 1047980 (a closed plate, volume role) and 103197 (open: 636 open edges, surface
-    // role), overlapping in space: the sheet passes through the plate's region.
-    const fs::path d = fs::temp_directory_path() / "wmtk_test_hybrid_thingi_sheet";
-    fs::create_directories(d);
-    const std::string vol = std::string(WMTK_DATA_DIR) + "/models/challenging_tetwild_1047980.stl";
-    const std::string sur = std::string(WMTK_DATA_DIR) + "/models/challenging_tetwild_103197.stl";
-    const InputMesh plate = load_welded(vol);
-    const InputMesh sheet = load_welded(sur);
-
-    const nlohmann::json j = {
-        {"application", "tetwild"},
-        {"input", {vol, sur}},
-        {"input_roles", {"volume", "surface"}},
-        {"filter", "hybrid"},
-        {"num_threads", 0},
-        {"output", (d / "out").string()}};
-    REQUIRE_NOTHROW(components::tetwild::tetwild(j));
-    const HybridBlocks h = read_hybrid(d / "out_hybrid.msh");
-    const double eps = 1e-3 * bbox_diag({&plate.V, &sheet.V});
-
-    // Tets: inside the plate (the only volume-role input).
-    REQUIRE(!h.tets.empty());
-    CHECK(tets_outside_volumes(h, {&plate}, eps) == 0);
-
-    // Triangles: on the surface-role input (every vertex within eps of it) and not inside the
-    // plate (each centre outside it or within eps of its surface).
-    REQUIRE(!h.faces.empty());
-    const Eigen::VectorXd Dv = sq_dist(rows(h.face_v), sheet);
-    CHECK(Dv.maxCoeff() <= eps * eps);
-    std::vector<Vector3d> fc;
-    for (const auto& f : h.faces)
-        fc.push_back((h.face_v[f[0]] + h.face_v[f[1]] + h.face_v[f[2]]) / 3);
-    const Eigen::MatrixXd FC = rows(fc);
-    const utils::WindingNumberHierarchy wnh(plate.V, plate.F);
-    const Eigen::VectorXd Dp = sq_dist(FC, plate);
-    size_t in_plate = 0;
-    for (Eigen::Index i = 0; i < FC.rows(); ++i) {
-        if (wnh.winding_number(FC.row(i)) > 0.5 && Dp[i] > eps * eps) ++in_plate;
-    }
-    CHECK(in_plate == 0);
-    // No curves or points were given.
-    CHECK(h.edges.empty());
-    CHECK(h.points.empty());
-}
-
 // ---- Connected scenes: the feature demos ------------------------------------------------------
 //
 // TetWild meshes every input into one tet mesh, so where a sheet meets the volume, or a curve
@@ -699,4 +654,619 @@ TEST_CASE("hybrid-demo4-two-sheets-and-a-wire", "[tetwild][hybrid][demo][.]")
     }
     CHECK(unshared_outside_free == 0);
     CHECK(on_sheet > 0); // the arc in S1 and the ends on S2
+}
+
+// ---- Connected scenes on Thingi10K models (hidden: minutes each) -----------------------------
+//
+// A solid (volume role), an open sheet (surface role) placed to cut it, and a wire (input_edges)
+// through both, with its free end and its branch point also given as input_points. The wire is a
+// trefoil knot -- a closed loop through the solid's walls and through the sheet -- plus a branch
+// from one of the knot's vertices: a straight run to the sheet, a stretch ALONG the sheet on the
+// sheet's own mesh edges (so it lies on the sheet exactly), and a straight run off the sheet,
+// along its normal, to a free end. The same checks run on both scenes, every bound taken from
+//
+//   eps    eps_rel (1e-3) x the diagonal of the bounding box of every input, the wire included:
+//          the envelope every tracked face stays within, exactly;
+//   eps/2  the feature tube every tagged edge stays within, and the anchor ball.
+//
+// A point is inside the solid when its winding number is above 1/2 AND it is farther than eps
+// from the solid's surface, outside when the winding number is at most 1/2 AND it is farther
+// than eps; the shell between is neither, since there the output may put a point either side.
+
+namespace {
+
+// An edge mesh with, per edge, whether it lies on the sheet: an edge of one of the sheet's
+// triangles, between two of the sheet's own vertices.
+struct Wire
+{
+    std::vector<Vector3d> v;
+    std::vector<std::array<size_t, 2>> e;
+    std::vector<char> on_sheet;
+    size_t branch = 0, free_end = 0;
+
+    size_t add(const Vector3d& p)
+    {
+        v.push_back(p);
+        return v.size() - 1;
+    }
+    void edge(size_t a, size_t b, bool sheet)
+    {
+        e.push_back({{a, b}});
+        on_sheet.push_back(sheet);
+    }
+    // A straight run off the sheet from vertex a to the point q, in pieces no longer than step,
+    // ending on q exactly (p + (q - p) need not round to q). Returns q's vertex.
+    size_t run(size_t a, const Vector3d& q, double step)
+    {
+        const Vector3d p = v[a];
+        const int n = std::max(1, int(std::ceil((q - p).norm() / step)));
+        for (int s = 1; s <= n; ++s) {
+            const size_t b = add(s == n ? q : Vector3d(p + (q - p) * (double(s) / n)));
+            edge(a, b, false);
+            a = b;
+        }
+        return a;
+    }
+};
+
+void write_mesh_obj(const fs::path& p, const InputMesh& m)
+{
+    std::ofstream o(p);
+    o.precision(17);
+    for (Eigen::Index i = 0; i < m.V.rows(); ++i)
+        o << "v " << m.V(i, 0) << " " << m.V(i, 1) << " " << m.V(i, 2) << "\n";
+    for (Eigen::Index i = 0; i < m.F.rows(); ++i)
+        o << "f " << m.F(i, 0) + 1 << " " << m.F(i, 1) + 1 << " " << m.F(i, 2) + 1 << "\n";
+}
+
+// The trefoil (sin t + 2 sin 2t, cos t - 2 cos 2t, -sin 3t), scaled about c by sxy in x and y
+// and by sz in z, as a closed polygon of n vertices.
+std::vector<Vector3d> trefoil(const Vector3d& c, double sxy, double sz, int n)
+{
+    const double pi = std::acos(-1.0);
+    std::vector<Vector3d> p;
+    for (int i = 0; i < n; ++i) {
+        const double t = 2 * pi * i / n;
+        p.push_back(
+            c + Vector3d(
+                    sxy * (std::sin(t) + 2 * std::sin(2 * t)),
+                    sxy * (std::cos(t) - 2 * std::cos(2 * t)),
+                    -sz * std::sin(3 * t)));
+    }
+    return p;
+}
+
+// Area-weighted normal of m at vertex vid.
+Vector3d vertex_normal(const InputMesh& m, int vid)
+{
+    Vector3d n = Vector3d::Zero();
+    for (Eigen::Index f = 0; f < m.F.rows(); ++f) {
+        if (m.F(f, 0) != vid && m.F(f, 1) != vid && m.F(f, 2) != vid) continue;
+        const Vector3d a = m.V.row(m.F(f, 0)).transpose();
+        const Vector3d b = m.V.row(m.F(f, 1)).transpose();
+        const Vector3d c = m.V.row(m.F(f, 2)).transpose();
+        n += (b - a).cross(c - a);
+    }
+    return n.normalized();
+}
+
+std::vector<std::vector<int>> vertex_adjacency(const InputMesh& m)
+{
+    std::vector<std::vector<int>> adj(m.V.rows());
+    for (Eigen::Index f = 0; f < m.F.rows(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            adj[m.F(f, k)].push_back(m.F(f, (k + 1) % 3));
+            adj[m.F(f, (k + 1) % 3)].push_back(m.F(f, k));
+        }
+    }
+    return adj;
+}
+
+// The vertices of m's largest edge-connected piece.
+std::vector<int> largest_piece(const InputMesh& m)
+{
+    const auto adj = vertex_adjacency(m);
+    std::vector<int> label(m.V.rows(), -1);
+    std::vector<std::vector<int>> pieces;
+    for (int s = 0; s < int(m.V.rows()); ++s) {
+        if (label[s] >= 0 || adj[s].empty()) continue;
+        pieces.emplace_back();
+        std::vector<int> stack = {s};
+        label[s] = int(pieces.size()) - 1;
+        while (!stack.empty()) {
+            const int u = stack.back();
+            stack.pop_back();
+            pieces.back().push_back(u);
+            for (const int x : adj[u]) {
+                if (label[x] < 0) {
+                    label[x] = label[s];
+                    stack.push_back(x);
+                }
+            }
+        }
+    }
+    return *std::max_element(pieces.begin(), pieces.end(), [](const auto& a, const auto& b) {
+        return a.size() < b.size();
+    });
+}
+
+int nearest_vertex(const InputMesh& m, const std::vector<int>& among, const Vector3d& p)
+{
+    int best = among.front();
+    for (const int v : among) {
+        if ((m.V.row(v).transpose() - p).squaredNorm() <
+            (m.V.row(best).transpose() - p).squaredNorm())
+            best = v;
+    }
+    return best;
+}
+
+// The shortest path from vertex `from` to vertex `to` along m's edges, edge length as weight
+// (Dijkstra), as vertex ids; empty if they are not connected.
+std::vector<int> shortest_edge_path(const InputMesh& m, int from, int to)
+{
+    const auto adj = vertex_adjacency(m);
+    std::vector<double> dist(m.V.rows(), std::numeric_limits<double>::infinity());
+    std::vector<int> prev(m.V.rows(), -1);
+    using Item = std::pair<double, int>;
+    std::priority_queue<Item, std::vector<Item>, std::greater<Item>> q;
+    dist[from] = 0;
+    q.push({0, from});
+    while (!q.empty()) {
+        const auto [du, u] = q.top();
+        q.pop();
+        if (du > dist[u]) continue;
+        if (u == to) break;
+        for (const int x : adj[u]) {
+            const double dx = du + (m.V.row(u) - m.V.row(x)).norm();
+            if (dx < dist[x]) {
+                dist[x] = dx;
+                prev[x] = u;
+                q.push({dx, x});
+            }
+        }
+    }
+    if (!std::isfinite(dist[to])) return {};
+    std::vector<int> path = {to};
+    while (path.back() != from) path.push_back(prev[path.back()]);
+    std::reverse(path.begin(), path.end());
+    return path;
+}
+
+// The wire: the closed loop, a run from loop[branch] to the first stretch vertex, the stretch
+// along the sheet's vertices, and a run of tail_length along the sheet's normal at the last
+// stretch vertex, to the free end. Runs are cut into pieces no longer than the loop's edges.
+Wire make_wire(
+    const std::vector<Vector3d>& loop,
+    size_t branch,
+    const InputMesh& sheet,
+    const std::vector<int>& stretch,
+    double tail_length)
+{
+    Wire w;
+    for (const Vector3d& p : loop) w.add(p);
+    for (size_t i = 0; i < loop.size(); ++i) w.edge(i, (i + 1) % loop.size(), false);
+    const double step = (loop[1] - loop[0]).norm();
+    w.branch = branch;
+    size_t a = w.run(branch, sheet.V.row(stretch.front()).transpose(), step);
+    for (size_t k = 1; k < stretch.size(); ++k) {
+        const size_t b = w.add(sheet.V.row(stretch[k]).transpose());
+        w.edge(a, b, true);
+        a = b;
+    }
+    w.free_end = w.run(a, w.v[a] + tail_length * vertex_normal(sheet, stretch.back()), step);
+    return w;
+}
+
+struct Crossing
+{
+    Vector3d at;
+    double sin_angle; // between the wire edge and the triangle's plane
+};
+
+// Where the wire's edges that `use` selects cross m's triangles: the edge's endpoints strictly on
+// opposite sides of the triangle's plane, and its line through the closed triangle, both decided
+// by exact orientation tests. A crossing through a triangle edge is found from both triangles;
+// the checks below ask something of each crossing, so a repeat changes nothing.
+template <typename Use>
+std::vector<Crossing> wire_crossings(const Wire& w, const Use& use, const InputMesh& m)
+{
+    using utils::predicates::orient3d;
+    using O = utils::predicates::Orientation;
+    std::vector<Crossing> out;
+    for (size_t i = 0; i < w.e.size(); ++i) {
+        if (!use(i)) continue;
+        const Vector3d& p = w.v[w.e[i][0]];
+        const Vector3d& q = w.v[w.e[i][1]];
+        for (Eigen::Index f = 0; f < m.F.rows(); ++f) {
+            const Vector3d a = m.V.row(m.F(f, 0)).transpose();
+            const Vector3d b = m.V.row(m.F(f, 1)).transpose();
+            const Vector3d c = m.V.row(m.F(f, 2)).transpose();
+            const O sp = orient3d(a, b, c, p), sq = orient3d(a, b, c, q);
+            if (sp == O::COPLANAR || sq == O::COPLANAR || sp == sq) continue;
+            const O s[3] = {orient3d(p, q, a, b), orient3d(p, q, b, c), orient3d(p, q, c, a)};
+            const bool pos = std::count(s, s + 3, O::POSITIVE) > 0;
+            const bool neg = std::count(s, s + 3, O::NEGATIVE) > 0;
+            if (pos && neg) continue;
+            const Vector3d n = (b - a).cross(c - a);
+            const double vp = n.dot(p - a), vq = n.dot(q - a);
+            out.push_back(
+                {p + (vp / (vp - vq)) * (q - p),
+                 std::abs(n.normalized().dot((q - p).normalized()))});
+        }
+    }
+    return out;
+}
+
+// The vertices of the tet block's boundary faces (faces of exactly one tet).
+std::set<Key> tet_boundary_vertices(const HybridBlocks& h)
+{
+    std::map<std::array<size_t, 3>, int> incident;
+    for (const auto& t : h.tets) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<size_t, 3> f;
+            for (int j = 0, k = 0; j < 4; ++j) {
+                if (j != skip) f[k++] = t[j];
+            }
+            std::sort(f.begin(), f.end());
+            ++incident[f];
+        }
+    }
+    std::set<Key> out;
+    for (const auto& [f, n] : incident) {
+        if (n != 1) continue;
+        for (const size_t v : f) out.insert(key_of(h.tet_v[v]));
+    }
+    return out;
+}
+
+// Connected pieces of the line block.
+size_t line_pieces(const HybridBlocks& h)
+{
+    std::vector<size_t> root(h.edge_v.size());
+    for (size_t i = 0; i < root.size(); ++i) root[i] = i;
+    const auto find = [&](size_t x) {
+        while (root[x] != x) x = root[x] = root[root[x]];
+        return x;
+    };
+    std::set<size_t> used;
+    for (const auto& e : h.edges) {
+        root[find(e[0])] = find(e[1]);
+        used.insert(e.begin(), e.end());
+    }
+    std::set<size_t> roots;
+    for (const size_t v : used) roots.insert(find(v));
+    return roots.size();
+}
+
+void check_connected_scene(
+    const fs::path& d,
+    const std::string& solid_path,
+    const InputMesh& solid,
+    const InputMesh& sheet,
+    const Wire& w)
+{
+    write_mesh_obj(d / "sheet.obj", sheet);
+    write_edges_obj(d / "wire.obj", w.v, w.e);
+    const std::vector<Vector3d> input_points = {w.v[w.free_end], w.v[w.branch]};
+    write_points_obj(d / "points.obj", input_points);
+    const std::string sheet_path = (d / "sheet.obj").string();
+    const nlohmann::json j = {
+        {"application", "tetwild"},
+        {"input", {solid_path, sheet_path}},
+        {"input_roles", {"volume", "surface"}},
+        {"input_edges", {(d / "wire.obj").string()}},
+        {"input_points", {(d / "points.obj").string()}},
+        {"filter", "hybrid"},
+        {"num_threads", 0},
+        {"output", (d / "out").string()}};
+    REQUIRE_NOTHROW(components::tetwild::tetwild(j));
+    const HybridBlocks h = read_hybrid(d / "out_hybrid.msh");
+    const Eigen::MatrixXd WV = rows(w.v);
+    const double eps = 1e-3 * bbox_diag({&solid.V, &sheet.V, &WV});
+
+    REQUIRE(!h.tets.empty());
+    REQUIRE(!h.faces.empty());
+    REQUIRE(!h.edges.empty());
+    const std::vector<Vector3d> tet_v = used_vertices(h.tet_v, h.tets);
+    const std::vector<Vector3d> sheet_v = used_vertices(h.face_v, h.faces);
+    const std::vector<Vector3d> line_v = used_vertices(h.edge_v, h.edges);
+    const std::set<Key> tet_keys = vertex_set(tet_v), sheet_keys = vertex_set(sheet_v),
+                        line_keys = vertex_set(line_v);
+    const utils::WindingNumberHierarchy wnh(solid.V, solid.F);
+    const auto winding = [&](const Vector3d& p) {
+        return wnh.winding_number(Eigen::RowVector3d(p.transpose()));
+    };
+    const Eigen::VectorXd line_d2_solid = sq_dist(rows(line_v), solid);
+
+    // Tets: inside the solid.
+    CHECK(tets_outside_volumes(h, {&solid}, eps) == 0);
+
+    // Triangles: on the sheet (every vertex within eps of it) and not inside the solid (each
+    // centre outside it or within eps of its surface).
+    const Eigen::VectorXd sheet_d2_sheet = sq_dist(rows(sheet_v), sheet);
+    INFO(
+        "sheet vertex farthest from the input sheet: " << std::sqrt(sheet_d2_sheet.maxCoeff()) / eps
+                                                       << " eps");
+    CHECK(sheet_d2_sheet.maxCoeff() <= eps * eps);
+    {
+        std::vector<Vector3d> fc;
+        for (const auto& f : h.faces)
+            fc.push_back((h.face_v[f[0]] + h.face_v[f[1]] + h.face_v[f[2]]) / 3);
+        const Eigen::VectorXd D = sq_dist(rows(fc), solid);
+        size_t in_solid = 0;
+        for (size_t i = 0; i < fc.size(); ++i) {
+            if (winding(fc[i]) > 0.5 && D[i] > eps * eps) ++in_solid;
+        }
+        CHECK(in_solid == 0);
+    }
+
+    // Lines: every vertex in the feature tube around the input wire.
+    {
+        double worst = 0;
+        for (const Vector3d& p : line_v) {
+            double best = std::numeric_limits<double>::infinity();
+            for (const auto& e : w.e)
+                best = std::min(best, point_segment_distance(p, w.v[e[0]], w.v[e[1]]));
+            worst = std::max(worst, best);
+        }
+        INFO("line vertex farthest from the input wire: " << worst / eps << " eps");
+        CHECK(worst <= 0.5 * eps);
+    }
+
+    // 1. The sheet meets the solid: the sheet vertices that are also tet vertices -- where the
+    // sheet's tracked faces outside the solid meet the kept tets -- lie within eps of the solid's
+    // surface (the kept region ends at tracked faces lying on the solid) and of the sheet (they
+    // are corners of sheet triangles); and there are some, since the sheet crosses the solid's
+    // surface and its tracked faces on either side share their vertices there.
+    {
+        std::vector<Vector3d> shared;
+        for (const Vector3d& p : sheet_v) {
+            if (tet_keys.count(key_of(p))) shared.push_back(p);
+        }
+        REQUIRE(!shared.empty());
+        const Eigen::VectorXd Ds = sq_dist(rows(shared), solid);
+        const Eigen::VectorXd Dh = sq_dist(rows(shared), sheet);
+        INFO(
+            shared.size() << " sheet vertices are tet vertices; farthest from the solid "
+                          << std::sqrt(Ds.maxCoeff()) / eps << " eps, from the sheet "
+                          << std::sqrt(Dh.maxCoeff()) / eps << " eps");
+        CHECK(Ds.maxCoeff() <= eps * eps);
+        CHECK(Dh.maxCoeff() <= eps * eps);
+    }
+
+    // 2. The wire is in the solid's tets where it is inside the solid: every line vertex inside
+    // it is a tet vertex. The tagged edges are edges of the tet mesh, and the kept region is
+    // everything the tracked surface on the solid encloses, which contains every point inside
+    // (the tracked surface stays within eps of the solid's).
+    {
+        size_t inside = 0, missed = 0;
+        for (size_t i = 0; i < line_v.size(); ++i) {
+            if (winding(line_v[i]) <= 0.5 || line_d2_solid[i] <= eps * eps) continue;
+            ++inside;
+            if (!tet_keys.count(key_of(line_v[i]))) ++missed;
+        }
+        INFO(inside << " line vertices inside the solid");
+        CHECK(missed == 0);
+    }
+
+    // 3. The wire is on the sheet where it runs along it: every line vertex in the tube of the
+    // stretch, outside the solid, and not in the tube of any off-sheet input edge, is a sheet
+    // vertex. The stretch's input edges are edges of the sheet's triangles, so the insertion
+    // makes them edges of tracked faces, and no operation separates the two: a collapse renames
+    // the tagged edges and the tracked faces at a vertex together, a split of such an edge
+    // splits its faces, and a swap keeps tracked faces. Outside the solid no kept tet touches
+    // the vertex, so its tracked faces are sheet triangles. Excluded: the shell around the
+    // solid, where the vertex may be a tet vertex instead, and the tubes of the runs that join
+    // the stretch at its ends, whose own vertices need not be on the sheet. Not guaranteed: that
+    // the stretch keeps an interior vertex at all (it is several target edge lengths long here).
+    {
+        size_t checked = 0, missed = 0;
+        for (size_t i = 0; i < line_v.size(); ++i) {
+            const Vector3d& p = line_v[i];
+            double on = std::numeric_limits<double>::infinity(), off = on;
+            for (size_t k = 0; k < w.e.size(); ++k) {
+                double& to = w.on_sheet[k] ? on : off;
+                to = std::min(to, point_segment_distance(p, w.v[w.e[k][0]], w.v[w.e[k][1]]));
+            }
+            if (on > 0.5 * eps || off <= 0.5 * eps) continue;
+            if (winding(p) > 0.5 || line_d2_solid[i] <= eps * eps) continue;
+            ++checked;
+            if (!sheet_keys.count(key_of(p))) ++missed;
+        }
+        INFO(checked << " line vertices on the stretch outside the solid");
+        CHECK(checked > 0);
+        CHECK(missed == 0);
+    }
+
+    // 4. The wire is connected where it crosses the solid's surface and where it pierces the
+    // sheet. The tagged edges, the tet faces where the kept region ends and the sheet triangles
+    // are all faces of ONE tet mesh, so a tagged path can pass from one side of a tracked
+    // surface to the other only through a mesh vertex on it: at a crossing of the solid's
+    // surface, a vertex of the kept region's boundary faces; at a piercing of the sheet outside
+    // the solid, a sheet vertex. Where is that vertex? Within eps/2 of the wire (the tube) and
+    // within eps of the surface crossed (the envelope). Where the wire is a straight line through
+    // c meeting a plane at angle alpha, such a point x = c + t u + r, |r| <= eps/2, has
+    // |t| sin(alpha) <= eps + eps/2, so |x - c| <= reach(c) = 1.5 eps / sin(alpha) + eps/2. This
+    // assumes the output curve still passes the crossing (coverage, which the pipeline reports
+    // but does not gate) and the surface is flat across reach(c). A piercing is checked only
+    // outside the solid by more than reach(c) + eps, where the sheet vertex cannot be a tet vertex
+    // and its triangles are all output; one inside the solid is check 2's.
+    {
+        const std::set<Key> boundary = tet_boundary_vertices(h);
+        const auto reach = [&](const Crossing& c) { return 1.5 * eps / c.sin_angle + 0.5 * eps; };
+        const auto nearest = [&](const Vector3d& c, const std::set<Key>& in) {
+            double best = std::numeric_limits<double>::infinity();
+            for (const Vector3d& p : line_v) {
+                if (in.count(key_of(p))) best = std::min(best, (p - c).norm());
+            }
+            return best;
+        };
+
+        const std::vector<Crossing> through_solid =
+            wire_crossings(w, [](size_t) { return true; }, solid);
+        REQUIRE(through_solid.size() >= 2);
+        size_t missed = 0;
+        double worst = 0; // nearest shared vertex over reach, the largest
+        for (const Crossing& c : through_solid) {
+            const double r = nearest(c.at, boundary) / reach(c);
+            worst = std::max(worst, r);
+            if (r > 1) ++missed;
+        }
+        INFO(
+            through_solid.size() << " crossings of the solid's surface; nearest boundary line "
+                                    "vertex at most "
+                                 << worst << " x reach");
+        CHECK(missed == 0);
+
+        const std::vector<Crossing> through_sheet =
+            wire_crossings(w, [&](size_t i) { return !w.on_sheet[i]; }, sheet);
+        std::vector<Vector3d> at;
+        for (const Crossing& c : through_sheet) at.push_back(c.at);
+        const Eigen::VectorXd D = sq_dist(rows(at), solid);
+        size_t checked = 0;
+        missed = 0;
+        worst = 0;
+        for (size_t i = 0; i < through_sheet.size(); ++i) {
+            const Crossing& c = through_sheet[i];
+            const double r = reach(c);
+            if (winding(c.at) > 0.5 || D[i] <= (r + eps) * (r + eps)) continue;
+            ++checked;
+            const double ratio = nearest(c.at, sheet_keys) / r;
+            worst = std::max(worst, ratio);
+            if (ratio > 1) ++missed;
+        }
+        REQUIRE(checked >= 1);
+        INFO(
+            through_sheet.size() << " piercings of the sheet, " << checked
+                                 << " outside the solid; nearest sheet line vertex at most "
+                                 << worst << " x reach");
+        CHECK(missed == 0);
+    }
+
+    // 5. Points. Each input point has an anchor within its ball (the anchor guarantee), and that
+    // anchor is a line vertex: the vertex carrying an anchor passes it on only to the survivor of
+    // its collapse, which takes over its tagged edges. The line block is one connected piece, as
+    // the input wire is: the tagged edges change only by splits and by collapses (which rename one
+    // endpoint to the other, merging edges that coincide), never by deletion -- a swap that would
+    // remove one is refused, a collapse that would lose one is rolled back -- and renaming
+    // vertices cannot disconnect a graph. NOT guaranteed, so only reported: the branch point's
+    // degree. With allow_junction_cleanup on (the default), a collapse may rename a vertex of one
+    // branch to a vertex of another within the tube, merging their edges, so the junction can
+    // move along the curves and its anchor can be left with fewer (or more) than three edges.
+    {
+        std::map<Key, size_t> degree;
+        for (const auto& e : h.edges) {
+            ++degree[key_of(h.edge_v[e[0]])];
+            ++degree[key_of(h.edge_v[e[1]])];
+        }
+        for (const Vector3d& q : input_points) {
+            double best = std::numeric_limits<double>::infinity();
+            Vector3d anchor;
+            for (const Vector3d& p : h.points) {
+                if ((p - q).norm() < best) {
+                    best = (p - q).norm();
+                    anchor = p;
+                }
+            }
+            INFO(
+                "anchor " << best / eps << " eps from the input point, with "
+                          << degree[key_of(anchor)] << " line edges");
+            CHECK(best <= 0.5 * eps);
+            CHECK(line_keys.count(key_of(anchor)) == 1);
+        }
+        CHECK(line_pieces(h) == 1);
+    }
+}
+
+} // namespace
+
+TEST_CASE("hybrid-thingi-solid-wavy-sheet-wire", "[tetwild][hybrid][thingi][.]")
+{
+    // Thingi10K 104509, closed: a frame of walls about 1 thick (eps is 0.195 here). The sheet is
+    // z = c_z + a sin(k (x - c_x)) sin(k (y - c_y)) about the solid's box centre c, a = ext_z / 4
+    // and k = 3 pi / max(ext_x, ext_y) (1.5 periods across the solid), on a 40 x 40 grid over
+    // the solid's xy box grown by 10% of its extent on each side: it cuts the walls along wavy
+    // lines. The loop is the trefoil about c, scaled by ext_x / 10 in x, y and ext_z / 6 in z: it
+    // crosses the walls 6 times and the sheet 6 times, outside the solid. The stretch is the
+    // grid's column 15 (x = -18.2) from row 4 to 13 (y = -34.0 to -8.1): it goes through the
+    // wall at y = -19.96..-18.96 inside the sheet. The branch is the loop vertex nearest the
+    // stretch's start, and the free end is 0.1 x the solid's diagonal off the sheet.
+    const fs::path d = fs::temp_directory_path() / "wmtk_test_hybrid_thingi_wavy_sheet";
+    fs::create_directories(d);
+    const std::string solid_path = data_model("challenging_tetwild_104509.stl").string();
+    const InputMesh solid = load_welded(solid_path);
+    const Vector3d lo = solid.V.colwise().minCoeff().transpose();
+    const Vector3d hi = solid.V.colwise().maxCoeff().transpose();
+    const Vector3d ext = hi - lo, c = (lo + hi) / 2;
+
+    const int n = 40;
+    const double pi = std::acos(-1.0);
+    const double a = ext.z() / 4, k = 3 * pi / std::max(ext.x(), ext.y());
+    InputMesh sheet;
+    sheet.V.resize((n + 1) * (n + 1), 3);
+    sheet.F.resize(2 * n * n, 3);
+    for (int row = 0; row <= n; ++row) {
+        for (int col = 0; col <= n; ++col) {
+            const double x = lo.x() - 0.1 * ext.x() + 1.2 * ext.x() * col / n;
+            const double y = lo.y() - 0.1 * ext.y() + 1.2 * ext.y() * row / n;
+            sheet.V.row(row * (n + 1) + col) << x, y,
+                c.z() + a * std::sin(k * (x - c.x())) * std::sin(k * (y - c.y()));
+        }
+    }
+    for (int row = 0; row < n; ++row) {
+        for (int col = 0; col < n; ++col) {
+            const int v0 = row * (n + 1) + col, v1 = v0 + 1, v2 = v0 + n + 2, v3 = v0 + n + 1;
+            sheet.F.row(2 * (row * n + col)) << v0, v1, v2;
+            sheet.F.row(2 * (row * n + col) + 1) << v0, v2, v3;
+        }
+    }
+
+    const std::vector<Vector3d> loop = trefoil(c, ext.x() / 10, ext.z() / 6, 120);
+    std::vector<int> stretch;
+    for (int row = 4; row <= 13; ++row) stretch.push_back(row * (n + 1) + 15);
+    size_t branch = 0;
+    for (size_t i = 0; i < loop.size(); ++i) {
+        if ((loop[i] - sheet.V.row(stretch[0]).transpose()).norm() <
+            (loop[branch] - sheet.V.row(stretch[0]).transpose()).norm())
+            branch = i;
+    }
+    const Wire w = make_wire(loop, branch, sheet, stretch, 0.1 * ext.norm());
+    check_connected_scene(d, solid_path, solid, sheet, w);
+}
+
+TEST_CASE("hybrid-thingi-solid-open-surface-wire", "[tetwild][hybrid][thingi][.]")
+{
+    // Thingi10K 1047980, closed: a ring of radius 40, wall 2 thick, z = -5.1..5.1. The sheet is
+    // Thingi10K 103197 (open, 6 pieces), scaled by 0.8 and lowered by 10.4: its band z = 10..16,
+    // where its surfaces stand at radius 20..50, moves to the ring's height, so the ring's wall
+    // cuts it along several curves. The loop is the trefoil about the ring's centre, scaled by
+    // ext_x / 5 in x, y and 0.3 ext_z in z: it goes through the wall 6 times and through the
+    // sheet some 30 times. The branch is loop vertex 80, in the ring's hole; the stretch is the
+    // shortest path along the sheet's edges, on its largest piece, from the vertex nearest the
+    // branch to the vertex nearest (33, 25, 7), outside the ring above its top: it goes through
+    // the wall inside the sheet. The free end is 0.1 x the ring's diagonal off the sheet.
+    const fs::path d = fs::temp_directory_path() / "wmtk_test_hybrid_thingi_open_surface";
+    fs::create_directories(d);
+    const std::string solid_path = data_model("challenging_tetwild_1047980.stl").string();
+    const InputMesh solid = load_welded(solid_path);
+    const Vector3d lo = solid.V.colwise().minCoeff().transpose();
+    const Vector3d hi = solid.V.colwise().maxCoeff().transpose();
+    const Vector3d ext = hi - lo, c = (lo + hi) / 2;
+
+    InputMesh sheet = load_welded(data_model("challenging_tetwild_103197.stl").string());
+    for (Eigen::Index i = 0; i < sheet.V.rows(); ++i) {
+        sheet.V.row(i) = 0.8 * sheet.V.row(i) + Eigen::RowVector3d(0, 0, -10.4);
+    }
+
+    const std::vector<Vector3d> loop = trefoil(c, ext.x() / 5, 0.3 * ext.z(), 120);
+    const size_t branch = 80;
+    const std::vector<int> piece = largest_piece(sheet);
+    const std::vector<int> stretch = shortest_edge_path(
+        sheet,
+        nearest_vertex(sheet, piece, loop[branch]),
+        nearest_vertex(sheet, piece, Vector3d(33, 25, 7)));
+    REQUIRE(stretch.size() >= 2);
+    const Wire w = make_wire(loop, branch, sheet, stretch, 0.1 * ext.norm());
+    check_connected_scene(d, solid_path, solid, sheet, w);
 }
