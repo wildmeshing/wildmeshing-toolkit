@@ -1088,17 +1088,15 @@ void TopoOffsetTetMesh::init_input_features()
     const bool points = m_phi_F.rows() == 0 && m_phi_E.rows() == 0 && !m_phi_P.empty();
     if (!rods && !points) return;
 
-    // Registered here, after init(), and only for these complexes. The engine asks for both
-    // before init() so that its sizing covers them; the input complex is known only after it
-    // (label_input_complex()), and with tracking on for every input the shared operations cache
-    // and restore every edge's tag: MEASURED, cube_in (target 1e-2, 15 turns, serial) 10.4 s ->
-    // 15.6 s, the output identical. So each is sized here to the storage init() and the
-    // construction left (the collections only grow, with defaults: no tag, no anchor), which
-    // is what that sizing would have done.
+    // Turned on here, after init() and the construction, and only for these complexes: the
+    // engine supports enabling both after init(), each sized to the current storage with no
+    // edge tagged and no vertex anchored (TetOptimizerMesh::enable_feature_edge_tracking()).
+    // Late because the input complex is known only from the built mesh (label_input_complex()),
+    // and with tracking on for every input the shared operations cache and restore every edge's
+    // tag: MEASURED, cube_in (target 1e-2, 15 turns, serial) 10.4 s -> 15.6 s, the output
+    // identical.
     enable_feature_edge_tracking();
-    m_feature_edge_attribute.resize(6 * tet_storage_capacity());
     enable_feature_point_tracking(true);
-    m_feature_point_attribute.resize(vert_storage_capacity());
 
     // The tube and the balls have the half-width of the envelope that holds the input's faces,
     // envelope_size: the rod is a part of the input complex, held to the input's tolerance.
