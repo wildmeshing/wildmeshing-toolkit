@@ -125,11 +125,24 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 #     tetwild/simwild background grid, src/wmtk/utils/Delaunay.cpp -- sorts the tets it
 #     returns, so neither sees the new order. Measured on crown, octocat and thingi 36075, the
 #     background-grid Delaunay is 10-30 ms faster.
+#
+# Then #34 (45f72ed), which does move output. Delaunay3D does not support inserting a point at
+# an existing vertex's position (MarcoAttene/Delaunay3D#2), and the embedding did exactly that
+# for every surface vertex: tetwild and simwild build the background from the surface vertices
+# plus a lattice (init_from_delaunay_box_mesh, delaunay_box_mesh), and embed_tri_in_poly_mesh
+# then inserted the same vertices again. VolumeRemesher now skips a vertex that coincides with
+# one of the tet mesh and moves its constraints onto that vertex; Delaunay3D moves to 22bd3fe,
+# where #2 is reduced to the point overload of searchTetrahedron. The tets are the same, but
+# the copy of each surface vertex that survives is now the background's, so the output is
+# numbered differently: the 12 tetwild configs and simwild's two double-sphere embeds move,
+# the other 36 registered configs stay byte-identical. All of them still pass their checks
+# (every vertex rounded, Hausdorff 0.46-0.57 of eps, Euler characteristic where checked);
+# tetwild's iterations total 57 -> 39 over the registered set, and max energy moves both ways.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 57e7753521c98554129fd08545a5b3458228e5ba
+    GIT_TAG 45f72ed8f4ad18143f7c4b2fd447e2d3b9c1ab49
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
