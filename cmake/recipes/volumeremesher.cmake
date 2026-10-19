@@ -138,11 +138,18 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # the other 36 registered configs stay byte-identical. All of them still pass their checks
 # (every vertex rounded, Hausdorff 0.46-0.57 of eps, Euler characteristic where checked);
 # tetwild's iterations total 57 -> 39 over the registered set, and max energy moves both ways.
+#
+# Then #35 (8d5aac6): both forks are merged upstream, so NFG is MarcoAttene/NFG aeec975 (the same
+# numerics.h as 2330267) and Delaunay3D is MarcoAttene/Delaunay3D 362502e. The one difference
+# from 22bd3fe is upstream 60d00a8: tetrahedrize() returns no tets, instead of stopping in
+# ip_error, when the vertices do not span a volume. Our delaunay3D checks that before calling
+# it (spans_a_volume, src/wmtk/utils/Delaunay.cpp). No output changes: all 50 registered
+# configs are byte-identical to #34.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 45f72ed8f4ad18143f7c4b2fd447e2d3b9c1ab49
+    GIT_TAG 8d5aac6e80654a6e3b1ad931e3c2705b7dec2871
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
