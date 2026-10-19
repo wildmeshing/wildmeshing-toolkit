@@ -11,7 +11,7 @@ using namespace wmtk;
 using namespace wmtk::components::triwild;
 
 // A feature point is a 0-dimensional feature of the curve network -- an open polyline's
-// endpoint, or a junction. collapse_breaks_feature is the policy that keeps one from being
+// endpoint, or a junction. collapse_breaks_feature_point is the policy that keeps one from being
 // dropped or displaced by an edge collapse, which is what used to delete open polylines
 // outright: a polyline erodes into its own tip until a single segment is left, and that
 // segment carries a feature at BOTH ends, which the surface order test does not refuse.
@@ -20,7 +20,7 @@ using namespace wmtk::components::triwild;
 // building a real curve network or running an operation.
 namespace {
 
-// One triangle is enough: the policy only reads m_feature_id and m_posf.
+// One triangle is enough: the policy only reads m_feature_point_id and m_posf.
 void build_one_tri(TriWildMesh& mesh, const std::array<Vector2d, 3>& p)
 {
     const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
@@ -55,30 +55,30 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
-    mesh.m_vertex_extra[0].m_feature_id = 0;
+    mesh.m_feature_point_attribute[0].m_feature_point_id = 0;
 
     SECTION("a vertex carrying no feature is never blocked")
     {
-        CHECK_FALSE(mesh.collapse_breaks_feature(1, 2));
-        CHECK_FALSE(mesh.collapse_breaks_feature(2, 1));
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(1, 2));
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(2, 1));
     }
 
     SECTION("collapsing a feature into a nearby vertex is allowed")
     {
         // v1 is within eps of feature 0, so the feature stays represented.
-        CHECK_FALSE(mesh.collapse_breaks_feature(0, 1));
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(0, 1));
     }
 
     SECTION("collapsing a feature into a distant vertex is refused")
     {
         // This is the case that deletes a polyline: the anchor would be left behind.
-        CHECK(mesh.collapse_breaks_feature(0, 2));
+        CHECK(mesh.collapse_breaks_feature_point(0, 2));
     }
 
     SECTION("collapsing INTO a feature is always fine")
     {
         // v2 carries nothing; the feature on v0 is untouched by v2 disappearing.
-        CHECK_FALSE(mesh.collapse_breaks_feature(2, 0));
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(2, 0));
     }
 
     SECTION("two features closer than eps may merge -- the survivor covers both")
@@ -89,9 +89,9 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // integration model it stranded a degenerate triangle and the max energy stayed at
         // 1e50 for all 82 iterations instead of converging in 3.
         mesh.m_feature_points.push_back(Vector2d(0.5, 0));
-        mesh.m_vertex_extra[1].m_feature_id = 1;
-        CHECK_FALSE(mesh.collapse_breaks_feature(0, 1));
-        CHECK_FALSE(mesh.collapse_breaks_feature(1, 0));
+        mesh.m_feature_point_attribute[1].m_feature_point_id = 1;
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(0, 1));
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(1, 0));
     }
 
     SECTION("two features further apart than eps still cannot merge")
@@ -100,15 +100,15 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // vertex within eps, and the plain distance test catches that without needing a
         // special case for "v2 already carries something".
         mesh.m_feature_points.push_back(Vector2d(5, 0));
-        mesh.m_vertex_extra[2].m_feature_id = 1;
-        CHECK(mesh.collapse_breaks_feature(0, 2));
-        CHECK(mesh.collapse_breaks_feature(2, 0));
+        mesh.m_feature_point_attribute[2].m_feature_point_id = 1;
+        CHECK(mesh.collapse_breaks_feature_point(0, 2));
+        CHECK(mesh.collapse_breaks_feature_point(2, 0));
     }
 
     SECTION("a vertex already carrying the SAME feature is fine")
     {
-        mesh.m_vertex_extra[1].m_feature_id = 0;
-        CHECK_FALSE(mesh.collapse_breaks_feature(0, 1));
+        mesh.m_feature_point_attribute[1].m_feature_point_id = 0;
+        CHECK_FALSE(mesh.collapse_breaks_feature_point(0, 1));
     }
 
     SECTION("protection does not depend on rounding")
@@ -116,7 +116,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // The pre-existing order test is gated on m_is_rounded, so an un-rounded endpoint
         // slipped through it. This rule is not.
         mesh.m_vertex_attribute[0].m_is_rounded = false;
-        CHECK(mesh.collapse_breaks_feature(0, 2));
+        CHECK(mesh.collapse_breaks_feature_point(0, 2));
     }
 
     SECTION("preserve_feature_points off restores the old behaviour")
@@ -125,8 +125,8 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         TriWildMesh off(params, eps, 0);
         build_one_tri(off, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
         off.m_feature_points = {Vector2d(0, 0)};
-        off.m_vertex_extra[0].m_feature_id = 0;
-        CHECK_FALSE(off.collapse_breaks_feature(0, 2));
+        off.m_feature_point_attribute[0].m_feature_point_id = 0;
+        CHECK_FALSE(off.collapse_breaks_feature_point(0, 2));
     }
 }
 
@@ -137,7 +137,7 @@ TEST_CASE("triwild-feature-smoothing-is-a-ball-not-a-pin", "[triwild_operation][
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
-    mesh.m_vertex_extra[0].m_feature_id = 0;
+    mesh.m_feature_point_attribute[0].m_feature_point_id = 0;
 
     // A feature vertex is free to move, just not away: smoothing keeps whatever quality it
     // can find inside the ball. Freezing it outright would be simpler and worse.

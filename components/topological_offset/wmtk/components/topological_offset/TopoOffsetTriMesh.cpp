@@ -231,6 +231,15 @@ bool TopoOffsetTriMesh::edge_is_complex_boundary(const Tuple& e) const
 void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
 {
     m_envelope_eps = m_offset_params.envelope_size;
+    // Always the exact envelope, as in 3D (build_envelopes()). An eps that is not a positive
+    // length has no exact tube to build, and is an error, where it used to switch to the sampled
+    // envelope.
+    if (!(std::isfinite(m_envelope_eps) && m_envelope_eps > 0.)) {
+        log_and_throw_error(
+            "envelope_size {} is not a valid envelope half-width (finite and > 0); set "
+            "envelope_size or envelope_size_rel to a positive length",
+            m_envelope_eps);
+    }
 
     // Fresh: every mask from the tracked edges as they stand, nothing carried over.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
@@ -292,12 +301,11 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         m_isect_cache.clear();
         m_offset_isect_cache.clear();
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    std::vector<std::shared_ptr<Envelope>> members;
     std::string per_tag_log;
     for (const auto& [tag, bucket] : buckets) {
         if (bucket.empty()) continue;
-        auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        auto env = std::make_shared<Envelope>(/*exact=*/true);
         env->init(tempV, bucket, m_envelope_eps);
         m_tag_envelopes[tag] = env;
         members.push_back(env);
@@ -310,13 +318,12 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
 
     logger().info(
         "\t[envelopes @ {}] {}: {} region-boundary segments tracked ({} on the wall), eps {:.6g}, "
-        "{} |{}{}",
+        "EXACT |{}{}",
         when,
         setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
         n_tracked,
         n_wall,
         m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)",
         per_tag_log,
         setup == EnvelopeSetup::WallComplex
             ? fmt::format(
@@ -373,7 +380,7 @@ void TopoOffsetTriMesh::classify_curve_edges()
     std::vector<Eigen::Vector2i> ce(m_curve_E.rows());
     for (int i = 0; i < m_curve_E.rows(); ++i)
         ce[i] = Eigen::Vector2i(m_curve_E(i, 0), m_curve_E(i, 1));
-    SampleEnvelope curve(/*exact=*/true);
+    Envelope curve(/*exact=*/true);
     curve.init(cv, ce, eps);
     size_t n_on = 0;
     for (const Tuple& e : get_edges()) {

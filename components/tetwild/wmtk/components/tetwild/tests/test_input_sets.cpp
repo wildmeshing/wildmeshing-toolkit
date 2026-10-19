@@ -44,10 +44,10 @@ struct Mesh : TetWildMesh
     }
 };
 
-std::shared_ptr<SampleEnvelope>
+std::shared_ptr<Envelope>
 envelope_around(const std::vector<Vector3d>& v, const std::vector<Eigen::Vector3i>& f, double eps)
 {
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->init(v, f, eps);
     return env;
 }
@@ -127,13 +127,13 @@ void build_fan(TetWildMesh& mesh)
 }
 
 /// An envelope of radius eps around one triangle of the fan.
-std::shared_ptr<SampleEnvelope> around_fan_face(size_t a, size_t b, size_t c, double eps)
+std::shared_ptr<Envelope> around_fan_face(size_t a, size_t b, size_t c, double eps)
 {
     const auto p = fan_points();
     return envelope_around({p[a], p[b], p[c]}, {Eigen::Vector3i(0, 1, 2)}, eps);
 }
 
-std::shared_ptr<SampleEnvelope> loose_fan_envelope()
+std::shared_ptr<Envelope> loose_fan_envelope()
 {
     const auto p = fan_points();
     return envelope_around(p, {Eigen::Vector3i(L1, L2, V1), Eigen::Vector3i(L1, L2, V2)}, 10.0);
@@ -182,7 +182,7 @@ bool flip_ab(TetWildMesh& mesh)
     return mesh.swap_edge(t, ret);
 }
 
-std::shared_ptr<SampleEnvelope> loose_ring_envelope()
+std::shared_ptr<Envelope> loose_ring_envelope()
 {
     const auto p = ring_points();
     return envelope_around(

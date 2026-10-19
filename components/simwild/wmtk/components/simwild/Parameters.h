@@ -55,6 +55,8 @@ struct Parameters : public wmtk::OptimizerParameters
 
     bool skip_simplify = false;
     bool use_sample_envelope = false;
+    /// The input simplification alone uses the sampled envelope; see the spec.
+    bool simplify_use_sample_envelope = true;
     int NUM_THREADS = 0;
     bool write_vtu = false;
     bool write_envelope = true;
@@ -65,6 +67,7 @@ struct Parameters : public wmtk::OptimizerParameters
         output_path = json_params["output"];
         skip_simplify = json_params["skip_simplify"];
         use_sample_envelope = json_params["use_sample_envelope"];
+        simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
         write_vtu = json_params["write_vtu"];
         write_envelope = json_params["write_envelope"];

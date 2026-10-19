@@ -22,10 +22,10 @@ using namespace wmtk::components::triwild;
 
 namespace {
 
-std::shared_ptr<SampleEnvelope>
+std::shared_ptr<Envelope>
 envelope_around(const std::vector<Vector2d>& v, const std::vector<Vector2i>& e, double eps)
 {
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->init(v, e, eps);
     return env;
 }
@@ -85,13 +85,13 @@ bool collapse_v1_into_v2(TriWildMesh& mesh)
     return mesh.collapse_edge(t, new_t);
 }
 
-std::shared_ptr<SampleEnvelope> around_fan_edge(size_t a, size_t b, double eps)
+std::shared_ptr<Envelope> around_fan_edge(size_t a, size_t b, double eps)
 {
     const auto p = fan_points();
     return envelope_around({p[a], p[b]}, {Vector2i(0, 1)}, eps);
 }
 
-std::shared_ptr<SampleEnvelope> loose_fan_envelope()
+std::shared_ptr<Envelope> loose_fan_envelope()
 {
     const auto p = fan_points();
     return envelope_around(p, {Vector2i(X, V1), Vector2i(X, V2)}, 10.0);

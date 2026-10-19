@@ -60,7 +60,7 @@ struct Parameters : public wmtk::OptimizerParameters
      * The two answer a different question. The sampled test places points along the query
      * segment and asks whether each is within eps of the input; it therefore cannot see
      * anything that happens between two samples, and pays for that by shrinking its
-     * acceptance radius to eps/2 (see SampleEnvelope::eps2_edge). The exact one asks whether
+     * acceptance radius to eps/2 (see Envelope::eps2_edge). The exact one asks whether
      * the segment is covered by the union of the eps-rectangles around the input segments and
      * decides it without sampling, so it uses the full eps and answers a strictly sharper
      * question -- notably it rejects a segment that bridges a gap between two input curves,

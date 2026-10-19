@@ -38,7 +38,7 @@ Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
 
 
 ExactDistanceEnergy2D::ExactDistanceEnergy2D(
-    const std::shared_ptr<SampleEnvelope>& envelope,
+    const std::shared_ptr<Envelope>& envelope,
     const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
@@ -78,7 +78,7 @@ void ExactDistanceEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 }
 
 ExactDistanceEnergy3D::ExactDistanceEnergy3D(
-    const std::shared_ptr<SampleEnvelope>& envelope,
+    const std::shared_ptr<Envelope>& envelope,
     const double weight)
     : m_envelope(envelope)
     , m_weight(weight)

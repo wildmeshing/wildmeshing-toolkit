@@ -87,7 +87,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
         ds[i].push_back(box_max[i]);
     }
 
-    SampleEnvelope envelope;
+    Envelope envelope;
     envelope.init(V, E, 0);
 
     const double min_dis = voxel_resolution * voxel_resolution / 4;

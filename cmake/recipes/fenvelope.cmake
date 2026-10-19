@@ -41,7 +41,7 @@ CPMAddPackage(
     # leaving <fastenvelope/FastEnvelope.h> resolving as before, and switches the tests to
     # Catch2. And PR #6, which adds envelopes built from edges rather than triangles -- both
     # `FastEnvelope::init(V, edges, eps)` in 3D and the new `FastEnvelope2D` -- which is what
-    # lets SampleEnvelope answer segment and 2D queries exactly instead of throwing.
+    # lets Envelope answer segment and 2D queries exactly instead of throwing.
     #
     # And PR #8, which points fast-envelope's own Indirect_Predicates declaration
     # (cmake/recipes/ipred.cmake) at the same commit VolumeRemesher uses. FetchContent keeps

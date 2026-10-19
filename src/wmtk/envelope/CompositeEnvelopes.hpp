@@ -15,11 +15,16 @@ namespace wmtk {
 /**
  * Containment-only composites over several envelopes, in both dimensions.
  *
- * Both classes override exactly the four virtual queries -- is_outside(triangle3) and
- * is_outside(point3) on wmtk::Envelope, is_outside(segment2) and is_outside(point2) on
- * SampleEnvelope -- which are the only calls the containment paths make.
+ * Both classes override exactly the four virtual queries of wmtk::Envelope --
+ * is_outside(triangle3), is_outside(point3), is_outside(segment2) and is_outside(point2) --
+ * which are the only calls the containment paths make.
  *
- * A composite must never reach a caller of the non-virtual SampleEnvelope queries:
+ * Both construct their base in sampled mode, use_exact = false: the value the base's default
+ * constructor gave them before the default became exact. The flag is inert here -- a composite
+ * is never init()ed and nothing reads use_exact off one -- so this only keeps the change of
+ * default from changing anything.
+ *
+ * A composite must never reach a caller of the non-virtual Envelope queries:
  * nearest_point, nearest_point_feature, squared_distance, or the edge/2D is_outside overloads.
  * Those bind statically to the base subobject, whose BVH was never built, and dereference null.
  * Such callers are fed by smoothing_energy_envelope(), and that hook returns a single real member
@@ -34,11 +39,12 @@ namespace wmtk {
 /// to the junction, within eps of each boundary it lies on, and what holds a wire or isolated
 /// point of the input complex in place, since those only arise where two or more selected tags
 /// meet.
-class IntersectionEnvelope final : public SampleEnvelope
+class IntersectionEnvelope final : public Envelope
 {
 public:
-    explicit IntersectionEnvelope(std::vector<std::shared_ptr<SampleEnvelope>> members)
-        : m_members(std::move(members))
+    explicit IntersectionEnvelope(std::vector<std::shared_ptr<Envelope>> members)
+        : Envelope(/*exact=*/false)
+        , m_members(std::move(members))
     {}
 
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const override
@@ -73,20 +79,21 @@ public:
         return false;
     }
 
-    const std::vector<std::shared_ptr<SampleEnvelope>>& members() const { return m_members; }
+    const std::vector<std::shared_ptr<Envelope>>& members() const { return m_members; }
 
 private:
-    std::vector<std::shared_ptr<SampleEnvelope>> m_members;
+    std::vector<std::shared_ptr<Envelope>> m_members;
 };
 
 /// Inside means inside any member: the tube union. Assigned to the inherited m_envelope, so the
 /// shared engine's "may this surface vertex land on a non-surface position" point check keeps its
 /// semantics with no changes there.
-class UnionEnvelope final : public SampleEnvelope
+class UnionEnvelope final : public Envelope
 {
 public:
-    explicit UnionEnvelope(std::vector<std::shared_ptr<SampleEnvelope>> members)
-        : m_members(std::move(members))
+    explicit UnionEnvelope(std::vector<std::shared_ptr<Envelope>> members)
+        : Envelope(/*exact=*/false)
+        , m_members(std::move(members))
     {}
 
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const override
@@ -122,7 +129,7 @@ public:
     }
 
 private:
-    std::vector<std::shared_ptr<SampleEnvelope>> m_members;
+    std::vector<std::shared_ptr<Envelope>> m_members;
 };
 
 /**
@@ -144,7 +151,7 @@ class InputEnvelopes
 public:
     /// Member i is input i's envelope; null for an input no tracked simplex can cover (one with
     /// no triangle). Not while the operations run: it drops the intersections built so far.
-    void set(std::vector<std::shared_ptr<SampleEnvelope>> members)
+    void set(std::vector<std::shared_ptr<Envelope>> members)
     {
         if (members.size() > 16) {
             log_and_throw_error(
@@ -158,16 +165,16 @@ public:
 
     size_t size() const { return m_members.size(); }
     bool empty() const { return m_members.empty(); }
-    const std::shared_ptr<SampleEnvelope>& member(size_t i) const { return m_members[i]; }
+    const std::shared_ptr<Envelope>& member(size_t i) const { return m_members[i]; }
 
-    std::shared_ptr<SampleEnvelope> containment(const uint16_t set) const
+    std::shared_ptr<Envelope> containment(const uint16_t set) const
     {
         check(set);
         if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
         std::lock_guard<std::mutex> lock(m_mutex);
-        std::shared_ptr<SampleEnvelope>& e = m_intersections[set];
+        std::shared_ptr<Envelope>& e = m_intersections[set];
         if (!e) {
-            std::vector<std::shared_ptr<SampleEnvelope>> members;
+            std::vector<std::shared_ptr<Envelope>> members;
             for (size_t i = 0; i < m_members.size(); ++i) {
                 if (set & (1u << i)) members.push_back(m_members[i]);
             }
@@ -178,11 +185,11 @@ public:
 
     /// The member of `set` farthest from `p` (Vector2d or Vector3d). Ties go to the lower input.
     template <typename Point>
-    std::shared_ptr<SampleEnvelope> pull(const uint16_t set, const Point& p) const
+    std::shared_ptr<Envelope> pull(const uint16_t set, const Point& p) const
     {
         check(set);
         if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
-        std::shared_ptr<SampleEnvelope> best;
+        std::shared_ptr<Envelope> best;
         double worst = -1.;
         for (size_t i = 0; i < m_members.size(); ++i) {
             if (!(set & (1u << i))) continue;
@@ -217,9 +224,9 @@ private:
         return i;
     }
 
-    std::vector<std::shared_ptr<SampleEnvelope>> m_members;
+    std::vector<std::shared_ptr<Envelope>> m_members;
     /// Built on first use, under the mutex: the operations ask concurrently.
-    mutable std::map<uint16_t, std::shared_ptr<SampleEnvelope>> m_intersections;
+    mutable std::map<uint16_t, std::shared_ptr<Envelope>> m_intersections;
     mutable std::mutex m_mutex;
 };
 

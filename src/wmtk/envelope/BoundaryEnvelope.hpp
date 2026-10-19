@@ -145,7 +145,7 @@ private:
         double eps,
         bool use_exact);
 
-    SampleEnvelope m_envelope;
+    Envelope m_envelope;
     bool m_initialized = false;
 };
 
