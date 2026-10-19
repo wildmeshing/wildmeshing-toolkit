@@ -932,6 +932,62 @@ bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
     return true;
 }
 
+bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
+{
+    if (!m_preserve_feature_points) return false;
+    // v1 disappears into v2, and v2 does not move: the only question is whether v2 still
+    // covers the feature v1 stood for. See the 2D twin for why distance is the whole test.
+    const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
+    if (f1 == NO_FEATURE_POINT) return false;
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
+           m_feature_eps * m_feature_eps;
+}
+
+bool TetOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector3d& p) const
+{
+    if (!m_preserve_feature_points) return true;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f == NO_FEATURE_POINT) return true;
+    // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
+    // anchor, exactly the freedom the envelope gives everywhere else.
+    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+}
+
+std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_ratio) const
+{
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+
+    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
+    // 2D version learned the hard way not to scan every vertex per feature.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
+    for (const Tuple& v : get_vertices()) {
+        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector3d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(anchor, idx, sq);
+        if (sq <= m_feature_eps * m_feature_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+        }
+    }
+    return {kept, m_feature_points.size()};
+}
+
 
 void TetOptimizerMesh::feature_edges_cache(
     const std::vector<size_t>& tids,

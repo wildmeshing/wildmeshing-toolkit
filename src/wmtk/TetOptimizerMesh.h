@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -169,6 +170,36 @@ public:
     AttributeContainerGroup m_face_attr_group;
 
     /**
+     * @brief What p_edge_attrs points at, once a collection is registered with it.
+     *
+     * The 3D counterpart of wmtk::TriOptimizerMesh::m_edge_attr_group. Two owners keep a
+     * per-edge collection: the feature-edge tags (enable_feature_edge_tracking()) and
+     * topological_offset, which labels each edge by which part of the construction produced
+     * it. With one p_edge_attrs slot only one of them could register, so feature tracking had
+     * to refuse to run in the offset; registered here, each is resized, moved, protected and
+     * rolled back with the others.
+     *
+     * Unlike the 2D group, which always holds the shared m_edge_attribute, this one starts
+     * EMPTY -- the 3D base keeps no edge attribute of its own -- so p_edge_attrs stays null
+     * until add_edge_attributes() registers the first collection. TetMesh skips every per-edge
+     * step on a null p_edge_attrs (the owner migration in remove_tets_by_ids, the moves in
+     * consolidate_mesh, the protect/rollback forwarding); pointing it at an empty group would
+     * pay for all of them in the tetwild and simwild runs that track no edges.
+     *
+     * Same caveat as the 2D group: this moves the storage and nothing more. The shared
+     * operations maintain the VALUES of m_feature_edge_attribute only (the split and collapse
+     * restores); anything else registered here is its registering application's to maintain.
+     */
+    AttributeContainerGroup m_edge_attr_group;
+    /// Register an edge collection with m_edge_attr_group and point p_edge_attrs at the group.
+    /// Must run before init(), so the connectivity init sizes it.
+    void add_edge_attributes(AbstractAttributeContainer* c)
+    {
+        m_edge_attr_group.add(c);
+        p_edge_attrs = &m_edge_attr_group;
+    }
+
+    /**
      * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
      *
      * A single union bool, deliberately, mirroring how the tracked surface is one
@@ -189,8 +220,8 @@ public:
      * @brief Whether the shared operations maintain m_feature_edge_attribute.
      *
      * The operations are guarded by THIS flag, never by `p_edge_attrs != nullptr`:
-     * topological_offset also registers an edge collection there, with its own attribute
-     * type, and reinterpreting it as feature tags would corrupt it.
+     * topological_offset also registers an edge collection with m_edge_attr_group, with its
+     * own attribute type, so a non-null p_edge_attrs says nothing about feature tags.
      */
     bool m_track_feature_edges = false;
 
@@ -205,15 +236,12 @@ public:
     std::shared_ptr<Envelope> m_feature_envelope;
 
     /// Turn on feature-edge tracking. Must run before init() so the connectivity init sizes
-    /// the collection; refuses to share p_edge_attrs with an application that already uses it.
+    /// the collection, which joins m_edge_attr_group beside whatever the application
+    /// registered there. Idempotent: registering twice would move every tag twice.
     void enable_feature_edge_tracking()
     {
-        if (p_edge_attrs != nullptr && p_edge_attrs != &m_feature_edge_attribute) {
-            log_and_throw_error(
-                "enable_feature_edge_tracking: p_edge_attrs is already registered by the "
-                "application; feature tracking cannot share it");
-        }
-        p_edge_attrs = &m_feature_edge_attribute;
+        if (m_track_feature_edges) return;
+        add_edge_attributes(&m_feature_edge_attribute);
         m_track_feature_edges = true;
     }
 
@@ -233,10 +261,85 @@ public:
     /// position already written into the vertex attribute.
     bool feature_edges_at_vertex_inside(size_t vid) const;
 
+    /**
+     * @name Feature-point anchors
+     *
+     * The 3D twin of TriOptimizerMesh's block of the same name, which states the reasoning:
+     * preserving a 0-dimensional feature -- an input point, or a feature curve's endpoint (a
+     * junction too, when the application anchors those) -- is a COVERAGE property, so each
+     * anchor vertex names WHICH feature it stands for. Lifted from tetwild, itself a port of
+     * triwild, with the same semantics and the same distance test.
+     *
+     * Opt-in, in two levels. enable_feature_point_tracking() registers the per-vertex ids
+     * and has the shared operations maintain them: a split vertex stands for no feature, and
+     * a collapse survivor that stands for none takes over the collapsed vertex's. Its
+     * `preserve` argument additionally turns on the policy: a collapse that would leave a
+     * feature further than m_feature_eps from every vertex is refused
+     * (CollapseReject::feature_point), and smoothing may move an anchor vertex only inside its
+     * ball (the default smoothing_position_is_allowed()). The ids are maintained with the
+     * policy off too, so an application can still export and audit its anchors.
+     *
+     * The application supplies the data, because which vertices stand for which features
+     * depends on its input: it fills m_feature_points and the ids after init(), and sets
+     * m_feature_eps.
+     * @{
+     */
+    /// A vertex that stands for no feature point. See FeaturePointAttributes.
+    static constexpr size_t NO_FEATURE_POINT = std::numeric_limits<size_t>::max();
+    struct FeaturePointAttributes
+    {
+        /// Index into m_feature_points, or NO_FEATURE_POINT.
+        size_t m_feature_point_id = NO_FEATURE_POINT;
+    };
+    using FeaturePointAttCol = AttributeCollection<FeaturePointAttributes>;
+    /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
+    FeaturePointAttCol m_feature_point_attribute;
+    /// Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
+    /// carrying feature f may never end up further than m_feature_eps from
+    /// m_feature_points[f]; the anchor never moves, so the id is a direct lookup.
+    std::vector<Vector3d> m_feature_points;
+    /// Radius of the anchor ball. A separate name from the tube eps for the same reason
+    /// triwild keeps it separate from its envelope eps; tetwild gives both the same value.
+    double m_feature_eps = -1;
+    /// Whether the shared operations maintain the ids (enable_feature_point_tracking()).
+    bool m_track_feature_points = false;
+    /// Whether the collapse and smoothing policy is on (its `preserve` argument).
+    bool m_preserve_feature_points = false;
+
+    /// Turn on feature-point tracking, and the policy when `preserve`. Must run before init()
+    /// so the connectivity init sizes the ids.
+    void enable_feature_point_tracking(const bool preserve)
+    {
+        if (!m_track_feature_points) m_vertex_attr_group.add(&m_feature_point_attribute);
+        m_track_feature_points = true;
+        m_preserve_feature_points = preserve;
+    }
+
+    /**
+     * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False
+     * when the policy is off. Distance test included, as in 2D: two anchors within
+     * m_feature_eps of each other are allowed to merge -- the survivor covers both -- and
+     * forbidding that deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
+     */
+    bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
+
+    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the policy is on,
+    /// the vertex stands for a feature, and `p` is outside that feature's ball.
+    bool feature_point_ball_contains(const size_t vid, const Vector3d& p) const;
+
+    /// {anchors still represented within m_feature_eps, total}. Geometric, as in 2D: "some
+    /// vertex is within eps of this anchor", whether or not it carries the id.
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
+    /** @} */
+
     /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
-    /// TriOptimizerMesh's hook of the same name. An application uses this to pin a vertex to
-    /// a 0-dimensional feature it stands for, within a ball. Default: no constraint.
-    virtual bool smoothing_position_is_allowed(size_t, const Vector3d&) const { return true; }
+    /// TriOptimizerMesh's hook of the same name. The default is the feature-point ball, which
+    /// answers true when the anchors are off; an application overriding this while anchoring
+    /// feature points must AND its own answer with feature_point_ball_contains().
+    virtual bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const
+    {
+        return feature_point_ball_contains(vid, p);
+    }
 
     /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
@@ -915,6 +1018,7 @@ protected:
         quality, // collapse_quality_allowed() said no
         substructure_link, // preserve_topology, both ends on the surface: substructure link
         feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
+        feature_point, // v1 stands for a feature point and v2 is outside its ball
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
         app_leaves_input, // application: v1 on the input complex, v2 not

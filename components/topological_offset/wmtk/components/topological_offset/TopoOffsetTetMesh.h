@@ -508,11 +508,11 @@ public:
         , m_offset_params(_m_offset_params)
     {
         NUM_THREADS = _num_threads;
-        // The base owns the vertex and face slots; register the offset's own data with its
-        // groups so it is resized, protected and rolled back with them.
+        // The base owns the vertex, edge and face slots; register the offset's own data with
+        // its groups so it is resized, protected and rolled back with them.
         m_vertex_attr_group.add(&m_vertex_extra);
         m_face_attr_group.add(&m_face_extra);
-        p_edge_attrs = &m_edge_attribute;
+        add_edge_attributes(&m_edge_attribute);
         p_tet_attrs = &m_tet_attribute;
 
         m_collapse_check_link_condition = false;
