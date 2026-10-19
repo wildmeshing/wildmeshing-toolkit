@@ -254,9 +254,15 @@ jobs:
         with:
           fetch-depth: 10
 
+      # sccache from its GitHub releases, not Chocolatey: the community feed answered 503/499
+      # and failed both Windows jobs before they built anything. Same version choco installed.
       - name: Dependencies
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
+
+      - name: sccache directory
         run: |
-          choco install -y sccache
           "SCCACHE_DIR=${env:LOCALAPPDATA}\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Cache build
