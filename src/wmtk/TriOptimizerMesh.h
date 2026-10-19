@@ -266,11 +266,26 @@ public:
     /// collapse pass. Diagnostic; reported at the end of the pass when nonzero.
     std::atomic<size_t> m_feature_rejects = 0;
 
-    /// Turn on feature-point tracking, and the policy when `preserve`. Must run before init()
-    /// so the connectivity init sizes the ids.
+    /**
+     * @brief Turn on feature-point tracking, and the policy when `preserve`.
+     *
+     * Valid before or after init(), not during an operation pass: sizing reallocates the
+     * storage under concurrent readers, and an operation in flight would not have protected
+     * the ids. Before init() the storage is empty and the resize is a no-op; init() sizes the
+     * ids with the rest of m_vertex_attr_group. After init() the resize brings them to what
+     * init() and every capacity growth size vertex collections to, vert_storage_capacity(),
+     * with every vertex NO_FEATURE_POINT; the application then anchors what it needs. Late
+     * enabling is supported because an application may learn only from the built mesh whether
+     * its input has feature points, and enabling it for every input would make every
+     * operation cache and restore anchors it does not have. A second call changes only the
+     * policy.
+     */
     void enable_feature_point_tracking(const bool preserve)
     {
-        if (!m_track_feature_points) m_vertex_attr_group.add(&m_feature_point_attribute);
+        if (!m_track_feature_points) {
+            m_vertex_attr_group.add(&m_feature_point_attribute);
+            m_feature_point_attribute.resize(vert_storage_capacity());
+        }
         m_track_feature_points = true;
         m_preserve_feature_points = preserve;
     }
