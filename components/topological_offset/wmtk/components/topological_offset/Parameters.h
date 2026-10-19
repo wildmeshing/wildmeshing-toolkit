@@ -215,6 +215,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to
     /// target_distance, so N + 1 loops. At least 1 (the spec's min).
     int incremental_growth_steps = 4;
+    /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: the smoothing passes of every
+    /// smoothing block in stage 0, the loop at d_0 (in place of interleaved_smoothing_passes /
+    /// num_smoothing_passes). At least 1 (the spec's min). See the spec doc.
+    int initial_smoothing_passes = 10;
     /// EXPERIMENTAL (2026-10-19), 3D: before the march, the input complex's boundary gets the
     /// sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and TetWild
     /// runs on the mesh with every tracked surface held (TopoOffsetTetMesh::refine_input_pass()).
@@ -359,6 +363,7 @@ struct Parameters : public wmtk::OptimizerParameters
         construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
         incremental_growth = json_params["EXPERIMENTAL_incremental_growth"];
         incremental_growth_steps = json_params["EXPERIMENTAL_incremental_growth_steps"];
+        initial_smoothing_passes = json_params["EXPERIMENTAL_initial_smoothing_passes"];
         // 4 is the spec's default: a count set to anything else means growth was intended.
         if (!incremental_growth && incremental_growth_steps != 4) {
             log_and_throw_error(

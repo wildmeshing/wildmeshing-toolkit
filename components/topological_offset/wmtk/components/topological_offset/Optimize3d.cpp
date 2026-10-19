@@ -4351,7 +4351,8 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
-    const std::string& label)
+    const std::string& label,
+    const int smoothing_passes)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No offset tube
@@ -4394,9 +4395,12 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // not argued: the collapse and swap energy rules judge a front the split pass has not been
     // placed since.
     const bool interleaved = m_params.interleaved_smoothing;
-    const int k = std::max(
-        1,
-        interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
+    // smoothing_passes > 0: EXPERIMENTAL_initial_smoothing_passes in growth stage 0.
+    const int k = smoothing_passes > 0 ? smoothing_passes
+                                       : std::max(
+                                             1,
+                                             interleaved ? m_params.interleaved_smoothing_passes
+                                                         : m_params.num_smoothing_passes);
     const std::vector<std::array<int, 4>> groups =
         interleaved
             ? std::vector<std::array<int, 4>>{{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}
@@ -5169,7 +5173,11 @@ void TopoOffsetTetMesh::incremental_growth()
             m_offset_params.target_distance,
             m_offset_params.target_distance / delta,
             delta,
-            k == 0 ? ", the distance the march traced to" : "");
+            k == 0 ? fmt::format(
+                         ", the distance the march traced to; {} smoothing pass(es) per block "
+                         "(EXPERIMENTAL_initial_smoothing_passes)",
+                         m_offset_params.initial_smoothing_passes)
+                   : std::string());
         // Parameters::init() refuses front_conv above target_distance itself; a stage's target
         // below it is not refused, only said.
         if (m_offset_params.front_conv > m_offset_params.target_distance) {
@@ -5185,7 +5193,8 @@ void TopoOffsetTetMesh::incremental_growth()
         const bool converged = optimize_offset_loop(
             /*final_stage=*/false,
             /*refine=*/true,
-            fmt::format("incremental growth stage {} / {}", k, n));
+            fmt::format("incremental growth stage {} / {}", k, n),
+            /*smoothing_passes=*/k == 0 ? m_offset_params.initial_smoothing_passes : 0);
         // The loop sets m_iterations_used every turn, and a stage before the last has no final
         // pass to reset it: its turns.
         done += fmt::format(

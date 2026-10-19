@@ -428,12 +428,15 @@ public:
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
     /// init_optimize loop: it returns on convergence without the final TetWild pass and
     /// without deciding the verdict.
-    /// `refine` false skips the halving. `label` names the loop in its log. Returns whether the
-    /// loop converged within max_rounds.
+    /// `refine` false skips the halving. `label` names the loop in its log. `smoothing_passes` > 0
+    /// is the passes of every smoothing block (pre_smooth's and each operation group's) in place
+    /// of interleaved_smoothing_passes / num_smoothing_passes (EXPERIMENTAL_incremental_growth's
+    /// stage 0); 0 = those. Returns whether the loop converged within max_rounds.
     bool optimize_offset_loop(
         bool final_stage = true,
         bool refine = true,
-        const std::string& label = std::string());
+        const std::string& label = std::string(),
+        int smoothing_passes = 0);
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
@@ -446,7 +449,8 @@ public:
     /// growth_stage_target(m_growth_start, target_distance, k, N). Before each stage
     /// target_distance is set to its target and the field rebuilt on it (init_offset_potential());
     /// stages before the last are optimize_offset_loop(false, true) to convergence, their frames
-    /// led by g<k>; stage N is the ordinary loop. A stage before the last that does not converge
+    /// led by g<k>, stage 0's smoothing blocks at EXPERIMENTAL_initial_smoothing_passes passes;
+    /// stage N is the ordinary loop. A stage before the last that does not converge
     /// stops the run there, target_distance and the field set back for the verdict.
     void incremental_growth();
     /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n

@@ -2587,7 +2587,8 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
 
 TEST_CASE("incremental-growth-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_incremental_growth and EXPERIMENTAL_incremental_growth_steps through the spec,
+    // EXPERIMENTAL_incremental_growth, EXPERIMENTAL_incremental_growth_steps and
+    // EXPERIMENTAL_initial_smoothing_passes (default 10, min 1) through the spec,
     // as the app reads them: the defaults (off, 4 steps), values read through, and the refusals
     // -- a step count other than the default with growth off, growth with construction_mode
     // "midpoint_fallback" or with init_optimize, a step count below 1 (the spec's min). Then the
@@ -2607,10 +2608,14 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
     const Parameters by_default(injected(nlohmann::json::object()));
     CHECK_FALSE(by_default.incremental_growth);
     CHECK(by_default.incremental_growth_steps == 4);
+    CHECK(by_default.initial_smoothing_passes == 10);
     const Parameters set(injected(
-        {{"EXPERIMENTAL_incremental_growth", true}, {"EXPERIMENTAL_incremental_growth_steps", 1}}));
+        {{"EXPERIMENTAL_incremental_growth", true},
+         {"EXPERIMENTAL_incremental_growth_steps", 1},
+         {"EXPERIMENTAL_initial_smoothing_passes", 3}}));
     CHECK(set.incremental_growth);
     CHECK(set.incremental_growth_steps == 1);
+    CHECK(set.initial_smoothing_passes == 3);
     const nlohmann::json without_growth = injected({{"EXPERIMENTAL_incremental_growth_steps", 2}});
     CHECK_THROWS(Parameters{without_growth});
     const nlohmann::json midpoint = injected(
@@ -2626,6 +2631,16 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
             with_app(
                 {{"EXPERIMENTAL_incremental_growth", true},
                  {"EXPERIMENTAL_incremental_growth_steps", 0}}),
+            spec));
+    }
+    {
+        // EXPERIMENTAL_initial_smoothing_passes: at least 1 (the spec's min).
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(
+            with_app(
+                {{"EXPERIMENTAL_incremental_growth", true},
+                 {"EXPERIMENTAL_initial_smoothing_passes", 0}}),
             spec));
     }
 
