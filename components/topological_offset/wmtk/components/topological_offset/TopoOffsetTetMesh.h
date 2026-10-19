@@ -1713,9 +1713,15 @@ public:
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
-    /// pull requires. Any other vertex, the front's included, is held by nothing.
+    /// pull requires. A vertex on a tagged rod edge is pulled to the rod's tube, checked first
+    /// as tetwild does (TetWildMesh::smoothing_energy_envelope()): the input's curve is the
+    /// explicit constraint where a vertex is both. Any other vertex, the front's included, is
+    /// held by nothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
     {
+        if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
+            return m_feature_envelope;
+        }
         return vertex_is_held(vid) ? m_envelope : nullptr;
     }
     std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
@@ -2331,6 +2337,18 @@ public:
 
     /// Build the smooth offset potential from the extraction init_input_complex_bvh() kept.
     void init_offset_potential();
+
+    /**
+     * @brief Hold a rod or point input complex with the engine's feature machinery: tag the
+     * mesh edges that tile the rod (TetOptimizerMesh::m_feature_edge_attribute), build the tube
+     * around the input's segments (m_feature_envelope), and anchor the rod's endpoints and the
+     * isolated points (m_feature_points). Nothing for a complex of triangles. After
+     * construct_offset(), whose splits do not carry the engine's tags; before the loop.
+     */
+    void init_input_features();
+    /// After the loop: the tags, the tube and the anchors init_input_features() set up, measured
+    /// rather than assumed -- tagged edges outside the tube, anchors with no vertex in their ball.
+    void audit_input_features() const;
 
     /// The input complex as Phi's primitives: the BOUNDARY triangles of the label-1 tet region
     /// plus the complex's isolated triangles, every edge of those triangles plus the complex's

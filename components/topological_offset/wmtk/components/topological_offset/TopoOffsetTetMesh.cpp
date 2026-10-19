@@ -1073,6 +1073,152 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     // tag-region boundaries, so the per-tag envelopes already hold all of it.
 }
 
+void TopoOffsetTetMesh::init_input_features()
+{
+    // A rod or point input complex has no held face: m_envelope holds faces only
+    // (face_is_held()), so nothing kept its vertices where the input put them. MEASURED (rod
+    // fixture, target 0.2, 15 turns, before this): 8 of the 14 rod vertices off the input
+    // segment, by up to 0.51 target_distance; the rod's own three vertices stayed.
+    // The rod is held as tetwild holds its feature curves, by the engine: the mesh edges that
+    // tile it are tagged, and the shared operations keep the tags and refuse what would take a
+    // tagged edge out of m_feature_envelope (a collapse, a smoothing move) or delete one (a
+    // swap). Its endpoints, and the points of a point complex, are the engine's feature-point
+    // anchors. Triangle complexes are left alone: no tag, no anchor, no tube.
+    const bool rods = m_phi_F.rows() == 0 && m_phi_E.rows() > 0;
+    const bool points = m_phi_F.rows() == 0 && m_phi_E.rows() == 0 && !m_phi_P.empty();
+    if (!rods && !points) return;
+
+    // Registered here, after init(), and only for these complexes. The engine asks for both
+    // before init() so that its sizing covers them; the input complex is known only after it
+    // (label_input_complex()), and with tracking on for every input the shared operations cache
+    // and restore every edge's tag: MEASURED, cube_in (target 1e-2, 15 turns, serial) 10.4 s ->
+    // 15.6 s, the output identical. So each is sized here to the storage init() and the
+    // construction left (the collections only grow, with defaults: no tag, no anchor), which
+    // is what that sizing would have done.
+    enable_feature_edge_tracking();
+    m_feature_edge_attribute.resize(6 * tet_storage_capacity());
+    enable_feature_point_tracking(true);
+    m_feature_point_attribute.resize(vert_storage_capacity());
+
+    // The tube and the balls have the half-width of the envelope that holds the input's faces,
+    // envelope_size: the rod is a part of the input complex, held to the input's tolerance.
+    // tetwild's anchor ball has its tube's radius too.
+    const double eps = m_offset_params.envelope_size;
+    m_feature_eps = eps;
+
+    // The tags. The construction (simplicial_embedding(), the march, the repulsion rounds) splits
+    // through EdgeSplittingTet.cpp, not the shared split, so no tag would survive it: the tags are
+    // derived here, after it, from the labels it does carry. With no face or cell of the complex
+    // (a rod complex has none), an edge labelled 1 is an edge of the input complex itself
+    // (closed_label()): a piece of the rod.
+    size_t n_tagged = 0;
+    std::map<size_t, int> valence; // rod vertices: incident tagged edges
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        const bool tag = rods && m_edge_attribute[eid].label == 1;
+        m_feature_edge_attribute[eid].m_is_feature_edge = tag;
+        if (!tag) continue;
+        ++n_tagged;
+        ++valence[e.vid(*this)];
+        ++valence[e.switch_vertex(*this).vid(*this)];
+    }
+    if (rods) {
+        // Around the input's segments as init_input_complex_bvh() captured them, before the
+        // construction moved anything; separate from m_envelope, which holds faces (see
+        // TetOptimizerMesh::m_feature_envelope).
+        auto tube = std::make_shared<Envelope>(true);
+        tube->init(m_phi_V, m_phi_E, eps);
+        m_feature_envelope = std::move(tube);
+    }
+
+    // The anchors: the rod's endpoints (one incident input segment) and the isolated points, at
+    // their input positions. As in tetwild, a junction (three or more segments) is not
+    // anchored (its allow_junction_cleanup default), nor a vertex inside a rod: the tube holds
+    // those. Each anchor is carried by the complex vertex nearest it, which the construction
+    // leaves where the input put it (MEASURED: at distance 0 on the rod and point fixtures); a
+    // nearest one further than eps is a broken assumption, not a property of the input.
+    std::vector<int> seg_valence(size_t(m_phi_V.rows()), 0);
+    for (int i = 0; i < m_phi_E.rows(); ++i) {
+        ++seg_valence[size_t(m_phi_E(i, 0))];
+        ++seg_valence[size_t(m_phi_E(i, 1))];
+    }
+    std::vector<Vector3d> anchors;
+    for (int i = 0; i < m_phi_V.rows(); ++i) {
+        if (rods && seg_valence[size_t(i)] == 1) anchors.push_back(m_phi_V.row(i).transpose());
+    }
+    for (const int p : m_phi_P) anchors.push_back(m_phi_V.row(p).transpose());
+    std::vector<size_t> complex_vids;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_extra[v.vid(*this)].label == 1) complex_vids.push_back(v.vid(*this));
+    }
+    double worst = 0.;
+    for (const Vector3d& a : anchors) {
+        size_t best = size_t(-1);
+        double bd = std::numeric_limits<double>::infinity();
+        for (const size_t v : complex_vids) {
+            const double d = (m_vertex_attribute[v].m_posf - a).norm();
+            if (d < bd) bd = d, best = v;
+        }
+        if (!(bd <= eps)) {
+            log_and_throw_error(
+                "init_input_features: no input-complex vertex within {} of the input point ({}); "
+                "the nearest is {} away",
+                eps,
+                a.transpose(),
+                bd);
+        }
+        worst = std::max(worst, bd);
+        auto& anchor = m_feature_point_attribute[best];
+        if (anchor.m_feature_point_id != NO_FEATURE_POINT) continue;
+        anchor.m_feature_point_id = m_feature_points.size();
+        m_feature_points.push_back(a);
+    }
+    size_t n_ends = 0, n_junctions = 0;
+    for (const auto& [v, k] : valence) {
+        if (k == 1) ++n_ends;
+        if (k >= 3) ++n_junctions;
+    }
+    logger().info(
+        "\tInput features: {} tet edges tagged ({} rod endpoints, {} junctions in the tags), tube "
+        "half-width {}; {} anchors (ball radius {}), carried by complex vertices at most {} "
+        "from their input positions",
+        n_tagged,
+        n_ends,
+        n_junctions,
+        rods ? eps : 0.,
+        m_feature_points.size(),
+        eps,
+        worst);
+}
+
+void TopoOffsetTetMesh::audit_input_features() const
+{
+    if (!m_track_feature_edges || m_feature_points.empty()) return; // a complex of triangles
+    size_t n_tagged = 0, n_outside = 0;
+    for (const Tuple& e : get_edges()) {
+        if (!m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) continue;
+        ++n_tagged;
+        if (m_feature_envelope &&
+            m_feature_envelope->is_outside(
+                std::array<Eigen::Vector3d, 2>{
+                    {m_vertex_attribute[e.vid(*this)].m_posf,
+                     m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf}})) {
+            ++n_outside;
+        }
+    }
+    double worst = 0.;
+    const auto [kept, total] = feature_retention(&worst);
+    logger().log(
+        n_outside > 0 || kept < total ? spdlog::level::warn : spdlog::level::info,
+        "\tInput features after the loop: {} tagged tet edges, {} of them outside the tube; {} of "
+        "{} anchors with a vertex in their ball (worst {:.3g} ball radii)",
+        n_tagged,
+        n_outside,
+        kept,
+        total,
+        worst);
+}
+
 double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
 {
     if (m_input_solid_winding &&

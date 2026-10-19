@@ -426,6 +426,8 @@ void topological_offset(nlohmann::json json_params)
         igl::Timer timer;
         timer.start();
         mesh.construct_offset(output_filename);
+        // A rod or point complex's tags, tube and anchors, after the construction's splits.
+        mesh.init_input_features();
 
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
@@ -485,6 +487,7 @@ void topological_offset(nlohmann::json json_params)
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             mesh.optimize_offset(output_filename);
+            mesh.audit_input_features();
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the
