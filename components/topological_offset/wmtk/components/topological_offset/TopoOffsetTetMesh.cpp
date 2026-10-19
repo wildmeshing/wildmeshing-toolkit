@@ -1108,16 +1108,46 @@ void TopoOffsetTetMesh::init_offset_potential()
             m_input_complex_envelope,
             m_offset_params.target_distance);
         init_region_potentials(m_offset_params.target_distance, 0.);
-        // The input's triangles as the convex pieces of d, which the energy's band term takes
-        // its min over (see band_cell_term()), on m_input_complex_envelope's per-primitive
-        // queries. A segment that is an edge of a triangle adds nothing to d; an isolated one, or
-        // an isolated point, would be a piece the term does not have.
+        // The convex pieces of d, which the energy's band term takes its min over (see
+        // band_cell_term()), are m_input_complex_envelope's primitives, on its per-primitive
+        // queries: the input's triangles; or, for a complex with no triangles, its segments
+        // (rods), or its isolated points (the degenerate segments (i, i),
+        // euclidean_query_envelope()). Each d_P is the distance to a convex set, so convex, which
+        // is all the corner bound rests on. Each kind is taken alone.
+        // A complex with triangles is unchanged by the segment and point kinds: its envelope
+        // holds the triangles only, and nothing else belongs in it. A segment of such a complex
+        // is an edge of a triangle P (init_input_complex_bvh() refuses any other), so it is a
+        // subset of P and its distance is >= d_P everywhere: its corner mean is never below P's,
+        // and it can never lower the min; the same holds for a triangle's vertex.
+        // A complex of segments and isolated points together is refused: the term would take
+        // its min over both kinds on one envelope, which is well defined (a point is a convex
+        // set), but it stays refused until an input of that kind has been run.
         const size_t isolated = segments_off_triangles(m_phi_E, m_phi_F);
-        if (m_phi_F.rows() == 0 || isolated > 0 || !m_phi_P.empty()) {
+        const bool triangles = m_phi_F.rows() > 0 && isolated == 0 && m_phi_P.empty();
+        const bool segments = m_phi_F.rows() == 0 && isolated > 0 && m_phi_P.empty();
+        const bool points = m_phi_F.rows() == 0 && m_phi_E.rows() == 0 && !m_phi_P.empty();
+        if (!(triangles || segments || points)) {
             log_and_throw_error(
-                "the energy's band term needs an input complex of triangles only ({} "
-                "triangles, {} segments not on a triangle, {} points)",
+                "the energy's band term needs an input complex of one primitive kind: "
+                "triangles only, segments only, or points only ({} triangles, {} segments not "
+                "on a triangle, {} points)",
                 m_phi_F.rows(),
+                isolated,
+                m_phi_P.size());
+        }
+        // EXPERIMENTAL_band_volume_rule "exact" and "front_flux" take triangles only:
+        // ExactBandIntegral's features are the faces, edges and vertices of the input's
+        // triangles, and its envelope must hold triangles (ExactBandIntegral.cpp). Its exactness
+        // rests on regions of features that meet on planes; around segments and points the
+        // distances are line and point distances, whose bisectors are curved almost everywhere,
+        // where "exact" takes rule (a)'s upper bound and "front_flux" throws.
+        const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                                m_offset_params.band_volume_rule == "front_flux";
+        if (exact_rule && !triangles) {
+            log_and_throw_error(
+                "EXPERIMENTAL_band_volume_rule \"{}\" needs an input complex of triangles, and "
+                "this one has {} segments and {} points; use \"corner_bound\"",
+                m_offset_params.band_volume_rule,
                 isolated,
                 m_phi_P.size());
         }
@@ -1134,12 +1164,16 @@ void TopoOffsetTetMesh::init_offset_potential()
         // structure, beside them. It also gives the settle loop's max test its exact max of d
         // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
         // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
-        // nothing else reads it unless one of the other conditions holds.
-        const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                m_offset_params.band_volume_rule == "front_flux";
-        if (exact_rule ||
-            (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
-            m_offset_params.debug_output) {
+        // nothing else reads it unless one of the other conditions holds. Not for a complex of
+        // segments or points: built on no triangles it holds no envelope (its constructor returns
+        // before setting one) and its first query would read through a null pointer. Without it
+        // the settle loop's max test and the frames' outside_f take the corner bound
+        // (min_max_corner_distance(), d_P convex for these primitives too), and the frames have no
+        // band_gap_bars.
+        if (triangles &&
+            (exact_rule ||
+             (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+             m_offset_params.debug_output)) {
             // The band is on the offset side of the input only (ExactBandIntegral's class
             // doc), and that side is outside the label-1 cells whichever way the offset goes:
             // they are the selection for offset_out and everything outside the selection for

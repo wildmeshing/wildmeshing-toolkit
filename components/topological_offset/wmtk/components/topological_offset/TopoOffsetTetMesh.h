@@ -548,7 +548,7 @@ public:
      * engine stores as the cell quality; its MAX_ENERGY (unscoreable) is the cell's energy. vol A^3
      * is vol_amips3(), from the exact AMIPS^3 and the edge lengths, never from a determinant. b is
      * band_cell_term(): the band cell's part of int_B (d - delta) / delta dV, as an upper bound
-     * that no split raises -- vol times the min over all input triangles P of the corner mean of
+     * that no split raises -- vol times the min over all input primitives P of the corner mean of
      * (d_P - delta) / delta. Both terms are volumes, so E converges under refinement. Before the
      * march, while the repulsion runs (m_repulsion_potential set), a cell also carries
      * repulsion_cell_term(); there is no band then. A cell's energy depends on its own four
@@ -686,17 +686,20 @@ public:
     /**
      * @brief b(t), one band cell's part of int_B (d - delta) / delta dV, as an upper bound:
      *
-     *     vol * min over ALL input triangles P of (1/4) sum over the 4 corners q of
+     *     vol * min over ALL input primitives P of (1/4) sum over the 4 corners q of
      *           (d_P(q) - delta) / delta,
      *
-     * d_P the distance to input triangle P alone, delta = target_distance, vol the cell's unsigned
+     * P a primitive of m_input_complex_envelope: an input triangle, or, for an input complex of
+     * rods or of points, a segment or a point (init_offset_potential()). d_P the distance to P
+     * alone, delta = target_distance, vol the cell's unsigned
      * volume (the cell is valid wherever this is read). An upper bound on the exact
      * vol * mean of (d - delta)/delta for every P: d <= d_P, and the convex d_P lies below its
      * linear interpolant. A function of the four corners alone, and no split raises it: each
      * child's min includes the parent's minimiser, whose finer interpolant lies lower. Exact where
-     * one triangle's distance is affine on the cell. Signed: about -vol for a cell at the input,
-     * positive beyond the level set. A volume, as vol AMIPS^3 is. One input region only (the
-     * triangles are the whole input's): refused otherwise.
+     * one triangle's distance is affine on the cell; a segment's or a point's is affine on no
+     * cell. Signed: about -vol for a cell at the input, positive beyond the level set. A volume,
+     * as vol AMIPS^3 is. One input region only (the primitives are the whole input's): refused
+     * otherwise.
      *
      * Why the corner bound rather than a quadrature of d over the cell: corners on the input read
      * (d - delta)/delta = -1 whatever the cell's interior is, so the mean over the four corners and

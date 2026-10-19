@@ -749,7 +749,8 @@ private:
  * @name The band term's searches on the input envelope
  *
  * The distance d to the input is the min over its primitives P (the triangles of
- * TopoOffsetTetMesh::m_input_complex_envelope) of d_P, the distance to P alone,
+ * TopoOffsetTetMesh::m_input_complex_envelope, or its segments, or its points as degenerate
+ * segments) of d_P, the distance to P alone,
  * Envelope::primitive_distance(). Each d_P is convex (the distance to a convex set), which
  * the band term's corner bound needs (TopoOffsetTetMesh::band_cell_term()). These are the
  * searches the band term, the settle loop's face tests and the debug frames run over the P, on
@@ -852,7 +853,7 @@ double face_mean_sq_cos(
  * vertex moving:
  *
  *     E(x) = sum over the vertex's band cells t of  Vol_t(x) * m_t(x),
- *     m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
+ *     m_t(x) = min over ALL input primitives P of (1/4) sum over t's 4 corners q of
  *              (d_P(q) - delta) / delta,
  *
  * the four corners being x and the cell's three fixed ones, Vol_t the cell's signed volume,
@@ -861,7 +862,7 @@ double face_mean_sq_cos(
  *
  * Vol_t(x) = (q1 - x) . ((q2 - q1) x (q3 - q1)) / 6 is affine in x: its gradient is
  * -(q2 - q1) x (q3 - q1) / 6 and its Hessian zero. The gradient and Hessian of m_t are the
- * minimising triangle P's: grad m_t = grad d_P(x) / (4 delta), hess m_t = hess d_P(x) / (4 delta).
+ * minimising primitive P's: grad m_t = grad d_P(x) / (4 delta), hess m_t = hess d_P(x) / (4 delta).
  * So grad E_t = m_t grad Vol + Vol grad m_t and hess E_t = grad Vol grad m_t^T +
  * grad m_t grad Vol^T + Vol hess m_t. The outer-product pair is indefinite in general;
  * polysolve's Newton regularises, and the AMIPS term beside it carries the shape.

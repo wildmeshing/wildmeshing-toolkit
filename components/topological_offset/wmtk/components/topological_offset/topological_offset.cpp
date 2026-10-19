@@ -351,7 +351,7 @@ void topological_offset(nlohmann::json json_params)
         wmtk::logger().info("======= finish =========");
     } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
-        // The energy's band term reads the euclidean distance to the input's triangles; the
+        // The energy's band term reads the euclidean distance to the input's primitives; the
         // smooth field has no band term of its own yet.
         if (params.offset_field != "euclidean") {
             log_and_throw_error(

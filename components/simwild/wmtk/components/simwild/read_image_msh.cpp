@@ -156,6 +156,20 @@ InputData read_image_msh(const std::string& path)
             // dim-first, putting a dim-1 EnvelopeSurface first), every region's name shifted
             // by one and the last region's name vanished (c_shape.msh, 2026-08-31: shape_c's
             // faces reported as a second 'ambient', offset_selection 'shape_c' unresolvable).
+            // The envelope is one dimension below the cells: a surface (dim 2) beside tets, a
+            // curve (dim 1) beside triangles. A curve group beside tets has no reader: it used
+            // to be taken as the envelope surface, its 2-column segment rows read as triangles
+            // downstream (an assert in debug, out of bounds in release). No 3D input in data/
+            // carries one (every 3D group there is a volume or the EnvelopeSurface, 2026-10-16),
+            // and no 3D writer here writes one.
+            if (has_tets && ph.dim == 1) {
+                log_and_throw_error(
+                    "{}: physical group '{}' is a curve (dim 1) in a file with tets; a 3D input "
+                    "takes volume groups and at most one surface (dim 2) group as the envelope, "
+                    "and curve groups are not read in 3D",
+                    path,
+                    ph.name);
+            }
             if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
                 // this must be the envelope surface
                 if (V_envelope.size() != 0) {
