@@ -146,9 +146,11 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
         logger().info("Perform sanity checks...");
-        const auto edges = get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; });
-        for (const auto& verts : edges) {
-            if (surface_segment_is_outside(verts[0], verts[1])) {
+        for (const Tuple& e : get_edges()) {
+            const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
+            if (!attr.m_is_surface_fs) continue;
+            const std::array<size_t, 2> verts{{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+            if (surface_segment_is_outside(verts[0], verts[1], attr)) {
                 logger().error("Edge {} is outside!", verts);
             }
         }

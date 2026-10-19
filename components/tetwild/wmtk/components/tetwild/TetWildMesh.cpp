@@ -114,7 +114,20 @@ std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const siz
     if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
         return m_order2_envelope;
     }
-    return m_envelope;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
+    // -- the member of their union of input sets the vertex is farthest from, as
+    // topological_offset pulls a junction vertex. The containment check holds every face to its
+    // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
+    // strays from most. A vertex flagged on the surface with no tracked face left (a stale
+    // flag) has no inputs, and keeps the union's pull.
+    uint16_t set = 0;
+    const auto& FA = std::as_const(m_face_attribute);
+    for (const simplex::Face& f : get_surface_faces_for_vertex(vid).faces()) {
+        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
 }
 
 

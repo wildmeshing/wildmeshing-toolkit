@@ -18,12 +18,15 @@ namespace wmtk {
  */
 class SurfaceTagAttributes
 {
-    // Three bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
-    // orientation count that is +-1 or 0 almost everywhere -- but as int the struct was 12
-    // bytes, and the 3D meshes carry four of these per tet slot (the 2D ones three per triangle
-    // slot) in storage preallocated several times over: on the largest tetwild inputs that alone
-    // was most of a gigabyte. The class and the orientation share a byte as bitfields; both are
-    // int8_t so every compiler packs them together.
+    // Five bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
+    // orientation count that is +-1 or 0 almost everywhere, a 16-bit input set -- but as int the
+    // struct was 12 bytes, and the 3D meshes carry four of these per tet slot (the 2D ones three
+    // per triangle slot) in storage preallocated several times over: on the largest tetwild
+    // inputs that alone was most of a gigabyte. The class and the orientation share a byte as
+    // bitfields; both are int8_t so every compiler packs them together. The input set took it
+    // from 3 to 5 bytes, 8 more per tet slot: on Thingi10K 46024, the largest tetwild input of
+    // the challenging set (156k tets after insertion, two iterations), peak RSS went from 1006
+    // to 1017 MB (+1.1%), the simplification's per-face input id included.
 public:
     // Bitfields cannot take default member initializers before C++20.
     SurfaceTagAttributes()
@@ -85,6 +88,36 @@ public:
     int8_t m_orientation : 5;
     static constexpr int max_orientation = 15;
 
+    /**
+     * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. 16 inputs at
+     * most.
+     *
+     * The invariant it carries: a tracked simplex stays within eps of EVERY input in its set --
+     * not merely of the union of all inputs, which is what one envelope around everything
+     * enforces. With one envelope the solid's tracked boundary may ride on a sheet that crosses
+     * it: measured on Thingi10K 104509 cut by a wavy sheet (eps 0.1956), 12 of the 9532 tracked
+     * faces separating the solid's inside from its outside ended up farther than eps from the
+     * solid (at most 3.61 eps), 7 of them within eps of the sheet, and kept tets reached a sheet
+     * vertex 2.50 eps outside the solid. One bit per simplex usually; several where inputs
+     * coincide, and then the simplex is held by all of them.
+     *
+     * Set at insertion from the arrangement's provenance (tetwild, triwild); 0 on a mesh whose
+     * application never set it, which then answers containment without it. The operations carry
+     * it like every other field here: a split's halves copy it, merge() -- the faces a collapse
+     * makes one -- takes the union, and a surface flip gives both new simplices the union of the
+     * two it replaces. Two bytes rather than one uint16_t so the struct keeps alignment 1: five
+     * bytes, not six.
+     */
+    uint16_t input_set() const { return uint16_t(m_input_set_lo | (m_input_set_hi << 8)); }
+    void set_input_set(uint16_t s)
+    {
+        m_input_set_lo = uint8_t(s & 0xff);
+        m_input_set_hi = uint8_t(s >> 8);
+    }
+    static constexpr int max_inputs = 16;
+    uint8_t m_input_set_lo = 0;
+    uint8_t m_input_set_hi = 0;
+
     /// +1 if `v` is an even permutation of its ascending sort, -1 if odd. N is 2 or 3.
     template <size_t N>
     static int ascending_parity(const std::array<size_t, N>& v)
@@ -122,17 +155,20 @@ public:
         m_is_bbox_fs = -1;
         m_surface_class = 0;
         m_orientation = 0;
+        set_input_set(0);
     }
 
-    /// Does NOT combine m_orientation -- see there; the caller converts and sums it.
+    /// Does NOT combine m_orientation -- see there; the caller converts and sums it. The input
+    /// sets unite: the one simplex left covers what both covered.
     void merge(const SurfaceTagAttributes& attr)
     {
         m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
         if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
         if (attr.m_surface_class != 0) m_surface_class = attr.m_surface_class;
+        set_input_set(input_set() | attr.input_set());
     }
 };
 
-static_assert(sizeof(SurfaceTagAttributes) == 3, "keep the surface tags byte-sized");
+static_assert(sizeof(SurfaceTagAttributes) == 5, "keep the surface tags byte-sized");
 
 } // namespace wmtk

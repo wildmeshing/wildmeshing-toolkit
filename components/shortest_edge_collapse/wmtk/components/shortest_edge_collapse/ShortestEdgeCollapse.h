@@ -34,6 +34,15 @@ struct VertexAttributes
     bool input_boundary = false;
 };
 
+/// Which input a face came from, when the caller says (create_mesh's tri_input); -1 otherwise.
+/// A collapse keeps every surviving face in its slot, renaming only a vertex, and
+/// consolidate_mesh() moves the attribute with the face, so the simplified face still knows its
+/// input: what tetwild needs to hold each tracked face to its own input's envelope.
+struct FaceAttributes
+{
+    int input = -1;
+};
+
 class ShortestEdgeCollapse : public wmtk::TriMesh
 {
 public:
@@ -44,6 +53,7 @@ public:
     /// initialized() is false otherwise, and for a closed input.
     wmtk::BoundaryEnvelope m_boundary_envelope;
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
+    wmtk::AttributeCollection<FaceAttributes> face_attrs;
 
     int retry_limit = 10;
     ShortestEdgeCollapse(
@@ -66,13 +76,15 @@ public:
      *     is not judged, as with a frozen boundary: with the link condition off, simplifying a
      *     dense closed patch passes through such transient tears, and refusing them leaves it
      *     stuck as a non-manifold tangle (Thingi10K 55928, the second eye).
+     * @param tri_input    optional, per triangle: the input it came from, into face_attrs.
      */
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
         const std::vector<size_t>& frozen_verts = {},
         double eps = 0,
-        double boundary_eps = 0);
+        double boundary_eps = 0,
+        const std::vector<int>& tri_input = {});
 
     ~ShortestEdgeCollapse() {}
 

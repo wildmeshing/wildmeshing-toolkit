@@ -286,6 +286,12 @@ bool TetOptimizerMesh::prepare_surface_flip(
             cache.sf_face_attr = m_face_attribute[fid];
         } else if (n_surf == 1) {
             d = r;
+            // Each new face covers part of both old ones, so both carry the union of their input
+            // sets, and the containment check in the after-hook holds them to every input in it.
+            // A flip across two inputs' faces is therefore taken only where the new faces lie
+            // within eps of both; nothing else refuses it.
+            cache.sf_face_attr.set_input_set(
+                cache.sf_face_attr.input_set() | m_face_attribute[fid].input_set());
             // The flip replaces k[a,b,c] + k[b,a,d] by k[c,a,d] + k[d,b,c], which bounds the
             // same loop when the two faces carry the same k, i.e. are oriented alike across
             // (a,b). When they do not (a fold, or unequal multiplicities) no flip of this
@@ -437,9 +443,9 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the
         // Hausdorff envelope, exactly like a surface-edge collapse.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
     }
 
@@ -766,9 +772,9 @@ bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope,
         // exactly like a surface-edge collapse / the 3->2 surface flip.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
     }
 
@@ -916,9 +922,9 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d, cache.sf_face_attr))
             return swap_reject(SwapReject::after_envelope);
     }
 

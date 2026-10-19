@@ -1550,7 +1550,8 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 3> vids = get_face_vids(f);
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face(vids);
+        const std::shared_ptr<SampleEnvelope> env =
+            surface_envelope_for_face(vids, m_face_attribute[f.fid(*this)]);
         if (!env) continue;
         ++n_held;
         const std::array<Vector3d, 3> p{
@@ -1883,7 +1884,7 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
                         const size_t fid = std::get<1>(*found);
                         if (!m_face_attribute[fid].m_is_surface_fs) continue;
                         const std::shared_ptr<SampleEnvelope> env =
-                            surface_envelope_for_face({{a, b, w}});
+                            surface_envelope_for_face({{a, b, w}}, m_face_attribute[fid]);
                         if (!env) continue;
                         const Vector3d mid = 0.5 * (pa + pb);
                         const Vector3d& pw = m_vertex_attribute[w].m_posf;

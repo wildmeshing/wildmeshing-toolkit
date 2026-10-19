@@ -454,29 +454,42 @@ public:
     int edge_incident_surface_face_count(const Tuple& e);
 
     /**
-     * @brief Envelope the tracked-surface triangle `vids` must stay inside.
+     * @brief Envelope the tracked-surface triangle `vids` must stay inside, given the
+     * attributes `attr` it carries -- or, for a triangle an operation is creating, the ones the
+     * operation is about to write there.
      *
      * Null means this triangle carries no containment requirement, and every containment check
-     * on it is skipped. Both applications that track a single surface keep one envelope for it,
-     * so the default answers with that; an application tracking more than one surface (see
-     * SurfaceTagAttributes::m_surface_class) overrides this to answer per class -- the offset
-     * boundary, for instance, is free to move and is checked against nothing.
+     * on it is skipped. The default answers with the one surface envelope; tetwild answers with
+     * the envelopes of the face's input set (SurfaceTagAttributes::input_set()), and an
+     * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
+     * answers per class -- the offset boundary, for instance, is free to move and is checked
+     * against nothing.
      *
      * Keyed on the vertex ids rather than the fid because every caller is a topological
      * operation asking about the triangles it is ABOUT to create or has just created, where
-     * only the vids are known for certain.
+     * only the vids are known for certain. The attributes come from the caller for the same
+     * reason: a new triangle's own slot is written only after the check -- a collapse checks
+     * its faces before it writes their attributes back, a split before it writes its halves --
+     * and until then may hold a recycled face's. Every operation knows the face it is deriving
+     * the new one from, and passes what it will write.
      */
     virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids) const
+        const std::array<size_t, 3>& vids,
+        const FaceAttributes& attr) const
     {
         return m_envelope;
     }
 
-    /// Whether the tracked-surface triangle (a,b,c) is outside its containment envelope. False
-    /// when it has none. Every surface containment check in the operations goes through here.
-    bool surface_triangle_is_outside(const size_t a, const size_t b, const size_t c) const
+    /// Whether the tracked-surface triangle (a,b,c) with attributes `attr` (see
+    /// surface_envelope_for_face()) is outside its containment envelope. False when it has none.
+    /// Every surface containment check in the operations goes through here.
+    bool surface_triangle_is_outside(
+        const size_t a,
+        const size_t b,
+        const size_t c,
+        const FaceAttributes& attr) const
     {
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face({{a, b, c}});
+        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face({{a, b, c}}, attr);
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside({{VA[a].m_posf, VA[b].m_posf, VA[c].m_posf}});
@@ -601,12 +614,31 @@ public:
         override;
 
     /**
-     * @brief Envelope the resulting surface triangles are checked against.
+     * @brief Envelope the smoother checks tracked face `face` (attributes `attr`) at the moved
+     * vertex `vid` against; null skips the face.
      *
-     * The surface envelope is shared by both applications. A derived mesh may additionally
-     * select an order-2 feature envelope for the pull energy.
+     * By default the face's own containment, surface_envelope_for_face() -- the one every
+     * operation's check takes, so a move and an operation hold a face to the same set. It used
+     * to be ONE envelope per vertex for all its faces, which cannot be right once faces at one
+     * vertex belong to different inputs: a vertex where the solid's boundary meets a sheet
+     * crossing it would hold the solid's faces to the sheet's envelope too, or the reverse.
+     * topological_offset keeps its per-vertex answer by overriding this.
+     *
+     * The pull (smoothing_energy_envelope()) stays one real envelope per vertex: the pull calls
+     * the non-virtual SampleEnvelope queries, which a composite cannot answer.
      */
-    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(
+        const size_t /*vid*/,
+        const std::array<size_t, 3>& face,
+        const FaceAttributes& attr) const
+    {
+        return surface_envelope_for_face(face, attr);
+    }
+    /**
+     * @brief Envelope a surface vertex is pulled toward while smoothing. A real envelope, never a
+     * composite (see smoothing_containment_envelope()). A derived mesh may select an order-2 or
+     * feature envelope here.
+     */
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
     /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
@@ -1056,7 +1088,10 @@ protected:
         double max_energy = 0.;
         double edge_length = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        std::vector<std::array<size_t, 3>> surface_faces;
+        /// The tracked faces (v1,x,y) the collapse moves, as (v2,x,y), each with the attributes
+        /// it will carry -- its own, or the merged ones of changed_faces where it becomes one
+        /// face with (v2,x,y) -- for the containment check, which runs before they are written.
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> surface_faces;
         /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
         /// the orientation measured along that order. Their attribute stays in its slot, so
         /// without this the value would be read against the wrong vertex set.

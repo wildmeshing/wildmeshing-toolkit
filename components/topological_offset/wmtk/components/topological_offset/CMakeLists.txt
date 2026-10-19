@@ -9,7 +9,6 @@ endif()
 
 set(SRC_FILES
 	TopoOffsetTetMesh.h
-	TagEnvelopes.hpp
 	TopoOffsetTetMesh.cpp
 	Optimize3d.cpp
 	FrontSmooth3d.cpp

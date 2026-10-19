@@ -258,6 +258,22 @@ void triwild(nlohmann::json json_params)
     const double remove_duplicate_eps =
         params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
     wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
+    // Which input each segment of the union came from (read_input_curves concatenates them in
+    // order), carried through the simplification and the arrangement so each tracked segment
+    // is held to its own inputs' envelopes. 16 inputs at most: see
+    // SurfaceTagAttributes::input_set().
+    if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        log_and_throw_error(
+            "{} input curve files; at most {} are supported",
+            input_paths.size(),
+            SurfaceTagAttributes::max_inputs);
+    }
+    const bool per_input = input_paths.size() > 1;
+    std::vector<int> E_in_input;
+    for (size_t k = 0; k < Es.size(); ++k) {
+        E_in_input.insert(E_in_input.end(), Es[k].rows(), int(k));
+    }
+    assert(E_in_input.size() == size_t(E_in.rows()));
 
     // Input point files: every vertex is a feature point, appended to V_in as an isolated
     // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
@@ -363,17 +379,22 @@ void triwild(nlohmann::json json_params)
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
+    std::vector<int> E_simp_input = E_in_input;
     const bool skip_simplify = json_params["skip_simplify"];
     if (skip_simplify) {
         logger().info("skip simplification");
     } else {
         SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
+        std::vector<int> surviving;
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,
             E_simp,
             simplify_envelope,
-            simplify_use_link_condition);
+            simplify_use_link_condition,
+            &surviving);
+        E_simp_input.resize(surviving.size());
+        for (size_t i = 0; i < surviving.size(); ++i) E_simp_input[i] = E_in_input[surviving[i]];
         logger().info(
             "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed). Link "
             "condition {}.",
@@ -412,6 +433,7 @@ void triwild(nlohmann::json json_params)
     // The input's direction on each constraint edge, so the tracked curves can be oriented as
     // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
     std::vector<int> E_orientation;
+    std::vector<std::vector<int>> E_sources; // with several inputs only
     wmtk::utils::embed_segments(
         V_simp,
         E_simp,
@@ -419,9 +441,29 @@ void triwild(nlohmann::json json_params)
         V_rational,
         F,
         E,
-        nullptr,
+        per_input ? &E_sources : nullptr,
         &E_orientation,
         free_points.empty() ? nullptr : &point_map);
+    // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
+    // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
+    // several inputs in 3D -- and then the edge is held to all of them. Counted.
+    std::vector<uint16_t> E_input_set;
+    if (per_input) {
+        E_input_set.assign(E.rows(), 0);
+        size_t n_several = 0;
+        for (int i = 0; i < E.rows(); ++i) {
+            for (const int src : E_sources[i]) {
+                E_input_set[i] |= uint16_t(1u << E_simp_input[src]);
+            }
+            const uint16_t set = E_input_set[i];
+            if ((set & (set - 1)) != 0) ++n_several;
+        }
+        logger().info(
+            "input sets: {} constraint edges, {} with several inputs",
+            E.rows(),
+            n_several);
+        std::vector<std::vector<int>>().swap(E_sources);
+    }
 
     // Find each free point's vertex in the arrangement. By POSITION, not by index: the
     // simplification compacts V, so input row ids do not survive it -- but an isolated
@@ -522,6 +564,7 @@ void triwild(nlohmann::json json_params)
         /*simplification_ran=*/!skip_simplify);
     const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
     const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
+    const std::vector<int>& E_env_input = env_around_simplified ? E_simp_input : E_in_input;
     if (env_around_simplified) {
         logger().info(
             "optimization envelope: eps {:.6} ({}) around the {} curves (#V {}, #E {})",
@@ -534,7 +577,18 @@ void triwild(nlohmann::json json_params)
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, &E_orientation, free_point_vids);
+    mesh.init_mesh(
+        V,
+        V_rational,
+        F,
+        E,
+        tag_names,
+        V_env,
+        E_env,
+        &E_orientation,
+        free_point_vids,
+        per_input ? &E_env_input : nullptr,
+        per_input ? &E_input_set : nullptr);
     // The arrangement now lives in `mesh`. These are function locals, so without this they --
     // the exact coordinates above all -- would be held through the optimization, which is where
     // the run peaks.
@@ -543,6 +597,7 @@ void triwild(nlohmann::json json_params)
     E.resize(0, 0);
     std::vector<Vector2r>().swap(V_rational);
     std::vector<int>().swap(E_orientation);
+    std::vector<uint16_t>().swap(E_input_set);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -551,6 +606,9 @@ void triwild(nlohmann::json json_params)
             "DEBUG_disable_envelope: envelope checks are OFF for the triangulation. "
             "The output has no containment guarantee and is for diagnosis only.");
         mesh.m_envelope->disabled = true;
+        for (size_t k = 0; k < mesh.m_input_envelopes.size(); ++k) {
+            if (mesh.m_input_envelopes.member(k)) mesh.m_input_envelopes.member(k)->disabled = true;
+        }
     }
 
     if (params.debug_output) {

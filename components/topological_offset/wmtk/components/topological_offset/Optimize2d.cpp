@@ -1267,7 +1267,7 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
             ++n_other;
 
         // Exactly the dispatch the sanity check uses, so this cannot disagree with it.
-        if (!surface_segment_is_outside(vids[0], vids[1])) continue;
+        if (!surface_segment_is_outside(vids[0], vids[1], m_edge_attribute[eid])) continue;
 
         Bad r;
         r.a = vids[0];
@@ -1660,7 +1660,8 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
                 const auto [_, eid] = tuple_from_edge({{a, b}});
                 v = kFree;
                 if (m_edge_attribute[eid].m_is_surface_fs) {
-                    const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_edge({{a, b}});
+                    const std::shared_ptr<SampleEnvelope> env =
+                        surface_envelope_for_edge({{a, b}}, m_edge_attribute[eid]);
                     if (env) {
                         const Vector2d mid = 0.5 * (pa + pb);
                         if (env->is_outside(std::array<Vector2d, 2>{{pa, mid}}) ||

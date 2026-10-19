@@ -290,8 +290,9 @@ struct SmoothVertexOptions
  *     one-ring (TetOptimizerMesh: the max of smoothing_cell_energy() unless overridden)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
- *     and smoothing_containment_envelope(size_t vid) const
  *     (null is allowed and means "no envelope term for this vertex"; both dimensions)
+ *   - smoothing_containment_envelope(vid, face, attr) const per incident tracked face, with
+ *     m_face_attribute (null skips the face)
  *   - std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(size_t vid) const
  *     (null is allowed and means "AMIPS plus the envelope, as before")
  *
@@ -520,17 +521,20 @@ bool smooth_vertex_3d(
         return false;
     }
 
-    // Containment: every surface triangle at this vertex must still be inside. Checked
-    // against the containment envelope, which is not necessarily the one it was pulled to.
-    const std::shared_ptr<SampleEnvelope> check_env =
-        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : nullptr;
-    if (check_env) {
+    // Containment: every surface triangle at this vertex must still be inside -- each in the
+    // envelope smoothing_containment_envelope() gives that face, by default its own input set's,
+    // which is not necessarily the one the vertex was pulled to.
+    if (VA[vid].m_is_on_surface) {
+        const auto& FA_read = std::as_const(m.m_face_attribute);
         const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
         for (const simplex::Face& f : surf.faces()) {
+            const auto& fv = f.vertices();
+            const size_t fid = std::get<1>(m.tuple_from_face(fv));
+            const std::shared_ptr<SampleEnvelope> check_env =
+                m.smoothing_containment_envelope(vid, fv, FA_read[fid]);
+            if (!check_env) continue;
             const std::array<Eigen::Vector3d, 3> face = {
-                {VA_read[f.vertices()[0]].m_posf,
-                 VA_read[f.vertices()[1]].m_posf,
-                 VA_read[f.vertices()[2]].m_posf}};
+                {VA_read[fv[0]].m_posf, VA_read[fv[1]].m_posf, VA_read[fv[2]].m_posf}};
             if (check_env->is_outside(face)) {
                 if (counters) ++counters->envelope;
                 return false;
@@ -584,7 +588,8 @@ bool smooth_vertex_3d(
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
  *       writes the working position and its exact/rational copy together
- *   - m_envelope, used for both the surface pull energy and containment
+ *   - smoothing_energy_envelope(vid), the pull, and smoothing_containment_envelope(vid, edge,
+ *     attr) per incident tracked segment, with m_edge_attribute (null skips the segment)
  */
 template <class Mesh>
 bool smooth_vertex_2d(
@@ -677,13 +682,17 @@ bool smooth_vertex_2d(
     // Neighbours along the incident surface edges, captured before the solve. Only `vid`
     // moves, so their positions are the same either way, but taking them first matches what
     // both applications did and keeps the assert below meaningful.
+    // The segments themselves are kept too, for the per-segment containment below.
     std::vector<Vector2d> surf_neighbors;
+    std::vector<std::array<size_t, 2>> surf_edges;
     if (VA[vid].m_is_on_surface) {
         const simplex::SimplexCollection es = m.get_surface_edges_for_vertex(vid);
         surf_neighbors.reserve(es.edges().size());
+        surf_edges.reserve(es.edges().size());
         for (const simplex::Edge& e : es.edges()) {
             const auto& evs = e.vertices();
             surf_neighbors.push_back(m.smoothing_position(evs[0] != vid ? evs[0] : evs[1]));
+            surf_edges.push_back(evs);
         }
         assert(!surf_neighbors.empty());
     }
@@ -799,12 +808,17 @@ bool smooth_vertex_2d(
         return false;
     }
 
-    // Containment, edge by edge rather than face by face as in 3D -- and against the
-    // CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
-    if (const std::shared_ptr<SampleEnvelope> hold_env = m.smoothing_containment_envelope(vid)) {
+    // Containment, edge by edge rather than face by face as in 3D -- each segment against its
+    // own CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
+    {
+        const auto& EA_read = std::as_const(m.m_edge_attribute);
         const Vector2d p = m.smoothing_position(vid);
-        for (const Vector2d& q : surf_neighbors) {
-            const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
+        for (size_t i = 0; i < surf_neighbors.size(); ++i) {
+            const size_t eid = std::get<1>(m.tuple_from_edge(surf_edges[i]));
+            const std::shared_ptr<SampleEnvelope> hold_env =
+                m.smoothing_containment_envelope(vid, surf_edges[i], EA_read[eid]);
+            if (!hold_env) continue;
+            const std::array<Eigen::Vector2d, 2> edge = {{p, surf_neighbors[i]}};
             if (hold_env->is_outside(edge)) {
                 if (counters) ++counters->envelope;
                 return false;

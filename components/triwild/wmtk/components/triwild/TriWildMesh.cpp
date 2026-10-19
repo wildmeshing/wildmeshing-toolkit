@@ -48,7 +48,9 @@ void TriWildMesh::init_mesh(
     const MatrixXd& V_env,
     const MatrixXi& E_env,
     const std::vector<int>* E_orientation,
-    const std::vector<size_t>& free_point_vids)
+    const std::vector<size_t>& free_point_vids,
+    const std::vector<int>* E_env_input,
+    const std::vector<uint16_t>* E_input_set)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -172,8 +174,9 @@ void TriWildMesh::init_mesh(
             p2[1]);
     }
 
-    // mark edges as on surface if they are in E
+    // mark edges as on surface if they are in E, each with its input set (one input: input 0)
     assert(E_orientation == nullptr || E_orientation->size() == size_t(E.rows()));
+    assert(E_input_set == nullptr || E_input_set->size() == size_t(E.rows()));
     for (int i = 0; i < E.rows(); i++) {
         std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
@@ -181,6 +184,7 @@ void TriWildMesh::init_mesh(
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
+        m_edge_attribute[eid].set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
         if (E_orientation != nullptr) {
             m_edge_attribute[eid].set_orientation_along(vids, (*E_orientation)[i]);
         }
@@ -289,6 +293,47 @@ void TriWildMesh::init_mesh(
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
+
+    // One envelope per input, around its own rows of the same curves, at the same eps and
+    // predicate: what each tracked segment is held to through its input set. With one input the
+    // member would BE m_envelope, so none is built.
+    if (E_env_input != nullptr) {
+        assert(E_env_input->size() == m_E_envelope.size());
+        const int n_inputs = 1 + *std::max_element(E_env_input->begin(), E_env_input->end());
+        std::vector<std::shared_ptr<SampleEnvelope>> members;
+        for (int k = 0; k < n_inputs; ++k) {
+            // This input's segments over its own vertices only: an envelope keeps a copy of
+            // the vertices it is given.
+            std::vector<int> local(m_V_envelope.size(), -1);
+            std::vector<Vector2d> V_k;
+            std::vector<Vector2i> E_k;
+            for (size_t i = 0; i < m_E_envelope.size(); ++i) {
+                if ((*E_env_input)[i] != k) continue;
+                Vector2i e;
+                for (int j = 0; j < 2; ++j) {
+                    int& l = local[m_E_envelope[i][j]];
+                    if (l < 0) {
+                        l = int(V_k.size());
+                        V_k.push_back(m_V_envelope[m_E_envelope[i][j]]);
+                    }
+                    e[j] = l;
+                }
+                E_k.push_back(e);
+            }
+            if (E_k.empty()) {
+                members.push_back(nullptr); // no segment, so no tracked segment to hold
+                continue;
+            }
+            auto env = std::make_shared<SampleEnvelope>(!m_tri_params.use_sample_envelope);
+            env->init(V_k, E_k, m_envelope_eps);
+            members.push_back(std::move(env));
+        }
+        m_input_envelopes.set(std::move(members));
+        logger().info(
+            "per-input envelopes: {} inputs, each tracked segment held to the envelopes of its "
+            "own",
+            m_input_envelopes.size());
+    }
 
     // Sanity check: All surface edges must be inside the envelope. Opt-in: see
     // Parameters::check_envelope_at_init for why it is not worth its cost by default.
@@ -852,6 +897,21 @@ std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) co
         }
     }
     return {kept, m_feature_points.size()};
+}
+
+std::shared_ptr<SampleEnvelope> TriWildMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
+    // inputs, and keeps the union's pull.
+    uint16_t set = 0;
+    const auto& EA = std::as_const(m_edge_attribute);
+    for (const simplex::Edge& e : get_surface_edges_for_vertex(vid).edges()) {
+        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
 }
 
 bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const

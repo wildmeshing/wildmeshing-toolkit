@@ -6,6 +6,7 @@
 #include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <algorithm>
+#include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
@@ -115,6 +116,24 @@ public:
     /// edge. Named for the order rather than for "open boundary" because that is what
     /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
     std::shared_ptr<SampleEnvelope> m_order2_envelope;
+
+    /**
+     * @brief One envelope per input surface, when there are several: a tracked face is held to
+     * those of its input set (FaceAttributes::input_set()), m_envelope stays their union.
+     *
+     * Empty with one input, and then every face is held to m_envelope as it always was. Built
+     * by the driver around the same surface as m_envelope, at the same eps and predicate.
+     */
+    wmtk::InputEnvelopes m_input_envelopes;
+
+    /// A tracked face's containment: the envelopes of its input set (see m_input_envelopes).
+    std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+        const std::array<size_t, 3>& vids,
+        const FaceAttributes& attr) const override
+    {
+        if (m_input_envelopes.empty()) return m_envelope;
+        return m_input_envelopes.containment(attr.input_set());
+    }
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.
@@ -450,6 +469,11 @@ public:
      * output ids, see utils::EmbedFeaturesResult), which is required when features are
      * passed. Features and their forcing-triangle apexes must lie inside the background
      * box; the caller grows the input bounding box over them (tetwild.cpp does).
+     *
+     * `face_input` (optional, per face of `faces`: the input it came from, -1 for none) asks
+     * for `facet_input_set`: per facet of `facets_after`, the inputs it covers, one bit each --
+     * the union over the coplanar groups of input triangles the facet tiles, of the inputs of
+     * their triangles. Zero off the input surface.
      */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
@@ -463,11 +487,16 @@ public:
         const std::vector<Vector3d>& feature_edge_vertices = {},
         const std::vector<std::array<size_t, 2>>& feature_edges = {},
         const std::vector<Vector3d>& feature_points = {},
-        utils::EmbedFeaturesResult* features_out = nullptr);
+        utils::EmbedFeaturesResult* features_out = nullptr,
+        const std::vector<int>* face_input = nullptr,
+        std::vector<uint16_t>* facet_input_set = nullptr);
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers
      * m_edge_attribute with p_edge_attrs. Null => no feature tracking, nothing allocated.
+     *
+     * `facet_input_set` (from insertion_by_volumeremesher) gives each tracked face its input
+     * set; null => one input, and every tracked face gets input 0.
      */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
@@ -477,7 +506,8 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<Vector3d>* feature_anchors = nullptr);
+        const std::vector<Vector3d>* feature_anchors = nullptr,
+        const std::vector<uint16_t>* facet_input_set = nullptr);
 
     void init_from_file(std::string input_dir);
 

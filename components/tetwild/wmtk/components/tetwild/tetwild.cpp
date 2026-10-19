@@ -257,6 +257,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         MatrixXd V;
         MatrixXi F;
         io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
+        // Each tracked face records the inputs it covers in 16 bits (see
+        // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
+        // own inputs. Refused here, before any work, rather than answered by the union.
+        if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+            log_and_throw_error(
+                "{} input surfaces; at most {} are supported",
+                input_paths.size(),
+                SurfaceTagAttributes::max_inputs);
+        }
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -462,7 +471,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tris,
         modified_nonmanifold_v,
         simplify_eps,
-        simplify_boundary_eps);
+        simplify_boundary_eps,
+        tri_input);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
@@ -534,12 +544,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         vsimp[i] = surf_mesh.vertex_attrs[i].pos;
     }
 
+    // Which input each simplified face came from: the arrangement's provenance names input
+    // triangles, and the tracked faces it tiles them with are held to their inputs' envelopes.
+    // -1 for a slot no face fills.
+    std::vector<int> fsimp_input(fsimp.size(), -1);
     for (auto& t : surf_mesh.get_faces()) {
         auto i = t.fid(surf_mesh);
         auto vs = surf_mesh.oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
+        fsimp_input[i] = surf_mesh.face_attrs[i].input;
     }
     surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
     t_simplify = phase_timer.getElapsedTime(); // surface simplification done
@@ -618,6 +633,49 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tet_envelope->init(env_V, env_F, opt_eps);
     }
 
+    // One envelope per input, around the same surface as tet_envelope and at the same eps, with
+    // the same predicate: what each tracked face is held to, through its input set
+    // (TetWildMesh::surface_envelope_for_face). tet_envelope stays the union for the uses that
+    // need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
+    // finalization. With one input the member would BE tet_envelope, so none is built and every
+    // face is held to tet_envelope exactly as before.
+    std::vector<std::shared_ptr<wmtk::SampleEnvelope>> input_envelopes;
+    if (input_paths.size() > 1) {
+        const std::vector<Eigen::Vector3d>& src_V = env_around_simplified ? vsimp : verts;
+        const std::vector<std::array<size_t, 3>>& src_F = env_around_simplified ? fsimp : tris;
+        const std::vector<int>& src_input = env_around_simplified ? fsimp_input : tri_input;
+        for (size_t k = 0; k < input_paths.size(); ++k) {
+            // This input's triangles over its own vertices only: an envelope keeps a copy of
+            // the vertices it is given.
+            std::vector<int64_t> local(src_V.size(), -1);
+            std::vector<Eigen::Vector3d> V_k;
+            std::vector<Eigen::Vector3i> F_k;
+            for (size_t i = 0; i < src_F.size(); ++i) {
+                if (src_input[i] != int(k)) continue;
+                Eigen::Vector3i f;
+                for (int j = 0; j < 3; ++j) {
+                    int64_t& l = local[src_F[i][j]];
+                    if (l < 0) {
+                        l = int64_t(V_k.size());
+                        V_k.push_back(src_V[src_F[i][j]]);
+                    }
+                    f[j] = int(l);
+                }
+                F_k.push_back(f);
+            }
+            if (F_k.empty()) {
+                input_envelopes.push_back(nullptr); // no triangle, so no face to hold
+                continue;
+            }
+            auto env = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
+            env->init(V_k, F_k, opt_eps);
+            input_envelopes.push_back(std::move(env));
+        }
+        logger().info(
+            "per-input envelopes: {} inputs, each tracked face held to the envelopes of its own",
+            input_envelopes.size());
+    }
+
     // params.eps is deliberately NOT narrowed to match.
     //
     // It looks like it should be -- the veto now uses opt_eps -- but params.eps also sets
@@ -641,6 +699,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
             "The output has no containment guarantee and is for diagnosis only.");
         tet_envelope->disabled = true;
+        for (const auto& env : input_envelopes) {
+            if (env) env->disabled = true;
+        }
     }
 
     // The background mesh exists only to be cut by the insertion; held by pointer so it can be
@@ -702,6 +763,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // Exact arrangement of the simplified surface against a Delaunay background
     // mesh; the remesher's own tets are used directly, so no Steiner points.
     utils::EmbedFeaturesResult features_out;
+    std::vector<uint16_t> facet_input_set; // per facet, with several inputs only
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -714,7 +776,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         feature_edge_vertices,
         feature_edges,
         feature_points,
-        &features_out);
+        &features_out,
+        input_envelopes.empty() ? nullptr : &fsimp_input,
+        input_envelopes.empty() ? nullptr : &facet_input_set);
 
     if (!feature_edges.empty() || !feature_points.empty()) {
         size_t tiling_edges = 0;
@@ -767,7 +831,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr);
+        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr,
+        input_envelopes.empty() ? nullptr : &facet_input_set);
+    mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
     // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
     // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
@@ -804,8 +870,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     std::vector<std::array<size_t, 4>>().swap(tets);
     std::vector<bool>().swap(tet_face_on_input_surface);
     std::vector<int8_t>().swap(tet_face_orientation);
+    std::vector<uint16_t>().swap(facet_input_set);
     std::vector<Eigen::Vector3d>().swap(vsimp);
     std::vector<std::array<size_t, 3>>().swap(fsimp);
+    std::vector<int>().swap(fsimp_input);
 
     double insertion_time = insertion_timer.getElapsedTime();
 

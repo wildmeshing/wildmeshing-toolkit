@@ -169,9 +169,13 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         }
 
         // if both vertices are on the surface, the collapsing edge should be inside the envelope
+        //
+        // The edge is not tracked, so it covers no input: its own (empty) attributes go to the
+        // hook, and triwild answers an untracked segment with the union, as before -- a
+        // necessary condition where tracked segments are held to their own inputs.
         const size_t eid = loc.eid(*this);
         if (VA[v2_id].m_is_on_surface && !m_edge_attribute.at(eid).m_is_surface_fs) {
-            if (surface_segment_is_outside(v1_id, v2_id)) {
+            if (surface_segment_is_outside(v1_id, v2_id, m_edge_attribute.at(eid))) {
                 return false;
             }
         }
@@ -246,7 +250,7 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
-        std::vector<std::array<size_t, 2>> fs;
+        std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> fs;
         for (const size_t& tid : n1_locs) {
             const auto vs = oriented_tri_vids(tid);
 
@@ -277,16 +281,28 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                         cache.renamed_orientations.push_back({{{v2_id, va}}, o});
                     }
                     std::sort(f.begin(), f.end());
-                    fs.push_back(f);
+                    fs.emplace_back(f, m_edge_attribute.at(fid));
                 }
             }
         }
-        wmtk::vector_unique(fs);
+        wmtk::vector_unique(
+            fs,
+            [](const auto& a, const auto& b) { return a.first < b.first; },
+            [](const auto& a, const auto& b) { return a.first == b.first; });
 
         cache.surface_edges.reserve(fs.size());
-        for (auto& f : fs) {
+        for (auto& [f, attr] : fs) {
+            // An edge (v1,x) of the collapsing edge's link becomes one with (v2,x), and carries
+            // the merged attributes changed_edges holds for it (the union of the two input
+            // sets): it must then stay within the envelopes of both edges' inputs.
+            for (const auto& [merged, old_vids] : cache.changed_edges) {
+                if (std::is_permutation(old_vids.begin(), old_vids.end(), f.begin())) {
+                    attr = merged;
+                    break;
+                }
+            }
             std::replace(f.begin(), f.end(), v1_id, v2_id);
-            cache.surface_edges.push_back(f);
+            cache.surface_edges.emplace_back(f, attr);
         }
     }
 
@@ -327,9 +343,9 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
 
     // surface
     if (cache.edge_length > 0) {
-        for (auto& vids : cache.surface_edges) {
+        for (const auto& [vids, attr] : cache.surface_edges) {
             // surface envelope
-            if (surface_segment_is_outside(vids[0], vids[1])) {
+            if (surface_segment_is_outside(vids[0], vids[1], attr)) {
                 return false;
             }
         }

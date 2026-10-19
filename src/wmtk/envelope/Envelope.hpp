@@ -155,7 +155,7 @@ public:
      * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
      * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
      * containment path asks these two instead. See the composites in
-     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
+     * wmtk/envelope/CompositeEnvelopes.hpp, and the invariant stated there: a
      * composite must never reach the NON-virtual queries below, whose BVH it does not have.
      */
     virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;

@@ -151,6 +151,11 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // inside the envelope. With no envelope to ask, that cannot be certified, so refuse --
         // which is also what keeps this from dereferencing a null envelope. Both applications
         // that reach here always have one, so the guard never fires for them.
+        //
+        // m_envelope is the union of every input's envelope, so this is only a NECESSARY
+        // condition where faces are held to their own inputs (surface_envelope_for_face()): a
+        // point outside the union is outside every face's envelope. It stays a cheap prefilter;
+        // the faces the survivor keeps are checked against their own sets after the collapse.
         if (!VA[v2_id].m_is_on_surface &&
             (!m_envelope || m_envelope->is_outside(VA[v2_id].m_posf))) {
             return collapse_reject(CollapseReject::surface_leaves_envelope);
@@ -269,7 +274,7 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
-        std::vector<std::array<size_t, 3>> fs;
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> fs;
         for (const size_t& tid : n1_locs) {
             const auto vs = oriented_tet_vids(tid);
 
@@ -301,16 +306,28 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                         cache.renamed_orientations.push_back({{{v2_id, va, vb}}, o});
                     }
                     std::sort(f.begin(), f.end());
-                    fs.push_back(f);
+                    fs.emplace_back(f, m_face_attribute.at(fid));
                 }
             }
         }
-        wmtk::vector_unique(fs);
+        wmtk::vector_unique(
+            fs,
+            [](const auto& a, const auto& b) { return a.first < b.first; },
+            [](const auto& a, const auto& b) { return a.first == b.first; });
 
         cache.surface_faces.reserve(fs.size());
-        for (auto& f : fs) {
+        for (auto& [f, attr] : fs) {
+            // A face (v1,l1,l2) on the collapsing edge's link becomes one with (v2,l1,l2), and
+            // carries the merged attributes changed_faces holds for it (the union of the two
+            // input sets): it must then stay within the envelopes of both faces' inputs.
+            for (const auto& [merged, old_vids] : cache.changed_faces) {
+                if (std::is_permutation(old_vids.begin(), old_vids.end(), f.begin())) {
+                    attr = merged;
+                    break;
+                }
+            }
             std::replace(f.begin(), f.end(), v1_id, v2_id);
-            cache.surface_faces.push_back(f);
+            cache.surface_faces.emplace_back(f, attr);
         }
 
         std::vector<std::array<size_t, 2>> bs;
@@ -405,9 +422,9 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // surface
     // and open boundary
     if (cache.edge_length > 0) {
-        for (auto& vids : cache.surface_faces) {
+        for (const auto& [vids, attr] : cache.surface_faces) {
             // surface envelope
-            if (surface_triangle_is_outside(vids[0], vids[1], vids[2])) {
+            if (surface_triangle_is_outside(vids[0], vids[1], vids[2], attr)) {
                 return collapse_reject(CollapseReject::after_envelope);
             }
 

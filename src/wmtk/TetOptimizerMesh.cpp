@@ -145,9 +145,11 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         if (!m_params.perform_sanity_checks) return;
 
         logger().info("Perform sanity checks...");
-        const auto faces = get_faces_by_condition([](const auto& f) { return f.m_is_surface_fs; });
-        for (const auto& verts : faces) {
-            if (surface_triangle_is_outside(verts[0], verts[1], verts[2])) {
+        for (const Tuple& f : get_faces()) {
+            const FaceAttributes& attr = m_face_attribute[f.fid(*this)];
+            if (!attr.m_is_surface_fs) continue;
+            const auto verts = get_face_vids(f);
+            if (surface_triangle_is_outside(verts[0], verts[1], verts[2], attr)) {
                 logger().error("Face {} is outside!", verts);
             }
         }
@@ -469,13 +471,6 @@ void TetOptimizerMesh::smooth_vertices_colored(
         coloring_time);
     // Same wording as run_pass's line, so pass timings read the same either way.
     logger().info("vertex smoothing operation time parallel: {:.4}s", timer.getElapsedTime());
-}
-
-std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
-{
-    // Both applications keep one surface envelope. The pull energy may additionally select
-    // an order-2 feature envelope, but containment remains against the surface envelope.
-    return m_envelope;
 }
 
 std::vector<size_t> TetOptimizerMesh::all_vertex_ids() const
