@@ -125,9 +125,10 @@ public:
     /**
      * @brief What p_vertex_attrs points at, so a derived class can register more.
      *
-     * VertexAttributes holds only what both 2D applications need. triwild adds a per-vertex
-     * feature id through here; simwild-2D has no 0-dimensional features and registers nothing,
-     * so it does not carry the field.
+     * VertexAttributes holds only what both 2D applications need. The feature-point ids are
+     * registered through here only by an application that anchors feature points (see
+     * enable_feature_point_tracking(); triwild does), so simwild-2D, which has no
+     * 0-dimensional features, does not carry the field.
      */
     AttributeContainerGroup m_vertex_attr_group;
 
@@ -196,6 +197,106 @@ public:
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
+
+    /**
+     * @name Feature-point anchors
+     *
+     * A feature point is a 0-dimensional feature of the tracked curves: an open polyline's
+     * endpoint, a junction, or an input free point, as the application decides. Each anchor
+     * vertex names WHICH feature it stands for, not merely that it stands for one -- the
+     * deliberate difference from tetwild's m_is_on_open_boundary.
+     *
+     * That difference is the whole point. tetwild asks "is the survivor inside the envelope of
+     * the boundary?", a containment question, and in 3D a boundary is a curve with many edges
+     * so collapsing one shortens it rather than deleting it. In 2D the feature is a single
+     * point, and a containment test passes trivially when one endpoint is collapsed onto
+     * another -- the target IS a feature point, distance zero -- while the first endpoint
+     * quietly stops being represented. Preserving features is a COVERAGE property, so the
+     * constraint has to bind a vertex to a specific point.
+     *
+     * Opt-in, in two levels. enable_feature_point_tracking() registers the per-vertex ids and
+     * has the shared operations maintain them: a split vertex stands for no feature, and a
+     * collapse survivor that stands for none takes over the collapsed vertex's. Its `preserve`
+     * argument additionally turns on the policy: a collapse that would leave a feature further
+     * than m_feature_eps from every vertex is refused (collapse_breaks_feature_point(),
+     * counted in m_feature_rejects), and smoothing may move an anchor vertex only inside its
+     * ball (the default smoothing_position_is_allowed()). The ids are maintained with the
+     * policy off too, so an application can still export and audit its anchors.
+     *
+     * The application supplies the data, because which vertices stand for which features
+     * depends on its input: it fills m_feature_points and the ids after init(), and sets
+     * m_feature_eps. Lifted from triwild unchanged; the 3D twin is TetOptimizerMesh's block of
+     * the same name.
+     * @{
+     */
+    /// A vertex that stands for no feature point. See FeaturePointAttributes.
+    static constexpr size_t NO_FEATURE_POINT = std::numeric_limits<size_t>::max();
+    struct FeaturePointAttributes
+    {
+        /// Index into m_feature_points, or NO_FEATURE_POINT.
+        size_t m_feature_point_id = NO_FEATURE_POINT;
+    };
+    using FeaturePointAttCol = AttributeCollection<FeaturePointAttributes>;
+    /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
+    FeaturePointAttCol m_feature_point_attribute;
+    /**
+     * Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
+     * carrying feature f may never end up further than m_feature_eps from m_feature_points[f].
+     * Since the anchor never moves, no spatial index is required: the id is a direct lookup.
+     */
+    std::vector<Vector2d> m_feature_points;
+    /**
+     * Radius of the ball a feature-carrying vertex must stay inside.
+     *
+     * triwild sets it equal to m_envelope_eps, but it is deliberately a separate name: the two
+     * are different quantities -- the envelope bounds how far the CURVE may deviate, this
+     * bounds how far a SURVIVOR VERTEX may sit from an anchor -- so tying them means a tighter
+     * envelope silently tightens feature retention by the same factor. Measured on
+     * triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse
+     * refusals 75270 -> 61666 and delayed the mesh blow-up by two iterations. That was not
+     * enough to fix that model on its own -- the collapse length gate was the real cause --
+     * so the value is left alone and only the coupling is made visible.
+     */
+    double m_feature_eps = -1;
+    /// Whether the shared operations maintain the ids (enable_feature_point_tracking()).
+    bool m_track_feature_points = false;
+    /// Whether the collapse and smoothing policy is on (its `preserve` argument).
+    bool m_preserve_feature_points = false;
+    /// Collapses refused because they would drop or displace a feature point, in the current
+    /// collapse pass. Diagnostic; reported at the end of the pass when nonzero.
+    std::atomic<size_t> m_feature_rejects = 0;
+
+    /// Turn on feature-point tracking, and the policy when `preserve`. Must run before init()
+    /// so the connectivity init sizes the ids.
+    void enable_feature_point_tracking(const bool preserve)
+    {
+        if (!m_track_feature_points) m_vertex_attr_group.add(&m_feature_point_attribute);
+        m_track_feature_points = true;
+        m_preserve_feature_points = preserve;
+    }
+
+    /// True iff collapsing v1 into v2 would drop or displace a feature point. False when the
+    /// policy is off.
+    bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
+
+    /**
+     * @brief May vertex `vid` sit at `p` as far as its anchor goes?
+     *
+     * False only when the policy is on, the vertex stands for a feature point and `p` is more
+     * than m_feature_eps away from it. Smoothing is free to move a feature vertex inside that
+     * ball -- it is a containment test, not a freeze, so the optimizer keeps the quality it
+     * can get near features.
+     */
+    bool feature_point_ball_contains(const size_t vid, const Vector2d& p) const;
+
+    /**
+     * @brief {feature points still represented within m_feature_eps, total feature points}.
+     *
+     * The invariant the policy maintains, measured on the finished mesh rather than assumed
+     * from the per-operation checks.
+     */
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
+    /** @} */
 
     explicit TriOptimizerMesh(OptimizerParameters& params)
         : m_params(params)
@@ -385,7 +486,14 @@ public:
 
     Vector2d smoothing_position(size_t vid) const;
     void set_smoothing_position(size_t vid, const Vector2d& p);
-    virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
+    /// Per-vertex positional constraint, on top of the envelope. The default is the
+    /// feature-point ball, which answers true when the anchors are off; an application
+    /// overriding this while anchoring feature points must AND its own answer with
+    /// feature_point_ball_contains(). The 3D twin is TetOptimizerMesh's hook of the same name.
+    virtual bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
+    {
+        return feature_point_ball_contains(vid, p);
+    }
 
     /**
      * @brief The envelope this vertex is PULLED TOWARD while smoothing, and the one it is
