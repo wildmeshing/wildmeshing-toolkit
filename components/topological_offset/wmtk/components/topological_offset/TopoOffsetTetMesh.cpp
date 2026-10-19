@@ -1297,13 +1297,17 @@ void TopoOffsetTetMesh::init_offset_potential()
                 isolated,
                 m_phi_P.size());
         }
-        // The band term reads one distance, to the whole input; with several connected
-        // pieces each has a field of its own, and the term does not choose between them.
-        // Refused here, before the loop, rather than at the term's first evaluation.
-        if (m_n_regions > 1) {
+        // With several connected pieces the band term reads each cell's own piece
+        // (band_cell_term(), TetAttributes::piece), on the piece's envelope. The exact
+        // integral (ExactBandIntegral) is built over the whole input's triangles, one structure,
+        // and has no per-piece form: "exact" and "front_flux" are refused for such an input, as
+        // for rods and points, before the loop. Until 2026-10-19 every rule was refused here.
+        if (exact_rule && m_n_regions > 1) {
             log_and_throw_error(
-                "the energy's band term reads one field, and this input complex has {} "
-                "connected pieces",
+                "EXPERIMENTAL_band_volume_rule \"{}\" integrates over the whole input, and this "
+                "input complex has {} connected pieces, each with a band term of its own; use "
+                "\"corner_bound\"",
+                m_offset_params.band_volume_rule,
                 m_n_regions);
         }
         // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
@@ -1315,8 +1319,10 @@ void TopoOffsetTetMesh::init_offset_potential()
         // before setting one) and its first query would read through a null pointer. Without it
         // the settle loop's max test and the frames' outside_f take the corner bound
         // (min_max_corner_distance(), d_P convex for these primitives too), and the frames have no
-        // band_gap_bars.
-        if (triangles &&
+        // band_gap_bars. Nor for an input of several pieces: its max would be over the whole
+        // input's triangles, where every face is measured against its own piece; the same
+        // corner bound, on the piece's envelope, stands in.
+        if (triangles && m_n_regions <= 1 &&
             (exact_rule ||
              (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
              m_offset_params.debug_output)) {
@@ -2488,12 +2494,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //                    (front_conv). >= 0 up to rounding outside rule-(a) pieces. NaN outside
     //                    the band or when the exact integral is not built.
     //   plastic          1 for a plastic cell (cell_is_plastic(), use_rest_pose), else 0.
+    //   piece            TetAttributes::piece: the input piece a band cell belongs to, -1 for
+    //                    none (every cell of a connected input, every cell off the band), -2 for
+    //                    a cell of two.
     fr.amips = VectorXd::Constant(tets.size(), std::numeric_limits<double>::quiet_NaN());
     fr.tet_e = fr.amips;
     fr.amips_term = fr.amips;
     fr.band_term = fr.amips;
     fr.band_gap = fr.amips;
     fr.plastic = VectorXd::Zero(tets.size());
+    fr.piece = VectorXd::Zero(tets.size());
     fr.labels = VectorXd::Zero(vert_capacity());
     fr.order = VectorXd::Zero(vert_capacity());
     fr.vid = VectorXd::Zero(vert_capacity());
@@ -2502,7 +2512,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // Per vertex, the front's placement and what pushes it. NaN where a field does not apply.
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
-    //   front_error_bars  (d - target_distance) / front_conv at a front vertex: signed, in
+    //   front_error_bars  (d - target_distance) / front_conv at a front vertex, d to the
+    //                     vertex's own piece for an input of several (vertex_region()): signed, in
     //                     bars, so |.| > 1 is what the settle loop's vertex test marks
     //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
     //                     inside (-) the level set.
@@ -2548,8 +2559,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // before it.
     const Envelope* band_env =
         m_offset_potential && m_input_complex_envelope ? m_input_complex_envelope.get() : nullptr;
-    const bool energy_fields = band_env && m_n_regions <= 1 &&
-                               (m_offset_params.band_volume_rule != "exact" || m_band_exact);
+    const bool energy_fields =
+        band_env && (m_offset_params.band_volume_rule != "exact" || m_band_exact);
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
@@ -2559,7 +2570,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         const double a3 = get_quality(tets[k]);
         if (a3 < MAX_ENERGY) fr.amips[k] = std::cbrt(a3);
         fr.plastic[k] = cell_is_plastic(t_id) ? 1. : 0.;
-        // The energy reads the band term, which needs the input's triangles and one region
+        fr.piece[k] = m_tet_attribute[t_id].piece;
+        // The energy reads the band term, which needs the input's primitives
         // (band_cell_term()); the construction frames are written before they exist.
         if (!energy_fields) continue;
         const double e = tet_energy(t_id);
@@ -2568,7 +2580,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         fr.amips_term[k] = e;
         if (!cell_is_offset_band(t_id)) continue;
         const std::array<size_t, 4> vids = oriented_tet_vids(t_id);
-        const double b = band_cell_term(vids);
+        const double b = band_cell_term(vids, m_tet_attribute[t_id].piece);
         fr.band_term[k] = b;
         fr.amips_term[k] = e - b;
         if (!m_band_exact) continue;
@@ -2578,7 +2590,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         if (!(vol > 0.)) continue;
         int64_t best = -1;
         const double gap =
-            band_cell_corner_bound(vids, best) - m_band_exact->value(p, delta) / delta;
+            band_cell_corner_bound(vids, best, -1) - m_band_exact->value(p, delta) / delta;
         fr.band_gap[k] = gap / vol * delta / front_conv;
     }
     for (int64_t i = 0; i < m_tags_count; i++) {
@@ -2616,30 +2628,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         }
     }
 
-    // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP, as in 2D. The _off file's face measure
-    // (face_offset_term()) reads the vertex's own region's field through potential_for(vid) ->
-    // m_vertex_region, and that member is rebuilt only once a turn. Between rebuilds it is stale
-    // two different ways: a split appends vertices it does not cover (harmless -- vertex_region()
-    // bounds-checks and they fall back to the union field), and a base pass consolidates and
-    // renumbers every vid mid-pass, after which its entries name the WRONG vertices and the
-    // measures come out as residuals of tens of delta and ratios in the thousands. Testing the
-    // map's size caught the second case only by also catching the first, and refused the great
-    // majority of a run's frames.
-    //
-    // So the map is re-derived here and put back exactly as it was afterwards: the frame is
-    // measured against the regions the mesh has AT THIS MOMENT -- which is what
-    // energy_criterion() sees, since the loop rebuilds the map before it measures -- and the run
-    // reads the same (possibly stale) map after the frame as before it. face_offset_term() in the
-    // _off block below reads it.
-    std::vector<int> saved_cell_region, saved_vertex_region;
-    const bool region_map_refreshed = !m_region_potentials.empty();
-    if (region_map_refreshed) {
-        saved_cell_region = m_cell_region;
-        saved_vertex_region = m_vertex_region;
-        assign_band_regions(/*log=*/false);
-    }
     // The front fields (see above). The forces are the smoother's own energies at the vertex's
-    // current position, so they need what they read: the input's triangles and one region.
+    // current position, so they need what they read: the input's primitives. d is the vertex's
+    // piece's, as the settle loop's vertex test reads it.
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
         if (!band_env || !m_vertex_extra[vid].m_is_on_offset ||
@@ -2648,10 +2639,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         }
         const Vector3d& x = m_vertex_attribute[vid].m_posf;
         Vector3d g_d;
-        const double d = band_env->primitive_distance(
-            nearest_primitive(*band_env, m_input_complex_pad, x),
-            x,
-            &g_d);
+        const Envelope& env = envelope_for_region(vertex_region(vid));
+        const double d =
+            env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x, &g_d);
         fr.front_err[vid] = (d - delta) / front_conv;
         if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
         const double gn = g_d.norm();
@@ -2696,8 +2686,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //                    one bar as a fraction of it.
         //                    > 1 is what makes a face refinable, and the same number at 1 point
         //                    is what makes a vertex placed. -1 unmeasurable, including a face
-        //                    with a corner that is not a front vertex. Measured under the same
-        //                    re-derived region map as the vertex fields above. REPLACES
+        //                    with a corner that is not a front vertex. Measured on the pieces
+        //                    the operations carry (TetAttributes::piece), as the vertex fields
+        //                    above. REPLACES
         //                    front_sag_ratio, which reported an interpolation error against a
         //                    separate sag bar; a series mixing the two is comparing two
         //                    different quantities under one name, so the field was renamed
@@ -2740,14 +2731,18 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                            pc = m_vertex_attribute[c].m_posf;
             fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
             if (band_env) {
+                // d to the face's band cell's piece, as the settle loop's face tests read it
+                const int64_t bc = m_n_regions > 1 ? front_face_band_cell(a, b, c) : -1;
+                const Envelope& env =
+                    envelope_for_region(bc >= 0 ? m_tet_attribute[size_t(bc)].piece : -1);
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
-                    (delta - min_triangle_distance(*band_env, m_input_complex_pad, pa, pb, pc)) /
+                    (delta - min_triangle_distance(env, m_input_complex_pad, pa, pb, pc)) /
                     front_conv;
                 fr.f_outside[i] =
                     ((m_band_exact
                           ? m_band_exact->max_distance(p)
-                          : min_max_corner_distance(*band_env, m_input_complex_pad, p.data(), 3)) -
+                          : min_max_corner_distance(env, m_input_complex_pad, p.data(), 3)) -
                      delta) /
                     front_conv;
             }
@@ -2770,11 +2765,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         logger().info("Write {}", path + "_off.vtu");
     }
 
-    // The band-region map back exactly as the run left it (see the frame diagnostics above).
-    if (region_map_refreshed) {
-        m_cell_region.swap(saved_cell_region);
-        m_vertex_region.swap(saved_vertex_region);
-    }
     // edges
     logger().info("Write {}", path + "_edge.vtu");
     return fr;
@@ -2792,6 +2782,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         writer.add_cell_field("band_term", fr.band_term);
         writer.add_cell_field("band_gap_bars", fr.band_gap);
         writer.add_cell_field("plastic", fr.plastic);
+        writer.add_cell_field("piece", fr.piece);
         for (size_t i = 0; i < fr.tag_names.size(); i++) {
             writer.add_cell_field(fr.tag_names[i], fr.tags[i]);
         }

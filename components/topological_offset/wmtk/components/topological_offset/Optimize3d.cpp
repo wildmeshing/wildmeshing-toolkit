@@ -261,7 +261,7 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) con
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    return cell_energy(vids, a3, band_term && cell_is_offset_band(tid));
+    return cell_energy(vids, a3, band_term && cell_is_offset_band(tid), m_tet_attribute[tid].piece);
 }
 
 bool TopoOffsetTetMesh::plastic_rest(const size_t tid, Eigen::Matrix3d& R) const
@@ -331,7 +331,9 @@ double TopoOffsetTetMesh::offset_energy() const
     double s = 0.;
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
-        if (cell_is_offset_band(tid)) s += band_cell_term(oriented_tet_vids(tid));
+        if (cell_is_offset_band(tid)) {
+            s += band_cell_term(oriented_tet_vids(tid), m_tet_attribute[tid].piece);
+        }
     }
     return s;
 }
@@ -339,8 +341,8 @@ double TopoOffsetTetMesh::offset_energy() const
 void TopoOffsetTetMesh::log_energy_step(const char* step) const
 {
     // See the declaration. A band cell is never plastic (cell_is_plastic()), so its tet_energy()
-    // is cell_energy(vids, A^3, true): the AMIPS part (plus the repulsion term, 0 in the loop)
-    // and band_cell_term(), summed here apart rather than calling both tet_energy() and
+    // is cell_energy(vids, A^3, true, piece): the AMIPS part (plus the repulsion term, 0 in the
+    // loop) and band_cell_term(), summed here apart rather than calling both tet_energy() and
     // band_cell_term(), which would evaluate the band term twice.
     double amips = 0., band = 0.;
     for (const Tuple& t : get_tets()) {
@@ -355,8 +357,8 @@ void TopoOffsetTetMesh::log_energy_step(const char* step) const
             amips += MAX_ENERGY;
             continue;
         }
-        amips += cell_energy(vids, a3, false);
-        band += band_cell_term(vids);
+        amips += cell_energy(vids, a3, false, -1);
+        band += band_cell_term(vids, m_tet_attribute[tid].piece);
     }
     logger().info(
         "\t[energy step] turn {} {}: E {:.12g} | AMIPS term {:.12g} | band term {:.12g}",
@@ -378,17 +380,20 @@ double TopoOffsetTetMesh::tet_energy_sum(const std::vector<size_t>& tids, const 
 double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
 {
     // The candidate's label as swap_after_cells() will write it: the ring's single label for an
-    // interior swap, the side of a ring vertex it contains for a surface flip.
+    // interior swap, the side of a ring vertex it contains for a surface flip; and its piece,
+    // the ring's single piece, or that ring vertex's.
     const SwapRecord& rec = m_swap_record.local();
-    int label = -1;
+    int label = -1, piece = -1;
     if (!rec.flip) {
         label = m_swap_label.local();
+        piece = m_swap_piece.local();
     } else {
         const SwapSurfaceSides& sides = m_swap_sides.local();
         for (const size_t v : vids) {
             const auto it = sides.by_vertex.find(v);
             if (it != sides.by_vertex.end()) {
                 label = it->second.second;
+                piece = sides.piece_by_vertex.at(v);
                 break;
             }
         }
@@ -409,7 +414,7 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
         return e;
     }
     // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS).
-    return cell_energy(vids, a3, label == 2 && !rec.band_cancels);
+    return cell_energy(vids, a3, label == 2 && !rec.band_cancels, piece);
 }
 
 void TopoOffsetTetMesh::swap_record_fill(const bool flip)
@@ -443,6 +448,35 @@ bool TopoOffsetTetMesh::swap_capture_surface_sides(
             if (!inserted && it->second != side) return false;
         }
     }
+    // The piece (TetAttributes::piece) the same way, after the label and tag: a ring vertex on
+    // cells of two pieces is a piece boundary, which the flip would move. Refused as the side
+    // conflict above is, counted apart (m_piece_reject_swap).
+    sides.piece_by_vertex.clear();
+    for (const size_t tid : tids) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v == a || v == b || v == c || v == d) continue;
+            const auto [it, inserted] =
+                sides.piece_by_vertex.try_emplace(v, m_tet_attribute[tid].piece);
+            if (!inserted && it->second != m_tet_attribute[tid].piece) {
+                ++m_piece_reject_swap;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool TopoOffsetTetMesh::swap_capture_piece(const std::vector<size_t>& tids)
+{
+    // See m_swap_piece. As swap_capture_tag() refuses a ring of two labels: a ring of two pieces
+    // has a piece boundary running through it, and one piece for every new cell would move it.
+    std::set<int> pieces;
+    for (const size_t t : tids) pieces.insert(m_tet_attribute[t].piece);
+    if (pieces.size() > 1) {
+        ++m_piece_reject_swap;
+        return swap_reject(SwapReject::app_capture_label);
+    }
+    m_swap_piece.local() = *pieces.begin();
     return true;
 }
 
@@ -495,6 +529,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     }
     m_swap_record.local().clear(); // see SwapRecord
     if (!swap_capture_tag(tids)) return false;
+    if (!swap_capture_piece(tids)) return false;
     // The energy rule's before-half (see swap_after_cells()): the sum over the ring. A cell's
     // energy is its own corners' and label's, so no cell outside the ring changes energy.
     // use_rest_pose: every new cell takes the ring's one label; an all-plastic swap is an exact
@@ -1032,6 +1067,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         for (const size_t t : tids) {
             m_tet_attribute[t].tag = tag;
             m_tet_attribute[t].label = label;
+            m_tet_attribute[t].piece = m_swap_piece.local();
             // use_rest_pose: a cell the swap creates is stamped at creation, before the energy
             // rule reads it (candidate_energy() scores it the same way).
             stamp_rest_cell(t);
@@ -1054,8 +1090,11 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // ring vertex cannot be placed on a side and the flip is refused rather than guessed -- the
     // base turns that into a rollback. Two ring vertices disagreeing inside one new cell means
     // the flip would straddle the interface, which is the case this must not let through.
+    // The piece likewise (swap_capture_surface_sides()): two ring vertices of one new cell on
+    // two pieces refuse as two sides do, counted apart (m_piece_reject_swap).
     for (const size_t t : tids) {
         const std::pair<CellTag, int>* side = nullptr;
+        const int* piece = nullptr;
         for (const size_t v : oriented_tet_vids(t)) {
             const auto it = sides.by_vertex.find(v);
             if (it == sides.by_vertex.end()) continue;
@@ -1063,10 +1102,17 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
                 return swap_reject(SwapReject::app_after_side_conflict);
             }
             side = &it->second;
+            const int& p = sides.piece_by_vertex.at(v);
+            if (piece != nullptr && *piece != p) {
+                ++m_piece_reject_swap;
+                return swap_reject(SwapReject::app_after_side_conflict);
+            }
+            piece = &p;
         }
         if (side == nullptr) return swap_reject(SwapReject::app_after_no_side);
         m_tet_attribute[t].tag = side->first;
         m_tet_attribute[t].label = side->second;
+        m_tet_attribute[t].piece = *piece;
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
     close_labels(tids);
@@ -1247,6 +1293,38 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     }
     if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
         return collapse_reject(CollapseReject::app_leaves_region);
+    }
+
+    // Nor may a collapse join two pieces of the input (TetAttributes::piece): the cells it keeps
+    // keep their pieces, so the survivor's band cells after it are v1's and v2's less the ones
+    // holding the edge, known here before anything changes. If they hold two pieces (>= 0) and
+    // no vertex of v1's cells (v2 among them) was on band cells of two pieces before, the
+    // collapse would make a piece junction where there was none (Uday, 2026-10-19: refused, as
+    // a swap of a ring of two pieces is). Refused as the substructure link condition refuses a
+    // collapse that pinches two sides together, and counted apart (m_piece_reject_collapse).
+    if (m_n_regions > 1) {
+        std::set<int> merged;
+        for (const size_t vv : {v1_id, v2_id}) {
+            for (const size_t tid : get_one_ring_tids_for_vertex(vv)) {
+                if (!cell_is_offset_band(tid) || m_tet_attribute[tid].piece < 0) continue;
+                const auto vs = oriented_tet_vids(tid);
+                const bool dies = std::find(vs.begin(), vs.end(), v1_id) != vs.end() &&
+                                  std::find(vs.begin(), vs.end(), v2_id) != vs.end();
+                if (!dies) merged.insert(m_tet_attribute[tid].piece);
+            }
+        }
+        if (merged.size() > 1) {
+            bool junction_before = false;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v1_id)) {
+                for (const size_t u : oriented_tet_vids(tid)) {
+                    junction_before = junction_before || vertex_region(u) == -2;
+                }
+            }
+            if (!junction_before) {
+                ++m_piece_reject_collapse;
+                return collapse_reject(CollapseReject::app_substructure_link);
+            }
+        }
     }
 
     // open boundary: an order-2 vertex may not merge into a lower-order one.
@@ -2620,7 +2698,7 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
             const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
             size_t band = f.tid(*this);
             if (!cell_is_offset_band(band) && opp) band = opp->tid(*this);
-            const int region = band < m_cell_region.size() ? m_cell_region[band] : -1;
+            const int region = m_tet_attribute[band].piece;
             for_each_offset_face_sample(f, [&](const Vector3d& q, double, double, double) {
                 ++s.n_face_samples;
                 if (!gating) return;
@@ -2953,15 +3031,14 @@ Vector3d TopoOffsetTetMesh::front_vertex_field_gradient(const size_t vid) const
     return potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
 }
 
-void TopoOffsetTetMesh::assign_band_regions(const bool log)
+std::vector<int> TopoOffsetTetMesh::flood_band_pieces() const
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
     // with an input-complex vertex, whose piece is read off the per-piece envelopes (the nearest
     // piece to a vertex ON the complex is its own, at distance 0). As in 2D, a cell reached from
-    // two regions and a vertex on cells of two regions read -2 and fall back to the union field.
-    m_cell_region.assign(tet_capacity(), -1);
-    m_vertex_region.assign(vert_capacity(), -1);
-    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
+    // two regions reads -2 and falls back to the union field.
+    std::vector<int> cell(tet_capacity(), -1);
+    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return cell;
     const auto region_at = [&](const Vector3d& p) -> int {
         int best = -1;
         double best_d = std::numeric_limits<double>::infinity();
@@ -2986,37 +3063,51 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
             }
             const int r = piece_of_vertex[v];
             if (r < 0) continue;
-            if (m_cell_region[tid] == -1) {
-                m_cell_region[tid] = r;
+            if (cell[tid] == -1) {
+                cell[tid] = r;
                 queue.push_back(tid);
-            } else if (m_cell_region[tid] >= 0 && m_cell_region[tid] != r) {
-                m_cell_region[tid] = -2;
+            } else if (cell[tid] >= 0 && cell[tid] != r) {
+                cell[tid] = -2;
             }
         }
     }
     while (!queue.empty()) {
         const size_t t = queue.back();
         queue.pop_back();
-        const int r = m_cell_region[t];
+        const int r = cell[t];
         if (r < 0) continue;
         for (int j = 0; j < 4; ++j) {
             const std::optional<Tuple> opp = tuple_from_face(t, j).switch_tetrahedron(*this);
             if (!opp) continue;
             const size_t g = opp->tid(*this);
             if (!cell_is_offset_band(g)) continue;
-            if (m_cell_region[g] == -1) {
-                m_cell_region[g] = r;
+            if (cell[g] == -1) {
+                cell[g] = r;
                 queue.push_back(g);
-            } else if (m_cell_region[g] >= 0 && m_cell_region[g] != r) {
-                m_cell_region[g] = -2;
+            } else if (cell[g] >= 0 && cell[g] != r) {
+                cell[g] = -2;
             }
         }
     }
+    return cell;
+}
+
+void TopoOffsetTetMesh::assign_band_regions()
+{
+    // The initial assignment of TetAttributes::piece; the operations carry it from here on.
+    const std::vector<int> cell = flood_band_pieces();
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        m_tet_attribute[tid].piece = cell[tid];
+    }
+    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
     std::vector<size_t> n_cells(size_t(m_n_regions), 0);
     size_t n_mixed_cells = 0, n_unreached = 0, n_mixed_verts = 0;
-    for (size_t t = 0; t < m_cell_region.size(); ++t) {
-        if (!tuple_from_tet(t).is_valid(*this) || !cell_is_offset_band(t)) continue;
-        const int r = m_cell_region[t];
+    std::vector<int> vertex(vert_capacity(), -1);
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (!cell_is_offset_band(tid)) continue;
+        const int r = cell[tid];
         if (r == -2) {
             ++n_mixed_cells;
             continue;
@@ -3026,16 +3117,15 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
             continue;
         }
         ++n_cells[size_t(r)];
-        for (const size_t v : oriented_tet_vids(t)) {
-            if (m_vertex_region[v] == -1) {
-                m_vertex_region[v] = r;
-            } else if (m_vertex_region[v] >= 0 && m_vertex_region[v] != r) {
-                m_vertex_region[v] = -2;
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (vertex[v] == -1) {
+                vertex[v] = r;
+            } else if (vertex[v] >= 0 && vertex[v] != r) {
+                vertex[v] = -2;
                 ++n_mixed_verts;
             }
         }
     }
-    if (!log) return;
     std::string per;
     for (size_t r = 0; r < n_cells.size(); ++r)
         per += fmt::format("{}{}", r ? " / " : "", n_cells[r]);
@@ -3199,25 +3289,27 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         // bars over by it and -0.016..+0.020 bars by the exact max; they alone blocked the exit.
         // settle_mark "rms" and "vertex" only log outside_f and keep the former bound (the exact
         // structure exists for them only under band_volume_rule "exact").
+        //
+        // For an input of several pieces, d in every test below is the distance to the piece of
+        // the face's band cell, of the vertex (vertex_region()), of the cell
+        // (TetAttributes::piece) -- the piece whose band term the energy reads there -- and to
+        // the whole input where that is no single piece. m_band_exact is not built for such an
+        // input, so the max test takes the corner bound.
         std::vector<size_t> corners;
         for (const auto& f : faces) {
             const std::array<Vector3d, 3> p = {
                 {m_vertex_attribute[f[0]].m_posf,
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
-            const double inside = delta - min_triangle_distance(
-                                              *m_input_complex_envelope,
-                                              m_input_complex_pad,
-                                              p[0],
-                                              p[1],
-                                              p[2]);
+            const int64_t bc = front_face_band_cell(f[0], f[1], f[2]);
+            const Envelope& env_f =
+                envelope_for_region(bc >= 0 ? m_tet_attribute[size_t(bc)].piece : -1);
+            const double inside =
+                delta - min_triangle_distance(env_f, m_input_complex_pad, p[0], p[1], p[2]);
             const double outside =
-                (m_band_exact && !rms_mode && !vertex_mode ? m_band_exact->max_distance(p)
-                                                           : min_max_corner_distance(
-                                                                 *m_input_complex_envelope,
-                                                                 m_input_complex_pad,
-                                                                 p.data(),
-                                                                 3)) -
+                (m_band_exact && !rms_mode && !vertex_mode
+                     ? m_band_exact->max_distance(p)
+                     : min_max_corner_distance(env_f, m_input_complex_pad, p.data(), 3)) -
                 delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
@@ -3228,7 +3320,6 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             // The normal is oriented by the band cell carrying f (its fourth corner is in the
             // band).
             Vector3d n = (p[1] - p[0]).cross(p[2] - p[0]);
-            const int64_t bc = front_face_band_cell(f[0], f[1], f[2]);
             if (bc >= 0) {
                 for (const size_t v : oriented_tet_vids(size_t(bc))) {
                     if (v == f[0] || v == f[1] || v == f[2]) continue;
@@ -3236,7 +3327,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 }
             }
             const double q = face_mean_sq_cos(
-                *m_input_complex_envelope,
+                env_f,
                 m_input_complex_pad,
                 p[0],
                 p[1],
@@ -3265,7 +3356,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         n_front_vertices = front_vids.size();
         for (const size_t v : front_vids) {
             const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const Envelope& env = *m_input_complex_envelope;
+            const Envelope& env = envelope_for_region(vertex_region(v));
             const double err = std::abs(
                 env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
             max_vertex = std::max(max_vertex, err / eps);
@@ -3297,14 +3388,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 std::array<Vector3d, 4> p;
                 for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
                 int64_t best = -1;
-                const double md = min_mean_distance(
-                    *m_input_complex_envelope,
-                    m_input_complex_pad,
-                    p.data(),
-                    4,
-                    best);
+                const Envelope& env = envelope_for_region(m_tet_attribute[t].piece);
+                const double md = min_mean_distance(env, m_input_complex_pad, p.data(), 4, best);
                 const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
-                const Envelope& env = *m_input_complex_envelope;
                 const double dc =
                     env.primitive_distance(nearest_primitive(env, m_input_complex_pad, ctr), ctr);
                 max_gap = std::max(max_gap, (md - dc) / eps);
@@ -4060,7 +4146,7 @@ const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) c
     size_t band = ta;
     if (!cell_is_offset_band(ta) && opp && cell_is_offset_band(opp->tid(*this)))
         band = opp->tid(*this);
-    return potential_for_region(band < m_cell_region.size() ? m_cell_region[band] : -1);
+    return potential_for_region(m_tet_attribute[band].piece);
 }
 
 void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
@@ -4223,7 +4309,7 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
             const double amips3 = get_quality(t);
             amips +=
                 amips3 >= MAX_ENERGY ? MAX_ENERGY : band_amips_weight() * vol_amips3(vids, amips3);
-            if (cell_is_offset_band(tid)) vol += band_cell_term(vids);
+            if (cell_is_offset_band(tid)) vol += band_cell_term(vids, m_tet_attribute[tid].piece);
         }
         std::ofstream f(
             m_offset_params.output_path + "_energy.txt",
@@ -4456,9 +4542,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 }
             }
         }
+        logger().info(
+            "\t[piece refusals] turn {}: {} swaps refused for a ring of two input pieces "
+            "(TetAttributes::piece; counted under app_capture_label / app_after_side_conflict), "
+            "{} collapses refused for joining two (counted under app_substructure_link)",
+            it + 1,
+            m_piece_reject_swap.exchange(0),
+            m_piece_reject_collapse.exchange(0));
         consolidate_mesh();
         m_cross_valid = false; // DEBUG_crossings: consolidation renumbered the vertices
-        assign_band_regions();
         const double amips = std::get<0>(optimization_quality_stats());
         const double bar = optimization_stop_metric();
         const EnergyCriterion ec = energy_criterion();
@@ -4773,7 +4865,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 release_final_envelopes();
-                assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
                 m_quality_max_amips = final_amips;
                 m_quality_converged = final_amips < m_params.stop_energy;
@@ -4922,7 +5013,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_swap_offset_reject.load());
 
     // Final metrics and the convergence verdict, one entry for the whole run.
-    assign_band_regions();
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
     const GradientSplit g = gradient_split();

@@ -142,7 +142,38 @@ public:
      */
     bool rest_valid = false;
     std::array<Vector3d, 4> rest_pos;
+    /**
+     * The connected piece of the input complex this band cell belongs to
+     * (TopoOffsetTetMesh::m_region_potentials): a piece index, -1 for a cell outside the band or
+     * reached from no piece, -2 for one reached from two -- a cell that is not >= 0 reads the
+     * union field. Assigned by assign_band_regions()'s flood, then carried by the operations
+     * with the label, the struct copied: a split's children take their parent's, a collapse's
+     * cells keep their slots and so their own, consolidation moves it with the cell, and a swap's
+     * new cells take the ring's one piece (a ring of two pieces is refused, as a ring of two labels
+     * is; swap_capture_piece(), swap_capture_surface_sides()); a collapse that would join two
+     * pieces at a vertex is refused (collapse_before_vertex()), and a split's midpoint touches only
+     * cells its edge's two ends already touched. So no operation makes a -2 cell
+     * from cells that are not -2: -2 comes from the flood alone, and a -2 cell's children are -2.
+     * Until 2026-10-19 this was a table rebuilt once a turn: the cells an operation made in
+     * between had no entry and read the union field, and a mid-pass consolidation renumbered the
+     * cells under the entries. The per-turn rebuild is gone: MEASURED (2026-10-19, two boxes, two
+     * points, two boxes 0.1 apart at target_distance 0.075; serial, 7 turns), a fresh flood after
+     * every turn agreed with the carried pieces on every band cell (2183 to 98102 cells a turn),
+     * and no committed swap merged two pieces.
+     */
+    int piece = -1;
 };
+
+/// Two pieces (TetAttributes::piece) combined as assign_band_regions() combines the pieces that
+/// reach one cell, and the pieces of a vertex's cells (vertex_region()): -1 is no piece and
+/// yields to the other, two different pieces give -2, and -2 stays. Commutative and associative,
+/// so the order of the cells does not matter.
+inline int merge_piece(const int a, const int b)
+{
+    if (a == -1) return b;
+    if (b == -1 || a == b) return a;
+    return -2;
+}
 
 
 /**
@@ -263,7 +294,9 @@ public:
      * the union field has no level set across the gap. A band grown from one piece is placed on
      * that piece's field alone. Pieces are the connected components of the captured complex under
      * vertex connectivity, numbered once in init_input_complex_bvh(); assign_band_regions() maps
-     * the band's cells and vertices to them by a flood fill seeded from complex vertices.
+     * the band's cells to them by a flood fill seeded from complex vertices, once, and the
+     * operations carry each cell's piece from then on (TetAttributes::piece). A vertex's piece is
+     * read off its cells (vertex_region()).
      */
     int m_n_regions = 0; ///< connected pieces of the input complex; one field each
     std::vector<std::shared_ptr<OffsetPotential3D>> m_region_potentials; ///< one per piece
@@ -276,17 +309,44 @@ public:
     std::vector<int64_t> m_phi_seg_region; ///< per m_phi_E row: region index, -1 unknown
     std::vector<int64_t> m_phi_face_region; ///< per m_phi_F row: region index, -1 unknown
     std::vector<int64_t> m_phi_point_region; ///< per m_phi_P entry: region index, -1 unknown
-    std::vector<int> m_cell_region; ///< per tet: band's region, -1 none, -2 reached from two
-    std::vector<int> m_vertex_region; ///< per vertex: region of its band cells, -1 / -2 as above
     void init_region_potentials(double delta, double effective_factor);
-    /// Rebuild m_*_region from the mesh. `log` false suppresses the per-turn "[regions]" line:
-    /// write_vtu() re-derives the map for its frame diagnostics and puts the old one back.
-    void assign_band_regions(bool log = true);
+    /// The flood fill: per tet slot, the piece the band cell is reached from (-1 none, -2 two;
+    /// -1 off the band and for a dead slot).
+    std::vector<int> flood_band_pieces() const;
+    /// Write flood_band_pieces() onto every live cell (TetAttributes::piece) and log the
+    /// "[regions]" line: the initial assignment, before the loop.
+    void assign_band_regions();
     /// Diagnostic: the front objective of one vertex along its normal, offset term vs total.
     void log_front_profile(size_t vid);
+    /// The piece of vertex vid, from its band cells as the operations left them: the one piece
+    /// of those with a piece (>= 0), -2 when they hold two, -1 when none has one. Read live, so
+    /// it is never stale; -1 always for a connected input (every piece -1).
     int vertex_region(const size_t vid) const
     {
-        return vid < m_vertex_region.size() ? m_vertex_region[vid] : -1;
+        if (m_n_regions <= 1) return -1;
+        int r = -1;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            if (!cell_is_offset_band(tid)) continue;
+            const int p = m_tet_attribute[tid].piece;
+            if (p >= 0) r = merge_piece(r, p);
+        }
+        return r;
+    }
+    /// The envelope of piece `region`'s primitives (m_region_envelopes), or of the whole input
+    /// (m_input_complex_envelope) for a cell or vertex of no single piece (< 0) -- what the band
+    /// term and the settle tests read d off, as potential_for_region() chooses the field. Both
+    /// over the same vertices m_phi_V, so m_input_complex_pad is the pad of either.
+    const Envelope& envelope_for_region(const int region) const
+    {
+        return (region >= 0 && size_t(region) < m_region_envelopes.size())
+                   ? *m_region_envelopes[size_t(region)]
+                   : *m_input_complex_envelope;
+    }
+    std::shared_ptr<const Envelope> envelope_ptr_for_region(const int region) const
+    {
+        return (region >= 0 && size_t(region) < m_region_envelopes.size())
+                   ? m_region_envelopes[size_t(region)]
+                   : m_input_complex_envelope;
     }
     int edge_region(const size_t va, const size_t vb) const
     {
@@ -534,27 +594,29 @@ public:
     }
 
     /**
-     * @brief THE per-tet energy E(t), read from the mesh as it is -- the cell's corners and its
-     * label, nothing hypothetical. E = the sum of E(t) over the live cells (global_energy()) is
-     * the one energy of the 3D loop.
+     * @brief THE per-tet energy E(t), read from the mesh as it is -- the cell's corners, its
+     * label and its piece, nothing hypothetical. E = the sum of E(t) over the live cells
+     * (global_energy()) is the one energy of the 3D loop.
      *
-     *     tet_energy(t) = cell_energy(oriented_tet_vids(t), get_quality(t), cell_is_offset_band(t))
+     *     tet_energy(t) = cell_energy(oriented_tet_vids(t), get_quality(t), cell_is_offset_band(t),
+     *                                 piece(t))
      *
-     *     cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 >= MAX_ENERGY
-     *                                  = (w / s^3) vol A^3 + [band] b(vids)  otherwise
+     *     cell_energy(vids, A^3, band, r) = MAX_ENERGY                        if A^3 >= MAX_ENERGY
+     *                                     = (w / s^3) vol A^3 + [band] b(vids, r)    otherwise
      *
      * w = offset_amips_weight, s = stop_energy (optimization_stop_metric()), so a cell at the stop
      * energy costs about w vol. A^3 is the base's TetOptimizerMesh::get_quality(), the AMIPS^3 the
      * engine stores as the cell quality; its MAX_ENERGY (unscoreable) is the cell's energy. vol A^3
      * is vol_amips3(), from the exact AMIPS^3 and the edge lengths, never from a determinant. b is
      * band_cell_term(): the band cell's part of int_B (d - delta) / delta dV, as an upper bound
-     * that no split raises -- vol times the min over all input primitives P of the corner mean of
-     * (d_P - delta) / delta. Both terms are volumes, so E converges under refinement. Before the
-     * march, while the repulsion runs (m_repulsion_potential set), a cell also carries
-     * repulsion_cell_term(); there is no band then. A cell's energy depends on its own four
-     * corners and its label alone: an operation changes the energy of the cells it changes and
-     * of no other -- except under use_rest_pose, where a plastic cell's (cell_is_plastic(), outside
-     * the band and the complex) AMIPS term is vol A^3 against its stamped rest
+     * that no split raises -- vol times the min over all input primitives P (of the cell's piece r,
+     * for an input of several pieces) of the corner mean of (d_P - delta) / delta. Both terms are
+     * volumes, so E converges under refinement. Before the march, while the repulsion runs
+     * (m_repulsion_potential set), a cell also carries repulsion_cell_term(); there is no band
+     * then. A cell's energy depends on its own four corners, its label and its piece alone: an
+     * operation changes the energy of the cells it changes and of no other -- except under
+     * use_rest_pose, where a plastic cell's (cell_is_plastic(), outside the band and the complex)
+     * AMIPS term is vol A^3 against its stamped rest
      * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: every
      * plastic cell after each smoothing pass, and the cells an operation makes or changes at that
      * operation. All-plastic operations are decided as exact ties (plastic_tie()), not by
@@ -698,8 +760,11 @@ public:
      * child's min includes the parent's minimiser, whose finer interpolant lies lower. Exact where
      * one triangle's distance is affine on the cell; a segment's or a point's is affine on no
      * cell. Signed: about -vol for a cell at the input, positive beyond the level set. A volume,
-     * as vol AMIPS^3 is. One input region only (the primitives are the whole input's): refused
-     * otherwise.
+     * as vol AMIPS^3 is. For an input of several connected pieces, the P are those of the cell's
+     * own piece (TetAttributes::piece, envelope_for_region()), and the whole input's for a cell of
+     * no single piece (-1, -2), as placement reads its field (potential_for_region()). Two pieces
+     * closer than 2 delta have no level set of the union distance across the gap; each band is
+     * measured against its own piece. Until 2026-10-19 an input of several pieces was refused.
      *
      * Why the corner bound rather than a quadrature of d over the cell: corners on the input read
      * (d - delta)/delta = -1 whatever the cell's interior is, so the mean over the four corners and
@@ -724,13 +789,10 @@ public:
      * value() takes an upper bound and the front form labels the piece exactly, or throws where
      * a curved bisector crosses it. See the spec doc.
      */
-    double band_cell_term(const std::array<size_t, 4>& vids) const
+    double band_cell_term(const std::array<size_t, 4>& vids, const int piece) const
     {
-        if (m_n_regions > 1) {
-            log_and_throw_error(
-                "the energy's band term reads one field, and this input has {} regions",
-                m_n_regions);
-        }
+        // "exact" and "front_flux" are refused for an input of several pieces
+        // (init_offset_potential()): their integral is over the whole input's triangles.
         if (m_offset_params.band_volume_rule == "exact" ||
             m_offset_params.band_volume_rule == "front_flux") {
             // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
@@ -745,17 +807,19 @@ public:
             return m_band_exact->value(p, delta) / delta;
         }
         int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return band_cell_corner_bound(vids, best, piece);
     }
-    /// band_cell_term()'s value, with its minimising triangle in `best`.
-    double band_cell_corner_bound(const std::array<size_t, 4>& vids, int64_t& best) const
+    /// band_cell_term()'s value, with its minimising primitive of piece `piece`'s envelope in
+    /// `best`.
+    double band_cell_corner_bound(const std::array<size_t, 4>& vids, int64_t& best, const int piece)
+        const
     {
         const double delta = m_offset_params.target_distance;
         std::array<Vector3d, 4> p;
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
         const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
         const double md =
-            min_mean_distance(*m_input_complex_envelope, m_input_complex_pad, p.data(), 4, best);
+            min_mean_distance(envelope_for_region(piece), m_input_complex_pad, p.data(), 4, best);
         return vol * ((md - delta) / delta);
     }
     /// EXPERIMENTAL_band_volume_rule "exact" or "front_flux", or EXPERIMENTAL_settle_refinement
@@ -769,13 +833,17 @@ public:
         const double s = optimization_stop_metric();
         return m_offset_params.offset_amips_weight / (s * s * s);
     }
-    /// One cell's energy from its corners, its AMIPS^3 and its band label; see tet_energy().
-    double cell_energy(const std::array<size_t, 4>& vids, const double amips3, const bool band)
-        const
+    /// One cell's energy from its corners, its AMIPS^3, its band label and its piece
+    /// (TetAttributes::piece); see tet_energy().
+    double cell_energy(
+        const std::array<size_t, 4>& vids,
+        const double amips3,
+        const bool band,
+        const int piece) const
     {
         if (amips3 >= MAX_ENERGY) return MAX_ENERGY;
         double a = band_amips_weight() * vol_amips3(vids, amips3);
-        if (band) a += band_cell_term(vids);
+        if (band) a += band_cell_term(vids, piece);
         if (m_repulsion_potential) a += repulsion_cell_term(vids);
         return a;
     }
@@ -2430,7 +2498,7 @@ public:
         MatrixXd V;
         MatrixXi T, F_in, F_off, E;
         // per cell
-        VectorXd amips, tet_e, amips_term, band_term, band_gap, plastic;
+        VectorXd amips, tet_e, amips_term, band_term, band_gap, plastic, piece;
         std::vector<MatrixXd> tags;
         std::vector<std::string> tag_names;
         // per vertex
@@ -2441,7 +2509,7 @@ public:
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
-    /// Does not change the mesh (the band-region map it re-derives is put back).
+    /// Does not change the mesh.
     VtuFrame gather_vtu_frame(const std::string& path);
     /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
     static void write_vtu_frame(const VtuFrame& frame);
@@ -2520,6 +2588,19 @@ private:
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
     /// The construction label shared by every cell of an interior swap's ring, captured alongside.
     wmtk::threading::enumerable_thread_specific<int> m_swap_label;
+    /// The piece (TetAttributes::piece) shared by every cell of an interior swap's ring,
+    /// captured by swap_capture_piece() after swap_capture_tag(), and written on every new cell.
+    /// A ring of two pieces is refused, as a ring of two labels is: the piece boundary must not
+    /// move (Uday, 2026-10-19: "the topology can never be messed up"). A flip captures the piece
+    /// per ring vertex instead (SwapSurfaceSides::piece_by_vertex). The refusals are counted
+    /// under the label's reasons (the engine's SwapReject has no name for a piece) and apart in
+    /// m_piece_reject_swap, logged per turn as [piece refusals].
+    wmtk::threading::enumerable_thread_specific<int> m_swap_piece;
+    bool swap_capture_piece(const std::vector<size_t>& tids);
+    std::atomic<int> m_piece_reject_swap{0};
+    /// Collapses refused for joining two pieces (collapse_before_vertex()), logged with
+    /// m_piece_reject_swap as [piece refusals].
+    std::atomic<int> m_piece_reject_collapse{0};
 
     /// SURFACE flips: the two old surface faces split the edge ring into two arcs, each
     /// homogeneous in tag and label, and the flip keeps both -- it only moves the diagonal
@@ -2535,6 +2616,9 @@ private:
     struct SwapSurfaceSides
     {
         std::map<size_t, std::pair<CellTag, int>> by_vertex;
+        /// The same ring vertices' piece (TetAttributes::piece); a vertex on cells of two pieces
+        /// refuses the flip, and each new cell takes the piece of its ring vertices.
+        std::map<size_t, int> piece_by_vertex;
         /// a, b, c, d as prepare_surface_flip named them. The flip's net surface change is
         /// -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d), so these four are exactly the vertices whose
         /// membership it can change, and swap_after_cells() refreshes them.

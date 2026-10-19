@@ -287,13 +287,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
     const size_t vid) const
 {
-    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
-    if (m_n_regions > 1) {
-        log_and_throw_error(
-            "the energy's band term reads one field, and this input has {} regions",
-            m_n_regions);
-    }
-    std::vector<BandVolumeEnergy3D::Cell> cells;
+    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D). One
+    // BandVolumeEnergy3D per piece among the cells (TetAttributes::piece), on that piece's
+    // envelope, summed: each cell's term reads its own piece, as band_cell_term() does. A
+    // connected input has the one piece -1, the whole input's envelope.
+    std::map<int, std::vector<BandVolumeEnergy3D::Cell>> cells_of;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
         BandVolumeEnergy3D::Cell c;
@@ -304,13 +302,28 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
             ++k;
         }
         if (k != 3) continue;
-        cells.push_back(c);
+        cells_of[m_n_regions > 1 ? m_tet_attribute[tid].piece : -1].push_back(c);
     }
-    if (cells.empty()) return nullptr;
+    if (cells_of.empty()) return nullptr;
+    if (cells_of.size() > 1) {
+        // Several pieces: "exact" and "front_flux" are refused for such an input
+        // (init_offset_potential()), so the corner bound alone.
+        auto sum = std::make_shared<optimization::EnergySum>();
+        for (auto& [piece, cells] : cells_of) {
+            sum->add_energy(
+                std::make_shared<BandVolumeEnergy3D>(
+                    envelope_ptr_for_region(piece),
+                    m_input_complex_pad,
+                    std::move(cells),
+                    m_vertex_attribute[vid].m_posf,
+                    m_offset_params.target_distance));
+        }
+        return sum;
+    }
     auto e = std::make_shared<BandVolumeEnergy3D>(
-        m_input_complex_envelope,
+        envelope_ptr_for_region(cells_of.begin()->first),
         m_input_complex_pad,
-        std::move(cells),
+        std::move(cells_of.begin()->second),
         m_vertex_attribute[vid].m_posf,
         m_offset_params.target_distance);
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
