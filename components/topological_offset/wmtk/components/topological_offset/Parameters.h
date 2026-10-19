@@ -210,6 +210,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to
     /// target_distance, so N + 1 loops. At least 1 (the spec's min).
     int incremental_growth_steps = 4;
+    /// EXPERIMENTAL (2026-10-19), 3D: before the march, the input complex's boundary gets the
+    /// sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and TetWild
+    /// runs on the mesh with every tracked surface held (TopoOffsetTetMesh::refine_input_pass()).
+    /// Its operations carry the field, and so do the march's splits: the loop starts from it.
+    /// See the spec doc.
+    bool refine_input = false;
+    /// EXPERIMENTAL (2026-10-19), 3D, with refine_input: "a" in that sizing scalar. Default 10.
+    double refine_input_factor = 10.;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -366,6 +374,19 @@ struct Parameters : public wmtk::OptimizerParameters
             log_and_throw_error(
                 "EXPERIMENTAL_incremental_growth and init_optimize both decide the loops that "
                 "follow a march below target_distance: set only one of them");
+        }
+        refine_input = json_params["EXPERIMENTAL_refine_input"];
+        refine_input_factor = json_params["EXPERIMENTAL_refine_input_factor"];
+        if (!(refine_input_factor > 0.)) {
+            log_and_throw_error(
+                "EXPERIMENTAL_refine_input_factor must be > 0, not {}",
+                refine_input_factor);
+        }
+        // 10 is the spec's default: a factor set to anything else means the pass was intended.
+        if (!refine_input && refine_input_factor != 10.) {
+            log_and_throw_error(
+                "EXPERIMENTAL_refine_input_factor {} needs EXPERIMENTAL_refine_input true",
+                refine_input_factor);
         }
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];

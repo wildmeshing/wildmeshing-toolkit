@@ -45,6 +45,8 @@
       "EXPERIMENTAL_construction_tetwild_run",
       "EXPERIMENTAL_incremental_growth",
       "EXPERIMENTAL_incremental_growth_steps",
+      "EXPERIMENTAL_refine_input",
+      "EXPERIMENTAL_refine_input_factor",
       "TESTING_allow_mult_comp",
       "check_manifoldness",
       "save_vtu",
@@ -356,6 +358,18 @@
     "min": 1,
     "default": 4,
     "doc": "EXPERIMENTAL (2026-10-19), 3D, with EXPERIMENTAL_incremental_growth: N, the number of equal steps from the distance the march traced the front to, d_0, to target_distance. The loop runs N + 1 stages, at d_0 + k (target_distance - d_0) / N for k = 0, 1, ..., N (see EXPERIMENTAL_incremental_growth); N = 1 is two loops, at d_0 and at target_distance. Must be >= 1; a value other than the default with EXPERIMENTAL_incremental_growth false is refused with an error. 4 (the default): stages at d_0, then a quarter, half, three quarters and all of the way from d_0 to target_distance."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_refine_input",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL (2026-10-19), 3D. true: after the simplicial embedding (and the envelope built on it) and before the repulsion passes and the march, the input complex's boundary is refined by TetWild's own optimization (TopoOffsetTetMesh::refine_input_pass()). First the sizing scalar of every vertex on the input complex's boundary is lowered to s = min(a * min(M, target_distance) / l, 1), a = EXPERIMENTAL_refine_input_factor, M = the maximum marchable distance on the embedded mesh (the smallest distance to the input complex over the outer ends of the edges the march would march), l = the base edge length, so the boundary's edges are driven toward a * min(M, target_distance); s is kept at or above the floor of the loop's own refinement, max(min_sizing_scalar, min_edge_length / l), with a warning when the formula asks for less. The lowered scalars are graded into the volume as the loop's refinement grades them (sizing_gradation, sizing_gradation_mode). Then TetWild's iterations run (split, collapse, swap, smoothing; mesh_improvement(), up to max_iterations iterations, stopping once max AMIPS < stop_energy, with its stall refinement), every tracked surface held in the envelope (envelope_size: the domain wall, the input complex's boundary and every region boundary), every cell scored by its AMIPS term alone, the vertex order computed first so the collapses keep the input's feature curves and corners, and collapses and swaps that would break the simplicial embedding refused. The sizing field is carried through every operation, not reset: a split gives its new vertex the mean of its edge's scalars, a collapse's survivor keeps the smaller (sizing_collapse_min), swaps and smoothing change no scalar, and the stall refinement only lowers. After the pass the construction labels are recomputed from the region tags, and the embedding is checked and re-made by simplicial_embedding() if needed. The march then splits the marched edges with the field interpolated along each edge (as the embedding's face and tet splits take their corners' mean), so the loop starts from the field the pass left: front vertices included, nothing raises it. Logged as [refine input]: M, the sizing scalar and max AMIPS before and after, and the input boundary's vertices (sizing scalar min / median / max, how many still at 1) and edges (median length against the edge target, how many over the split gate) after the grading, after the pass, and at the loop's start beside the front vertices' scalars. With debug_output the pass's frames are led by ri and a frame refine_input follows it. Note the scale: the edge target is a * min(M, target_distance), so with a target far below the mesh size the input surface is refined very finely. false (the default): no pass."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_refine_input_factor",
+    "type": "float",
+    "default": 10.0,
+    "doc": "EXPERIMENTAL (2026-10-19), 3D, with EXPERIMENTAL_refine_input: the factor a in the input boundary's sizing scalar min(a * min(M, target_distance) / l, 1), so its edge target is a * min(M, target_distance). Must be > 0; a value other than the default with EXPERIMENTAL_refine_input false is refused with an error. 10 (the default)."
   },
   {
     "pointer": "/TESTING_allow_mult_comp",

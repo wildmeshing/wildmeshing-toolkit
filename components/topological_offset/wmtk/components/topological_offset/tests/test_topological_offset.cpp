@@ -2646,3 +2646,85 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
             TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, k + 1, 7));
     }
 }
+
+TEST_CASE("refine-input-keys", "[offset][3d]")
+{
+    // EXPERIMENTAL_refine_input and EXPERIMENTAL_refine_input_factor through the spec, as the app
+    // reads them: the defaults (off, a = 10), values read through, and the refusals -- a factor
+    // that is not > 0, and a factor other than the default with the pass off.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.refine_input);
+    CHECK(by_default.refine_input_factor == 10.);
+    const Parameters set(
+        injected({{"EXPERIMENTAL_refine_input", true}, {"EXPERIMENTAL_refine_input_factor", 5.}}));
+    CHECK(set.refine_input);
+    CHECK(set.refine_input_factor == 5.);
+    const nlohmann::json without_pass = injected({{"EXPERIMENTAL_refine_input_factor", 5.}});
+    CHECK_THROWS(Parameters{without_pass});
+    const nlohmann::json zero =
+        injected({{"EXPERIMENTAL_refine_input", true}, {"EXPERIMENTAL_refine_input_factor", 0.}});
+    CHECK_THROWS(Parameters{zero});
+}
+
+TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")
+{
+    // The construction's own splits (the simplicial embedding's, and the march's under
+    // EdgeSplitMode::Midpoint) give the new vertex the sizing field's value where it is: the mean
+    // of its edge's, face's or tet's scalars, as the engine's split does for an edge. So the field
+    // EXPERIMENTAL_refine_input leaves reaches the loop. Powers of two keep every sum exact in any
+    // order; with every scalar 1 the new one is exactly 1.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    REQUIRE(mesh.m_edge_split_mode == TopoOffsetTetMesh::EdgeSplitMode::Midpoint);
+    const std::array<double, 4> s = {{0.125, 0.25, 0.5, 1.}};
+    std::vector<TetMesh::Tuple> garbage;
+    // The one vertex the split added (the mesh had 0..3).
+    const auto new_scalar = [&]() {
+        std::vector<size_t> added;
+        for (const TetMesh::Tuple& v : mesh.get_vertices()) {
+            if (v.vid(mesh) > 3) added.push_back(v.vid(mesh));
+        }
+        REQUIRE(added.size() == 1);
+        return mesh.m_vertex_attribute[added[0]].m_sizing_scalar;
+    };
+    SECTION("every scalar 1")
+    {
+        REQUIRE(mesh.split_edge(mesh.tuple_from_edge({{0, 1}}), garbage));
+        CHECK(new_scalar() == 1.);
+    }
+    for (size_t v = 0; v < 4; ++v) mesh.m_vertex_attribute[v].m_sizing_scalar = s[v];
+    SECTION("edge")
+    {
+        REQUIRE(mesh.split_edge(mesh.tuple_from_edge({{0, 1}}), garbage));
+        CHECK(new_scalar() == (s[0] + s[1]) / 2);
+    }
+    SECTION("face")
+    {
+        REQUIRE(mesh.split_face(std::get<0>(mesh.tuple_from_face({{0, 1, 2}})), garbage));
+        CHECK(new_scalar() == (s[0] + s[1] + s[2]) / 3);
+    }
+    SECTION("tet")
+    {
+        REQUIRE(mesh.split_tet(mesh.tuple_from_tet(0), garbage));
+        CHECK(new_scalar() == (s[0] + s[1] + s[2] + s[3]) / 4);
+    }
+}

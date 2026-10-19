@@ -1066,7 +1066,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             stamp_rest_cell(t);
         }
         close_labels(tids);
-        if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
+        if ((m_repulsion_potential || m_refine_input_active) && !repulsion_embedding_kept(tids)) {
             ++m_repulsion_embed_refused;
             return false;
         }
@@ -1100,7 +1100,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     }
     close_labels(tids);
     if (sides.worthwhile) ++funnel_energy;
-    if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
+    if ((m_repulsion_potential || m_refine_input_active) && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
         return false;
     }
@@ -1123,9 +1123,10 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
-    // repulsion_rounds: the complex must stay simplicially embedded (repulsion_embedding_kept());
-    // every cell the collapse made is in the survivor's ring.
-    if (m_repulsion_potential && !repulsion_embedding_kept(get_one_ring_tids_for_vertex(v2_id))) {
+    // repulsion_rounds and refine_input_pass(): the complex must stay simplicially embedded
+    // (repulsion_embedding_kept()); every cell the collapse made is in the survivor's ring.
+    if ((m_repulsion_potential || m_refine_input_active) &&
+        !repulsion_embedding_kept(get_one_ring_tids_for_vertex(v2_id))) {
         ++m_repulsion_embed_refused;
         return false;
     }
@@ -4929,6 +4930,206 @@ void TopoOffsetTetMesh::construction_tetwild_run()
         std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 }
 
+double TopoOffsetTetMesh::max_marchable_distance() const
+{
+    // See the declaration: marching_tets()'s d_max, read on the current mesh without marching.
+    double d_max = std::numeric_limits<double>::infinity();
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+        if ((m_vertex_extra[v1].label == 0) == (m_vertex_extra[v2].label == 0)) continue;
+        const size_t v_out = m_vertex_extra[v1].label != 0 ? v2 : v1;
+        d_max = std::min(d_max, input_complex_distance(m_vertex_attribute[v_out].m_posf));
+    }
+    return d_max;
+}
+
+std::string TopoOffsetTetMesh::input_boundary_sizing_report() const
+{
+    // See the declaration. The boundary as face_is_complex_boundary() reads it, off the tracked
+    // faces; each vertex and each edge once.
+    std::vector<char> seen(vert_capacity(), 0);
+    std::vector<double> scalars;
+    std::set<std::pair<size_t, size_t>> edges;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        if (!face_is_complex_boundary(f)) continue;
+        const auto vs = get_face_vids(f);
+        for (size_t j = 0; j < 3; ++j) {
+            const size_t a = vs[j], b = vs[(j + 1) % 3];
+            edges.insert({std::min(a, b), std::max(a, b)});
+            if (seen[a]) continue;
+            seen[a] = 1;
+            scalars.push_back(m_vertex_attribute[a].m_sizing_scalar);
+        }
+    }
+    if (scalars.empty()) return "no face on the input complex's boundary";
+    const auto median = [](std::vector<double> x) {
+        const auto mid = x.begin() + std::ptrdiff_t(x.size() / 2);
+        std::nth_element(x.begin(), mid, x.end());
+        return *mid;
+    };
+    const auto [s_lo, s_hi] = std::minmax_element(scalars.begin(), scalars.end());
+    const size_t n_unrefined =
+        size_t(std::count_if(scalars.begin(), scalars.end(), [](double s) { return s >= 1.; }));
+    std::vector<double> lengths;
+    lengths.reserve(edges.size());
+    size_t n_due = 0;
+    for (const auto& [a, b] : edges) {
+        lengths.push_back((m_vertex_attribute[a].m_posf - m_vertex_attribute[b].m_posf).norm());
+        if (split_edge_is_due(tuple_from_edge({{a, b}}))) ++n_due;
+    }
+    const double l_med = median(lengths);
+    const double target = m_refine_input_scalar * m_params.l;
+    return fmt::format(
+        "{} vertices, sizing scalar min {:.4g}, median {:.4g}, max {:.4g}, {} at 1 or above | "
+        "{} edges, length median {:.4g} ({:.3g}x the edge target {:.4g}), {} over the split "
+        "gate",
+        scalars.size(),
+        *s_lo,
+        median(scalars),
+        *s_hi,
+        n_unrefined,
+        lengths.size(),
+        l_med,
+        target > 0. ? l_med / target : 0.,
+        target,
+        n_due);
+}
+
+void TopoOffsetTetMesh::refine_input_pass()
+{
+    // See the declaration and the spec doc (EXPERIMENTAL_refine_input).
+    const auto t0 = std::chrono::steady_clock::now();
+    const double delta = m_offset_params.target_distance;
+    const double a = m_offset_params.refine_input_factor;
+    const double l = std::max(m_params.l, 1e-300);
+    const double M0 = max_marchable_distance();
+    // The floor of refine_front_by_halving(): the loop's own refinement stops there. A scalar of
+    // 0 (M = 0: a marched edge ends on the complex) would split without end.
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    const double s_asked = std::min(a * std::min(M0, delta) / l, 1.);
+    const double s = std::max(s_asked, s_floor);
+    m_refine_input_scalar = s;
+    // The input complex's boundary vertices, off its tracked boundary faces.
+    std::vector<size_t> seeds;
+    {
+        std::vector<char> seen(vert_capacity(), 0);
+        for (const Tuple& f : get_faces()) {
+            if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+            if (!face_is_complex_boundary(f)) continue;
+            for (const size_t v : get_face_vids(f)) {
+                if (seen[v]) continue;
+                seen[v] = 1;
+                seeds.push_back(v);
+            }
+        }
+    }
+    std::vector<size_t> lowered;
+    for (const size_t v : seeds) {
+        double& sc = m_vertex_attribute[v].m_sizing_scalar;
+        if (s < sc) {
+            sc = s;
+            lowered.push_back(v);
+        }
+    }
+    grade_sizing(m_offset_params.sizing_gradation, lowered);
+    // The cells' stored quality, which mesh_improvement()'s stop test and statistics read; the
+    // loop stores it in label_offset_boundary(), which has not run yet.
+    for (const Tuple& t : get_tets()) m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
+    const double amips0 = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "======== [refine input] maximum marchable distance M {:.6g} ({:.4g}x target_distance); "
+        "sizing scalar min({} * min(M, target_distance) / l, 1) = {:.6g} (edge target {:.6g}, l "
+        "{:.6g}) on {} input-boundary vertices ({} lowered), graded into the volume; TetWild until "
+        "max AMIPS < stop_energy {} (max {} iterations), every tracked surface held to eps "
+        "{:.6g} | max AMIPS {:.6g} | #V {}, #T {} ========",
+        M0,
+        M0 / delta,
+        a,
+        s,
+        s * l,
+        l,
+        seeds.size(),
+        lowered.size(),
+        m_params.stop_energy,
+        std::max(1, m_offset_params.max_iterations),
+        m_envelope_eps,
+        amips0,
+        vertex_size(),
+        tet_size());
+    if (s_asked < s_floor) {
+        logger().warn(
+            "\t[refine input] the formula's sizing scalar {:.6g} is below the refinement floor "
+            "max(min_sizing_scalar, min_edge_length / l) = {:.6g}; the floor is used",
+            s_asked,
+            s_floor);
+    }
+    logger().info(
+        "\t[refine input] graded, before TetWild: the input complex's boundary: {}",
+        input_boundary_sizing_report());
+
+    // TetWild: the wall, the input complex's boundary and every region boundary held (no offset
+    // surface exists yet), AMIPS alone, the embedding kept by the collapses and swaps. The vertex
+    // order first: the collapses' link condition reads it. The engine's splits
+    // (EdgeSplitMode::Optimization) give the new vertex the mean of its edge's scalars, so the
+    // field is carried through the pass; the construction split mode is put back after it.
+    init_vertex_order();
+    build_final_envelopes(/*with_offset=*/false);
+    const EdgeSplitMode split_mode = m_edge_split_mode;
+    m_edge_split_mode = EdgeSplitMode::Optimization;
+    m_tetwild_pass = true;
+    m_refine_input_active = true;
+    m_frame_prefix = "ri";
+    m_round = 0;
+    mesh_improvement(std::max(1, m_offset_params.max_iterations));
+    logger().info(
+        "\t[split order] refine input: waited {} | committed off the longest edge {}",
+        m_split_order_waits.exchange(0),
+        m_split_off_longest.exchange(0));
+    m_frame_prefix.clear();
+    m_refine_input_active = false;
+    m_tetwild_pass = false;
+    m_edge_split_mode = split_mode;
+    release_final_envelopes();
+    consolidate_mesh();
+    // The construction labels from the tags: an operation only ever raises a label
+    // (close_labels()), and the march reads the vertices' to pick the edges it marches.
+    relabel_input_complex();
+    const size_t refused = m_repulsion_embed_refused.exchange(0);
+    bool repaired = false;
+    if (!is_simplicially_embedded()) {
+        simplicial_embedding();
+        consolidate_mesh();
+        repaired = true;
+        bool dummy = is_simplicially_embedded(); // internally prints to console
+    }
+    const double amips1 = std::get<0>(optimization_quality_stats());
+    const double M1 = max_marchable_distance();
+    const bool under = amips1 < m_params.stop_energy;
+    logger().log(
+        under ? spdlog::level::info : spdlog::level::warn,
+        "\t[refine input] max AMIPS {:.6g} -> {:.6g} (stop {}){} | #V {}, #T {} | maximum "
+        "marchable distance {:.6g} -> {:.6g} ({:.4g}x target_distance) | operations refused for "
+        "the embedding {}{} | {:.3g} s",
+        amips0,
+        amips1,
+        m_params.stop_energy,
+        under ? "" : ", STILL OVER stop_energy",
+        vertex_size(),
+        tet_size(),
+        M0,
+        M1,
+        M1 / delta,
+        refused,
+        repaired ? "; the embedding was re-made by simplicial_embedding()" : "",
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+    logger().info(
+        "\t[refine input] after TetWild: the input complex's boundary: {}",
+        input_boundary_sizing_report());
+}
+
 double TopoOffsetTetMesh::growth_stage_target(
     const double d0,
     const double delta,
@@ -5082,6 +5283,34 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             "scalar {:.6g} .. {:.6g}",
             s_min,
             s_max);
+    }
+    // EXPERIMENTAL_refine_input: the field the pass left, where the loop reads it -- the input
+    // complex's boundary, and the front the march made from it.
+    if (m_refine_input_scalar > 0.) {
+        std::vector<double> front;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].m_is_on_offset) {
+                front.push_back(m_vertex_attribute[vid].m_sizing_scalar);
+            }
+        }
+        std::string front_fact = "no front vertex";
+        if (!front.empty()) {
+            const auto [lo, hi] = std::minmax_element(front.begin(), front.end());
+            const double s_lo = *lo, s_hi = *hi;
+            const auto mid = front.begin() + std::ptrdiff_t(front.size() / 2);
+            std::nth_element(front.begin(), mid, front.end());
+            front_fact = fmt::format(
+                "{} front vertices, sizing scalar min {:.4g}, median {:.4g}, max {:.4g}",
+                front.size(),
+                s_lo,
+                *mid,
+                s_hi);
+        }
+        logger().info(
+            "[refine input] the loop starts with the input complex's boundary: {} || {}",
+            input_boundary_sizing_report(),
+            front_fact);
     }
 
     // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin). No

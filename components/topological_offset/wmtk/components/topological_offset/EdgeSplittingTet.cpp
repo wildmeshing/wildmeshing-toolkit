@@ -257,8 +257,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
         // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
-        // engine rolls a refused split back.
-        if (m_offset_params.split_energy_gate &&
+        // engine rolls a refused split back. The loop's gate: refine_input_pass()'s splits are
+        // the refinement it asks for.
+        if (m_offset_params.split_energy_gate && !m_refine_input_active &&
             !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;
@@ -304,6 +305,27 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
+    // The sizing field's value where the new vertex is, linear along the edge: the mean of the
+    // ends' scalars at the midpoint, as the engine's split gives it, and the traced point's own
+    // interpolate under SphereTrace. Without it the vertex kept its slot's scalar, so the march
+    // dropped the field EXPERIMENTAL_refine_input left at every front vertex. With every scalar 1
+    // it is 1.
+    {
+        const double s1 = m_vertex_attribute[v1_id].m_sizing_scalar;
+        const double s2 = m_vertex_attribute[v2_id].m_sizing_scalar;
+        const Vector3d d = m_vertex_attribute[v2_id].m_posf - m_vertex_attribute[v1_id].m_posf;
+        const double dd = d.squaredNorm();
+        double& s = m_vertex_attribute[v_id].m_sizing_scalar;
+        if (m_edge_split_mode == EdgeSplitMode::SphereTrace && dd > 0.) {
+            const double u = std::clamp(
+                (cache.new_v_pos - m_vertex_attribute[v1_id].m_posf).dot(d) / dd,
+                0.,
+                1.);
+            s = s1 + u * (s2 - s1);
+        } else {
+            s = (s1 + s2) / 2;
+        }
+    }
     // on_bbox_faces is written after the base set m_is_on_surface, so a midpoint landing on the
     // domain wall can arrive here unflagged. Re-derive it once both halves of
     // vertex_is_on_region() are known: every containment check is gated on this flag.
@@ -460,6 +482,11 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
+    // The sizing field at the centroid, as marching_split_edge_after() carries it along an edge.
+    m_vertex_attribute[v_id].m_sizing_scalar =
+        (m_vertex_attribute[v1_id].m_sizing_scalar + m_vertex_attribute[v2_id].m_sizing_scalar +
+         m_vertex_attribute[v3_id].m_sizing_scalar) /
+        3;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -581,6 +608,13 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
+    // The sizing field at the centroid, as marching_split_edge_after() carries it along an edge.
+    m_vertex_attribute[v_id].m_sizing_scalar =
+        (m_vertex_attribute[cache.v_ids[0]].m_sizing_scalar +
+         m_vertex_attribute[cache.v_ids[1]].m_sizing_scalar +
+         m_vertex_attribute[cache.v_ids[2]].m_sizing_scalar +
+         m_vertex_attribute[cache.v_ids[3]].m_sizing_scalar) /
+        4;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
