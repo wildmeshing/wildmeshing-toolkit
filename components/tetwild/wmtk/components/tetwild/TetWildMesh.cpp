@@ -87,7 +87,11 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     // flag) has no inputs, and keeps the union's pull.
     uint16_t set = 0;
     const auto& FA = std::as_const(m_face_attribute);
-    for (const simplex::Face& f : get_surface_faces_for_vertex(vid).faces()) {
+    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
+    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
+    for (const simplex::Face& f : surf.faces()) {
         set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
     }
     if (set == 0) return m_envelope;

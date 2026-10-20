@@ -858,7 +858,11 @@ std::shared_ptr<Envelope> TriWildMesh::smoothing_energy_envelope(const size_t vi
     // inputs, and keeps the union's pull.
     uint16_t set = 0;
     const auto& EA = std::as_const(m_edge_attribute);
-    for (const simplex::Edge& e : get_surface_edges_for_vertex(vid).edges()) {
+    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
+    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
+    for (const simplex::Edge& e : surf.edges()) {
         set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
     }
     if (set == 0) return m_envelope;

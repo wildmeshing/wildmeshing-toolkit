@@ -26,8 +26,10 @@ namespace {
 /// containment's (after_envelope) and nothing else's.
 struct Mesh : TetWildMesh
 {
-    using TetWildMesh::CollapseReject;
-    using TetWildMesh::SwapReject;
+    // Aliases rather than using-declarations: MSVC checks access in the base where the enum is
+    // declared (protected there) when Mesh::CollapseReject::x is named from outside (C2248).
+    using CollapseReject = TetWildMesh::CollapseReject;
+    using SwapReject = TetWildMesh::SwapReject;
     using TetWildMesh::TetWildMesh;
     long collapse_refusals(CollapseReject r) const { return m_collapse_reject[size_t(r)].load(); }
     long swap_refusals(SwapReject r) const { return m_swap_reject[size_t(r)].load(); }
