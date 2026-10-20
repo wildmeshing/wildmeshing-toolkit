@@ -3,19 +3,42 @@
     "doc": "",
     "pointer": "/",
     "type": "object",
-    "required": ["application", "history"],
-    "optional": ["input_dir", "operation", "log_file"]
+    "required": [
+      "application",
+      "history"
+    ],
+    "optional": [
+      "input_dir",
+      "operation",
+      "input",
+      "output",
+      "log_file"
+    ]
   },
   {
     "pointer": "/application",
     "type": "string",
-    "options": ["surface_map"],
+    "options": [
+      "surface_map"
+    ],
     "doc": "Application name must be surface_map."
   },
   {
     "pointer": "/history",
     "type": "string",
     "doc": "A surface history, as saved by an application's history_output: the map is rebuilt from it."
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "default": "",
+    "doc": "transfer: a gmsh file holding the surface the history starts from -- the same triangles in the same order -- with per-face fields (labels, say) to carry onto the output."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out.msh",
+    "doc": "transfer: the output surface, written as a gmsh file with the carried per-face fields."
   },
   {
     "pointer": "/input_dir",
@@ -26,9 +49,12 @@
   {
     "pointer": "/operation",
     "type": "string",
-    "options": ["info"],
+    "options": [
+      "info",
+      "transfer"
+    ],
     "default": "info",
-    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back."
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back. transfer: carry every per-face field of `input` onto the output surface and write it to `output`."
   },
   {
     "pointer": "/log_file",
