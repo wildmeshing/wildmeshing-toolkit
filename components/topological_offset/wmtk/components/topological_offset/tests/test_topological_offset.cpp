@@ -2797,6 +2797,7 @@ TEST_CASE("op-rules-switch", "[offset][3d]")
     CHECK(mesh.swap_quality_allowed(2., 1., false));
     CHECK(mesh.smoothing_extra_energy(0) != nullptr);
     CHECK(mesh.smoothing_ring_energy(ring, true) == mesh.tet_energy(ring[0].tid(mesh)));
+    CHECK_FALSE(mesh.optimization_bare_coarsen_passes());
 
     mesh.m_op_rules = TopoOffsetTetMesh::OpRules::TetWild;
     CHECK_FALSE(mesh.collapse_quality_allowed(0, 2., 1.));
@@ -2805,6 +2806,7 @@ TEST_CASE("op-rules-switch", "[offset][3d]")
     CHECK_FALSE(mesh.swap_quality_allowed(1., 1., false));
     CHECK(mesh.swap_quality_allowed(1., 2., false));
     CHECK(mesh.smoothing_extra_energy(0) == nullptr);
+    CHECK(mesh.optimization_bare_coarsen_passes());
     CHECK(
         mesh.smoothing_ring_energy(ring, true) ==
         mesh.TetOptimizerMesh::smoothing_ring_energy(ring, true));

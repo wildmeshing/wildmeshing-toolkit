@@ -407,25 +407,25 @@ public:
     /**
      * @brief Which rules the operations and the smoother follow -- the one switch for them.
      *
-     *   Loop (the default; the loop and the repulsion passes): this component's energy E. Every
-     *     rule compares the SUM of tet_energy() over the cells an operation changes, before
-     *     against after: collapses (collapse_before_vertex() / collapse_after_connectivity()),
-     *     swaps (swap_after_cells(); the 4-4 / 5-6 case search, swap_edge_44_energy(), and the face
-     *     swap's gate, swap_face_before(), on candidate_energy()), the smoothing veto and the
-     *     projected step (smoothing_ring_energy()), the split gate
-     * (EXPERIMENTAL_split_energy_gate). The engine's AMIPS^3 rules admit everything
-     * (collapse_quality_allowed(), swap_quality_allowed()), and the smoother minimises the vertex's
-     * part of E (smoothing_extra_energy()) with this component's solver criterion
-     * (smoothing_solver()). TetWild (every TetWild pass: tetwild_pass() --
-     * EXPERIMENTAL_refine_construction's, EXPERIMENTAL_construction_tetwild_run's, the final pass):
-     * TetWild's own. The engine's rules on the MAX of AMIPS^3 over those cells:
-     * collapse_quality_allowed() and
-     *     swap_quality_allowed() as the base has them, the base's scores in the 4-4 / 5-6 search
-     *     and the base's face swap gate; no sum rule and no split gate. The smoother is
-     *     TetOptimizerMesh::smooth_after(): the raw sum of AMIPS over the one-ring
-     *     (AMIPSEnergy3D; no extra energy), its quality veto and projected step on the ring's max
-     *     (smoothing_ring_energy() the base's), the engine's solver criterion (rel_grad_norm_tol
-     * 0).
+     * Loop (the default; the loop and the repulsion passes): this component's energy E. Every rule
+     * compares the SUM of tet_energy() over the cells an operation changes, before against after:
+     * collapses (collapse_before_vertex() / collapse_after_connectivity()), swaps
+     * (swap_after_cells(); the 4-4 / 5-6 case search, swap_edge_44_energy(), and the face swap's
+     * gate, swap_face_before(), on candidate_energy()), the smoothing veto and the projected step
+     * (smoothing_ring_energy()), the split gate (EXPERIMENTAL_split_energy_gate). The engine's
+     * AMIPS^3 rules admit everything (collapse_quality_allowed(), swap_quality_allowed()), and the
+     * smoother minimises the vertex's part of E (smoothing_extra_energy()) with this component's
+     * solver criterion (smoothing_solver()).
+     *
+     * TetWild (every TetWild pass, tetwild_pass(): EXPERIMENTAL_refine_construction's,
+     * EXPERIMENTAL_construction_tetwild_run's, the final pass): TetWild's own. The engine's rules
+     * on the MAX of AMIPS^3 over those cells: collapse_quality_allowed() and swap_quality_allowed()
+     * as the base has them, the base's scores in the 4-4 / 5-6 search and the base's face swap
+     * gate; no sum rule and no split gate. The smoother is TetOptimizerMesh::smooth_after(): the
+     * raw sum of AMIPS over the one-ring (AMIPSEnergy3D; no extra energy), its quality veto and
+     * projected step on the ring's max (smoothing_ring_energy() the base's), the engine's solver
+     * criterion (rel_grad_norm_tol 0). TetWild's bare coarsening passes run too
+     * (optimization_bare_coarsen_passes()).
      */
     enum class OpRules { Loop, TetWild };
     OpRules m_op_rules = OpRules::Loop;
@@ -2397,10 +2397,12 @@ public:
     std::set<std::tuple<long, long, long>> m_stuck_prev_cells;
     size_t m_stuck_calls = 0;
 
-    /// TetWild's bare collapse passes are off for the offset, as TriWild's are in 2D: with no
-    /// length gate the quality test alone demolishes the band, and the sizing field cannot
-    /// refuse a collapse.
-    bool optimization_bare_coarsen_passes() const override { return false; }
+    /// TetWild's bare coarsening passes (collapse + swap with no length gate, before the first
+    /// iteration of mesh_improvement() and after the last): on under TetWild's rules (m_op_rules),
+    /// as in TetWild -- mesh_improvement() runs only in tetwild_pass(), so in every TetWild pass
+    /// (since 2026-10-20). Off otherwise: in the loop, with no length gate, the quality test alone
+    /// demolished the band, and the sizing field cannot refuse a collapse.
+    bool optimization_bare_coarsen_passes() const override { return tetwild_rules(); }
 
     /// Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it
     /// separates, and on a live offset face the root of face_offset_term() (the face's RMS
