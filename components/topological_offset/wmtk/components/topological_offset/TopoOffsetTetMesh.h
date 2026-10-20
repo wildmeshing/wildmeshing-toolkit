@@ -1830,8 +1830,16 @@ public:
     /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid,
     /// EXPERIMENTAL_damping_factor (default 0.5) times the shortest edge from vid to a vertex of its
     /// one-ring, at the positions before the solve; the three smoothers above pass it as
-    /// SmoothVertexOptions::max_step. Infinity when damping is off.
+    /// SmoothVertexOptions::max_step. Infinity when damping is off or not active
+    /// (damping_active()).
     double damping_step(size_t vid) const;
+    /// EXPERIMENTAL_damping acts in the loop's smoothing passes only: never in a TetWild pass
+    /// (m_tetwild_pass: EXPERIMENTAL_refine_construction's, EXPERIMENTAL_construction_tetwild_run's,
+    /// the final pass) nor in the repulsion passes before the march (m_repulsion_potential).
+    bool damping_active() const
+    {
+        return m_offset_params.damping && !m_tetwild_pass && !m_repulsion_potential;
+    }
     /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
     /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
     void count_damped_move(size_t vid, const Vector3d& x0, double max_step);

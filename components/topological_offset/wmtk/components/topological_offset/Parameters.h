@@ -189,10 +189,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
     /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
     bool gap_refinement = false;
-    /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve may move its vertex at most
-    /// damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
+    /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve of the loop may move its vertex at
+    /// most damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
     /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
-    /// SmoothVertexOptions::max_step). See the spec doc.
+    /// SmoothVertexOptions::max_step). Never in a TetWild pass or the repulsion passes
+    /// (TopoOffsetTetMesh::damping_active()). See the spec doc.
     bool damping = false;
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.

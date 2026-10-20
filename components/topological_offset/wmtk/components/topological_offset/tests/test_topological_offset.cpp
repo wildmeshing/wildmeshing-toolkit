@@ -2699,6 +2699,45 @@ TEST_CASE("refine-construction-keys", "[offset][3d]")
     CHECK(Parameters(injected({{"EXPERIMENTAL_amips_pow", true}})).amips_pow);
 }
 
+TEST_CASE("damping-loop-only", "[offset][3d]")
+{
+    // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is
+    // damping_factor x the shortest edge at the vertex there, and infinity in a TetWild pass
+    // (m_tetwild_pass: the refine_construction pass, the construction pass, the final pass) and
+    // with damping off. The unit tet: every edge at vertex 0 has length 1.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    const double inf = std::numeric_limits<double>::infinity();
+    {
+        Parameters param;
+        param.damping = true;
+        param.damping_factor = 0.25;
+        TopoOffsetTetMesh mesh(param, 0);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+        REQUIRE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == 0.25);
+        mesh.m_tetwild_pass = true;
+        CHECK_FALSE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == inf);
+        mesh.m_tetwild_pass = false;
+        CHECK(mesh.damping_step(0) == 0.25);
+    }
+    {
+        Parameters param;
+        TopoOffsetTetMesh mesh(param, 0);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+        CHECK_FALSE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == inf);
+    }
+}
+
 TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")
 {
     // The construction's own splits (the simplicial embedding's, and the march's under

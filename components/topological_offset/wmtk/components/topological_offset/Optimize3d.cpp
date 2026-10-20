@@ -784,7 +784,7 @@ double TopoOffsetTetMesh::damping_step(const size_t vid) const
 {
     // See the declaration. Every edge at vid lies in a cell of its one-ring, so the ring's corners
     // other than vid are exactly its neighbours.
-    if (!m_offset_params.damping) return std::numeric_limits<double>::infinity();
+    if (!damping_active()) return std::numeric_limits<double>::infinity();
     const Vector3d& x = m_vertex_attribute[vid].m_posf;
     double shortest = std::numeric_limits<double>::infinity();
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
@@ -800,7 +800,7 @@ void TopoOffsetTetMesh::count_damped_move(
     const Vector3d& x0,
     const double max_step)
 {
-    if (!m_offset_params.damping) return;
+    if (!damping_active()) return;
     ++m_damping_moves;
     const double moved = (std::as_const(m_vertex_attribute)[vid].m_posf - x0).norm();
     if (moved >= max_step * (1. - 1e-9)) ++m_damping_bounded;
@@ -1787,7 +1787,7 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         "\tfront veto: fired {} of {} front moves that reached it (ring sum of tet_energy rose)",
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
-    if (m_offset_params.damping) {
+    if (damping_active()) {
         const size_t bounded = m_damping_bounded.exchange(0);
         const size_t moves = m_damping_moves.exchange(0);
         logger().info(
