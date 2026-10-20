@@ -86,7 +86,8 @@ public:
      * boundary, or the swap would make a new ear or turn a triangle over -- b collapses along
      * the curve and the corner goes. Where a curve zigzags, removing one ear can make the next,
      * so call it until it removes none. No other swap or collapse makes an ear, but the input
-     * can hold them. Serial; returns the number removed.
+     * can hold them. A triangle with curves (or the boundary) all round is a region of its own,
+     * not an ear, and stays. Serial; returns the number removed.
      */
     size_t remove_feature_ears();
     /// Whether `v` is on a curve and one triangle holds both of its curve edges.

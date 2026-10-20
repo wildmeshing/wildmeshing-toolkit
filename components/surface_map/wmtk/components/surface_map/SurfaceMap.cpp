@@ -546,15 +546,26 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             return std::make_pair((*loop)[(i + n - 1) % n], (*loop)[(i + 1) % n]);
         };
         // The outline keeps the removed vertex; after the edit a virtual vertex takes its place,
-        // on the edge (prev, next) at its parameter along the two edges it replaced.
-        bool split_all = true;
+        // on the edge (prev, next) at its parameter along the two edges it replaced. Where no
+        // edge replaces them, the survivor came out onto the outline in its place -- a boundary
+        // vertex collapsed into one inside -- and stands for it there.
+        const bool kept_inside = std::none_of(loop->begin(), loop->end(), [&](uint64_t v) {
+            return ids.vertex_of(v) == kept;
+        });
+        bool split_all = true, kept_placed = false;
         for (const size_t i : on_outline) {
             const auto [prev, next] = neighbours(i);
             const double a = length(prev, (*loop)[i]), b = length((*loop)[i], next);
             const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
             const uint64_t w = ids.fresh(removed);
-            split_all = after.split(prev, next, tau, w) && split_all;
-            slots[i].second = w;
+            if (after.split(prev, next, tau, w)) {
+                slots[i].second = w;
+            } else if (kept_inside && !kept_placed) {
+                slots[i].second = kept;
+                kept_placed = true;
+            } else {
+                split_all = false;
+            }
         }
         if (split_all) return joint(before, after, slots, cell);
         if (on_outline.size() > 1 || !ids.names.empty()) return false;

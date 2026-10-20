@@ -320,6 +320,23 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
         const auto feature_after = [&](size_t x) {
             return is_feature_edge(cache.v1, x) || is_feature_edge(cache.v2, x);
         };
+        // Nor may it merge two curves, the boundary counting as one: a triangle the collapse
+        // removes whose third vertex has a curve or boundary edge to both ends would leave the
+        // two one edge, and the region between them -- that triangle, at least -- gone.
+        for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
+            const auto vs = oriented_tri_vids(f);
+            if (!std::count(vs.begin(), vs.end(), cache.v2)) continue;
+            const size_t fid = f.fid(*this);
+            const auto bounding = [&](size_t a, size_t b) {
+                return is_feature_edge(a, b) || is_boundary_edge(tuple_from_edge(a, b, fid));
+            };
+            for (const size_t x : vs) {
+                if (x != cache.v1 && x != cache.v2 && bounding(cache.v1, x) &&
+                    bounding(cache.v2, x)) {
+                    return false;
+                }
+            }
+        }
         for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
             if (m_removing_ears) break;
             const auto vs = oriented_tri_vids(f);
@@ -338,6 +355,11 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
         // A curve vertex goes only along its curve, and only from inside it.
         if (feature_degree(cache.v1) > 0 &&
             (feature_degree(cache.v1) != 2 || !cache.feature_edge)) {
+            return false;
+        }
+        // Nor may a boundary vertex go into a curve vertex inside: the curve would touch the
+        // boundary there, pinching the region between them in two.
+        if (feature_degree(cache.v2) > 0 && is_boundary_vertex(t) && !is_boundary_vertex(t2)) {
             return false;
         }
     }
@@ -472,6 +494,9 @@ size_t IsotropicRemeshing::remove_feature_ears()
         for (int k = 0; k < 3; ++k) {
             const size_t a = vs[(k + 2) % 3], b = vs[k], c = vs[(k + 1) % 3];
             if (!is_feature_edge(a, b) || !is_feature_edge(b, c)) continue;
+            if (is_feature_edge(a, c) || is_boundary_edge(tuple_from_edge(a, c, f))) {
+                break; // curves, or the boundary, all round: a region of its own, no ear
+            }
             std::vector<Tuple> new_tris;
             // Swap the base (a, c): b gets two triangles on this side. Not where the base is a
             // curve or the boundary, nor where the swap would make a new ear at a or c, nor where
