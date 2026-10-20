@@ -68,6 +68,14 @@ struct SurfaceHistory
     std::vector<uint8_t> vertex_alive;
     std::vector<std::array<uint64_t, 3>> faces;
     std::vector<uint8_t> face_alive;
+    /**
+     * Feature edges: curves the operations keep, which a map must take onto themselves (label
+     * boundaries, say). Each a vertex pair with the smaller id first. The edits carry them
+     * along by fixed rules -- a split feature edge leaves two feature halves, a collapse renames
+     * the removed endpoint's feature edges to the survivor, a swap never takes one -- so only
+     * the snapshot lists them.
+     */
+    std::vector<std::array<uint64_t, 2>> feature_edges;
 
     std::vector<Edit> edits;
 

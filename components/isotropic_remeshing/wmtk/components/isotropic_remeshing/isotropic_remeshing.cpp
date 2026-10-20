@@ -8,12 +8,61 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
+
+#include <map>
 
 #include <isotropic_remeshing_spec.hpp>
 #include "IsotropicRemeshing.h"
 
 namespace wmtk::components::isotropic_remeshing {
+
+namespace {
+
+/// The edges between two faces that differ in any of `fields`, per-face fields of the gmsh file
+/// `path`, whose triangles are `tris` in file order.
+std::vector<std::array<size_t, 2>> field_boundaries(
+    const std::string& path,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::vector<std::string>& fields)
+{
+    MshData msh;
+    msh.load(path);
+    if (msh.get_num_faces() != tris.size()) {
+        log_and_throw_error(
+            "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
+            "line up with the triangles",
+            path,
+            tris.size(),
+            msh.get_num_faces());
+    }
+    std::vector<std::vector<double>> value(tris.size());
+    for (const std::string& name : fields) {
+        const auto names = msh.get_face_attribute_names();
+        if (std::find(names.begin(), names.end(), name) == names.end()) {
+            log_and_throw_error("feature_fields: {} has no per-face field {}", path, name);
+        }
+        msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
+            value[i].insert(value[i].end(), data.begin(), data.end());
+        });
+    }
+    std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
+    for (size_t f = 0; f < tris.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            size_t a = tris[f][k], b = tris[f][(k + 1) % 3];
+            if (a > b) std::swap(a, b);
+            edge_faces[{{a, b}}].push_back(f);
+        }
+    }
+    std::vector<std::array<size_t, 2>> edges;
+    for (const auto& [e, fs] : edge_faces) {
+        if (fs.size() == 2 && value[fs[0]] != value[fs[1]]) edges.push_back(e);
+    }
+    return edges;
+}
+
+} // namespace
 
 double
 run_remeshing(std::string input, double len, std::string output, IsotropicRemeshing& m, int itrs)
@@ -80,6 +129,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     const bool use_link_condition = json_params["use_link_condition"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
+    const std::vector<std::string> feature_fields = json_params["feature_fields"];
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -149,10 +199,21 @@ void isotropic_remeshing(nlohmann::json json_params)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    if (!feature_fields.empty()) {
+        m.set_feature_edges(field_boundaries(input_path, tris, feature_fields));
+        logger().info(
+            "{} feature edges: the boundaries of {}",
+            m.feature_edges().size(),
+            nlohmann::json(feature_fields).dump());
+    }
+
     std::shared_ptr<history::Recorder> history;
     if (!history_output.empty()) {
         history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
         history->history().metadata = json_params.dump();
+        for (const auto& e : m.feature_edges()) {
+            history->history().feature_edges.push_back({{e[0], e[1]}});
+        }
     }
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);

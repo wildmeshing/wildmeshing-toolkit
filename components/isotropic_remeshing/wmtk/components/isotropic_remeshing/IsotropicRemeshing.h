@@ -35,6 +35,12 @@ struct VertexAttributes
     bool input_boundary = false;
 };
 
+/// A vertex's neighbours across feature edges (see IsotropicRemeshing::set_feature_edges).
+struct FeatureAttributes
+{
+    std::vector<size_t> nbrs;
+};
+
 class IsotropicRemeshing : public wmtk::TriMesh
 {
 public:
@@ -47,6 +53,29 @@ public:
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
+    /// Read and written only while the mesh has feature edges.
+    wmtk::AttributeCollection<FeatureAttributes> feature_attrs;
+
+    /**
+     * @brief Curves the remeshing keeps: label boundaries, say.
+     *
+     * A vertex on two feature edges is on a curve; one with one, or with three or more, ends a
+     * curve or joins several, and stays where it is. A split of a feature edge leaves two
+     * feature halves. A curve vertex collapses only along its curve, onto the survivor's
+     * position, and not where that would flatten a triangle onto the curve; a vertex off every
+     * curve collapses as before, onto the survivor's position if that one is on a curve. A
+     * feature edge is never swapped, and a curve vertex is smoothed along its curve only.
+     *
+     * These are the rules wmtk::history::Replay carries feature edges by, so a recorded history
+     * holds the curves at every step.
+     */
+    void set_feature_edges(const std::vector<std::array<size_t, 2>>& edges);
+    /// The feature edges, smaller vertex id first.
+    std::vector<std::array<size_t, 2>> feature_edges() const;
+    bool is_feature_edge(size_t a, size_t b) const;
+    size_t feature_degree(size_t v) const;
+    /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
+    void consolidate_mesh();
 
     int retry_limit = 10;
     IsotropicRemeshing(
@@ -95,6 +124,11 @@ public:
         bool v2_on_boundary = false;
         // Split: the new vertex lands on a boundary edge that touches an input_boundary vertex.
         bool split_input_boundary = false;
+        // Feature curves: the edge's endpoints (t.vid() first), whether it is a feature edge,
+        // and whether a collapse leaves the survivor where it is.
+        size_t v1 = 0, v2 = 0;
+        bool feature_edge = false;
+        bool keep_v2_position = false;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -161,6 +195,10 @@ public:
     bool swap_remeshing();
     bool uniform_remeshing(double L, int interations);
     bool write_triangle_mesh(std::string path);
+
+private:
+    wmtk::AttributeContainerGroup m_vertex_group;
+    bool m_has_features = false;
 };
 
 } // namespace wmtk::components::isotropic_remeshing

@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <set>
 #include <vector>
 
 namespace wmtk::history {
@@ -31,6 +32,9 @@ public:
     const std::vector<uint8_t>& face_alive() const { return m_face_alive; }
     /// The live faces at vertex `v`, sorted.
     const std::vector<uint64_t>& faces_of(uint64_t v) const { return m_vertex_faces[v]; }
+    /// The feature edges (see SurfaceHistory::feature_edges), smaller id first.
+    std::set<std::array<uint64_t, 2>> feature_edges() const;
+    bool is_feature(uint64_t a, uint64_t b) const;
 
 private:
     void split_edge(const Edit& e);
@@ -51,6 +55,10 @@ private:
     std::vector<uint8_t> m_face_alive;
     /// Live faces at each vertex, sorted.
     std::vector<std::vector<uint64_t>> m_vertex_faces;
+    /// Each vertex's neighbours across feature edges.
+    std::vector<std::vector<uint64_t>> m_feature_nbrs;
+    void add_feature(uint64_t a, uint64_t b);
+    bool remove_feature(uint64_t a, uint64_t b);
 };
 
 } // namespace wmtk::history

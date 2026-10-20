@@ -2,13 +2,16 @@
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
 #include <wmtk/components/surface_map/surface_io.hpp>
 #include <wmtk/components/surface_map/transfer.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <map>
 #include <random>
+#include <set>
 
 using namespace wmtk;
 using namespace wmtk::components;
@@ -133,7 +136,7 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
     INFO(
         "not a disk " << w.not_a_disk << ", flat " << w.flat_triangle << ", inverted " << w.inverted
                       << ", merged " << w.merged_faces);
-    CHECK(map.boundary_collapses() > 0);
+    CHECK(map.chord_collapses() > 0);
     CHECK(w.not_a_disk == 0);
     CHECK(w.merged_faces == 0);
     CHECK(w.inverted <= w.flat_triangle);
@@ -205,4 +208,137 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
     INFO(far << " of " << out.faces.size() << " faces clearly on one side");
     CHECK(far > out.faces.size() / 3);
     CHECK(wrong == 0);
+}
+
+namespace {
+
+/// The sphere, labelled per face by the side of x = 0 and by octant of the centroid.
+surface_map::SurfaceData labelled_sphere()
+{
+    MatrixXd V;
+    MatrixXi F;
+    wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, F, 0);
+    surface_map::SurfaceData s;
+    for (int i = 0; i < V.rows(); ++i) s.vertices.push_back(V.row(i).transpose());
+    for (int f = 0; f < F.rows(); ++f) {
+        s.faces.push_back({{uint64_t(F(f, 0)), uint64_t(F(f, 1)), uint64_t(F(f, 2))}});
+        const Eigen::Vector3d c =
+            (s.vertices[s.faces[f][0]] + s.vertices[s.faces[f][1]] + s.vertices[s.faces[f][2]]) / 3;
+        s.face_fields["side"].push_back({c.x() > 0 ? 1. : 0.});
+        s.face_fields["octant"].push_back(
+            {double((c.x() > 0) + 2 * (c.y() > 0) + 4 * (c.z() > 0))});
+    }
+    return s;
+}
+
+/// Edges between two faces with different values of any field.
+std::vector<std::array<size_t, 2>> label_boundaries(const surface_map::SurfaceData& s)
+{
+    std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
+    for (size_t f = 0; f < s.faces.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            size_t a = s.faces[f][k], b = s.faces[f][(k + 1) % 3];
+            if (a > b) std::swap(a, b);
+            edge_faces[{{a, b}}].push_back(f);
+        }
+    }
+    std::vector<std::array<size_t, 2>> out;
+    for (const auto& [e, fs] : edge_faces) {
+        if (fs.size() != 2) continue;
+        for (const auto& [name, field] : s.face_fields) {
+            if (field[fs[0]] != field[fs[1]]) {
+                out.push_back(e);
+                break;
+            }
+        }
+    }
+    return out;
+}
+
+} // namespace
+
+TEST_CASE("surface-map-conforming-labels", "[surface_map]")
+{
+    // With the label boundaries kept as feature curves, every output face lies inside one label
+    // region: points anywhere in it map to input faces of one label, the labels hold exactly,
+    // and the output's label boundaries are its feature curves.
+    const surface_map::SurfaceData in = labelled_sphere();
+    std::vector<Eigen::Vector3d> verts(in.vertices.begin(), in.vertices.end());
+    std::vector<std::array<size_t, 3>> tris;
+    for (const auto& f : in.faces) tris.push_back({{size_t(f[0]), size_t(f[1]), size_t(f[2])}});
+    const auto features = label_boundaries(in);
+    REQUIRE(!features.empty());
+
+    for (const int threads : {0, 4}) {
+        INFO("threads " << threads);
+        isotropic_remeshing::IsotropicRemeshing m(verts, threads);
+        m.create_mesh(verts.size(), tris, {}, true, 0, 0);
+        m.set_feature_edges(features);
+        const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        for (const auto& e : m.feature_edges())
+            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        m.uniform_remeshing(0.6 * m.average_len_valen()[0], 2);
+        m.consolidate_mesh();
+        m.stop_history();
+        const auto& h = rec->history();
+
+        // The history carries the curves exactly as the mesh does.
+        history::Replay r(h);
+        r.apply_all(h);
+        std::set<std::array<uint64_t, 2>> mesh_features;
+        for (const auto& e : m.feature_edges()) mesh_features.insert({{e[0], e[1]}});
+        CHECK(r.feature_edges() == mesh_features);
+        CHECK(mesh_features.size() > features.size() / 4);
+
+        const SurfaceMap map(h);
+        INFO(
+            "build: not a disk " << map.build_warnings().not_a_disk << ", flat "
+                                 << map.build_warnings().flat_triangle << ", inverted "
+                                 << map.build_warnings().inverted);
+        CHECK(map.build_warnings().total() == 0);
+
+        // Four points in every output face, mapped to the input.
+        std::vector<SurfacePoint> pts;
+        std::vector<uint64_t> out_faces;
+        for (uint64_t f = 0; f < map.output_face_alive().size(); ++f) {
+            if (!map.output_face_alive()[f]) continue;
+            out_faces.push_back(f);
+            pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
+            pts.push_back({f, Eigen::Vector3d(0.8, 0.1, 0.1)});
+            pts.push_back({f, Eigen::Vector3d(0.1, 0.8, 0.1)});
+            pts.push_back({f, Eigen::Vector3d(0.1, 0.1, 0.8)});
+        }
+        const auto src = map.to_input(pts);
+        CHECK(map.map_warnings().total() == 0);
+        size_t mixed = 0;
+        for (size_t i = 0; i < out_faces.size(); ++i) {
+            const auto label = [&](size_t k) {
+                return in.face_fields.at("octant")[src[4 * i + k].face];
+            };
+            if (label(1) != label(0) || label(2) != label(0) || label(3) != label(0)) ++mixed;
+        }
+        CHECK(mixed == 0);
+
+        // The transferred labels change exactly across feature edges.
+        const surface_map::SurfaceData out = surface_map::transfer_face_fields(map, in);
+        std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
+        for (size_t f = 0; f < out.faces.size(); ++f) {
+            for (int k = 0; k < 3; ++k) {
+                uint64_t a = out.faces[f][k], b = out.faces[f][(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                edge_faces[{{a, b}}].push_back(f);
+            }
+        }
+        size_t label_edges = 0, label_edges_not_feature = 0;
+        for (const auto& [e, fs] : edge_faces) {
+            if (fs.size() != 2) continue;
+            if (out.face_fields.at("octant")[fs[0]] == out.face_fields.at("octant")[fs[1]])
+                continue;
+            ++label_edges;
+            // out numbers vertices by rank, as the consolidated mesh does.
+            if (!mesh_features.count(e)) ++label_edges_not_feature;
+        }
+        CHECK(label_edges > 0);
+        CHECK(label_edges_not_feature == 0);
+    }
 }
