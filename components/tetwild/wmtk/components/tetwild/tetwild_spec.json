@@ -119,7 +119,7 @@
     "pointer": "/input_roles",
     "type": "list",
     "default": [],
-    "doc": "For filter='hybrid': one role per /input entry, 'volume' (tetrahedralize its inside, by per-input winding number) or 'surface' (keep as an embedded triangle sheet in the hybrid output). Empty means every input is 'volume'. Curves and points declare their dimension by arriving through /input_edges and /input_points. Ignored (with a warning) by every other filter."
+    "doc": "For filter='hybrid': one role per /input entry, 'volume' (tetrahedralize its inside: the winding number of the tracked faces whose input set contains that input, as filter 'tracked' uses for the whole tracked surface) or 'surface' (keep as an embedded triangle sheet in the hybrid output). Empty means every input is 'volume'. Curves and points declare their dimension by arriving through /input_edges and /input_points. Ignored (with a warning) by every other filter."
   },
   {
     "pointer": "/input_roles/*",

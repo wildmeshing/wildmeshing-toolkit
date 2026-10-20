@@ -354,6 +354,23 @@ public:
         const std::vector<int>& face_input,
         int n_inputs);
 
+    /**
+     * @brief The tracked surface's winding number split by input: W(i, p) is the winding number
+     * at barycenters.row(i) of the tracked faces whose input set contains p, in the orientation
+     * compute_winding_number gives the tracked surface (the input's, when the mesh tracks it).
+     * One column per input up to the largest in `inputs`; the others are 0.
+     *
+     * Exact membership, no envelope test: each face carries its input set from the insertion,
+     * and stays within eps of every input in it. A face on several inputs counts for each, with
+     * the one orientation it carries -- m_orientation is the net count over every input that
+     * covers it, not one per input. Each column is oriented on its own, as
+     * compute_input_winding_numbers orients each input. With one input every tracked face is on
+     * it, and the column is the winding number filter "tracked" uses.
+     */
+    Eigen::MatrixXd tracked_winding_numbers_per_input(
+        const Eigen::MatrixXd& barycenters,
+        const std::vector<size_t>& inputs) const;
+
     /// Which of the finalization's per-tet fields were computed, so that the writers leave
     /// out the ones that were not rather than writing their defaults as if they were values.
     bool m_has_input_winding_number = false;
@@ -365,13 +382,12 @@ public:
     void filter_with_flood_fill();
 
     /**
-     * The 'hybrid' filter: keep only tets inside (winding > 0.5) at least one of the
-     * inputs listed in `volume_inputs` (indices into the input list, matching
-     * m_winding_number_per_input). Everything else is scaffolding; the driver collects
-     * the surface-role faces and the feature curves BEFORE calling this, because they
-     * live on the tets this deletes.
+     * The 'hybrid' filter: remove every tet tid with keep[tid] false. The driver decides keep
+     * -- inside at least one volume-role input by tracked_winding_numbers_per_input -- and
+     * collects the surface-role faces and the feature curves with the same keep BEFORE calling
+     * this, because they live on the tets this deletes.
      */
-    void filter_with_roles(const std::vector<size_t>& volume_inputs);
+    void filter_with_roles(const std::vector<bool>& keep);
 
     /**
      * Write the mixed-dimensional output of the hybrid filter: the (already filtered)
@@ -389,6 +405,10 @@ public:
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 private:
+    /// The tracked surface as compute_winding_number evaluates it, as a soup over every vertex
+    /// slot: oriented as the input when m_tracks_orientation, by bfs_orient otherwise.
+    void tracked_surface_soup(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;

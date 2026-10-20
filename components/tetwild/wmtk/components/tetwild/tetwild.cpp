@@ -981,6 +981,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     const bool need_tracked =
         filter_option == "tracked" || json_params["compute_tracked_winding_number"];
     const bool need_parts = filter_option == "flood" || json_params["compute_flood_fill"];
+    // The hybrid filter's decision per tet slot: inside at least one volume-role input.
+    std::vector<bool> hybrid_keep;
     {
         igl::Timer step_timer;
         // Precompute the tets and their barycenters once; every winding-number pass reuses
@@ -1012,6 +1014,42 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             mesh_new.compute_winding_number(finalize_tets, finalize_barycenters);
             logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
         }
+        if (filter_option == "hybrid") {
+            // Inside volume-role input k means what filter "tracked" means, input by input: the
+            // winding number at the tet's centre of the tracked faces whose input set contains
+            // k. Each of those faces stays within eps of k (the input-set invariant), and where
+            // they close up the number is an integer, constant between them, so k's kept tets
+            // end at tracked faces within eps of k. Input k's own winding number at the centre
+            // did not: the tracked surface lies up to eps from the input, and a tet between the
+            // two was decided by the side its centre fell on (thingi 104509 cut by a wavy sheet,
+            // eps 0.1956: kept tet 7114 lay in the region joined to the outside without
+            // crossing a tracked face, its centre 0.11 eps inside the solid, one corner a sheet
+            // vertex 2.06 eps outside it).
+            //
+            // Not exact where inputs coincide: a face carries one net orientation, the sum over
+            // the inputs covering it, so two solids touching cancel to 0 there and the face is
+            // in neither, and a sheet lying on a solid's face adds to or cancels it. Measured on
+            // thingi 1047980 cut by 103197 (eps 0.1602): 10 tracked faces carry both inputs, with
+            // orientation 2, -2 or 1, so the solid's faces leave 23 boundary edges (0 with each
+            // such face counted once) and its winding number is up to 0.46 off an integer -- yet
+            // no tet's decision changes against counting them once. On the other hybrid scenes no
+            // face carries two inputs.
+            step_timer.start();
+            const Eigen::MatrixXd W =
+                mesh_new.tracked_winding_numbers_per_input(finalize_barycenters, volume_input_ids);
+            hybrid_keep.assign(mesh_new.tet_capacity(), false);
+            for (size_t i = 0; i < finalize_tets.size(); ++i) {
+                for (const size_t k : volume_input_ids) {
+                    if (wmtk::utils::winding_number_inside(W(i, k))) {
+                        hybrid_keep[finalize_tets[i].tid(mesh_new)] = true;
+                        break;
+                    }
+                }
+            }
+            logger().info(
+                "finalize: tracked winding numbers per volume-role input {:.4}s",
+                step_timer.getElapsedTime());
+        }
         if (need_parts) {
             step_timer.start();
             const int num_parts = mesh_new.flood_fill();
@@ -1035,17 +1073,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // tagged feature curve, the anchor positions, and the pre-filter retention -- the
         // audit that means something is the one taken while the features still exist in
         // the tet mesh.
-        std::vector<bool> keep(mesh_new.tet_capacity(), false);
-        for (const auto& t : mesh_new.get_tets()) {
-            const size_t tid = t.tid(mesh_new);
-            const auto& wn = mesh_new.tet_finalize(tid).m_winding_number_per_input;
-            for (const size_t k : volume_input_ids) {
-                if (k < wn.size() && wmtk::utils::winding_number_inside(wn[k])) {
-                    keep[tid] = true;
-                    break;
-                }
-            }
-        }
+        const std::vector<bool>& keep = hybrid_keep;
         // A tracked face with no kept tet on either side is a sheet triangle only if it lies on
         // a surface-role input. The tracked surface is one flag for every input, so membership
         // is decided by the same containment test the optimizer holds every tracked face to:
@@ -1095,7 +1123,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             }
             hybrid_sheet_tris.push_back(tri);
         }
-        mesh_new.filter_with_roles(volume_input_ids);
+        mesh_new.filter_with_roles(keep);
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }

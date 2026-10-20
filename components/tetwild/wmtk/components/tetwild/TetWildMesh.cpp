@@ -494,27 +494,9 @@ Eigen::MatrixXd TetWildMesh::tet_barycenters(const std::vector<Tuple>& tets) con
     return C;
 }
 
-void TetWildMesh::compute_winding_number(
-    const std::vector<Tuple>& tets,
-    const Eigen::MatrixXd& barycenters,
-    const std::vector<Vector3d>& vertices,
-    const std::vector<std::array<size_t, 3>>& faces)
+void TetWildMesh::tracked_surface_soup(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
 {
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    if (!vertices.empty()) {
-        V.resize(vertices.size(), 3);
-        F.resize(faces.size(), 3);
-
-        for (size_t i = 0; i < (size_t)V.rows(); i++) {
-            V.row(i) = vertices[i];
-        }
-        for (size_t i = 0; i < (size_t)F.rows(); i++) {
-            for (size_t j = 0; j < 3; j++) {
-                F(i, j) = (int)faces[i][j];
-            }
-        }
-    } else if (m_tracks_orientation) {
+    if (m_tracks_orientation) {
         // The tracked surface with the orientation the input gave it, carried through
         // insertion and every operation: no guessing, so this means what the input winding
         // number means, evaluated on the surface the mesh actually conforms to. Coincident
@@ -553,6 +535,31 @@ void TetWildMesh::compute_winding_number(
         bfs_orient(F0, F, C);
         // logger().info("BFS orient {}", F.rows());
     }
+}
+
+void TetWildMesh::compute_winding_number(
+    const std::vector<Tuple>& tets,
+    const Eigen::MatrixXd& barycenters,
+    const std::vector<Vector3d>& vertices,
+    const std::vector<std::array<size_t, 3>>& faces)
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    if (!vertices.empty()) {
+        V.resize(vertices.size(), 3);
+        F.resize(faces.size(), 3);
+
+        for (size_t i = 0; i < (size_t)V.rows(); i++) {
+            V.row(i) = vertices[i];
+        }
+        for (size_t i = 0; i < (size_t)F.rows(); i++) {
+            for (size_t j = 0; j < 3; j++) {
+                F(i, j) = (int)faces[i][j];
+            }
+        }
+    } else {
+        tracked_surface_soup(V, F);
+    }
 
     // `tets` and their `barycenters` are precomputed once by the caller and shared
     // across the winding-number passes (input / tracked).
@@ -582,6 +589,21 @@ void TetWildMesh::compute_winding_number(
     }
 }
 
+namespace {
+/// Orient input p's winding number (column p) on its own: see compute_input_winding_numbers.
+void orient_input(Eigen::MatrixXd& W_per_input, const int p)
+{
+    Eigen::VectorXd w = W_per_input.col(p);
+    if (wmtk::utils::orient_winding_number(w)) {
+        logger().info("Correcting winding number for input {}", p);
+    }
+    if (!wmtk::utils::any_winding_number_inside(w)) {
+        logger().warn("No winding number above 0.5 for input {}", p);
+    }
+    W_per_input.col(p) = w;
+}
+} // namespace
+
 void TetWildMesh::compute_input_winding_numbers(
     const std::vector<Tuple>& tets,
     const Eigen::MatrixXd& barycenters,
@@ -610,16 +632,7 @@ void TetWildMesh::compute_input_winding_numbers(
         NUM_THREADS);
     Eigen::VectorXd W = W_per_input.rowwise().sum();
 
-    for (int p = 0; p < n_inputs; ++p) {
-        Eigen::VectorXd w = W_per_input.col(p);
-        if (wmtk::utils::orient_winding_number(w)) {
-            logger().info("Correcting winding number for input {}", p);
-        }
-        if (!wmtk::utils::any_winding_number_inside(w)) {
-            logger().warn("No winding number above 0.5 for input {}", p);
-        }
-        W_per_input.col(p) = w;
-    }
+    for (int p = 0; p < n_inputs; ++p) orient_input(W_per_input, p);
     if (wmtk::utils::orient_winding_number(W)) logger().info("Correcting winding number");
     const bool whole_inside = wmtk::utils::any_winding_number_inside(W);
     if (!whole_inside) {
@@ -636,6 +649,52 @@ void TetWildMesh::compute_input_winding_numbers(
     m_has_input_winding_number = whole_inside;
 }
 
+Eigen::MatrixXd TetWildMesh::tracked_winding_numbers_per_input(
+    const Eigen::MatrixXd& barycenters,
+    const std::vector<size_t>& inputs) const
+{
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    tracked_surface_soup(V, F);
+    // Each row's input set, read off the face it is a copy of.
+    std::vector<uint16_t> row_set(F.rows());
+    size_t on_several = 0, on_none = 0;
+    for (Eigen::Index i = 0; i < F.rows(); ++i) {
+        const std::array<size_t, 3> vids = {{size_t(F(i, 0)), size_t(F(i, 1)), size_t(F(i, 2))}};
+        row_set[i] = m_face_attribute[std::get<1>(tuple_from_face(vids))].input_set();
+        on_several += (row_set[i] & (row_set[i] - 1)) != 0;
+        on_none += row_set[i] == 0;
+    }
+    logger().info(
+        "tracked winding numbers per input: {} oriented tracked faces (each |orientation| "
+        "times), {} on several inputs (carrying their summed orientation), {} on none",
+        F.rows(),
+        on_several,
+        on_none);
+
+    const size_t n_cols = inputs.empty() ? 0 : *std::max_element(inputs.begin(), inputs.end()) + 1;
+    Eigen::MatrixXd W = Eigen::MatrixXd::Zero(barycenters.rows(), n_cols);
+    for (const size_t p : inputs) {
+        // Not winding_number_by_group: a face on several inputs counts for each. Same V, and
+        // the rows in the soup's order, so with one input this is filter "tracked"'s number.
+        std::vector<int> rows;
+        for (Eigen::Index i = 0; i < F.rows(); ++i) {
+            if ((row_set[i] >> p) & 1) rows.push_back(int(i));
+        }
+        if (rows.empty()) {
+            logger().warn("No tracked face on input {}", p);
+            continue;
+        }
+        Eigen::MatrixXi Fp(rows.size(), 3);
+        for (size_t i = 0; i < rows.size(); ++i) Fp.row(i) = F.row(rows[i]);
+        Eigen::VectorXd w;
+        wmtk::utils::winding_number(V, Fp, barycenters, w, NUM_THREADS);
+        W.col(p) = w;
+        orient_input(W, int(p));
+    }
+    return W;
+}
+
 void TetWildMesh::filter_with_input_surface_winding_number()
 {
     std::vector<size_t> rm_tids;
@@ -649,20 +708,12 @@ void TetWildMesh::filter_with_input_surface_winding_number()
     remove_tets_by_ids(rm_tids);
 }
 
-void TetWildMesh::filter_with_roles(const std::vector<size_t>& volume_inputs)
+void TetWildMesh::filter_with_roles(const std::vector<bool>& keep)
 {
     std::vector<size_t> rm_tids;
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
-        const auto& wn = tet_finalize(tid).m_winding_number_per_input;
-        bool inside = false;
-        for (const size_t k : volume_inputs) {
-            if (k < wn.size() && wmtk::utils::winding_number_inside(wn[k])) {
-                inside = true;
-                break;
-            }
-        }
-        if (!inside) {
+        if (!keep[tid]) {
             rm_tids.emplace_back(tid);
         }
     }

@@ -17,6 +17,7 @@
 #include <igl/unique_edge_map.h>
 #include <mshio/mshio.h>
 #include <wmtk/components/tetwild/tetwild.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/WindingNumberHierarchy.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
@@ -86,6 +87,59 @@ double point_segment_distance(const Vector3d& p, const Vector3d& a, const Vector
     return (p - (a + t * ab)).norm();
 }
 
+// Number of boundary faces of a tet block -- faces of exactly one tet, where the kept region
+// ends -- outside the exact envelope of radius eps around the triangles of the VOLUME-role inputs
+// (the files `volumes`), not their union with the sheets.
+//
+// None should be. The filter keeps a tet when, for some volume-role input k, the winding number
+// at its centre of the tracked faces whose input set contains k is above 1/2. Where those faces
+// close up, that number is an integer, constant on every connected set they miss: two tets
+// sharing a face not among them are both in k or both out. So the region kept for k ends at
+// tracked faces carrying k, and a face between a kept tet and a dropped one ends the region of
+// every input its kept tet is in. Each such face stays within eps of every input in its set (the
+// input-set invariant: tetwild holds a tracked face to the envelopes of its own inputs, radius
+// eps = eps_rel times the diagonal of the bounding box of every input, features included, exact
+// by default). Not guaranteed where the faces carrying k do not close up: a surface flip of faces
+// not oriented alike, or a face of several inputs whose summed orientation leaves a hole in k's.
+size_t tet_boundary_faces_outside(
+    const std::vector<Vector3d>& tet_v,
+    const std::vector<std::array<size_t, 4>>& tets,
+    const std::vector<std::string>& volumes,
+    double eps)
+{
+    std::vector<Vector3d> V;
+    std::vector<Eigen::Vector3i> F;
+    for (const std::string& path : volumes) {
+        Eigen::MatrixXd Vi;
+        Eigen::MatrixXi Fi;
+        REQUIRE(igl::read_triangle_mesh(path, Vi, Fi));
+        const int base = int(V.size());
+        for (Eigen::Index i = 0; i < Vi.rows(); ++i) V.push_back(Vi.row(i).transpose());
+        for (Eigen::Index i = 0; i < Fi.rows(); ++i) {
+            F.emplace_back(Fi(i, 0) + base, Fi(i, 1) + base, Fi(i, 2) + base);
+        }
+    }
+    Envelope env(/*exact=*/true);
+    env.init(V, F, eps);
+
+    std::map<std::array<size_t, 3>, int> incident;
+    for (const auto& t : tets) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<size_t, 3> f;
+            for (int j = 0, k = 0; j < 4; ++j) {
+                if (j != skip) f[k++] = t[j];
+            }
+            std::sort(f.begin(), f.end());
+            ++incident[f];
+        }
+    }
+    size_t outside = 0;
+    for (const auto& [f, n] : incident) {
+        if (n == 1 && env.is_outside({{tet_v[f[0]], tet_v[f[1]], tet_v[f[2]]}})) ++outside;
+    }
+    return outside;
+}
+
 } // namespace
 
 TEST_CASE("hybrid-output-blocks", "[tetwild][hybrid]")
@@ -118,6 +172,8 @@ TEST_CASE("hybrid-output-blocks", "[tetwild][hybrid]")
             }
         }
         CHECK(outside == 0);
+        // ...and they end at tracked faces within eps of the cube.
+        CHECK(tet_boundary_faces_outside(V, T, {(d / "cube.obj").string()}, kEps) == 0);
     }
 
     // b. Triangles: the sheet, and only the sheet -- every vertex within eps of the plane z = 3
@@ -412,6 +468,7 @@ TEST_CASE("hybrid-thingi-volume-curves-points", "[tetwild][hybrid][thingi][.]")
     // Tets: inside the body.
     REQUIRE(!h.tets.empty());
     CHECK(tets_outside_volumes(h, {&body}, eps) == 0);
+    CHECK(tet_boundary_faces_outside(h.tet_v, h.tets, {model}, eps) == 0);
     // No surface-role input, so no triangle block.
     CHECK(h.faces.empty());
 
@@ -522,6 +579,12 @@ TEST_CASE("hybrid-demo2-cantilever-and-rod", "[tetwild][hybrid][demo][.]")
     // Input bounding box: x 0..3.5 (the sheet), y -1.2..2 (the helix), z 0..2.
     const double eps = 1e-3 * Vector3d(3.5, 3.2, 2.0).norm();
     REQUIRE(!h.tets.empty());
+    CHECK(
+        tet_boundary_faces_outside(
+            h.tet_v,
+            h.tets,
+            {data_model("hybrid_demo_cube.obj").string()},
+            eps) == 0);
     REQUIRE(!h.faces.empty());
     REQUIRE(!h.edges.empty());
     const std::set<Key> tet_keys = vertex_set(used_vertices(h.tet_v, h.tets));
@@ -587,6 +650,12 @@ TEST_CASE("hybrid-demo4-two-sheets-and-a-wire", "[tetwild][hybrid][demo][.]")
     // Input bounding box: x 0..3.2 (S1), y -1.2..2 (S2), z 0..2.
     const double eps = 1e-3 * Vector3d(3.2, 3.2, 2.0).norm();
     REQUIRE(!h.tets.empty());
+    CHECK(
+        tet_boundary_faces_outside(
+            h.tet_v,
+            h.tets,
+            {data_model("hybrid_demo_cube.obj").string()},
+            eps) == 0);
     REQUIRE(!h.faces.empty());
     REQUIRE(!h.edges.empty());
     const std::set<Key> tet_keys = vertex_set(used_vertices(h.tet_v, h.tets));
@@ -979,8 +1048,9 @@ void check_connected_scene(
     };
     const Eigen::VectorXd line_d2_solid = sq_dist(rows(line_v), solid);
 
-    // Tets: inside the solid.
+    // Tets: inside the solid, and ending at tracked faces within eps of it.
     CHECK(tets_outside_volumes(h, {&solid}, eps) == 0);
+    CHECK(tet_boundary_faces_outside(h.tet_v, h.tets, {solid_path}, eps) == 0);
 
     // Triangles: on the sheet (every vertex within eps of it) and not inside the solid (each
     // centre outside it or within eps of its surface).
