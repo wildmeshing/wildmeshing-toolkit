@@ -263,7 +263,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         }
     };
 
-    for (const Edit& e : h.edits) {
+    for (size_t edit_index = 0; edit_index < h.edits.size(); ++edit_index) {
+        const Edit& e = h.edits[edit_index];
+        const size_t warnings_before = m_build_warnings.total();
         Step step{e.kind, {}, {}, {}, {}};
         switch (e.kind) {
         case EditKind::split_edge: {
@@ -419,6 +421,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         case EditKind::move_vertices: // maps every point onto itself
         default: r.apply(e); break;
         }
+        if (m_build_warnings.total() > warnings_before) m_warned_edits.push_back(edit_index);
         if (step.cells.empty() && step.dead.empty() && e.kind != EditKind::consolidate) continue;
         ++m_cells_by_kind[size_t(e.kind) % m_cells_by_kind.size()];
         m_steps.push_back(std::move(step));
@@ -427,6 +430,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
     m_out_vertices = r.vertices();
     m_out_faces = r.faces();
     m_out_face_alive = r.face_alive();
+    m_out_features = r.feature_edges();
 }
 
 std::vector<SurfacePoint> SurfaceMap::to_input(std::vector<SurfacePoint> points) const

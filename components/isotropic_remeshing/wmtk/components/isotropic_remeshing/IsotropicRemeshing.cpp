@@ -239,7 +239,19 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
     if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
-    if (is_feature_edge(t.vid(*this), t.switch_vertex(*this).vid(*this))) return false;
+    const size_t v1 = t.vid(*this), v2 = t.switch_vertex(*this).vid(*this);
+    if (is_feature_edge(v1, v2)) return false;
+    if (m_has_features) {
+        // Nor may it put two edges of a curve into one triangle: the swap joins the apexes a and
+        // b, and a curve vertex at an endpoint with curve edges to both would be left with that
+        // triangle alone on one side -- flat once smoothing straightens the curve.
+        const size_t a = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+        const size_t b =
+            t.switch_face(*this).value().switch_edge(*this).switch_vertex(*this).vid(*this);
+        for (const size_t v : {v1, v2}) {
+            if (is_feature_edge(v, a) && is_feature_edge(v, b)) return false;
+        }
+    }
     return true;
 }
 
@@ -301,6 +313,26 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
     cache.v2_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t2);
     if (m_has_features) {
         cache.keep_v2_position = feature_degree(cache.v2) > 0;
+        // No triangle the collapse renames may come out holding two curve edges: the survivor
+        // takes over the removed vertex's feature edges, and a survivor a curve split put at
+        // its neighbours' midpoint would leave that triangle flat.
+        const auto feature_after = [&](size_t x) {
+            return is_feature_edge(cache.v1, x) || is_feature_edge(cache.v2, x);
+        };
+        for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
+            const auto vs = oriented_tri_vids(f);
+            if (std::count(vs.begin(), vs.end(), cache.v2)) continue; // removed by the collapse
+            size_t x = 0, y = 0;
+            for (int k = 0; k < 3; ++k) {
+                if (vs[k] == cache.v1) {
+                    x = vs[(k + 1) % 3];
+                    y = vs[(k + 2) % 3];
+                }
+            }
+            if (int(feature_after(x)) + int(feature_after(y)) + int(is_feature_edge(x, y)) >= 2) {
+                return false;
+            }
+        }
         if (feature_degree(cache.v1) > 0) {
             // A curve vertex goes only along its curve, and only from inside it.
             if (feature_degree(cache.v1) != 2 || !cache.feature_edge) return false;
@@ -407,6 +439,23 @@ bool IsotropicRemeshing::smooth_before(const Tuple& t)
     return true;
 }
 
+namespace {
+
+double min_angle_deg(const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c)
+{
+    const std::array<const Eigen::Vector3d*, 3> p = {{&a, &b, &c}};
+    double m = 180;
+    for (int k = 0; k < 3; ++k) {
+        const Eigen::Vector3d u = *p[(k + 1) % 3] - *p[k], w = *p[(k + 2) % 3] - *p[k];
+        const double d = u.norm() * w.norm();
+        if (!(d > 0)) return 0;
+        m = std::min(m, std::acos(std::clamp(u.dot(w) / d, -1., 1.)) * 180 / M_PI);
+    }
+    return m;
+}
+
+} // namespace
+
 bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
 {
     auto one_ring_tris = get_one_ring_tris_for_vertex(t);
@@ -415,8 +464,80 @@ bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
     }
     Eigen::Vector3d after_smooth = tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
-    vertex_attrs[t.vid(*this)].pos = after_smooth;
+    const size_t v = t.vid(*this);
+    if (feature_degree(v) == 2) {
+        // Sliding along a curve can flatten a triangle onto it. Go only as far as the worst
+        // incident triangle does not get worse -- or stays above 25 degrees -- and none turns
+        // over: the whole step, else half, else a quarter, else stay.
+        const Eigen::Vector3d p0 = vertex_attrs.at(v).pos;
+        const auto worst = [&](const Eigen::Vector3d& p, const bool check_normals) {
+            double m = 180;
+            for (const Tuple& f : one_ring_tris) {
+                std::array<Eigen::Vector3d, 3> q, q0;
+                const auto vs = oriented_tri_vids(f);
+                for (int k = 0; k < 3; ++k) {
+                    q0[k] = vertex_attrs.at(vs[k]).pos;
+                    q[k] = vs[k] == v ? p : q0[k];
+                }
+                if (check_normals &&
+                    (q[1] - q[0]).cross(q[2] - q[0]).dot((q0[1] - q0[0]).cross(q0[2] - q0[0])) <=
+                        0) {
+                    return -1.;
+                }
+                m = std::min(m, min_angle_deg(q[0], q[1], q[2]));
+            }
+            return m;
+        };
+        const double before = worst(p0, false);
+        bool moved = false;
+        double step = 1;
+        for (int i = 0; i < 3 && !moved; ++i, step /= 2) {
+            const Eigen::Vector3d p = p0 + step * (after_smooth - p0);
+            if (worst(p, true) >= std::min(before, 25.)) {
+                after_smooth = p;
+                moved = true;
+            }
+        }
+        if (!moved) return false;
+    }
+    vertex_attrs[v].pos = after_smooth;
     return true;
+}
+
+size_t IsotropicRemeshing::swap_feature_ears()
+{
+    if (!m_has_features) return 0;
+    size_t swapped = 0;
+    for (const Tuple& face : get_faces()) {
+        if (!face.is_valid(*this)) continue; // an earlier swap of this sweep changed it
+        const size_t f = face.fid(*this);
+        const auto vs = oriented_tri_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            const size_t a = vs[(k + 2) % 3], b = vs[k], c = vs[(k + 1) % 3];
+            if (!is_feature_edge(a, b) || !is_feature_edge(b, c)) continue;
+            if (is_feature_edge(a, c)) break;
+            const Tuple base = tuple_from_edge(a, c, f);
+            const auto across = base.switch_face(*this);
+            if (!across) break; // (a, c) is on the boundary
+            const auto ws = oriented_tri_vids(*across);
+            size_t d = ws[0];
+            for (const size_t w : ws) {
+                if (w != a && w != c) d = w;
+            }
+            if (is_feature_edge(a, d) || is_feature_edge(c, d)) break; // a new ear at a or c
+            // Neither new triangle may turn over against the two it replaces.
+            const auto P = [this](size_t i) { return vertex_attrs.at(i).pos; };
+            const Eigen::Vector3d n_old =
+                (P(b) - P(a)).cross(P(c) - P(a)) + (P(c) - P(a)).cross(P(d) - P(a));
+            const Eigen::Vector3d n1 = (P(b) - P(a)).cross(P(d) - P(a));
+            const Eigen::Vector3d n2 = (P(c) - P(b)).cross(P(d) - P(b));
+            if (n1.dot(n_old) <= 0 || n2.dot(n_old) <= 0) break;
+            std::vector<Tuple> new_tris;
+            if (swap_edge(base, new_tris)) ++swapped;
+            break;
+        }
+    }
+    return swapped;
 }
 
 double IsotropicRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const
@@ -812,6 +933,14 @@ bool IsotropicRemeshing::uniform_remeshing(double L, int iterations)
         timer.start();
         swap_remeshing();
         wmtk::logger().info("--------swap time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        // feature curves: no triangle may hold two of a curve's edges when smoothing slides it
+        if (m_has_features) {
+            size_t ears = 0, n;
+            do {
+                ears += n = swap_feature_ears();
+            } while (n > 0 && ears < tri_capacity());
+            wmtk::logger().info("swapped {} triangles with two feature edges", ears);
+        }
         // smoothing
         timer.start();
         smooth_all_vertices();
