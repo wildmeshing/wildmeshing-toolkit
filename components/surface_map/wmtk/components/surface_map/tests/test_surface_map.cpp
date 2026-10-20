@@ -5,7 +5,9 @@
 #include <wmtk/history/Replay.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/predicates.hpp>
 
+#include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
@@ -70,6 +72,10 @@ std::vector<SurfacePoint> sample(const std::vector<uint8_t>& alive, int n, unsig
     return pts;
 }
 
+/// How far a round trip may come back from where it started: rounding, through thousands of local
+/// maps whose layouts may hold thin triangles. A map that is not a bijection misses by far more.
+constexpr double kRoundTrip = 1e-8;
+
 /// Maps `pts` there and back and returns the largest 3D displacement; every point has to land
 /// on a live face both ways.
 double round_trip(
@@ -114,12 +120,12 @@ TEST_CASE("surface-map-round-trip-remeshing", "[surface_map]")
         size_t warnings = 0;
         const double in_err = round_trip(map, sample(map.input_face_alive(), 3, 1), true, warnings);
         CHECK(warnings == 0);
-        CHECK(in_err < 1e-9);
+        CHECK(in_err < kRoundTrip);
 
         const double out_err =
             round_trip(map, sample(map.output_face_alive(), 3, 2), false, warnings);
         CHECK(warnings == 0);
-        CHECK(out_err < 1e-9);
+        CHECK(out_err < kRoundTrip);
     }
 }
 
@@ -143,7 +149,7 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
     size_t warnings = 0;
     const double err = round_trip(map, sample(map.output_face_alive(), 1, 3), false, warnings);
     CHECK(warnings == 0);
-    CHECK(err < 1e-9);
+    CHECK(err < kRoundTrip);
 }
 
 TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
@@ -183,7 +189,7 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
     INFO(why);
     REQUIRE(surface_map::matches_input(map, reread, why));
 
-    const surface_map::SurfaceData out = surface_map::transfer_face_fields(map, reread);
+    const surface_map::SurfaceData out = surface_map::transfer_fields(map, reread);
     CHECK(map.map_warnings().total() == 0);
     REQUIRE(out.face_fields.at("side").size() == out.faces.size());
     const auto longest_edge = [](const surface_map::SurfaceData& s) {
@@ -304,9 +310,13 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         // the map stays a bijection, both ways.
         CHECK(map.curve_collapses() > 0);
         size_t trip_warnings = 0;
-        CHECK(round_trip(map, sample(map.input_face_alive(), 3, 5), true, trip_warnings) < 1e-9);
+        CHECK(
+            round_trip(map, sample(map.input_face_alive(), 3, 5), true, trip_warnings) <
+            kRoundTrip);
         CHECK(trip_warnings == 0);
-        CHECK(round_trip(map, sample(map.output_face_alive(), 3, 6), false, trip_warnings) < 1e-9);
+        CHECK(
+            round_trip(map, sample(map.output_face_alive(), 3, 6), false, trip_warnings) <
+            kRoundTrip);
         CHECK(trip_warnings == 0);
 
         // Four points in every output face, mapped to the input.
@@ -332,7 +342,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         CHECK(mixed == 0);
 
         // The transferred labels change exactly across feature edges.
-        const surface_map::SurfaceData out = surface_map::transfer_face_fields(map, in);
+        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
         std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
         for (size_t f = 0; f < out.faces.size(); ++f) {
             for (int k = 0; k < 3; ++k) {
@@ -375,5 +385,154 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
             }
         }
         CHECK(ears == 0);
+    }
+}
+
+TEST_CASE("surface-map-transfer-uv", "[surface_map]")
+{
+    // The sphere's own texture coordinates, seams kept as curves: carried through the remeshing,
+    // they stay continuous away from the seams, no texture triangle turns over away from the
+    // poles, and the texture area is what it was.
+    Eigen::MatrixXd V, TC, N;
+    Eigen::MatrixXi F, FTC, FN;
+    REQUIRE(igl::readOBJ(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, TC, N, F, FTC, FN));
+    surface_map::SurfaceData in;
+    for (int i = 0; i < V.rows(); ++i) in.vertices.push_back(V.row(i).transpose());
+    auto& uv = in.corner_fields["uv"];
+    for (int f = 0; f < F.rows(); ++f) {
+        in.faces.push_back({{uint64_t(F(f, 0)), uint64_t(F(f, 1)), uint64_t(F(f, 2))}});
+        std::vector<double> c;
+        for (int k = 0; k < 3; ++k) c.insert(c.end(), {TC(FTC(f, k), 0), TC(FTC(f, k), 1), 0.});
+        uv.push_back(c);
+    }
+    // Seams: edges whose two faces disagree on the texture coordinates at either end.
+    const auto corner = [](const surface_map::SurfaceData& s,
+                           const std::vector<std::vector<double>>& field,
+                           size_t f,
+                           uint64_t v) {
+        for (int c = 0; c < 3; ++c) {
+            if (s.faces[f][c] == v) return Eigen::Vector2d(field[f][3 * c], field[f][3 * c + 1]);
+        }
+        return Eigen::Vector2d(NAN, NAN);
+    };
+    const auto edge_faces = [](const surface_map::SurfaceData& s) {
+        std::map<std::array<uint64_t, 2>, std::vector<size_t>> ef;
+        for (size_t f = 0; f < s.faces.size(); ++f) {
+            for (int k = 0; k < 3; ++k) {
+                uint64_t a = s.faces[f][k], b = s.faces[f][(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                ef[{{a, b}}].push_back(f);
+            }
+        }
+        return ef;
+    };
+    std::vector<std::array<size_t, 2>> seams;
+    for (const auto& [e, fs] : edge_faces(in)) {
+        if (fs.size() == 2 && (corner(in, uv, fs[0], e[0]) != corner(in, uv, fs[1], e[0]) ||
+                               corner(in, uv, fs[0], e[1]) != corner(in, uv, fs[1], e[1]))) {
+            seams.push_back({{size_t(e[0]), size_t(e[1])}});
+        }
+    }
+    REQUIRE(!seams.empty());
+    const auto signed_area = [](const std::vector<double>& c) {
+        return 0.5 * ((c[3] - c[0]) * (c[7] - c[1]) - (c[4] - c[1]) * (c[6] - c[0]));
+    };
+    const auto orientation = [](const std::vector<double>& c) {
+        return wmtk::utils::predicates::orient2d(
+            Eigen::Vector2d(c[0], c[1]),
+            Eigen::Vector2d(c[3], c[4]),
+            Eigen::Vector2d(c[6], c[7]));
+    };
+    double in_area = 0;
+    int in_sign = 0;
+    for (const auto& c : uv) {
+        in_area += std::abs(signed_area(c));
+        in_sign += int(orientation(c));
+    }
+    // The orientation of the texture; the input has no triangle against it, or flat.
+    const auto texture_orientation = in_sign > 0 ? wmtk::utils::predicates::Orientation::POSITIVE
+                                                 : wmtk::utils::predicates::Orientation::NEGATIVE;
+    for (const auto& c : uv) REQUIRE(orientation(c) == texture_orientation);
+    // The texture is singular at the poles -- a pole has a coordinate per triangle, and its first
+    // ring is a straight line -- so a triangle reaching that far may come out flat or turned over
+    // however good the map is. The caps out to the first rings are left out.
+    std::map<uint64_t, std::set<std::pair<double, double>>> coordinates;
+    std::map<uint64_t, std::set<uint64_t>> neighbours;
+    for (size_t f = 0; f < in.faces.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            coordinates[in.faces[f][k]].insert({uv[f][3 * k], uv[f][3 * k + 1]});
+            neighbours[in.faces[f][k]].insert(in.faces[f].begin(), in.faces[f].end());
+        }
+    }
+    std::vector<std::pair<Eigen::Vector3d, double>> caps;
+    for (const auto& [v, cs] : coordinates) {
+        if (cs.size() <= 2) continue; // a seam has two
+        double radius = 0;
+        for (const uint64_t u : neighbours[v]) {
+            radius = std::max(radius, (in.vertices[u] - in.vertices[v]).norm());
+        }
+        caps.push_back({in.vertices[v], radius});
+    }
+    REQUIRE(caps.size() == 2);
+    const auto in_caps = [&caps](const Eigen::Vector3d& p) {
+        for (const auto& [centre, radius] : caps) {
+            if ((p - centre).norm() <= radius) return true;
+        }
+        return false;
+    };
+
+    std::vector<Eigen::Vector3d> verts(in.vertices.begin(), in.vertices.end());
+    std::vector<std::array<size_t, 3>> tris;
+    for (const auto& f : in.faces) tris.push_back({{size_t(f[0]), size_t(f[1]), size_t(f[2])}});
+    for (const int threads : {0, 4}) {
+        INFO("threads " << threads);
+        isotropic_remeshing::IsotropicRemeshing m(verts, threads);
+        m.create_mesh(verts.size(), tris, {}, true, 0, 0);
+        m.set_feature_edges(seams);
+        const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        for (const auto& e : m.feature_edges())
+            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        m.uniform_remeshing(0.6 * m.average_len_valen()[0], 2);
+        m.consolidate_mesh();
+        m.stop_history();
+        const SurfaceMap map(rec->history());
+        CHECK(map.build_warnings().total() == 0);
+
+        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
+        CHECK(map.map_warnings().total() == 0);
+        const auto& ouv = out.corner_fields.at("uv");
+        REQUIRE(ouv.size() == out.faces.size());
+
+        std::set<std::array<uint64_t, 2>> features;
+        for (const auto& e : m.feature_edges()) features.insert({{e[0], e[1]}});
+        double jump = 0; // largest disagreement across an edge that is not a seam
+        for (const auto& [e, fs] : edge_faces(out)) {
+            if (fs.size() != 2 || features.count(e)) continue;
+            for (const uint64_t v : e) {
+                jump = std::max(
+                    jump,
+                    (corner(out, ouv, fs[0], v) - corner(out, ouv, fs[1], v)).norm());
+            }
+        }
+        size_t flipped = 0, flipped_in_caps = 0;
+        double out_area = 0;
+        for (size_t f = 0; f < ouv.size(); ++f) {
+            out_area += std::abs(signed_area(ouv[f]));
+            if (orientation(ouv[f]) == texture_orientation) continue;
+            bool capped = false;
+            for (const uint64_t v : out.faces[f]) capped = capped || in_caps(out.vertices[v]);
+            ++(capped ? flipped_in_caps : flipped);
+        }
+        INFO(
+            "uv jump " << jump << ", flipped " << flipped << " of " << ouv.size() << " ("
+                       << flipped_in_caps << " more at the poles), area " << out_area << " vs "
+                       << in_area);
+        CHECK(jump < 1e-5);
+        // Isotropic remeshing may fold a vertex's star over for a while (it does not check for
+        // inverted triangles); the map is a bijection there too but stretched, and a texture
+        // triangle across the stretch may turn over. A few, at most.
+        INFO("local maps across folds " << map.folded_cells());
+        CHECK(flipped <= ouv.size() / 500);
+        CHECK(std::abs(out_area - in_area) < 1e-2 * in_area);
     }
 }

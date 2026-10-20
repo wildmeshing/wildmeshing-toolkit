@@ -88,8 +88,16 @@ void surface_map(nlohmann::json json_params)
         cells[size_t(history::EditKind::swap_edge)],
         cells[size_t(history::EditKind::consolidate)]);
     logger().info(
-        "{} side(s) of collapses along the boundary or a feature curve",
-        map.curve_collapses());
+        "{} side(s) of collapses along the boundary or a feature curve; {} vertex moves, {} of "
+        "them keeping barycentric coordinates",
+        map.curve_collapses(),
+        cells[size_t(history::EditKind::move_vertices)] + map.kept_moves(),
+        map.kept_moves());
+    if (map.folded_cells() > 0) {
+        logger().info(
+            "{} local maps span a patch the remesher folded over; the map stretches there",
+            map.folded_cells());
+    }
     log_warnings("building the map", map.build_warnings());
     for (size_t i = 0; i < std::min<size_t>(map.warned_edits().size(), 5); ++i) {
         const size_t k = map.warned_edits()[i];
@@ -115,12 +123,17 @@ void surface_map(nlohmann::json json_params)
                 why);
         }
         timer.start();
-        const SurfaceData out = transfer_face_fields(map, in);
+        const SurfaceData out = transfer_fields(map, in);
         log_warnings("output centroids to the input", map.map_warnings());
         write_surface_msh(output, out);
+        const std::string output_obj = json_params["output_obj"];
+        if (!output_obj.empty()) {
+            write_surface_obj(output_obj, out, json_params["uv_field"], json_params["texture"]);
+            logger().info("textured output written to {}", output_obj);
+        }
         logger().info(
             "{} field(s) carried from {} faces onto {} in {:.3}s; written to {}",
-            out.face_fields.size(),
+            out.face_fields.size() + out.corner_fields.size(),
             in.faces.size(),
             out.faces.size(),
             timer.getElapsedTimeInSec(),

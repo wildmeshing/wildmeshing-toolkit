@@ -85,6 +85,12 @@ public:
     /// edges along the curve become one; the map splits the triangle holding that new edge
     /// virtually where the removed vertex was, so both sides keep their area.
     size_t curve_collapses() const { return m_curve_collapses; }
+    /// Vertex moves whose points keep their barycentric coordinates instead of their place: a
+    /// vertex on more than one curve, or whose star is not a disk.
+    size_t kept_moves() const { return m_kept_moves; }
+    /// Local maps between patches one of which is folded over in 3D: a bijection still, but
+    /// stretched, since no flat layout matches a fold.
+    size_t folded_cells() const { return m_folded_cells; }
 
 private:
     /// A face of a patch with the domain position of each of its corners -- or a piece of one:
@@ -121,6 +127,8 @@ private:
     mutable MapWarnings m_map_warnings;
     std::array<size_t, 8> m_cells_by_kind = {};
     size_t m_curve_collapses = 0;
+    size_t m_kept_moves = 0;
+    size_t m_folded_cells = 0;
 
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 3>> m_in_faces, m_out_faces;

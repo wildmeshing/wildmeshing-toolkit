@@ -20,8 +20,9 @@ namespace wmtk::components::isotropic_remeshing {
 
 namespace {
 
-/// The edges between two faces that differ in any of `fields`, per-face fields of the gmsh file
-/// `path`, whose triangles are `tris` in file order.
+/// The edges between two faces that differ in any of `fields`, per-face or per-corner fields of
+/// the gmsh file `path`, whose triangles are `tris` in file order. A per-corner field differs
+/// across an edge where the two faces disagree on it at either end: a texture seam, say.
 std::vector<std::array<size_t, 2>> field_boundaries(
     const std::string& path,
     const std::vector<std::array<size_t, 3>>& tris,
@@ -37,16 +38,46 @@ std::vector<std::array<size_t, 2>> field_boundaries(
             tris.size(),
             msh.get_num_faces());
     }
-    std::vector<std::vector<double>> value(tris.size());
-    for (const std::string& name : fields) {
-        const auto names = msh.get_face_attribute_names();
-        if (std::find(names.begin(), names.end(), name) == names.end()) {
-            log_and_throw_error("feature_fields: {} has no per-face field {}", path, name);
-        }
-        msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
-            value[i].insert(value[i].end(), data.begin(), data.end());
-        });
+    const mshio::ElementBlock* triangles = nullptr;
+    for (const auto& block : msh.m_spec.elements.entity_blocks) {
+        if (block.entity_dim == 2) triangles = &block;
     }
+    std::vector<std::vector<double>> value(tris.size());
+    std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
+    const auto names = msh.get_face_attribute_names();
+    for (const std::string& name : fields) {
+        if (std::find(names.begin(), names.end(), name) != names.end()) {
+            msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
+                value[i].insert(value[i].end(), data.begin(), data.end());
+            });
+            continue;
+        }
+        bool found = false;
+        for (const mshio::Data& data : msh.m_spec.element_node_data) {
+            if (data.header.string_tags.empty() || data.header.string_tags.front() != name)
+                continue;
+            found = true;
+            for (const mshio::DataEntry& entry : data.entries) {
+                const size_t f = entry.tag - triangles->data.front();
+                const size_t k = entry.data.size() / 3;
+                if (f >= tris.size()) continue;
+                for (int c = 0; c < 3; ++c) {
+                    auto& cv = corner_value[f][c];
+                    cv.insert(
+                        cv.end(),
+                        entry.data.begin() + c * k,
+                        entry.data.begin() + (c + 1) * k);
+                }
+            }
+        }
+        if (!found) log_and_throw_error("feature_fields: {} has no field {}", path, name);
+    }
+    const auto at = [&](size_t f, size_t v) -> const std::vector<double>& {
+        for (int c = 0; c < 3; ++c) {
+            if (tris[f][c] == v) return corner_value[f][c];
+        }
+        return corner_value[f][0];
+    };
     std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
     for (size_t f = 0; f < tris.size(); ++f) {
         for (int k = 0; k < 3; ++k) {
@@ -57,7 +88,11 @@ std::vector<std::array<size_t, 2>> field_boundaries(
     }
     std::vector<std::array<size_t, 2>> edges;
     for (const auto& [e, fs] : edge_faces) {
-        if (fs.size() == 2 && value[fs[0]] != value[fs[1]]) edges.push_back(e);
+        if (fs.size() != 2) continue;
+        const size_t f = fs[0], g = fs[1];
+        if (value[f] != value[g] || at(f, e[0]) != at(g, e[0]) || at(f, e[1]) != at(g, e[1])) {
+            edges.push_back(e);
+        }
     }
     return edges;
 }

@@ -12,6 +12,9 @@
       "operation",
       "input",
       "output",
+      "output_obj",
+      "uv_field",
+      "texture",
       "log_file"
     ]
   },
@@ -39,6 +42,24 @@
     "type": "string",
     "default": "out.msh",
     "doc": "transfer: the output surface, written as a gmsh file with the carried per-face fields."
+  },
+  {
+    "pointer": "/output_obj",
+    "type": "string",
+    "default": "",
+    "doc": "transfer: also write the output as a textured Wavefront OBJ, with uv_field as its texture coordinates and a material mapping `texture`. Empty: not written."
+  },
+  {
+    "pointer": "/uv_field",
+    "type": "string",
+    "default": "uv",
+    "doc": "transfer: the per-corner field output_obj takes its texture coordinates from (its first two components)."
+  },
+  {
+    "pointer": "/texture",
+    "type": "string",
+    "default": "checker.png",
+    "doc": "transfer: the image the material of output_obj maps."
   },
   {
     "pointer": "/input_dir",

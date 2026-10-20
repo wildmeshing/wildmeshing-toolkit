@@ -37,18 +37,25 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
     return true;
 }
 
-SurfaceData transfer_face_fields(const SurfaceMap& map, const SurfaceData& input)
+SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input)
 {
-    // The output's live faces, by rank, and their centroids mapped to the input.
+    // The output's live faces, by rank; for each, its centroid and a point just inside it at
+    // each corner, mapped to the input.
+    constexpr double eps = 1e-7;
     const auto& alive = map.output_face_alive();
     std::vector<uint64_t> out_faces;
-    std::vector<SurfacePoint> centroids;
+    std::vector<SurfacePoint> pts;
     for (uint64_t f = 0; f < alive.size(); ++f) {
         if (!alive[f]) continue;
         out_faces.push_back(f);
-        centroids.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
+        pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
+        for (int c = 0; c < 3; ++c) {
+            Eigen::Vector3d b = Eigen::Vector3d::Constant(eps);
+            b[c] = 1 - 2 * eps;
+            pts.push_back({f, b});
+        }
     }
-    const std::vector<SurfacePoint> sources = map.to_input(centroids);
+    const std::vector<SurfacePoint> src = map.to_input(pts);
 
     // The vertices the live faces use, numbered by rank, as a consolidation numbers them.
     SurfaceData out;
@@ -67,13 +74,14 @@ SurfaceData transfer_face_fields(const SurfaceMap& map, const SurfaceData& input
         for (uint64_t& v : t) v = rank[v];
         out.faces.push_back(t);
     }
+
     size_t lost = 0;
     for (const auto& [name, field] : input.face_fields) {
         auto& o = out.face_fields[name];
         o.resize(out_faces.size());
         const std::vector<double> none(field.empty() ? 1 : field.front().size(), 0.);
         for (size_t i = 0; i < out_faces.size(); ++i) {
-            const uint64_t g = sources[i].face;
+            const uint64_t g = src[4 * i].face;
             if (g < field.size()) {
                 o[i] = field[g];
             } else {
@@ -82,7 +90,26 @@ SurfaceData transfer_face_fields(const SurfaceMap& map, const SurfaceData& input
             }
         }
     }
-    if (lost > 0) logger().warn("transfer: {} face values had no source and were set to 0", lost);
+    for (const auto& [name, field] : input.corner_fields) {
+        const size_t k = field.empty() ? 0 : field.front().size() / 3;
+        auto& o = out.corner_fields[name];
+        o.assign(out_faces.size(), std::vector<double>(3 * k, 0.));
+        for (size_t i = 0; i < out_faces.size(); ++i) {
+            for (int c = 0; c < 3; ++c) {
+                const SurfacePoint& p = src[4 * i + 1 + c];
+                if (p.face >= field.size() || field[p.face].size() != 3 * k) {
+                    ++lost;
+                    continue;
+                }
+                for (size_t j = 0; j < k; ++j) {
+                    double v = 0;
+                    for (int m = 0; m < 3; ++m) v += p.bary[m] * field[p.face][m * k + j];
+                    o[i][c * k + j] = v;
+                }
+            }
+        }
+    }
+    if (lost > 0) logger().warn("transfer: {} values had no source and were set to 0", lost);
     return out;
 }
 

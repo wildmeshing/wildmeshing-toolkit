@@ -9,6 +9,9 @@ set(SRC_FILES
 	SurfaceMap.hpp
 	SurfaceMap.cpp
 
+	slim2d.hpp
+	slim2d.cpp
+
 	surface_io.hpp
 	surface_io.cpp
 

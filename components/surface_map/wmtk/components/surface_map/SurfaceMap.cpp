@@ -1,5 +1,7 @@
 #include "SurfaceMap.hpp"
 
+#include "slim2d.hpp"
+
 #include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -9,6 +11,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <unordered_map>
@@ -161,6 +164,72 @@ bool positive(const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::V
     return utils::predicates::orient2d(a, b, c) == utils::predicates::Orientation::POSITIVE;
 }
 
+/// A face, or a piece of one, in a local patch: its corners -- vertex ids, or a virtual vertex on
+/// one of its edges -- and where they sit in the face, in barycentric coordinates.
+struct Piece
+{
+    uint64_t fid;
+    Tri t;
+    std::array<Eigen::Vector3d, 3> sub = {
+        {Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ()}};
+};
+
+/// The faces of a patch before or after an edit, and the 3D positions of their corners.
+struct Patch
+{
+    std::vector<Piece> pieces;
+    Positions P;
+
+    Patch(const std::vector<uint64_t>& fs, const std::vector<Tri>& ts, Positions positions)
+        : P(std::move(positions))
+    {
+        for (size_t i = 0; i < fs.size(); ++i) pieces.push_back({fs[i], ts[i]});
+    }
+
+    std::vector<Tri> tris() const
+    {
+        std::vector<Tri> ts;
+        for (const Piece& p : pieces) ts.push_back(p.t);
+        return ts;
+    }
+
+    /// Splits the piece holding the edge (a, b), virtually, at w = (1 - tau) a + tau b: into the
+    /// piece with w for b and the one with w for a, consecutive. False if no piece holds it.
+    bool split(const uint64_t a, const uint64_t b, const double tau, const uint64_t w)
+    {
+        for (size_t k = 0; k < pieces.size(); ++k) {
+            const Tri& t = pieces[k].t;
+            const size_t ia = size_t(std::find(t.begin(), t.end(), a) - t.begin());
+            const size_t ib = size_t(std::find(t.begin(), t.end(), b) - t.begin());
+            if (ia == 3 || ib == 3) continue;
+            Piece with_a = pieces[k], with_b = pieces[k];
+            const Eigen::Vector3d sub_w = (1 - tau) * pieces[k].sub[ia] + tau * pieces[k].sub[ib];
+            with_a.t[ib] = w;
+            with_a.sub[ib] = sub_w;
+            with_b.t[ia] = w;
+            with_b.sub[ia] = sub_w;
+            pieces[k] = with_a;
+            pieces.insert(pieces.begin() + long(k) + 1, with_b);
+            P[w] = (1 - tau) * P.at(a) + tau * P.at(b);
+            return true;
+        }
+        return false;
+    }
+};
+
+/// Whether `loop` is `ids` up to where it starts.
+bool same_loop(const std::vector<uint64_t>& loop, const std::vector<uint64_t>& ids)
+{
+    if (loop.size() != ids.size() || loop.empty()) return false;
+    const auto it = std::find(loop.begin(), loop.end(), ids.front());
+    if (it == loop.end()) return false;
+    const size_t s = size_t(it - loop.begin());
+    for (size_t i = 0; i < ids.size(); ++i) {
+        if (loop[(s + i) % loop.size()] != ids[i]) return false;
+    }
+    return true;
+}
+
 } // namespace
 
 SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
@@ -185,144 +254,455 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         return P;
     };
 
-    // A joint Tutte embedding of the patch before and after an edit, on the outline of the patch
-    // before it, spaced on the unit circle by 3D length. A `removed` vertex on that outline -- on
-    // the boundary or a curve -- stays on the circle, and the triangle after the edit that holds
-    // the edge replacing its two is split virtually at the same spot, so the outline is the same
-    // polygon after it. False if the patch is not a disk.
-    const auto flatten = [&](const std::vector<uint64_t>& before_f,
-                             const std::vector<Tri>& before_t,
-                             const std::vector<uint64_t>& after_f,
-                             const std::vector<Tri>& after_t,
-                             const uint64_t removed,
-                             const Positions& P,
-                             Cell& cell) -> bool {
-        const auto loop = disk_boundary(before_t);
-        if (!loop) return false;
-        const auto length = [&P](uint64_t a, uint64_t b) { return (P.at(a) - P.at(b)).norm(); };
-        const auto on_circle = [&](const std::vector<uint64_t>& ring) {
-            std::vector<double> s(ring.size() + 1, 0.);
-            for (size_t i = 0; i < ring.size(); ++i) {
-                s[i + 1] = s[i] + std::max(length(ring[i], ring[(i + 1) % ring.size()]), 1e-300);
+    // A virtual vertex: a point on an edge of a patch that stands in for a vertex the other patch
+    // has there.
+    constexpr uint64_t kVirtual = kNone - 1;
+    using Slots = std::vector<std::pair<uint64_t, uint64_t>>;
+
+    // Lowers the distortion of a joint embedding of `before` and `after`, keeping it one: SLIM
+    // (Rabinovich et al. 2017) moves the vertices towards the 3D shapes of their triangles, and
+    // a scaffold (Jiang et al. 2017) shared by both -- a ring of triangles from the outline out
+    // to a fixed circle -- keeps the outline from folding over, since the line search keeps
+    // every triangle, the scaffold's included, positive. The outline `slots` is free but shared:
+    // each slot is one point, a corner of `before` and one of `after`. The embedding must be on
+    // a circle about the origin, as the Tutte ones are; it is rescaled to the 3D area.
+    const auto refine =
+        [&](const Slots& slots, const Patch& before, const Patch& after, UV& uv_b, UV& uv_a) {
+            const std::vector<Tri> before_t = before.tris(), after_t = after.tris();
+            double area_3d = 0, area_2d = 0;
+            for (const Tri& t : before_t) {
+                const auto& P = before.P;
+                area_3d += 0.5 * (P.at(t[1]) - P.at(t[0])).cross(P.at(t[2]) - P.at(t[0])).norm();
+                const Eigen::Vector2d a = uv_b.at(t[1]) - uv_b.at(t[0]);
+                const Eigen::Vector2d b = uv_b.at(t[2]) - uv_b.at(t[0]);
+                area_2d += 0.5 * (a.x() * b.y() - a.y() * b.x());
             }
-            UV uv;
-            for (size_t i = 0; i < ring.size(); ++i) {
-                const double th = 2 * M_PI * s[i] / s.back();
-                uv[ring[i]] = Eigen::Vector2d(std::cos(th), std::sin(th));
+            if (!(area_3d > 0) || !(area_2d > 0)) return;
+            const double scale = std::sqrt(area_3d / area_2d);
+
+            std::vector<Eigen::Vector2d> x;
+            std::vector<char> fixed;
+            std::map<uint64_t, int> var_b, var_a;
+            for (const auto& [b, a] : slots) {
+                var_b[b] = var_a[a] = int(x.size());
+                x.push_back(scale * uv_b.at(b));
+                fixed.push_back(0);
             }
-            return uv;
-        };
-        const auto add = [&](std::vector<Face>& to, uint64_t fid, const Tri& t, const UV& uv) {
-            to.push_back({fid, layout(t, uv)});
-            return positive(to.back().uv[0], to.back().uv[1], to.back().uv[2]);
+            const auto var = [&](std::map<uint64_t, int>& vars, const UV& uv, uint64_t v) {
+                const auto [it, inserted] = vars.emplace(v, int(x.size()));
+                if (inserted) {
+                    x.push_back(scale * uv.at(v));
+                    fixed.push_back(0);
+                }
+                return it->second;
+            };
+            std::vector<SlimElement> elements;
+            const auto add =
+                [&](const Patch& p, const std::vector<Tri>& ts, auto& vars, const UV& uv) {
+                    for (const Tri& t : ts) {
+                        elements.push_back(slim_element(
+                            {{var(vars, uv, t[0]), var(vars, uv, t[1]), var(vars, uv, t[2])}},
+                            p.P.at(t[0]),
+                            p.P.at(t[1]),
+                            p.P.at(t[2]),
+                            1.));
+                    }
+                };
+            add(before, before_t, var_b, uv_b);
+            add(after, after_t, var_a, uv_a);
+            // The scaffold: the ring between the outline and its copy three times as far out,
+            // held there, weighted so it gives way to the patch.
+            const double scaffold_weight = 1e-2 * area_3d / double(before_t.size());
+            const size_t n = slots.size();
+            std::vector<int> outer(n);
+            for (size_t i = 0; i < n; ++i) {
+                outer[i] = int(x.size());
+                x.push_back(3 * x[i]);
+                fixed.push_back(1);
+            }
+            for (size_t i = 0; i < n; ++i) {
+                const int a = int(i), b = int((i + 1) % n), c = outer[i], d = outer[(i + 1) % n];
+                elements.push_back(slim_element({{a, c, d}}, x[a], x[c], x[d], scaffold_weight));
+                elements.push_back(slim_element({{a, d, b}}, x[a], x[d], x[b], scaffold_weight));
+            }
+            slim(x, fixed, elements, 10);
+            for (auto& [v, uv] : uv_b) {
+                if (const auto it = var_b.find(v); it != var_b.end()) uv = x[it->second];
+            }
+            for (auto& [v, uv] : uv_a) {
+                if (const auto it = var_a.find(v); it != var_a.end()) uv = x[it->second];
+            }
         };
 
-        const auto it = std::find(loop->begin(), loop->end(), removed);
-        bool ok = true;
-        if (it == loop->end()) {
-            const UV fixed = on_circle(*loop);
-            const UV uv_before = tutte(before_t, fixed);
-            const UV uv_after = tutte(after_t, fixed);
-            for (size_t i = 0; i < before_f.size(); ++i) {
-                ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
-            }
-            for (size_t i = 0; i < after_f.size(); ++i) {
-                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
-            }
-            if (!ok) ++m_build_warnings.inverted;
-            return true;
+    // The cell of a joint embedding of `before` and `after` in one planar domain, whose outline
+    // both share: `slots`, in the order of before's outline, each a corner of `before` and one
+    // of `after` at the same point. Tutte embeddings on the unit circle, outline spaced by 3D
+    // length, start it; refine() lowers its distortion (the joint flattening of Liu et al. 2021,
+    // with a shared scaffold). False if a patch's outline is not its slots.
+    const auto joint = [&](const Patch& before,
+                           const Patch& after,
+                           const Slots& slots,
+                           Cell& cell) {
+        std::vector<uint64_t> outline_b, outline_a;
+        for (const auto& [b, a] : slots) {
+            outline_b.push_back(b);
+            outline_a.push_back(a);
         }
+        const std::vector<Tri> before_t = before.tris(), after_t = after.tris();
+        const auto loop_b = disk_boundary(before_t), loop_a = disk_boundary(after_t);
+        if (!loop_b || !loop_a || !same_loop(*loop_b, outline_b) ||
+            !same_loop(*loop_a, outline_a)) {
+            return false;
+        }
+        const size_t n = slots.size();
+        std::vector<double> len(n), s(n + 1, 0.);
+        for (size_t i = 0; i < n; ++i) {
+            len[i] = (before.P.at(outline_b[i]) - before.P.at(outline_b[(i + 1) % n])).norm();
+        }
+        // A slot apart from the next by a fraction of the mean, at least, so the start is not
+        // flat where the outline has a short edge; SLIM brings it back to its length.
+        const double floor = 1e-2 * std::accumulate(len.begin(), len.end(), 0.) / double(n);
+        for (size_t i = 0; i < n; ++i) s[i + 1] = s[i] + std::max({len[i], floor, 1e-300});
+        UV fixed_b, fixed_a;
+        for (size_t i = 0; i < n; ++i) {
+            const double th = 2 * M_PI * s[i] / s.back();
+            fixed_b[outline_b[i]] = fixed_a[outline_a[i]] =
+                Eigen::Vector2d(std::cos(th), std::sin(th));
+        }
+        UV uv_b = tutte(before_t, fixed_b), uv_a = tutte(after_t, fixed_a);
+        refine(slots, before, after, uv_b, uv_a);
+        // A patch folded over in 3D -- a triangle facing against the patch -- cannot be laid flat
+        // as it is: the map, still a bijection, stretches there.
+        const auto folded = [](const std::vector<Tri>& ts, const Positions& Q) {
+            const auto normal = [&Q](const Tri& t) {
+                return Eigen::Vector3d((Q.at(t[1]) - Q.at(t[0])).cross(Q.at(t[2]) - Q.at(t[0])));
+            };
+            Eigen::Vector3d n = Eigen::Vector3d::Zero();
+            for (const Tri& t : ts) n += normal(t);
+            return std::any_of(ts.begin(), ts.end(), [&](const Tri& t) {
+                return normal(t).dot(n) < 0;
+            });
+        };
+        if (folded(before_t, before.P) || folded(after_t, after.P)) ++m_folded_cells;
+        bool ok = true;
+        const auto add = [&](std::vector<Face>& to, const Patch& p, const UV& uv) {
+            for (const Piece& piece : p.pieces) {
+                to.push_back({piece.fid, layout(piece.t, uv), piece.sub});
+                ok = positive(to.back().uv[0], to.back().uv[1], to.back().uv[2]) && ok;
+            }
+        };
+        add(cell.before, before, uv_b);
+        add(cell.after, after, uv_a);
+        if (!ok) ++m_build_warnings.inverted;
+        return true;
+    };
+
+    // Ids of a cell's own: the pieces of a vertex a cut makes, and virtual vertices. Counted down
+    // from kVirtual, far above any vertex id.
+    struct LocalIds
+    {
+        uint64_t next = kVirtual;
+        std::map<uint64_t, uint64_t> vertex; // of each, the vertex it stands for
+        std::map<std::pair<uint64_t, uint64_t>, uint64_t> names; // of the pieces of vertices
+        uint64_t fresh(const uint64_t v)
+        {
+            vertex[next] = v;
+            return next--;
+        }
+        uint64_t vertex_of(const uint64_t id) const
+        {
+            const auto it = vertex.find(id);
+            return it == vertex.end() ? id : it->second;
+        }
+    };
+
+    // The feature edges among the edges of `ts`, now.
+    const auto features_in = [&r](const std::vector<Tri>& ts) {
+        std::set<std::array<uint64_t, 2>> fs;
+        for (const Tri& t : ts) {
+            for (int k = 0; k < 3; ++k) {
+                uint64_t a = t[k], b = t[(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                if (r.is_feature(a, b)) fs.insert({{a, b}});
+            }
+        }
+        return fs;
+    };
+
+    // Cuts the patch `ts` along the feature edges inside it -- a curve that ends inside -- so it
+    // is a disk with every curve on its outline, which a joint embedding then keeps: each vertex
+    // splits into its wedges, the fans of its triangles joined across edges that are not feature
+    // edges, and a vertex with more than one is a corner of the outline once per wedge, each
+    // with an id of its own (`P` gets their positions). A wedge is named by its vertex and the
+    // vertex before it on the outline, `removed` read as `kept`, so the patches before and after
+    // a collapse name a corner alike. `features` are the patch's feature edges. The patch as it
+    // is if no curve ends inside it; nothing if the cut is not a disk.
+    const auto cut = [](const std::vector<Tri>& ts,
+                        const std::set<std::array<uint64_t, 2>>& features,
+                        Positions& P,
+                        LocalIds& ids,
+                        const uint64_t removed,
+                        const uint64_t kept) -> std::optional<std::vector<Tri>> {
+        std::vector<size_t> root(3 * ts.size());
+        for (size_t i = 0; i < root.size(); ++i) root[i] = i;
+        const auto find = [&root](size_t i) {
+            while (root[i] != i) i = root[i] = root[root[i]];
+            return i;
+        };
+        const auto corner = [&ts](size_t f, uint64_t v) {
+            return 3 * f + size_t(std::find(ts[f].begin(), ts[f].end(), v) - ts[f].begin());
+        };
+        std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
+        for (size_t i = 0; i < ts.size(); ++i) {
+            for (int k = 0; k < 3; ++k) {
+                uint64_t a = ts[i][k], b = ts[i][(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                edge_faces[{{a, b}}].push_back(i);
+            }
+        }
+        for (const auto& [e, fs] : edge_faces) {
+            if (fs.size() != 2 || features.count(e)) continue;
+            for (const uint64_t v : e) root[find(corner(fs[0], v))] = find(corner(fs[1], v));
+        }
+        std::map<uint64_t, std::set<size_t>> wedges;
+        for (size_t c = 0; c < root.size(); ++c) wedges[ts[c / 3][c % 3]].insert(find(c));
+        std::map<size_t, uint64_t> wedge_id; // temporary, for vertices with more than one
+        LocalIds temp;
+        for (const auto& [v, ws] : wedges) {
+            if (ws.size() < 2) continue;
+            for (const size_t w : ws) wedge_id[w] = temp.fresh(v);
+        }
+        if (wedge_id.empty()) return ts;
+        std::vector<Tri> cut_ts = ts;
+        for (size_t c = 0; c < root.size(); ++c) {
+            if (const auto it = wedge_id.find(find(c)); it != wedge_id.end()) {
+                cut_ts[c / 3][c % 3] = it->second;
+            }
+        }
+        const auto loop = disk_boundary(cut_ts);
+        if (!loop) return std::nullopt;
+        std::map<uint64_t, uint64_t> final_id;
+        const size_t n = loop->size();
+        for (size_t i = 0; i < n; ++i) {
+            const uint64_t t = (*loop)[i];
+            if (!temp.vertex.count(t)) continue;
+            const uint64_t v = temp.vertex_of(t);
+            uint64_t before = temp.vertex_of((*loop)[(i + n - 1) % n]);
+            if (before == removed) before = kept;
+            const auto [it, inserted] = ids.names.emplace(std::make_pair(v, before), 0);
+            if (inserted) it->second = ids.fresh(v);
+            final_id[t] = it->second;
+            P[it->second] = P.at(v);
+        }
+        for (Tri& t : cut_ts) {
+            for (uint64_t& v : t) {
+                if (temp.vertex.count(v)) {
+                    const auto it = final_id.find(v);
+                    if (it == final_id.end()) return std::nullopt; // a wedge off the outline
+                    v = it->second;
+                }
+            }
+        }
+        return cut_ts;
+    };
+
+    // The cell of a collapse or swap: the patch before and after it, cut along the curves inside
+    // them, on the outline of the patch before. A `removed` vertex on that outline -- on the
+    // boundary or a curve, maybe more than once -- stays on it, and the triangle after the edit
+    // that holds the edge replacing its two is split virtually at the same spot, so the outline
+    // is the same polygon after it. `before_features` are the feature edges of the patch before
+    // the edit, which the replay has already applied. False if the patch is not a disk.
+    const auto flatten = [&](const std::vector<uint64_t>& before_f,
+                             const std::vector<Tri>& before_t_uncut,
+                             const std::set<std::array<uint64_t, 2>>& before_features,
+                             const std::vector<uint64_t>& after_f,
+                             const std::vector<Tri>& after_t_uncut,
+                             const uint64_t removed,
+                             const uint64_t kept,
+                             const Positions& P_uncut,
+                             const Positions& Pa_uncut,
+                             Cell& cell) -> bool {
+        LocalIds ids;
+        Positions P = P_uncut, Pa = Pa_uncut;
+        const auto before_t = cut(before_t_uncut, before_features, P, ids, removed, kept);
+        const auto after_t = cut(after_t_uncut, features_in(after_t_uncut), Pa, ids, kNone, kNone);
+        if (!before_t || !after_t) return false;
+        const auto loop = disk_boundary(*before_t);
+        if (!loop) return false;
+        const Patch before(before_f, *before_t, P);
+        Patch after(after_f, *after_t, Pa);
+        Slots slots;
+        for (const uint64_t v : *loop) slots.emplace_back(v, v);
+        std::vector<size_t> on_outline;
+        for (size_t i = 0; i < loop->size(); ++i) {
+            if (ids.vertex_of((*loop)[i]) == removed) on_outline.push_back(i);
+        }
+        if (on_outline.empty()) return joint(before, after, slots, cell);
 
         ++m_curve_collapses;
-        const size_t i_rm = size_t(it - loop->begin());
-        const uint64_t prev = (*loop)[(i_rm + loop->size() - 1) % loop->size()];
-        const uint64_t next = (*loop)[(i_rm + 1) % loop->size()];
-        const double a = length(prev, removed), b = length(removed, next);
-        const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
-        // The triangle after the edit holding the edge (prev, next), which replaces the removed
-        // vertex's two edges along the outline.
-        size_t j = after_t.size();
-        for (size_t k = 0; k < after_t.size(); ++k) {
-            if (std::count(after_t[k].begin(), after_t[k].end(), prev) &&
-                std::count(after_t[k].begin(), after_t[k].end(), next)) {
-                j = k;
-            }
-        }
-        if (j == after_t.size()) {
-            // Nothing to split: flatten the outline over a chord instead, where the triangles
-            // with all three corners on it go flat.
-            std::vector<uint64_t> ring = *loop;
-            ring.erase(ring.begin() + long(i_rm));
-            const UV fixed = on_circle(ring);
-            UV fixed_before = fixed;
-            fixed_before[removed] = (1 - tau) * fixed.at(prev) + tau * fixed.at(next);
-            for (const Tri& t : before_t) {
-                int on = 0;
-                for (const uint64_t v : t) on += (v == prev || v == removed || v == next);
-                if (on == 3) {
-                    ++m_build_warnings.flat_triangle;
-                    break;
-                }
-            }
-            const UV uv_before = tutte(before_t, fixed_before);
-            const UV uv_after = tutte(after_t, fixed);
-            for (size_t i = 0; i < before_f.size(); ++i) {
-                ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
-            }
-            for (size_t i = 0; i < after_f.size(); ++i) {
-                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
-            }
-            if (!ok) ++m_build_warnings.inverted;
-            return true;
-        }
-
+        const auto length = [&P](uint64_t a, uint64_t b) { return (P.at(a) - P.at(b)).norm(); };
+        const auto neighbours = [&loop](size_t i) {
+            const size_t n = loop->size();
+            return std::make_pair((*loop)[(i + n - 1) % n], (*loop)[(i + 1) % n]);
+        };
         // The outline keeps the removed vertex; after the edit a virtual vertex takes its place,
         // on the edge (prev, next) at its parameter along the two edges it replaced.
-        constexpr uint64_t kVirtual = kNone - 1;
-        const UV fixed_before = on_circle(*loop);
-        UV fixed_after = fixed_before;
-        fixed_after.erase(removed);
-        fixed_after[kVirtual] = fixed_before.at(removed);
-        const Tri split = after_t[j];
-        Tri half_prev = split, half_next = split; // (prev, q, z) and (q, next, z), in place
-        for (uint64_t& v : half_prev) {
-            if (v == next) v = kVirtual;
+        bool split_all = true;
+        for (const size_t i : on_outline) {
+            const auto [prev, next] = neighbours(i);
+            const double a = length(prev, (*loop)[i]), b = length((*loop)[i], next);
+            const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
+            const uint64_t w = ids.fresh(removed);
+            split_all = after.split(prev, next, tau, w) && split_all;
+            slots[i].second = w;
         }
-        for (uint64_t& v : half_next) {
-            if (v == prev) v = kVirtual;
+        if (split_all) return joint(before, after, slots, cell);
+        if (on_outline.size() > 1 || !ids.names.empty()) return false;
+        const size_t i_rm = on_outline.front();
+        const auto [prev, next] = neighbours(i_rm);
+        const double a = length(prev, removed), b = length(removed, next);
+        const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
+        const std::vector<Tri>& before_tris = *before_t;
+        const std::vector<Tri>& after_tris = *after_t;
+
+        // Nothing to split: flatten the outline over a chord instead, where the triangles with
+        // all three corners on it go flat.
+        std::vector<uint64_t> ring = *loop;
+        ring.erase(ring.begin() + long(i_rm));
+        std::vector<double> s(ring.size() + 1, 0.);
+        for (size_t i = 0; i < ring.size(); ++i) {
+            s[i + 1] = s[i] + std::max(length(ring[i], ring[(i + 1) % ring.size()]), 1e-300);
         }
-        std::vector<Tri> virtual_after = after_t;
-        virtual_after[j] = half_prev;
-        virtual_after.push_back(half_next);
-        const UV uv_before = tutte(before_t, fixed_before);
-        const UV uv_after = tutte(virtual_after, fixed_after);
+        UV fixed;
+        for (size_t i = 0; i < ring.size(); ++i) {
+            const double th = 2 * M_PI * s[i] / s.back();
+            fixed[ring[i]] = Eigen::Vector2d(std::cos(th), std::sin(th));
+        }
+        UV fixed_before = fixed;
+        fixed_before[removed] = (1 - tau) * fixed.at(prev) + tau * fixed.at(next);
+        for (const Tri& t : before_tris) {
+            int on = 0;
+            for (const uint64_t v : t) on += (v == prev || v == removed || v == next);
+            if (on == 3) {
+                ++m_build_warnings.flat_triangle;
+                break;
+            }
+        }
+        const UV uv_before = tutte(before_tris, fixed_before);
+        const UV uv_after = tutte(after_tris, fixed);
+        bool ok = true;
         for (size_t i = 0; i < before_f.size(); ++i) {
-            ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
+            cell.before.push_back({before_f[i], layout(before_tris[i], uv_before)});
+            ok = positive(
+                     cell.before.back().uv[0],
+                     cell.before.back().uv[1],
+                     cell.before.back().uv[2]) &&
+                 ok;
         }
         for (size_t i = 0; i < after_f.size(); ++i) {
-            if (i != j) {
-                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
-                continue;
-            }
-            for (const Tri& half : {half_prev, half_next}) {
-                ok = add(cell.after, after_f[i], half, uv_after) && ok;
-                for (int k = 0; k < 3; ++k) {
-                    Eigen::Vector3d sub = Eigen::Vector3d::Zero();
-                    if (half[k] != kVirtual) {
-                        sub[k] = 1;
-                    } else {
-                        for (int m = 0; m < 3; ++m) {
-                            if (split[m] == prev) sub[m] = 1 - tau;
-                            if (split[m] == next) sub[m] = tau;
-                        }
-                    }
-                    cell.after.back().sub[k] = sub;
-                }
-            }
+            cell.after.push_back({after_f[i], layout(after_tris[i], uv_after)});
+            ok = positive(
+                     cell.after.back().uv[0],
+                     cell.after.back().uv[1],
+                     cell.after.back().uv[2]) &&
+                 ok;
         }
         if (!ok) ++m_build_warnings.inverted;
         return true;
     };
+
+    // The sides of the feature curves through a patch: its triangles joined across an edge that
+    // is not a feature edge, as index groups. Each side is flattened on its own, so a curve maps
+    // onto itself and a face stays on its side.
+    const auto sides_of = [&r](const std::vector<Tri>& ts) {
+        std::vector<size_t> root(ts.size());
+        for (size_t i = 0; i < root.size(); ++i) root[i] = i;
+        const auto find = [&root](size_t i) {
+            while (root[i] != i) i = root[i] = root[root[i]];
+            return i;
+        };
+        std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
+        for (size_t i = 0; i < ts.size(); ++i) {
+            for (int k = 0; k < 3; ++k) {
+                uint64_t a = ts[i][k], b = ts[i][(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                edge_faces[{{a, b}}].push_back(i);
+            }
+        }
+        for (const auto& [edge, fs] : edge_faces) {
+            if (fs.size() == 2 && !r.is_feature(edge[0], edge[1])) root[find(fs[0])] = find(fs[1]);
+        }
+        std::map<size_t, std::vector<size_t>> groups;
+        for (size_t i = 0; i < ts.size(); ++i) groups[find(i)].push_back(i);
+        std::vector<std::vector<size_t>> sides;
+        for (auto& [g, members] : groups) sides.push_back(std::move(members));
+        return sides;
+    };
+
+    // The cells of moving vertex v to `to`: one per side of its star, the same faces before and
+    // after (the vertex smoothing of the paper), so the points stay where they were on the
+    // surface as far as the joint embedding can, instead of riding along with the vertex. On a
+    // curve or the boundary v keeps to the outline: both its places are on it, each a virtual
+    // vertex on the edge of the patch it is not a corner of, matched by arc length along the
+    // curve -- the same on both sides. False where v is on more than one curve: the points then
+    // keep their barycentric coordinates, which is a bijection too.
+    const auto move_cells =
+        [&](const uint64_t v, const Eigen::Vector3d& to, std::vector<Cell>& cells) {
+            const std::vector<uint64_t> star = r.faces_of(v);
+            if (star.empty()) return false;
+            const std::vector<Tri> star_t = corners_of(star);
+            const Positions P = positions_of(star_t);
+            Positions Pa = P;
+            Pa[v] = to;
+            std::set<std::pair<uint64_t, uint64_t>> curve; // v's outline neighbours, per side
+            for (const auto& members : sides_of(star_t)) {
+                std::vector<uint64_t> fs;
+                std::vector<Tri> ts;
+                for (const size_t i : members) {
+                    fs.push_back(star[i]);
+                    ts.push_back(star_t[i]);
+                }
+                const auto loop = disk_boundary(ts);
+                if (!loop) return false;
+                Patch before(fs, ts, P), after(fs, ts, Pa);
+                Slots slots;
+                for (const uint64_t u : *loop) slots.emplace_back(u, u);
+                const auto it = std::find(loop->begin(), loop->end(), v);
+                if (it != loop->end()) {
+                    const size_t i = size_t(it - loop->begin()), n = loop->size();
+                    const uint64_t prev = (*loop)[(i + n - 1) % n], next = (*loop)[(i + 1) % n];
+                    curve.insert(std::minmax(prev, next));
+                    if (curve.size() > 1) return false;
+                    const auto fraction = [&](const Positions& Q) {
+                        const double a = (Q.at(prev) - Q.at(v)).norm(),
+                                     b = (Q.at(v) - Q.at(next)).norm();
+                        return a + b > 0 ? a / (a + b) : -1.;
+                    };
+                    const double f_old = fraction(P), f_new = fraction(Pa);
+                    if (!(f_old > 0 && f_old < 1 && f_new > 0 && f_new < 1)) return false;
+                    // Kept off the edge's ends, as a collapse's: a split there would be a piece
+                    // flat in the face but not in the domain, which the map could not invert. The
+                    // bounds are symmetric, so the other side of the curve, measuring from its
+                    // other end, splits the edge at the same point.
+                    const auto clamped = [](double tau) { return std::clamp(tau, 0.01, 0.99); };
+                    if (f_new < f_old) { // v moved towards prev
+                        before.split(prev, v, clamped(f_new / f_old), kVirtual);
+                        after.split(v, next, clamped((f_old - f_new) / (1 - f_new)), kVirtual);
+                        slots[i] = {kVirtual, v};
+                        slots.insert(slots.begin() + long(i) + 1, {v, kVirtual});
+                    } else if (f_new > f_old) {
+                        before.split(v, next, clamped((f_new - f_old) / (1 - f_old)), kVirtual);
+                        after.split(prev, v, clamped(f_old / f_new), kVirtual);
+                        slots[i] = {v, kVirtual};
+                        slots.insert(slots.begin() + long(i) + 1, {kVirtual, v});
+                    }
+                }
+                Cell cell;
+                if (!joint(before, after, slots, cell)) return false;
+                cells.push_back(std::move(cell));
+            }
+            return true;
+        };
 
     // Where flatten() cannot go: each surviving face maps onto itself by its corners, which is
     // what relabelling `removed` to the survivor does, and a face that vanished takes its points
@@ -410,38 +790,14 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                     ++n_spanning;
                 }
             }
-            // The sides of the feature curves through the patch: faces joined across an edge
-            // that is not a feature edge. Each side is flattened on its own, so a curve maps
-            // onto itself and a face stays on its side.
-            std::vector<size_t> root(before_f.size());
-            for (size_t i = 0; i < root.size(); ++i) root[i] = i;
-            const auto find = [&root](size_t i) {
-                while (root[i] != i) i = root[i] = root[root[i]];
-                return i;
-            };
-            {
-                std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
-                for (size_t i = 0; i < before_t.size(); ++i) {
-                    for (int k = 0; k < 3; ++k) {
-                        uint64_t a = before_t[i][k], b = before_t[i][(k + 1) % 3];
-                        if (a > b) std::swap(a, b);
-                        edge_faces[{{a, b}}].push_back(i);
-                    }
-                }
-                for (const auto& [edge, fs] : edge_faces) {
-                    if (fs.size() == 2 && !r.is_feature(edge[0], edge[1])) {
-                        root[find(fs[0])] = find(fs[1]);
-                    }
-                }
-            }
+            const auto sides = sides_of(before_t);
+            const auto before_features = features_in(before_t);
             r.apply(e);
             const std::vector<uint64_t> after_f = r.faces_of(kept);
             if (after_f.size() + n_spanning < before_f.size()) {
                 m_build_warnings.merged_faces += before_f.size() - n_spanning - after_f.size();
             }
-            std::map<size_t, std::vector<size_t>> sides;
-            for (size_t i = 0; i < before_f.size(); ++i) sides[find(i)].push_back(i);
-            for (const auto& [side_root, members] : sides) {
+            for (const auto& members : sides) {
                 std::vector<uint64_t> side_before_f;
                 std::vector<Tri> side_before_t;
                 bool has_removed = false;
@@ -460,13 +816,17 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                     }
                 }
                 Cell cell;
+                const std::vector<Tri> side_after_t = corners_of(side_after_f);
                 if (flatten(
                         side_before_f,
                         side_before_t,
+                        before_features,
                         side_after_f,
-                        corners_of(side_after_f),
+                        side_after_t,
                         removed,
+                        kept,
                         P,
+                        positions_of(side_after_t),
                         cell)) {
                     step.cells.push_back(std::move(cell));
                 } else {
@@ -479,9 +839,20 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             const std::vector<uint64_t> fs = e.faces;
             const std::vector<Tri> before_t = corners_of(fs);
             const Positions P = positions_of(before_t);
+            const auto before_features = features_in(before_t);
             r.apply(e);
             Cell cell;
-            if (flatten(fs, before_t, fs, corners_of(fs), kNone, P, cell)) {
+            if (flatten(
+                    fs,
+                    before_t,
+                    before_features,
+                    fs,
+                    corners_of(fs),
+                    kNone,
+                    kNone,
+                    P,
+                    P,
+                    cell)) {
                 step.cells.push_back(std::move(cell));
             } else {
                 relabel(fs, fs, step);
@@ -498,7 +869,22 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             r.apply(e);
             break;
         }
-        case EditKind::move_vertices: // maps every point onto itself
+        case EditKind::move_vertices: {
+            // One vertex at a time, each its own step.
+            for (const history::VertexMove& m : e.moves) {
+                std::vector<Cell> cells;
+                const bool mapped = m.vid < r.vertex_alive().size() && r.vertex_alive()[m.vid] &&
+                                    r.vertices()[m.vid] != m.pos && move_cells(m.vid, m.pos, cells);
+                r.apply(Edit{EditKind::move_vertices, {}, {}, {m}});
+                if (!mapped) {
+                    ++m_kept_moves;
+                    continue;
+                }
+                ++m_cells_by_kind[size_t(EditKind::move_vertices)];
+                m_steps.push_back({EditKind::move_vertices, std::move(cells), {}, {}, {}});
+            }
+            break;
+        }
         default: r.apply(e); break;
         }
         if (m_build_warnings.total() > warnings_before) m_warned_edits.push_back(edit_index);
