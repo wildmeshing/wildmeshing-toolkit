@@ -1,0 +1,39 @@
+[
+  {
+    "doc": "",
+    "pointer": "/",
+    "type": "object",
+    "required": ["application", "history"],
+    "optional": ["input_dir", "operation", "log_file"]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["surface_map"],
+    "doc": "Application name must be surface_map."
+  },
+  {
+    "pointer": "/history",
+    "type": "string",
+    "doc": "A surface history, as saved by an application's history_output: the map is rebuilt from it."
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": "",
+    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "options": ["info"],
+    "default": "info",
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back."
+  },
+  {
+    "pointer": "/log_file",
+    "type": "string",
+    "default": "",
+    "doc": "Logs are not just printed on the terminal but also saved in this file."
+  }
+]

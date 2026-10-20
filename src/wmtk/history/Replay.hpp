@@ -29,6 +29,8 @@ public:
     const std::vector<uint8_t>& vertex_alive() const { return m_vertex_alive; }
     const std::vector<std::array<uint64_t, 3>>& faces() const { return m_faces; }
     const std::vector<uint8_t>& face_alive() const { return m_face_alive; }
+    /// The live faces at vertex `v`, sorted.
+    const std::vector<uint64_t>& faces_of(uint64_t v) const { return m_vertex_faces[v]; }
 
 private:
     void split_edge(const Edit& e);
