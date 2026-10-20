@@ -417,7 +417,8 @@ InputData read_image_msh(const std::string& path)
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
-    const nlohmann::json& json_params)
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io)
 {
     InputData input_data;
 
@@ -427,7 +428,7 @@ InputData read_mesh(
     }
 
     const int NUM_THREADS = json_params["num_threads"];
-    const bool debug_output = json_params["DEBUG_output"];
+    const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
@@ -449,7 +450,8 @@ InputData read_mesh(
         input_transforms,
         tol_rel,
         tol_abs,
-        split_connected_components);
+        split_connected_components,
+        component_io);
     image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
@@ -531,7 +533,8 @@ InputData read_mesh(
 InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
-    const nlohmann::json& json_params)
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io)
 {
     InputData input_data;
 
@@ -541,7 +544,7 @@ InputData read_curves(
     }
 
     const int NUM_THREADS = json_params["num_threads"];
-    const bool debug_output = json_params["DEBUG_output"];
+    const bool debug_output = !component_io && bool(json_params["DEBUG_output"]);
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -555,7 +558,7 @@ InputData read_curves(
         tol_abs = 0.1 * eps_simplify;
     }
 
-    EmbedCurves curves(input_paths, input_transforms, tol_rel, tol_abs);
+    EmbedCurves curves(input_paths, input_transforms, tol_rel, tol_abs, component_io);
     curves.m_num_threads = NUM_THREADS;
 
     if (debug_output) {
@@ -603,8 +606,22 @@ InputData read_curves(
 
 int resolve_input_dimension(
     const std::vector<std::string>& input_paths,
-    const nlohmann::json& json_params)
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io)
 {
+    if (component_io) {
+        const auto& data = component_io->mesh(input_paths.at(0));
+        if (data.cells.count(CellType::Tetrahedron) ||
+            (data.cells.count(CellType::Triangle) &&
+             data.cell(CellType::Triangle).attributes.count("tags")))
+            return 0;
+        const int dimension = data.cells.count(CellType::Triangle) ? 3 : 2;
+        if (!json_params["dimension"].is_string() &&
+            json_params["dimension"].get<int>() != dimension)
+            log_and_throw_error("Input mesh topology disagrees with dimension");
+        return dimension;
+    }
+
     // 0 means "let the .msh reader decide from the file's content", which is what it has
     // always done: a msh with faces and no tets is 2D, one with tets is 3D.
     const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
@@ -666,6 +683,90 @@ int resolve_input_dimension(
     }
     logger().info("dimension: {} (forced)", forced);
     return forced;
+}
+
+
+InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
+{
+    mesh.validate();
+    const auto type =
+        mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
+    const auto& block = mesh.cell(type);
+    if (!block.connectivity.rows()) throw std::runtime_error("Empty tagged mesh");
+    io::ComponentIO::attributes(
+        mesh.vertex_attributes,
+        {"sizing_field",
+         "sizing_scalar",
+         "vid",
+         "labels",
+         "is_rounded",
+         "is_false_surface",
+         "order",
+         "input_distance",
+         "front_error_bars",
+         "band_force_n",
+         "amips_force_n",
+         "offset_foldover",
+         "front_last_change",
+         "corr_input_vid",
+         "front_ring_ratio"});
+    const std::set<std::string> fields = {
+        "tags",
+        "quality",
+        "quality_target",
+        "quality_rel",
+        "offset_tag",
+        "amips",
+        "tet_energy",
+        "amips_term",
+        "band_term",
+        "band_gap_bars",
+        "plastic",
+        "face_energy",
+        "front_err_ratio",
+        "settle_inside_bars",
+        "settle_outside_bars",
+        "chord_length"};
+    for (const auto& [t, c] : mesh.cells) {
+        if (t != type && cell_dimension(t) >= cell_dimension(type))
+            throw std::runtime_error("Incompatible tagged mesh topology");
+        io::ComponentIO::attributes(
+            c.attributes,
+            fields,
+            t == type ? std::set<std::string>{"tags"} : std::set<std::string>{});
+    }
+    const auto& a = block.attributes.at("tags");
+    if (!std::holds_alternative<DataMatrix<uint8_t>>(a.values) ||
+        a.labels.size() != size_t(a.cols()))
+        throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
+    const auto& tags = std::get<DataMatrix<uint8_t>>(a.values);
+    if ((tags.array() > 1).any()) throw std::runtime_error("tags must be binary");
+    InputData out;
+    out.V_input = mesh.V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
+    out.T_input = io::ComponentIO::indices(block.connectivity);
+    std::vector<int> columns;
+    for (int j = 0; j < tags.cols(); ++j)
+        if (a.labels[j] != "ambient" && a.labels[j] != "ImageVolume") {
+            columns.push_back(j);
+            out.tag_names.push_back(a.labels[j]);
+        }
+    out.T_input_tag.resize(tags.rows(), columns.size());
+    for (int i = 0; i < tags.rows(); ++i)
+        for (size_t j = 0; j < columns.size(); ++j)
+            if (tags(i, columns[j])) out.T_input_tag.coeffRef(i, j) = 1;
+    if (envelope) {
+        envelope->validate();
+        io::ComponentIO::attributes(envelope->vertex_attributes, {});
+        const auto t = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
+        for (const auto& [ct, c] : envelope->cells) {
+            if (ct != t) throw std::runtime_error("Incompatible envelope topology");
+            io::ComponentIO::attributes(c.attributes, {});
+        }
+        out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
+        out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
+        out.envelope_name = "EnvelopeSurface";
+    }
+    return out;
 }
 
 } // namespace wmtk::components::simwild

@@ -28,11 +28,19 @@ EmbedCurves::EmbedCurves(
     const std::vector<std::string>& input_paths,
     const std::vector<Matrix3d>& input_transform,
     const double tol_rel,
-    const double tol_abs)
+    const double tol_abs,
+    const io::ComponentIO* component_io)
 {
     assert(input_paths.size() == input_transform.size());
 
-    utils::read_input_curves(input_paths, tol_rel, m_V_curves, m_E_curves, m_Vs, m_Es);
+    utils::read_input_curves(
+        input_paths,
+        tol_rel,
+        m_V_curves,
+        m_E_curves,
+        m_Vs,
+        m_Es,
+        component_io);
 
     // Transform each input in place, then rebuild the union from the transformed copies. The
     // union has to agree with the per-input meshes: it is what gets arranged, they are what

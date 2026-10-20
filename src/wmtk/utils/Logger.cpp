@@ -56,6 +56,31 @@ std::shared_ptr<spdlog::logger>& get_shared_opt_logger()
 
 } // namespace
 
+detail::ComponentLoggerScope::ComponentLoggerScope(bool memory)
+    : m_lock([]() -> std::recursive_mutex& {
+        static std::recursive_mutex mutex;
+        return mutex;
+    }())
+    , m_memory(memory)
+{
+    if (!memory) return;
+    const auto level = logger().level();
+    m_previous = get_shared_logger();
+    m_previous_opt = get_shared_opt_logger();
+    auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto console = std::make_shared<spdlog::logger>("wmtk", sink);
+    console->set_level(level);
+    set_logger(console);
+    set_opt_logger(std::make_shared<spdlog::logger>("wmtk-opt", sink));
+}
+
+detail::ComponentLoggerScope::~ComponentLoggerScope()
+{
+    if (!m_memory) return;
+    set_opt_logger(std::move(m_previous_opt));
+    set_logger(std::move(m_previous));
+}
+
 // Retrieve current logger
 spdlog::logger& logger()
 {

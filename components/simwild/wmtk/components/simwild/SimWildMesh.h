@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
@@ -313,7 +315,7 @@ public:
     bool is_order_2_edge(const Tuple& e) const;
     bool is_order_2_edge(const std::array<size_t, 2>& e) const;
 
-    void write_vtu(const std::string& path);
+    void write_vtu(const std::string& path, MeshMap* output = nullptr);
 
     void write_surface(const std::string& path) const;
 

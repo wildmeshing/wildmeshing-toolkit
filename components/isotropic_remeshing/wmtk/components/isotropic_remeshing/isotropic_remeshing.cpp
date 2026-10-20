@@ -1,5 +1,7 @@
 #include "isotropic_remeshing.hpp"
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Preallocation.hpp>
+#include "isotropic_remeshing.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
@@ -24,11 +26,13 @@ run_remeshing(std::string input, double len, std::string output, IsotropicRemesh
     timer.stop();
 
     m.consolidate_mesh();
-    m.write_triangle_mesh(output);
+    if (!output.empty()) m.write_triangle_mesh(output);
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime {:.4}s", timer.getElapsedTimeInSec());
-    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
-    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    if (!output.empty()) {
+        wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
+        wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
+    }
     wmtk::logger().info("after remesh properties: {}", properties);
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
@@ -38,8 +42,9 @@ run_remeshing(std::string input, double len, std::string output, IsotropicRemesh
     return timer.getElapsedTimeInSec();
 }
 
-void isotropic_remeshing(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "isotropic_remeshing");
     using wmtk::utils::resolve_path;
     using Tuple = IsotropicRemeshing::Tuple;
 
@@ -67,7 +72,7 @@ void isotropic_remeshing(nlohmann::json json_params)
         }
     }
 
-    const std::string input_path = resolve_path(root, json_params["input"]).string();
+    const std::string input_path = component_io.path(root, json_params["input"]);
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
     const double boundary_env_rel = json_params["boundary_eps_rel"];
@@ -88,7 +93,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     {
         MatrixXd V;
         MatrixXi F;
-        wmtk::io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
+        component_io.triangles(input_path, V, F, remove_duplicate_eps);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -170,8 +175,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     }
 
     const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
+    if (component_io.memory() || !report_file.empty()) {
         nlohmann::json report;
         std::vector<double> properties = m.average_len_valen();
         report["avg_length"] = properties[0];
@@ -187,9 +191,27 @@ void isotropic_remeshing(nlohmann::json json_params)
         report["nonmanifold_edges"] = out_nm_e;
         report["nonmanifold_vertices"] = out_nm_v;
         report["use_link_condition"] = use_link_condition;
-        fout << std::setw(4) << report;
-        fout.close();
+        component_io.result.second = report;
+        if (!component_io.memory()) {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
+    if (component_io.memory())
+        component_io.result.first["mesh"] =
+            io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
+}
+
+void isotropic_remeshing(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult isotropic_remeshing(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
 }
 
 } // namespace wmtk::components::isotropic_remeshing

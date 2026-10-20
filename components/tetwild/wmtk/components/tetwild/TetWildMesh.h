@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
@@ -495,7 +497,7 @@ public:
     // for boolean operations
     int flood_fill();
 
-    void save_paraview(const std::string& path, const bool use_hdf5);
+    void save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output = nullptr);
     void write_optimization_debug_output(const std::string& path) override
     {
         save_paraview(path, false);

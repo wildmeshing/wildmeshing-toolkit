@@ -27,6 +27,7 @@ namespace wmtk {
  */
 struct OptimizerParameters
 {
+    bool output_enabled = true; // private execution policy, never a JSON algorithm option
     double epsr = 1e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)

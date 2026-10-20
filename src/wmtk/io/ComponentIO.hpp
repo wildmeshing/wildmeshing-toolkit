@@ -1,0 +1,170 @@
+#pragma once
+#include <set>
+#include <wmtk/MeshData.hpp>
+#include <wmtk/Types.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/resolve_path.hpp>
+
+namespace wmtk::io {
+// Per-call state; no global mesh store, temporary files, or thread-local dispatch.
+class ComponentIO
+{
+    detail::ComponentLoggerScope logging;
+
+public:
+    const MeshMap* inputs = nullptr;
+    ComponentResult result{{}, nlohmann::json::object()};
+    explicit ComponentIO(const MeshMap* meshes = nullptr)
+        : logging(meshes != nullptr)
+        , inputs(meshes)
+    {}
+    bool memory() const { return inputs != nullptr; }
+    const MeshData& mesh(const std::string& name) const
+    {
+        const auto it = inputs->find(name);
+        if (it == inputs->end()) throw std::runtime_error("Unknown input mesh: " + name);
+        it->second.validate();
+        return it->second;
+    }
+    static void attributes(
+        const MeshAttributes& a,
+        const std::set<std::string>& allowed,
+        const std::set<std::string>& required = {})
+    {
+        for (const auto& name : required)
+            if (!a.count(name))
+                throw std::runtime_error("Missing required mesh attribute: " + name);
+        for (const auto& [name, field] : a)
+            if (!allowed.count(name)) throw std::runtime_error("Unknown mesh attribute: " + name);
+    }
+    std::string path(const std::filesystem::path& root, const nlohmann::json& selector) const
+    {
+        return memory() ? selector.get<std::string>()
+                        : utils::resolve_path(root, selector.get<std::string>()).string();
+    }
+    std::vector<std::string> paths(
+        const std::filesystem::path& root,
+        const nlohmann::json& selectors) const
+    {
+        if (selectors.is_string()) return {path(root, selectors)};
+        std::vector<std::string> out;
+        for (const auto& v : selectors) out.push_back(path(root, v));
+        return out;
+    }
+    void triangles(
+        const std::string& name,
+        MatrixXd& V,
+        MatrixXi& F,
+        double rel = -1,
+        double abs = -1) const
+    {
+        if (!memory()) {
+            read_triangle_mesh(name, V, F, rel, abs);
+            return;
+        }
+        const auto& data = mesh(name);
+        attributes(data.vertex_attributes, {});
+        for (const auto& [type, c] : data.cells) {
+            if (type != CellType::Triangle)
+                throw std::runtime_error("Expected triangle input: " + name);
+            attributes(c.attributes, {});
+        }
+        V = data.V;
+        F = indices(data.cell(CellType::Triangle).connectivity);
+        if (!F.rows()) throw std::runtime_error("Empty triangle input: " + name);
+        clean_triangle_mesh(V, F, rel, abs);
+        if (!F.rows()) throw std::runtime_error("No faces after cleaning: " + name);
+    }
+    void triangles(
+        const std::vector<std::string>& names,
+        MatrixXd& V,
+        MatrixXi& F,
+        double rel,
+        double abs,
+        std::vector<int>* provenance = nullptr) const
+    {
+        if (!memory()) {
+            read_triangle_mesh(names, V, F, rel, abs, provenance);
+            return;
+        }
+        V.resize(0, 3);
+        F.resize(0, 3);
+        if (provenance) provenance->clear();
+        for (size_t i = 0; i < names.size(); ++i) {
+            MatrixXd v;
+            MatrixXi f;
+            triangles(names[i], v, f, -1, -1);
+            const auto nv = V.rows(), nf = F.rows();
+            f.array() += nv;
+            V.conservativeResize(nv + v.rows(), 3);
+            V.bottomRows(v.rows()) = v;
+            F.conservativeResize(nf + f.rows(), 3);
+            F.bottomRows(f.rows()) = f;
+            if (provenance) provenance->resize(F.rows(), int(i));
+        }
+        clean_triangle_mesh(V, F, rel, abs, provenance);
+        if (!F.rows()) throw std::runtime_error("No faces after cleaning");
+    }
+    void edges(const std::string& name, MatrixXd& V, MatrixXi& E, double rel = -1, double abs = -1)
+        const
+    {
+        if (!memory()) {
+            read_edge_mesh(name, V, E, rel, abs);
+            return;
+        }
+        const auto& data = mesh(name);
+        attributes(data.vertex_attributes, {});
+        for (const auto& [type, c] : data.cells) {
+            if (type != CellType::Edge && type != CellType::Point)
+                throw std::runtime_error("Expected curves or points: " + name);
+            attributes(c.attributes, {});
+        }
+        V = data.V;
+        E.resize(0, 2);
+        auto it = data.cells.find(CellType::Edge);
+        if (it != data.cells.end()) E = indices(it->second.connectivity);
+        clean_edge_mesh(V, E, rel, abs);
+    }
+    static MatrixXi indices(const DataMatrix<int64_t>& c)
+    {
+        if (c.size() && (c.maxCoeff() > std::numeric_limits<int>::max() || c.minCoeff() < 0))
+            throw std::runtime_error("Connectivity exceeds internal index range");
+        return c.cast<int>();
+    }
+    void prepare(nlohmann::json& j, const std::string& component) const
+    {
+        if (!memory()) return;
+        if ((component == "simwild" || component == "tetwild" || component == "triwild") &&
+            j.contains("input") && j["input"].is_string())
+            j["input"] = nlohmann::json::array({j["input"]});
+        j["application"] = component;
+        j["input_dir"] = "";
+        j["output"] = "";
+        j["log_file"] = "";
+        j["report"] = "";
+    }
+};
+
+template <typename Mesh, typename Position>
+MeshData triangle_data(const Mesh& m, Position position)
+{
+    MeshData data;
+    const auto vs = m.get_vertices();
+    const auto fs = m.get_faces();
+    data.V.resize(vs.size(), 3);
+    std::map<size_t, int64_t> rows;
+    for (size_t i = 0; i < vs.size(); ++i) {
+        rows[vs[i].vid(m)] = i;
+        data.V.row(i) = position(vs[i].vid(m));
+    }
+    auto& c = data.cells[CellType::Triangle].connectivity;
+    c.resize(fs.size(), 3);
+    for (size_t i = 0; i < fs.size(); ++i) {
+        auto v = m.oriented_tri_vertices(fs[i]);
+        for (int j = 0; j < 3; ++j) c(i, j) = rows.at(v[j].vid(m));
+    }
+    data.validate();
+    return data;
+}
+} // namespace wmtk::io

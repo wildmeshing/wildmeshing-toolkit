@@ -4,6 +4,7 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <utility>
+#include <wmtk/io/DataWriter.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -1682,6 +1683,7 @@ bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 
 void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.vtu", path);
 
     std::vector<int> vid_map(
@@ -1741,8 +1743,9 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 }
 
 
-void TopoOffsetTriMesh::write_vtu(const std::string& path)
+void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output)
 {
+    if (!m_params.output_enabled && !output) return;
     logger().info("Write {}.vtu (tag for offset is included)", path);
 
     // Writing debug output must not change the mesh: consolidate_mesh() compacts the slot arrays
@@ -1904,8 +1907,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         }
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
-    writer = std::make_shared<paraviewo::VTUWriter>();
+    std::shared_ptr<io::DataWriter> writer;
+    writer = std::make_shared<io::DataWriter>(output);
     writer->add_cell_field("amips", amips);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
@@ -1991,8 +1994,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
                                  : std::numeric_limits<double>::quiet_NaN();
             }
             const std::string front_path = path + "_front.vtu";
-            std::shared_ptr<paraviewo::ParaviewWriter> front_writer =
-                std::make_shared<paraviewo::VTUWriter>();
+            std::shared_ptr<io::DataWriter> front_writer = std::make_shared<io::DataWriter>(output);
             front_writer->add_cell_field("front_err_ratio", ERR);
             front_writer->add_cell_field("chord_length", LEN);
             front_writer->add_field("vid", VID);
@@ -2019,8 +2021,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // surface output
     if (m_has_envelope) {
         const auto out_surf_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        std::shared_ptr<io::DataWriter> surf_writer;
+        surf_writer = std::make_shared<io::DataWriter>(output);
         logger().info("Write {}", out_surf_path);
         surf_writer
             ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
@@ -2030,6 +2032,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
 void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) const
 {
+    if (!m_params.output_enabled) return;
     // A dense triangulated grid over the bounding box carrying Phi as a vertex field, so a viewer
     // can draw the level set Phi = c as an isoline. The offset is a level set of a field that
     // exists everywhere, and the mesh only ever samples it along one curve.
@@ -2085,6 +2088,7 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
 
 void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.msh", file);
     consolidate_mesh();
 

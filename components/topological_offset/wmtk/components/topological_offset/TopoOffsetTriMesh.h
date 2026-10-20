@@ -1,4 +1,5 @@
 #pragma once
+
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
 #include <algorithm>
@@ -10,6 +11,7 @@
 #include <map>
 #include <mutex>
 #include <set>
+#include <wmtk/MeshData.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -2378,7 +2380,7 @@ public:
     void write_phi_grid(const std::string& path, int n) const;
 
     void write_input_complex(const std::string& path);
-    void write_vtu(const std::string& path);
+    void write_vtu(const std::string& path, MeshMap* output = nullptr);
     // void write_msh(const std::string& file);
     void write_msh_groups(const std::string& file);
     //// output stuff

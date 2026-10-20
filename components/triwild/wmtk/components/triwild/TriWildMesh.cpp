@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "TriWildMesh.h"
 
@@ -450,6 +451,7 @@ size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
 
 void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -891,8 +893,9 @@ bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id
 }
 
 
-void TriWildMesh::write_vtu(const std::string& path) const
+void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
 {
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -947,7 +950,8 @@ void TriWildMesh::write_vtu(const std::string& path) const
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
-    paraviewo::VTUWriter writer;
+    if (output) F.conservativeResize(faces.size(), 3);
+    io::DataWriter writer(output);
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
@@ -960,7 +964,7 @@ void TriWildMesh::write_vtu(const std::string& path) const
     // surface
     {
         const auto surf_out_path = path + "_surf.vtu";
-        paraviewo::VTUWriter surf_writer;
+        io::DataWriter surf_writer(output);
         surf_writer.add_field("sizing_field", v_sizing_field);
 
         logger().info("Write {}", surf_out_path);

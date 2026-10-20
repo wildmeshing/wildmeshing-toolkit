@@ -1,0 +1,46 @@
+#pragma once
+#include <wmtk/TetMesh.h>
+#include <type_traits>
+#include <wmtk/io/tagged_mesh_data.hpp>
+
+namespace wmtk::components::topological_offset {
+template <typename Mesh>
+void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
+{
+    MeshMap raw;
+    mesh.write_vtu("mesh", &raw);
+    if constexpr (std::is_base_of_v<TetMesh, Mesh>) io::compact_slot_outputs(mesh, raw);
+    context.result.first = io::named_outputs(std::move(raw));
+    auto& data = context.result.first.at("mesh");
+    if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
+        simwild::collect_tags(
+            mesh,
+            context.result.first,
+            CellType::Tetrahedron,
+            mesh.get_tets(),
+            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tag; });
+    } else {
+        simwild::collect_tags(
+            mesh,
+            context.result.first,
+            CellType::Triangle,
+            mesh.get_faces(),
+            [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+    }
+    if (mesh.m_offset_params.save_offset_correspondence) {
+        const auto ids = data.vertex_attributes.at("vid").integers();
+        DataMatrix<int64_t> correspondence(data.V.rows(), 1);
+        for (Eigen::Index i = 0; i < ids.rows(); ++i)
+            correspondence(i, 0) = mesh.m_vertex_extra[ids(i, 0)].m_corr_input_vid;
+        data.vertex_attributes["corr_input_vid"].values = std::move(correspondence);
+        data.vertex_attributes["vid"].values = ids;
+    }
+    if (mesh.m_has_envelope) {
+        context.result.first["envelope"] = simwild::geometry_data(
+            mesh.m_V_envelope,
+            mesh.m_F_envelope,
+            std::is_base_of_v<TetMesh, Mesh> ? CellType::Triangle : CellType::Edge);
+    }
+    data.validate();
+}
+} // namespace wmtk::components::topological_offset

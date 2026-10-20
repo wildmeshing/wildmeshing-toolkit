@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "TetWildMesh.h"
 
@@ -733,6 +734,7 @@ void TetWildMesh::filter_with_flood_fill()
 
 void TetWildMesh::output_mesh(std::string file)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -970,8 +972,9 @@ int TetWildMesh::flood_fill()
     return current_id;
 }
 
-void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
+void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output)
 {
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
 
     // flood fill
@@ -1051,12 +1054,13 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
+    if (output) T.conservativeResize(tets.size(), 4);
+    std::shared_ptr<io::DataWriter> writer;
     if (use_hdf5) {
         log_and_throw_error("Cannot write HDF5");
         // writer = std::make_shared<paraviewo::HDF5VTUWriter>();
     } else {
-        writer = std::make_shared<paraviewo::VTUWriter>();
+        writer = std::make_shared<io::DataWriter>(output);
     }
 
     const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
@@ -1087,8 +1091,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     // surface
     {
         const auto surf_out_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        std::shared_ptr<io::DataWriter> surf_writer;
+        surf_writer = std::make_shared<io::DataWriter>(output);
         surf_writer->add_field("sizing_field", v_sizing_field);
         surf_writer->add_field("is_rounded", v_is_rounded);
         surf_writer->add_field("on_surface", v_is_on_surface);

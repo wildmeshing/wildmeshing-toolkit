@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
@@ -2129,6 +2130,7 @@ bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 
 void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.vtu", path);
 
     std::vector<int> vid_map(vertex_size(), -1); // vid_map[i] gives new vertex id for old id 'i'
@@ -2201,9 +2203,10 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
     writer.write_mesh(path + ".vtu", V, cells);
 }
 
-void TopoOffsetTetMesh::write_vtu(const std::string& path)
+void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output)
 {
-    write_vtu_frame(gather_vtu_frame(path));
+    if (!m_params.output_enabled && !output) return;
+    write_vtu_frame(gather_vtu_frame(path), output);
 }
 
 TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::string& path)
@@ -2563,12 +2566,12 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     return fr;
 }
 
-void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
+void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
 {
     // What each field is: gather_vtu_frame().
     const std::string& path = fr.path;
     {
-        paraviewo::VTUWriter writer;
+        io::DataWriter writer(output);
         writer.add_cell_field("amips", fr.amips);
         writer.add_cell_field("tet_energy", fr.tet_e);
         writer.add_cell_field("amips_term", fr.amips_term);
@@ -2593,7 +2596,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // surface
     {
-        paraviewo::VTUWriter surf_writer;
+        io::DataWriter surf_writer(output);
         surf_writer.add_field("order", fr.order);
         surf_writer.add_field("vid", fr.vid);
         surf_writer.add_field("sizing_scalar", fr.sizing);
@@ -2602,7 +2605,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // offset faces
     {
-        paraviewo::VTUWriter off_writer;
+        io::DataWriter off_writer(output);
         off_writer.add_cell_field("front_err_ratio", fr.f_err);
         off_writer.add_cell_field("settle_inside_bars", fr.f_inside);
         off_writer.add_cell_field("settle_outside_bars", fr.f_outside);
@@ -2621,7 +2624,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // edges
     {
-        paraviewo::VTUWriter edge_writer;
+        io::DataWriter edge_writer(output);
         edge_writer.add_field("order", fr.order);
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
@@ -2631,6 +2634,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
 void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) const
 {
+    if (!m_params.output_enabled) return;
     // A plane slice of the offset potential, carrying Phi per grid vertex. A dense volume is
     // unaffordable in 3D, so the slice is the plane through the box centre with the shortest
     // extent removed.
@@ -2690,6 +2694,7 @@ void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) con
 
 void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.msh, {} tags", file, m_tags_count);
     consolidate_mesh();
 

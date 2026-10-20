@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/io/ComponentIO.hpp>
+
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -83,7 +85,8 @@ public:
         const std::vector<Matrix4d>& img_transform = {},
         const double tol_rel = -1,
         const double tol_abs = -1,
-        const bool split_connected_components = false);
+        const bool split_connected_components = false,
+        const io::ComponentIO* component_io = nullptr);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.

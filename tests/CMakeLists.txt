@@ -11,6 +11,7 @@ set(TEST_SOURCES
     test_envelope.cpp
     test_geom.cpp
     test_io.cpp
+    test_mesh_data.cpp
     test_knn.cpp
     test_link_condition.cpp
     test_nonmanifold.cpp

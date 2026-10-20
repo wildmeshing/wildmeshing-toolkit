@@ -286,7 +286,8 @@ EmbedSurface::EmbedSurface(
     const std::vector<Matrix4d>& img_transform,
     const double tol_rel,
     const double tol_abs,
-    const bool split_connected_components)
+    const bool split_connected_components,
+    const io::ComponentIO* component_io)
     : m_img_filenames(img_filenames)
 {
     assert(img_filenames.size() == img_transform.size());
@@ -301,12 +302,15 @@ EmbedSurface::EmbedSurface(
     Fs.reserve(m_img_filenames.size());
 
     for (size_t i = 0; i < m_img_filenames.size(); ++i) {
-        if (!std::filesystem::exists(m_img_filenames[i])) {
+        if (!component_io && !std::filesystem::exists(m_img_filenames[i])) {
             log_and_throw_error("Input file {} does not exist", m_img_filenames[i]);
         }
         MatrixXd V_file;
         MatrixXi F_file;
-        io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
+        if (component_io)
+            component_io->triangles(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
+        else
+            io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
 
         assert(V_file.cols() == 3);
         assert(F_file.cols() == 3);
