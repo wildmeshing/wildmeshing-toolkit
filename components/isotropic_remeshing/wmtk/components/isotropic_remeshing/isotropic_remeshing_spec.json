@@ -18,6 +18,7 @@
       "log_file",
       "report",
       "use_link_condition",
+      "check_inversions",
       "remove_duplicate_eps",
       "history_output",
       "feature_fields"
@@ -128,6 +129,12 @@
     "type": "bool",
     "default": true,
     "doc": "Require the link condition before collapsing an edge. When true a collapse cannot change the topology, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed -- TriMesh represents the result, and any duplicate triangles the collapse produces are merged. Swaps are refused on non-manifold edges either way."
+  },
+  {
+    "pointer": "/check_inversions",
+    "type": "bool",
+    "default": true,
+    "doc": "Refuse a collapse, swap or smoothing that folds the surface over: one that leaves more triangles facing against, or flat to, the surface it replaces (the triangles it changes or removes, their area vectors summed) or the surface it leaves than there were, or more such triangles in the stars of the vertices it touches, each star against its own normal. Exact (orient3d). A fold the input has can be undone, but none is made. Splits are not checked: they move no vertex. Where the input's triangles are not consistently oriented, every orientation flip counts as a fold, so most operations there are refused."
   },
   {
     "pointer": "/remove_duplicate_eps",

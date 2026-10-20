@@ -112,7 +112,80 @@ void replace_nbr(std::vector<size_t>& nbrs, const size_t from, const size_t to)
     std::sort(nbrs.begin(), nbrs.end());
     nbrs.erase(std::unique(nbrs.begin(), nbrs.end()), nbrs.end());
 }
+
+// Whether the triangle (a, b, c) faces along n, exactly: n . ((b - a) x (c - a)) > 0, which is
+// orient3d of the triangle and a point below it along n. Only that point is rounded, so n tilts
+// by a rounding error and a flat triangle stays flat; n is scaled to the coordinates for that.
+bool faces_along(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector3d& n)
+{
+    const Eigen::Vector3d below = a - (1 + a.lpNorm<Eigen::Infinity>()) * n.normalized();
+    return wmtk::utils::predicates::orient3d(a, b, c, below) ==
+           wmtk::utils::predicates::Orientation::POSITIVE;
+}
 } // namespace
+
+Eigen::Vector3d IsotropicRemeshing::area_normal(const std::vector<Tuple>& tris) const
+{
+    Eigen::Vector3d n = Eigen::Vector3d::Zero();
+    for (const Tuple& f : tris) {
+        const auto vs = oriented_tri_vids(f);
+        const auto& p = vertex_attrs;
+        n += (p.at(vs[1]).pos - p.at(vs[0]).pos).cross(p.at(vs[2]).pos - p.at(vs[0]).pos);
+    }
+    return n;
+}
+
+size_t IsotropicRemeshing::not_facing(const std::vector<Tuple>& tris, const Eigen::Vector3d& n)
+    const
+{
+    size_t count = 0;
+    for (const Tuple& f : tris) {
+        const auto vs = oriented_tri_vids(f);
+        const auto& p = vertex_attrs;
+        if (!faces_along(p.at(vs[0]).pos, p.at(vs[1]).pos, p.at(vs[2]).pos, n)) ++count;
+    }
+    return count;
+}
+
+size_t IsotropicRemeshing::star_folds(const std::vector<Tuple>& tris) const
+{
+    std::vector<size_t> vs;
+    for (const Tuple& f : tris) {
+        for (const size_t v : oriented_tri_vids(f)) vs.push_back(v);
+    }
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    size_t count = 0;
+    for (const size_t v : vs) {
+        const auto star = get_one_ring_tris_for_vertex(tuple_from_vertex(v));
+        count += not_facing(star, area_normal(star));
+    }
+    return count;
+}
+
+ReplacedSurface IsotropicRemeshing::replaced(const std::vector<Tuple>& tris) const
+{
+    ReplacedSurface r;
+    r.normal = area_normal(tris);
+    r.against = not_facing(tris, r.normal);
+    r.star_folds = star_folds(tris);
+    return r;
+}
+
+bool IsotropicRemeshing::folds(const std::vector<Tuple>& tris, const ReplacedSurface& before)
+{
+    if (std::max(not_facing(tris, before.normal), not_facing(tris, area_normal(tris))) <=
+            before.against &&
+        star_folds(tris) <= before.star_folds) {
+        return false;
+    }
+    ++m_refused_inversions;
+    return true;
+}
 
 void IsotropicRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& edges)
 {
@@ -252,16 +325,19 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
             if (is_feature_edge(v, a) && is_feature_edge(v, b)) return false;
         }
     }
+    if (m_check_inversions) {
+        auto& cache = position_cache.local();
+        cache.replaced = replaced({t, t.switch_face(*this).value()});
+    }
     return true;
 }
 
 
 bool IsotropicRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
-    std::vector<TriMesh::Tuple> tris;
-    tris.push_back(t);
-    tris.push_back(t.switch_edge(*this));
-    return true;
+    if (!m_check_inversions) return true;
+    const auto& cache = position_cache.local();
+    return !folds({t, t.switch_face(*this).value()}, cache.replaced);
 }
 
 std::vector<TriMesh::Tuple> IsotropicRemeshing::replace_edges_after_split(
@@ -363,6 +439,15 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
             return false;
         }
     }
+    if (m_check_inversions) {
+        // Both stars: the triangles the collapse removes, and the ones it renames or moves.
+        auto tris = get_one_ring_tris_for_vertex(t);
+        for (const Tuple& f : get_one_ring_tris_for_vertex(t2)) {
+            const auto vs = oriented_tri_vids(f);
+            if (!std::count(vs.begin(), vs.end(), cache.v1)) tris.push_back(f);
+        }
+        cache.replaced = replaced(tris);
+    }
     return true;
 }
 
@@ -401,6 +486,9 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     vertex_attrs[vid].partition_id = cache.partition_id;
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
+    if (m_check_inversions && folds(get_one_ring_tris_for_vertex(t), cache.replaced)) {
+        return false;
+    }
     return true;
 }
 
@@ -464,7 +552,9 @@ bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
     }
     Eigen::Vector3d after_smooth = tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
+    const ReplacedSurface before = m_check_inversions ? replaced(one_ring_tris) : ReplacedSurface();
     vertex_attrs[t.vid(*this)].pos = after_smooth;
+    if (m_check_inversions && folds(one_ring_tris, before)) return false;
     return true;
 }
 
@@ -515,8 +605,8 @@ size_t IsotropicRemeshing::remove_feature_ears()
                 const Eigen::Vector3d n_old =
                     (P(b) - P(a)).cross(P(c) - P(a)) + (P(c) - P(a)).cross(P(d) - P(a));
                 swappable = !is_feature_edge(a, d) && !is_feature_edge(c, d) &&
-                            (P(b) - P(a)).cross(P(d) - P(a)).dot(n_old) > 0 &&
-                            (P(c) - P(b)).cross(P(d) - P(b)).dot(n_old) > 0;
+                            faces_along(P(a), P(b), P(d), n_old) &&
+                            faces_along(P(b), P(c), P(d), n_old);
             }
             if (swappable && swap_edge(base, new_tris)) {
                 ++removed;
