@@ -38,9 +38,12 @@ IsotropicRemeshing::IsotropicRemeshing(
     NUM_THREADS = num_threads;
     m_envelope.use_exact = use_exact;
 
-    p_vertex_attrs = &vertex_attrs;
+    m_vertex_group.add(&vertex_attrs);
+    m_vertex_group.add(&feature_attrs);
+    p_vertex_attrs = &m_vertex_group;
 
     vertex_attrs.resize(_m_vertex_positions.size());
+    feature_attrs.resize(_m_vertex_positions.size());
 
     for (auto i = 0; i < _m_vertex_positions.size(); i++)
         vertex_attrs[i] = {_m_vertex_positions[i], 0};
@@ -90,9 +93,84 @@ void IsotropicRemeshing::create_mesh(
 
 void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
 {
-    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
-    position_cache.local().partition_id = vertex_attrs[t.vid(*this)].partition_id;
+    auto& cache = position_cache.local();
+    cache.v1 = t.vid(*this);
+    cache.v2 = t.switch_vertex(*this).vid(*this);
+    cache.v1p = vertex_attrs[cache.v1].pos;
+    cache.v2p = vertex_attrs[cache.v2].pos;
+    cache.partition_id = vertex_attrs[cache.v1].partition_id;
+    cache.feature_edge = is_feature_edge(cache.v1, cache.v2);
+    cache.keep_v2_position = false;
+}
+
+namespace {
+void replace_nbr(std::vector<size_t>& nbrs, const size_t from, const size_t to)
+{
+    for (size_t& n : nbrs) {
+        if (n == from) n = to;
+    }
+    std::sort(nbrs.begin(), nbrs.end());
+    nbrs.erase(std::unique(nbrs.begin(), nbrs.end()), nbrs.end());
+}
+} // namespace
+
+void IsotropicRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& edges)
+{
+    feature_attrs.resize(vertex_attrs.size());
+    for (auto& f : feature_attrs.m_attributes) f.nbrs.clear();
+    for (const auto& e : edges) {
+        if (e[0] == e[1]) continue;
+        for (const auto& [a, b] : {std::pair{e[0], e[1]}, std::pair{e[1], e[0]}}) {
+            auto& n = feature_attrs.m_attributes[a].nbrs;
+            if (std::find(n.begin(), n.end(), b) == n.end()) n.push_back(b);
+        }
+    }
+    m_has_features = !edges.empty();
+}
+
+std::vector<std::array<size_t, 2>> IsotropicRemeshing::feature_edges() const
+{
+    std::vector<std::array<size_t, 2>> out;
+    if (!m_has_features) return out;
+    for (const auto& t : get_vertices()) {
+        const size_t a = t.vid(*this);
+        for (const size_t b : feature_attrs.at(a).nbrs) {
+            if (a < b) out.push_back({{a, b}});
+        }
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+bool IsotropicRemeshing::is_feature_edge(const size_t a, const size_t b) const
+{
+    if (!m_has_features) return false;
+    const auto& n = feature_attrs.at(a).nbrs;
+    return std::find(n.begin(), n.end(), b) != n.end();
+}
+
+size_t IsotropicRemeshing::feature_degree(const size_t v) const
+{
+    return m_has_features ? feature_attrs.at(v).nbrs.size() : 0;
+}
+
+void IsotropicRemeshing::consolidate_mesh()
+{
+    if (!m_has_features) {
+        TriMesh::consolidate_mesh();
+        return;
+    }
+    // The consolidation numbers the live vertices by rank; the feature edges name vertices, so
+    // they follow.
+    std::vector<size_t> live;
+    for (const auto& t : get_vertices()) live.push_back(t.vid(*this));
+    std::sort(live.begin(), live.end());
+    std::vector<size_t> rank(vert_capacity(), size_t(-1));
+    for (size_t i = 0; i < live.size(); ++i) rank[live[i]] = i;
+    TriMesh::consolidate_mesh();
+    for (size_t v = 0; v < live.size(); ++v) {
+        for (size_t& n : feature_attrs.m_attributes[v].nbrs) n = rank[n];
+    }
 }
 
 bool IsotropicRemeshing::invariants(const std::vector<Tuple>& new_tris)
@@ -161,6 +239,7 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
     if (!TriMesh::swap_edge_before(t)) return false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
+    if (is_feature_edge(t.vid(*this), t.switch_vertex(*this).vid(*this))) return false;
     return true;
 }
 
@@ -220,6 +299,24 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
     cache.v2_input_boundary = vertex_attrs[t2.vid(*this)].input_boundary;
     cache.v1_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t);
     cache.v2_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t2);
+    if (m_has_features) {
+        cache.keep_v2_position = feature_degree(cache.v2) > 0;
+        if (feature_degree(cache.v1) > 0) {
+            // A curve vertex goes only along its curve, and only from inside it.
+            if (feature_degree(cache.v1) != 2 || !cache.feature_edge) return false;
+            // Not when one of its sides is a single triangle on the curve: the collapse would
+            // flatten it onto the curve, and with it every point it held.
+            const auto& n = feature_attrs.at(cache.v1).nbrs;
+            const size_t u = n[0] == cache.v2 ? n[1] : n[0];
+            for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
+                const auto vs = oriented_tri_vids(f);
+                if (std::count(vs.begin(), vs.end(), u) &&
+                    std::count(vs.begin(), vs.end(), cache.v2)) {
+                    return false;
+                }
+            }
+        }
+    }
     return true;
 }
 
@@ -231,11 +328,29 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     // one, as in ShortestEdgeCollapse. The midpoint would pull the outline into the surface,
     // which the boundary envelope refuses, so the collapse would be lost rather than taken.
     // Without a boundary envelope both flags are false and this is the midpoint, as before.
-    const Eigen::Vector3d p = cache.v1_on_boundary && !cache.v2_on_boundary ? cache.v1p
+    // A survivor on a feature curve stays where it is, so the curve keeps its shape.
+    const Eigen::Vector3d p = cache.keep_v2_position                          ? cache.v2p
+                              : cache.v1_on_boundary && !cache.v2_on_boundary ? cache.v1p
                               : cache.v2_on_boundary && !cache.v1_on_boundary
                                   ? cache.v2p
                                   : (cache.v1p + cache.v2p) / 2.0;
     auto vid = t.vid(*this);
+    if (m_has_features) {
+        // The removed vertex's feature edges go to the survivor.
+        assert(vid == cache.v2);
+        const std::vector<size_t> removed_nbrs = feature_attrs.at(cache.v1).nbrs;
+        auto& kept_nbrs = feature_attrs[vid].nbrs;
+        replace_nbr(kept_nbrs, cache.v1, vid);
+        kept_nbrs.erase(std::remove(kept_nbrs.begin(), kept_nbrs.end(), vid), kept_nbrs.end());
+        for (const size_t x : removed_nbrs) {
+            if (x == vid) continue;
+            replace_nbr(feature_attrs[x].nbrs, cache.v1, vid);
+            if (std::find(kept_nbrs.begin(), kept_nbrs.end(), x) == kept_nbrs.end()) {
+                kept_nbrs.push_back(x);
+            }
+        }
+        feature_attrs[cache.v1].nbrs.clear();
+    }
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.partition_id;
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
@@ -271,12 +386,24 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
     va.pos = p;
     va.partition_id = cache.partition_id;
     va.input_boundary = cache.split_input_boundary;
+    if (m_has_features) {
+        // Always written: the slot may hold a vertex that lived there before.
+        auto& n = feature_attrs[vid].nbrs;
+        n.clear();
+        if (cache.feature_edge) {
+            n = {cache.v1, cache.v2};
+            replace_nbr(feature_attrs[cache.v1].nbrs, cache.v2, vid);
+            replace_nbr(feature_attrs[cache.v2].nbrs, cache.v1, vid);
+        }
+    }
     return true;
 }
 
 bool IsotropicRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].freeze) return false;
+    const size_t d = feature_degree(t.vid(*this));
+    if (d != 0 && d != 2) return false; // a curve's end, or a junction of curves
     return true;
 }
 
@@ -601,6 +728,11 @@ Eigen::Vector3d normal(IsotropicRemeshing& m, std::array<TriMesh::Tuple, 3>& ver
 
 Eigen::Vector3d IsotropicRemeshing::smooth(const TriMesh::Tuple& t)
 {
+    if (feature_degree(t.vid(*this)) == 2) {
+        // Along the curve: the average of the two curve neighbours, as on the boundary.
+        const auto& n = feature_attrs.at(t.vid(*this)).nbrs;
+        return (vertex_attrs.at(n[0]).pos + vertex_attrs.at(n[1]).pos) / 2;
+    }
     auto one_ring_edges = get_one_ring_edges_for_vertex(t);
     if (one_ring_edges.size() < 3) return vertex_attrs[t.vid(*this)].pos;
     Eigen::Vector3d after_smooth(0, 0, 0);

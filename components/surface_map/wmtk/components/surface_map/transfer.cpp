@@ -50,18 +50,21 @@ SurfaceData transfer_face_fields(const SurfaceMap& map, const SurfaceData& input
     }
     const std::vector<SurfacePoint> sources = map.to_input(centroids);
 
+    // The vertices the live faces use, numbered by rank, as a consolidation numbers them.
     SurfaceData out;
     constexpr uint64_t kNone = std::numeric_limits<uint64_t>::max();
     std::vector<uint64_t> rank(map.output_vertices().size(), kNone);
     for (const uint64_t f : out_faces) {
+        for (const uint64_t v : map.output_faces()[f]) rank[v] = 0;
+    }
+    for (uint64_t v = 0; v < rank.size(); ++v) {
+        if (rank[v] == kNone) continue;
+        rank[v] = out.vertices.size();
+        out.vertices.push_back(map.output_vertices()[v]);
+    }
+    for (const uint64_t f : out_faces) {
         std::array<uint64_t, 3> t = map.output_faces()[f];
-        for (uint64_t& v : t) {
-            if (rank[v] == kNone) {
-                rank[v] = out.vertices.size();
-                out.vertices.push_back(map.output_vertices()[v]);
-            }
-            v = rank[v];
-        }
+        for (uint64_t& v : t) v = rank[v];
         out.faces.push_back(t);
     }
     size_t lost = 0;

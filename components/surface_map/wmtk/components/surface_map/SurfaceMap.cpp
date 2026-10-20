@@ -214,7 +214,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         }
         UV fixed_before = fixed;
         if (removed_on_loop) {
-            ++m_boundary_collapses;
+            ++m_chord_collapses;
             const double a = length(prev, removed), b = length(removed, next);
             const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
             fixed_before[removed] = (1 - tau) * fixed[prev] + tau * fixed[next];
@@ -328,17 +328,68 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                     ++n_spanning;
                 }
             }
+            // The sides of the feature curves through the patch: faces joined across an edge
+            // that is not a feature edge. Each side is flattened on its own, so a curve maps
+            // onto itself and a face stays on its side.
+            std::vector<size_t> root(before_f.size());
+            for (size_t i = 0; i < root.size(); ++i) root[i] = i;
+            const auto find = [&root](size_t i) {
+                while (root[i] != i) i = root[i] = root[root[i]];
+                return i;
+            };
+            {
+                std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
+                for (size_t i = 0; i < before_t.size(); ++i) {
+                    for (int k = 0; k < 3; ++k) {
+                        uint64_t a = before_t[i][k], b = before_t[i][(k + 1) % 3];
+                        if (a > b) std::swap(a, b);
+                        edge_faces[{{a, b}}].push_back(i);
+                    }
+                }
+                for (const auto& [edge, fs] : edge_faces) {
+                    if (fs.size() == 2 && !r.is_feature(edge[0], edge[1])) {
+                        root[find(fs[0])] = find(fs[1]);
+                    }
+                }
+            }
             r.apply(e);
             const std::vector<uint64_t> after_f = r.faces_of(kept);
-            const std::vector<Tri> after_t = corners_of(after_f);
             if (after_f.size() + n_spanning < before_f.size()) {
                 m_build_warnings.merged_faces += before_f.size() - n_spanning - after_f.size();
             }
-            Cell cell;
-            if (flatten(before_f, before_t, after_f, after_t, removed, P, cell)) {
-                step.cells.push_back(std::move(cell));
-            } else {
-                relabel(before_f, after_f, step);
+            std::map<size_t, std::vector<size_t>> sides;
+            for (size_t i = 0; i < before_f.size(); ++i) sides[find(i)].push_back(i);
+            for (const auto& [side_root, members] : sides) {
+                std::vector<uint64_t> side_before_f;
+                std::vector<Tri> side_before_t;
+                bool has_removed = false;
+                for (const size_t i : members) {
+                    side_before_f.push_back(before_f[i]);
+                    side_before_t.push_back(before_t[i]);
+                    has_removed =
+                        has_removed || std::count(before_t[i].begin(), before_t[i].end(), removed);
+                }
+                if (!has_removed) continue; // nothing on this side changes
+                std::vector<uint64_t> side_after_f;
+                for (const uint64_t f : after_f) {
+                    if (std::find(side_before_f.begin(), side_before_f.end(), f) !=
+                        side_before_f.end()) {
+                        side_after_f.push_back(f);
+                    }
+                }
+                Cell cell;
+                if (flatten(
+                        side_before_f,
+                        side_before_t,
+                        side_after_f,
+                        corners_of(side_after_f),
+                        removed,
+                        P,
+                        cell)) {
+                    step.cells.push_back(std::move(cell));
+                } else {
+                    relabel(side_before_f, side_after_f, step);
+                }
             }
             break;
         }

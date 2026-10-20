@@ -75,8 +75,9 @@ public:
 
     /// How many operations needed a local map, by kind (index: history::EditKind).
     const std::array<size_t, 8>& cells_by_kind() const { return m_cells_by_kind; }
-    /// Collapses that removed a boundary vertex: its boundary edges were flattened to one chord.
-    size_t boundary_collapses() const { return m_boundary_collapses; }
+    /// Collapses that removed a vertex on the boundary or on a feature curve: on each side, its
+    /// two edges along it were flattened to one chord.
+    size_t chord_collapses() const { return m_chord_collapses; }
 
 private:
     /// A face of a patch with the domain position of each of its corners.
@@ -107,7 +108,7 @@ private:
     MapWarnings m_build_warnings;
     mutable MapWarnings m_map_warnings;
     std::array<size_t, 8> m_cells_by_kind = {};
-    size_t m_boundary_collapses = 0;
+    size_t m_chord_collapses = 0;
 
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 3>> m_in_faces, m_out_faces;

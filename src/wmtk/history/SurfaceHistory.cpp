@@ -11,12 +11,13 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 2). Every count and id is an unsigned LEB128 varint; a position is three
+// Layout (version 3). Every count and id is an unsigned LEB128 varint; a position is three
 // little-endian f64.
 //
 //   "WMTKHIST" u32 version
 //   n_vertices, then per vertex: u8 alive, and its position if alive
 //   n_faces, then per face: u8 alive, and its three vertex ids if alive
+//   n_feature_edges, then per feature edge its two vertex ids
 //   n_edits, then per edit: u8 kind, the ids the kind implies --
 //       split_edge:    v0 v1 new_v, u8 n_pairs, n_pairs x (f new_f)
 //       split_face:    v0 v1 v2 new_v, f new_f1 new_f2
@@ -27,7 +28,7 @@ namespace {
 //   vertices were before the edit. Saving and loading both replay the history to know it.
 //   metadata length, metadata bytes
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 2;
+constexpr uint32_t kVersion = 3;
 
 class Writer
 {
@@ -196,6 +197,11 @@ void SurfaceHistory::save(const std::string& path) const
         if (!face_alive[i]) continue;
         for (const uint64_t v : faces[i]) w.varint(v);
     }
+    w.varint(feature_edges.size());
+    for (const auto& e : feature_edges) {
+        w.varint(e[0]);
+        w.varint(e[1]);
+    }
 
     Replay r(*this);
     w.varint(edits.size());
@@ -250,6 +256,11 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
         h.face_alive[i] = r.get<uint8_t>();
         if (!h.face_alive[i]) continue;
         for (uint64_t& v : h.faces[i]) v = r.varint();
+    }
+    h.feature_edges.resize(r.varint());
+    for (auto& e : h.feature_edges) {
+        e[0] = r.varint();
+        e[1] = r.varint();
     }
 
     Replay replay(h);

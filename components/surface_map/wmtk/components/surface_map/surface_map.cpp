@@ -84,7 +84,9 @@ void surface_map(nlohmann::json json_params)
         cells[size_t(history::EditKind::collapse_edge)],
         cells[size_t(history::EditKind::swap_edge)],
         cells[size_t(history::EditKind::consolidate)]);
-    logger().info("{} of the collapses removed a boundary vertex", map.boundary_collapses());
+    logger().info(
+        "{} side(s) of collapses flattened along the boundary or a feature curve",
+        map.chord_collapses());
     log_warnings("building the map", map.build_warnings());
 
     if (json_params["operation"] == "transfer") {

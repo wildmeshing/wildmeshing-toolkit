@@ -19,7 +19,8 @@
       "report",
       "use_link_condition",
       "remove_duplicate_eps",
-      "history_output"
+      "history_output",
+      "feature_fields"
     ]
   },
   {
@@ -98,6 +99,17 @@
     "type": "string",
     "default": "",
     "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/feature_fields",
+    "type": "list",
+    "default": [],
+    "doc": "Per-face fields of a .msh input whose boundaries the remeshing keeps as curves: an edge between two faces that differ in any of them is a feature edge (see IsotropicRemeshing::set_feature_edges). A field carried through the remeshing then holds exactly on every output face."
+  },
+  {
+    "pointer": "/feature_fields/*",
+    "type": "string",
+    "doc": "The name of a per-face field of the input."
   },
   {
     "pointer": "/history_output",

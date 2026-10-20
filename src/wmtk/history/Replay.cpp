@@ -18,6 +18,49 @@ Replay::Replay(const SurfaceHistory& h)
         if (!m_face_alive[f]) continue;
         for (const uint64_t v : m_faces[f]) m_vertex_faces[v].push_back(f);
     }
+    m_feature_nbrs.resize(m_vertices.size());
+    for (const auto& e : h.feature_edges) add_feature(e[0], e[1]);
+}
+
+void Replay::add_feature(const uint64_t a, const uint64_t b)
+{
+    grow_vertices(std::max(a, b));
+    for (const auto& [x, y] : {std::pair{a, b}, std::pair{b, a}}) {
+        auto& n = m_feature_nbrs[x];
+        if (std::find(n.begin(), n.end(), y) == n.end()) n.push_back(y);
+    }
+}
+
+bool Replay::remove_feature(const uint64_t a, const uint64_t b)
+{
+    if (a >= m_feature_nbrs.size() || b >= m_feature_nbrs.size()) return false;
+    bool found = false;
+    for (const auto& [x, y] : {std::pair{a, b}, std::pair{b, a}}) {
+        auto& n = m_feature_nbrs[x];
+        const auto it = std::find(n.begin(), n.end(), y);
+        if (it == n.end()) continue;
+        n.erase(it);
+        found = true;
+    }
+    return found;
+}
+
+bool Replay::is_feature(const uint64_t a, const uint64_t b) const
+{
+    if (a >= m_feature_nbrs.size()) return false;
+    const auto& n = m_feature_nbrs[a];
+    return std::find(n.begin(), n.end(), b) != n.end();
+}
+
+std::set<std::array<uint64_t, 2>> Replay::feature_edges() const
+{
+    std::set<std::array<uint64_t, 2>> out;
+    for (uint64_t a = 0; a < m_feature_nbrs.size(); ++a) {
+        for (const uint64_t b : m_feature_nbrs[a]) {
+            if (a < b) out.insert({{a, b}});
+        }
+    }
+    return out;
 }
 
 void Replay::apply_all(const SurfaceHistory& h)
@@ -48,6 +91,7 @@ void Replay::grow_vertices(const uint64_t vid)
     m_vertices.resize(vid + 1, Eigen::Vector3d::Zero());
     m_vertex_alive.resize(vid + 1, 0);
     m_vertex_faces.resize(vid + 1);
+    m_feature_nbrs.resize(vid + 1);
 }
 
 void Replay::grow_faces(const uint64_t fid)
@@ -83,6 +127,10 @@ void Replay::split_edge(const Edit& e)
     const uint64_t v0 = e.v[0], v1 = e.v[1], vn = e.v[2];
     grow_vertices(vn);
     m_vertex_alive[vn] = 1;
+    if (remove_feature(v0, v1)) {
+        add_feature(v0, vn);
+        add_feature(vn, v1);
+    }
     for (size_t i = 0; i + 1 < e.faces.size(); i += 2) {
         const uint64_t f = e.faces[i], fn = e.faces[i + 1];
         grow_faces(fn);
@@ -120,6 +168,14 @@ void Replay::split_face(const Edit& e)
 void Replay::collapse_edge(const Edit& e)
 {
     const uint64_t removed = e.v[0], kept = e.v[1];
+    // The removed endpoint's feature edges go to the survivor; the collapsed edge goes.
+    if (removed < m_feature_nbrs.size()) {
+        const std::vector<uint64_t> nbrs = m_feature_nbrs[removed];
+        for (const uint64_t x : nbrs) {
+            remove_feature(removed, x);
+            if (x != kept) add_feature(kept, x);
+        }
+    }
     std::vector<uint64_t> touched{kept};
     const std::vector<uint64_t> fs = m_vertex_faces[removed];
     for (const uint64_t f : fs) {
@@ -161,6 +217,7 @@ void Replay::collapse_edge(const Edit& e)
 void Replay::swap_edge(const Edit& e)
 {
     const uint64_t v0 = e.v[0], v1 = e.v[1], a = e.v[2], b = e.v[3];
+    remove_feature(v0, v1); // never a feature edge: the meshes refuse to swap one
     const uint64_t fa = e.faces[0], fb = e.faces[1];
     rename_in_face(fa, v1, a);
     rename_in_face(fb, v0, b);
@@ -196,6 +253,12 @@ void Replay::consolidate()
     for (uint64_t f = 0; f < m_faces.size(); ++f) {
         for (const uint64_t v : m_faces[f]) m_vertex_faces[v].push_back(f);
     }
+    std::vector<std::vector<uint64_t>> nbrs(nv);
+    for (uint64_t a = 0; a < m_feature_nbrs.size(); ++a) {
+        if (map_v[a] == uint64_t(-1)) continue;
+        for (const uint64_t b : m_feature_nbrs[a]) nbrs[map_v[a]].push_back(map_v[b]);
+    }
+    m_feature_nbrs = std::move(nbrs);
 }
 
 } // namespace wmtk::history
