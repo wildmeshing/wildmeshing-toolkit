@@ -340,28 +340,46 @@ double TopoOffsetTetMesh::offset_energy() const
     return s;
 }
 
-void TopoOffsetTetMesh::log_energy_step(const char* step) const
+std::pair<double, double> TopoOffsetTetMesh::energy_parts() const
 {
     // See the declaration. A band cell is never plastic (cell_is_plastic()), so its tet_energy()
     // is cell_energy(vids, A^3, true): the AMIPS part (plus the repulsion term, 0 in the loop)
-    // and band_cell_term(), summed here apart rather than calling both tet_energy() and
-    // band_cell_term(), which would evaluate the band term twice.
+    // and band_cell_term(), evaluated here apart rather than calling both tet_energy() and
+    // band_cell_term(), which would evaluate the band term twice. Per cell k (get_tets() order):
+    // its AMIPS part, and its band term where it has one (has_band[k]).
+    const std::vector<Tuple> tets = get_tets();
+    std::vector<double> amips_k(tets.size(), 0.), band_k(tets.size(), 0.);
+    std::vector<char> has_band(tets.size(), 0);
+    diagnostic_parallel_for(tets.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+        for (size_t k = b; k < e; ++k) {
+            const size_t tid = tets[k].tid(*this);
+            if (!cell_is_offset_band(tid)) {
+                amips_k[k] = tet_energy(tid);
+                continue;
+            }
+            const std::array<size_t, 4> vids = oriented_tet_vids(tid);
+            const double a3 = get_quality(tets[k]);
+            if (a3 >= MAX_ENERGY) {
+                amips_k[k] = MAX_ENERGY;
+                continue;
+            }
+            amips_k[k] = cell_energy(vids, a3, false);
+            band_k[k] = band_cell_term(vids);
+            has_band[k] = 1;
+        }
+    });
+    // Summed serially in cell order, as the loop that evaluated them in place did.
     double amips = 0., band = 0.;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (!cell_is_offset_band(tid)) {
-            amips += tet_energy(tid);
-            continue;
-        }
-        const std::array<size_t, 4> vids = oriented_tet_vids(tid);
-        const double a3 = get_quality(t);
-        if (a3 >= MAX_ENERGY) {
-            amips += MAX_ENERGY;
-            continue;
-        }
-        amips += cell_energy(vids, a3, false);
-        band += band_cell_term(vids);
+    for (size_t k = 0; k < tets.size(); ++k) {
+        amips += amips_k[k];
+        if (has_band[k]) band += band_k[k];
     }
+    return {amips, band};
+}
+
+void TopoOffsetTetMesh::log_energy_step(const char* step) const
+{
+    const auto [amips, band] = energy_parts();
     logger().info(
         "\t[energy step] turn {} {}: E {:.12g} | AMIPS term {:.12g} | band term {:.12g}",
         m_energy_step_turn,

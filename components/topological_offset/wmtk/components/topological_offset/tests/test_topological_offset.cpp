@@ -7,6 +7,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstring>
 #include <filesystem>
 #include <functional>
 #include <map>
@@ -2501,6 +2502,140 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
     REQUIRE_THROWS_WITH(
         components::topological_offset::topological_offset(j),
         Catch::Matchers::ContainsSubstring("save_offset_correspondence requires"));
+}
+
+TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
+{
+    // gather_vtu_frame() and energy_parts() evaluate their cells, vertices and faces on the mesh's
+    // threads (diagnostic_parallel_for()); what they return must not depend on the thread count.
+    // Two identical meshes -- the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2, the field built under the exact rule, the optimization's labels -- one gathered
+    // at 1 thread and one at 4, each from its own empty value table, compared bit for bit (NaN
+    // equal to NaN).
+    Eigen::MatrixXd V(64, 3);
+    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
+    for (int k = 0; k < 4; ++k) {
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> center;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < 3; ++k) {
+        for (int j = 0; j < 3; ++j) {
+            for (int i = 0; i < 3; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
+                    T.push_back(positive(V, t));
+                }
+            }
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+    }
+    MatrixSi Tags(int(T.size()), 1);
+    for (const int t : center) Tags.coeffRef(t, 0) = 1;
+
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_frame_threads";
+    const auto make_mesh = [&](const int threads) {
+        auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh->init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
+        mesh->m_offset_params.offset_selection = parse("tag_0", mesh->m_tag_name_to_id);
+        mesh->label_input_complex();
+        mesh->init_input_complex_bvh();
+        mesh->consolidate_mesh();
+        mesh->construct_offset(out);
+        mesh->init_offset_potential();
+        mesh->label_offset_boundary();
+        mesh->NUM_THREADS = threads;
+        return mesh;
+    };
+    const auto serial = make_mesh(1);
+    const auto threaded = make_mesh(4);
+    REQUIRE(serial->m_band_exact);
+    const size_t chunk = TopoOffsetTetMesh::kDiagnosticChunk;
+    INFO(serial->get_tets().size() << " tets, " << serial->get_vertices().size() << " vertices");
+    REQUIRE(serial->get_tets().size() > 4 * chunk); // every task has cells to evaluate
+
+    const auto [a_serial, b_serial] = serial->energy_parts();
+    const auto [a_threaded, b_threaded] = threaded->energy_parts();
+    CHECK(std::memcmp(&a_serial, &a_threaded, sizeof(double)) == 0);
+    CHECK(std::memcmp(&b_serial, &b_threaded, sizeof(double)) == 0);
+    CHECK(b_serial < 0.); // the band is inside the level set at construction
+
+    const TopoOffsetTetMesh::VtuFrame fs = serial->gather_vtu_frame(out.string() + "_serial");
+    const TopoOffsetTetMesh::VtuFrame ft = threaded->gather_vtu_frame(out.string() + "_threaded");
+    // Bit for bit, NaN equal to NaN; and how many entries are finite, so no field passes empty.
+    const auto same = [](const auto& x, const auto& y, size_t& n_finite) {
+        if (x.rows() != y.rows() || x.cols() != y.cols()) return false;
+        n_finite = 0;
+        for (Eigen::Index i = 0; i < x.size(); ++i) {
+            const double p = double(x.data()[i]), q = double(y.data()[i]);
+            if (std::isnan(p) && std::isnan(q)) continue;
+            if (std::memcmp(&p, &q, sizeof(double)) != 0) return false;
+            n_finite += std::isfinite(p) ? 1 : 0;
+        }
+        return true;
+    };
+    const std::vector<std::tuple<const char*, const VectorXd*, const VectorXd*>> fields = {
+        {"amips", &fs.amips, &ft.amips},
+        {"tet_energy", &fs.tet_e, &ft.tet_e},
+        {"amips_term", &fs.amips_term, &ft.amips_term},
+        {"band_term", &fs.band_term, &ft.band_term},
+        {"band_gap_bars", &fs.band_gap, &ft.band_gap},
+        {"plastic", &fs.plastic, &ft.plastic},
+        {"labels", &fs.labels, &ft.labels},
+        {"order", &fs.order, &ft.order},
+        {"vid", &fs.vid, &ft.vid},
+        {"sizing", &fs.sizing, &ft.sizing},
+        {"input_distance", &fs.in_dist, &ft.in_dist},
+        {"front_error_bars", &fs.front_err, &ft.front_err},
+        {"band_force_n", &fs.band_force, &ft.band_force},
+        {"amips_force_n", &fs.amips_force, &ft.amips_force},
+        {"front_last_change", &fs.front_change, &ft.front_change},
+        {"front_err_ratio", &fs.f_err, &ft.f_err},
+        {"chord_length", &fs.f_len, &ft.f_len},
+        {"settle_inside_bars", &fs.f_inside, &ft.f_inside},
+        {"settle_outside_bars", &fs.f_outside, &ft.f_outside},
+        {"offset_foldover", &fs.f_fold, &ft.f_fold},
+        {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
+        {"front_ring_ratio", &fs.ring, &ft.ring}};
+    for (const auto& [name, x, y] : fields) {
+        INFO(name);
+        size_t n_finite = 0;
+        CHECK(same(*x, *y, n_finite));
+        CHECK(n_finite > 0);
+    }
+    size_t n = 0;
+    CHECK(same(fs.V, ft.V, n));
+    CHECK(same(fs.T, ft.T, n));
+    CHECK(same(fs.F_in, ft.F_in, n));
+    CHECK(same(fs.F_off, ft.F_off, n));
+    CHECK(fs.F_off.rows() > 0);
+    CHECK(same(fs.E, ft.E, n));
+    REQUIRE(fs.tags.size() == ft.tags.size());
+    for (size_t i = 0; i < fs.tags.size(); ++i) CHECK(same(fs.tags[i], ft.tags[i], n));
+    CHECK(fs.tag_names == ft.tag_names);
 }
 
 TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")

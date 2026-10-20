@@ -2284,6 +2284,13 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // stays valid and dead slots are unreferenced points; the cell arrays are packed.
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
+    // The sections run on the mesh's threads (diagnostic_parallel_for()) read the attributes
+    // through these, the const accessors: the non-const operator[] consults the running thread's
+    // rollback recording (AttributeCollection).
+    const auto& VA = std::as_const(m_vertex_attribute);
+    const auto& VX = std::as_const(m_vertex_extra);
+    const auto& TA = std::as_const(m_tet_attribute);
+    const auto& FA = std::as_const(m_face_attribute);
     // The two surfaces' faces and the order-2 edges, from ONE pass over the faces, so each face's
     // canonical-id lookup (TetMesh::Tuple::fid(), a scan of a vertex's tet fan) is made once.
     // get_faces_by_condition() twice and get_edges() with is_order_2_edge() per edge made it
@@ -2293,30 +2300,54 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // order, as get_faces_by_condition() lists them; an edge is listed when get_order_of_edge()
     // makes it order 2 -- both ends vertex_is_on_surface() and a count of face_is_on_surface()
     // faces other than 0 and 2 -- in get_edges()' order, by (min vid, max vid).
-    std::vector<std::array<size_t, 3>> faces_in, faces_off;
-    std::vector<std::array<size_t, 2>> surface_edges; // per surface face, its three edges
-    for (const Tuple& t : tets) {
-        const size_t tid = t.tid(*this);
-        for (int j = 0; j < 4; ++j) {
-            const Tuple f = tuple_from_face(tid, j);
-            const size_t fid = f.fid(*this);
-            if (fid != 4 * tid + j) continue; // a lower-numbered tet lists this face
-            const FaceAttributes& fa = m_face_attribute[fid];
-            const bool in = fa.m_is_surface_fs && fa.m_surface_class != OFFSET_SURFACE_CLASS;
-            const bool off = fa.m_is_surface_fs && fa.m_surface_class == OFFSET_SURFACE_CLASS;
-            const bool surf = face_is_on_surface(fid);
-            if (!in && !off && !surf) continue;
-            const auto fv = get_face_vertices(f);
-            const std::array<size_t, 3> v{{fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this)}};
-            if (in) faces_in.push_back(v);
-            if (off) faces_off.push_back(v);
-            if (!surf) continue;
-            for (int k = 0; k < 3; ++k) {
-                const size_t a = v[k], b = v[(k + 1) % 3];
-                surface_edges.push_back({{std::min(a, b), std::max(a, b)}});
+    // On the mesh's threads, in blocks of kDiagnosticChunk tets, each block's lists apart; the
+    // blocks are then joined in block order, which is the tets' order.
+    struct FaceBlock
+    {
+        std::vector<std::array<size_t, 3>> in, off;
+        std::vector<std::array<size_t, 2>> edges; // per surface face, its three edges
+    };
+    const size_t n_face_blocks = (tets.size() + kDiagnosticChunk - 1) / kDiagnosticChunk;
+    std::vector<FaceBlock> face_blocks(n_face_blocks);
+    diagnostic_parallel_for(n_face_blocks, 1, [&](const size_t b, const size_t e) {
+        for (size_t bi = b; bi < e; ++bi) {
+            FaceBlock& blk = face_blocks[bi];
+            const size_t k_end = std::min(tets.size(), (bi + 1) * kDiagnosticChunk);
+            for (size_t k = bi * kDiagnosticChunk; k < k_end; ++k) {
+                const size_t tid = tets[k].tid(*this);
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(tid, j);
+                    const size_t fid = f.fid(*this);
+                    if (fid != 4 * tid + j) continue; // a lower-numbered tet lists this face
+                    const FaceAttributes& fa = FA[fid];
+                    const bool in =
+                        fa.m_is_surface_fs && fa.m_surface_class != OFFSET_SURFACE_CLASS;
+                    const bool off =
+                        fa.m_is_surface_fs && fa.m_surface_class == OFFSET_SURFACE_CLASS;
+                    const bool surf = face_is_on_surface(fid);
+                    if (!in && !off && !surf) continue;
+                    const auto fv = get_face_vertices(f);
+                    const std::array<size_t, 3> v{
+                        {fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this)}};
+                    if (in) blk.in.push_back(v);
+                    if (off) blk.off.push_back(v);
+                    if (!surf) continue;
+                    for (int i = 0; i < 3; ++i) {
+                        const size_t a = v[i], c = v[(i + 1) % 3];
+                        blk.edges.push_back({{std::min(a, c), std::max(a, c)}});
+                    }
+                }
             }
         }
+    });
+    std::vector<std::array<size_t, 3>> faces_in, faces_off;
+    std::vector<std::array<size_t, 2>> surface_edges;
+    for (const FaceBlock& blk : face_blocks) {
+        faces_in.insert(faces_in.end(), blk.in.begin(), blk.in.end());
+        faces_off.insert(faces_off.end(), blk.off.begin(), blk.off.end());
+        surface_edges.insert(surface_edges.end(), blk.edges.begin(), blk.edges.end());
     }
+    face_blocks.clear();
     std::sort(surface_edges.begin(), surface_edges.end());
     std::vector<std::array<size_t, 2>> edges;
     for (size_t i = 0; i < surface_edges.size();) {
@@ -2399,52 +2430,55 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         m_offset_potential && m_input_complex_envelope ? m_input_complex_envelope.get() : nullptr;
     const bool energy_fields = band_env && (m_n_regions <= 1 || m_offset_params.allow_mult_comp) &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);
-    size_t n_gap_threw = 0; // band cells whose exact integral threw: band_gap_bars NaN
-    for (size_t k = 0; k < tets.size(); ++k) {
-        const size_t t_id = tets[k].tid(*this);
-        for (int i = 0; i < m_tags_count; i++) {
-            fr.tags[i](k, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
+    // Per cell, on the mesh's threads: each cell writes its own row k.
+    std::atomic<size_t> n_gap_threw{0}; // band cells whose exact integral threw: band_gap_bars NaN
+    diagnostic_parallel_for(tets.size(), kDiagnosticChunk, [&](const size_t kb, const size_t ke) {
+        for (size_t k = kb; k < ke; ++k) {
+            const size_t t_id = tets[k].tid(*this);
+            for (int i = 0; i < m_tags_count; i++) {
+                fr.tags[i](k, 0) = (TA[t_id].tag.count(i) == 1) ? 1 : 0;
+            }
+            fr.tags[m_tags_count](k, 0) = (TA[t_id].label == 2) ? 1 : 0;
+            const double a3 = get_quality(tets[k]);
+            if (a3 < MAX_ENERGY) fr.amips[k] = std::cbrt(a3);
+            fr.plastic[k] = cell_is_plastic(t_id) ? 1. : 0.;
+            // The energy reads the band term, which needs the input's triangles and one region
+            // (band_cell_term()); the construction frames are written before they exist.
+            if (!energy_fields) continue;
+            const double e = tet_energy(t_id);
+            if (!(e < MAX_ENERGY)) continue;
+            fr.tet_e[k] = e;
+            fr.amips_term[k] = e;
+            if (!cell_is_offset_band(t_id)) continue;
+            const std::array<size_t, 4> vids = oriented_tet_vids(t_id);
+            const double b = band_cell_term(vids);
+            fr.band_term[k] = b;
+            fr.amips_term[k] = e - b;
+            if (!m_band_exact) continue;
+            std::array<Vector3d, 4> p;
+            for (int j = 0; j < 4; ++j) p[size_t(j)] = VA[vids[size_t(j)]].m_posf;
+            const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
+            if (!(vol > 0.)) continue;
+            // A frame never ends the run: a cell whose exact integral throws (its partition
+            // failed a check, ExactBandIntegral::check_cell_pieces()) keeps NaN and is counted.
+            double exact = 0.;
+            try {
+                exact = m_band_exact->value(p, delta);
+            } catch (const std::exception&) {
+                ++n_gap_threw;
+                continue;
+            }
+            int64_t best = -1;
+            const double gap = band_cell_corner_bound(vids, best) - exact / delta;
+            fr.band_gap[k] = gap / vol * delta / front_conv;
         }
-        fr.tags[m_tags_count](k, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
-        const double a3 = get_quality(tets[k]);
-        if (a3 < MAX_ENERGY) fr.amips[k] = std::cbrt(a3);
-        fr.plastic[k] = cell_is_plastic(t_id) ? 1. : 0.;
-        // The energy reads the band term, which needs the input's triangles and one region
-        // (band_cell_term()); the construction frames are written before they exist.
-        if (!energy_fields) continue;
-        const double e = tet_energy(t_id);
-        if (!(e < MAX_ENERGY)) continue;
-        fr.tet_e[k] = e;
-        fr.amips_term[k] = e;
-        if (!cell_is_offset_band(t_id)) continue;
-        const std::array<size_t, 4> vids = oriented_tet_vids(t_id);
-        const double b = band_cell_term(vids);
-        fr.band_term[k] = b;
-        fr.amips_term[k] = e - b;
-        if (!m_band_exact) continue;
-        std::array<Vector3d, 4> p;
-        for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
-        const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-        if (!(vol > 0.)) continue;
-        // A frame never ends the run: a cell whose exact integral throws (its partition failed a
-        // check, ExactBandIntegral::check_cell_pieces()) keeps NaN and is counted.
-        double exact = 0.;
-        try {
-            exact = m_band_exact->value(p, delta);
-        } catch (const std::exception&) {
-            ++n_gap_threw;
-            continue;
-        }
-        int64_t best = -1;
-        const double gap = band_cell_corner_bound(vids, best) - exact / delta;
-        fr.band_gap[k] = gap / vol * delta / front_conv;
-    }
+    });
     if (n_gap_threw > 0) {
         logger().warn(
             "\t[frame] {}: band_gap_bars NaN on {} band cell(s), whose exact integral threw (each "
             "logged as an error above); the run goes on",
             path,
-            n_gap_threw);
+            n_gap_threw.load());
     }
     for (int64_t i = 0; i < m_tags_count; i++) {
         fr.tag_names.push_back(m_tag_id_to_name[i]);
@@ -2467,19 +2501,22 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         fr.E(i, 1) = edges[i][1];
     }
 
-    for (const Tuple& v : vs) {
-        size_t vid = v.vid(*this);
-        fr.labels[vid] = m_vertex_extra[vid].label;
-        fr.order[vid] = m_vertex_attribute[vid].m_order;
-        fr.vid[vid] = vid;
-        fr.sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
-        if (band_env) {
-            const Vector3d& x = m_vertex_attribute[vid].m_posf;
-            fr.in_dist[vid] = band_env->primitive_distance(
-                nearest_primitive(*band_env, m_input_complex_pad, x),
-                x);
+    // Per vertex, on the mesh's threads: each vertex writes its own row vid.
+    diagnostic_parallel_for(vs.size(), kDiagnosticChunk, [&](const size_t ib, const size_t ie) {
+        for (size_t i = ib; i < ie; ++i) {
+            const size_t vid = vs[i].vid(*this);
+            fr.labels[vid] = VX[vid].label;
+            fr.order[vid] = VA[vid].m_order;
+            fr.vid[vid] = vid;
+            fr.sizing[vid] = VA[vid].m_sizing_scalar;
+            if (band_env) {
+                const Vector3d& x = VA[vid].m_posf;
+                fr.in_dist[vid] = band_env->primitive_distance(
+                    nearest_primitive(*band_env, m_input_complex_pad, x),
+                    x);
+            }
         }
-    }
+    });
 
     // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP, as in 2D. The _off file's face measure
     // (face_offset_term()) reads the vertex's own region's field through potential_for(vid) ->
@@ -2504,42 +2541,44 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         assign_band_regions(/*log=*/false);
     }
     // The front fields (see above). The forces are the smoother's own energies at the vertex's
-    // current position, so they need what they read: the input's triangles and one region.
-    for (const Tuple& v : vs) {
-        const size_t vid = v.vid(*this);
-        if (!band_env || !m_vertex_extra[vid].m_is_on_offset ||
-            !m_vertex_attribute[vid].m_is_rounded) {
-            continue;
+    // current position, so they need what they read: the input's triangles and one region. Per
+    // vertex, on the mesh's threads, after the region map above (they read it).
+    diagnostic_parallel_for(vs.size(), kDiagnosticChunk, [&](const size_t ib, const size_t ie) {
+        for (size_t i = ib; i < ie; ++i) {
+            const size_t vid = vs[i].vid(*this);
+            if (!band_env || !VX[vid].m_is_on_offset || !VA[vid].m_is_rounded) continue;
+            const Vector3d& x = VA[vid].m_posf;
+            Vector3d g_d;
+            const double d = band_env->primitive_distance(
+                nearest_primitive(*band_env, m_input_complex_pad, x),
+                x,
+                &g_d);
+            fr.front_err[vid] = (d - delta) / front_conv;
+            if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
+            const double gn = g_d.norm();
+            if (!(gn > 0.)) continue;
+            const Vector3d n = g_d / gn;
+            const VectorXd xv = x;
+            VectorXd g;
+            if (const auto band = band_volume_energy_at(vid)) {
+                band->gradient(xv, g);
+                fr.band_force[vid] = -g.dot(n);
+            }
+            if (const auto am = amips3_energy(vid)) {
+                am->gradient(xv, g);
+                fr.amips_force[vid] = -g.dot(n);
+            }
         }
-        const Vector3d& x = m_vertex_attribute[vid].m_posf;
-        Vector3d g_d;
-        const double d = band_env->primitive_distance(
-            nearest_primitive(*band_env, m_input_complex_pad, x),
-            x,
-            &g_d);
-        fr.front_err[vid] = (d - delta) / front_conv;
-        if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
-        const double gn = g_d.norm();
-        if (!(gn > 0.)) continue;
-        const Vector3d n = g_d / gn;
-        const VectorXd xv = x;
-        VectorXd g;
-        if (const auto band = band_volume_energy_at(vid)) {
-            band->gradient(xv, g);
-            fr.band_force[vid] = -g.dot(n);
-        }
-        if (const auto am = amips3_energy(vid)) {
-            am->gradient(xv, g);
-            fr.amips_force[vid] = -g.dot(n);
-        }
-    }
+    });
 
-    for (size_t k = 0; k < tets.size(); ++k) {
-        const auto& loc_vs = oriented_tet_vertices(tets[k]);
-        for (int j = 0; j < 4; j++) {
-            fr.T(k, j) = loc_vs[j].vid(*this);
+    diagnostic_parallel_for(tets.size(), kDiagnosticChunk, [&](const size_t kb, const size_t ke) {
+        for (size_t k = kb; k < ke; ++k) {
+            const auto& loc_vs = oriented_tet_vertices(tets[k]);
+            for (int j = 0; j < 4; j++) {
+                fr.T(k, j) = loc_vs[j].vid(*this);
+            }
         }
-    }
+    });
 
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
@@ -2600,20 +2639,27 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         v_ring_n.setZero();
         std::vector<char> ring_bad(vert_capacity(), 0);
         const auto front = [&](const size_t vid) {
-            return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+            return VX[vid].m_is_on_offset && VA[vid].m_is_rounded;
         };
-        size_t n_outside_threw = 0; // faces whose exact max threw: settle_outside_bars NaN
-        for (size_t i = 0; i < faces_off.size(); ++i) {
-            const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
-            const bool all_front = front(a) && front(b) && front(c);
-            const double term = all_front ? face_offset_term(a, b, c) : -1.;
-            fr.f_err[i] = term < 0. ? -1. : std::sqrt(term);
-            const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
-                           pc = m_vertex_attribute[c].m_posf;
-            fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
-            fr.f_field_angle[i] = front_face_field_angle(a, b, c);
-            fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
-            if (band_env) {
+        // Per face, on the mesh's threads: its own entries, and for the ring sums below whether
+        // its three corners are front vertices and its term (face_offset_term()).
+        std::vector<double> face_term(faces_off.size(), -1.);
+        std::vector<char> face_all_front(faces_off.size(), 0);
+        std::atomic<size_t> n_outside_threw{0}; // faces whose exact max threw: outside_bars NaN
+        const size_t n_off = faces_off.size();
+        diagnostic_parallel_for(n_off, kDiagnosticChunk, [&](const size_t fb, const size_t fe) {
+            for (size_t i = fb; i < fe; ++i) {
+                const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
+                const bool all_front = front(a) && front(b) && front(c);
+                const double term = all_front ? face_offset_term(a, b, c) : -1.;
+                face_term[i] = term;
+                face_all_front[i] = all_front ? 1 : 0;
+                fr.f_err[i] = term < 0. ? -1. : std::sqrt(term);
+                const Vector3d pa = VA[a].m_posf, pb = VA[b].m_posf, pc = VA[c].m_posf;
+                fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
+                fr.f_field_angle[i] = front_face_field_angle(a, b, c);
+                fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
+                if (!band_env) continue;
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
                     (delta - min_triangle_distance(*band_env, m_input_complex_pad, pa, pb, pc)) /
@@ -2634,14 +2680,18 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                     ++n_outside_threw;
                 }
             }
-            if (all_front) {
-                for (const size_t u : {a, b, c}) {
-                    if (term < 0.) {
-                        ring_bad[u] = 1;
-                    } else {
-                        v_ring_sum[int(u)] += term;
-                        v_ring_n[int(u)] += 1.;
-                    }
+        });
+        // The ring sums on this thread, in face order: faces share corners, and the order of the
+        // additions is the serial loop's.
+        for (size_t i = 0; i < n_off; ++i) {
+            if (!face_all_front[i]) continue;
+            const double term = face_term[i];
+            for (const size_t u : faces_off[i]) {
+                if (term < 0.) {
+                    ring_bad[u] = 1;
+                } else {
+                    v_ring_sum[int(u)] += term;
+                    v_ring_n[int(u)] += 1.;
                 }
             }
         }
@@ -2655,7 +2705,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 "\t[frame] {}: settle_outside_bars NaN on {} offset face(s), whose exact max threw "
                 "(each logged as an error above); the run goes on",
                 path,
-                n_outside_threw);
+                n_outside_threw.load());
         }
         logger().info("Write {}", path + "_off.vtu");
     }

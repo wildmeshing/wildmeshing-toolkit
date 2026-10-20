@@ -21,6 +21,7 @@
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "ExactBandIntegral.hpp"
 #include "OffsetPotential.hpp"
@@ -1620,6 +1621,24 @@ public:
      * "start" is the operation pass and that smoothing pass together; every later one is "smooth".
      */
     void log_energy_step(const char* step) const;
+    /// log_energy_step()'s two sums over the live cells: {the AMIPS term, the band term}; E is
+    /// their sum. Each cell is evaluated on the mesh's threads (diagnostic_parallel_for()), the
+    /// sums are taken in get_tets() order on the calling thread: the same additions in the same
+    /// order whatever the thread count.
+    std::pair<double, double> energy_parts() const;
+    /// Run fn(begin, end) over [0, n) in chunks of `chunk` items handed out on demand
+    /// (wmtk::threading::dynamic_parallel_for) on the mesh's NUM_THREADS threads; a serial run
+    /// (NUM_THREADS <= 1) runs fn(0, n) on the calling thread. For the read-only diagnostics
+    /// (energy_parts(), gather_vtu_frame()), called between passes: every item must read the mesh
+    /// only and write its own slots, so what they compute does not depend on the thread count.
+    template <typename F>
+    void diagnostic_parallel_for(const size_t n, const size_t chunk, F&& fn) const
+    {
+        wmtk::threading::dynamic_parallel_for(n, std::max(1, NUM_THREADS), chunk, fn);
+    }
+    /// diagnostic_parallel_for()'s chunk for per-cell, per-vertex and per-face items, whose cost
+    /// varies a lot (a band cell's exact integral against an AMIPS term alone).
+    static constexpr size_t kDiagnosticChunk = 64;
     /// The turn (1-based) whose operation group is running, 0 outside one: smoothing_pass_done()
     /// logs only inside a group, so pre_smooth, the final pass and coarsening log nothing.
     int m_energy_step_turn = 0;
