@@ -41,6 +41,18 @@ struct FeatureAttributes
     std::vector<size_t> nbrs;
 };
 
+/// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them.
+struct ReplacedSurface
+{
+    /// Their area vectors, summed.
+    Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+    /// The ones that do not face along `normal`.
+    size_t against = 0;
+    /// The folds in the stars of their vertices: triangles that do not face along their star's
+    /// summed area vector, over those stars.
+    size_t star_folds = 0;
+};
+
 class IsotropicRemeshing : public wmtk::TriMesh
 {
 public:
@@ -92,6 +104,21 @@ public:
     size_t remove_feature_ears();
     /// Whether `v` is on a curve and one triangle holds both of its curve edges.
     bool is_feature_ear_tip(const Tuple& v) const;
+
+    /**
+     * @brief Refuse a collapse, swap or smoothing that folds the surface over.
+     *
+     * The triangles an operation changes or removes have a normal, their area vectors summed;
+     * the operation may leave no more triangles that do not face along it -- face against it, or
+     * are flat -- than there were, nor along the normal of the triangles it leaves. Nor may it
+     * leave more folds in the stars of the vertices it touches, each star against its own
+     * normal: what it changes is in its neighbours' stars too. So it makes no fold, and may undo
+     * one the input has. A triangle faces along a normal when the exact orient3d says so (see
+     * faces_along in the .cpp). A split moves no vertex and is not checked. On by default.
+     */
+    void set_check_inversions(bool check) { m_check_inversions = check; }
+    /// The operations set_check_inversions() refused, since the mesh was made.
+    size_t refused_inversions() const { return m_refused_inversions; }
 
     int retry_limit = 10;
     IsotropicRemeshing(
@@ -145,6 +172,8 @@ public:
         size_t v1 = 0, v2 = 0;
         bool feature_edge = false;
         bool keep_v2_position = false;
+        // Collapse and swap, checking inversions: what the operation replaces.
+        ReplacedSurface replaced;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -217,6 +246,22 @@ private:
     bool m_has_features = false;
     /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
     bool m_removing_ears = false;
+    bool m_check_inversions = true;
+    std::atomic<size_t> m_refused_inversions = 0;
+
+    /// The area vectors of the triangles, summed (twice over).
+    Eigen::Vector3d area_normal(const std::vector<Tuple>& tris) const;
+    /// How many of the triangles do not face along n.
+    size_t not_facing(const std::vector<Tuple>& tris, const Eigen::Vector3d& n) const;
+    /// Over the vertices of the triangles, the triangles of each one's star that do not face along
+    /// that star's area_normal. An operation may read these stars: one that changes a star holds
+    /// its centre, which is in the one-ring of what this operation changes, and so held by it.
+    size_t star_folds(const std::vector<Tuple>& tris) const;
+    /// The triangles an operation is about to replace.
+    ReplacedSurface replaced(const std::vector<Tuple>& tris) const;
+    /// Whether the triangles an operation left fold the surface over more than the `before` they
+    /// replaced. Counts a refusal.
+    bool folds(const std::vector<Tuple>& tris, const ReplacedSurface& before);
 };
 
 } // namespace wmtk::components::isotropic_remeshing

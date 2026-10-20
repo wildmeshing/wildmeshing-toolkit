@@ -614,11 +614,10 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
                        << flipped_in_caps << " more at the poles), area " << out_area << " vs "
                        << in_area);
         CHECK(jump < 1e-5);
-        // Isotropic remeshing may fold a vertex's star over for a while (it does not check for
-        // inverted triangles); the map is a bijection there too but stretched, and a texture
-        // triangle across the stretch may turn over. A few, at most.
-        INFO("local maps across folds " << map.folded_cells());
-        CHECK(flipped <= ouv.size() / 500);
+        // The remesher folds nothing over (IsotropicRemeshing::set_check_inversions), so no local
+        // map has to stretch across a fold, and no texture triangle turns over.
+        CHECK(map.folded_cells() == 0);
+        CHECK(flipped == 0);
         CHECK(std::abs(out_area - in_area) < 1e-2 * in_area);
     }
 }

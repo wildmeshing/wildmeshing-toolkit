@@ -162,6 +162,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     const bool sample_envelope = json_params["use_sample_envelope"];
     const bool freeze_boundary = json_params["freeze_boundary"];
     const bool use_link_condition = json_params["use_link_condition"];
+    const bool check_inversions = json_params["check_inversions"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
@@ -194,6 +195,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
+    m.set_check_inversions(check_inversions);
     m.create_mesh(
         verts.size(),
         tris,
@@ -252,6 +254,9 @@ void isotropic_remeshing(nlohmann::json json_params)
     }
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
+    if (check_inversions) {
+        logger().info("refused {} operations that would fold the surface", m.refused_inversions());
+    }
 
     if (history) {
         m.stop_history();
@@ -299,6 +304,8 @@ void isotropic_remeshing(nlohmann::json json_params)
         report["nonmanifold_edges"] = out_nm_e;
         report["nonmanifold_vertices"] = out_nm_v;
         report["use_link_condition"] = use_link_condition;
+        report["check_inversions"] = check_inversions;
+        report["refused_inversions"] = m.refused_inversions();
         fout << std::setw(4) << report;
         fout.close();
     }
