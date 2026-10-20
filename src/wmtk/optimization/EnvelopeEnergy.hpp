@@ -26,7 +26,7 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    ExactDistanceEnergy2D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
+    ExactDistanceEnergy2D(const std::shared_ptr<Envelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -39,7 +39,7 @@ public:
     void solution_changed(const TVector& new_x) override {}
 
 private:
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     double m_weight;
 };
 
@@ -53,7 +53,7 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    ExactDistanceEnergy3D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
+    ExactDistanceEnergy3D(const std::shared_ptr<Envelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -66,7 +66,7 @@ public:
     void solution_changed(const TVector& new_x) override {}
 
 private:
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
     double m_weight;
 };
 

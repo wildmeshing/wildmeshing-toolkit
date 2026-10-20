@@ -489,7 +489,11 @@ InputData read_mesh(
             logger().info("simplification freezes the open boundary");
         }
 
-        image_mesh.simplify_surface(eps_simplify, NUM_THREADS, boundary_eps);
+        image_mesh.simplify_surface(
+            eps_simplify,
+            !json_params["simplify_use_sample_envelope"],
+            NUM_THREADS,
+            boundary_eps);
 
         if (debug_output) {
             image_mesh.write_surf_off(output_filename + "_input_simplified.off");

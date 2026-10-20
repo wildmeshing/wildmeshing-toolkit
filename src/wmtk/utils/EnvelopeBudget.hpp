@@ -38,7 +38,7 @@ namespace wmtk::utils {
  *
  * A `simplify_eps` at or above `eps` leaves nothing to spend. That is a misconfiguration, and
  * this warns and returns the full `eps` rather than failing: the alternative is worse than it
- * looks, because SampleEnvelope::init squares its argument, so a *negative* eps becomes a
+ * looks, because Envelope::init squares its argument, so a *negative* eps becomes a
  * positive eps2 and yields a silently smaller envelope instead of an error.
  */
 double optimization_envelope_eps(

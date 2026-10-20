@@ -11,11 +11,16 @@ namespace wmtk::components::topological_offset {
 /**
  * Containment-only composites over per-tag boundary envelopes, in both dimensions.
  *
- * Both classes override exactly the four virtual queries -- is_outside(triangle3) and
- * is_outside(point3) on wmtk::Envelope, is_outside(segment2) and is_outside(point2) on
- * SampleEnvelope -- which are the only calls the containment paths make.
+ * Both classes override exactly the four virtual queries of wmtk::Envelope --
+ * is_outside(triangle3), is_outside(point3), is_outside(segment2) and is_outside(point2) --
+ * which are the only calls the containment paths make.
  *
- * A composite must never reach a caller of the non-virtual SampleEnvelope queries:
+ * Both construct their base in sampled mode, use_exact = false: the value the base's default
+ * constructor gave them before the default became exact. The flag is inert here -- a composite
+ * is never init()ed and nothing reads use_exact off one -- so this only keeps the change of
+ * default from changing anything.
+ *
+ * A composite must never reach a caller of the non-virtual Envelope queries:
  * nearest_point, nearest_point_feature, squared_distance, or the edge/2D is_outside overloads.
  * Those bind statically to the base subobject, whose BVH was never built, and dereference null.
  * Such callers are fed by smoothing_energy_envelope(), and that hook returns a single real member
@@ -26,11 +31,12 @@ namespace wmtk::components::topological_offset {
 /// to the junction, within eps of each boundary it lies on, and what holds a wire or isolated
 /// point of the input complex in place, since those only arise where two or more selected tags
 /// meet.
-class IntersectionEnvelope final : public SampleEnvelope
+class IntersectionEnvelope final : public Envelope
 {
 public:
-    explicit IntersectionEnvelope(std::vector<std::shared_ptr<SampleEnvelope>> members)
-        : m_members(std::move(members))
+    explicit IntersectionEnvelope(std::vector<std::shared_ptr<Envelope>> members)
+        : Envelope(/*exact=*/false)
+        , m_members(std::move(members))
     {}
 
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const override
@@ -65,20 +71,21 @@ public:
         return false;
     }
 
-    const std::vector<std::shared_ptr<SampleEnvelope>>& members() const { return m_members; }
+    const std::vector<std::shared_ptr<Envelope>>& members() const { return m_members; }
 
 private:
-    std::vector<std::shared_ptr<SampleEnvelope>> m_members;
+    std::vector<std::shared_ptr<Envelope>> m_members;
 };
 
 /// Inside means inside any member: the tube union. Assigned to the inherited m_envelope, so the
 /// shared engine's "may this surface vertex land on a non-surface position" point check keeps its
 /// semantics with no changes there.
-class UnionEnvelope final : public SampleEnvelope
+class UnionEnvelope final : public Envelope
 {
 public:
-    explicit UnionEnvelope(std::vector<std::shared_ptr<SampleEnvelope>> members)
-        : m_members(std::move(members))
+    explicit UnionEnvelope(std::vector<std::shared_ptr<Envelope>> members)
+        : Envelope(/*exact=*/false)
+        , m_members(std::move(members))
     {}
 
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const override
@@ -114,7 +121,7 @@ public:
     }
 
 private:
-    std::vector<std::shared_ptr<SampleEnvelope>> m_members;
+    std::vector<std::shared_ptr<Envelope>> m_members;
 };
 
 } // namespace wmtk::components::topological_offset

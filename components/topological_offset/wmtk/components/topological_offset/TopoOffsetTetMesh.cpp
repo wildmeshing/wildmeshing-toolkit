@@ -1,6 +1,7 @@
 
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -33,9 +34,31 @@ namespace wmtk::components::topological_offset {
  */
 
 namespace {
-/// The exact-kind envelope Phi's euclidean twin queries: triangles where there are any,
-/// segments (isolated input points as the degenerate segment (i, i)) otherwise.
-std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
+/// The rows of E that are not an edge of any triangle of F. The extraction's E (m_phi_E) holds
+/// every triangle edge as well as the isolated segments (init_input_complex_bvh()).
+size_t segments_off_triangles(const MatrixXi& E, const MatrixXi& F)
+{
+    std::set<std::pair<int, int>> tri_edges;
+    for (int f = 0; f < F.rows(); ++f) {
+        for (int j = 0; j < 3; ++j) {
+            const int a = F(f, j), b = F(f, (j + 1) % 3);
+            tri_edges.insert({std::min(a, b), std::max(a, b)});
+        }
+    }
+    size_t isolated = 0;
+    for (int e = 0; e < E.rows(); ++e) {
+        const int a = E(e, 0), b = E(e, 1);
+        if (!tri_edges.count({std::min(a, b), std::max(a, b)})) ++isolated;
+    }
+    return isolated;
+}
+
+/// The envelope Phi's euclidean twin queries: triangles where there are any, segments (isolated
+/// input points as the degenerate segment (i, i)) otherwise. Nothing is dropped:
+/// init_input_complex_bvh() refuses a complex with triangles and segments or points. Always exact:
+/// with eps <= 0 either kind is the query engine alone (the BVH and the copies of the input), the
+/// exact build skipped, and its containment queries throw (Envelope::init).
+std::shared_ptr<Envelope> euclidean_query_envelope(
     const MatrixXd& V,
     const MatrixXi& E,
     const MatrixXi& F,
@@ -46,7 +69,7 @@ std::shared_ptr<SampleEnvelope> euclidean_query_envelope(
     for (int i = 0; i < V.rows(); ++i) {
         verts[size_t(i)] = V.row(i).head<3>();
     }
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->use_exact = true;
     if (F.rows() > 0) {
         std::vector<Eigen::Vector3i> tris(size_t(F.rows()));
@@ -294,6 +317,14 @@ void TopoOffsetTetMesh::build_envelopes()
 {
     // See m_envelope's declaration: one envelope, around every held face, built once.
     m_envelope_eps = m_offset_params.envelope_size;
+    // Always the exact envelope. An eps that is not a positive length has no exact tube to build,
+    // and is an error, where it used to switch to the sampled envelope.
+    if (!(std::isfinite(m_envelope_eps) && m_envelope_eps > 0.)) {
+        log_and_throw_error(
+            "envelope_size {} is not a valid envelope half-width (finite and > 0); set "
+            "envelope_size or envelope_size_rel to a positive length",
+            m_envelope_eps);
+    }
     std::vector<Eigen::Vector3i> tris;
     size_t n_tracked = 0, n_wall = 0;
     for (const Tuple& f : get_faces()) {
@@ -304,7 +335,6 @@ void TopoOffsetTetMesh::build_envelopes()
         const auto vs = get_face_vids(f);
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
     // Kept as built, so the final pass can hold the same surfaces where they were here
     // (build_final_envelopes()).
     m_held_verts.assign(vert_capacity(), Eigen::Vector3d::Zero());
@@ -313,17 +343,16 @@ void TopoOffsetTetMesh::build_envelopes()
     if (tris.empty()) {
         m_envelope = nullptr;
     } else {
-        m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_envelope = std::make_shared<Envelope>(/*exact=*/true);
         m_envelope->init(m_held_verts, tris, m_envelope_eps);
     }
     logger().info(
         "\t[envelope] {} of {} tracked faces held ({} on the domain wall; the input complex "
-        "boundary and the wall), eps {:.6g}, {}",
+        "boundary and the wall), eps {:.6g}, EXACT",
         tris.size(),
         n_tracked,
         n_wall,
-        m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)");
+        m_envelope_eps);
 }
 
 void TopoOffsetTetMesh::build_final_envelopes()
@@ -352,8 +381,8 @@ void TopoOffsetTetMesh::build_final_envelopes()
         logger().info("\t[envelope] final pass: no region boundary besides the held surfaces");
         return;
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    m_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+    // m_envelope_eps is build_envelopes()'s, which refuses an invalid one.
+    m_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_envelope->init(verts, tris, m_envelope_eps);
     logger().info(
         "\t[envelope] final pass: {} region-boundary faces held beside the {} held at "
@@ -418,7 +447,7 @@ void TopoOffsetTetMesh::classify_sheet_faces()
     std::vector<Eigen::Vector3i> sf(m_sheet_F.rows());
     for (int i = 0; i < m_sheet_F.rows(); ++i)
         sf[i] = Eigen::Vector3i(m_sheet_F(i, 0), m_sheet_F(i, 1), m_sheet_F(i, 2));
-    SampleEnvelope sheet(/*exact=*/true);
+    Envelope sheet(/*exact=*/true);
     sheet.init(sv, sf, eps);
     size_t n_on = 0;
     for (const Tuple& f : get_faces()) {
@@ -889,11 +918,6 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
         m_n_regions,
         V.rows());
 
-    // set BVH -- a fresh object rather than clear+reinit, so anything still holding the old one
-    // keeps a coherent view.
-    m_input_complex_bvh = std::make_shared<SimplicialComplexBVH>();
-    m_input_complex_bvh->init(V, T, F, E, P);
-
     // The smooth offset potential's primitives, from the same extraction. Phi's 3D primitives
     // are triangles, segments and points; there is no volume primitive, so a solid input region
     // enters as its boundary -- the faces of the complex's tets with exactly one incident complex
@@ -983,27 +1007,91 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     m_phi_point_region.clear();
     for (const int p : P_phi) m_phi_point_region.push_back(comp_of[size_t(p)]);
 
+    // One primitive kind per input complex: triangles (a solid's boundary, a sheet), or segments
+    // and points. The euclidean field's envelope holds one kind (euclidean_query_envelope()),
+    // and it used to keep the triangles of a mixed complex and silently drop its segments and
+    // points. Refused here, before construction.
+    if (m_phi_F.rows() > 0) {
+        const size_t isolated = segments_off_triangles(m_phi_E, m_phi_F);
+        if (isolated > 0 || !m_phi_P.empty()) {
+            log_and_throw_error(
+                "the input complex mixes primitive kinds: {} triangles, {} segments not on a "
+                "triangle, {} isolated points; the offset takes one primitive kind per input "
+                "complex (triangles, or segments and points); change offset_selection",
+                m_phi_F.rows(),
+                isolated,
+                m_phi_P.size());
+        }
+    }
+
+    // The input complex's query engine (m_input_complex_envelope), built here, once, from the
+    // final extraction -- a fresh object rather than clear+reinit, so anything still holding the
+    // old one keeps a coherent view. The march and the repulsion pass (construct_offset()) read
+    // it before init_offset_potential() builds the field on it. A query engine, not a tolerance:
+    // nearest_point_feature() supplies the foot point and the feature kind the exact derivatives
+    // case on, from the envelope's BVH and its copies of the input. No containment question is
+    // asked of it, so its exact structure is unused, and its eps (target_distance) enters no
+    // query: a potential built on it at another level (2 delta for the repulsion) reads the same
+    // distance as one built at target_distance. Any other field than "euclidean" (refused by the
+    // 3D app; the unit tests' meshes have none, nor a target_distance) gets the query engine alone
+    // (eps 0).
+    m_input_complex_envelope = euclidean_query_envelope(
+        m_phi_V,
+        m_phi_E,
+        m_phi_F,
+        m_phi_P,
+        m_offset_params.offset_field == "euclidean" ? m_offset_params.target_distance : 0.);
+    m_input_complex_pad = input_pad(m_phi_V);
+
+    // input_complex_distance()'s inside test: the winding number with respect to the solid's
+    // boundary, the rows of m_phi_F that bound a label-1 cell (m_phi_F_inner != 0), each turned
+    // so that its normal (b - a) x (c - a) points out of the cell (m_phi_F_inner > 0 already
+    // does). The boundary of a union of cells is closed, so the winding number is 1 inside the
+    // solid and 0 outside, the domain's walls included where the solid reaches them. Answers
+    // against the solid as captured here, as the tet tree of SimplicialComplexBVH did.
+    m_input_solid_winding = nullptr;
+    {
+        std::vector<int> rows;
+        for (int f = 0; f < m_phi_F.rows(); ++f) {
+            if (m_phi_F_inner[size_t(f)] != 0) rows.push_back(f);
+        }
+        if (!rows.empty()) {
+            MatrixXi F_solid(rows.size(), 3);
+            for (size_t k = 0; k < rows.size(); ++k) {
+                const int f = rows[k];
+                F_solid.row(int(k)) = m_phi_F.row(f);
+                if (m_phi_F_inner[size_t(f)] < 0) {
+                    std::swap(F_solid(int(k), 1), F_solid(int(k), 2));
+                }
+            }
+            m_input_solid_winding =
+                std::make_shared<const wmtk::utils::WindingNumberHierarchy>(m_phi_V, F_solid);
+        }
+    }
+
     // The input complex needs no containment envelopes of its own: every simplex of it lies on
     // tag-region boundaries, so the per-tag envelopes already hold all of it.
 }
 
+double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
+{
+    if (m_input_solid_winding &&
+        wmtk::utils::winding_number_inside(m_input_solid_winding->winding_number(p.transpose()))) {
+        return 0.;
+    }
+    return std::sqrt(m_input_complex_envelope->squared_distance(p));
+}
+
 void TopoOffsetTetMesh::init_offset_potential()
 {
-    if (m_phi_V.rows() == 0 || !m_input_complex_bvh) {
+    if (m_phi_V.rows() == 0 || !m_input_complex_envelope) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
     // Which field defines the offset; see OffsetPotential.hpp and the offset_field parameter.
     // Both are built from the same extraction (m_phi_V/E/F/P), so whichever is chosen measures
     // the same geometry the diagnostics do.
     if (m_offset_params.offset_field == "euclidean") {
-        // A query engine, not a tolerance: nearest_point_feature() supplies the foot point and
-        // the feature kind the exact derivatives case on, and only the exact kind answers it.
-        m_input_complex_envelope = euclidean_query_envelope(
-            m_phi_V,
-            m_phi_E,
-            m_phi_F,
-            m_phi_P,
-            m_offset_params.target_distance);
+        // On m_input_complex_envelope, built by init_input_complex_bvh().
         if (m_phi_F.rows() > 0) {
             logger().info(
                 "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} triangles",
@@ -1020,106 +1108,93 @@ void TopoOffsetTetMesh::init_offset_potential()
             m_input_complex_envelope,
             m_offset_params.target_distance);
         init_region_potentials(m_offset_params.target_distance, 0.);
-        if (!m_band_tris) {
-            // The input's triangles as the convex pieces of d, which the energy's band term takes
-            // its min over (see band_cell_term()). A segment that is an edge of a triangle adds
-            // nothing to d; an isolated one, or an isolated point, would be a piece the term does
-            // not have.
-            std::set<std::pair<int, int>> tri_edges;
+        // The input's triangles as the convex pieces of d, which the energy's band term takes
+        // its min over (see band_cell_term()), on m_input_complex_envelope's per-primitive
+        // queries. A segment that is an edge of a triangle adds nothing to d; an isolated one, or
+        // an isolated point, would be a piece the term does not have.
+        const size_t isolated = segments_off_triangles(m_phi_E, m_phi_F);
+        if (m_phi_F.rows() == 0 || isolated > 0 || !m_phi_P.empty()) {
+            log_and_throw_error(
+                "the energy's band term needs an input complex of triangles only ({} "
+                "triangles, {} segments not on a triangle, {} points)",
+                m_phi_F.rows(),
+                isolated,
+                m_phi_P.size());
+        }
+        // The band term reads one distance, to the whole input; with several connected
+        // pieces each has a field of its own, and the term does not choose between them.
+        // Refused here, before the loop, rather than at the term's first evaluation.
+        if (m_n_regions > 1) {
+            log_and_throw_error(
+                "the energy's band term reads one field, and this input complex has {} "
+                "connected pieces",
+                m_n_regions);
+        }
+        // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
+        // structure, beside them. It also gives the settle loop's max test its exact max of d
+        // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
+        // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
+        // nothing else reads it unless one of the other conditions holds.
+        const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
+                                m_offset_params.band_volume_rule == "front_flux";
+        if (exact_rule ||
+            (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
+            m_offset_params.debug_output) {
+            // The band is on the offset side of the input only (ExactBandIntegral's class
+            // doc), and that side is outside the label-1 cells whichever way the offset goes:
+            // they are the selection for offset_out and everything outside the selection for
+            // offset_in (label_input_complex()), and the band grows away from them. A face's
+            // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
+            // positive: the row's normal points away from the cell), so sigma is +1 for both
+            // directions; both or neither: no side. The oriented volume of the boundary must
+            // come out positive; it is logged, and a warning if not.
+            // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
+            // inside of cells that are the outside of the selection, so the clip kept the far
+            // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
+            // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
+            // tag_0's 343.81: the label-1 cells, not the selection.
+            const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
+            double vol6 = 0.;
             for (int f = 0; f < m_phi_F.rows(); ++f) {
-                for (int j = 0; j < 3; ++j) {
-                    const int a = m_phi_F(f, j), b = m_phi_F(f, (j + 1) % 3);
-                    tri_edges.insert({std::min(a, b), std::max(a, b)});
-                }
+                const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
+                const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
+                const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
+                vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
             }
-            size_t isolated = 0;
-            for (int e = 0; e < m_phi_E.rows(); ++e) {
-                const int a = m_phi_E(e, 0), b = m_phi_E(e, 1);
-                if (!tri_edges.count({std::min(a, b), std::max(a, b)})) ++isolated;
+            logger().log(
+                vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
+                "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
+                "oriented by them encloses volume {}",
+                sigma > 0 ? "outside the label-1 cells" : "none",
+                sigma,
+                vol6 / 6.);
+            // The value table (ExactBandIntegral::value()) for the band term only, which
+            // reads cells again; twice the constructed mesh's tets, so that its live band
+            // cells seldom share a slot. Its box queries are m_input_complex_envelope's, built
+            // from the same rows of m_phi_F.
+            const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
+            auto eb = std::make_shared<ExactBandIntegral>(
+                m_phi_V,
+                m_phi_F,
+                m_phi_F_inner,
+                sigma,
+                value_slots,
+                m_input_complex_envelope);
+            // "front_flux" and "exact": where bisectors within reach of the input can be, from
+            // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
+            // it, and both rules' band term that cancels (tet_energy()).
+            if (exact_rule) {
+                const auto t0 = std::chrono::steady_clock::now();
+                eb->prepare_front_flux(m_offset_params.target_distance);
+                logger().info(
+                    "\t{}: {} region overlaps within reach {} of the input can hold "
+                    "bisectors ({:.3g} s)",
+                    m_offset_params.band_volume_rule,
+                    eb->front_flux_polytopes(),
+                    eb->front_flux_reach(),
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
             }
-            if (m_phi_F.rows() == 0 || isolated > 0 || !m_phi_P.empty()) {
-                log_and_throw_error(
-                    "the energy's band term needs an input complex of triangles only ({} "
-                    "triangles, {} segments not on a triangle, {} points)",
-                    m_phi_F.rows(),
-                    isolated,
-                    m_phi_P.size());
-            }
-            // The band term reads one distance, to the whole input; with several connected
-            // pieces each has a field of its own, and the term does not choose between them.
-            // Refused here, before the loop, rather than at the term's first evaluation.
-            if (m_n_regions > 1) {
-                log_and_throw_error(
-                    "the energy's band term reads one field, and this input complex has {} "
-                    "connected pieces",
-                    m_n_regions);
-            }
-            m_band_tris = std::make_shared<InputTriangles>(m_phi_V, m_phi_F);
-            // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's
-            // structure, beside them. It also gives the settle loop's max test its exact max of d
-            // over a front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too,
-            // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
-            // nothing else reads it unless one of the other conditions holds.
-            const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                    m_offset_params.band_volume_rule == "front_flux";
-            if (exact_rule ||
-                (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
-                m_offset_params.debug_output) {
-                // The band is on the offset side of the input only (ExactBandIntegral's class
-                // doc), and that side is outside the label-1 cells whichever way the offset goes:
-                // they are the selection for offset_out and everything outside the selection for
-                // offset_in (label_input_complex()), and the band grows away from them. A face's
-                // side is its orient3d against the label-1 cell it bounds (m_phi_F_inner,
-                // positive: the row's normal points away from the cell), so sigma is +1 for both
-                // directions; both or neither: no side. The oriented volume of the boundary must
-                // come out positive; it is logged, and a warning if not.
-                // MEASURED (Geneva base, offset_in, 2026-10-13): sigma was -1 for offset_in, the
-                // inside of cells that are the outside of the selection, so the clip kept the far
-                // side: the band term at construction was 0 against -7.5046 unclipped (41988 band
-                // cells, volume 8.55). The volume logged, 6470.85, is the domain's 6814.66 minus
-                // tag_0's 343.81: the label-1 cells, not the selection.
-                const int sigma = m_offset_params.offset_out == m_offset_params.offset_in ? 0 : 1;
-                double vol6 = 0.;
-                for (int f = 0; f < m_phi_F.rows(); ++f) {
-                    const Vector3d a = m_phi_V.row(m_phi_F(f, 0)).head<3>().transpose();
-                    const Vector3d b = m_phi_V.row(m_phi_F(f, 1)).head<3>().transpose();
-                    const Vector3d c = m_phi_V.row(m_phi_F(f, 2)).head<3>().transpose();
-                    vol6 += double(m_phi_F_inner[size_t(f)]) * a.dot(b.cross(c));
-                }
-                logger().log(
-                    vol6 > 0. ? spdlog::level::info : spdlog::level::warn,
-                    "\tExact band integral: offset side {} (sigma {}), the label-1 cells' boundary "
-                    "oriented by them encloses volume {}",
-                    sigma > 0 ? "outside the label-1 cells" : "none",
-                    sigma,
-                    vol6 / 6.);
-                // The value table (ExactBandIntegral::value()) for the band term only, which
-                // reads cells again; twice the constructed mesh's tets, so that its live band
-                // cells seldom share a slot.
-                const size_t value_slots = exact_rule ? 2 * tet_capacity() : 0;
-                auto eb = std::make_shared<ExactBandIntegral>(
-                    m_phi_V,
-                    m_phi_F,
-                    m_phi_F_inner,
-                    sigma,
-                    value_slots);
-                // "front_flux" and "exact": where bisectors within reach of the input can be, from
-                // the input alone (ExactBandIntegral::prepare_front_flux()). The front form reads
-                // it, and both rules' band term that cancels (tet_energy()).
-                if (exact_rule) {
-                    const auto t0 = std::chrono::steady_clock::now();
-                    eb->prepare_front_flux(m_offset_params.target_distance);
-                    logger().info(
-                        "\t{}: {} region overlaps within reach {} of the input can hold "
-                        "bisectors ({:.3g} s)",
-                        m_offset_params.band_volume_rule,
-                        eb->front_flux_polytopes(),
-                        eb->front_flux_reach(),
-                        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0)
-                            .count());
-                }
-                m_band_exact = std::move(eb);
-            }
+            m_band_exact = std::move(eb);
         }
         return;
     }
@@ -1156,7 +1231,7 @@ void TopoOffsetTetMesh::init_region_potentials(const double delta, const double 
     // See m_region_potentials. A connected input complex is one region, and that region's field
     // is the union field itself -- nothing to build.
     m_region_potentials.clear();
-    m_region_bvhs.clear();
+    m_region_envelopes.clear();
     if (m_n_regions <= 1) {
         assign_band_regions();
         return;
@@ -1183,20 +1258,14 @@ void TopoOffsetTetMesh::init_region_potentials(const double delta, const double 
         for (size_t i = 0; i < frows.size(); ++i) F_r.row(i) = m_phi_F.row(frows[i]);
         std::vector<int> P_r;
         for (const int i : pidx) P_r.push_back(m_phi_P[size_t(i)]);
-        // The piece's own BVH, over its boundary primitives: what assign_band_regions() reads a
-        // seed's piece off.
-        {
-            MatrixXi P_m(P_r.size(), 1);
-            for (size_t i = 0; i < P_r.size(); ++i) P_m(i, 0) = P_r[i];
-            auto bvh = std::make_shared<SimplicialComplexBVH>();
-            bvh->init(m_phi_V, MatrixXi(0, 4), F_r, E_r, P_m);
-            m_region_bvhs.push_back(bvh);
-        }
+        // The piece's own envelope, over its boundary primitives: what assign_band_regions() reads
+        // a seed's piece off, and the piece's euclidean field's engine (eps as
+        // m_input_complex_envelope's).
+        m_region_envelopes.push_back(
+            euclidean_query_envelope(m_phi_V, E_r, F_r, P_r, euclidean ? delta : 0.));
         if (euclidean) {
             m_region_potentials.push_back(
-                std::make_shared<EuclideanOffsetPotential3D>(
-                    euclidean_query_envelope(m_phi_V, E_r, F_r, P_r, delta),
-                    delta));
+                std::make_shared<EuclideanOffsetPotential3D>(m_region_envelopes.back(), delta));
         } else {
             m_region_potentials.push_back(
                 std::make_shared<
@@ -1289,9 +1358,10 @@ void TopoOffsetTetMesh::init_vertex_order()
 
 double TopoOffsetTetMesh::max_band_vertex_distance() const
 {
-    // How far the offset surface ended up from the input complex, as a length. Exact (BVH
-    // nearest point): dhat selects the level c, so an overestimate changes which surface the run
-    // solves for. Returns 0 when there is no offset surface yet.
+    // How far the offset surface ended up from the input complex, as a length: the distance to
+    // the complex itself, 0 inside its solid (input_complex_distance()). Exact: dhat selects the
+    // level c, so an overestimate changes which surface the run solves for. Returns 0 when there
+    // is no offset surface yet.
     std::vector<bool> on_band(vert_capacity(), false);
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
@@ -1301,8 +1371,7 @@ double TopoOffsetTetMesh::max_band_vertex_distance() const
     for (size_t vid = 0; vid < vert_capacity(); ++vid) {
         if (!on_band[vid]) continue;
         if (!m_vertex_attribute[vid].m_is_rounded) continue;
-        const Vector3d p = m_vertex_attribute[vid].m_posf;
-        worst = std::max(worst, (p - m_input_complex_bvh->nearest_point(p)).norm());
+        worst = std::max(worst, input_complex_distance(m_vertex_attribute[vid].m_posf));
     }
     return worst;
 }
@@ -1551,11 +1620,10 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         logger().info("\t[repulsion] no edge to march, no pass");
         return;
     }
-    // The march's own distance (the same input-complex arrays as m_input_complex_bvh), at level
-    // 2 delta. Non-null switches the repulsion on (is_repulsion_vertex()).
-    m_repulsion_potential = std::make_shared<EuclideanOffsetPotential3D>(
-        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, 2. * delta),
-        2. * delta);
+    // The march's own distance (m_input_complex_envelope), at level 2 delta. Non-null switches
+    // the repulsion on (is_repulsion_vertex()).
+    m_repulsion_potential =
+        std::make_shared<EuclideanOffsetPotential3D>(m_input_complex_envelope, 2. * delta);
     m_repulsion_term = std::make_shared<OffsetEnergy3D>(
         m_repulsion_potential,
         4. * offset_term_weight(),
@@ -1571,7 +1639,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         size_t n_stop = 0, n_delta = 0, n_2delta = 0;
         double ring_max = 0.;
         for (const size_t v : outer) {
-            const double d = m_input_complex_bvh->dist(m_vertex_attribute[v].m_posf);
+            const double d = input_complex_distance(m_vertex_attribute[v].m_posf);
             d_min = std::min(d_min, d);
             if (d <= stop) ++n_stop;
             if (d <= delta) ++n_delta;
@@ -1601,64 +1669,26 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     const auto log_newton = [&](const std::string& what) {
         const size_t refused = m_repulsion_embed_refused.exchange(0);
         logger().info(
-            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}{}",
+            "\t[repulsion] {}: newton, repulsion: {} | veto: fired {} of {}{}",
             what,
             m_newton_repulsion.to_string(),
             m_repulsion_veto_fired.exchange(0),
             m_repulsion_veto_asked.exchange(0),
             n_rounds > 0
                 ? fmt::format(" | operations refused for breaking the embedding: {}", refused)
-                : std::string(),
-            m_offset_params.repulsion_refine
-                ? fmt::format(
-                      " | refused for making an outer end within target_distance + front_conv: "
-                      "{} swap(s)",
-                      m_repulsion_close_refused.exchange(0))
                 : std::string());
         m_newton_repulsion.reset();
     };
 
-    // EXPERIMENTAL_repulsion_refine: the front the march would cut at delta is measured with the
-    // loop's face measure (predict_front()) at every report, the sizing scalar halved at the
-    // corners of the cells whose piece is over the bar, and the stop test also asks that no
-    // piece be over. The rounds' split pass realizes the halving, still refusing marched edges;
-    // the rounds do not collapse (the collapses are what emptied the slots: on the one-slot model
-    // every vertex inside the slot, on Thingi10K 100026 40% of them).
-    const bool refine = m_offset_params.repulsion_refine;
-    if (refine && m_offset_params.offset_field != "euclidean") {
-        log_and_throw_error("EXPERIMENTAL_repulsion_refine: offset_field euclidean only");
-    }
-    const auto predicted_ok = [&](const std::string& when) {
-        const PredictedFront f = predict_front(delta, /*halve=*/true);
-        logger().info(
-            "\t[repulsion] {}: front predicted at {:.6g}: {} cells with a marched edge, {} over "
-            "the bar (worst {:.4g}x), {} with an outer end within it, {} unmeasurable -> sizing "
-            "scalar halved at {} vertices",
-            when,
-            delta,
-            f.n_cells,
-            f.n_over,
-            f.max_measure,
-            f.n_unreached,
-            f.n_unmeasurable,
-            f.n_halved);
-        return f.n_over == 0 && f.n_unmeasurable == 0;
-    };
-    const auto all_ok = [&](const std::string& when) {
-        const bool outer_ok = report(when);
-        return (!refine || predicted_ok(when)) && outer_ok;
-    };
-
     logger().info(
         "\t[repulsion] {} repulsion vertices pushed toward 2 x target_distance = {:.6g}; the "
-        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}{}, at "
+        "passes stop once every outer end is beyond target_distance + front_conv = {:.6g}, at "
         "most {} pass(es)",
         outer.size() - n_held,
         2. * delta,
         stop,
-        refine ? " and no predicted front piece is over the bar" : "",
         n_passes);
-    bool done = all_ok("before");
+    bool done = report("before");
     // The engine's per-pass frames are the loop's numbered series; these passes write their own.
     // m_params and m_offset_params are one object, so the flag is read before it is switched off.
     const bool frames = m_params.debug_output;
@@ -1668,7 +1698,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         ++k;
         smooth_all_vertices(1);
         log_newton(fmt::format("pass {}", k));
-        done = all_ok(fmt::format("after pass {}", k));
+        done = report(fmt::format("after pass {}", k));
         if (frames) write_debug_frame(fmt::format("repulsion_{}", k));
     }
     if (n_passes > 0) {
@@ -1691,8 +1721,6 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     // every operation aims at the base edge length) and no split of a marched edge
     // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
     // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
-    // Under EXPERIMENTAL_repulsion_refine the field is lowered where the predicted front is over
-    // the bar (all_ok() above) and there is no collapse group.
     int r = 0;
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
@@ -1712,18 +1740,14 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             interleaved ? m_params.interleaved_smoothing_passes : m_params.num_smoothing_passes);
         const std::vector<std::array<int, 4>> groups =
             interleaved
-                ? (refine
-                       ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 0, 1, ks}}}
-                       : std::vector<
-                             std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}})
-                : std::vector<std::array<int, 4>>{{{1, refine ? 0 : 1, 1, ks}}};
+                ? std::vector<std::array<int, 4>>{{{1, 0, 0, ks}}, {{0, 1, 0, ks}}, {{0, 0, 1, ks}}}
+                : std::vector<std::array<int, 4>>{{{1, 1, 1, ks}}};
         logger().info(
-            "\t[repulsion] up to {} round(s): split, {}swap{}; {}, no marched-edge split",
+            "\t[repulsion] up to {} round(s): split, collapse, swap{}; no refinement, no "
+            "marched-edge split",
             n_rounds,
-            refine ? "" : "collapse, ",
             interleaved ? fmt::format(", each followed by {} smoothing pass(es)", ks)
-                        : fmt::format(" back to back, then {} smoothing pass(es)", ks),
-            refine ? "refinement where the predicted front is over the bar" : "no refinement");
+                        : fmt::format(" back to back, then {} smoothing pass(es)", ks));
         op_accounting_reset(); // the [ops accounting] lines below are per round
         swap_counters_reset();
         while (!done && r < n_rounds) {
@@ -1772,7 +1796,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
             }
             op_accounting_reset();
             log_newton(fmt::format("round {}", r));
-            done = all_ok(fmt::format("after round {}", r));
+            done = report(fmt::format("after round {}", r));
             if (frames) write_debug_frame(fmt::format("repulsion_round_{}", r));
         }
         // Every group above leaves the complex embedded and smoothing changes no topology, so
@@ -1788,108 +1812,19 @@ void TopoOffsetTetMesh::repulsion_smoothing()
         consolidate_mesh();
         if (done) {
             logger().info(
-                "\t[repulsion] every outer end is beyond target_distance + front_conv{} after {} "
+                "\t[repulsion] every outer end is beyond target_distance + front_conv after {} "
                 "round(s)",
-                refine ? " and no predicted front piece is over the bar" : "",
                 r);
         } else {
             logger().info(
                 "\t[repulsion] {} round(s), the cap: some outer end is still within "
-                "target_distance + front_conv{}",
-                r,
-                refine ? ", or some predicted front piece is over the bar" : "");
+                "target_distance + front_conv",
+                r);
         }
     }
     m_params.debug_output = frames;
     m_repulsion_potential.reset();
     m_repulsion_term.reset();
-}
-
-TopoOffsetTetMesh::PredictedFront TopoOffsetTetMesh::predict_front(const double t, const bool halve)
-{
-    // EXPERIMENTAL_repulsion_refine. The front the march would cut at t, measured before it
-    // exists. On every marched edge (one end on the complex) the split point is the sphere
-    // trace's, the point marching_tets() creates there; in every cell with marched edges these
-    // points bound the cell's front piece -- a triangle (one or three complex corners) or a quad
-    // (two), whose diagonal the march's split order decides, so a quad is measured in both
-    // triangulations. Each triangle is measured by face_offset_term() at level t: the loop's own
-    // face measure, stencil_order and front_conv included. A cell is over when any of its
-    // triangles is over the bar. halve: the sizing scalar is halved at the corners of every cell
-    // over, by refine_front_by_halving(), as the loop halves.
-    PredictedFront s;
-    const auto pot = std::make_shared<EuclideanOffsetPotential3D>(
-        euclidean_query_envelope(m_phi_V, m_phi_E, m_phi_F, m_phi_P, t),
-        t);
-    const double d_saved = m_construction_distance;
-    m_construction_distance = t; // what edge_split_sphere_trace() traces to
-    std::map<std::pair<size_t, size_t>, std::optional<Vector3d>> cut;
-    const auto cut_point = [&](const size_t vin, const size_t vout) {
-        const auto key = std::make_pair(vin, vout);
-        if (const auto it = cut.find(key); it != cut.end()) return it->second;
-        Vector3d p;
-        size_t steps = 0;
-        std::optional<Vector3d> r;
-        if (edge_split_sphere_trace(
-                m_vertex_attribute[vin].m_posf,
-                m_vertex_attribute[vout].m_posf,
-                p,
-                steps)) {
-            r = p;
-        }
-        cut.emplace(key, r);
-        return r;
-    };
-    std::vector<size_t> corners;
-    for (const Tuple& tt : get_tets()) {
-        const std::array<size_t, 4> vs = oriented_tet_vids(tt.tid(*this));
-        std::vector<size_t> in, out;
-        for (const size_t v : vs) (m_vertex_extra[v].label != 0 ? in : out).push_back(v);
-        if (in.empty() || out.empty()) continue;
-        ++s.n_cells;
-        bool reached = true;
-        const auto P = [&](const size_t a, const size_t b) {
-            const std::optional<Vector3d> p = cut_point(a, b);
-            if (!p) reached = false;
-            return p ? *p : Vector3d(Vector3d::Zero());
-        };
-        std::vector<std::array<Vector3d, 3>> tris;
-        if (in.size() == 1) {
-            tris.push_back({{P(in[0], out[0]), P(in[0], out[1]), P(in[0], out[2])}});
-        } else if (in.size() == 3) {
-            tris.push_back({{P(in[0], out[0]), P(in[1], out[0]), P(in[2], out[0])}});
-        } else {
-            // The quad's corners in cyclic order: consecutive ones share a face of the cell.
-            const Vector3d a = P(in[0], out[0]), b = P(in[0], out[1]), c = P(in[1], out[1]),
-                           d = P(in[1], out[0]);
-            tris = {{{a, b, c}}, {{a, c, d}}, {{a, b, d}}, {{b, c, d}}};
-        }
-        if (!reached) {
-            ++s.n_unreached;
-            continue;
-        }
-        double worst = 0.;
-        bool measurable = true;
-        for (const auto& tri : tris) {
-            const double m2 = face_offset_term(*pot, tri[0], tri[1], tri[2]);
-            if (!(m2 >= 0.)) {
-                measurable = false;
-                break;
-            }
-            worst = std::max(worst, m2);
-        }
-        if (!measurable) {
-            ++s.n_unmeasurable;
-            continue;
-        }
-        s.max_measure = std::max(s.max_measure, std::sqrt(worst));
-        if (worst > 1.) {
-            ++s.n_over;
-            if (halve) corners.insert(corners.end(), vs.begin(), vs.end());
-        }
-    }
-    m_construction_distance = d_saved;
-    if (halve && !corners.empty()) s.n_halved = refine_front_by_halving(corners);
-    return s;
 }
 
 bool TopoOffsetTetMesh::simplex_in_input_complex(const std::vector<size_t>& c) const
@@ -1984,7 +1919,7 @@ void TopoOffsetTetMesh::marching_tets()
         const size_t vb = e.vertices()[1];
         // Exactly one end carries a zero label: that is how e_to_split was built.
         const size_t v_out = m_vertex_extra[va].label != 0 ? vb : va;
-        d_max = std::min(d_max, m_input_complex_bvh->dist(m_vertex_attribute[v_out].m_posf));
+        d_max = std::min(d_max, input_complex_distance(m_vertex_attribute[v_out].m_posf));
     }
     const bool reachable = target < d_max;
     const std::string& mode = m_offset_params.construction_mode;
@@ -2385,8 +2320,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // The sizing field, as point data: it drives every split and collapse gate.
     fr.sizing = VectorXd::Zero(vert_capacity());
     // Per vertex, the front's placement and what pushes it. NaN where a field does not apply.
-    //   input_distance    d: the exact distance to the input's triangles (m_band_tris), every
-    //                     vertex; NaN before the triangles exist (the construction frames).
+    //   input_distance    d: the exact distance to the input's triangles (band_env below),
+    //                     every vertex; NaN before the field exists (the construction frames).
     //   front_error_bars  (d - target_distance) / front_conv at a front vertex: signed, in
     //                     bars, so |.| > 1 is what the settle loop's vertex test marks
     //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
@@ -2428,7 +2363,12 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
 
     const double delta = m_offset_params.target_distance;
     const double front_conv = std::max(m_offset_params.front_conv, 1e-300);
-    const bool energy_fields = m_band_tris && m_n_regions <= 1 &&
+    // The band term's input: m_input_complex_envelope, once init_offset_potential() has built the
+    // field (and refused an input the band term cannot take). The construction frames come
+    // before it.
+    const Envelope* band_env =
+        m_offset_potential && m_input_complex_envelope ? m_input_complex_envelope.get() : nullptr;
+    const bool energy_fields = band_env && m_n_regions <= 1 &&
                                (m_offset_params.band_volume_rule != "exact" || m_band_exact);
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
@@ -2488,9 +2428,11 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         fr.order[vid] = m_vertex_attribute[vid].m_order;
         fr.vid[vid] = vid;
         fr.sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
-        if (m_band_tris) {
+        if (band_env) {
             const Vector3d& x = m_vertex_attribute[vid].m_posf;
-            fr.in_dist[vid] = m_band_tris->distance(m_band_tris->nearest(x), x);
+            fr.in_dist[vid] = band_env->primitive_distance(
+                nearest_primitive(*band_env, m_input_complex_pad, x),
+                x);
         }
     }
 
@@ -2520,13 +2462,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // current position, so they need what they read: the input's triangles and one region.
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
-        if (!m_band_tris || !m_vertex_extra[vid].m_is_on_offset ||
+        if (!band_env || !m_vertex_extra[vid].m_is_on_offset ||
             !m_vertex_attribute[vid].m_is_rounded) {
             continue;
         }
         const Vector3d& x = m_vertex_attribute[vid].m_posf;
         Vector3d g_d;
-        const double d = m_band_tris->distance(m_band_tris->nearest(x), x, &g_d);
+        const double d = band_env->primitive_distance(
+            nearest_primitive(*band_env, m_input_complex_pad, x),
+            x,
+            &g_d);
         fr.front_err[vid] = (d - delta) / front_conv;
         if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
         const double gn = g_d.norm();
@@ -2614,13 +2559,15 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
-            if (m_band_tris) {
+            if (band_env) {
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
-                    (delta - m_band_tris->min_triangle_distance(pa, pb, pc)) / front_conv;
+                    (delta - min_triangle_distance(*band_env, m_input_complex_pad, pa, pb, pc)) /
+                    front_conv;
                 fr.f_outside[i] =
-                    ((m_band_exact ? m_band_exact->max_distance(p)
-                                   : m_band_tris->min_max_corner_distance(p.data(), 3)) -
+                    ((m_band_exact
+                          ? m_band_exact->max_distance(p)
+                          : min_max_corner_distance(*band_env, m_input_complex_pad, p.data(), 3)) -
                      delta) /
                     front_conv;
             }
@@ -2751,7 +2698,9 @@ void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) con
             residual(k, 0) = std::min(
                 m_offset_potential->residual_length(p),
                 8. * m_offset_params.target_distance);
-            euclid(k, 0) = (p - m_input_complex_bvh->nearest_point(p)).norm();
+            // The reference Phi (unsigned, no inside test) is viewed against: the distance to the
+            // complex itself, 0 inside its solid, where Phi has a false level set.
+            euclid(k, 0) = input_complex_distance(p);
         }
     }
     int f = 0;

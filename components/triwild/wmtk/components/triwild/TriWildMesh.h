@@ -23,7 +23,6 @@
 
 #include "Parameters.h"
 
-#include <atomic>
 #include <memory>
 #include <set>
 
@@ -34,113 +33,35 @@ using VertexAttributes = wmtk::TriOptimizerMesh::VertexAttributes;
 using EdgeAttributes = wmtk::TriOptimizerMesh::EdgeAttributes;
 using FaceAttributes = wmtk::TriOptimizerMesh::FaceAttributes;
 
-/// A vertex that stands for no input feature point. See VertexExtras::m_feature_id.
-inline constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
-
 class TriWildMesh : public wmtk::TriOptimizerMesh
 {
 public:
-    /**
-     * @brief triwild's per-vertex additions to the shared VertexAttributes.
-     *
-     * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled
-     * back exactly like the shared collection -- which matters, because collapse_edge_after and
-     * split_edge_after both write it.
-     */
-    struct VertexExtras
-    {
-        /**
-         * Index into TriWildMesh::m_feature_points, or NO_FEATURE.
-         *
-         * A feature point is a 0-dimensional feature of the curve network: an open polyline's
-         * endpoint, or a junction. This is the 2D counterpart of tetwild's
-         * m_is_on_open_boundary, with one deliberate difference -- it names WHICH feature the
-         * vertex stands for, not merely that it stands for one.
-         *
-         * That difference is the whole point. tetwild asks "is the survivor inside the
-         * envelope of the boundary?", a containment question, and in 3D a boundary is a curve
-         * with many edges so collapsing one shortens it rather than deleting it. In 2D the
-         * feature is a single point, and a containment test passes trivially when one endpoint
-         * is collapsed onto another -- the target IS a feature point, distance zero -- while
-         * the first endpoint quietly stops being represented. Preserving features is a
-         * COVERAGE property, so the constraint has to bind a vertex to a specific point.
-         */
-        size_t m_feature_id = std::numeric_limits<size_t>::max();
-    };
-    wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
-
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// triwild-only fields (features, high valence, smoothing schedule, box).
     Parameters& m_tri_params;
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
-    /**
-     * Radius of the ball a feature-carrying vertex must stay inside.
-     *
-     * Presently equal to m_envelope_eps, but deliberately a separate name: the two are
-     * different quantities -- the envelope bounds how far the CURVE may deviate, this bounds
-     * how far a SURVIVOR VERTEX may sit from an anchor -- so tying them means a tighter
-     * envelope silently tightens feature retention by the same factor. Measured on
-     * triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse
-     * refusals 75270 -> 61666 and delayed the mesh blow-up by two iterations. That was not
-     * enough to fix that model on its own -- the collapse length gate was the real cause --
-     * so the value is left alone here and only the coupling is made visible.
-     */
-    double m_feature_eps = -1;
 
-    /**
-     * Anchor positions of the curve network's 0-dimensional features, indexed by
-     * VertexExtras::m_feature_id.
-     *
-     * Filled in init_mesh from the arrangement's constrained edges: a vertex whose valence in
-     * that edge set is neither 0 nor 2 is a feature -- valence 1 is an open polyline's
-     * endpoint, valence >= 3 a junction. Reading it off the arrangement rather than the raw
-     * input is deliberate: it is the network the optimizer actually starts from, so a
-     * junction the simplification was allowed to merge (which it may, with
-     * simplify_use_link_condition off) is correctly absent, and no provenance or
-     * position-matching plumbing is needed.
-     *
-     * A vertex carrying feature f may never end up further than m_envelope_eps from
-     * m_feature_points[f]. Since the anchor never moves, no spatial index is required: the
-     * feature id is a direct lookup.
-     */
-    std::vector<Vector2d> m_feature_points;
-    /// Collapses refused because they would drop or displace a feature point. Diagnostic.
-    std::atomic<size_t> m_feature_rejects = 0;
-
-    /**
-     * @brief May vertex `vid` sit at `p`?
-     *
-     * False only when the vertex stands for a feature point and `p` is more than
-     * m_envelope_eps away from it. Smoothing is free to move a feature vertex inside that
-     * ball -- it is a containment test, not a freeze, so the optimizer keeps the quality it
-     * can get near features.
-     */
-    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override;
-    void split_after_vertex(const size_t vid) override
-    {
-        m_vertex_extra[vid].m_feature_id = NO_FEATURE;
-    }
-
-    /**
-     * @brief {feature points still represented within eps, total feature points}.
-     *
-     * The invariant preserve_feature_points maintains, measured on the finished mesh rather
-     * than assumed from the per-operation checks.
-     */
-    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
-
-    /// True iff collapsing v1 into v2 would drop or displace a feature point.
-    bool collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const;
-
+    // The curve network's 0-dimensional features are anchored by the base
+    // (TriOptimizerMesh's feature-point anchors), turned on in the constructor with
+    // m_feature_eps = the envelope eps. init_mesh fills m_feature_points from the
+    // arrangement's constrained edges: a vertex whose valence in that edge set is neither 0
+    // nor 2 is a feature -- valence 1 is an open polyline's endpoint, valence >= 3 a
+    // junction -- plus the input free points. Reading it off the arrangement rather than the
+    // raw input is deliberate: it is the network the optimizer actually starts from, so a
+    // junction the simplification was allowed to merge (which it may, with
+    // simplify_use_link_condition off) is correctly absent, and no provenance or
+    // position-matching plumbing is needed.
 
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
         , m_tri_params(_m_params)
-        , m_feature_eps(envelope_eps)
     {
-        m_vertex_attr_group.add(&m_vertex_extra);
+        // Registered unconditionally, as the ids always were: the driver exports and audits
+        // the anchors whether or not preserve_feature_points turns the policy on.
+        enable_feature_point_tracking(m_tri_params.preserve_feature_points);
+        m_feature_eps = envelope_eps;
         m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
 
@@ -255,30 +176,6 @@ public:
 
 protected:
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
-
-    void collapse_pass_begin() override { m_feature_rejects = 0; }
-    void collapse_pass_end(size_t) override
-    {
-        if (const size_t n = m_feature_rejects.load(); n > 0) {
-            logger().info(
-                "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
-                "junction, or input free point) within {:.6} of its input position",
-                n,
-                m_envelope_eps);
-        }
-    }
-    bool collapse_before_vertex(size_t v1, size_t v2) override
-    {
-        if (!collapse_breaks_feature(v1, v2)) return true;
-        m_feature_rejects.fetch_add(1, std::memory_order_relaxed);
-        return false;
-    }
-    void collapse_after_vertex(size_t v1, size_t v2) override
-    {
-        if (m_vertex_extra[v2].m_feature_id == NO_FEATURE) {
-            m_vertex_extra[v2].m_feature_id = m_vertex_extra[v1].m_feature_id;
-        }
-    }
 };
 
 

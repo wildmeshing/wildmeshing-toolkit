@@ -413,10 +413,11 @@ void TetWildMesh::init_from_Volumeremesher(
                         "Feature anchor ({}) is not a vertex of the initial mesh",
                         p.transpose());
                 }
-                if (m_vertex_extra[it->second].m_feature_point_id != NO_FEATURE) {
+                auto& anchor = m_feature_point_attribute[it->second];
+                if (anchor.m_feature_point_id != NO_FEATURE_POINT) {
                     continue;
                 }
-                m_vertex_extra[it->second].m_feature_point_id = m_feature_points.size();
+                anchor.m_feature_point_id = m_feature_points.size();
                 m_feature_points.push_back(p);
                 ++n_anchored;
             }
@@ -686,7 +687,7 @@ void TetWildMesh::find_open_boundary()
     // so having `use_sample_envelope: false` hold for the surface but not for its boundary
     // curves was an accident of the exact envelope not supporting edges until now.
     if (!m_order2_envelope) {
-        m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
+        m_order2_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
     }
     // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
     // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a

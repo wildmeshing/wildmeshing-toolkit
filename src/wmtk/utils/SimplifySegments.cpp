@@ -26,7 +26,7 @@ Key key_of(int a, int b)
 size_t simplify_segments(
     MatrixXd& V,
     MatrixXi& E,
-    const SampleEnvelope& envelope,
+    const Envelope& envelope,
     bool use_link_condition,
     std::vector<int>* surviving_edges)
 {

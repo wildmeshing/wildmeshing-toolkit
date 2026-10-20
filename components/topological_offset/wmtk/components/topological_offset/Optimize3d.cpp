@@ -1034,10 +1034,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
             ++m_repulsion_embed_refused;
             return false;
         }
-        if (!repulsion_outer_ends_kept(tids)) {
-            ++m_repulsion_close_refused;
-            return false;
-        }
         if (!energy_lowered()) return false;
         ++iter_cnt_swap;
         return true;
@@ -1070,10 +1066,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
-        return false;
-    }
-    if (!repulsion_outer_ends_kept(tids)) {
-        ++m_repulsion_close_refused;
         return false;
     }
     if (!energy_lowered()) return false;
@@ -1537,7 +1529,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
     // yes/no, and a face resting on the skin of its tube is the one the next operation pushes
-    // out. Both envelopes are real SampleEnvelopes, so squared_distance() is safe on them.
+    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -1549,7 +1541,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     double worst_frac = 0.;
     std::array<size_t, 5> band{{0, 0, 0, 0, 0}}; // <0.5, <0.9, <0.99, <1, >=1 of eps
     // The farthest a lattice of (k+1)(k+2)/2 points on the triangle is from the envelope.
-    const auto farthest = [](const SampleEnvelope& env, const std::array<Vector3d, 3>& p, int k) {
+    const auto farthest = [](const Envelope& env, const std::array<Vector3d, 3>& p, int k) {
         double d = 0.;
         for (int i = 0; i <= k; ++i) {
             for (int j = 0; j <= k - i; ++j) {
@@ -1564,7 +1556,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 3> vids = get_face_vids(f);
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face(vids);
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face(vids);
         if (!env) continue;
         ++n_held;
         const std::array<Vector3d, 3> p{
@@ -1856,9 +1848,9 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
             cand.c += m_vertex_attribute[v].m_posf / 4.;
             cand.sizing = std::min(cand.sizing, m_vertex_attribute[v].m_sizing_scalar);
         }
-        if (m_input_complex_bvh) {
-            cand.dist = (cand.c - m_input_complex_bvh->nearest_point(cand.c)).norm();
-        }
+        // The line's "dist to complex": the distance to the input complex itself, 0 inside its
+        // solid (input_complex_distance()).
+        if (m_input_complex_envelope) cand.dist = input_complex_distance(cand.c);
         if (m_offset_potential && c_level > 0.) {
             cand.phi_over_c = m_offset_potential->value(cand.c) / c_level;
         }
@@ -1896,7 +1888,7 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
                         if (!found) continue;
                         const size_t fid = std::get<1>(*found);
                         if (!m_face_attribute[fid].m_is_surface_fs) continue;
-                        const std::shared_ptr<SampleEnvelope> env =
+                        const std::shared_ptr<Envelope> env =
                             surface_envelope_for_face({{a, b, w}});
                         if (!env) continue;
                         const Vector3d mid = 0.5 * (pa + pb);
@@ -2484,7 +2476,7 @@ std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
 double TopoOffsetTetMesh::band_vertex_distance_error(const size_t vid) const
 {
     const Vector3d p = m_vertex_attribute[vid].m_posf;
-    return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    return std::abs(input_complex_distance(p) - m_offset_params.target_distance);
 }
 
 double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
@@ -2530,7 +2522,7 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
         if (band_vertex_is_reachable(vid)) {
             if (!potential_for(vid).within_support(p)) {
                 ++s.n_outside_support;
-                const double d = m_input_complex_bvh->dist(VectorXd(p));
+                const double d = input_complex_distance(p);
                 if (d > s.worst_outside_dist) {
                     s.worst_outside_dist = d;
                     s.worst_outside_vid = vid;
@@ -2957,17 +2949,17 @@ Vector3d TopoOffsetTetMesh::front_vertex_field_gradient(const size_t vid) const
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
-    // with an input-complex vertex, whose piece is read off the per-piece BVHs (the nearest
+    // with an input-complex vertex, whose piece is read off the per-piece envelopes (the nearest
     // piece to a vertex ON the complex is its own, at distance 0). As in 2D, a cell reached from
     // two regions and a vertex on cells of two regions read -2 and fall back to the union field.
     m_cell_region.assign(tet_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
-    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_bvhs.empty()) return;
+    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
     const auto region_at = [&](const Vector3d& p) -> int {
         int best = -1;
         double best_d = std::numeric_limits<double>::infinity();
-        for (size_t r = 0; r < m_region_bvhs.size(); ++r) {
-            const double d = m_region_bvhs[r]->squared_dist(VectorXd(p));
+        for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
+            const double d = m_region_envelopes[r]->squared_distance(p);
             if (d < best_d) {
                 best_d = d;
                 best = int(r);
@@ -3206,11 +3198,20 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 {m_vertex_attribute[f[0]].m_posf,
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
-            const double inside = delta - m_band_tris->min_triangle_distance(p[0], p[1], p[2]);
-            const double outside = (m_band_exact && !rms_mode && !vertex_mode
-                                        ? m_band_exact->max_distance(p)
-                                        : m_band_tris->min_max_corner_distance(p.data(), 3)) -
-                                   delta;
+            const double inside = delta - min_triangle_distance(
+                                              *m_input_complex_envelope,
+                                              m_input_complex_pad,
+                                              p[0],
+                                              p[1],
+                                              p[2]);
+            const double outside =
+                (m_band_exact && !rms_mode && !vertex_mode ? m_band_exact->max_distance(p)
+                                                           : min_max_corner_distance(
+                                                                 *m_input_complex_envelope,
+                                                                 m_input_complex_pad,
+                                                                 p.data(),
+                                                                 3)) -
+                delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
             const bool over_max = std::max(inside, outside) > eps;
@@ -3227,7 +3228,14 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                     if (n.dot(p[0] - m_vertex_attribute[v].m_posf) < 0.) n = -n;
                 }
             }
-            const double q = m_band_tris->face_mean_sq_cos(p[0], p[1], p[2], n.normalized(), delta);
+            const double q = face_mean_sq_cos(
+                *m_input_complex_envelope,
+                m_input_complex_pad,
+                p[0],
+                p[1],
+                p[2],
+                n.normalized(),
+                delta);
             const bool over_rms = bc >= 0 && q > eps * eps;
             max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
             n_over_max += over_max;
@@ -3250,7 +3258,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         n_front_vertices = front_vids.size();
         for (const size_t v : front_vids) {
             const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const double err = std::abs(m_band_tris->distance(m_band_tris->nearest(x), x) - delta);
+            const Envelope& env = *m_input_complex_envelope;
+            const double err = std::abs(
+                env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
             max_vertex = std::max(max_vertex, err / eps);
             if (!(err > eps)) continue;
             ++n_over_vertex;
@@ -3280,9 +3290,16 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 std::array<Vector3d, 4> p;
                 for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
                 int64_t best = -1;
-                const double md = m_band_tris->min_mean_distance(p.data(), 4, best);
+                const double md = min_mean_distance(
+                    *m_input_complex_envelope,
+                    m_input_complex_pad,
+                    p.data(),
+                    4,
+                    best);
                 const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
-                const double dc = m_band_tris->distance(m_band_tris->nearest(ctr), ctr);
+                const Envelope& env = *m_input_complex_envelope;
+                const double dc =
+                    env.primitive_distance(nearest_primitive(env, m_input_complex_pad, ctr), ctr);
                 max_gap = std::max(max_gap, (md - dc) / eps);
                 if (!(md - dc > eps)) continue;
                 ++n_gap_over;
@@ -3356,9 +3373,10 @@ void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& se
 
 size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
 {
-    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
-    // (attic/app/tetwild/TetWild.cpp): the same R, the same ramp, the same breadth-first walk
-    // that stops at R, the same floor. Two parts of that function are NOT ported on purpose:
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field (the attic/
+    // directory, since deleted; read attic/app/tetwild/TetWild.cpp at 2371c13fe8): the same R,
+    // the same ramp, the same breadth-first walk that stops at R, the same floor. Two parts of
+    // that function are NOT ported on purpose:
     //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
     //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
     //     the value it wants, and halving it again would refine the seed twice.
@@ -3649,8 +3667,9 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     const size_t vid = m_worst_dist_vid;
     if (vid == static_cast<size_t>(-1)) return;
 
+    // The distance band_vertex_distance_error() chose the vertex by, printed beside it.
     const Vector3d p = m_vertex_attribute[vid].m_posf;
-    const double d = (p - m_input_complex_bvh->nearest_point(p)).norm();
+    const double d = input_complex_distance(p);
 
     // Every face incident to vid, classified.
     const auto& ve = m_vertex_extra[vid];
@@ -4048,7 +4067,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input) {
             continue;
         }
-        if (m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf)) >
+        if (input_complex_distance(m_vertex_attribute[vid].m_posf) >
             m_offset_params.envelope_size) {
             continue;
         }
@@ -4062,7 +4081,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
     std::string detail;
     for (size_t i = 0; i < n_show; ++i) {
         const size_t vid = both[i];
-        const double d = m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf));
+        const double d = input_complex_distance(m_vertex_attribute[vid].m_posf);
         detail += fmt::format("{}{} (dist to input {:.6g})", i ? ", " : "", vid, d);
     }
     log_and_throw_error(
@@ -4104,7 +4123,7 @@ void TopoOffsetTetMesh::build_offset_envelope()
     // in 2D.
     const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+    m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
     logger().info(
         "\t[offset envelope] built: {} faces, {} (eps {:.6g} = offset_envelope, "
