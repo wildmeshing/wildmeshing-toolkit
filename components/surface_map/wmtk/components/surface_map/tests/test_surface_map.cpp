@@ -364,7 +364,8 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         CHECK(label_edges_not_feature == 0);
 
         // No triangle holds both curve edges of a vertex inside a curve -- an "ear", which
-        // smoothing along the curve would flatten. Where curves meet, a corner triangle may.
+        // smoothing along the curve would flatten. Where curves meet, a corner triangle may, and
+        // so may a triangle with curves all round, a region of its own.
         std::map<uint64_t, size_t> curve_degree;
         for (const auto& e : mesh_features) {
             ++curve_degree[e[0]];
@@ -379,12 +380,97 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
                                  : std::array<uint64_t, 2>{{y, x}};
                 };
                 if (curve_degree[b] == 2 && mesh_features.count(key(a, b)) &&
-                    mesh_features.count(key(b, c))) {
+                    mesh_features.count(key(b, c)) && !mesh_features.count(key(a, c))) {
                     ++ears;
                 }
             }
         }
         CHECK(ears == 0);
+    }
+}
+
+TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
+{
+    // Single-triangle label regions -- curves all round, or curves and the open boundary --
+    // through a coarsening with the boundary free: the remeshing may not collapse one away (that
+    // would merge its curves), so every label is still there, and the map, with boundary
+    // vertices collapsing inwards among its edits, has no warning and round-trips.
+    MatrixXd V0;
+    MatrixXi F0;
+    wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V0, F0, 0);
+    // The sphere less its top cap: an open boundary.
+    surface_map::SurfaceData in;
+    std::map<int, uint64_t> vid;
+    for (int f = 0; f < F0.rows(); ++f) {
+        double y = 0;
+        for (int k = 0; k < 3; ++k) y += V0(F0(f, k), 1) / 3;
+        if (y > 0.5) continue;
+        std::array<uint64_t, 3> t;
+        for (int k = 0; k < 3; ++k) {
+            const auto [it, inserted] = vid.emplace(F0(f, k), in.vertices.size());
+            if (inserted) in.vertices.push_back(V0.row(F0(f, k)).transpose());
+            t[k] = it->second;
+        }
+        in.faces.push_back(t);
+    }
+    std::map<std::array<uint64_t, 2>, int> edge_count;
+    for (const auto& t : in.faces) {
+        for (int k = 0; k < 3; ++k) {
+            ++edge_count[{{std::min(t[k], t[(k + 1) % 3]), std::max(t[k], t[(k + 1) % 3])}}];
+        }
+    }
+    // A label of its own for every seventh triangle and for every third one on the boundary.
+    auto& label = in.face_fields["label"];
+    size_t singles = 0, on_boundary = 0;
+    for (size_t f = 0; f < in.faces.size(); ++f) {
+        bool boundary = false;
+        for (int k = 0; k < 3; ++k) {
+            const auto& t = in.faces[f];
+            boundary =
+                boundary ||
+                edge_count[{{std::min(t[k], t[(k + 1) % 3]), std::max(t[k], t[(k + 1) % 3])}}] == 1;
+        }
+        const bool single = f % 7 == 0 || (boundary && f % 3 == 0);
+        label.push_back({single ? double(f + 1) : 0.});
+        singles += single;
+        on_boundary += single && boundary;
+    }
+    REQUIRE(on_boundary > 0);
+    std::vector<Eigen::Vector3d> verts(in.vertices.begin(), in.vertices.end());
+    std::vector<std::array<size_t, 3>> tris;
+    for (const auto& f : in.faces) tris.push_back({{size_t(f[0]), size_t(f[1]), size_t(f[2])}});
+    const auto features = label_boundaries(in);
+
+    for (const int threads : {0, 4}) {
+        INFO("threads " << threads);
+        isotropic_remeshing::IsotropicRemeshing m(verts, threads);
+        m.create_mesh(verts.size(), tris, {}, false, 0, 0);
+        m.set_feature_edges(features);
+        const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        for (const auto& e : m.feature_edges())
+            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        m.uniform_remeshing(1.5 * m.average_len_valen()[0], 3);
+        m.consolidate_mesh();
+        m.stop_history();
+
+        const SurfaceMap map(rec->history());
+        INFO(
+            "build: not a disk " << map.build_warnings().not_a_disk << ", flat "
+                                 << map.build_warnings().flat_triangle << ", inverted "
+                                 << map.build_warnings().inverted);
+        CHECK(map.build_warnings().total() == 0);
+        size_t trip_warnings = 0;
+        CHECK(
+            round_trip(map, sample(map.input_face_alive(), 3, 7), true, trip_warnings) <
+            kRoundTrip);
+        CHECK(trip_warnings == 0);
+
+        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
+        std::set<double> labels_in, labels_out;
+        for (const auto& l : label) labels_in.insert(l[0]);
+        for (const auto& l : out.face_fields.at("label")) labels_out.insert(l[0]);
+        CHECK(labels_out == labels_in);
+        CHECK(out.faces.size() < in.faces.size()); // it did coarsen
     }
 }
 
