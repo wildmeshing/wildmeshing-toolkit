@@ -234,6 +234,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face offset_foldover
     /// and the end-of-run [foldover] count. See the spec doc.
     double foldover_angle = 30.;
+    /// DEBUG (2026-10-20), 3D: debug frames for a remote machine short on space -- overrides
+    /// DEBUG_output (sets it, so every debug computation runs) and writes only the constructed
+    /// mesh, each TetWild pass's start and every iteration of it, the end of the construction
+    /// TetWild pass, the end of every turn of the loop, and the final mesh. See the spec doc.
+    bool debug_remote_output = false;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -437,6 +442,10 @@ struct Parameters : public wmtk::OptimizerParameters
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
+        debug_remote_output = json_params["DEBUG_remote_output"];
+        // DEBUG_remote_output overrides DEBUG_output: everything debug output computes is on, and
+        // the frames follow the remote schedule (TopoOffsetTetMesh::remote_frames()).
+        if (debug_remote_output) debug_output = true;
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];

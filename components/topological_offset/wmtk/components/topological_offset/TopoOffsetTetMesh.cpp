@@ -1396,7 +1396,7 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
         bool dummy = is_simplicially_embedded(); // internally prints to console
     }
     consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
+    if (stage_frames()) { // intermediate output
         write_debug_frame("simplicial_embedding");
     }
 
@@ -1413,7 +1413,7 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     marching_tets();
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
+    if (stage_frames()) { // intermediate output
         write_debug_frame("marching");
     }
 
@@ -1422,7 +1422,7 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     consolidate_mesh();
     set_offset_tet_tags();
     consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
+    if (stage_frames()) { // intermediate output
         write_debug_frame("offset_tagged");
     }
 
@@ -1701,7 +1701,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     bool done = report("before");
     // The engine's per-pass frames are the loop's numbered series; these passes write their own.
     // m_params and m_offset_params are one object, so the flag is read before it is switched off.
-    const bool frames = m_params.debug_output;
+    const bool frames = stage_frames();
     m_params.debug_output = false;
     int k = 0;
     while (!done && k < n_passes) {

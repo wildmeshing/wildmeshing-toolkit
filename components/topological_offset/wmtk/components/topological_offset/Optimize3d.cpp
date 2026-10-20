@@ -4812,7 +4812,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     final_amips,
                     optimization_stop_metric(),
                     m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
-                if (m_offset_params.debug_output) {
+                // Under DEBUG_remote_output the "final" frame at the end of optimize_offset() is
+                // this mesh.
+                if (m_offset_params.debug_output && !remote_frames()) {
                     write_optimization_debug_output(fmt::format("end_{}F", it + 2));
                 }
             }
@@ -4844,6 +4846,11 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
     m_op_rules = OpRules::TetWild;
     const bool plastic_was = m_plastic_active;
     m_plastic_active = false;
+    // DEBUG_remote_output: the pass's start frame; its iterations' frames come from
+    // optimization_iteration_done().
+    if (remote_frames()) {
+        write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
+    }
     mesh_improvement(max_its);
     logger().info(
         "\t[split order] {}: waited {} | committed off the longest edge {}",
@@ -5204,7 +5211,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     optimization_metrics.clear();
 
     // Frame 0 is the mesh as constructed, before the optimization touches it.
-    if (m_params.debug_output) {
+    if (remote_frames()) {
+        write_debug_frame("construction"); // DEBUG_remote_output's first frame
+    } else if (m_params.debug_output) {
         m_debug_pass_name = "construction";
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
@@ -5411,6 +5420,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 floor_fact);
         }
     }
+
+    // DEBUG_remote_output: the final mesh, the one the driver writes.
+    if (remote_frames()) write_debug_frame("final");
 
     // Foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in the
     // delivered mesh, not a debug curiosity, so it is reported whether or not debug_output wrote

@@ -2769,6 +2769,27 @@ TEST_CASE("foldover-face-angle", "[offset][3d]")
     CHECK_FALSE(mesh.front_face_is_foldover(0, 1, 2));
 }
 
+TEST_CASE("debug-remote-output-key", "[offset][3d]")
+{
+    // DEBUG_remote_output: off by default; true overrides DEBUG_output (sets it), so every debug
+    // computation runs while the frames follow the remote schedule.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.debug_remote_output);
+    CHECK_FALSE(by_default.debug_output);
+    const Parameters remote(injected({{"DEBUG_remote_output", true}, {"DEBUG_output", false}}));
+    CHECK(remote.debug_remote_output);
+    CHECK(remote.debug_output);
+}
+
 TEST_CASE("op-rules-switch", "[offset][3d]")
 {
     // m_op_rules: in the loop the engine's AMIPS^3 rules admit everything, the smoother gets the

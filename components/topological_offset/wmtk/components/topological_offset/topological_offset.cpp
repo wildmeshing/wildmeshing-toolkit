@@ -410,9 +410,9 @@ void topological_offset(nlohmann::json json_params)
         mesh.m_init_counts[2] = mesh.get_faces().size();
         mesh.m_init_counts[3] = mesh.tet_size();
 
-        // output input complex and entire mesh as vtu
+        // output input complex and entire mesh as vtu (DEBUG_remote_output: the complex alone)
         if (mesh.m_offset_params.debug_output) {
-            mesh.write_debug_frame("input");
+            if (mesh.stage_frames()) mesh.write_debug_frame("input");
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 

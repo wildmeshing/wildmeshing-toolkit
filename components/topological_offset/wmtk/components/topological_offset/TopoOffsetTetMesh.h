@@ -2422,6 +2422,8 @@ public:
      */
     void write_optimization_debug_output(const std::string& path) override
     {
+        // DEBUG_remote_output: no per-operation or per-smoothing-pass frame (remote_frames()).
+        if (remote_frames() && path.rfind("debug_", 0) == 0) return;
         const char ph = m_tetwild_pass ? 'F' : 'S'; // a TetWild pass, or the loop
         if (m_round != m_debug_last_round || ph != m_debug_last_tag ||
             m_frame_prefix != m_debug_last_prefix) {
@@ -2445,6 +2447,19 @@ public:
             label = fmt::format("{}r{}{}_end", g, m_round, ph);
         }
         write_debug_frame(label);
+    }
+    /// DEBUG_remote_output: the sparse frame schedule (see the spec doc) instead of DEBUG_output's.
+    bool remote_frames() const { return m_offset_params.debug_remote_output; }
+    /// The construction stages' frames (input, simplicial embedding, march, tagging, repulsion):
+    /// DEBUG_output's, none under DEBUG_remote_output.
+    bool stage_frames() const { return m_offset_params.debug_output && !remote_frames(); }
+    /// DEBUG_remote_output: a frame after every iteration of a TetWild pass (mesh_improvement()
+    /// runs only in tetwild_pass()), labelled "<prefix>r<turn>F_it<k>".
+    void optimization_iteration_done(const int it) override
+    {
+        if (remote_frames()) {
+            write_debug_frame(fmt::format("{}r{}F_it{}", m_frame_prefix, m_round, it + 1));
+        }
     }
     /// One line of <output>_frames.txt; truncates the file on the first frame.
     void append_frame_label(size_t idx, const std::string& label) const;

@@ -49,6 +49,7 @@
       "EXPERIMENTAL_refine_construction",
       "EXPERIMENTAL_refine_construction_factor",
       "foldover_angle",
+      "DEBUG_remote_output",
       "EXPERIMENTAL_amips_pow",
       "TESTING_allow_mult_comp",
       "check_manifoldness",
@@ -434,6 +435,12 @@
     "type": "bool",
     "default": false,
     "doc": "Write debug VTU frames of the evolving mesh, in both dimensions: one frame after every operation pass and every smoothing pass, as sequential <output>_NNNNN.vtu files so ParaView loads them as one time series, plus <output>_frames.txt carrying one 'NNNNN<tab>r<turn><phase><pass>_<op>' line per frame, which the viewer scripts read for their labels; in 3D also <output>_energy.txt, one 'NNNNN<tab>label<tab>band term<tab>AMIPS term' line per frame, the energy's two parts (see offset_amips_weight). Expect hundreds of frames on a real model; observational only, the frames cannot change the run."
+  },
+  {
+    "pointer": "/DEBUG_remote_output",
+    "type": "bool",
+    "default": false,
+    "doc": "DEBUG (2026-10-20), 3D. A sparser debug-frame schedule for runs on a machine short on disk space. true OVERRIDES DEBUG_output: it is set to true, so everything debug output computes runs as usual (the frames carry the same fields, <output>_input_complex.vtu, <output>_energy.txt and <output>_frames.txt are written), but frames are written only at these points: the mesh as constructed, just before the optimization (label 'construction'); at the start of each TetWild pass ('<prefix>r<turn>F_start': EXPERIMENTAL_refine_construction's or EXPERIMENTAL_construction_tetwild_run's before the loop, the final pass after it) and after each of its iterations ('<prefix>r<turn>F_it<k>'); after the construction TetWild pass, before the loop (its end frame); after every turn of the loop ('<prefix>r<turn>S_end': one frame per split / smooth / collapse / smooth / swap / smooth cycle, after the turn's refinement; every growth stage and the init_optimize loop included); and the final mesh ('final', after the final pass when one runs). Not written: the input, the construction stages before the constructed mesh, the repulsion passes, and every per-operation and per-smoothing-pass frame. false (the default): DEBUG_output decides, with its usual frames."
   },
   {
     "pointer": "/log_file",
