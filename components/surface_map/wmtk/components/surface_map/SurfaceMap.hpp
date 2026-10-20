@@ -24,8 +24,9 @@ struct MapWarnings
 {
     /// A collapse whose patch is not a disk; its faces are mapped by relabelling alone.
     size_t not_a_disk = 0;
-    /// A collapse along the boundary whose patch holds a triangle with all three corners on the
-    /// straight segment the boundary is flattened to.
+    /// A collapse along the boundary or a curve with no triangle after it holding the edge that
+    /// replaces the removed vertex's two: flattened onto a chord instead, where a triangle with
+    /// all three corners on it goes flat.
     size_t flat_triangle = 0;
     /// An atlas with a triangle that is not positively oriented.
     size_t inverted = 0;
@@ -80,16 +81,21 @@ public:
 
     /// How many operations needed a local map, by kind (index: history::EditKind).
     const std::array<size_t, 8>& cells_by_kind() const { return m_cells_by_kind; }
-    /// Collapses that removed a vertex on the boundary or on a feature curve: on each side, its
-    /// two edges along it were flattened to one chord.
-    size_t chord_collapses() const { return m_chord_collapses; }
+    /// Sides of collapses that removed a vertex on the boundary or on a feature curve. Its two
+    /// edges along the curve become one; the map splits the triangle holding that new edge
+    /// virtually where the removed vertex was, so both sides keep their area.
+    size_t curve_collapses() const { return m_curve_collapses; }
 
 private:
-    /// A face of a patch with the domain position of each of its corners.
+    /// A face of a patch with the domain position of each of its corners -- or a piece of one:
+    /// a face the map splits virtually appears as several, each with its corners given as
+    /// barycentric coordinates in the face.
     struct Face
     {
         uint64_t fid;
         std::array<Eigen::Vector2d, 3> uv;
+        std::array<Eigen::Vector3d, 3> sub = {
+            {Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ()}};
     };
     /// One flattened patch: the faces it covers before and after an edit, in a shared domain.
     struct Cell
@@ -114,7 +120,7 @@ private:
     std::vector<size_t> m_warned_edits;
     mutable MapWarnings m_map_warnings;
     std::array<size_t, 8> m_cells_by_kind = {};
-    size_t m_chord_collapses = 0;
+    size_t m_curve_collapses = 0;
 
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 3>> m_in_faces, m_out_faces;

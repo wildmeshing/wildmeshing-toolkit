@@ -62,9 +62,10 @@ public:
      * A vertex on two feature edges is on a curve; one with one, or with three or more, ends a
      * curve or joins several, and stays where it is. A split of a feature edge leaves two
      * feature halves. A curve vertex collapses only along its curve, onto the survivor's
-     * position, and not where that would flatten a triangle onto the curve; a vertex off every
-     * curve collapses as before, onto the survivor's position if that one is on a curve. A
-     * feature edge is never swapped, and a curve vertex is smoothed along its curve only.
+     * position; a vertex off every curve collapses as before, onto the survivor's position if
+     * that one is on a curve. A feature edge is never swapped, and a curve vertex is smoothed
+     * along its curve only. No swap or collapse makes a triangle holding two curve edges, and
+     * remove_feature_ears() removes the ones the input has.
      *
      * These are the rules wmtk::history::Replay carries feature edges by, so a recorded history
      * holds the curves at every step.
@@ -77,15 +78,19 @@ public:
     /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
     void consolidate_mesh();
     /**
-     * @brief Swaps away the triangles that hold two feature edges.
+     * @brief Removes the triangles that hold two feature edges -- "ears".
      *
-     * Three consecutive curve vertices a, b, c that span a triangle leave b a single triangle on
-     * that side, which smoothing along the curve would flatten onto it and which no collapse can
-     * remove. Swapping the edge (a, c) gives b two triangles there. Refused where the swap would
-     * make a new such triangle or turn one over. Serial; returns the number of swaps. No other
-     * operation makes one (swap_edge_before refuses to), but the input can hold them.
+     * Three consecutive curve vertices a, b, c that span a triangle leave b that triangle alone
+     * on one side, and smoothing b along the curve would flatten it. Swapping the edge (a, c)
+     * gives b two triangles there; where that is not possible -- (a, c) is a curve or the
+     * boundary, or the swap would make a new ear or turn a triangle over -- b collapses along
+     * the curve and the corner goes. Where a curve zigzags, removing one ear can make the next,
+     * so call it until it removes none. No other swap or collapse makes an ear, but the input
+     * can hold them. Serial; returns the number removed.
      */
-    size_t swap_feature_ears();
+    size_t remove_feature_ears();
+    /// Whether `v` is on a curve and one triangle holds both of its curve edges.
+    bool is_feature_ear_tip(const Tuple& v) const;
 
     int retry_limit = 10;
     IsotropicRemeshing(
@@ -209,6 +214,8 @@ public:
 private:
     wmtk::AttributeContainerGroup m_vertex_group;
     bool m_has_features = false;
+    /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
+    bool m_removing_ears = false;
 };
 
 } // namespace wmtk::components::isotropic_remeshing
