@@ -76,6 +76,16 @@ public:
     size_t feature_degree(size_t v) const;
     /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
     void consolidate_mesh();
+    /**
+     * @brief Swaps away the triangles that hold two feature edges.
+     *
+     * Three consecutive curve vertices a, b, c that span a triangle leave b a single triangle on
+     * that side, which smoothing along the curve would flatten onto it and which no collapse can
+     * remove. Swapping the edge (a, c) gives b two triangles there. Refused where the swap would
+     * make a new such triangle or turn one over. Serial; returns the number of swaps. No other
+     * operation makes one (swap_edge_before refuses to), but the input can hold them.
+     */
+    size_t swap_feature_ears();
 
     int retry_limit = 10;
     IsotropicRemeshing(

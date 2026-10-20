@@ -11,6 +11,9 @@
 
 #include <surface_map_spec.hpp>
 
+#include <algorithm>
+#include <cmath>
+
 namespace wmtk::components::surface_map {
 
 namespace {
@@ -88,6 +91,16 @@ void surface_map(nlohmann::json json_params)
         "{} side(s) of collapses flattened along the boundary or a feature curve",
         map.chord_collapses());
     log_warnings("building the map", map.build_warnings());
+    for (size_t i = 0; i < std::min<size_t>(map.warned_edits().size(), 5); ++i) {
+        const size_t k = map.warned_edits()[i];
+        const auto& e = h.edits[k];
+        logger().warn(
+            "  edit {} (kind {}): vertices {}, faces {}",
+            k,
+            int(e.kind),
+            nlohmann::json(e.v).dump(),
+            nlohmann::json(e.faces).dump());
+    }
 
     if (json_params["operation"] == "transfer") {
         const std::string input = resolve_path(root, json_params["input"]).string();
@@ -113,6 +126,48 @@ void surface_map(nlohmann::json json_params)
             timer.getElapsedTimeInSec(),
             output);
         return;
+    }
+
+    // info: the shape of the output's triangles, by how many feature edges they have.
+    {
+        const auto& V = map.output_vertices();
+        const auto& F = map.output_faces();
+        const auto& fe = map.output_feature_edges();
+        std::array<std::vector<double>, 3> min_angles; // 0, 1, 2+ feature edges
+        for (uint64_t f = 0; f < F.size(); ++f) {
+            if (!map.output_face_alive()[f]) continue;
+            double a_min = 180;
+            int n_feature = 0;
+            for (int k = 0; k < 3; ++k) {
+                const Eigen::Vector3d& p = V[F[f][k]];
+                const Eigen::Vector3d u = V[F[f][(k + 1) % 3]] - p, w = V[F[f][(k + 2) % 3]] - p;
+                const double c = u.dot(w) / (u.norm() * w.norm());
+                a_min = std::min(a_min, std::acos(std::clamp(c, -1., 1.)) * 180 / M_PI);
+                uint64_t a = F[f][k], b = F[f][(k + 1) % 3];
+                if (a > b) std::swap(a, b);
+                n_feature += fe.count({{a, b}}) > 0;
+            }
+            min_angles[std::min(n_feature, 2)].push_back(a_min);
+        }
+        const char* what[3] = {"no feature edge", "one feature edge", "two or more"};
+        for (int c = 0; c < 3; ++c) {
+            auto& a = min_angles[c];
+            if (a.empty()) continue;
+            std::sort(a.begin(), a.end());
+            const auto below = [&a](double t) {
+                return size_t(std::lower_bound(a.begin(), a.end(), t) - a.begin());
+            };
+            logger().info(
+                "output faces with {}: {} -- min angle {:.3g} deg, 1st percentile {:.3g}, below "
+                "1 deg {}, below 5 deg {}, below 10 deg {}",
+                what[c],
+                a.size(),
+                a.front(),
+                a[a.size() / 100],
+                below(1),
+                below(5),
+                below(10));
+        }
     }
 
     // info: the output's face centroids to the input and back.

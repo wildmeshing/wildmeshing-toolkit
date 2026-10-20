@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <set>
 #include <vector>
 
 namespace wmtk::components::surface_map {
@@ -62,6 +63,8 @@ public:
 
     /// What building the map found.
     const MapWarnings& build_warnings() const { return m_build_warnings; }
+    /// The edits (indices into the history) whose local map raised a build warning.
+    const std::vector<size_t>& warned_edits() const { return m_warned_edits; }
     /// What the last to_input() / to_output() found.
     const MapWarnings& map_warnings() const { return m_map_warnings; }
 
@@ -72,6 +75,8 @@ public:
     const std::vector<Eigen::Vector3d>& output_vertices() const { return m_out_vertices; }
     const std::vector<std::array<uint64_t, 3>>& output_faces() const { return m_out_faces; }
     const std::vector<uint8_t>& output_face_alive() const { return m_out_face_alive; }
+    /// The feature edges at the end, smaller vertex id first.
+    const std::set<std::array<uint64_t, 2>>& output_feature_edges() const { return m_out_features; }
 
     /// How many operations needed a local map, by kind (index: history::EditKind).
     const std::array<size_t, 8>& cells_by_kind() const { return m_cells_by_kind; }
@@ -106,6 +111,7 @@ private:
 
     std::vector<Step> m_steps;
     MapWarnings m_build_warnings;
+    std::vector<size_t> m_warned_edits;
     mutable MapWarnings m_map_warnings;
     std::array<size_t, 8> m_cells_by_kind = {};
     size_t m_chord_collapses = 0;
@@ -113,6 +119,7 @@ private:
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 3>> m_in_faces, m_out_faces;
     std::vector<uint8_t> m_in_face_alive, m_out_face_alive;
+    std::set<std::array<uint64_t, 2>> m_out_features;
 };
 
 } // namespace wmtk::components::surface_map
