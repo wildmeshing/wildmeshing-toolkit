@@ -223,7 +223,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-19), 3D, with optimize_offset: after the march, the front vertices
     /// get the sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and
     /// the construction TetWild pass runs (the offset surface in a tube of half the traced
-    /// distance, this pass only; AMIPS alone, no band term; TopoOffsetTetMesh::refine_front_pass()).
+    /// distance, this pass only; TetWild's own rules, no band term;
+    /// TopoOffsetTetMesh::refine_front_pass()).
     /// Its operations carry the field: the loop starts from it. See the spec doc.
     bool refine_construction = false;
     /// EXPERIMENTAL (2026-10-19), 3D, with refine_construction: "a" in that sizing scalar. Default 10.

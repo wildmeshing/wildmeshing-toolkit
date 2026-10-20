@@ -257,9 +257,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
         // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
-        // engine rolls a refused split back. The loop's gate: refine_front_pass()'s splits are
-        // the refinement it asks for.
-        if (m_offset_params.split_energy_gate && !m_refine_front_active &&
+        // engine rolls a refused split back. The loop's gate: TetWild's rules (m_op_rules, every
+        // TetWild pass) have no split rule.
+        if (m_offset_params.split_energy_gate && !tetwild_rules() &&
             !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;

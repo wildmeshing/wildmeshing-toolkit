@@ -2762,6 +2762,47 @@ TEST_CASE("foldover-face-angle", "[offset][3d]")
     CHECK_FALSE(mesh.front_face_is_foldover(0, 1, 2));
 }
 
+TEST_CASE("op-rules-switch", "[offset][3d]")
+{
+    // m_op_rules: in the loop the engine's AMIPS^3 rules admit everything, the smoother gets the
+    // component's energy and the projected step the ring's sum of tet_energy(); under TetWild's
+    // rules (every TetWild pass) the base's own: q <= ring_max for a collapse, after < before for
+    // a swap, no extra energy (the raw AMIPS sum), the base's ring measure. One unit tet.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    REQUIRE(mesh.m_vertex_attribute[0].m_is_rounded);
+    const std::vector<TetMesh::Tuple> ring =
+        mesh.get_one_ring_tets_for_vertex(mesh.tuple_from_vertex(0));
+    for (const auto& t : ring) mesh.set_cell_quality(t.tid(mesh), mesh.get_quality(t));
+
+    REQUIRE(mesh.m_op_rules == TopoOffsetTetMesh::OpRules::Loop);
+    CHECK(mesh.collapse_quality_allowed(0, 2., 1.));
+    CHECK(mesh.swap_quality_allowed(2., 1., false));
+    CHECK(mesh.smoothing_extra_energy(0) != nullptr);
+    CHECK(mesh.smoothing_ring_energy(ring, true) == mesh.tet_energy(ring[0].tid(mesh)));
+
+    mesh.m_op_rules = TopoOffsetTetMesh::OpRules::TetWild;
+    CHECK_FALSE(mesh.collapse_quality_allowed(0, 2., 1.));
+    CHECK(mesh.collapse_quality_allowed(0, 1., 2.));
+    CHECK_FALSE(mesh.swap_quality_allowed(2., 1., false));
+    CHECK_FALSE(mesh.swap_quality_allowed(1., 1., false));
+    CHECK(mesh.swap_quality_allowed(1., 2., false));
+    CHECK(mesh.smoothing_extra_energy(0) == nullptr);
+    CHECK(
+        mesh.smoothing_ring_energy(ring, true) ==
+        mesh.TetOptimizerMesh::smoothing_ring_energy(ring, true));
+}
+
 TEST_CASE("damping-loop-only", "[offset][3d]")
 {
     // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is

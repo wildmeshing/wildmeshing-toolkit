@@ -263,7 +263,8 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) con
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    // A TetWild pass scores every cell by its AMIPS term alone (m_tetwild_pass).
+    // In a TetWild pass a cell's energy is its AMIPS term alone (m_tetwild_pass); there only the
+    // logs and frames read it, the rules being TetWild's own (m_op_rules).
     return cell_energy(vids, a3, band_term && !m_tetwild_pass && cell_is_offset_band(tid));
 }
 
@@ -509,6 +510,8 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     }
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has label 2, the label every new cell takes.
+    // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
+    if (tetwild_rules()) return true;
     const bool band_cancels = band_term_cancels(tids);
     m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search and the face swap's gate read candidate cells' labels from;
@@ -613,6 +616,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     }
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has only band sides, and every new cell takes one or the flip is refused.
+    // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
+    if (tetwild_rules()) return true;
     const bool band_cancels = band_term_cancels(tids);
     m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search reads candidate cells' labels from; see SwapRecord. After
@@ -812,7 +817,9 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
 {
     // See the declaration. The sum of the energy over the cells, double::max() for an inverted
     // one as the base does: the current cells are real and read from the mesh, a candidate's do
-    // not exist yet and are scored by candidate_energy().
+    // not exist yet and are scored by candidate_energy(). TetWild's rules (m_op_rules): the
+    // base's score, the max of AMIPS^3 over the cells.
+    if (tetwild_rules()) return TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
     double e = -1.;
     if (op_case == 0) {
         // The old cells are the ring the before-half already measured (swap_before_interior() /
@@ -885,6 +892,8 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     //
     // Every refusal below is counted in the per-kind table alone (swap_reject_kind_only()), so
     // the edge-swap line swap_reject_report() prints is untouched by face swaps.
+    // TetWild's rules (m_op_rules): the base itself, its gate on the max of AMIPS^3.
+    if (tetwild_rules()) return TetOptimizerMesh::swap_face_before(t);
     if (!TetMesh::swap_face_before(t)) {
         return swap_reject_kind_only(SwapReject::base_before);
     }
@@ -1047,6 +1056,9 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // for this after-hook refusal (SwapReject lives in the engine, which this does not change);
     // a face swap counts in the per-kind table alone, as the engine counts its own refusals.
     const auto energy_lowered = [&]() {
+        // TetWild's rules (m_op_rules): the engine's max rule decided before this hook (3-2 and
+        // 4-4: swap_quality_allowed(); 5-6: the case scores; face swap: the gate); no sum rule.
+        if (tetwild_rules()) return true;
         // without the band term when the before-sum left it out (BAND TERM THAT CANCELS)
         const double after_sum = tet_energy_sum(tids, !m_swap_record.local().band_cancels);
         if (m_params.perform_sanity_checks) swap_scoring_check(tids, after_sum);
@@ -1196,8 +1208,9 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     }
     // The energy rule's before-half (see CollapseVolume): the sum of tet_energy() over v1's ring,
     // the cells the collapse changes, and v2's other cells, which it does not. Not in coarsening,
-    // where the engine skips its own collapse rule as well.
-    if (!m_coarsen_mode) {
+    // where the engine skips its own collapse rule as well, and not under TetWild's rules
+    // (m_op_rules), where the engine's collapse_quality_allowed() decides.
+    if (!m_coarsen_mode && !tetwild_rules()) {
         std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
         CollapseVolume& cv = m_collapse_volume.local();
         // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): the new
@@ -1317,7 +1330,7 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // (plastic_tie(), decided in collapse_before_vertex()) is not gated by the energy; it is
     // still refused for a cell the engine cannot score. Coarsening runs in the final pass, where
     // the plastic medium is off.
-    if (!m_coarsen_mode) {
+    if (!m_coarsen_mode && !tetwild_rules()) {
         const CollapseVolume& cv = m_collapse_volume.local();
         double after = 0.;
         bool scoreable = true;
@@ -1478,7 +1491,9 @@ polysolve::nonlinear::Solver& TopoOffsetTetMesh::smoothing_solver()
             1,
             opt_logger());
     }
-    solver->stop_criteria().relGradNorm = kSmoothRelGradNormTol;
+    // TetWild's rules (m_op_rules): the engine's own criterion, basic_nonlinear_solver_params'
+    // rel_grad_norm_tol 0.
+    solver->stop_criteria().relGradNorm = tetwild_rules() ? 0. : kSmoothRelGradNormTol;
     return *solver;
 }
 
@@ -1530,13 +1545,18 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // The repulsion passes before the march (repulsion_smoothing()); false at every other time.
     if (is_repulsion_vertex(vid)) return smooth_repulsion_vertex(t);
 
+    // TetWild's rules (m_op_rules): TetWild's own smoother, every vertex -- the raw sum of AMIPS
+    // over the ring (smoothing_extra_energy() gives none), its quality veto on the ring's max, a
+    // held vertex's projected step on the max (smoothing_ring_energy()); the front held in its
+    // tube by smoothing_energy_envelope() like any held vertex.
+    if (tetwild_rules()) return TetOptimizerMesh::smooth_after(t);
+
     // A front vertex goes through the shared smoother -- same solver, line search and accept
     // tests as every other vertex -- with the offset's options: its objective carries the offset
     // terms (smoothing_extra_energy), and the veto is on the ring's sum of tet_energy() instead
     // of AMIPS, since a front vertex must be able to worsen its ring's shape on the way to the
     // level set but not the energy, which charges both (see smooth_front_vertex()). Every other
-    // vertex minimises the same energy (smooth_nonfront_vertex()) -- and in a TetWild pass the
-    // front too, as a vertex held in its tube (smoothing_envelope()) whose energy is AMIPS alone.
+    // vertex minimises the same energy (smooth_nonfront_vertex()). A TetWild pass returned above.
     if (ve.m_is_on_offset && !m_tetwild_pass) {
         const bool ok = smooth_front_vertex(t);
         if (ok) ++m_smooth_trace.offset_accepted;
@@ -3760,7 +3780,7 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     if (!m_vertex_attribute[vid].m_is_rounded) {
         fate = "REFUSED by smooth_before: not rounded";
     } else if (m_tetwild_pass && ve.m_is_on_offset) {
-        fate = "a TetWild pass: AMIPS alone, held in the offset tube (smooth_nonfront_vertex)";
+        fate = "a TetWild pass: TetWild's smooth_after() (raw AMIPS sum), held in the offset tube";
     } else if (ve.m_is_on_offset) {
         fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
     }
@@ -4811,11 +4831,14 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
 {
     // The final envelopes -- the front's tube, and m_envelope widened to every region boundary
-    // as placement left them (build_final_envelopes()). Every cell's energy its AMIPS term alone
-    // (m_tetwild_pass: no band term; no plastic medium, so AMIPS is against the regular tet), the
-    // quality the pass is driving down; the front smoothed inside its tube like any held vertex.
+    // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
+    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
+    // (AMIPS against the regular tet); the front smoothed inside its tube like any held vertex.
     build_final_envelopes();
     m_tetwild_pass = true;
+    // TetWild's own rules for the operations and the smoother (m_op_rules).
+    const OpRules rules_was = m_op_rules;
+    m_op_rules = OpRules::TetWild;
     const bool plastic_was = m_plastic_active;
     m_plastic_active = false;
     mesh_improvement(max_its);
@@ -4825,6 +4848,7 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
         m_split_order_waits.exchange(0),
         m_split_off_longest.exchange(0));
     m_plastic_active = plastic_was;
+    m_op_rules = rules_was;
     m_tetwild_pass = false;
     release_final_envelopes();
     assign_band_regions();
@@ -4972,7 +4996,8 @@ void TopoOffsetTetMesh::refine_front_pass()
         "distance M "
         "{:.6g} ({:.4g}x target_distance); sizing scalar min({} * min(M, target_distance) / l, 1) "
         "= {:.6g} (edge target {:.6g}, l {:.6g}) on {} front vertices ({} lowered), graded into "
-        "the volume; then the construction TetWild pass: AMIPS alone (no band term), the offset "
+        "the volume; then the construction TetWild pass under TetWild's own rules (raw AMIPS sum, "
+        "max-AMIPS guards; no band term), the offset "
         "surface held to eps {:.6g} (half the traced distance {:.6g}; this pass only), every other "
         "tracked surface to eps {:.6g} ========",
         M,
@@ -4997,11 +5022,9 @@ void TopoOffsetTetMesh::refine_front_pass()
     logger().info("\t[refine construction] graded, before TetWild: {}", front_sizing_report());
     // The engine's splits (the loop's EdgeSplitMode::Optimization, set by optimize_offset()) give
     // the new vertex the mean of its edge's scalars, so the field is carried through the pass.
-    m_refine_front_active = true;
     m_refine_front_tube_eps = tube_eps;
     construction_tetwild_run();
     m_refine_front_tube_eps = 0.;
-    m_refine_front_active = false;
     logger().info("\t[refine construction] after TetWild: {}", front_sizing_report());
 }
 

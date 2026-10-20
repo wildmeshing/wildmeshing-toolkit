@@ -364,16 +364,13 @@ public:
      * the loop's refinement floor, and graded into the volume (grade_sizing()). Then
      * construction_tetwild_run(): a TetWild pass (tetwild_pass()) with the offset surface held in
      * a tube of eps m_construction_distance / 2 (m_refine_front_tube_eps, this pass only; the
-     * final pass keeps offset_envelope) and every other tracked surface in m_envelope, every cell
-     * scored by its AMIPS term alone (no band term), then the loop's setup redone. Its splits are
+     * final pass keeps offset_envelope) and every other tracked surface in m_envelope, under
+     * TetWild's own rules (m_op_rules: no band term), then the loop's setup redone. Its splits are
      * the engine's (EdgeSplitMode::Optimization): the new vertex takes the mean of its edge's
      * sizing scalars, so the loop starts from the field the pass leaves. Called by
      * optimize_offset() after the "construction" frame, in place of construction_tetwild_run().
      */
     void refine_front_pass();
-    /// True while refine_front_pass() runs its TetWild pass: EXPERIMENTAL_split_energy_gate,
-    /// which is the loop's, does not hold the pass's splits back.
-    bool m_refine_front_active = false;
     /// The sizing scalar refine_front_pass() gave the front; 0 when no pass ran.
     double m_refine_front_scalar = 0.;
     /// The front's tube eps while refine_front_pass() runs its TetWild pass: half the distance the
@@ -385,8 +382,8 @@ public:
     /// target m_refine_front_scalar x l, how many over the split gate, split_edge_is_due()).
     std::string front_sizing_report() const;
     /// A TetWild pass: every tracked surface held (the final envelopes; the front in its tube,
-    /// smoothed like any held vertex), every cell's energy its equilateral AMIPS term alone
-    /// (m_tetwild_pass), mesh_improvement(max_its), everything put back and the band regions
+    /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
+    /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
     /// re-derived. Returns the max AMIPS after it. The final pass and
     /// construction_tetwild_run() both run it; `what` names it in the log.
     double tetwild_pass(const char* what, int max_its);
@@ -401,10 +398,38 @@ public:
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
-    /// held vertex, pulled to and contained in its tube (smoothing_energy_envelope()); and every
-    /// cell's energy is its equilateral AMIPS term alone, no band term (tet_energy(),
-    /// candidate_energy(), smoothing_extra_energy()). The plastic medium is off as well.
+    /// held vertex, pulled to and contained in its tube (smoothing_energy_envelope()); every
+    /// cell's energy, where it is still read (tet_energy(): the logs and frames), is its
+    /// equilateral AMIPS term alone, no band term; the plastic medium is off; and the operations
+    /// and the smoother follow TetWild's own rules (m_op_rules, set there too).
     bool m_tetwild_pass = false;
+
+    /**
+     * @brief Which rules the operations and the smoother follow -- the one switch for them.
+     *
+     *   Loop (the default; the loop and the repulsion passes): this component's energy E. Every
+     *     rule compares the SUM of tet_energy() over the cells an operation changes, before
+     *     against after: collapses (collapse_before_vertex() / collapse_after_connectivity()),
+     *     swaps (swap_after_cells(); the 4-4 / 5-6 case search, swap_edge_44_energy(), and the face
+     *     swap's gate, swap_face_before(), on candidate_energy()), the smoothing veto and the
+     *     projected step (smoothing_ring_energy()), the split gate
+     * (EXPERIMENTAL_split_energy_gate). The engine's AMIPS^3 rules admit everything
+     * (collapse_quality_allowed(), swap_quality_allowed()), and the smoother minimises the vertex's
+     * part of E (smoothing_extra_energy()) with this component's solver criterion
+     * (smoothing_solver()). TetWild (every TetWild pass: tetwild_pass() --
+     * EXPERIMENTAL_refine_construction's, EXPERIMENTAL_construction_tetwild_run's, the final pass):
+     * TetWild's own. The engine's rules on the MAX of AMIPS^3 over those cells:
+     * collapse_quality_allowed() and
+     *     swap_quality_allowed() as the base has them, the base's scores in the 4-4 / 5-6 search
+     *     and the base's face swap gate; no sum rule and no split gate. The smoother is
+     *     TetOptimizerMesh::smooth_after(): the raw sum of AMIPS over the one-ring
+     *     (AMIPSEnergy3D; no extra energy), its quality veto and projected step on the ring's max
+     *     (smoothing_ring_energy() the base's), the engine's solver criterion (rel_grad_norm_tol
+     * 0).
+     */
+    enum class OpRules { Loop, TetWild };
+    OpRules m_op_rules = OpRules::Loop;
+    bool tetwild_rules() const { return m_op_rules == OpRules::TetWild; }
 
     /**
      * @brief The tube the offset surface may not leave during a TetWild pass (tetwild_pass()), of
@@ -620,7 +645,8 @@ public:
      * comparing the sums.
      *
      * WHERE IT IS COMPARED: always as the SUM of tet_energy() over the cells an operation changes,
-     * before against after, the cells summed in the same order each time.
+     * before against after, the cells summed in the same order each time -- in the loop. In a
+     * TetWild pass none of the rules below reads it: TetWild's own decide (m_op_rules).
      *   - Collapse: before = the sum over v1's ring (collapse_before_vertex()); after = the sum
      *     over the survivor's ring less v2's old cells outside v1's ring, which keep their corners
      *     and labels (collapse_after_connectivity()). Refused unless after <= before (a tie passes,
@@ -704,7 +730,8 @@ public:
     }
     /**
      * @brief What the shared smoother's projected step compares for a vertex held on a surface:
-     * the sum of tet_energy() over the one-ring, the rule every other move answers to. The step
+     * the sum of tet_energy() over the one-ring, the rule every other move answers to (under
+     * TetWild's rules, m_op_rules, the base's max over the ring). The step
      * takes the first projected position where it is strictly below the sum before the move.
      *
      * Read on the mesh as it is in both calls: the engine asks for the value before the move
@@ -715,9 +742,10 @@ public:
      * of 21,687 held moves, 2,964 of them moves whose AMIPS part fell and whose band part rose.
      * Now the step looks on along its shorter steps for a position E accepts.
      */
-    double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool /*stored*/)
-        const override
+    double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool stored) const override
     {
+        // TetWild's rules (m_op_rules): the base's max over the ring.
+        if (tetwild_rules()) return TetOptimizerMesh::smoothing_ring_energy(ring, stored);
         double s = 0.;
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
         return s;
@@ -1730,19 +1758,23 @@ public:
     bool allow_surface_swap() const override { return true; }
 
     /**
-     * @brief Admits every swap: switches off the engine's own AMIPS^3 swap rule (`after` is the
+     * @brief In the loop (m_op_rules Loop) admits every swap; under TetWild's rules, the base's.
+     * The loop's case: switches off the engine's own AMIPS^3 swap rule (`after` is the
      * largest AMIPS^3 over the new cells, `before` that of the old cells), so the energy decides
      * in its place -- on the sum of tet_energy() over the cells the swap changes, in the 4-4 / 5-6
      * case search (swap_edge_44_energy(), swap_edge_56_energy()), the face swap's gate
      * (swap_face_before()) and swap_after_cells(). The AMIPS^3 bound cannot refuse early: the
      * energy is a sum, and a new cell's AMIPS term can rise while the sum falls.
      */
-    bool swap_quality_allowed(double /*after*/, double /*before*/, bool) const override
+    bool swap_quality_allowed(double after, double before, bool is_surface_flip) const override
     {
-        return true;
+        // TetWild's rules (m_op_rules): the base's, after < before.
+        return !tetwild_rules() ||
+               TetOptimizerMesh::swap_quality_allowed(after, before, is_surface_flip);
     }
     /**
-     * @brief The 4-4 / 5-6 case search's score, on the energy: for op_case 0 (the current cells)
+     * @brief The 4-4 / 5-6 case search's score, on the energy (under TetWild's rules, m_op_rules,
+     * the base's: the max of AMIPS^3): for op_case 0 (the current cells)
      * the sum of tet_energy() over the ring that swap_before_interior() / swap_before_surface()
      * took, the same cells the engine passes here; for a candidate (op_case >= 1) the sum of
      * candidate_energy() over `tets`; std::numeric_limits<double>::max() as soon as a cell is
@@ -1770,7 +1802,8 @@ public:
         override;
     /**
      * @brief The face (2-3) swap's before-hook: TetOptimizerMesh::swap_face_before() with its
-     * AMIPS^3 gate replaced by the energy.
+     * AMIPS^3 gate replaced by the energy -- in the loop; under TetWild's rules (m_op_rules) the
+     * base itself.
      *
      * The base gates the three new cells, each by AMIPS^3 against the max of the two cells' stored
      * AMIPS^3, and only then calls swap_before_interior(). Here the sum of candidate_energy() over
@@ -1910,10 +1943,14 @@ public:
     /// ring's band cells (band_volume_energy_at(); through front_energy() for a front vertex the
     /// loop places) unless an input envelope holds vid, or, in the passes before the march, a
     /// repulsion vertex's term once per ring cell that carries it (repulsion_energy(),
-    /// repulsion_cell_term()). In a TetWild pass the AMIPS term alone, for every vertex.
+    /// repulsion_cell_term()). Under TetWild's rules (m_op_rules) none: null, so the engine's
+    /// smoother minimises the raw sum of AMIPS over the ring.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
+        // TetWild's rules (m_op_rules): no extra energy, so the engine's smoother minimises the
+        // raw sum of AMIPS over the one-ring (AMIPSEnergy3D), as TetWild's does.
+        if (tetwild_rules()) return nullptr;
         auto sum = std::make_shared<optimization::EnergySum>();
         sum->add_energy(amips3_energy(vid));
         // Before the march (repulsion_smoothing()) there is no front.
@@ -1921,8 +1958,6 @@ public:
             sum->add_energy(repulsion_energy(vid));
             return sum;
         }
-        // A TetWild pass: every cell's energy is its AMIPS term alone (tet_energy()).
-        if (m_tetwild_pass) return sum;
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid));
             // EXPERIMENTAL_laplacian: in this objective and nowhere else -- not in tet_energy(),
@@ -2329,16 +2364,18 @@ public:
     void log_refine_block_census(const std::string& when, double filter_energy) const;
 
     /**
-     * @brief Admits every collapse: switches off the engine's own AMIPS^3 collapse rule (`q` the
+     * @brief In the loop (m_op_rules Loop) admits every collapse; under TetWild's rules, the
+     * base's. The loop's case: switches off the engine's own AMIPS^3 collapse rule (`q` the
      * AMIPS^3 of a reshaped cell, `ring_max` that of v1's ring), so the energy decides in its
      * place -- the sum of tet_energy() over the cells the collapse changes, before
      * (collapse_before_vertex()) against after (collapse_after_connectivity()). The AMIPS^3 bound
      * cannot refuse early: the energy is a sum, and a cell's AMIPS term can rise while the sum
      * falls.
      */
-    bool collapse_quality_allowed(size_t /*v1*/, double /*q*/, double /*ring_max*/) const override
+    bool collapse_quality_allowed(size_t v1, double q, double ring_max) const override
     {
-        return true;
+        // TetWild's rules (m_op_rules): the base's, q <= ring_max for a rounded v1.
+        return !tetwild_rules() || TetOptimizerMesh::collapse_quality_allowed(v1, q, ring_max);
     }
 
     mutable std::atomic<size_t> m_deg_split_created{0};
