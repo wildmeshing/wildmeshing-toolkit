@@ -1,10 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+
+#include <wmtk/AttributeCollection.hpp>
 
 #include <wmtk/components/simwild/SimWildMesh.h>
 #include <wmtk/components/simwild/SimWildMeshTri.hpp>
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <map>
 #include <set>
 #include <vector>
@@ -320,4 +324,139 @@ TEST_CASE("feature-point tracking enabled after init (2D)", "[simwild][feature_t
     REQUIRE(vertex_at(mesh, 1) != Mesh::NO_FEATURE_POINT);
     CHECK(vertex_at(mesh, 1) < newest); // the id moved with its vertex
     check_anchors_at_their_points(mesh);
+}
+
+// The same calls refuse to run while an operation pass runs: registering a collection then
+// would resize the storage under the pass's readers, unprotected by the operations in flight.
+// Each is called from a hook the pass invokes -- a split pass (run_pass) and a colored smoothing
+// sweep (utils::smooth_classes_checked), the two drivers that mark the pass -- and must throw;
+// the mark must be gone afterwards, so the same call then succeeds.
+
+namespace {
+
+struct HookedTetMesh : wmtk::components::simwild::SimWildMesh
+{
+    using SimWildMesh::SimWildMesh;
+    std::function<void(HookedTetMesh&)> during_pass;
+    void split_after_vertex(size_t, bool) override
+    {
+        if (during_pass) during_pass(*this);
+    }
+    bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const override
+    {
+        if (during_pass) during_pass(const_cast<HookedTetMesh&>(*this));
+        return SimWildMesh::smoothing_position_is_allowed(vid, p);
+    }
+};
+
+struct HookedTriMesh : wmtk::components::simwild::tri::SimWildMeshTri
+{
+    using SimWildMeshTri::SimWildMeshTri;
+    std::function<void(HookedTriMesh&)> during_pass;
+    void split_after_vertex(size_t v_new) override
+    {
+        SimWildMeshTri::split_after_vertex(v_new);
+        if (during_pass) during_pass(*this);
+    }
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override
+    {
+        if (during_pass) during_pass(const_cast<HookedTriMesh&>(*this));
+        return SimWildMeshTri::smoothing_position_is_allowed(vid, p);
+    }
+};
+
+} // namespace
+
+/// Build a fresh mesh, make `call` run from a hook of a split pass (`colored` false) or of a
+/// colored smoothing sweep (true), and check that the pass throws, that the pass mark is gone
+/// afterwards, and that the same call then succeeds.
+template <typename Mesh, typename Init>
+void check_refused_during_pass(
+    const std::function<void(Mesh&)>& call,
+    const bool colored,
+    wmtk::components::simwild::Parameters& params,
+    Init init)
+{
+    CAPTURE(colored);
+    const auto refused = Catch::Matchers::ContainsSubstring("called while an operation pass runs");
+    Mesh mesh(params, params.eps, 0);
+    init(mesh);
+    CHECK(!mesh.m_in_operation_pass);
+    if (colored) {
+        mesh.split_all_edges(); // interior vertices to smooth
+        mesh.NUM_THREADS = 2;
+        REQUIRE(mesh.use_colored_smoothing());
+        mesh.during_pass = call;
+        CHECK_THROWS_WITH(mesh.smooth_all_vertices(), refused);
+    } else {
+        mesh.during_pass = call;
+        CHECK_THROWS_WITH(mesh.split_all_edges(), refused);
+    }
+    mesh.during_pass = nullptr;
+    CHECK(!mesh.m_in_operation_pass);
+    CHECK_NOTHROW(call(mesh));
+}
+
+TEST_CASE(
+    "feature tracking cannot be enabled during an operation pass (3D)",
+    "[simwild][feature_tracking]")
+{
+    wmtk::AttributeCollection<int> extra; // outlives the meshes: the group does not own it
+    wmtk::components::simwild::Parameters params;
+    params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
+
+    {
+        // Before init() the calls run as they always did, and init() sizes the collections.
+        HookedTetMesh mesh(params, params.eps, 0);
+        mesh.enable_feature_edge_tracking();
+        mesh.enable_feature_point_tracking(true);
+        init_tet_ring(mesh);
+        CHECK(mesh.m_feature_edge_attribute.size() == 6 * mesh.tet_storage_capacity());
+        CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
+    }
+
+    const auto init = [](HookedTetMesh& m) {
+        init_tet_ring(m);
+        for (size_t vid = 0; vid < 6; ++vid) m.m_vertex_attribute[vid].m_sizing_scalar = 0.3;
+    };
+    const std::vector<std::function<void(HookedTetMesh&)>> calls = {
+        [&](HookedTetMesh& m) { m.add_edge_attributes(&extra); },
+        [](HookedTetMesh& m) { m.enable_feature_edge_tracking(); },
+        [](HookedTetMesh& m) { m.enable_feature_point_tracking(true); }};
+    for (size_t c = 0; c < calls.size(); ++c) {
+        CAPTURE(c);
+        for (const bool colored : {false, true}) {
+            check_refused_during_pass<HookedTetMesh>(calls[c], colored, params, init);
+        }
+    }
+}
+
+TEST_CASE(
+    "feature tracking cannot be enabled during an operation pass (2D)",
+    "[simwild][feature_tracking]")
+{
+    using Mesh = wmtk::components::simwild::tri::SimWildMeshTri;
+    wmtk::components::simwild::Parameters params;
+    params.init(Vector2d(-1, -1), Vector2d(2, 2));
+
+    {
+        HookedTriMesh mesh(params, params.eps, 0);
+        mesh.enable_feature_point_tracking(true);
+        init_quad(mesh);
+        CHECK(mesh.m_feature_point_attribute.size() == mesh.vert_storage_capacity());
+        for (size_t i = 0; i < mesh.m_feature_point_attribute.size(); ++i) {
+            CHECK(mesh.m_feature_point_attribute[i].m_feature_point_id == Mesh::NO_FEATURE_POINT);
+        }
+    }
+
+    const auto init = [](HookedTriMesh& m) {
+        init_quad(m);
+        for (size_t vid = 0; vid < 4; ++vid) m.m_vertex_attribute[vid].m_sizing_scalar = 0.25;
+    };
+    const std::function<void(HookedTriMesh&)> call = [](HookedTriMesh& m) {
+        m.enable_feature_point_tracking(true);
+    };
+    for (const bool colored : {false, true}) {
+        check_refused_during_pass<HookedTriMesh>(call, colored, params, init);
+    }
 }

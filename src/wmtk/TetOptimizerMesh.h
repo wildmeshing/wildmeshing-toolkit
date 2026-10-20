@@ -192,12 +192,36 @@ public:
      */
     AttributeContainerGroup m_edge_attr_group;
     /**
+     * @brief True while a pass of the shared operations runs.
+     *
+     * Set, and restored on exit or throw, by the two drivers every such pass goes through:
+     * run_pass() (utils/RunPass.cpp) and the colored smoothing sweep
+     * (utils::smooth_classes_checked). No existing state says this: the attribute collections'
+     * protect flag is per thread and per operation, so it is false between two operations of a
+     * pass and on every thread not running one. Only the calls that register a collection read
+     * it; see throw_if_in_operation_pass().
+     */
+    bool m_in_operation_pass = false;
+    /**
+     * Registering a collection resizes it, which reallocates the storage under the pass's
+     * readers, and an operation already in flight has not protected it -- nothing fails at the
+     * call, the corruption shows up later. Thrown, not asserted: release builds compile
+     * asserts out.
+     */
+    void throw_if_in_operation_pass(const char* call) const
+    {
+        if (m_in_operation_pass) {
+            log_and_throw_error(
+                "{}() called while an operation pass runs; call it before or after the pass.",
+                call);
+        }
+    }
+    /**
      * @brief Register an edge collection with m_edge_attr_group and point p_edge_attrs at the
      * group.
      *
-     * Valid before or after init(), but not while an operation pass runs: sizing reallocates
-     * the storage under concurrent readers, and an operation in flight would not have
-     * protected the new collection. Before init() the storage is empty and the resize here is
+     * Valid before or after init(), but not while an operation pass runs (it throws then; see
+     * throw_if_in_operation_pass()). Before init() the storage is empty and the resize here is
      * a no-op; init() sizes the collection with the rest. After init() the resize brings it to
      * what init() and every capacity growth size edge collections to -- one entry per tet edge
      * slot, 6 x tet_storage_capacity() -- so the registered collections keep the invariant
@@ -207,6 +231,7 @@ public:
      */
     void add_edge_attributes(AbstractAttributeContainer* c)
     {
+        throw_if_in_operation_pass("add_edge_attributes");
         m_edge_attr_group.add(c);
         p_edge_attrs = &m_edge_attr_group;
         c->resize(6 * tet_storage_capacity());
@@ -252,16 +277,17 @@ public:
      * @brief Turn on feature-edge tracking. The collection joins m_edge_attr_group beside
      * whatever the application registered there.
      *
-     * Valid before or after init(), not during an operation pass (see add_edge_attributes(),
-     * which sizes it). After init() it starts with no edge tagged, and the application tags
-     * the edges it needs. Late enabling is supported because an application may learn only
-     * from the built mesh whether its input has feature curves -- topological_offset reads
-     * that off the labels init() produces -- and enabling it for every input would make every
-     * operation cache and restore feature data it does not have (+50% wall time on the
-     * offset's triangle inputs). Idempotent: registering twice would move every tag twice.
+     * Valid before or after init(), not during an operation pass (it throws then; see
+     * add_edge_attributes(), which sizes it). After init() it starts with no edge tagged, and the
+     * application tags the edges it needs. Late enabling is supported because an application may
+     * learn only from the built mesh whether its input has feature curves -- topological_offset
+     * reads that off the labels init() produces -- and enabling it for every input would make every
+     * operation cache and restore feature data it does not have (+50% wall time on the offset's
+     * triangle inputs). Idempotent: registering twice would move every tag twice.
      */
     void enable_feature_edge_tracking()
     {
+        throw_if_in_operation_pass("enable_feature_edge_tracking");
         if (m_track_feature_edges) return;
         add_edge_attributes(&m_feature_edge_attribute);
         m_track_feature_edges = true;
@@ -331,19 +357,19 @@ public:
     /**
      * @brief Turn on feature-point tracking, and the policy when `preserve`.
      *
-     * Valid before or after init(), not during an operation pass: sizing reallocates the
-     * storage under concurrent readers, and an operation in flight would not have protected
-     * the ids. Before init() the storage is empty and the resize is a no-op; init() sizes the
-     * ids with the rest of m_vertex_attr_group. After init() the resize brings them to what
-     * init() and every capacity growth size vertex collections to, vert_storage_capacity(),
-     * with every vertex NO_FEATURE_POINT; the application then anchors what it needs. Late
-     * enabling is supported because an application may learn only from the built mesh whether
-     * its input has feature points, and enabling it for every input would make every
-     * operation cache and restore anchors it does not have. A second call changes only the
+     * Valid before or after init(), not during an operation pass (it throws then; see
+     * throw_if_in_operation_pass()). Before init() the storage is empty and the resize is a no-op;
+     * init() sizes the ids with the rest of m_vertex_attr_group. After init() the resize brings
+     * them to what init() and every capacity growth size vertex collections to,
+     * vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors
+     * what it needs. Late enabling is supported because an application may learn only from the
+     * built mesh whether its input has feature points, and enabling it for every input would make
+     * every operation cache and restore anchors it does not have. A second call changes only the
      * policy.
      */
     void enable_feature_point_tracking(const bool preserve)
     {
+        throw_if_in_operation_pass("enable_feature_point_tracking");
         if (!m_track_feature_points) {
             m_vertex_attr_group.add(&m_feature_point_attribute);
             m_feature_point_attribute.resize(vert_storage_capacity());
