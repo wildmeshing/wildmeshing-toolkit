@@ -1,0 +1,114 @@
+#pragma once
+
+#include <Eigen/Core>
+
+#include <array>
+#include <cstdint>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace wmtk::history {
+
+/**
+ * @brief The kinds of edit a triangle complex goes through.
+ *
+ * Every kind is described on the complex alone -- vertex and face ids, positions -- never on the
+ * mesh class that performed it, so a tet mesh can report the changes to its tracked surface in
+ * the same terms as a TriMesh reports its own. The ids are the recording mesh's slots: a split
+ * names the slots it was handed, and a consolidation renumbers every live vertex and face by
+ * rank, as the meshes do.
+ */
+enum class EditKind : uint8_t {
+    /// v = {v0, v1, new_v}. faces = {f, new_f} for each face on the edge: f keeps the v0 half
+    /// (v1 renamed to new_v in place) and new_f is f with v0 renamed to new_v.
+    split_edge = 1,
+    /// v = {v0, v1, v2, new_v}. faces = {f, new_f1, new_f2}: f with v0, new_f1 with v1 and new_f2
+    /// with v2 renamed to new_v, each in place.
+    split_face = 2,
+    /// v = {removed, kept}. Faces with both endpoints go; `removed` is renamed to `kept`
+    /// elsewhere. Duplicate faces this leaves at `kept` merge into the smallest fid, and a vertex
+    /// it leaves without faces is retired.
+    collapse_edge = 3,
+    /// v = {v0, v1, a, b}, faces = {fa, fb}: edge (v0,v1) becomes (a,b). In fa, which holds the
+    /// apex b, v1 is renamed to a; in fb, which holds a, v0 is renamed to b.
+    swap_edge = 4,
+    /// Only vertex positions change (smoothing, or a sweep outside any operation).
+    move_vertices = 5,
+    /// Live vertices and faces renumbered by rank, in id order.
+    consolidate = 6,
+};
+
+struct VertexMove
+{
+    uint64_t vid;
+    Eigen::Vector3d pos;
+};
+
+/// One committed operation.
+struct Edit
+{
+    EditKind kind;
+    std::vector<uint64_t> v;
+    std::vector<uint64_t> faces;
+    /// The position, after the operation, of every live vertex it wrote.
+    std::vector<VertexMove> moves;
+};
+
+/**
+ * @brief A triangle complex and the edits it went through, in commit order.
+ *
+ * Replaying the edits from the snapshot (Replay.hpp) reproduces every later state, ids
+ * included, which is what a map between the first and the last state is built from.
+ */
+struct SurfaceHistory
+{
+    /// The snapshot: every vertex and face slot, live or not.
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<uint8_t> vertex_alive;
+    std::vector<std::array<uint64_t, 3>> faces;
+    std::vector<uint8_t> face_alive;
+
+    std::vector<Edit> edits;
+
+    /// Free-form text saved with the history; the recording application's parameters, say.
+    std::string metadata;
+
+    void save(const std::string& path) const;
+    static SurfaceHistory load(const std::string& path);
+};
+
+/**
+ * @brief Collects the edits of operations that may commit concurrently.
+ *
+ * A mesh appends while it still holds the locks of the operation it is committing, so two
+ * operations whose regions overlap append in the order they committed, and the order of the
+ * edits is a valid serial order of the run.
+ *
+ * A mesh reports every vertex an operation *wrote*, which includes vertices it only read through
+ * non-const access. The recorder keeps the last position it saw for every vertex and drops the
+ * moves that leave a vertex where it was, and an edit that only moved vertices and moved none.
+ */
+class Recorder
+{
+public:
+    explicit Recorder(SurfaceHistory start);
+
+    void append(Edit&& e);
+
+    /// The ids were renumbered (a consolidation): `positions` holds every live vertex's position
+    /// under its new id, and every other id is unknown.
+    void rebase(std::vector<Eigen::Vector3d> positions);
+
+    /// Not synchronised: read it once the recording mesh is done.
+    const SurfaceHistory& history() const { return m_history; }
+    SurfaceHistory& history() { return m_history; }
+
+private:
+    std::mutex m_mutex;
+    SurfaceHistory m_history;
+    std::vector<Eigen::Vector3d> m_known;
+    std::vector<uint8_t> m_known_valid;
+};
+
+} // namespace wmtk::history

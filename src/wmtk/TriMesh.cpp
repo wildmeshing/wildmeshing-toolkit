@@ -3,6 +3,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -970,6 +971,14 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    if (m_history) {
+        history::Edit e{history::EditKind::split_edge, {vid1, vid2, new_vid}, {}, {}};
+        for (size_t i = 0; i < fids.size(); ++i) {
+            e.faces.push_back(fids[i]);
+            e.faces.push_back(new_fids[i]);
+        }
+        commit_history(std::move(e));
+    }
     release_protect_attributes();
     return true;
 }
@@ -1157,6 +1166,10 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     }
     if (dry_run()) return true; // checks done, the change would come next
 
+    // collapse_edge_conn retires the tuple's own vertex and keeps the other.
+    const size_t v_removed = loc0.vid(*this);
+    const size_t v_kept = loc0.switch_vertex(*this).vid(*this);
+
     Tuple return_t;
     size_t new_vid;
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris;
@@ -1234,6 +1247,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
 
         rollback_protected_attributes();
         return false;
+    }
+    if (m_history) {
+        commit_history({history::EditKind::collapse_edge, {v_removed, v_kept}, {}, {}});
     }
     release_protect_attributes();
     return true;
@@ -1606,6 +1622,10 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 
         return false;
     }
+    if (m_history) {
+        commit_history(
+            {history::EditKind::swap_edge, {vid1, vid2, vid3, vid4}, {test_fid1, test_fid2}, {}});
+    }
     release_protect_attributes();
     return true;
 }
@@ -1632,6 +1652,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
         rollback_protected_attributes();
         return false;
     }
+    if (m_history) commit_history({history::EditKind::move_vertices, {}, {}, {}});
     release_protect_attributes();
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
@@ -1832,6 +1853,13 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
         rollback_protected_attributes();
         return false;
     }
+    if (m_history) {
+        commit_history(
+            {history::EditKind::split_face,
+             {vid[0], vid[1], vid[2], new_vid},
+             {fid, new_fid1, new_fid2},
+             {}});
+    }
     release_protect_attributes();
     return true;
 }
@@ -1913,6 +1941,57 @@ void TriMesh::consolidate_mesh()
 
     // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
+
+    if (m_history) {
+        m_history->append({history::EditKind::consolidate, {}, {}, {}});
+        std::vector<Eigen::Vector3d> positions(v_cnt);
+        for (size_t v = 0; v < size_t(v_cnt); ++v) positions[v] = m_history_position(v);
+        m_history->rebase(std::move(positions));
+    }
+}
+
+std::shared_ptr<history::Recorder> TriMesh::start_history(
+    std::function<Eigen::Vector3d(size_t)> position)
+{
+    history::SurfaceHistory h;
+    const size_t nv = vert_capacity();
+    const size_t nf = tri_capacity();
+    h.vertices.assign(nv, Eigen::Vector3d::Zero());
+    h.vertex_alive.assign(nv, 0);
+    for (size_t v = 0; v < nv; ++v) {
+        if (m_vertex_connectivity[v].m_is_removed) continue;
+        h.vertex_alive[v] = 1;
+        h.vertices[v] = position(v);
+    }
+    h.faces.resize(nf);
+    h.face_alive.assign(nf, 0);
+    for (size_t f = 0; f < nf; ++f) {
+        const auto& t = m_tri_connectivity[f].m_indices;
+        h.faces[f] = {{t[0], t[1], t[2]}};
+        h.face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+    m_history = std::make_shared<history::Recorder>(std::move(h));
+    m_history_position = std::move(position);
+    return m_history;
+}
+
+void TriMesh::stop_history()
+{
+    m_history.reset();
+    m_history_position = nullptr;
+}
+
+void TriMesh::commit_history(history::Edit&& e)
+{
+    std::vector<size_t> written;
+    if (p_vertex_attrs) p_vertex_attrs->append_recorded(written);
+    std::sort(written.begin(), written.end());
+    written.erase(std::unique(written.begin(), written.end()), written.end());
+    for (const size_t v : written) {
+        if (v >= vert_capacity() || m_vertex_connectivity[v].m_is_removed) continue;
+        e.moves.push_back({v, m_history_position(v)});
+    }
+    m_history->append(std::move(e));
 }
 
 

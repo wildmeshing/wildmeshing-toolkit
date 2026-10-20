@@ -7,6 +7,7 @@
 
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -80,6 +81,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool freeze_boundary = json_params["freeze_boundary"];
     const bool use_link_condition = json_params["use_link_condition"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const std::string history_output = json_params["history_output"];
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -149,8 +151,22 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        history->history().metadata = json_params.dump();
+    }
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
+
+    if (history) {
+        m.stop_history();
+        history->history().save(history_output);
+        logger().info(
+            "history: {} edits saved to {}",
+            history->history().edits.size(),
+            history_output);
+    }
 
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid after remeshing!");
