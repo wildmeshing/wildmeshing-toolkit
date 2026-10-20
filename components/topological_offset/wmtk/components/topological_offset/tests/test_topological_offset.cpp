@@ -2662,11 +2662,12 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
     }
 }
 
-TEST_CASE("refine-input-keys", "[offset][3d]")
+TEST_CASE("refine-construction-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_refine_input and EXPERIMENTAL_refine_input_factor through the spec, as the app
-    // reads them: the defaults (off, a = 10), values read through, and the refusals -- a factor
-    // that is not > 0, and a factor other than the default with the pass off.
+    // EXPERIMENTAL_refine_construction and EXPERIMENTAL_refine_construction_factor through the
+    // spec, as the app reads them: the defaults (off, a = 10), values read through, and the
+    // refusals -- a factor that is not > 0, a factor other than the default with the pass off, and
+    // the pass with optimize_offset false (it runs when the optimization starts).
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto injected = [&](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -2677,17 +2678,22 @@ TEST_CASE("refine-input-keys", "[offset][3d]")
         return spec_engine.inject_defaults(j, spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK_FALSE(by_default.refine_input);
-    CHECK(by_default.refine_input_factor == 10.);
-    const Parameters set(
-        injected({{"EXPERIMENTAL_refine_input", true}, {"EXPERIMENTAL_refine_input_factor", 5.}}));
-    CHECK(set.refine_input);
-    CHECK(set.refine_input_factor == 5.);
-    const nlohmann::json without_pass = injected({{"EXPERIMENTAL_refine_input_factor", 5.}});
+    CHECK_FALSE(by_default.refine_construction);
+    CHECK(by_default.refine_construction_factor == 10.);
+    const Parameters set(injected(
+        {{"EXPERIMENTAL_refine_construction", true},
+         {"EXPERIMENTAL_refine_construction_factor", 5.}}));
+    CHECK(set.refine_construction);
+    CHECK(set.refine_construction_factor == 5.);
+    const nlohmann::json without_pass = injected({{"EXPERIMENTAL_refine_construction_factor", 5.}});
     CHECK_THROWS(Parameters{without_pass});
-    const nlohmann::json zero =
-        injected({{"EXPERIMENTAL_refine_input", true}, {"EXPERIMENTAL_refine_input_factor", 0.}});
+    const nlohmann::json zero = injected(
+        {{"EXPERIMENTAL_refine_construction", true},
+         {"EXPERIMENTAL_refine_construction_factor", 0.}});
     CHECK_THROWS(Parameters{zero});
+    const nlohmann::json construction_only =
+        injected({{"EXPERIMENTAL_refine_construction", true}, {"optimize_offset", false}});
+    CHECK_THROWS(Parameters{construction_only});
     // EXPERIMENTAL_amips_pow: off by default, read through.
     CHECK_FALSE(by_default.amips_pow);
     CHECK(Parameters(injected({{"EXPERIMENTAL_amips_pow", true}})).amips_pow);
@@ -2698,7 +2704,7 @@ TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")
     // The construction's own splits (the simplicial embedding's, and the march's under
     // EdgeSplitMode::Midpoint) give the new vertex the sizing field's value where it is: the mean
     // of its edge's, face's or tet's scalars, as the engine's split does for an edge. So the field
-    // EXPERIMENTAL_refine_input leaves reaches the loop. Powers of two keep every sum exact in any
+    // set before the march reaches the loop. Powers of two keep every sum exact in any
     // order; with every scalar 1 the new one is exactly 1.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;

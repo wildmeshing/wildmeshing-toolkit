@@ -351,43 +351,39 @@ public:
     /// The final pass's envelopes: the offset surface's tube (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
-    /// then). release_final_envelopes() puts the loop's envelope back. `with_offset` false
-    /// (refine_input_pass(), before the march: there is no offset surface yet) builds no tube.
-    void build_final_envelopes(bool with_offset = true);
+    /// then). release_final_envelopes() puts the loop's envelope back.
+    void build_final_envelopes();
     void release_final_envelopes();
     /**
-     * @brief EXPERIMENTAL_refine_input: TetWild's own optimization on the embedded mesh, before
-     * the repulsion passes and the march, with the input complex's boundary refined.
+     * @brief EXPERIMENTAL_refine_construction: the offset surface as constructed refined by
+     * TetWild, before the loop.
      *
-     * The sizing scalar of every vertex on the input complex's boundary is lowered to
-     * s = min(a min(M, target_distance) / l, 1) (a = refine_input_factor, M =
-     * max_marchable_distance(), l the base edge length), kept at or above the loop's refinement
-     * floor, and graded into the volume (grade_sizing()). Then mesh_improvement() runs, up to
-     * max_iterations iterations, until max AMIPS < stop_energy: every tracked surface held
-     * (build_final_envelopes(false)), every cell scored by its AMIPS term alone (m_tetwild_pass),
-     * the vertex order computed first (the collapses' link condition reads it), and collapses and
-     * swaps that would break the simplicial embedding refused (m_refine_input_active). Its splits
-     * are the engine's (EdgeSplitMode::Optimization): the new vertex takes the mean of its edge's
-     * sizing scalars, so the field is carried through the pass rather than reset. Afterwards the
-     * construction labels are recomputed from the tags (relabel_input_complex(): an operation only
-     * ever raises a label) and the embedding is checked, and re-made if needed.
+     * The sizing scalar of every front vertex (m_is_on_offset) is lowered to
+     * s = min(a min(M, target_distance) / l, 1) (a = refine_construction_factor, M = the march's
+     * maximum marchable distance m_marchable_distance, l the base edge length), kept at or above
+     * the loop's refinement floor, and graded into the volume (grade_sizing()). Then
+     * construction_tetwild_run(): a TetWild pass (tetwild_pass()) with the offset surface held in
+     * a tube of eps m_construction_distance / 2 (m_refine_front_tube_eps, this pass only; the
+     * final pass keeps offset_envelope) and every other tracked surface in m_envelope, every cell
+     * scored by its AMIPS term alone (no band term), then the loop's setup redone. Its splits are
+     * the engine's (EdgeSplitMode::Optimization): the new vertex takes the mean of its edge's
+     * sizing scalars, so the loop starts from the field the pass leaves. Called by
+     * optimize_offset() after the "construction" frame, in place of construction_tetwild_run().
      */
-    void refine_input_pass();
-    /// The march's maximum marchable distance on the current mesh: the smallest distance to the
-    /// input complex over the outer ends of the edges marching_tets() would march (one end
-    /// labelled, one not). +inf if there is no such edge.
-    double max_marchable_distance() const;
-    /// True while refine_input_pass() runs its operations: collapses and swaps then keep the
-    /// simplicial embedding, as the repulsion rounds' do, and EXPERIMENTAL_split_energy_gate,
+    void refine_front_pass();
+    /// True while refine_front_pass() runs its TetWild pass: EXPERIMENTAL_split_energy_gate,
     /// which is the loop's, does not hold the pass's splits back.
-    bool m_refine_input_active = false;
-    /// The sizing scalar refine_input_pass() gave the input complex's boundary; 0 when no pass
-    /// ran.
-    double m_refine_input_scalar = 0.;
-    /// EXPERIMENTAL_refine_input's log: the input complex's boundary vertices (sizing scalar min /
-    /// median / max, how many still at 1 or above) and edges (median length against the edge
-    /// target m_refine_input_scalar x l, how many over the split gate, split_edge_is_due()).
-    std::string input_boundary_sizing_report() const;
+    bool m_refine_front_active = false;
+    /// The sizing scalar refine_front_pass() gave the front; 0 when no pass ran.
+    double m_refine_front_scalar = 0.;
+    /// The front's tube eps while refine_front_pass() runs its TetWild pass: half the distance the
+    /// march traced the front to, m_construction_distance / 2. 0 at every other time, when
+    /// build_offset_envelope() takes offset_envelope (the final pass included).
+    double m_refine_front_tube_eps = 0.;
+    /// EXPERIMENTAL_refine_construction's log: the front vertices (sizing scalar min / median / max, how
+    /// many still at 1 or above) and the front faces' edges (median length against the edge
+    /// target m_refine_front_scalar x l, how many over the split gate, split_edge_is_due()).
+    std::string front_sizing_report() const;
     /// A TetWild pass: every tracked surface held (the final envelopes; the front in its tube,
     /// smoothed like any held vertex), every cell's energy its equilateral AMIPS term alone
     /// (m_tetwild_pass), mesh_improvement(max_its), everything put back and the band regions
@@ -1279,6 +1275,9 @@ public:
     /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
     /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
     double m_construction_distance = 0.;
+    /// The march's maximum marchable distance M: the smallest distance to the input complex over
+    /// the outer ends of the marched edges (+inf if none), as marching_tets() found it.
+    double m_marchable_distance = 0.;
     /// EXPERIMENTAL_incremental_growth: d_0, the distance the march traced the front to when that
     /// is below target_distance (m_construction_distance, half the maximum marchable distance).
     /// Set by marching_tets() with the key on and optimize_offset true; 0 otherwise, and

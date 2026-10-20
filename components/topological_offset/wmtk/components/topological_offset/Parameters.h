@@ -219,14 +219,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// smoothing block in stage 0, the loop at d_0 (in place of interleaved_smoothing_passes /
     /// num_smoothing_passes). At least 1 (the spec's min). See the spec doc.
     int initial_smoothing_passes = 10;
-    /// EXPERIMENTAL (2026-10-19), 3D: before the march, the input complex's boundary gets the
-    /// sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and TetWild
-    /// runs on the mesh with every tracked surface held (TopoOffsetTetMesh::refine_input_pass()).
-    /// Its operations carry the field, and so do the march's splits: the loop starts from it.
-    /// See the spec doc.
-    bool refine_input = false;
-    /// EXPERIMENTAL (2026-10-19), 3D, with refine_input: "a" in that sizing scalar. Default 10.
-    double refine_input_factor = 10.;
+    /// EXPERIMENTAL (2026-10-19), 3D, with optimize_offset: after the march, the front vertices
+    /// get the sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and
+    /// the construction TetWild pass runs (the offset surface in a tube of half the traced
+    /// distance, this pass only; AMIPS alone, no band term; TopoOffsetTetMesh::refine_front_pass()).
+    /// Its operations carry the field: the loop starts from it. See the spec doc.
+    bool refine_construction = false;
+    /// EXPERIMENTAL (2026-10-19), 3D, with refine_construction: "a" in that sizing scalar. Default 10.
+    double refine_construction_factor = 10.;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -385,18 +385,26 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_incremental_growth and init_optimize both decide the loops that "
                 "follow a march below target_distance: set only one of them");
         }
-        refine_input = json_params["EXPERIMENTAL_refine_input"];
-        refine_input_factor = json_params["EXPERIMENTAL_refine_input_factor"];
-        if (!(refine_input_factor > 0.)) {
+        refine_construction = json_params["EXPERIMENTAL_refine_construction"];
+        refine_construction_factor = json_params["EXPERIMENTAL_refine_construction_factor"];
+        if (!(refine_construction_factor > 0.)) {
             log_and_throw_error(
-                "EXPERIMENTAL_refine_input_factor must be > 0, not {}",
-                refine_input_factor);
+                "EXPERIMENTAL_refine_construction_factor must be > 0, not {}",
+                refine_construction_factor);
         }
         // 10 is the spec's default: a factor set to anything else means the pass was intended.
-        if (!refine_input && refine_input_factor != 10.) {
+        if (!refine_construction && refine_construction_factor != 10.) {
             log_and_throw_error(
-                "EXPERIMENTAL_refine_input_factor {} needs EXPERIMENTAL_refine_input true",
-                refine_input_factor);
+                "EXPERIMENTAL_refine_construction_factor {} needs EXPERIMENTAL_refine_construction "
+                "true",
+                refine_construction_factor);
+        }
+        // The pass runs when the optimization starts (optimize_offset()).
+        if (refine_construction && !optimize_offset) {
+            log_and_throw_error(
+                "EXPERIMENTAL_refine_construction needs optimize_offset true: it refines the "
+                "offset "
+                "surface after the march, when the optimization starts");
         }
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];

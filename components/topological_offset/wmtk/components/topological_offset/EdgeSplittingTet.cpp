@@ -257,9 +257,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
         // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
-        // engine rolls a refused split back. The loop's gate: refine_input_pass()'s splits are
+        // engine rolls a refused split back. The loop's gate: refine_front_pass()'s splits are
         // the refinement it asks for.
-        if (m_offset_params.split_energy_gate && !m_refine_input_active &&
+        if (m_offset_params.split_energy_gate && !m_refine_front_active &&
             !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;
@@ -308,8 +308,7 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     // The sizing field's value where the new vertex is, linear along the edge: the mean of the
     // ends' scalars at the midpoint, as the engine's split gives it, and the traced point's own
     // interpolate under SphereTrace. Without it the vertex kept its slot's scalar, so the march
-    // dropped the field EXPERIMENTAL_refine_input left at every front vertex. With every scalar 1
-    // it is 1.
+    // dropped any field set before it at every front vertex. With every scalar 1 it is 1.
     {
         const double s1 = m_vertex_attribute[v1_id].m_sizing_scalar;
         const double s2 = m_vertex_attribute[v2_id].m_sizing_scalar;

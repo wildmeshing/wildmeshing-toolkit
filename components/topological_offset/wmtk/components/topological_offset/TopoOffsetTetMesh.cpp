@@ -356,10 +356,10 @@ void TopoOffsetTetMesh::build_envelopes()
         m_envelope_eps);
 }
 
-void TopoOffsetTetMesh::build_final_envelopes(const bool with_offset)
+void TopoOffsetTetMesh::build_final_envelopes()
 {
     // See the declaration. The offset surface's own tube first.
-    if (with_offset) build_offset_envelope();
+    build_offset_envelope();
     // The held surfaces where build_envelopes() captured them, plus every region boundary as the
     // loop left it: a tracked face off the wall, off the offset surface and off the input
     // complex's boundary.
@@ -1402,13 +1402,6 @@ void TopoOffsetTetMesh::construct_offset(const std::filesystem::path& output_fil
     // THE envelope, once: the complex is labelled and embedded, and nothing has moved yet.
     build_envelopes();
 
-    // EXPERIMENTAL_refine_input: TetWild on the embedded mesh, the input complex's boundary
-    // refined toward a * min(M, target_distance), every tracked surface held.
-    if (m_offset_params.refine_input) {
-        refine_input_pass();
-        if (m_offset_params.debug_output) write_debug_frame("refine_input");
-    }
-
     // repulsion_smoothing_passes: push the marched edges' outer ends out before the march.
     repulsion_smoothing();
 
@@ -1939,6 +1932,7 @@ void TopoOffsetTetMesh::marching_tets()
     }
     const bool reachable = target < d_max;
     const std::string& mode = m_offset_params.construction_mode;
+    m_marchable_distance = d_max;
     m_construction_distance = target;
     m_edge_split_mode = EdgeSplitMode::SphereTrace;
     if (e_to_split.empty()) {
