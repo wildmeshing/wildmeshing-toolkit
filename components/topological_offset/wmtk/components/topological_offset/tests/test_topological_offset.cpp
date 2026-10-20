@@ -2699,6 +2699,69 @@ TEST_CASE("refine-construction-keys", "[offset][3d]")
     CHECK(Parameters(injected({{"EXPERIMENTAL_amips_pow", true}})).amips_pow);
 }
 
+TEST_CASE("foldover-face-angle", "[offset][3d]")
+{
+    // foldover_angle through the spec (default 30, range 0..180), and front_face_field_angle():
+    // the angle between a front face's normal, out of its band cell, and grad d at its centroid.
+    // One band tet, the unit tet, over an input plane x + y + z = -1, where grad d =
+    // (1, 1, 1) / sqrt(3): the face opposite vertex 0 faces along the field (0 degrees), each face
+    // through vertex 0 faces away from it, acos(-1 / sqrt(3)) = 125.26 degrees.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto with_app = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](const nlohmann::json& j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(with_app(j), spec));
+        return spec_engine.inject_defaults(with_app(j), spec);
+    };
+    CHECK(Parameters(injected(nlohmann::json::object())).foldover_angle == 30.);
+    CHECK(Parameters(injected({{"foldover_angle", 45.}})).foldover_angle == 45.);
+    for (const double bad : {-1., 181.}) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(with_app({{"foldover_angle", bad}}), spec));
+    }
+
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    // Before an input envelope exists nothing is measurable.
+    CHECK(std::isnan(mesh.front_face_field_angle(1, 2, 3)));
+    auto env = std::make_shared<Envelope>(true);
+    env->init(
+        std::vector<Eigen::Vector3d>{{-21., 10., 10.}, {10., -21., 10.}, {10., 10., -21.}},
+        std::vector<Eigen::Vector3i>{{0, 1, 2}},
+        0.1);
+    mesh.m_input_complex_envelope = env;
+    mesh.m_input_complex_pad = 1e-9;
+    // Not a band cell: no side to orient by.
+    mesh.m_tet_attribute[0].label = 0;
+    CHECK(std::isnan(mesh.front_face_field_angle(1, 2, 3)));
+    mesh.m_tet_attribute[0].label = 2;
+    const double away = std::acos(-1. / std::sqrt(3.)) * 180. / M_PI;
+    CHECK(mesh.front_face_field_angle(1, 2, 3) == Catch::Approx(0.).margin(1e-6));
+    CHECK(mesh.front_face_field_angle(3, 2, 1) == Catch::Approx(0.).margin(1e-6));
+    CHECK(mesh.front_face_field_angle(0, 1, 2) == Catch::Approx(away).epsilon(1e-9));
+    CHECK(mesh.front_face_field_angle(0, 1, 3) == Catch::Approx(away).epsilon(1e-9));
+    CHECK_FALSE(mesh.front_face_is_foldover(1, 2, 3));
+    CHECK(mesh.front_face_is_foldover(0, 1, 2));
+    mesh.m_offset_params.foldover_angle = 130.;
+    CHECK_FALSE(mesh.front_face_is_foldover(0, 1, 2));
+}
+
 TEST_CASE("damping-loop-only", "[offset][3d]")
 {
     // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is

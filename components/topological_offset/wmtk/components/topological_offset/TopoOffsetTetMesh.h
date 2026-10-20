@@ -1079,26 +1079,22 @@ public:
     void report_offset_face_lookup_misses(const char* when) const;
 
     /**
-     * @brief Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset
-     * surface edge? Debug-frame diagnostic; see write_vtu(). Costs one pass over the live
-     * offset faces, no field evaluation.
-     *
-     * An offset-surface edge carries two live offset faces. Measured through either side, the
-     * angle between them is 180 degrees where the surface is flat and 360 where the two faces
-     * lie on top of each other with that side pinched to nothing. Over FOLDOVER_OUTER_ANGLE_DEG
-     * through EITHER side is the fold, and every such edge's two endpoints get 1.
-     *
-     * Which side is pinched is deliberately not determined: on the cube the measured folds
-     * pinch the BACKGROUND, not the band, so a test written around a pinched band found none of
-     * them. Since the two sides sum to 360, the test is simply that the unsigned angle is under
-     * 360 minus the threshold. Vertices of an edge that does not carry exactly two live offset
-     * faces are left 0, as are degenerate faces: this is a diagnostic, and a number it cannot
-     * measure is not a fold.
-     *
-     * The 2D twin is TopoOffsetTriMesh::offset_surface_foldover_labels(), which asks the same
-     * question of a curve vertex's two incident offset edges.
+     * @brief The foldover measure of front face (a, b, c): the angle, in degrees, between its
+     * unit normal, oriented out of its band cell (front_face_band_cell(); away from the cell's
+     * fourth corner), and the field's unit normal at its centroid, the gradient of the distance
+     * d to the input complex (m_input_complex_envelope's nearest primitive). 0 where the face
+     * faces along the field, 180 where it faces back toward the input. NaN where it cannot be
+     * measured: no band cell, a degenerate face, no input envelope yet, or a zero gradient.
+     * The face is a foldover when the angle exceeds foldover_angle (front_face_is_foldover()).
+     * Debug frames write both per face on the _off file; the end of optimize_offset() counts
+     * the folded faces. The 2D code still labels vertices (TopoOffsetTriMesh).
      */
-    std::vector<char> offset_surface_foldover_labels() const;
+    double front_face_field_angle(size_t a, size_t b, size_t c) const;
+    /// front_face_field_angle() > foldover_angle; an unmeasurable face is not a foldover.
+    bool front_face_is_foldover(size_t a, size_t b, size_t c) const
+    {
+        return front_face_field_angle(a, b, c) > m_offset_params.foldover_angle;
+    }
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
@@ -2545,9 +2541,9 @@ public:
         std::vector<std::string> tag_names;
         // per vertex
         VectorXd labels, order, vid, sizing;
-        VectorXd in_dist, front_err, band_force, amips_force, fold, front_change;
+        VectorXd in_dist, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.

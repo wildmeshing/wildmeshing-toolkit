@@ -228,6 +228,11 @@ struct Parameters : public wmtk::OptimizerParameters
     bool refine_construction = false;
     /// EXPERIMENTAL (2026-10-19), 3D, with refine_construction: "a" in that sizing scalar. Default 10.
     double refine_construction_factor = 10.;
+    /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
+    /// the field's normal (grad d at its centroid) exceeds this many degrees
+    /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face offset_foldover
+    /// and the end-of-run [foldover] count. See the spec doc.
+    double foldover_angle = 30.;
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
@@ -388,6 +393,7 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         refine_construction = json_params["EXPERIMENTAL_refine_construction"];
         refine_construction_factor = json_params["EXPERIMENTAL_refine_construction_factor"];
+        foldover_angle = json_params["foldover_angle"];
         if (!(refine_construction_factor > 0.)) {
             log_and_throw_error(
                 "EXPERIMENTAL_refine_construction_factor must be > 0, not {}",

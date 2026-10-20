@@ -2380,19 +2380,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     fr.band_force = VectorXd::Constant(vert_capacity(), nan);
     fr.amips_force = VectorXd::Constant(vert_capacity(), nan);
 
-    // Collapsed-foldover flag, as point data: 1 where the vertex is an endpoint of an offset
-    // surface edge whose two faces have folded back onto each other (outer angle over the
-    // threshold), 0 elsewhere. DEBUG ONLY -- computed only under debug_output, so a plain
-    // save_vtu run writes it as all 0 rather than paying for the surface walk.
-    // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
-    fr.fold = VectorXd::Zero(vert_capacity());
-    if (m_offset_params.debug_output) {
-        const std::vector<char> fold = offset_surface_foldover_labels();
-        for (size_t vid = 0; vid < fold.size() && vid < size_t(fr.fold.size()); ++vid) {
-            fr.fold[int(vid)] = fold[vid] ? 1. : 0.;
-        }
-    }
-
     //   front_last_change    VertexExtra::m_front_change when recorded in the latest operation
     //                        group, else -1.
     fr.front_change = VectorXd::Constant(vert_capacity(), -1.);
@@ -2597,7 +2584,13 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //                        else the corner bound min over P of max d_P at the corners. The
         //                        settle loop's "max" test marks a face with either over 1.
         //   Both NaN before the input's triangles exist.
+        //   field_normal_angle  front_face_field_angle(): the angle in degrees between the face's
+        //                       normal, out of the band, and grad d at its centroid. NaN where it
+        //                       cannot be measured.
+        //   offset_foldover     1 where field_normal_angle > foldover_angle (a foldover), else 0.
         fr.f_err.resize(faces_off.size());
+        fr.f_fold = VectorXd::Zero(faces_off.size());
+        fr.f_field_angle = VectorXd::Constant(faces_off.size(), nan);
         fr.f_len.resize(faces_off.size());
         fr.f_inside = VectorXd::Constant(faces_off.size(), nan);
         fr.f_outside = VectorXd::Constant(faces_off.size(), nan);
@@ -2617,6 +2610,8 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
+            fr.f_field_angle[i] = front_face_field_angle(a, b, c);
+            fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
             if (band_env) {
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
@@ -2697,7 +2692,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         writer.add_field("front_error_bars", fr.front_err);
         writer.add_field("band_force_n", fr.band_force);
         writer.add_field("amips_force_n", fr.amips_force);
-        writer.add_field("offset_foldover", fr.fold);
         writer.add_field("front_last_change", fr.front_change);
         writer.write_mesh(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
     }
@@ -2718,6 +2712,8 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         off_writer.add_cell_field("settle_inside_bars", fr.f_inside);
         off_writer.add_cell_field("settle_outside_bars", fr.f_outside);
         off_writer.add_cell_field("chord_length", fr.f_len);
+        off_writer.add_cell_field("field_normal_angle", fr.f_field_angle);
+        off_writer.add_cell_field("offset_foldover", fr.f_fold);
         off_writer.add_field("vid", fr.vid);
         off_writer.add_field("sizing_scalar", fr.sizing);
         off_writer.add_field("input_distance", fr.in_dist);
@@ -2725,7 +2721,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         off_writer.add_field("front_ring_ratio", fr.ring);
         off_writer.add_field("band_force_n", fr.band_force);
         off_writer.add_field("amips_force_n", fr.amips_force);
-        off_writer.add_field("offset_foldover", fr.fold);
         off_writer.add_field("front_last_change", fr.front_change);
         off_writer.write_mesh(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
     }

@@ -4000,94 +4000,32 @@ void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
         invalid);
 }
 
-/// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
-/// over: the angle between its two faces measured through ONE of the two sides. 180 is flat and
-/// 360 is the two faces exactly on top of each other. Because the two sides sum to 360, "over
-/// 330 on one side" is the same statement as "under 30 unsigned", which is what the code tests --
-/// see offset_surface_foldover_labels() for why the side is not determined.
-/// Optimize2d.cpp carries the same constant; the two values must stay equal.
-static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
-
-std::vector<char> TopoOffsetTetMesh::offset_surface_foldover_labels() const
+double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b, const size_t c)
+    const
 {
-    std::vector<char> fold(vert_capacity(), 0);
-
-    // Every live offset face against each of its three edges, so an edge arrives with the faces
-    // that actually carry it. A std::map keyed on the sorted vertex pair: the surface is a small
-    // part of the mesh and this runs once per debug frame.
-    //
-    // The faces are found from the band side: a live offset face has exactly one band cell
-    // (face_is_offset_surface_live() is true only where its two cells differ, or for a band
-    // cell's face on the domain boundary), so the band cells' faces list each one exactly once,
-    // at one switch_tetrahedron() per band-cell face -- not a canonical-id lookup for every face
-    // of the mesh before the same test. MEASURED 2026-10-09 on the cube (22k tets): 9 of the 40
-    // ms a debug frame spent reading the mesh, before. The order the faces arrive in does not
-    // change the labels: an edge keeps the two faces' third vertices, and the angle between them
-    // is symmetric in the two.
-    struct EdgeFaces
-    {
-        int n = 0;
-        std::array<size_t, 2> opposite{{0, 0}}; // the two faces' third vertices
-    };
-    std::map<std::array<size_t, 2>, EdgeFaces> edges;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (!cell_is_offset_band(tid)) continue;
-        for (int j = 0; j < 4; ++j) {
-            const Tuple f = tuple_from_face(tid, j);
-            if (!face_is_offset_surface_live(f)) continue;
-            const auto fv = get_face_vids(f);
-            for (int i = 0; i < 3; ++i) {
-                const size_t a = fv[i], b = fv[(i + 1) % 3], c = fv[(i + 2) % 3];
-                std::array<size_t, 2> key{{a, b}};
-                if (key[0] > key[1]) std::swap(key[0], key[1]);
-                EdgeFaces& ef = edges[key];
-                if (ef.n < 2) ef.opposite[size_t(ef.n)] = c;
-                ++ef.n; // counted past 2 on purpose, so a non-manifold edge can be recognised
-            }
-        }
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
+    const Vector3d& pa = m_vertex_attribute[a].m_posf;
+    const Vector3d& pb = m_vertex_attribute[b].m_posf;
+    const Vector3d& pc = m_vertex_attribute[c].m_posf;
+    Vector3d n = (pb - pa).cross(pc - pa);
+    if (!(n.norm() > 0.)) return nan;
+    const int64_t bc = front_face_band_cell(a, b, c);
+    if (bc < 0) return nan;
+    for (const size_t v : oriented_tet_vids(size_t(bc))) {
+        if (v == a || v == b || v == c) continue;
+        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
     }
-
-    // A fold is the two faces lying on top of each other, and WHICH side is pinched is not part
-    // of it. MEASURED, on the cube at target_distance_rel 5e-2 with the construction probe off
-    // and the alignment term off: at every folded edge in that run it is the BACKGROUND that is
-    // pinched, not the band -- the two band tets sit at angles like 92 and 265 degrees around
-    // the edge, on either side of a sliver of outside a fraction of a degree wide. Measuring
-    // through the background there gives 0.67 degrees, not 359.33. So the side is deliberately
-    // not determined: the two sides sum to 360, "over 355 through one side" is exactly "under 5
-    // unsigned", and testing the unsigned angle catches the fold whichever wedge collapsed.
-    // This also drops the band-apex orientation the first version needed, which was the part
-    // that could be got wrong.
-    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
-    for (const auto& [e, ef] : edges) {
-        // Not two faces means the angle is not defined -- a domain-boundary rim, or a
-        // non-manifold edge. Not measurable is not a fold.
-        if (ef.n != 2) continue;
-        const Vector3d pa = m_vertex_attribute[e[0]].m_posf;
-        const Vector3d pb = m_vertex_attribute[e[1]].m_posf;
-        Vector3d dir = pb - pa;
-        const double elen = dir.norm();
-        if (!(elen > 0.)) continue;
-        dir /= elen;
-        // Each face's in-plane direction away from the edge, so the angle between them is the
-        // angle around the edge and not the angle between two arbitrary chords.
-        const auto perp = [&](const size_t opp_vid, Vector3d& u) -> bool {
-            const Vector3d w = m_vertex_attribute[opp_vid].m_posf - pa;
-            u = w - w.dot(dir) * dir;
-            const double len = u.norm();
-            if (!(len > 0.) || !std::isfinite(len)) return false;
-            u /= len;
-            return true;
-        };
-        Vector3d u0, u1;
-        if (!perp(ef.opposite[0], u0) || !perp(ef.opposite[1], u1)) continue;
-        const double ang = std::acos(std::clamp(u0.dot(u1), -1., 1.)) * 180. / M_PI; // [0, 180]
-        if (ang < coincidence_deg) {
-            fold[e[0]] = 1;
-            fold[e[1]] = 1;
-        }
-    }
-    return fold;
+    const Vector3d x = (pa + pb + pc) / 3.;
+    const Envelope& env = *m_input_complex_envelope;
+    const int64_t prim = nearest_primitive(env, m_input_complex_pad, x);
+    if (prim < 0) return nan;
+    Vector3d g;
+    env.primitive_distance(prim, x, &g);
+    if (!(g.norm() > 0.)) return nan;
+    // atan2 of the cross and dot products: accurate at every angle, unlike acos near 0 and 180.
+    return std::atan2(n.cross(g).norm(), n.dot(g)) * 180. / M_PI;
 }
 
 const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
@@ -5447,39 +5385,49 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
-    // the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
-    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
-    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
-    // Reported for a run that did not converge too, where a fold is if anything more likely.
-    // See offset_surface_foldover_labels() for what the angle is and why its side is not
-    // determined. Costs one pass over the live offset simplices, once, with no field evaluation.
+    // Foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in the
+    // delivered mesh, not a debug curiosity, so it is reported whether or not debug_output wrote
+    // the per-face field. Run here, at the end of optimize_offset, so it describes the mesh the
+    // driver is about to write: after the finishing pass, not at the loop's verdict. Reported for
+    // a run that did not converge too. A face is a foldover when its normal, out of the band, is
+    // more than foldover_angle from the field's normal (front_face_field_angle()).
     {
-        const std::vector<char> fold = offset_surface_foldover_labels();
-        size_t n_fold = 0;
-        size_t first = std::numeric_limits<size_t>::max();
-        for (size_t vid = 0; vid < fold.size(); ++vid) {
-            if (!fold[vid]) continue;
+        size_t n_fold = 0, n_faces = 0, n_unmeasured = 0;
+        double worst = 0.;
+        Vector3d worst_at = Vector3d::Zero();
+        for (const auto& f : offset_surface_faces()) {
+            ++n_faces;
+            const double ang = front_face_field_angle(f[0], f[1], f[2]);
+            if (!std::isfinite(ang)) {
+                ++n_unmeasured;
+                continue;
+            }
+            if (!(ang > m_offset_params.foldover_angle)) continue;
             ++n_fold;
-            if (first == std::numeric_limits<size_t>::max()) first = vid;
+            if (ang > worst) {
+                worst = ang;
+                worst_at = (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
+                            m_vertex_attribute[f[2]].m_posf) /
+                           3.;
+            }
         }
         if (n_fold > 0) {
-            const auto& p = m_vertex_attribute[first].m_posf;
             logger().warn(
-                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
-                "meet within {} degrees of coincident (over {} degrees through one side). "
-                "First at v{} ({:.4}, {:.4}{}). {}",
+                "[foldover] {} of {} offset faces are folded: their normal, out of the band, is "
+                "more "
+                "than foldover_angle {} degrees from the field's normal (grad d at the centroid); "
+                "the worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4}). {} face(s) not measurable. {}",
                 n_fold,
-                "two faces of an offset-surface edge",
-                360. - FOLDOVER_OUTER_ANGLE_DEG,
-                FOLDOVER_OUTER_ANGLE_DEG,
-                first,
-                p[0],
-                p[1],
-                fmt::format(", {:.4}", p[2]),
+                n_faces,
+                m_offset_params.foldover_angle,
+                worst,
+                worst_at[0],
+                worst_at[1],
+                worst_at[2],
+                n_unmeasured,
                 m_offset_params.debug_output
-                    ? "The per-vertex flag offset_foldover is on the debug frames."
-                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+                    ? "The per-face flag offset_foldover is on the debug frames' _off files."
+                    : "Set DEBUG_output to get the per-face offset_foldover field.");
         }
     }
 
