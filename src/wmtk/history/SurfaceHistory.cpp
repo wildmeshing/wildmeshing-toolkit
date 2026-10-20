@@ -1,23 +1,33 @@
 #include "SurfaceHistory.hpp"
+#include "Replay.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
 #include <cstring>
 #include <fstream>
+#include <optional>
 
 namespace wmtk::history {
 
 namespace {
 
-// Layout, all integers little-endian as the platforms we build on store them:
+// Layout (version 2). Every count and id is an unsigned LEB128 varint; a position is three
+// little-endian f64.
+//
 //   "WMTKHIST" u32 version
-//   u64 n_vertices, n_vertices x (f64 x, y, z, u8 alive)
-//   u64 n_faces, n_faces x (u64 v0, v1, v2, u8 alive)
-//   u64 n_edits, n_edits x (u8 kind, u32 n_v, n_v x u64, u32 n_faces, n_faces x u64,
-//                           u32 n_moves, n_moves x (u64 vid, f64 x, y, z))
-//   u64 metadata length, metadata bytes
+//   n_vertices, then per vertex: u8 alive, and its position if alive
+//   n_faces, then per face: u8 alive, and its three vertex ids if alive
+//   n_edits, then per edit: u8 kind, the ids the kind implies --
+//       split_edge:    v0 v1 new_v, u8 n_pairs, n_pairs x (f new_f)
+//       split_face:    v0 v1 v2 new_v, f new_f1 new_f2
+//       collapse_edge: removed kept
+//       swap_edge:     v0 v1 a b, fa fb
+//   -- then n_moves and per move: (vid << 1 | midpoint), and the position unless `midpoint`
+//   says it is exactly the midpoint of the edit's edge (v0,v1) / (removed,kept), as the
+//   vertices were before the edit. Saving and loading both replay the history to know it.
+//   metadata length, metadata bytes
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 1;
+constexpr uint32_t kVersion = 2;
 
 class Writer
 {
@@ -32,6 +42,19 @@ public:
     void put(const T& x)
     {
         m_out.write(reinterpret_cast<const char*>(&x), sizeof(T));
+    }
+    void varint(uint64_t n)
+    {
+        do {
+            uint8_t b = n & 0x7F;
+            n >>= 7;
+            if (n) b |= 0x80;
+            put(b);
+        } while (n);
+    }
+    void position(const Eigen::Vector3d& p)
+    {
+        for (int k = 0; k < 3; ++k) put(p[k]);
     }
     void bytes(const char* p, size_t n) { m_out.write(p, std::streamsize(n)); }
     void finish()
@@ -62,6 +85,22 @@ public:
         if (!m_in) log_and_throw_error("SurfaceHistory: {} is truncated", m_path);
         return x;
     }
+    uint64_t varint()
+    {
+        uint64_t n = 0;
+        for (int shift = 0; shift < 64; shift += 7) {
+            const uint8_t b = get<uint8_t>();
+            n |= uint64_t(b & 0x7F) << shift;
+            if (!(b & 0x80)) return n;
+        }
+        log_and_throw_error("SurfaceHistory: {} holds a malformed integer", m_path);
+    }
+    Eigen::Vector3d position()
+    {
+        Eigen::Vector3d p;
+        for (int k = 0; k < 3; ++k) p[k] = get<double>();
+        return p;
+    }
     void bytes(char* p, size_t n)
     {
         m_in.read(p, std::streamsize(n));
@@ -72,6 +111,34 @@ private:
     std::ifstream m_in;
     std::string m_path;
 };
+
+/// How many vertex and face ids each kind carries; split_edge's faces come in counted pairs.
+size_t vertex_ids(const EditKind k)
+{
+    switch (k) {
+    case EditKind::split_edge: return 3;
+    case EditKind::split_face: return 4;
+    case EditKind::collapse_edge: return 2;
+    case EditKind::swap_edge: return 4;
+    default: return 0;
+    }
+}
+size_t face_ids(const EditKind k)
+{
+    switch (k) {
+    case EditKind::split_face: return 3;
+    case EditKind::swap_edge: return 2;
+    default: return 0;
+    }
+}
+
+/// The position a move of this edit is predicted to have: the midpoint of the edit's edge, as
+/// the replay holds it before the edit. None for the other kinds.
+std::optional<Eigen::Vector3d> predicted(const Edit& e, const Replay& r)
+{
+    if (e.kind != EditKind::split_edge && e.kind != EditKind::collapse_edge) return std::nullopt;
+    return ((r.vertices()[e.v[0]] + r.vertices()[e.v[1]]) / 2.0).eval();
+}
 
 } // namespace
 
@@ -118,30 +185,35 @@ void SurfaceHistory::save(const std::string& path) const
     w.bytes(kMagic, sizeof(kMagic));
     w.put(kVersion);
 
-    w.put(uint64_t(vertices.size()));
+    w.varint(vertices.size());
     for (size_t i = 0; i < vertices.size(); ++i) {
-        for (int k = 0; k < 3; ++k) w.put(vertices[i][k]);
         w.put(vertex_alive[i]);
+        if (vertex_alive[i]) w.position(vertices[i]);
     }
-    w.put(uint64_t(faces.size()));
+    w.varint(faces.size());
     for (size_t i = 0; i < faces.size(); ++i) {
-        for (const uint64_t v : faces[i]) w.put(v);
         w.put(face_alive[i]);
+        if (!face_alive[i]) continue;
+        for (const uint64_t v : faces[i]) w.varint(v);
     }
-    w.put(uint64_t(edits.size()));
+
+    Replay r(*this);
+    w.varint(edits.size());
     for (const Edit& e : edits) {
         w.put(uint8_t(e.kind));
-        w.put(uint32_t(e.v.size()));
-        for (const uint64_t v : e.v) w.put(v);
-        w.put(uint32_t(e.faces.size()));
-        for (const uint64_t f : e.faces) w.put(f);
-        w.put(uint32_t(e.moves.size()));
+        for (const uint64_t v : e.v) w.varint(v);
+        if (e.kind == EditKind::split_edge) w.put(uint8_t(e.faces.size() / 2));
+        for (const uint64_t f : e.faces) w.varint(f);
+        const auto mid = predicted(e, r);
+        w.varint(e.moves.size());
         for (const VertexMove& m : e.moves) {
-            w.put(m.vid);
-            for (int k = 0; k < 3; ++k) w.put(m.pos[k]);
+            const bool at_mid = mid && m.pos == *mid;
+            w.varint(m.vid << 1 | uint64_t(at_mid));
+            if (!at_mid) w.position(m.pos);
         }
+        r.apply(e);
     }
-    w.put(uint64_t(metadata.size()));
+    w.varint(metadata.size());
     w.bytes(metadata.data(), metadata.size());
     w.finish();
 }
@@ -164,35 +236,46 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
     }
 
     SurfaceHistory h;
-    const uint64_t nv = r.get<uint64_t>();
-    h.vertices.resize(nv);
+    const uint64_t nv = r.varint();
+    h.vertices.assign(nv, Eigen::Vector3d::Zero());
     h.vertex_alive.resize(nv);
     for (uint64_t i = 0; i < nv; ++i) {
-        for (int k = 0; k < 3; ++k) h.vertices[i][k] = r.get<double>();
         h.vertex_alive[i] = r.get<uint8_t>();
+        if (h.vertex_alive[i]) h.vertices[i] = r.position();
     }
-    const uint64_t nf = r.get<uint64_t>();
-    h.faces.resize(nf);
+    const uint64_t nf = r.varint();
+    h.faces.assign(nf, {{0, 0, 0}});
     h.face_alive.resize(nf);
     for (uint64_t i = 0; i < nf; ++i) {
-        for (uint64_t& v : h.faces[i]) v = r.get<uint64_t>();
         h.face_alive[i] = r.get<uint8_t>();
+        if (!h.face_alive[i]) continue;
+        for (uint64_t& v : h.faces[i]) v = r.varint();
     }
-    const uint64_t ne = r.get<uint64_t>();
-    h.edits.resize(ne);
+
+    Replay replay(h);
+    h.edits.resize(r.varint());
     for (Edit& e : h.edits) {
         e.kind = EditKind(r.get<uint8_t>());
-        e.v.resize(r.get<uint32_t>());
-        for (uint64_t& v : e.v) v = r.get<uint64_t>();
-        e.faces.resize(r.get<uint32_t>());
-        for (uint64_t& f : e.faces) f = r.get<uint64_t>();
-        e.moves.resize(r.get<uint32_t>());
+        e.v.resize(vertex_ids(e.kind));
+        for (uint64_t& v : e.v) v = r.varint();
+        e.faces.resize(
+            e.kind == EditKind::split_edge ? 2 * size_t(r.get<uint8_t>()) : face_ids(e.kind));
+        for (uint64_t& f : e.faces) f = r.varint();
+        const auto mid = predicted(e, replay);
+        e.moves.resize(r.varint());
         for (VertexMove& m : e.moves) {
-            m.vid = r.get<uint64_t>();
-            for (int k = 0; k < 3; ++k) m.pos[k] = r.get<double>();
+            const uint64_t tagged = r.varint();
+            m.vid = tagged >> 1;
+            if (tagged & 1) {
+                if (!mid) log_and_throw_error("SurfaceHistory: {} is corrupt", path);
+                m.pos = *mid;
+            } else {
+                m.pos = r.position();
+            }
         }
+        replay.apply(e);
     }
-    h.metadata.resize(r.get<uint64_t>());
+    h.metadata.resize(r.varint());
     r.bytes(h.metadata.data(), h.metadata.size());
     return h;
 }
