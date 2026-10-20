@@ -1952,12 +1952,14 @@ std::shared_ptr<history::Recorder> TriMesh::start_history(
         h.vertex_alive[v] = 1;
         h.vertices[v] = position(v);
     }
-    h.faces.resize(nf);
+    h.faces.assign(nf, {{0, 0, 0}});
     h.face_alive.assign(nf, 0);
     for (size_t f = 0; f < nf; ++f) {
+        // A removed slot keeps whatever it last held; the snapshot does not carry that.
+        if (m_tri_connectivity[f].m_is_removed) continue;
         const auto& t = m_tri_connectivity[f].m_indices;
         h.faces[f] = {{t[0], t[1], t[2]}};
-        h.face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+        h.face_alive[f] = 1;
     }
     m_history = std::make_shared<history::Recorder>(std::move(h));
     m_history_position = std::move(position);

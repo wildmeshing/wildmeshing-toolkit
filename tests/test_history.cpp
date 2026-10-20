@@ -133,6 +133,21 @@ TEST_CASE("history-replay-matches-random-operations", "[history]")
             });
             history::Replay r(rec->history());
             run_and_check(m, *rec, r, 400, seed);
+
+            // The same history through the file format.
+            const auto path = (std::filesystem::temp_directory_path() /
+                               ("wmtk_history_random_" + std::to_string(int(link)) + "_" +
+                                std::to_string(seed) + ".bin"))
+                                  .string();
+            rec->history().save(path);
+            const history::SurfaceHistory h = history::SurfaceHistory::load(path);
+            std::filesystem::remove(path);
+            history::Replay loaded(h);
+            loaded.apply_all(h);
+            std::string why;
+            const bool same = same_state(m, loaded, why);
+            INFO("after save and load: " << why);
+            REQUIRE(same);
         }
     }
 }
