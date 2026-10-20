@@ -17,11 +17,17 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <vector>
+
+namespace wmtk::history {
+class Recorder;
+struct Edit;
+} // namespace wmtk::history
 
 namespace wmtk {
 
@@ -640,6 +646,19 @@ public:
     void consolidate_mesh();
 
     /**
+     * @brief Record every operation this mesh commits from now on (see wmtk/history).
+     *
+     * Snapshots the current complex and returns the recorder the edits go to. `position(v)`
+     * gives the position of vertex v. It is called at the snapshot, and then for every vertex an
+     * operation wrote, from inside that operation while its locks are held, so it must read
+     * through const attribute access. Recording changes nothing about what the operations do.
+     */
+    std::shared_ptr<history::Recorder> start_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording. The recorder keeps the edits it has.
+    void stop_history();
+
+    /**
      * @brief Mark the given triangles, and any vertex left without an incident triangle,
      * as removed.
      *
@@ -1081,6 +1100,13 @@ public:
         if (p_edge_attrs) p_edge_attrs->rollback();
         if (p_face_attrs) p_face_attrs->rollback();
     }
+
+private:
+    std::shared_ptr<history::Recorder> m_history;
+    std::function<Eigen::Vector3d(size_t)> m_history_position;
+    /// Adds the position of every live vertex the operation wrote -- the vertex journal, so call
+    /// it before release_protect_attributes() -- and appends the edit, if recording.
+    void commit_history(history::Edit&& e);
 
     // Moved code from concurrent TriMesh
 
