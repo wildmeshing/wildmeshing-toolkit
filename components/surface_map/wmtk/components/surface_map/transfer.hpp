@@ -14,11 +14,14 @@ namespace wmtk::components::surface_map {
 bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string& why);
 
 /**
- * @brief The map's output surface, with every per-face field of `input` carried onto it.
+ * @brief The map's output surface, with every field of `input` carried onto it.
  *
- * An output face takes the value of the input face its centroid maps to. `input` must match the
- * map's input surface (matches_input). The output's live vertices and faces are numbered by rank.
+ * An output face takes the per-face values of the input face its centroid maps to. An output
+ * corner takes the per-corner values interpolated where a point just inside the face at that
+ * corner maps to: inside, so that it lands in the chart of the face when the corner is on a
+ * seam, which the remeshing keeps as a curve. `input` must match the map's input surface
+ * (matches_input). The output's live vertices and faces are numbered by rank.
  */
-SurfaceData transfer_face_fields(const SurfaceMap& map, const SurfaceData& input);
+SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input);
 
 } // namespace wmtk::components::surface_map

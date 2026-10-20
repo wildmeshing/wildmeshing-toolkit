@@ -18,11 +18,27 @@ struct SurfaceData
     /// Field name -> one value per face. A value has 1, 3 or 9 components (a scalar such as a
     /// label, a vector, a tensor), the ones gmsh element data can hold.
     std::map<std::string, std::vector<std::vector<double>>> face_fields;
+    /// Field name -> per face, one value per corner, corner after corner in the face's order:
+    /// gmsh element-node data. Texture coordinates live here, a seam being where the two faces
+    /// at an edge disagree; they are stored as (u, v, 0), gmsh's views taking 1, 3 or 9
+    /// components.
+    std::map<std::string, std::vector<std::vector<double>>> corner_fields;
 };
 
 /// The triangles of a gmsh file in file order, and every per-face field stored with them.
 SurfaceData read_surface_msh(const std::string& path);
 
 void write_surface_msh(const std::string& path, const SurfaceData& s);
+
+/**
+ * @brief The surface as a Wavefront OBJ, textured: the first two components of the per-corner
+ * field `uv_field` are its texture coordinates, and a material file next to it (same name,
+ * .mtl) maps `texture` onto it.
+ */
+void write_surface_obj(
+    const std::string& path,
+    const SurfaceData& s,
+    const std::string& uv_field,
+    const std::string& texture);
 
 } // namespace wmtk::components::surface_map

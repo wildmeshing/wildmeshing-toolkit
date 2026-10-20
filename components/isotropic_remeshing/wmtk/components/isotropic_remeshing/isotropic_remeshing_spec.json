@@ -104,12 +104,12 @@
     "pointer": "/feature_fields",
     "type": "list",
     "default": [],
-    "doc": "Per-face fields of a .msh input whose boundaries the remeshing keeps as curves: an edge between two faces that differ in any of them is a feature edge (see IsotropicRemeshing::set_feature_edges). A field carried through the remeshing then holds exactly on every output face."
+    "doc": "Fields of a .msh input whose boundaries the remeshing keeps as curves (see IsotropicRemeshing::set_feature_edges): per-face fields (labels), where two faces differ, and per-corner fields (texture coordinates), where the two faces at an edge disagree at either end -- a seam. A field carried through the remeshing then holds on every output face: a label exactly, texture coordinates within one chart."
   },
   {
     "pointer": "/feature_fields/*",
     "type": "string",
-    "doc": "The name of a per-face field of the input."
+    "doc": "The name of a per-face or per-corner field of the input."
   },
   {
     "pointer": "/history_output",
