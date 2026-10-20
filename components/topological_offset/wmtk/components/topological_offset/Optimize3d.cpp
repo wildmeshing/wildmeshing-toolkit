@@ -1548,7 +1548,7 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // TetWild's rules (m_op_rules): TetWild's own smoother, every vertex -- the raw sum of AMIPS
     // over the ring (smoothing_extra_energy() gives none), its quality veto on the ring's max, a
     // held vertex's projected step on the max (smoothing_ring_energy()); the front held in its
-    // tube by smoothing_energy_envelope() like any held vertex.
+    // envelope by smoothing_energy_envelope() like any held vertex.
     if (tetwild_rules()) return TetOptimizerMesh::smooth_after(t);
 
     // A front vertex goes through the shared smoother -- same solver, line search and accept
@@ -1583,7 +1583,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // Every tracked face against the envelope surface_envelope_for_face() holds it to -- the
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
-    // yes/no, and a face resting on the skin of its tube is the one the next operation pushes
+    // yes/no, and a face resting on the skin of its envelope is the one the next operation pushes
     // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
     struct Face
     {
@@ -2697,10 +2697,10 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
 {
     EnergyCriterion s;
     // THE bar, as a length: a face is resolved when its RMS relative error is within it, and a
-    // vertex placed when its own relative error is. One key for both since 2026-09-24. See
-    // offset_envelope_rel for the leash on the operations, which is not an accuracy and which
-    // startup requires to be no wider than this.
-    s.tube = m_offset_params.front_conv;
+    // vertex placed when its own relative error is. One key for both since 2026-09-24. The
+    // offset surface's envelope (envelope_size) holds the front in a TetWild pass alone and is
+    // not an accuracy.
+    s.bar_length = m_offset_params.front_conv;
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
@@ -2755,7 +2755,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         // front_measure "vertex_ring" it feeds both through the ring measure instead. gn is
         // the root of the face term, the figure the logs print.
         const double term = face_offset_term(va, vb, vc);
-        const double gn = term < 0. ? -1. : std::sqrt(term); // the sag / the tube
+        const double gn = term < 0. ? -1. : std::sqrt(term); // the sag / bar_length
         if (gn < 0.) {
             ++s.n_unmeasurable;
             if (s.ring_exit) ring_bad[va] = ring_bad[vb] = ring_bad[vc] = 1;
@@ -2815,11 +2815,12 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 // the halving in refine_front_by_halving(), but the question asked here is the
                 // same one either way -- is there any target left below what the corners
                 // already carry, or are they at the floor.
-                const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
+                const double target =
+                    front_chord_target(la, lb, len, gn * s.bar_length, s.bar_length);
                 const double sn =
                     std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 if (sn < have) {
-                    s.refinable.push_back({la, lb, lc, gn * s.tube, len});
+                    s.refinable.push_back({la, lb, lc, gn * s.bar_length, len});
                 } else {
                     // Not handed to the refinement, for one of two reasons. Either the corners
                     // are at the sizing floor (have <= s_floor): nothing can refine the face and
@@ -3148,13 +3149,13 @@ double TopoOffsetTetMesh::front_chord_target(
     const size_t vb,
     const double len,
     const double sag,
-    const double tube) const
+    const double bar) const
 {
-    // 3/4 L (tube / sag)^(1/p), capped at L/2, with the exponent p measured from how the level
+    // 3/4 L (bar / sag)^(1/p), capped at L/2, with the exponent p measured from how the level
     // set turns across the chord: 2 on a smooth level set, 1 where the chord straddles a kink.
     // See the 2D twin for the derivation. The sag fraction a halving leaves is ratio = 2^-p, so
     // p = -log2(ratio): 1/4 -> 2, 1/2 -> 1. (The 2D twin writes -1 / log2(ratio), which maps
-    // 1/4 to 0.5 and 1/2 to 1 and so over-refines every smooth chord by (sag / tube)^(1..2)
+    // 1/4 to 0.5 and 1/2 to 1 and so over-refines every smooth chord by (sag / bar)^(1..2)
     // instead of the square root -- affordable on a curve, cubic on a surface. Not mirrored.)
     double p = 2.;
     const OffsetPotential3D& pot = potential_for_edge(va, vb);
@@ -3174,7 +3175,7 @@ double TopoOffsetTetMesh::front_chord_target(
             p = -std::log2(ratio);
         }
     }
-    return std::min(0.75 * len * std::pow(tube / sag, 1. / p), 0.5 * len);
+    return std::min(0.75 * len * std::pow(bar / sag, 1. / p), 0.5 * len);
 }
 
 size_t TopoOffsetTetMesh::refine_front_by_halving(
@@ -3780,7 +3781,8 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     if (!m_vertex_attribute[vid].m_is_rounded) {
         fate = "REFUSED by smooth_before: not rounded";
     } else if (m_tetwild_pass && ve.m_is_on_offset) {
-        fate = "a TetWild pass: TetWild's smooth_after() (raw AMIPS sum), held in the offset tube";
+        fate =
+            "a TetWild pass: TetWild's smooth_after() (raw AMIPS sum), held in the offset envelope";
     } else if (ve.m_is_on_offset) {
         fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
     }
@@ -4120,13 +4122,13 @@ void TopoOffsetTetMesh::build_offset_envelope()
         verts[i] = m_vertex_attribute[i].m_posf;
     }
 
-    // The leash as init() resolved it: absolute if the config gave one, else offset_envelope_rel
-    // x the bbox diagonal. Referenced to the BOX, not to target_distance, since 2026-09-24. As
-    // in 2D. EXPERIMENTAL_refine_construction's pass alone holds the front in a wider tube, half
-    // the distance the march traced it to (m_refine_front_tube_eps, 0 at every other time).
-    const bool refine_tube = m_refine_front_tube_eps > 0.;
-    const double eps =
-        refine_tube ? m_refine_front_tube_eps : std::max(m_offset_params.offset_envelope, 1e-12);
+    // envelope_size, as init() resolved it: the eps of every held surface's envelope, the offset
+    // surface's too (its own key, offset_envelope, went on 2026-10-20).
+    // EXPERIMENTAL_refine_construction's pass alone holds the front in a wider envelope, half the
+    // distance the march traced it to (m_refine_front_envelope_eps, 0 at every other time).
+    const bool refine_envelope = m_refine_front_envelope_eps > 0.;
+    const double eps = refine_envelope ? m_refine_front_envelope_eps
+                                       : std::max(m_offset_params.envelope_size, 1e-12);
 
     m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
@@ -4135,12 +4137,12 @@ void TopoOffsetTetMesh::build_offset_envelope()
         tris.size(),
         m_offset_envelope->use_exact ? "EXACT" : "sampled",
         eps,
-        refine_tube ? std::string(
-                          "half the traced distance, EXPERIMENTAL_refine_construction's "
-                          "pass only")
-                    : fmt::format(
-                          "offset_envelope, {:.4} x the bbox diagonal",
-                          m_offset_params.offset_envelope_rel));
+        refine_envelope ? std::string(
+                              "half the traced distance, EXPERIMENTAL_refine_construction's "
+                              "pass only")
+                        : fmt::format(
+                              "envelope_size, {:.4} x the bbox diagonal",
+                              m_offset_params.envelope_size_rel));
 }
 
 namespace {
@@ -4319,7 +4321,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const int smoothing_passes)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
-    // with the front placed by the offset objective inside the smoothing passes. No offset tube
+    // with the front placed by the offset objective inside the smoothing passes. No envelope
     // holds the front in the loop, neither the operations nor the smoothing; only a TetWild pass
     // holds it to one (build_offset_envelope()).
     const int rounds = std::max(1, m_offset_params.max_rounds);
@@ -4341,8 +4343,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_offset_params.front_conv_rel);
     logger().info(
         "\t[offset envelope] the loop's operations and smoothing do not hold the offset surface "
-        "to an envelope; the final pass does (eps {:.6g})",
-        m_offset_params.offset_envelope);
+        "to an envelope; a TetWild pass does (eps envelope_size {:.6g})",
+        m_offset_params.envelope_size);
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
@@ -4709,12 +4711,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             write_optimization_debug_output(fmt::format("end_{}S", it + 1));
         }
         // Termination: every offset face's measure within the bar and nothing unmeasurable
-        // (EnergyCriterion::converged()) -- then quality with the front held in its tube (below).
-        // The face measure is the one quantity the smoothing minimises and the refinement reads;
-        // the vertex measure is reported on the turn line and in the verdict, and tested nowhere.
-        // Nothing refinable is implied, a refinable face being over the bar. Under front_measure
-        // "vertex_ring" the tested measure is every front vertex's ring measure instead, and the
-        // face measure joins the vertex measure as a diagnostic (EnergyCriterion::ring_exit).
+        // (EnergyCriterion::converged()) -- then quality with the front held in its envelope
+        // (below). The face measure is the one quantity the smoothing minimises and the refinement
+        // reads; the vertex measure is reported on the turn line and in the verdict, and tested
+        // nowhere. Nothing refinable is implied, a refinable face being over the bar. Under
+        // front_measure "vertex_ring" the tested measure is every front vertex's ring measure
+        // instead, and the face measure joins the vertex measure as a diagnostic
+        // (EnergyCriterion::ring_exit).
         //
         // The loop exits on the FIRST turn that meets the criterion. It used to additionally
         // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
@@ -4794,7 +4797,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             }
             if (amips >= bar) {
                 logger().info(
-                    "======== final pass, TetWild with the front held in its tube: max AMIPS "
+                    "======== final pass, TetWild with the front held in its envelope: max AMIPS "
                     "{:.6g} >= stop_energy {} "
                     "========",
                     amips,
@@ -4830,10 +4833,10 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
 
 double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
 {
-    // The final envelopes -- the front's tube, and m_envelope widened to every region boundary
+    // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
     // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
     // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
-    // (AMIPS against the regular tet); the front smoothed inside its tube like any held vertex.
+    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
     build_final_envelopes();
     m_tetwild_pass = true;
     // TetWild's own rules for the operations and the smoother (m_op_rules).
@@ -4864,7 +4867,8 @@ void TopoOffsetTetMesh::construction_tetwild_run()
         "======== [construction tetwild] TetWild on the mesh as constructed, every tracked "
         "surface held (the offset surface to eps {:.6g}, the rest to eps {:.6g}): max AMIPS "
         "{:.6g}, stop_energy {} | #V {}, #T {} ========",
-        m_refine_front_tube_eps > 0. ? m_refine_front_tube_eps : m_offset_params.offset_envelope,
+        m_refine_front_envelope_eps > 0. ? m_refine_front_envelope_eps
+                                         : m_offset_params.envelope_size,
         m_envelope_eps,
         amips0,
         m_params.stop_energy,
@@ -4987,10 +4991,10 @@ void TopoOffsetTetMesh::refine_front_pass()
         }
     }
     grade_sizing(m_offset_params.sizing_gradation, lowered);
-    // The front's tube in this pass only: half the distance the march traced it to (d_0 under
-    // EXPERIMENTAL_incremental_growth, else target_distance); every other tracked surface keeps
-    // m_envelope (envelope_size).
-    const double tube_eps = m_construction_distance > 0. ? 0.5 * m_construction_distance : 0.;
+    // The offset surface's envelope in this pass only: half the distance the march traced it to
+    // (d_0 under EXPERIMENTAL_incremental_growth, else target_distance); every other tracked
+    // surface keeps m_envelope (envelope_size).
+    const double envelope_eps = m_construction_distance > 0. ? 0.5 * m_construction_distance : 0.;
     logger().info(
         "======== [refine construction] the offset surface as constructed: maximum marchable "
         "distance M "
@@ -5008,7 +5012,7 @@ void TopoOffsetTetMesh::refine_front_pass()
         l,
         seeds.size(),
         lowered.size(),
-        tube_eps > 0. ? tube_eps : m_offset_params.offset_envelope,
+        envelope_eps > 0. ? envelope_eps : m_offset_params.envelope_size,
         m_construction_distance,
         m_envelope_eps);
     if (s_asked < s_floor) {
@@ -5022,9 +5026,9 @@ void TopoOffsetTetMesh::refine_front_pass()
     logger().info("\t[refine construction] graded, before TetWild: {}", front_sizing_report());
     // The engine's splits (the loop's EdgeSplitMode::Optimization, set by optimize_offset()) give
     // the new vertex the mean of its edge's scalars, so the field is carried through the pass.
-    m_refine_front_tube_eps = tube_eps;
+    m_refine_front_envelope_eps = envelope_eps;
     construction_tetwild_run();
-    m_refine_front_tube_eps = 0.;
+    m_refine_front_envelope_eps = 0.;
     logger().info("\t[refine construction] after TetWild: {}", front_sizing_report());
 }
 

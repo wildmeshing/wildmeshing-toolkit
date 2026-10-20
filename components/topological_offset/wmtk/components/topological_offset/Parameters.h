@@ -222,7 +222,7 @@ struct Parameters : public wmtk::OptimizerParameters
     int initial_smoothing_passes = 10;
     /// EXPERIMENTAL (2026-10-19), 3D, with optimize_offset: after the march, the front vertices
     /// get the sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and
-    /// the construction TetWild pass runs (the offset surface in a tube of half the traced
+    /// the construction TetWild pass runs (the offset surface in an envelope of half the traced
     /// distance, this pass only; TetWild's own rules, no band term;
     /// TopoOffsetTetMesh::refine_front_pass()).
     /// Its operations carry the field: the loop starts from it. See the spec doc.
@@ -258,14 +258,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
     /// pass, and in 3D the construction pass (EXPERIMENTAL_construction_tetwild_run).
     int max_iterations;
-    // The offset envelope half-width: the leash the front is kept inside during a TetWild pass,
-    // built just before it (3D: build_offset_envelope(); 2D:
-    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
-    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
-    // tying it to target_distance made every change of the offset distance a silent change of the
-    // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
-    double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
-    double offset_envelope_rel;
+    // NO KEY since 2026-10-20 (offset_envelope / offset_envelope_rel removed): the offset
+    // surface's envelope in a TetWild pass has envelope_size's eps, like every other held surface
+    // (EXPERIMENTAL_refine_construction's pass alone widens it). init() sets these two to
+    // envelope_size / envelope_size_rel; only the 2D code still reads them.
+    double offset_envelope = -1.;
+    double offset_envelope_rel = -1.;
 
     // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
     // target_distance rather than of the bounding box because that is the scale the offset has;
@@ -427,8 +425,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
-        offset_envelope = json_params["offset_envelope"];
-        offset_envelope_rel = json_params["offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
         min_edge_length_rel = json_params["min_edge_length_rel"];
@@ -535,23 +531,18 @@ struct Parameters : public wmtk::OptimizerParameters
                 target_distance);
         }
 
-        // The operation leash, the same absolute-or-relative pair as the envelope and the
-        // convergence epsilon, against the same reference.
-        if (offset_envelope > 0) {
-            offset_envelope_rel = offset_envelope / diag_l;
-        } else {
-            offset_envelope = offset_envelope_rel * diag_l;
-        }
+        // The offset surface's envelope is envelope_size's (no key of its own since 2026-10-20);
+        // the two fields only for the 2D code, which still reads them.
+        offset_envelope = envelope_size;
+        offset_envelope_rel = envelope_size_rel;
 
         // l_min is relative to the offset distance rather than the bounding box: it is the offset
         // that has to be resolved. See the declaration.
         if (min_edge_length_rel < 0) {
             // The envelope eps expressed as a multiple of target_distance, which is what this
-            // wants. offset_envelope_rel is a fraction of the BBOX DIAGONAL since 2026-09-24, so
-            // the conversion goes through the resolved absolute rather than being the identity it
-            // used to be -- the derived floor is unchanged in model units either way.
-            min_edge_length_rel =
-                std::max(offset_envelope / std::max(target_distance, 1e-16), 1e-12);
+            // wants: envelope_size, the offset surface's envelope too since offset_envelope went
+            // (2026-10-20), resolved to an absolute length above.
+            min_edge_length_rel = std::max(envelope_size / std::max(target_distance, 1e-16), 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;

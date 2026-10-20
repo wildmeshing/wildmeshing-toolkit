@@ -111,7 +111,7 @@ class FaceExtra
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
     /// The face lies on the input's envelope surface group (within its envelope): selectable as
-    /// the complex by name, held in that group's tube. Re-derived by classify_sheet_faces() and
+    /// the complex by name, held in that group's envelope. Re-derived by classify_sheet_faces() and
     /// read only before the optimization starts; the optimization's operations carry it with the
     /// label (see m_face_extra in TopoOffsetTetMesh). The 2D twin is EdgeExtra2d::on_curve.
     bool on_sheet = false;
@@ -183,7 +183,7 @@ public:
      * @brief Mark the mesh faces that lie on the input's envelope surface group
      * (FaceExtra::on_sheet).
      *
-     * Geometric, against the sheet's own tube (the same eps the tag envelopes use), because the
+     * Geometric, against the sheet's own envelope (the same eps the tag envelopes use), because the
      * .msh carries the sheet with its own vertices and there is no index to match on. Called
      * whenever the complex is labelled, not once at load: the flag is a property of a face and
      * nothing propagates it through split and collapse.
@@ -348,7 +348,7 @@ public:
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
-    /// The final pass's envelopes: the offset surface's tube (build_offset_envelope()), and
+    /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
     /// then). release_final_envelopes() puts the loop's envelope back.
@@ -363,8 +363,8 @@ public:
      * maximum marchable distance m_marchable_distance, l the base edge length), kept at or above
      * the loop's refinement floor, and graded into the volume (grade_sizing()). Then
      * construction_tetwild_run(): a TetWild pass (tetwild_pass()) with the offset surface held in
-     * a tube of eps m_construction_distance / 2 (m_refine_front_tube_eps, this pass only; the
-     * final pass keeps offset_envelope) and every other tracked surface in m_envelope, under
+     * an envelope of eps m_construction_distance / 2 (m_refine_front_envelope_eps, this pass only;
+     * the final pass keeps envelope_size) and every other tracked surface in m_envelope, under
      * TetWild's own rules (m_op_rules: no band term), then the loop's setup redone. Its splits are
      * the engine's (EdgeSplitMode::Optimization): the new vertex takes the mean of its edge's
      * sizing scalars, so the loop starts from the field the pass leaves. Called by
@@ -373,15 +373,15 @@ public:
     void refine_front_pass();
     /// The sizing scalar refine_front_pass() gave the front; 0 when no pass ran.
     double m_refine_front_scalar = 0.;
-    /// The front's tube eps while refine_front_pass() runs its TetWild pass: half the distance the
+    /// The offset surface's envelope eps while refine_front_pass() runs its TetWild pass: half the distance the
     /// march traced the front to, m_construction_distance / 2. 0 at every other time, when
-    /// build_offset_envelope() takes offset_envelope (the final pass included).
-    double m_refine_front_tube_eps = 0.;
+    /// build_offset_envelope() takes envelope_size (the final pass included).
+    double m_refine_front_envelope_eps = 0.;
     /// EXPERIMENTAL_refine_construction's log: the front vertices (sizing scalar min / median / max, how
     /// many still at 1 or above) and the front faces' edges (median length against the edge
     /// target m_refine_front_scalar x l, how many over the split gate, split_edge_is_due()).
     std::string front_sizing_report() const;
-    /// A TetWild pass: every tracked surface held (the final envelopes; the front in its tube,
+    /// A TetWild pass: every tracked surface held (the final envelopes; the front in its envelope,
     /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
     /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
     /// re-derived. Returns the max AMIPS after it. The final pass and
@@ -398,7 +398,7 @@ public:
 
     /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
-    /// held vertex, pulled to and contained in its tube (smoothing_energy_envelope()); every
+    /// held vertex, pulled to and contained in its envelope (smoothing_energy_envelope()); every
     /// cell's energy, where it is still read (tet_energy(): the logs and frames), is its
     /// equilateral AMIPS term alone, no band term; the plastic medium is off; and the operations
     /// and the smoother follow TetWild's own rules (m_op_rules, set there too).
@@ -432,8 +432,9 @@ public:
     bool tetwild_rules() const { return m_op_rules == OpRules::TetWild; }
 
     /**
-     * @brief The tube the offset surface may not leave during a TetWild pass (tetwild_pass()), of
-     * half-width offset_envelope, built by build_offset_envelope() from the surface as it is just
+     * @brief The envelope the offset surface may not leave during a TetWild pass (tetwild_pass()),
+     * of eps envelope_size (EXPERIMENTAL_refine_construction's pass: half the traced distance),
+     * built by build_offset_envelope() from the surface as it is just
      * before that pass. Null until then: the loop holds the offset surface to no
      * envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
      * check), so it is one triangle set with no junctions: a face is either on it or not, and
@@ -1817,7 +1818,7 @@ public:
 
     /// A held vertex is pulled to and contained in m_envelope -- a real Envelope, as the
     /// pull requires. In a TetWild pass a front vertex no other envelope holds is pulled to and
-    /// contained in the front's own tube, m_offset_envelope (one on another held surface too
+    /// contained in the front's own envelope, m_offset_envelope (one on another held surface too
     /// keeps m_envelope, which its front faces are not in, so it stays where it is). Any other
     /// vertex, and the front in the loop, is held by nothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override
@@ -2187,7 +2188,7 @@ public:
         size_t n_faces_over = 0, n_faces_over_placed = 0;
         double max_face_placed = 0.;
         Vector3d worst_placed_centroid = Vector3d::Zero();
-        double tube = 0.;
+        double bar_length = 0.; ///< the bar (front_conv) as a length
         /// Faces over the bar that the refinement does not take: no chord target below the
         /// largest sizing scalar at their corners. Like every face over the bar they block the
         /// exit. Two states share this count (see energy_criterion()): corners at the sizing
@@ -2212,7 +2213,7 @@ public:
         /// edge (the chord the target is derived from), c the third corner; len the longest
         /// edge's length.
         ///
-        /// `measure` is the face's MEAN sag as a LENGTH (the ratio times the tube). Nothing
+        /// `measure` is the face's MEAN sag as a LENGTH (the ratio times bar_length). Nothing
         /// reads it today -- refinement is the halving, which needs the face's corners alone --
         /// and it is kept because the sag condition is still being reworked.
         struct Refinable
@@ -2299,13 +2300,13 @@ public:
         double avg_face() const { return n_faces ? sum_face / double(n_faces) : 0.; }
     };
     EnergyCriterion energy_criterion();
-    /// The edge length that would bring a front chord's sag under the tube: 3/4 L
-    /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
+    /// The edge length that would bring a front chord's sag under the bar (front_conv): 3/4 L
+    /// (bar / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
     ///
     /// Reached from ONE place now: the refinable / at-floor test in energy_criterion(), which
     /// asks whether there is any target left below what the face's corners already carry.
-    double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
+    double front_chord_target(size_t va, size_t vb, double len, double sag, double bar) const;
 
     /// THE refinement: halve the sizing scalar at the corners of every refinable face, once per
     /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded

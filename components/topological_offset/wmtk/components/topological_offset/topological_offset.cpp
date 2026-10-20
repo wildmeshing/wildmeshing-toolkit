@@ -108,10 +108,6 @@ void topological_offset(nlohmann::json json_params)
             params.front_conv,
             params.front_conv_rel);
         logger().info("stencil_order: {}", params.stencil_order);
-        logger().info(
-            "offset_envelope: {} ({} x the bbox diagonal)",
-            params.offset_envelope,
-            params.offset_envelope_rel);
         logger().info("===============================");
     }
 
@@ -359,9 +355,6 @@ void topological_offset(nlohmann::json json_params)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
-        check_envelope_leash(params);
-
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
         wmtk::set_preallocation_factor_from_json(mesh, json_params);

@@ -153,7 +153,7 @@ void TopoOffsetTetMesh::init_from_image(
     // The envelope surface group is registered as a tag so an OPEN sheet can be selected as the
     // input complex; offset_selection is otherwise an expression over tet tags. Membership is
     // decided geometrically below: the .msh carries the sheet with its own vertices, nothing
-    // matches by index, so a face inside the sheet's tube (the eps the tag envelopes use)
+    // matches by index, so a face inside the sheet's envelope (the eps the tag envelopes use)
     // carries it. The 2D twin is the curve group.
     if (F_env.rows() > 0) {
         m_sheet_V = V_env;
@@ -318,8 +318,8 @@ void TopoOffsetTetMesh::build_envelopes()
 {
     // See m_envelope's declaration: one envelope, around every held face, built once.
     m_envelope_eps = m_offset_params.envelope_size;
-    // Always the exact envelope. An eps that is not a positive length has no exact tube to build,
-    // and is an error, where it used to switch to the sampled envelope.
+    // Always the exact envelope. An eps that is not a positive length has no exact envelope to
+    // build, and is an error, where it used to switch to the sampled envelope.
     if (!(std::isfinite(m_envelope_eps) && m_envelope_eps > 0.)) {
         log_and_throw_error(
             "envelope_size {} is not a valid envelope half-width (finite and > 0); set "
@@ -358,7 +358,7 @@ void TopoOffsetTetMesh::build_envelopes()
 
 void TopoOffsetTetMesh::build_final_envelopes()
 {
-    // See the declaration. The offset surface's own tube first.
+    // See the declaration. The offset surface's own envelope first.
     build_offset_envelope();
     // The held surfaces where build_envelopes() captured them, plus every region boundary as the
     // loop left it: a tracked face off the wall, off the offset surface and off the input
@@ -371,7 +371,7 @@ void TopoOffsetTetMesh::build_final_envelopes()
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         if (!f.switch_tetrahedron(*this)) continue; // the wall: already held
-        if (face_is_offset_surface_live(f)) continue; // its own tube
+        if (face_is_offset_surface_live(f)) continue; // its own envelope
         if (face_is_complex_boundary(f)) continue; // already held
         const auto vs = get_face_vids(f);
         tris.emplace_back(base + int(vs[0]), base + int(vs[1]), base + int(vs[2]));
@@ -462,7 +462,8 @@ void TopoOffsetTetMesh::classify_sheet_faces()
         n_on += on ? 1 : 0;
     }
     logger().info(
-        "\tSurface group '{}' (tag {}): {} triangles; {} of the mesh's faces lie inside its tube "
+        "\tSurface group '{}' (tag {}): {} triangles; {} of the mesh's faces lie inside its "
+        "envelope "
         "(eps {:.6g}) and carry the tag",
         m_tag_id_to_name[m_sheet_tag],
         m_sheet_tag,

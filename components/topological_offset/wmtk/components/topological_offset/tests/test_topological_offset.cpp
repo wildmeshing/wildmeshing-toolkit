@@ -1802,7 +1802,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
         for (size_t v = 0; v < 5; ++v) {
             const bool front = mesh->vertex_carries_offset_term(v);
             // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
-            // tube) carries no offset term, so its chords' terms do move with it and are not in
+            // envelope) carries no offset term, so its chords' terms do move with it and are not in
             // its objective; the identity is the carrying vertices' and the off-front ones'.
             if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
             const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
@@ -2719,6 +2719,13 @@ TEST_CASE("foldover-face-angle", "[offset][3d]")
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     CHECK(Parameters(injected(nlohmann::json::object())).foldover_angle == 30.);
+    // offset_envelope / offset_envelope_rel are gone (2026-10-20): the offset surface's envelope
+    // is envelope_size's; the strict spec refuses a config that still sets either.
+    for (const char* gone : {"offset_envelope", "offset_envelope_rel"}) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(with_app({{gone, 1e-3}}), spec));
+    }
     CHECK(Parameters(injected({{"foldover_angle", 45.}})).foldover_angle == 45.);
     for (const double bad : {-1., 181.}) {
         jse::JSE spec_engine;
