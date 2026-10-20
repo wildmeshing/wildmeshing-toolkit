@@ -1,5 +1,7 @@
 #include "surface_map.hpp"
 #include "SurfaceMap.hpp"
+#include "surface_io.hpp"
+#include "transfer.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
@@ -85,7 +87,33 @@ void surface_map(nlohmann::json json_params)
     logger().info("{} of the collapses removed a boundary vertex", map.boundary_collapses());
     log_warnings("building the map", map.build_warnings());
 
-    // The output's face centroids to the input and back.
+    if (json_params["operation"] == "transfer") {
+        const std::string input = resolve_path(root, json_params["input"]).string();
+        const std::string output = json_params["output"];
+        const SurfaceData in = read_surface_msh(input);
+        std::string why;
+        if (!matches_input(map, in, why)) {
+            log_and_throw_error(
+                "{} is not the surface {} starts from: {}",
+                input,
+                history_path,
+                why);
+        }
+        timer.start();
+        const SurfaceData out = transfer_face_fields(map, in);
+        log_warnings("output centroids to the input", map.map_warnings());
+        write_surface_msh(output, out);
+        logger().info(
+            "{} field(s) carried from {} faces onto {} in {:.3}s; written to {}",
+            out.face_fields.size(),
+            in.faces.size(),
+            out.faces.size(),
+            timer.getElapsedTimeInSec(),
+            output);
+        return;
+    }
+
+    // info: the output's face centroids to the input and back.
     std::vector<SurfacePoint> centroids;
     for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
         if (map.output_face_alive()[f]) centroids.push_back({f, Eigen::Vector3d::Constant(1. / 3)});

@@ -9,6 +9,12 @@ set(SRC_FILES
 	SurfaceMap.hpp
 	SurfaceMap.cpp
 
+	surface_io.hpp
+	surface_io.cpp
+
+	transfer.hpp
+	transfer.cpp
+
 	surface_map.hpp
 	surface_map.cpp
 )

@@ -1,10 +1,13 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
+#include <wmtk/components/surface_map/surface_io.hpp>
+#include <wmtk/components/surface_map/transfer.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
 #include <random>
 
 using namespace wmtk;
@@ -14,12 +17,15 @@ using surface_map::SurfacePoint;
 
 namespace {
 
-/// The history of an isotropic remeshing of `model`.
+/// The history of an isotropic remeshing of `model` (a path, or a name under data/models).
 history::SurfaceHistory remesh(const std::string& model, int threads, double len_factor, int its)
 {
     MatrixXd V;
     MatrixXi F;
-    wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/" + model, V, F, 0);
+    const std::string path = std::filesystem::path(model).is_absolute()
+                                 ? model
+                                 : std::string(WMTK_DATA_DIR) + "/models/" + model;
+    wmtk::io::read_triangle_mesh(path, V, F, 0);
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     VF_to_vectors(V, F, verts, tris);
@@ -135,4 +141,68 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
     const double err = round_trip(map, sample(map.output_face_alive(), 1, 3), false, warnings);
     CHECK(warnings == 0);
     CHECK(err < 1e-9);
+}
+
+TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
+{
+    // Label the sphere's faces by the side of x = 0 their centroid is on, and by octant; remesh
+    // from the labelled gmsh file while recording; carry the labels onto the output. An output
+    // face clearly on one side gets that side's label. Near x = 0 an output face can straddle
+    // the boundary, since the remeshing does not keep it as a curve.
+    MatrixXd V;
+    MatrixXi F;
+    wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, F, 0);
+    surface_map::SurfaceData in;
+    for (int i = 0; i < V.rows(); ++i) in.vertices.push_back(V.row(i).transpose());
+    auto& side = in.face_fields["side"];
+    auto& octant = in.face_fields["octant"];
+    const auto centroid = [](const surface_map::SurfaceData& s, size_t f) {
+        return (s.vertices[s.faces[f][0]] + s.vertices[s.faces[f][1]] + s.vertices[s.faces[f][2]]) /
+               3;
+    };
+    for (int f = 0; f < F.rows(); ++f) {
+        in.faces.push_back({{uint64_t(F(f, 0)), uint64_t(F(f, 1)), uint64_t(F(f, 2))}});
+        const Eigen::Vector3d c = centroid(in, size_t(f));
+        side.push_back({c.x() > 0 ? 1. : 0.});
+        octant.push_back({double((c.x() > 0) + 2 * (c.y() > 0) + 4 * (c.z() > 0))});
+    }
+    const auto path =
+        (std::filesystem::temp_directory_path() / "wmtk_surface_map_labels.msh").string();
+    surface_map::write_surface_msh(path, in);
+    const surface_map::SurfaceData reread = surface_map::read_surface_msh(path);
+    REQUIRE(reread.faces == in.faces);
+    REQUIRE(reread.face_fields == in.face_fields);
+
+    const auto h = remesh(path, 0, 0.6, 2);
+    std::filesystem::remove(path);
+    const SurfaceMap map(h);
+    std::string why;
+    INFO(why);
+    REQUIRE(surface_map::matches_input(map, reread, why));
+
+    const surface_map::SurfaceData out = surface_map::transfer_face_fields(map, reread);
+    CHECK(map.map_warnings().total() == 0);
+    REQUIRE(out.face_fields.at("side").size() == out.faces.size());
+    const auto longest_edge = [](const surface_map::SurfaceData& s) {
+        double h = 0;
+        for (const auto& t : s.faces) {
+            for (int k = 0; k < 3; ++k) {
+                h = std::max(h, (s.vertices[t[k]] - s.vertices[t[(k + 1) % 3]]).norm());
+            }
+        }
+        return h;
+    };
+    // The labelled side ends within one input face of x = 0, and an output face reaches at most
+    // its longest edge from its centroid.
+    const double margin = longest_edge(in) + longest_edge(out);
+    size_t far = 0, wrong = 0;
+    for (size_t f = 0; f < out.faces.size(); ++f) {
+        const Eigen::Vector3d c = centroid(out, f);
+        if (std::abs(c.x()) < margin) continue;
+        ++far;
+        wrong += out.face_fields.at("side")[f][0] != (c.x() > 0 ? 1. : 0.);
+    }
+    INFO(far << " of " << out.faces.size() << " faces clearly on one side");
+    CHECK(far > out.faces.size() / 3);
+    CHECK(wrong == 0);
 }
