@@ -146,6 +146,16 @@ std::optional<std::vector<uint64_t>> disk_boundary(const std::vector<Tri>& tris)
     return loop;
 }
 
+/// Coordinates of the barycentric point `b` of a face in the piece of it with corners `sub`.
+Eigen::Vector3d local_coordinates(
+    const std::array<Eigen::Vector3d, 3>& sub,
+    const Eigen::Vector3d& b)
+{
+    Eigen::Matrix3d M;
+    for (int k = 0; k < 3; ++k) M.col(k) = sub[k];
+    return M.partialPivLu().solve(b);
+}
+
 bool positive(const Eigen::Vector2d& a, const Eigen::Vector2d& b, const Eigen::Vector2d& c)
 {
     return utils::predicates::orient2d(a, b, c) == utils::predicates::Orientation::POSITIVE;
@@ -176,8 +186,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
     };
 
     // A joint Tutte embedding of the patch before and after an edit, on the outline of the patch
-    // before it. `removed`, if it is on that outline, goes on the chord between its outline
-    // neighbours, so the outline is the same polygon after it. False if the patch is not a disk.
+    // before it, spaced on the unit circle by 3D length. A `removed` vertex on that outline -- on
+    // the boundary or a curve -- stays on the circle, and the triangle after the edit that holds
+    // the edge replacing its two is split virtually at the same spot, so the outline is the same
+    // polygon after it. False if the patch is not a disk.
     const auto flatten = [&](const std::vector<uint64_t>& before_f,
                              const std::vector<Tri>& before_t,
                              const std::vector<uint64_t>& after_f,
@@ -187,37 +199,63 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                              Cell& cell) -> bool {
         const auto loop = disk_boundary(before_t);
         if (!loop) return false;
-        std::vector<uint64_t> ring = *loop;
-        const auto it = std::find(ring.begin(), ring.end(), removed);
-        const bool removed_on_loop = it != ring.end();
-        uint64_t prev = kNone, next = kNone;
-        if (removed_on_loop) {
-            const size_t i = size_t(it - ring.begin());
-            prev = ring[(i + ring.size() - 1) % ring.size()];
-            next = ring[(i + 1) % ring.size()];
-            ring.erase(it);
-        }
         const auto length = [&P](uint64_t a, uint64_t b) { return (P.at(a) - P.at(b)).norm(); };
-        // The outline on the unit circle, spaced by 3D length; the chord over a removed vertex
-        // counts both of its edges.
-        std::vector<double> s(ring.size() + 1, 0.);
-        for (size_t i = 0; i < ring.size(); ++i) {
-            const uint64_t a = ring[i], b = ring[(i + 1) % ring.size()];
-            const double l =
-                (a == prev && b == next) ? length(a, removed) + length(removed, b) : length(a, b);
-            s[i + 1] = s[i] + std::max(l, 1e-300);
+        const auto on_circle = [&](const std::vector<uint64_t>& ring) {
+            std::vector<double> s(ring.size() + 1, 0.);
+            for (size_t i = 0; i < ring.size(); ++i) {
+                s[i + 1] = s[i] + std::max(length(ring[i], ring[(i + 1) % ring.size()]), 1e-300);
+            }
+            UV uv;
+            for (size_t i = 0; i < ring.size(); ++i) {
+                const double th = 2 * M_PI * s[i] / s.back();
+                uv[ring[i]] = Eigen::Vector2d(std::cos(th), std::sin(th));
+            }
+            return uv;
+        };
+        const auto add = [&](std::vector<Face>& to, uint64_t fid, const Tri& t, const UV& uv) {
+            to.push_back({fid, layout(t, uv)});
+            return positive(to.back().uv[0], to.back().uv[1], to.back().uv[2]);
+        };
+
+        const auto it = std::find(loop->begin(), loop->end(), removed);
+        bool ok = true;
+        if (it == loop->end()) {
+            const UV fixed = on_circle(*loop);
+            const UV uv_before = tutte(before_t, fixed);
+            const UV uv_after = tutte(after_t, fixed);
+            for (size_t i = 0; i < before_f.size(); ++i) {
+                ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
+            }
+            for (size_t i = 0; i < after_f.size(); ++i) {
+                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
+            }
+            if (!ok) ++m_build_warnings.inverted;
+            return true;
         }
-        UV fixed;
-        for (size_t i = 0; i < ring.size(); ++i) {
-            const double th = 2 * M_PI * s[i] / s.back();
-            fixed[ring[i]] = Eigen::Vector2d(std::cos(th), std::sin(th));
+
+        ++m_curve_collapses;
+        const size_t i_rm = size_t(it - loop->begin());
+        const uint64_t prev = (*loop)[(i_rm + loop->size() - 1) % loop->size()];
+        const uint64_t next = (*loop)[(i_rm + 1) % loop->size()];
+        const double a = length(prev, removed), b = length(removed, next);
+        const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
+        // The triangle after the edit holding the edge (prev, next), which replaces the removed
+        // vertex's two edges along the outline.
+        size_t j = after_t.size();
+        for (size_t k = 0; k < after_t.size(); ++k) {
+            if (std::count(after_t[k].begin(), after_t[k].end(), prev) &&
+                std::count(after_t[k].begin(), after_t[k].end(), next)) {
+                j = k;
+            }
         }
-        UV fixed_before = fixed;
-        if (removed_on_loop) {
-            ++m_chord_collapses;
-            const double a = length(prev, removed), b = length(removed, next);
-            const double tau = std::clamp(a + b > 0 ? a / (a + b) : 0.5, 0.01, 0.99);
-            fixed_before[removed] = (1 - tau) * fixed[prev] + tau * fixed[next];
+        if (j == after_t.size()) {
+            // Nothing to split: flatten the outline over a chord instead, where the triangles
+            // with all three corners on it go flat.
+            std::vector<uint64_t> ring = *loop;
+            ring.erase(ring.begin() + long(i_rm));
+            const UV fixed = on_circle(ring);
+            UV fixed_before = fixed;
+            fixed_before[removed] = (1 - tau) * fixed.at(prev) + tau * fixed.at(next);
             for (const Tri& t : before_t) {
                 int on = 0;
                 for (const uint64_t v : t) on += (v == prev || v == removed || v == next);
@@ -226,19 +264,61 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                     break;
                 }
             }
+            const UV uv_before = tutte(before_t, fixed_before);
+            const UV uv_after = tutte(after_t, fixed);
+            for (size_t i = 0; i < before_f.size(); ++i) {
+                ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
+            }
+            for (size_t i = 0; i < after_f.size(); ++i) {
+                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
+            }
+            if (!ok) ++m_build_warnings.inverted;
+            return true;
         }
+
+        // The outline keeps the removed vertex; after the edit a virtual vertex takes its place,
+        // on the edge (prev, next) at its parameter along the two edges it replaced.
+        constexpr uint64_t kVirtual = kNone - 1;
+        const UV fixed_before = on_circle(*loop);
+        UV fixed_after = fixed_before;
+        fixed_after.erase(removed);
+        fixed_after[kVirtual] = fixed_before.at(removed);
+        const Tri split = after_t[j];
+        Tri half_prev = split, half_next = split; // (prev, q, z) and (q, next, z), in place
+        for (uint64_t& v : half_prev) {
+            if (v == next) v = kVirtual;
+        }
+        for (uint64_t& v : half_next) {
+            if (v == prev) v = kVirtual;
+        }
+        std::vector<Tri> virtual_after = after_t;
+        virtual_after[j] = half_prev;
+        virtual_after.push_back(half_next);
         const UV uv_before = tutte(before_t, fixed_before);
-        const UV uv_after = tutte(after_t, fixed);
-        bool ok = true;
+        const UV uv_after = tutte(virtual_after, fixed_after);
         for (size_t i = 0; i < before_f.size(); ++i) {
-            cell.before.push_back({before_f[i], layout(before_t[i], uv_before)});
-            const auto& q = cell.before.back().uv;
-            ok = ok && positive(q[0], q[1], q[2]);
+            ok = add(cell.before, before_f[i], before_t[i], uv_before) && ok;
         }
         for (size_t i = 0; i < after_f.size(); ++i) {
-            cell.after.push_back({after_f[i], layout(after_t[i], uv_after)});
-            const auto& q = cell.after.back().uv;
-            ok = ok && positive(q[0], q[1], q[2]);
+            if (i != j) {
+                ok = add(cell.after, after_f[i], after_t[i], uv_after) && ok;
+                continue;
+            }
+            for (const Tri& half : {half_prev, half_next}) {
+                ok = add(cell.after, after_f[i], half, uv_after) && ok;
+                for (int k = 0; k < 3; ++k) {
+                    Eigen::Vector3d sub = Eigen::Vector3d::Zero();
+                    if (half[k] != kVirtual) {
+                        sub[k] = 1;
+                    } else {
+                        for (int m = 0; m < 3; ++m) {
+                            if (split[m] == prev) sub[m] = 1 - tau;
+                            if (split[m] == next) sub[m] = tau;
+                        }
+                    }
+                    cell.after.back().sub[k] = sub;
+                }
+            }
         }
         if (!ok) ++m_build_warnings.inverted;
         return true;
@@ -467,38 +547,61 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
         for (const Cell& c : s.cells) {
             const auto& from = forward ? c.before : c.after;
             const auto& to = forward ? c.after : c.before;
-            for (const Face& f : from) {
-                const auto it = on_face.find(f.fid);
-                if (it == on_face.end()) continue;
-                for (const size_t i : it->second) {
-                    const Eigen::Vector3d& b = pts[i].bary;
-                    const Eigen::Vector2d q = b[0] * f.uv[0] + b[1] * f.uv[1] + b[2] * f.uv[2];
-                    double best = -std::numeric_limits<double>::infinity();
-                    size_t best_k = 0;
-                    Eigen::Vector3d best_l(1. / 3, 1. / 3, 1. / 3);
-                    for (size_t k = 0; k < to.size(); ++k) {
-                        const Eigen::Vector3d l =
-                            barycentric(q, to[k].uv[0], to[k].uv[1], to[k].uv[2]);
-                        const double score = l.minCoeff();
-                        if (std::isfinite(score) && score > best) {
-                            best = score;
-                            best_k = k;
-                            best_l = l;
+            // The pieces of one face are consecutive.
+            for (size_t first = 0; first < from.size();) {
+                size_t last = first + 1;
+                while (last < from.size() && from[last].fid == from[first].fid) ++last;
+                const auto it = on_face.find(from[first].fid);
+                if (it != on_face.end()) {
+                    for (const size_t i : it->second) {
+                        // The piece of the face holding the point, and the point in the domain.
+                        size_t piece = first;
+                        Eigen::Vector3d l = pts[i].bary;
+                        if (last - first > 1) {
+                            double best = -std::numeric_limits<double>::infinity();
+                            for (size_t k = first; k < last; ++k) {
+                                const Eigen::Vector3d lk =
+                                    local_coordinates(from[k].sub, pts[i].bary);
+                                if (lk.minCoeff() > best) {
+                                    best = lk.minCoeff();
+                                    piece = k;
+                                    l = lk;
+                                }
+                            }
                         }
-                    }
-                    if (!(best >= -1e-9)) {
-                        ++m_map_warnings.unlocated;
-                        best_l = best_l.cwiseMax(0.);
-                        if (best_l.sum() > 0) {
-                            best_l /= best_l.sum();
-                        } else {
-                            best_l = Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
+                        const auto& f = from[piece];
+                        const Eigen::Vector2d q = l[0] * f.uv[0] + l[1] * f.uv[1] + l[2] * f.uv[2];
+                        double best = -std::numeric_limits<double>::infinity();
+                        size_t best_k = 0;
+                        Eigen::Vector3d best_l(1. / 3, 1. / 3, 1. / 3);
+                        for (size_t k = 0; k < to.size(); ++k) {
+                            const Eigen::Vector3d lk =
+                                barycentric(q, to[k].uv[0], to[k].uv[1], to[k].uv[2]);
+                            const double score = lk.minCoeff();
+                            if (std::isfinite(score) && score > best) {
+                                best = score;
+                                best_k = k;
+                                best_l = lk;
+                            }
                         }
+                        if (!(best >= -1e-9)) {
+                            ++m_map_warnings.unlocated;
+                            best_l = best_l.cwiseMax(0.);
+                            if (best_l.sum() > 0) {
+                                best_l /= best_l.sum();
+                            } else {
+                                best_l = Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
+                            }
+                        }
+                        const auto& g = to[best_k];
+                        pts[i] = {
+                            g.fid,
+                            best_l[0] * g.sub[0] + best_l[1] * g.sub[1] + best_l[2] * g.sub[2]};
+                        landed.emplace_back(g.fid, i);
                     }
-                    pts[i] = {to[best_k].fid, best_l};
-                    landed.emplace_back(to[best_k].fid, i);
+                    on_face.erase(it);
                 }
-                on_face.erase(it);
+                first = last;
             }
         }
         if (forward) {

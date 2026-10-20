@@ -8,7 +8,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <cmath>
 #include <filesystem>
 #include <map>
 #include <random>
@@ -137,7 +136,7 @@ TEST_CASE("surface-map-round-trip-remeshing-bunny", "[surface_map][.]")
     INFO(
         "not a disk " << w.not_a_disk << ", flat " << w.flat_triangle << ", inverted " << w.inverted
                       << ", merged " << w.merged_faces);
-    CHECK(map.chord_collapses() > 0);
+    CHECK(map.curve_collapses() > 0);
     CHECK(w.not_a_disk == 0);
     CHECK(w.merged_faces == 0);
     CHECK(w.inverted <= w.flat_triangle);
@@ -301,6 +300,14 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
                                  << map.build_warnings().flat_triangle << ", inverted "
                                  << map.build_warnings().inverted);
         CHECK(map.build_warnings().total() == 0);
+        // Collapses along the curves, the ears' among them, each split a triangle virtually:
+        // the map stays a bijection, both ways.
+        CHECK(map.curve_collapses() > 0);
+        size_t trip_warnings = 0;
+        CHECK(round_trip(map, sample(map.input_face_alive(), 3, 5), true, trip_warnings) < 1e-9);
+        CHECK(trip_warnings == 0);
+        CHECK(round_trip(map, sample(map.output_face_alive(), 3, 6), false, trip_warnings) < 1e-9);
+        CHECK(trip_warnings == 0);
 
         // Four points in every output face, mapped to the input.
         std::vector<SurfacePoint> pts;
@@ -346,27 +353,27 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         CHECK(label_edges > 0);
         CHECK(label_edges_not_feature == 0);
 
-        // Keeping the curves does not leave flat triangles along them: smoothing along a curve
-        // used to flatten the triangles holding two of its edges.
-        double worst_on_curve = 180, worst_two = 180;
-        for (const auto& t : out.faces) {
-            int n_feature = 0;
-            double a_min = 180;
-            for (int k = 0; k < 3; ++k) {
-                uint64_t a = t[k], b = t[(k + 1) % 3];
-                const Eigen::Vector3d u = out.vertices[b] - out.vertices[a];
-                const Eigen::Vector3d w = out.vertices[t[(k + 2) % 3]] - out.vertices[a];
-                a_min = std::min(a_min, std::acos(u.dot(w) / (u.norm() * w.norm())) * 180 / M_PI);
-                if (a > b) std::swap(a, b);
-                n_feature += mesh_features.count({{a, b}}) > 0;
-            }
-            if (n_feature >= 1) worst_on_curve = std::min(worst_on_curve, a_min);
-            if (n_feature >= 2) worst_two = std::min(worst_two, a_min);
+        // No triangle holds both curve edges of a vertex inside a curve -- an "ear", which
+        // smoothing along the curve would flatten. Where curves meet, a corner triangle may.
+        std::map<uint64_t, size_t> curve_degree;
+        for (const auto& e : mesh_features) {
+            ++curve_degree[e[0]];
+            ++curve_degree[e[1]];
         }
-        INFO(
-            "smallest angle on a curve " << worst_on_curve << ", with two curve edges "
-                                         << worst_two);
-        CHECK(worst_on_curve > 2);
-        CHECK(worst_two > 10);
+        size_t ears = 0;
+        for (const auto& t : out.faces) {
+            for (int k = 0; k < 3; ++k) {
+                const uint64_t b = t[k], a = t[(k + 2) % 3], c = t[(k + 1) % 3];
+                const auto key = [](uint64_t x, uint64_t y) {
+                    return x < y ? std::array<uint64_t, 2>{{x, y}}
+                                 : std::array<uint64_t, 2>{{y, x}};
+                };
+                if (curve_degree[b] == 2 && mesh_features.count(key(a, b)) &&
+                    mesh_features.count(key(b, c))) {
+                    ++ears;
+                }
+            }
+        }
+        CHECK(ears == 0);
     }
 }
