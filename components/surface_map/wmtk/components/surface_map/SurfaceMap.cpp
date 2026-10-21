@@ -58,14 +58,16 @@ Eigen::Vector3d position_after(const Edit& e, const uint64_t vid, const Eigen::V
 }
 
 /// Barycentric coordinates of p, projected onto the plane of the 3D triangle (a, b, c); not
-/// finite if it is degenerate.
+/// finite if it is degenerate. Taken against the triangle's normal: the normal equations'
+/// Gram determinant would square the conditioning, losing eight digits on a sliver of aspect
+/// 1e4 -- which a tet surface has after insertion -- and a point mapped there and back would
+/// drift by that much.
 Eigen::Vector3d barycentric3(const Eigen::Vector3d& p, const std::array<Eigen::Vector3d, 3>& t)
 {
     const Eigen::Vector3d e0 = t[1] - t[0], e1 = t[2] - t[0], ep = p - t[0];
-    const double d00 = e0.dot(e0), d01 = e0.dot(e1), d11 = e1.dot(e1);
-    const double d20 = ep.dot(e0), d21 = ep.dot(e1);
-    const double den = d00 * d11 - d01 * d01;
-    const double l1 = (d11 * d20 - d01 * d21) / den, l2 = (d00 * d21 - d01 * d20) / den;
+    const Eigen::Vector3d n = e0.cross(e1);
+    const double nn = n.squaredNorm();
+    const double l1 = ep.cross(e1).dot(n) / nn, l2 = e0.cross(ep).dot(n) / nn;
     return {1 - l1 - l2, l1, l2};
 }
 
@@ -77,13 +79,12 @@ Eigen::Vector3d inside_barycentric(
     const Eigen::Vector3d& c)
 {
     const Eigen::Vector3d e0 = b - a, e1 = c - a, ep = p - a;
-    const double d00 = e0.dot(e0), d01 = e0.dot(e1), d11 = e1.dot(e1);
-    const double d20 = ep.dot(e0), d21 = ep.dot(e1);
-    const double den = d00 * d11 - d01 * d01;
+    const Eigen::Vector3d n = e0.cross(e1);
+    const double nn = n.squaredNorm();
     Eigen::Vector3d l(1. / 3, 1. / 3, 1. / 3);
-    if (den > 0) {
-        l[1] = (d11 * d20 - d01 * d21) / den;
-        l[2] = (d00 * d21 - d01 * d20) / den;
+    if (nn > 0) {
+        l[1] = ep.cross(e1).dot(n) / nn;
+        l[2] = e0.cross(ep).dot(n) / nn;
         l[0] = 1 - l[1] - l[2];
     }
     for (int k = 0; k < 3; ++k) l[k] = std::max(l[k], 1e-6);
