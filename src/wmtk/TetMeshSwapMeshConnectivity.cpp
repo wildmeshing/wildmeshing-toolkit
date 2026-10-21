@@ -247,9 +247,9 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // The two tests in the order and with the short-circuit of `!after || !invariants`.
     const OpEvent refused = !swap_edge_after(newt)        ? OpEvent::after_hook
                             : !invariants(new_tet_tuples) ? OpEvent::invariants
-                                                          : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
-                                                              ? OpEvent::after_hook
-                                                          : OpEvent::committed;
+                            : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
+                                ? OpEvent::after_hook
+                                : OpEvent::committed;
     if (refused != OpEvent::committed) { // rollback post-operation
         assert(affected.size() == old_tets.size());
         operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
@@ -357,9 +357,9 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
         const OpEvent refused = !swap_face_after(newt)        ? OpEvent::after_hook
                                 : !invariants(new_tet_tuples) ? OpEvent::invariants
-                                                              : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
-                                                                  ? OpEvent::after_hook
-                                                              : OpEvent::committed;
+                                : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
+                                    ? OpEvent::after_hook
+                                    : OpEvent::committed;
         if (refused != OpEvent::committed) { // rollback post-operation
 
             logger().trace("rolling back");
@@ -651,9 +651,9 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
         const OpEvent refused = !swap_edge_44_after(newt)     ? OpEvent::after_hook
                                 : !invariants(new_tet_tuples) ? OpEvent::invariants
-                                                              : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
-                                                                  ? OpEvent::after_hook
-                                                              : OpEvent::committed;
+                                : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
+                                    ? OpEvent::after_hook
+                                    : OpEvent::committed;
         if (refused != OpEvent::committed) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
@@ -897,9 +897,9 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
         const OpEvent refused = !swap_edge_56_after(newt)     ? OpEvent::after_hook
                                 : !invariants(new_tet_tuples) ? OpEvent::invariants
-                                                              : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
-                                                                  ? OpEvent::after_hook
-                                                              : OpEvent::committed;
+                                : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
+                                    ? OpEvent::after_hook
+                                    : OpEvent::committed;
         if (refused != OpEvent::committed) { // rollback post-operation
             assert(affected.size() == old_tets.size());
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
