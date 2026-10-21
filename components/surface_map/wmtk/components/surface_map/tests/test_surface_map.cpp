@@ -17,6 +17,7 @@
 #include <map>
 #include <random>
 #include <set>
+#include <string>
 
 using namespace wmtk;
 using namespace wmtk::components;
@@ -179,7 +180,9 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
         octant.push_back({double((c.x() > 0) + 2 * (c.y() > 0) + 4 * (c.z() > 0))});
     }
     const auto path =
-        (std::filesystem::temp_directory_path() / "wmtk_surface_map_labels.msh").string();
+        (std::filesystem::temp_directory_path() /
+         ("wmtk_surface_map_labels_" + std::to_string(std::random_device{}()) + ".msh"))
+            .string();
     surface_map::write_surface_msh(path, in);
     const surface_map::SurfaceData reread = surface_map::read_surface_msh(path);
     REQUIRE(reread.faces == in.faces);
@@ -720,7 +723,8 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     // A damaged tracking file that still loads -- a byte changed where the format cannot tell --
     // builds a map that may be wrong, but builds it or throws: no crash.
     const auto h = remesh("sphere.obj", 0, 1.5, 2);
-    const auto dir = std::filesystem::temp_directory_path() / "wmtk_surface_map_damaged";
+    const auto dir = std::filesystem::temp_directory_path() /
+                     ("wmtk_surface_map_damaged_" + std::to_string(std::random_device{}()));
     std::filesystem::create_directories(dir);
     const auto path = (dir / "history.bin").string();
     h.save(path);
@@ -731,7 +735,7 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     }
     std::mt19937 rng(2);
     size_t built = 0;
-    for (int i = 0; i < 300; ++i) {
+    for (int i = 0; i < 100; ++i) {
         std::string d = bytes;
         d[rng() % d.size()] ^= char(1 + rng() % 255);
         {

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -185,7 +186,8 @@ TEST_CASE("read_triangle_mesh_reads_every_entity_of_a_gmsh_file", "[io][read_tri
 {
     // A gmsh 2.2 file with two surface entities, one triangle each. mshio puts them in two
     // blocks, of which MshData reads the first; such a file goes to libigl, which reads both.
-    const fs::path dir = fs::temp_directory_path() / "wmtk_read_triangle_mesh_gmsh";
+    const fs::path dir = fs::temp_directory_path() /
+                         ("wmtk_read_triangle_mesh_gmsh_" + std::to_string(std::random_device{}()));
     fs::create_directories(dir);
     const fs::path path = dir / "two_entities.msh";
     {

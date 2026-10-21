@@ -19,6 +19,13 @@ using namespace wmtk::components::tetwild;
 
 namespace {
 
+/// Whole runs of the application, too slow for the Debug CI jobs: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
 /// The vertex at (i, j, k) of a 2 x 2 x 1 block of unit cubes.
 size_t block_vid(size_t i, size_t j, size_t k)
 {
@@ -180,7 +187,7 @@ TEST_CASE("tetwild-surface-folds-refused", "[tetwild][folds]")
     CHECK(mesh.tracked_surface_after({below}, false));
 }
 
-TEST_CASE("tetwild-surface-folds-none-made", "[tetwild][folds]")
+TEST_CASE("tetwild-surface-folds-none-made", "[tetwild][folds]" + release_only)
 {
     // A whole parallel run with the check on: the tracked surface leaves the optimization with
     // no more folded faces than the insertion left it, though splits are not checked (a split

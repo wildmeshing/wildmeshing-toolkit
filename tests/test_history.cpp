@@ -137,10 +137,11 @@ TEST_CASE("history-replay-matches-random-operations", "[history]")
             run_and_check(m, *rec, r, 400, seed);
 
             // The same history through the file format.
-            const auto path = (std::filesystem::temp_directory_path() /
-                               ("wmtk_history_random_" + std::to_string(int(link)) + "_" +
-                                std::to_string(seed) + ".bin"))
-                                  .string();
+            const auto path =
+                (std::filesystem::temp_directory_path() /
+                 ("wmtk_history_random_" + std::to_string(int(link)) + "_" + std::to_string(seed) +
+                  "_" + std::to_string(std::random_device{}()) + ".bin"))
+                    .string();
             rec->history().save(path);
             const history::SurfaceHistory h = history::SurfaceHistory::load(path);
             std::filesystem::remove(path);
@@ -169,7 +170,9 @@ TEST_CASE("history-save-load-round-trip", "[history]")
     rec->history().metadata = R"({"application": "test"})";
 
     const auto path =
-        (std::filesystem::temp_directory_path() / "wmtk_history_round_trip.bin").string();
+        (std::filesystem::temp_directory_path() /
+         ("wmtk_history_round_trip_" + std::to_string(std::random_device{}()) + ".bin"))
+            .string();
     rec->history().save(path);
     const history::SurfaceHistory h = history::SurfaceHistory::load(path);
     std::filesystem::remove(path);
@@ -217,7 +220,8 @@ TEST_CASE("history-load-refuses-damaged-files", "[history]")
     m.consolidate_mesh();
     rec->history().metadata = R"({"application": "test"})";
 
-    const auto dir = std::filesystem::temp_directory_path() / "wmtk_history_damaged";
+    const auto dir = std::filesystem::temp_directory_path() /
+                     ("wmtk_history_damaged_" + std::to_string(std::random_device{}()));
     std::filesystem::create_directories(dir);
     const auto path = (dir / "history.bin").string();
     rec->history().save(path);

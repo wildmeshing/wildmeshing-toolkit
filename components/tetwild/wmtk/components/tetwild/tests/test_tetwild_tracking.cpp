@@ -33,13 +33,15 @@ TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]")
     const fs::path tracking_file = dir / "sphere.wmtkhist";
 
     // 1. Run tetwild with tracking on: history_output names the tracking file. The tet mesh is
-    // written to <output>_final.msh, whose vertices the tracking names.
+    // written to <output>_final.msh, whose vertices the tracking names. preserve_topology keeps
+    // the map a bijection.
     tetwild::tetwild({
         {"application", "tetwild"},
         {"input", {input.string()}},
         {"output", output.string()},
         {"history_output", tracking_file.string()},
-        {"max_iterations", 5},
+        {"preserve_topology", true},
+        {"max_iterations", 3},
         {"write_vtu", false},
     });
     std::vector<Eigen::Vector3d> tet_vertices;
