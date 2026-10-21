@@ -2504,14 +2504,17 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
         Catch::Matchers::ContainsSubstring("save_offset_correspondence requires"));
 }
 
-TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
+namespace {
+/// The input of save-offset-correspondence-3d: a 3 x 3 x 3 grid of unit cubes, six tets each,
+/// the center cube tag_0.
+struct GridInput
 {
-    // gather_vtu_frame() and energy_parts() evaluate their cells, vertices and faces on the mesh's
-    // threads (diagnostic_parallel_for()); what they return must not depend on the thread count.
-    // Two identical meshes -- the grid of save-offset-correspondence-3d, constructed serially at
-    // target 0.2, the field built under the exact rule, the optimization's labels -- one gathered
-    // at 1 thread and one at 4, each from its own empty value table, compared bit for bit (NaN
-    // equal to NaN).
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi Tm;
+    MatrixSi Tags;
+};
+GridInput grid_input()
+{
     Eigen::MatrixXd V(64, 3);
     const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
     for (int k = 0; k < 4; ++k) {
@@ -2547,26 +2550,81 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     MatrixSi Tags(int(T.size()), 1);
     for (const int t : center) Tags.coeffRef(t, 0) = 1;
 
+    return {V, Tm, Tags};
+}
+
+/// The grid constructed serially at the target in `param`, the field built and the
+/// optimization's labels set: a small mesh with a band, a front and offset faces.
+std::unique_ptr<TopoOffsetTetMesh>
+grid_offset_mesh(const GridInput& g, Parameters& param, const std::filesystem::path& out)
+{
+    auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+    mesh->init_from_image(g.V, g.Tm, g.Tags, V_env, F_env, {"tag_0"});
+    mesh->m_offset_params.offset_selection = parse("tag_0", mesh->m_tag_name_to_id);
+    mesh->label_input_complex();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    mesh->construct_offset(out);
+    mesh->init_offset_potential();
+    mesh->label_offset_boundary();
+    return mesh;
+}
+
+/// Every array of two frames bit for bit, NaN equal to NaN.
+bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetMesh::VtuFrame& b)
+{
+    const auto same = [](const auto& x, const auto& y) {
+        if (x.rows() != y.rows() || x.cols() != y.cols()) return false;
+        for (Eigen::Index i = 0; i < x.size(); ++i) {
+            const double p = double(x.data()[i]), q = double(y.data()[i]);
+            if (std::isnan(p) && std::isnan(q)) continue;
+            if (std::memcmp(&p, &q, sizeof(double)) != 0) return false;
+        }
+        return true;
+    };
+    bool ok = same(a.V, b.V) && same(a.T, b.T) && same(a.F_in, b.F_in) && same(a.F_off, b.F_off) &&
+              same(a.E, b.E) && a.tag_names == b.tag_names && a.tags.size() == b.tags.size();
+    for (size_t i = 0; ok && i < a.tags.size(); ++i) ok = same(a.tags[i], b.tags[i]);
+    for (const auto m :
+         {&TopoOffsetTetMesh::VtuFrame::amips,         &TopoOffsetTetMesh::VtuFrame::tet_e,
+          &TopoOffsetTetMesh::VtuFrame::amips_term,    &TopoOffsetTetMesh::VtuFrame::band_term,
+          &TopoOffsetTetMesh::VtuFrame::band_gap,      &TopoOffsetTetMesh::VtuFrame::plastic,
+          &TopoOffsetTetMesh::VtuFrame::labels,        &TopoOffsetTetMesh::VtuFrame::order,
+          &TopoOffsetTetMesh::VtuFrame::vid,           &TopoOffsetTetMesh::VtuFrame::sizing,
+          &TopoOffsetTetMesh::VtuFrame::in_dist,       &TopoOffsetTetMesh::VtuFrame::front_err,
+          &TopoOffsetTetMesh::VtuFrame::band_force,    &TopoOffsetTetMesh::VtuFrame::amips_force,
+          &TopoOffsetTetMesh::VtuFrame::front_change,  &TopoOffsetTetMesh::VtuFrame::f_err,
+          &TopoOffsetTetMesh::VtuFrame::f_len,         &TopoOffsetTetMesh::VtuFrame::f_inside,
+          &TopoOffsetTetMesh::VtuFrame::f_outside,     &TopoOffsetTetMesh::VtuFrame::f_fold,
+          &TopoOffsetTetMesh::VtuFrame::f_field_angle, &TopoOffsetTetMesh::VtuFrame::ring}) {
+        ok = ok && same(a.*m, b.*m);
+    }
+    return ok;
+}
+} // namespace
+
+TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
+{
+    // gather_vtu_frame() and energy_parts() evaluate their cells, vertices and faces on the mesh's
+    // threads (diagnostic_parallel_for()); what they return must not depend on the thread count.
+    // Two identical meshes -- the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2, the field built under the exact rule, the optimization's labels -- one gathered
+    // at 1 thread and one at 4, each from its own empty value table, compared bit for bit (NaN
+    // equal to NaN).
+    const GridInput g = grid_input();
+
     Parameters param = construction_params(
         {{"offset_selection", "tag_0"},
          {"num_threads", 0},
          {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "exact"}},
-        V);
+        g.V);
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_frame_threads";
     const auto make_mesh = [&](const int threads) {
-        auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
-        MatrixXd V_env;
-        MatrixXi F_env;
-        mesh->init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
-        mesh->m_offset_params.offset_selection = parse("tag_0", mesh->m_tag_name_to_id);
-        mesh->label_input_complex();
-        mesh->init_input_complex_bvh();
-        mesh->consolidate_mesh();
-        mesh->construct_offset(out);
-        mesh->init_offset_potential();
-        mesh->label_offset_boundary();
+        auto mesh = grid_offset_mesh(g, param, out);
         mesh->NUM_THREADS = threads;
         return mesh;
     };
@@ -2636,6 +2694,55 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     REQUIRE(fs.tags.size() == ft.tags.size());
     for (size_t i = 0; i < fs.tags.size(); ++i) CHECK(same(fs.tags[i], ft.tags[i], n));
     CHECK(fs.tag_names == ft.tag_names);
+}
+
+TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]")
+{
+    // take_snapshot() / restore_snapshot(): after a restore the mesh is the one the snapshot left,
+    // bit for bit in every frame array, and the same operations from it give the same result
+    // again -- the storage is the same, not only the geometry (the operations depend on the order
+    // of each vertex's tet fan). The grid mesh, serial; the change is a split pass at a lowered
+    // sizing field, which adds vertices and cells.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        g.V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_snapshot";
+    const auto mesh = grid_offset_mesh(g, param, out);
+    // As optimize_offset() sets them before the loop.
+    mesh->m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Optimization;
+    mesh->init_vertex_order();
+    const TopoOffsetTetMesh::MeshSnapshot snap = mesh->take_snapshot();
+    REQUIRE(mesh->check_mesh_connectivity_validity());
+    const size_t n_v = mesh->get_vertices().size(), n_t = mesh->get_tets().size();
+    const auto frame = [&](const char* name) {
+        return mesh->gather_vtu_frame(out.string() + name);
+    };
+    const auto change = [&]() {
+        for (const auto& v : mesh->get_vertices()) {
+            mesh->m_vertex_attribute[v.vid(*mesh)].m_sizing_scalar = 0.3;
+        }
+        mesh->local_operations({{1, 0, 0, 0}});
+        mesh->consolidate_mesh();
+    };
+    const TopoOffsetTetMesh::VtuFrame before = frame("_before");
+    change();
+    INFO(n_t << " tets before the split pass, " << mesh->get_tets().size() << " after");
+    REQUIRE(mesh->get_tets().size() > n_t);
+    const TopoOffsetTetMesh::VtuFrame changed = frame("_changed");
+    CHECK_FALSE(frames_identical(before, changed)); // the comparison can fail
+
+    mesh->restore_snapshot(snap);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(mesh->get_vertices().size() == n_v);
+    CHECK(mesh->get_tets().size() == n_t);
+    CHECK(frames_identical(before, frame("_restored")));
+    change();
+    CHECK(frames_identical(changed, frame("_changed_again")));
 }
 
 TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
@@ -2720,13 +2827,13 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
     CHECK_THROWS(Parameters{zero});
 }
 
-TEST_CASE("incremental-growth-keys", "[offset][3d]")
+TEST_CASE("growth-mode-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_incremental_growth and EXPERIMENTAL_incremental_growth_steps through the spec,
-    // as the app reads them: the defaults (off, 4 steps), values read through, and the refusals
-    // -- a step count other than the default with growth off, growth with construction_mode
-    // "midpoint_fallback" or with init_optimize, a step count below 1 (the spec's min). Then the
-    // stage targets.
+    // growth_mode, linear_growth_steps, smart_growth_attempts and smart_growth_max_fails through
+    // the spec, as the app reads them: the defaults (none, 4, 2, 10), values read through, and the
+    // refusals -- an unknown mode, a mode's key at a non-default value under another mode, growth
+    // with construction_mode "midpoint_fallback" or with init_optimize, counts below 1 (the
+    // spec's min), and the two keys growth_mode replaced. Then linear's stage targets.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -2739,30 +2846,41 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
         REQUIRE(spec_engine.verify_json(with_app(j), spec));
         return spec_engine.inject_defaults(with_app(j), spec);
     };
-    const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK_FALSE(by_default.incremental_growth);
-    CHECK(by_default.incremental_growth_steps == 4);
-    const Parameters set(injected(
-        {{"EXPERIMENTAL_incremental_growth", true}, {"EXPERIMENTAL_incremental_growth_steps", 1}}));
-    CHECK(set.incremental_growth);
-    CHECK(set.incremental_growth_steps == 1);
-    const nlohmann::json without_growth = injected({{"EXPERIMENTAL_incremental_growth_steps", 2}});
-    CHECK_THROWS(Parameters{without_growth});
-    const nlohmann::json midpoint = injected(
-        {{"EXPERIMENTAL_incremental_growth", true}, {"construction_mode", "midpoint_fallback"}});
-    CHECK_THROWS(Parameters{midpoint});
-    const nlohmann::json with_init_optimize =
-        injected({{"EXPERIMENTAL_incremental_growth", true}, {"init_optimize", true}});
-    CHECK_THROWS(Parameters{with_init_optimize});
-    {
+    const auto refused_by_spec = [&](const nlohmann::json& j) {
         jse::JSE spec_engine;
         spec_engine.strict = true;
-        CHECK_FALSE(spec_engine.verify_json(
-            with_app(
-                {{"EXPERIMENTAL_incremental_growth", true},
-                 {"EXPERIMENTAL_incremental_growth_steps", 0}}),
-            spec));
+        return !spec_engine.verify_json(with_app(j), spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK(by_default.growth_mode == "none");
+    CHECK(by_default.linear_growth_steps == 4);
+    CHECK(by_default.smart_growth_attempts == 2);
+    CHECK(by_default.smart_growth_max_fails == 10);
+    const Parameters linear(injected({{"growth_mode", "linear"}, {"linear_growth_steps", 1}}));
+    CHECK(linear.growth_mode == "linear");
+    CHECK(linear.linear_growth_steps == 1);
+    const Parameters smart(injected(
+        {{"growth_mode", "smart"}, {"smart_growth_attempts", 3}, {"smart_growth_max_fails", 5}}));
+    CHECK(smart.growth_mode == "smart");
+    CHECK(smart.smart_growth_attempts == 3);
+    CHECK(smart.smart_growth_max_fails == 5);
+    CHECK(refused_by_spec({{"growth_mode", "exponential"}}));
+    CHECK_THROWS(Parameters{injected({{"linear_growth_steps", 2}})});
+    CHECK_THROWS(Parameters{injected({{"growth_mode", "smart"}, {"linear_growth_steps", 2}})});
+    CHECK_THROWS(Parameters{injected({{"smart_growth_attempts", 3}})});
+    CHECK_THROWS(Parameters{injected({{"growth_mode", "linear"}, {"smart_growth_max_fails", 3}})});
+    for (const char* mode : {"linear", "smart"}) {
+        INFO(mode);
+        CHECK_THROWS(
+            Parameters{
+                injected({{"growth_mode", mode}, {"construction_mode", "midpoint_fallback"}})});
+        CHECK_THROWS(Parameters{injected({{"growth_mode", mode}, {"init_optimize", true}})});
     }
+    CHECK(refused_by_spec({{"growth_mode", "linear"}, {"linear_growth_steps", 0}}));
+    CHECK(refused_by_spec({{"growth_mode", "smart"}, {"smart_growth_attempts", 0}}));
+    CHECK(refused_by_spec({{"growth_mode", "smart"}, {"smart_growth_max_fails", 0}}));
+    CHECK(refused_by_spec({{"EXPERIMENTAL_incremental_growth", true}}));
+    CHECK(refused_by_spec({{"EXPERIMENTAL_incremental_growth_steps", 4}}));
 
     // Stage k of n at d0 + k (delta - d0) / n: d0 at k = 0, delta at k = n. With n = 1, two
     // loops: at d0, then at delta.
@@ -2843,6 +2961,43 @@ TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
     CHECK(abs.front_conv == 0.05);
     CHECK(abs.front_conv_rel == Catch::Approx(0.1));
     CHECK_THROWS(construction_params({{"target_distance", 0.5}, {"front_conv_rel", 1.5}}, V));
+}
+
+TEST_CASE("smart-growth-schedule", "[offset][3d]")
+{
+    // growth_mode "smart"'s targets and decisions (TopoOffsetTetMesh::SmartGrowthSchedule), apart
+    // from the mesh: from base b the j-th try after j failures is at b + (delta - b) / 2^j, delta
+    // itself first; a success below delta becomes the new base and the next try is at delta
+    // again; max_fails failures from one base give up; a success at delta is the end.
+    using Schedule = TopoOffsetTetMesh::SmartGrowthSchedule;
+    using Next = Schedule::Next;
+    Schedule s{1., 9., 3};
+    CHECK(s.target() == 9.);
+    CHECK(s.report(false) == Next::Retry); // 9 failed
+    CHECK(s.target() == 5.); // 1 + 8 / 2
+    CHECK(s.report(false) == Next::Retry); // 5 failed
+    CHECK(s.target() == 3.); // 1 + 8 / 4
+    CHECK(s.report(true) == Next::Advance); // 3 converged: the new base
+    CHECK(s.base == 3.);
+    CHECK(s.level == 2);
+    CHECK(s.target() == 9.); // delta again
+    CHECK(s.report(false) == Next::Retry);
+    CHECK(s.target() == 6.); // 3 + 6 / 2
+    CHECK(s.report(true) == Next::Advance);
+    CHECK(s.target() == 9.);
+    CHECK(s.report(true) == Next::Done);
+
+    // The count is per base, and the max_fails-th failure gives up.
+    Schedule g{0., 1., 3};
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::Retry);
+    CHECK(g.report(false) == Next::GiveUp);
+    Schedule h{0., 1., 2};
+    CHECK(h.report(false) == Next::Retry);
+    CHECK(h.report(true) == Next::Advance); // at 0.5
+    CHECK(h.report(false) == Next::Retry); // the count started again
+    CHECK(h.report(false) == Next::GiveUp);
+    CHECK(Schedule{0., 1., 1}.report(false) == Next::GiveUp);
 }
 
 TEST_CASE("foldover-face-angle", "[offset][3d]")

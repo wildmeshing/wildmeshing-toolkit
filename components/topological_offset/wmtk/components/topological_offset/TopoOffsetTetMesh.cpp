@@ -1997,26 +1997,30 @@ void TopoOffsetTetMesh::marching_tets()
         }
     }
 
-    // EXPERIMENTAL_incremental_growth: the loop grows the offset from the distance traced here,
-    // when that is below the target (optimize_offset(), incremental_growth()).
+    // growth_mode: the loop grows the offset from the distance traced here, when that is below
+    // the target (optimize_offset(): linear_growth(), smart_growth()).
     m_growth_start = 0.;
-    if (m_offset_params.incremental_growth && m_offset_params.optimize_offset) {
-        const int n = m_offset_params.incremental_growth_steps;
+    const std::string& growth = m_offset_params.growth_mode;
+    if (growth != "none" && m_offset_params.optimize_offset) {
+        // "linear" keeps the log tag of its EXPERIMENTAL_incremental_growth days.
+        const std::string tag = growth == "linear" ? "incremental growth" : "smart growth";
         if (e_to_split.empty()) {
             logger().info(
-                "\t[incremental growth] not done: no edge to march; the loop runs at "
-                "target_distance as usual");
+                "\t[{}] not done: no edge to march; the loop runs at target_distance as usual",
+                tag);
         } else if (reachable) {
             logger().info(
-                "\t[incremental growth] not done: the march traces to target_distance itself; the "
-                "loop runs at it as usual");
+                "\t[{}] not done: the march traces to target_distance itself; the loop runs at it "
+                "as usual",
+                tag);
         } else if (m_edge_split_mode != EdgeSplitMode::SphereTrace) {
             logger().warn(
-                "\t[incremental growth] not done: every marched edge is split at its midpoint, so "
-                "the front is at no single distance to grow from; the loop runs at "
-                "target_distance as usual");
-        } else {
+                "\t[{}] not done: every marched edge is split at its midpoint, so the front is at "
+                "no single distance to grow from; the loop runs at target_distance as usual",
+                tag);
+        } else if (growth == "linear") {
             m_growth_start = m_construction_distance;
+            const int n = m_offset_params.linear_growth_steps;
             logger().info(
                 "\t[incremental growth] {} loops: at the traced distance {:.6g} first, then in {} "
                 "step(s) of {:.6g} to target_distance {:.6g}, each to convergence",
@@ -2025,6 +2029,18 @@ void TopoOffsetTetMesh::marching_tets()
                 n,
                 (target - m_growth_start) / double(n),
                 target);
+        } else {
+            m_growth_start = m_construction_distance;
+            logger().info(
+                "\t[smart growth] the loop at the traced distance {:.6g} first (up to max_rounds "
+                "{} turns), then attempts toward target_distance {:.6g} of up to "
+                "smart_growth_attempts {} turns each, halving the step after each failure (up to "
+                "smart_growth_max_fails {} per converged distance)",
+                m_growth_start,
+                m_offset_params.max_rounds,
+                target,
+                m_offset_params.smart_growth_attempts,
+                m_offset_params.smart_growth_max_fails);
         }
     }
 
