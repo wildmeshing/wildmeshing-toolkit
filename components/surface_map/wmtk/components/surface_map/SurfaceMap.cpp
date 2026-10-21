@@ -838,6 +838,12 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                         side_after_f.push_back(f);
                     }
                 }
+                // A side the collapse removes whole -- faces on the edge cut off by non-manifold
+                // or feature edges, faces merged into another side's -- has nothing to map onto.
+                if (side_after_f.empty()) {
+                    relabel(side_before_f, side_after_f, step);
+                    continue;
+                }
                 Cell cell;
                 const std::vector<Tri> side_after_t = corners_of(side_after_f);
                 if (flatten(
@@ -937,8 +943,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
                 const uint64_t n = e.faces[i++];
                 for (uint64_t j = 0; j < n; ++j) {
                     const uint64_t g = e.faces[i++];
+                    if (g >= em.to_after.size() || !r.face_alive()[g]) continue;
                     em.to_before[f].push_back(g);
-                    if (g < em.to_after.size()) em.to_after[g].push_back(f);
+                    em.to_after[g].push_back(f);
                 }
             }
             step.kind = EditKind::embed;
