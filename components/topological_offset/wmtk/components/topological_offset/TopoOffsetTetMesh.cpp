@@ -2003,8 +2003,10 @@ void TopoOffsetTetMesh::marching_tets()
     m_growth_start = 0.;
     const std::string& growth = m_offset_params.growth_mode;
     if (growth != "none" && m_offset_params.optimize_offset) {
-        // "linear" keeps the log tag of its EXPERIMENTAL_incremental_growth days.
-        const std::string tag = growth == "linear" ? "incremental growth" : "smart growth";
+        // "linear" (and "individual_op_reject", one step of it) keeps the log tag of its
+        // EXPERIMENTAL_incremental_growth days.
+        const bool stepped = growth == "linear" || growth == "individual_op_reject";
+        const std::string tag = stepped ? "incremental growth" : "smart growth";
         if (e_to_split.empty()) {
             logger().info(
                 "\t[{}] not done: no edge to march; the loop runs at target_distance as usual",
@@ -2019,17 +2021,21 @@ void TopoOffsetTetMesh::marching_tets()
                 "\t[{}] not done: every marched edge is split at its midpoint, so the front is at "
                 "no single distance to grow from; the loop runs at target_distance as usual",
                 tag);
-        } else if (growth == "linear") {
+        } else if (stepped) {
             m_growth_start = m_construction_distance;
-            const int n = m_offset_params.linear_growth_steps;
+            const int n = growth == "linear" ? m_offset_params.linear_growth_steps : 1;
             logger().info(
                 "\t[incremental growth] {} loops: at the traced distance {:.6g} first, then in {} "
-                "step(s) of {:.6g} to target_distance {:.6g}, each to convergence",
+                "step(s) of {:.6g} to target_distance {:.6g}, each to convergence{}",
                 n + 1,
                 m_growth_start,
                 n,
                 (target - m_growth_start) / double(n),
-                target);
+                target,
+                growth == "individual_op_reject"
+                    ? " (growth_mode individual_op_reject: collapses, offset-surface flips and "
+                      "smoothing moves that raise the folded offset faces are refused)"
+                    : "");
         } else {
             m_growth_start = m_construction_distance;
             logger().info(

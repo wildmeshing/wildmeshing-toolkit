@@ -1103,6 +1103,11 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
+    /// Every live offset face through vid, from vid's own tet list alone (see
+    /// vertex_has_live_offset_face()): fn(sorted vertex triple, its band cell) for each, until fn
+    /// returns true; returns whether one did. A band face on the domain boundary counts.
+    template <typename F>
+    bool for_each_live_offset_face_at(size_t vid, F&& fn) const;
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
      *
@@ -1175,6 +1180,14 @@ public:
     /// (away from front_face_band_cell()'s fourth corner). False, `n` unusable, where it cannot be
     /// measured: a degenerate face, or no band cell. front_face_field_angle()'s normal.
     bool front_face_out_normal(size_t a, size_t b, size_t c, Vector3d& n) const;
+    /// front_face_out_normal() with the face's band cell given: `band_tid`, a band cell holding
+    /// the face (no lookup, so it reads that cell alone).
+    bool front_face_out_normal_in(size_t a, size_t b, size_t c, size_t band_tid, Vector3d& n) const;
+    /// front_face_field_angle() with the face's band cell given (front_face_out_normal_in()).
+    double front_face_field_angle_in(size_t a, size_t b, size_t c, size_t band_tid) const;
+    /// The angle front_face_field_angle() reports, for face (a, b, c) with normal `n` out of the
+    /// band: against grad d at the centroid; NaN without an input envelope or a gradient.
+    double front_face_angle_to_field(size_t a, size_t b, size_t c, const Vector3d& n) const;
     /// The dihedral angle in degrees, in [0, 360), across an offset-surface edge between two faces
     /// with unit normals n1, n2 out of the band, measured on the band side: 180 flat, below 180
     /// where the front bends away from the band (convex seen from the offset side), toward 0 or
@@ -1208,6 +1221,32 @@ public:
         Vector3d worst_at = Vector3d::Zero();
     };
     FoldCensus fold_census() const;
+    /// growth_mode "individual_op_reject": a collapse, a flip of the offset surface or a smoothing
+    /// move that raises the number of folded offset faces (front_face_is_foldover()'s test) among
+    /// the faces it changes is refused. In the loops only: not in a TetWild pass (the
+    /// optimize_construction pass, the final pass), nor before the march.
+    bool fold_reject_active() const
+    {
+        return m_offset_params.growth_mode == "individual_op_reject" && !m_tetwild_pass &&
+               !m_repulsion_potential;
+    }
+    /// The folded live offset faces through vid (front_face_field_angle() > foldover_angle), as
+    /// sorted vertex triples, added to `out`. Reads vid's own tet list and its cells only, as
+    /// vertex_has_live_offset_face() does (for_each_live_offset_face_at()), so the operation hooks
+    /// may ask it: the passes' locks always claim vid's list.
+    void folded_front_faces_at(size_t vid, std::set<std::array<size_t, 3>>& out) const;
+    /// Whether face (a, b, c) is folded, its band cell looked for among `cells` (a band cell
+    /// holding it); false when none is.
+    bool face_folded_in(size_t a, size_t b, size_t c, const std::vector<size_t>& cells) const;
+    /// growth_mode "individual_op_reject": the folded faces the collapse / offset-surface flip in
+    /// flight saw before it (folded_front_faces_at(), face_folded_in()), per thread; -1 for no
+    /// rule.
+    mutable wmtk::threading::enumerable_thread_specific<int> m_collapse_folds_before{-1},
+        m_swap_folds_before{-1};
+    /// Operations refused for raising the folded faces (fold_reject_active()), per operation
+    /// group; logged as [op reject].
+    mutable std::atomic<int> m_fold_reject_collapse{0}, m_fold_reject_swap{0},
+        m_fold_reject_smooth{0};
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.

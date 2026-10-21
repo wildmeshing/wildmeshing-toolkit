@@ -204,7 +204,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// and at d_0 + k (target_distance - d_0) / linear_growth_steps, each to convergence, the last
     /// the ordinary loop (TopoOffsetTetMesh::linear_growth()). "smart": a loop at d_0, then
     /// attempts toward target_distance, reverted and halved when they fail
-    /// (TopoOffsetTetMesh::smart_growth()). See the spec doc.
+    /// (TopoOffsetTetMesh::smart_growth()). "individual_op_reject": loops at d_0 and at
+    /// target_distance (linear with one step), every collapse, offset-surface flip and smoothing
+    /// move that raises the folded offset faces refused (TopoOffsetTetMesh::fold_reject_active()).
+    /// See the spec doc.
     std::string growth_mode = "none";
     /// growth_mode "linear": N, the steps from d_0 to target_distance, so N + 1 loops. At least 1
     /// (the spec's min).
@@ -356,9 +359,11 @@ struct Parameters : public wmtk::OptimizerParameters
         linear_growth_steps = json_params["linear_growth_steps"];
         smart_growth_attempts = json_params["smart_growth_attempts"];
         smart_growth_max_fails = json_params["smart_growth_max_fails"];
-        if (growth_mode != "none" && growth_mode != "linear" && growth_mode != "smart") {
+        if (growth_mode != "none" && growth_mode != "linear" && growth_mode != "smart" &&
+            growth_mode != "individual_op_reject") {
             log_and_throw_error(
-                "growth_mode is \"none\", \"linear\" or \"smart\", not \"{}\"",
+                "growth_mode is \"none\", \"linear\", \"smart\" or \"individual_op_reject\", "
+                "not \"{}\"",
                 growth_mode);
         }
         // The spec's defaults: a value set to anything else means that mode was intended.

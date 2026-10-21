@@ -2760,6 +2760,70 @@ TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]")
     CHECK(frames_identical(changed, frame("_changed_again")));
 }
 
+TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
+{
+    // growth_mode "individual_op_reject" counts folds per operation with folded_front_faces_at(),
+    // which reads one vertex's own tet list (lock-safe in the operation passes). Over every vertex
+    // it must find exactly the folded faces fold_census() finds over the whole offset surface
+    // (offset_surface_faces()). The grid mesh with one front vertex dragged to the input's centre,
+    // which turns its offset faces back toward the input: folds to find.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        g.V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_folded_faces";
+    const auto mesh = grid_offset_mesh(g, param, out);
+    CHECK_FALSE(mesh->fold_reject_active()); // growth_mode "none"
+    const auto census_set = [&]() {
+        std::set<std::array<size_t, 3>> s;
+        for (const auto& f : mesh->offset_surface_faces()) {
+            if (mesh->front_face_is_foldover(f[0], f[1], f[2])) {
+                auto k = f;
+                std::sort(k.begin(), k.end());
+                s.insert(k);
+            }
+        }
+        return s;
+    };
+    const auto per_vertex_set = [&]() {
+        std::set<std::array<size_t, 3>> s;
+        for (const auto& v : mesh->get_vertices()) mesh->folded_front_faces_at(v.vid(*mesh), s);
+        return s;
+    };
+    CHECK(census_set().empty()); // as constructed
+    CHECK(per_vertex_set().empty());
+    size_t front = static_cast<size_t>(-1);
+    for (const auto& v : mesh->get_vertices()) {
+        if (mesh->m_vertex_extra[v.vid(*mesh)].m_is_on_offset) {
+            front = v.vid(*mesh);
+            break;
+        }
+    }
+    REQUIRE(front != static_cast<size_t>(-1));
+    mesh->set_vertex_position(front, Vector3d::Zero());
+    const auto census = census_set();
+    INFO(census.size() << " folded faces");
+    REQUIRE(!census.empty());
+    CHECK(per_vertex_set() == census);
+    CHECK(mesh->fold_census().n_fold == census.size());
+    // Every folded face found through the moved vertex goes through it.
+    std::set<std::array<size_t, 3>> at;
+    mesh->folded_front_faces_at(front, at);
+    CHECK(!at.empty());
+    for (const auto& f : at) CHECK(std::find(f.begin(), f.end(), front) != f.end());
+
+    // The rule is on in the loops of growth_mode "individual_op_reject" only.
+    mesh->m_offset_params.growth_mode = "individual_op_reject";
+    CHECK(mesh->fold_reject_active());
+    mesh->m_tetwild_pass = true;
+    CHECK_FALSE(mesh->fold_reject_active());
+    mesh->m_tetwild_pass = false;
+}
+
 TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
 {
     // The 2D twin: a 3 x 3 grid of unit squares, two triangles each along the same diagonal, the
@@ -2879,12 +2943,18 @@ TEST_CASE("growth-mode-keys", "[offset][3d]")
     CHECK(smart.growth_mode == "smart");
     CHECK(smart.smart_growth_attempts == 3);
     CHECK(smart.smart_growth_max_fails == 5);
+    CHECK(
+        Parameters(injected({{"growth_mode", "individual_op_reject"}})).growth_mode ==
+        "individual_op_reject");
+    CHECK_THROWS(
+        Parameters{
+            injected({{"growth_mode", "individual_op_reject"}, {"linear_growth_steps", 2}})});
     CHECK(refused_by_spec({{"growth_mode", "exponential"}}));
     CHECK_THROWS(Parameters{injected({{"linear_growth_steps", 2}})});
     CHECK_THROWS(Parameters{injected({{"growth_mode", "smart"}, {"linear_growth_steps", 2}})});
     CHECK_THROWS(Parameters{injected({{"smart_growth_attempts", 3}})});
     CHECK_THROWS(Parameters{injected({{"growth_mode", "linear"}, {"smart_growth_max_fails", 3}})});
-    for (const char* mode : {"linear", "smart"}) {
+    for (const char* mode : {"linear", "smart", "individual_op_reject"}) {
         INFO(mode);
         CHECK_THROWS(
             Parameters{

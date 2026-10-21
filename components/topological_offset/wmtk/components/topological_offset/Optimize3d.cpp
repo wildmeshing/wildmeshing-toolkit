@@ -517,6 +517,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
+    m_swap_folds_before.local() = -1; // an interior swap changes no offset face
     if (!swap_capture_tag(tids)) return false;
     // The energy rule's before-half (see swap_after_cells()): the sum over the ring. A cell's
     // energy is its own corners' and label's, so no cell outside the ring changes energy.
@@ -560,6 +561,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
+    m_swap_folds_before.local() = -1; // set below for a flip of the offset surface
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
     // the ring of a surface flip always spans band and background, which is what makes its faces
@@ -605,6 +607,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // followed through the rest of the swap by [flip funnel]. It is judged by the energy rule like
     // every other swap (swap_after_cells()); no rule of its own.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
+        // growth_mode "individual_op_reject": the folded faces among the two the flip replaces
+        // (their band cells are in the ring), for swap_after_cells().
+        if (fold_reject_active()) {
+            m_swap_folds_before.local() =
+                int(face_folded_in(a, b, c, tids)) + int(face_folded_in(a, b, d, tids));
+        }
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
@@ -775,6 +783,24 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     // vertices (a background cell in every ring) and held vertices (an input cell) never have one.
     const bool cancels_before = !projected && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tet_energy_sum(ring, false) : 0.;
+    // growth_mode "individual_op_reject": a front vertex held on a surface (the domain wall, say)
+    // moves its offset faces too; the move may not raise the folded ones among them.
+    int folds_before = -1;
+    if (fold_reject_active() && m_vertex_extra[vid].m_is_on_offset) {
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(vid, f);
+        folds_before = int(f.size());
+    }
+    const auto raises_folds = [&]() {
+        if (folds_before < 0) return false;
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(vid, f);
+        if (int(f.size()) <= folds_before) return false;
+        ++m_fold_reject_smooth;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return true;
+    };
     if (!optimization::smooth_vertex_3d(
             *this,
             t,
@@ -784,6 +810,7 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
+    if (raises_folds()) return false;
     if (projected) {
         count_damped_move(vid, x0, opts.max_step);
         return true;
@@ -1129,6 +1156,18 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
     close_labels(tids);
+    // growth_mode "individual_op_reject": the flip may not raise the folded faces among the two it
+    // changes -- (a,b,c), (a,b,d) out, (a,c,d), (b,c,d) in, whose band cells are new cells now.
+    // Counted as app_sag_raised, the engine's name for a flip that makes the surface worse.
+    if (const int before = m_swap_folds_before.local(); before >= 0) {
+        const auto& q = sides.abcd;
+        const int after = int(face_folded_in(q[0], q[2], q[3], tids)) +
+                          int(face_folded_in(q[1], q[2], q[3], tids));
+        if (after > before) {
+            ++m_fold_reject_swap;
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+    }
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
@@ -1184,6 +1223,20 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
         return collapse_reject(CollapseReject::app_substructure_link);
+    }
+    // growth_mode "individual_op_reject": the folded faces through the two ends, for
+    // collapse_after_connectivity(); -1 (no rule) when neither end is on the front.
+    {
+        const auto& cc = collapse_cache.local();
+        int& folds = m_collapse_folds_before.local();
+        folds = -1;
+        if (fold_reject_active() &&
+            (m_vertex_extra[cc.v1_id].m_is_on_offset || m_vertex_extra[cc.v2_id].m_is_on_offset)) {
+            std::set<std::array<size_t, 3>> f;
+            folded_front_faces_at(cc.v1_id, f);
+            folded_front_faces_at(cc.v2_id, f);
+            folds = int(f.size());
+        }
     }
     // The energy rule's before-half is taken in collapse_before_vertex().
     return true;
@@ -1323,6 +1376,17 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
+    // growth_mode "individual_op_reject": the faces through the survivor are every offset face
+    // the collapse changed (it moves no vertex); refused, the base counts after_connectivity and
+    // rolls back, as for the energy rule below.
+    if (const int before = m_collapse_folds_before.local(); before >= 0) {
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(v2_id, f);
+        if (int(f.size()) > before) {
+            ++m_fold_reject_collapse;
+            return false;
+        }
+    }
     // THE ENERGY RULE for a collapse (see tet_energy()): the sum of tet_energy() over the cells
     // the collapse changed -- the survivor's ring less v2's old cells outside v1's ring, which
     // keep their slots, corners and labels -- may not exceed the sum over v1's old ring
@@ -3931,7 +3995,8 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
     return result;
 }
 
-bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+template <typename F>
+bool TopoOffsetTetMesh::for_each_live_offset_face_at(const size_t vid, F&& fn) const
 {
     // Reads vid's own tet list and the tets in it, nothing else. Every face through vid is shared
     // by at most two tets, and both contain vid, so both are in vid's list: pairing the faces
@@ -3971,13 +4036,56 @@ bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
         while (j < sides.size() && sides[j].face == sides[i].face) ++j;
         const size_t ta = sides[i].tid;
         if (j - i == 1) {
-            if (cell_is_offset_band(ta)) return true; // band face on the domain boundary
+            // a band face on the domain boundary
+            if (cell_is_offset_band(ta) && fn(sides[i].face, ta)) return true;
         } else {
             const size_t tb = sides[i + 1].tid;
             const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
-            if (a != b && !cell_is_input_complex(a ? tb : ta)) return true;
+            if (a != b && !cell_is_input_complex(a ? tb : ta) && fn(sides[i].face, a ? ta : tb)) {
+                return true;
+            }
         }
         i = j;
+    }
+    return false;
+}
+
+bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+{
+    // See for_each_live_offset_face_at(): any face at all.
+    return for_each_live_offset_face_at(vid, [](const std::array<size_t, 3>&, size_t) {
+        return true;
+    });
+}
+
+void TopoOffsetTetMesh::folded_front_faces_at(
+    const size_t vid,
+    std::set<std::array<size_t, 3>>& out) const
+{
+    // See the declaration.
+    for_each_live_offset_face_at(vid, [&](const std::array<size_t, 3>& f, const size_t band) {
+        if (front_face_field_angle_in(f[0], f[1], f[2], band) > m_offset_params.foldover_angle) {
+            out.insert(f);
+        }
+        return false;
+    });
+}
+
+bool TopoOffsetTetMesh::face_folded_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const std::vector<size_t>& cells) const
+{
+    // See the declaration.
+    for (const size_t t : cells) {
+        if (!cell_is_offset_band(t)) continue;
+        const auto tv = oriented_tet_vids(t);
+        const auto has = [&](const size_t v) {
+            return std::find(tv.begin(), tv.end(), v) != tv.end();
+        };
+        if (!has(a) || !has(b) || !has(c)) continue;
+        return front_face_field_angle_in(a, b, c, t) > m_offset_params.foldover_angle;
     }
     return false;
 }
@@ -4043,14 +4151,24 @@ bool TopoOffsetTetMesh::front_face_out_normal(
     Vector3d& n) const
 {
     // See the declaration.
+    const int64_t bc = front_face_band_cell(a, b, c);
+    return bc >= 0 && front_face_out_normal_in(a, b, c, size_t(bc), n);
+}
+
+bool TopoOffsetTetMesh::front_face_out_normal_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t band_tid,
+    Vector3d& n) const
+{
+    // See the declaration.
     const Vector3d& pa = m_vertex_attribute[a].m_posf;
     const Vector3d& pb = m_vertex_attribute[b].m_posf;
     const Vector3d& pc = m_vertex_attribute[c].m_posf;
     n = (pb - pa).cross(pc - pa);
     if (!(n.norm() > 0.)) return false;
-    const int64_t bc = front_face_band_cell(a, b, c);
-    if (bc < 0) return false;
-    for (const size_t v : oriented_tet_vids(size_t(bc))) {
+    for (const size_t v : oriented_tet_vids(band_tid)) {
         if (v == a || v == b || v == c) continue;
         if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
     }
@@ -4065,6 +4183,32 @@ double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b,
     if (!m_input_complex_envelope) return nan;
     Vector3d n;
     if (!front_face_out_normal(a, b, c, n)) return nan;
+    return front_face_angle_to_field(a, b, c, n);
+}
+
+double TopoOffsetTetMesh::front_face_field_angle_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t band_tid) const
+{
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
+    Vector3d n;
+    if (!front_face_out_normal_in(a, b, c, band_tid, n)) return nan;
+    return front_face_angle_to_field(a, b, c, n);
+}
+
+double TopoOffsetTetMesh::front_face_angle_to_field(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const Vector3d& n) const
+{
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
     const Vector3d& pa = m_vertex_attribute[a].m_posf;
     const Vector3d& pb = m_vertex_attribute[b].m_posf;
     const Vector3d& pc = m_vertex_attribute[c].m_posf;
@@ -4475,6 +4619,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
+            const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
+                      fold_m0 = m_fold_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             // [energy step] lines: the group's baseline here, then one per smoothing pass from
@@ -4504,6 +4650,17 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
                     m_volume_reject_split.load() - vol_p0);
+                if (fold_reject_active()) {
+                    logger().info(
+                        "\t[op reject] turn {} {} group: refused for raising the folded offset "
+                        "faces (growth_mode individual_op_reject): {} collapses, {} offset-surface "
+                        "flips, {} smoothing moves",
+                        it + 1,
+                        group_names[gi],
+                        m_fold_reject_collapse.load() - fold_c0,
+                        m_fold_reject_swap.load() - fold_s0,
+                        m_fold_reject_smooth.load() - fold_m0);
+                }
                 if (m_plastic_active) {
                     logger().info(
                         "\t[plastic tie] turn {} {} group: {} swaps refused outright, {} collapses "
@@ -5040,7 +5197,8 @@ void TopoOffsetTetMesh::linear_growth()
     // no pass is running here.
     const double delta = m_offset_params.target_distance;
     const double d0 = m_growth_start;
-    const int n = m_offset_params.linear_growth_steps;
+    // growth_mode "individual_op_reject": d_0, then target_distance, nothing between.
+    const int n = m_offset_params.growth_mode == "linear" ? m_offset_params.linear_growth_steps : 1;
     const auto set_target = [&](const double d) {
         m_offset_params.target_distance = d;
         init_offset_potential();
