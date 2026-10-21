@@ -130,8 +130,8 @@ TEST_CASE("tetwild-surface-history-replays-to-the-tracked-surface", "[tetwild][h
 
 TEST_CASE("tetwild-surface-history-octocat", "[tetwild][history][.]")
 {
-    // A real input, welded and simplified -- with the link condition, so the simplification
-    // keeps the topology the map needs -- inserted and optimized with preserve_topology.
+    // A real input, welded, simplified, inserted and optimized with preserve_topology, which
+    // holds the simplification to the link condition too: the topology the map needs.
     const fs::path input = fs::path(WMTK_DATA_DIR) / "models" / "Octocat.obj";
     REQUIRE(fs::exists(input));
     const fs::path dir = fs::current_path() / "tetwild_history_test";
@@ -144,7 +144,6 @@ TEST_CASE("tetwild-surface-history-octocat", "[tetwild][history][.]")
         {"history_output", hist.string()},
         {"num_threads", 8},
         {"preserve_topology", true},
-        {"simplify_use_link_condition", true},
         {"write_vtu", false},
     });
     const surface_map::SurfaceMap map(history::SurfaceHistory::load(hist.string()));

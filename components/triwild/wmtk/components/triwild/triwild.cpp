@@ -363,7 +363,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // Simplifying inside a fraction of the envelope reserves the rest as headroom. Measured
     // in 3D, where sharing one envelope put a third of the simplified vertices outside before
     // the tet phase began and had ~94% of smoothing attempts vetoed.
-    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
+    // preserve_topology holds the input simplification to the link condition as well.
+    const bool simplify_use_link_condition = params.preserve_topology;
+    if (json_params.contains("simplify_use_link_condition")) {
+        logger().warn(
+            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
+            "condition of the input simplification",
+            params.preserve_topology);
+    }
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     const double simplify_eps = envelope_eps * simplify_envelope_ratio;
     logger().info(
@@ -418,8 +425,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             simplify_use_link_condition ? "on" : "off");
     }
 
-    // The simplification is the one stage whose topology is genuinely optional: with
-    // simplify_use_link_condition off it may merge junctions and separate curves. Compare
+    // The simplification is the one stage whose topology is genuinely optional: without
+    // preserve_topology it may merge junctions and separate curves. Compare
     // here, while the curves are still the same kind of object.
     std::vector<int> ecs_simplified;
     if (debug_euler) {
@@ -427,8 +434,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (ecs_simplified != ecs_input) {
             logger().warn(
                 "Euler characteristic, after simplification: {} -- changed from the input "
-                "{}. Expected when simplify_use_link_condition is off, which allows "
-                "junctions and separate curves to merge.",
+                "{}. Expected without preserve_topology, which allows junctions and "
+                "separate curves to merge.",
                 ecs_simplified,
                 ecs_input);
         } else {

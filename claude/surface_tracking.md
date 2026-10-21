@@ -353,8 +353,8 @@ Each of these shows up as warnings, never as a refusal to run:
 - surface changes outside the operations;
 - patches that are not disks.
 
-For a bijective map, run tetwild with `preserve_topology: true` **and**
-`simplify_use_link_condition: true`. The input simplification ignores `preserve_topology`.
+For a bijective map, run tetwild with `preserve_topology: true`. It holds both the input
+simplification and the tet operations to the link condition.
 
 ## Extending the mapping component
 

@@ -176,8 +176,8 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
     // TriMesh::collapse_edge_before is the classical link condition, applied only when
-    // set_use_link_condition() left it on. tetwild sets it from simplify_use_link_condition,
-    // off by default, and the simplification then may change the surface topology, including
+    // set_use_link_condition() left it on. tetwild sets it from preserve_topology, off by
+    // default, and the simplification then may change the surface topology, including
     // creating non-manifold edges and vertices.
     if (!TriMesh::collapse_edge_before(t)) return false;
 
