@@ -534,9 +534,34 @@ public:
     /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 
+    /// m_params.check_surface_folds; see there.
+    bool checks_tracked_surface() const override { return m_params.check_surface_folds; }
+    void tracked_surface_before(const std::vector<size_t>& vs, bool all) override;
+    bool tracked_surface_after(const std::vector<size_t>& vs, bool all) override;
+    /// The operations check_surface_folds refused.
+    std::atomic<size_t> m_surface_fold_refusals = 0;
+
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     std::shared_ptr<history::TrackedSurfaceRecorder> m_recorded_surface;
+    /// What the tracked faces around an operation were before it, for check_surface_folds: their
+    /// area vectors summed, how many do not face along that, and the folds in the stars of their
+    /// vertices. `skip` where no vertex around it is on the surface.
+    struct SurfaceFolds
+    {
+        bool skip = true;
+        Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+        size_t against = 0;
+        size_t star_folds = 0;
+    };
+    wmtk::threading::enumerable_thread_specific<SurfaceFolds> m_surface_folds_before;
+    /// The tracked faces, oriented, their area vectors summed; and, over their vertices, the
+    /// faces of each one's tracked star not facing along that star's sum.
+    Eigen::Vector3d tracked_area_normal(const std::vector<std::array<size_t, 3>>& faces) const;
+    size_t tracked_not_facing(
+        const std::vector<std::array<size_t, 3>>& faces,
+        const Eigen::Vector3d& n) const;
+    size_t tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The input triangles each face of the recorded surface's first state lies on.
     std::vector<std::vector<uint64_t>> m_recorded_sources;
     int m_debug_print_counter = 0;

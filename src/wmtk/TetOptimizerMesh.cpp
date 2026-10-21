@@ -132,6 +132,11 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
     // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
+    if (m_params.check_surface_folds) {
+        logger().info(
+            "refused {} operations that would fold the tracked surface",
+            m_surface_fold_refusals.load());
+    }
 }
 
 std::tuple<double, double> TetOptimizerMesh::local_operations(
@@ -421,7 +426,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 
 bool TetOptimizerMesh::use_colored_smoothing() const
 {
-    return NUM_THREADS > 0 && m_params.colored_smoothing;
+    return NUM_THREADS > 0 && m_params.colored_smoothing && !m_params.check_surface_folds;
 }
 
 void TetOptimizerMesh::smooth_vertices_colored(
@@ -775,6 +780,77 @@ std::vector<std::array<size_t, 2>> TetOptimizerMesh::tracked_feature_edges() con
     }
     std::sort(out.begin(), out.end());
     return out;
+}
+
+Eigen::Vector3d TetOptimizerMesh::tracked_area_normal(
+    const std::vector<std::array<size_t, 3>>& faces) const
+{
+    Eigen::Vector3d n = Eigen::Vector3d::Zero();
+    for (const auto& f : faces) {
+        const auto t = orient_tracked_face(f);
+        const auto& p = m_vertex_attribute;
+        n += (p.at(t[1]).m_posf - p.at(t[0]).m_posf).cross(p.at(t[2]).m_posf - p.at(t[0]).m_posf);
+    }
+    return n;
+}
+
+size_t TetOptimizerMesh::tracked_not_facing(
+    const std::vector<std::array<size_t, 3>>& faces,
+    const Eigen::Vector3d& n) const
+{
+    size_t count = 0;
+    for (const auto& f : faces) {
+        const auto t = orient_tracked_face(f);
+        const auto& p = m_vertex_attribute;
+        if (!utils::predicates::faces_along(
+                p.at(t[0]).m_posf,
+                p.at(t[1]).m_posf,
+                p.at(t[2]).m_posf,
+                n)) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+size_t TetOptimizerMesh::tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const
+{
+    std::vector<size_t> vs;
+    for (const auto& f : faces) vs.insert(vs.end(), f.begin(), f.end());
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    size_t count = 0;
+    for (const size_t v : vs) {
+        const auto star = tracked_faces_around({v}, false);
+        count += tracked_not_facing(star, tracked_area_normal(star));
+    }
+    return count;
+}
+
+void TetOptimizerMesh::tracked_surface_before(const std::vector<size_t>& vs, const bool all)
+{
+    auto& before = m_surface_folds_before.local();
+    before.skip = std::none_of(vs.begin(), vs.end(), [this](size_t v) {
+        return m_vertex_attribute.at(v).m_is_on_surface;
+    });
+    if (before.skip) return;
+    const auto faces = tracked_faces_around(vs, all);
+    before.normal = tracked_area_normal(faces);
+    before.against = tracked_not_facing(faces, before.normal);
+    before.star_folds = tracked_star_folds(faces);
+}
+
+bool TetOptimizerMesh::tracked_surface_after(const std::vector<size_t>& vs, const bool all)
+{
+    const auto& before = m_surface_folds_before.local();
+    if (before.skip) return true;
+    const auto faces = tracked_faces_around(vs, all);
+    const size_t against = std::max(
+        tracked_not_facing(faces, before.normal),
+        tracked_not_facing(faces, tracked_area_normal(faces)));
+    if (against <= before.against && tracked_star_folds(faces) <= before.star_folds) return true;
+    ++m_surface_fold_refusals;
+    return false;
 }
 
 TetOptimizerMesh::PositionKey
