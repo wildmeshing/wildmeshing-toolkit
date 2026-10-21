@@ -18,6 +18,9 @@ set(SRC_FILES
 	transfer.hpp
 	transfer.cpp
 
+	Tracking.hpp
+	Tracking.cpp
+
 	surface_map.hpp
 	surface_map.cpp
 )

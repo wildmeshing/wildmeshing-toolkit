@@ -104,6 +104,15 @@ TrackedSurfaceRecorder::TrackedSurfaceRecorder(
     , m_next_face(m_history.faces.size())
 {}
 
+std::vector<uint64_t> TrackedSurfaceRecorder::mesh_vertex_ids() const
+{
+    std::vector<uint64_t> out(m_mesh_of.size(), kNoVertex);
+    for (size_t s = 0; s < m_mesh_of.size(); ++s) {
+        if (m_mesh_of[s] != kNoMesh && live(m_mesh_of[s]) == s) out[s] = m_mesh_of[s];
+    }
+    return out;
+}
+
 std::vector<std::array<size_t, 2>> TrackedSurfaceRecorder::feature_edges() const
 {
     std::vector<std::array<size_t, 2>> out;

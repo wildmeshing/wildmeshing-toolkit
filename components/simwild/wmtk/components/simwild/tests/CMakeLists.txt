@@ -15,6 +15,7 @@ set(SRC_FILES
     test_embed_surface_components.cpp
     test_simplify_boundary.cpp
     test_simwild_history.cpp
+    test_simwild_tracking.cpp
     test_late_feature_tracking.cpp
     )
 
