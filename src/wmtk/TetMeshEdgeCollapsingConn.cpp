@@ -297,13 +297,12 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     start_protect_attributes();
     // The three tests in the order and with the short-circuit of `!topology || !after ||
     // !invariants`.
-    const OpEvent refused = !collapse_edge_check_topology(new_tet_id) ? OpEvent::topology
-                            : !collapse_edge_after(new_loc)           ? OpEvent::after_hook
-                            : !invariants(get_one_ring_tets_for_vertex(new_loc))
-                                ? OpEvent::invariants
-                            : checks_tracked_surface() && !tracked_surface_after({v_kept}, false)
-                                ? OpEvent::after_hook
-                                : OpEvent::committed;
+    const OpEvent refused =
+        !collapse_edge_check_topology(new_tet_id)                             ? OpEvent::topology
+        : !collapse_edge_after(new_loc)                                       ? OpEvent::after_hook
+        : !invariants(get_one_ring_tets_for_vertex(new_loc))                  ? OpEvent::invariants
+        : checks_tracked_surface() && !tracked_surface_after({v_kept}, false) ? OpEvent::after_hook
+                                                                              : OpEvent::committed;
     if (refused != OpEvent::committed) {
         // m_vertex_connectivity[v1_id].m_is_removed = false;
         // operation_failure_rollback_imp(rollback_vert_conn, n1_t_ids, new_tet_id, old_tets);
