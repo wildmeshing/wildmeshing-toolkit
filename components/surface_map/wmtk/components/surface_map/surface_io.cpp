@@ -11,14 +11,10 @@
 
 namespace wmtk::components::surface_map {
 
-SurfaceData read_surface_msh(const std::string& path)
+namespace {
+/// A single-block surface .msh (MshData::is_single_surface_block) with its fields; `msh` loaded.
+SurfaceData surface_with_fields(MshData& msh, const std::string& path)
 {
-    MshData msh;
-    try {
-        msh.load(path);
-    } catch (const std::exception& e) {
-        log_and_throw_error("Could not read {}: {}", path, e.what());
-    }
     SurfaceData s;
     s.vertices.resize(msh.get_num_face_vertices());
     s.faces.resize(msh.get_num_faces());
@@ -30,15 +26,12 @@ SurfaceData read_surface_msh(const std::string& path)
         auto& field = s.face_fields[name];
         field.resize(s.faces.size());
         msh.extract_face_attribute(name, [&field](size_t i, const std::vector<double>& data) {
-            field[i] = data;
+            if (i < field.size()) field[i] = data;
         });
     }
-    const mshio::ElementBlock* triangles = nullptr;
-    for (const auto& block : msh.m_spec.elements.entity_blocks) {
-        if (block.entity_dim == 2) triangles = &block;
-    }
+    const mshio::ElementBlock* triangles = &msh.m_spec.elements.entity_blocks.front();
     for (const mshio::Data& data : msh.m_spec.element_node_data) {
-        if (data.header.string_tags.empty() || triangles == nullptr) continue;
+        if (data.header.string_tags.empty()) continue;
         auto& field = s.corner_fields[data.header.string_tags.front()];
         field.assign(s.faces.size(), {});
         const size_t offset = triangles->data.front();
@@ -49,11 +42,38 @@ SurfaceData read_surface_msh(const std::string& path)
     }
     return s;
 }
+} // namespace
+
+SurfaceData read_surface_msh(const std::string& path)
+{
+    MshData msh;
+    try {
+        msh.load(path);
+    } catch (const std::exception& e) {
+        log_and_throw_error("Could not read {}: {}", path, e.what());
+    }
+    if (!msh.is_single_surface_block()) {
+        log_and_throw_error(
+            "{} is not a single-block surface file, as wmtk writes one: its fields cannot be "
+            "matched to its triangles",
+            path);
+    }
+    return surface_with_fields(msh, path);
+}
 
 SurfaceData read_surface(const std::vector<std::string>& paths)
 {
     if (paths.size() == 1 && std::filesystem::path(paths[0]).extension() == ".msh") {
-        return read_surface_msh(paths[0]);
+        MshData msh;
+        try {
+            msh.load(paths[0]);
+        } catch (const std::exception&) {
+        }
+        if (msh.is_single_surface_block()) return surface_with_fields(msh, paths[0]);
+        // Read as the applications read it, so its faces are theirs; its fields are not.
+        logger().warn(
+            "{} is not a single-block surface file, as wmtk writes one: its fields are not read",
+            paths[0]);
     }
     MatrixXd V;
     MatrixXi F;

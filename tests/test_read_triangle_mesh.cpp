@@ -180,3 +180,24 @@ TEST_CASE("read_triangle_mesh_reports_the_input_of_each_face", "[io][read_triang
     fs::remove(a);
     fs::remove(b);
 }
+
+TEST_CASE("read_triangle_mesh_reads_every_entity_of_a_gmsh_file", "[io][read_triangle_mesh]")
+{
+    // A gmsh 2.2 file with two surface entities, one triangle each. mshio puts them in two
+    // blocks, of which MshData reads the first; such a file goes to libigl, which reads both.
+    const fs::path dir = fs::temp_directory_path() / "wmtk_read_triangle_mesh_gmsh";
+    fs::create_directories(dir);
+    const fs::path path = dir / "two_entities.msh";
+    {
+        std::ofstream f(path);
+        f << "$MeshFormat\n2.2 0 8\n$EndMeshFormat\n"
+          << "$Nodes\n4\n1 0 0 0\n2 1 0 0\n3 0 1 0\n4 1 1 0\n$EndNodes\n"
+          << "$Elements\n2\n1 2 2 1 1 1 2 3\n2 2 2 2 2 2 4 3\n$EndElements\n";
+    }
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    wmtk::io::read_triangle_mesh(path.string(), V, F);
+    CHECK(V.rows() == 4);
+    CHECK(F.rows() == 2);
+    fs::remove_all(dir);
+}

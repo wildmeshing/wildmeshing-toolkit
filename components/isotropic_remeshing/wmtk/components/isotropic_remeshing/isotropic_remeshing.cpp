@@ -30,6 +30,12 @@ std::vector<std::array<size_t, 2>> field_boundaries(
 {
     MshData msh;
     msh.load(path);
+    if (!msh.is_single_surface_block()) {
+        log_and_throw_error(
+            "feature_fields: {} is not a single-block surface file, as wmtk writes one; its "
+            "fields cannot be matched to its triangles",
+            path);
+    }
     if (msh.get_num_faces() != tris.size()) {
         log_and_throw_error(
             "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
@@ -38,17 +44,14 @@ std::vector<std::array<size_t, 2>> field_boundaries(
             tris.size(),
             msh.get_num_faces());
     }
-    const mshio::ElementBlock* triangles = nullptr;
-    for (const auto& block : msh.m_spec.elements.entity_blocks) {
-        if (block.entity_dim == 2) triangles = &block;
-    }
+    const mshio::ElementBlock* triangles = &msh.m_spec.elements.entity_blocks.front();
     std::vector<std::vector<double>> value(tris.size());
     std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
     const auto names = msh.get_face_attribute_names();
     for (const std::string& name : fields) {
         if (std::find(names.begin(), names.end(), name) != names.end()) {
             msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
-                value[i].insert(value[i].end(), data.begin(), data.end());
+                if (i < value.size()) value[i].insert(value[i].end(), data.begin(), data.end());
             });
             continue;
         }
