@@ -749,3 +749,31 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     CHECK(built > 0);
     std::filesystem::remove_all(dir);
 }
+
+TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[surface_map]")
+{
+    // One triangle, split in two: face 1 exists on the output only. A point given on it, or on
+    // any face the input does not have, comes back with no face, not wherever the split's new
+    // face 1 would take it.
+    history::SurfaceHistory h;
+    h.vertices = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
+    h.vertex_alive = {1, 1, 1};
+    h.faces = {{{0, 1, 2}}};
+    h.face_alive = {1};
+    h.edits.push_back(
+        {history::EditKind::split_edge, {0, 1, 3}, {0, 1}, {{3, Eigen::Vector3d(0.5, 0, 0)}}});
+    const SurfaceMap map(h);
+    REQUIRE(map.output_face_alive() == std::vector<uint8_t>{1, 1});
+    const Eigen::Vector3d b(0.2, 0.3, 0.5);
+
+    const auto there = map.to_output({{0, b}, {1, b}, {7, b}});
+    CHECK(there[0].face < 2);
+    CHECK(there[1].face >= map.output_faces().size());
+    CHECK(there[2].face >= map.output_faces().size());
+    CHECK(map.map_warnings().unlocated == 2);
+
+    const auto back = map.to_input({{1, b}, {2, b}});
+    CHECK(back[0].face == 0);
+    CHECK(back[1].face >= map.input_faces().size());
+    CHECK(map.map_warnings().unlocated == 1);
+}

@@ -1010,7 +1010,17 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
 {
     m_map_warnings = {};
     std::unordered_map<uint64_t, std::vector<size_t>> on_face;
-    for (size_t i = 0; i < pts.size(); ++i) on_face[pts[i].face].push_back(i);
+    // A point must start on a live face of its side: any other id would be carried along by
+    // whichever face a later edit gives that slot.
+    const auto& alive = forward ? m_in_face_alive : m_out_face_alive;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (pts[i].face < alive.size() && alive[pts[i].face]) {
+            on_face[pts[i].face].push_back(i);
+        } else {
+            pts[i].face = kNone;
+            ++m_map_warnings.unlocated;
+        }
+    }
     std::vector<std::pair<uint64_t, size_t>> landed;
 
     const auto visit = [&](const Step& s) {
