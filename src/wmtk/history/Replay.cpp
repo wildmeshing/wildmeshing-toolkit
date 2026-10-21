@@ -91,6 +91,7 @@ void Replay::apply(const Edit& e)
 void Replay::grow_vertices(const uint64_t vid)
 {
     if (vid < m_vertices.size()) return;
+    if (vid == kNoVertex) log_and_throw_error("Replay: an edit names no vertex as one");
     m_vertices.resize(vid + 1, Eigen::Vector3d::Zero());
     m_vertex_alive.resize(vid + 1, 0);
     m_vertex_faces.resize(vid + 1);
@@ -213,7 +214,11 @@ void Replay::collapse_edge(const Edit& e)
     }
 
     for (const uint64_t v : touched) {
-        if (v != removed && m_vertex_faces[v].empty()) m_vertex_alive[v] = 0;
+        if (v == removed || !m_vertex_faces[v].empty()) continue;
+        m_vertex_alive[v] = 0;
+        // A retired vertex keeps no feature edges, as in replace_faces.
+        const std::vector<uint64_t> nbrs = m_feature_nbrs[v];
+        for (const uint64_t x : nbrs) remove_feature(v, x);
     }
 }
 
@@ -379,7 +384,9 @@ void Replay::consolidate()
     std::vector<std::vector<uint64_t>> nbrs(nv);
     for (uint64_t a = 0; a < m_feature_nbrs.size(); ++a) {
         if (map_v[a] == uint64_t(-1)) continue;
-        for (const uint64_t b : m_feature_nbrs[a]) nbrs[map_v[a]].push_back(map_v[b]);
+        for (const uint64_t b : m_feature_nbrs[a]) {
+            if (map_v[b] != uint64_t(-1)) nbrs[map_v[a]].push_back(map_v[b]);
+        }
     }
     m_feature_nbrs = std::move(nbrs);
 }

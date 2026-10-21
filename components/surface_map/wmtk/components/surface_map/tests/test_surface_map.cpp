@@ -12,6 +12,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <map>
 #include <random>
 #include <set>
@@ -711,4 +713,39 @@ TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
         err = std::max(err, (back[i].bary - pts[i].bary).cwiseAbs().maxCoeff());
     }
     CHECK(err < 1e-9);
+}
+
+TEST_CASE("surface-map-damaged-history", "[surface_map]")
+{
+    // A damaged tracking file that still loads -- a byte changed where the format cannot tell --
+    // builds a map that may be wrong, but builds it or throws: no crash.
+    const auto h = remesh("sphere.obj", 0, 1.5, 2);
+    const auto dir = std::filesystem::temp_directory_path() / "wmtk_surface_map_damaged";
+    std::filesystem::create_directories(dir);
+    const auto path = (dir / "history.bin").string();
+    h.save(path);
+    std::string bytes;
+    {
+        std::ifstream in(path, std::ios::binary);
+        bytes.assign(std::istreambuf_iterator<char>(in), {});
+    }
+    std::mt19937 rng(2);
+    size_t built = 0;
+    for (int i = 0; i < 300; ++i) {
+        std::string d = bytes;
+        d[rng() % d.size()] ^= char(1 + rng() % 255);
+        {
+            std::ofstream o(path, std::ios::binary | std::ios::trunc);
+            o.write(d.data(), std::streamsize(d.size()));
+        }
+        try {
+            const SurfaceMap map(history::SurfaceHistory::load(path));
+            map.to_output(sample(map.input_face_alive(), 1, 3));
+            map.to_input(sample(map.output_face_alive(), 1, 4));
+            ++built;
+        } catch (const std::exception&) {
+        }
+    }
+    CHECK(built > 0);
+    std::filesystem::remove_all(dir);
 }
