@@ -366,8 +366,11 @@ bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
     if (dry_run()) return true;
+    const bool check = checks_tracked_surface();
+    if (check) tracked_surface_before({loc0.vid(*this)}, false);
     start_protect_attributes();
-    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0));
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0)) &&
+                    (!check || tracked_surface_after({loc0.vid(*this)}, false));
     if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
     if (!ok) {
         rollback_protected_attributes();

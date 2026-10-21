@@ -42,6 +42,7 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "colored_smoothing",
+      "check_surface_folds",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -397,6 +398,12 @@
     "default": 1,
     "min": 0,
     "doc": "Smoothing passes after each topology phase when interleaved_smoothing is enabled."
+  },
+  {
+    "pointer": "/check_surface_folds",
+    "type": "bool",
+    "default": false,
+    "doc": "Refuse a collapse, swap or smoothing that folds the tracked surface over: one that leaves more tracked faces facing against, or flat to, the surface it replaces (the tracked faces around it, their area vectors summed) or the surface it leaves than there were, or more such faces in the stars of the surface vertices it touches. Exact (orient3d). A fold the input has can be undone, but none is made. Splits are not checked: they move no vertex. Turns colored_smoothing off."
   },
   {
     "pointer": "/colored_smoothing",

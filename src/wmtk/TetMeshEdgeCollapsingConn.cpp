@@ -272,6 +272,7 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (dry_run()) return op_screened(OpKind::collapse);
     const size_t v_removed = loc0.vid(*this), v_kept = loc0.switch_vertex(*this).vid(*this);
     if (m_surface_history) surface_history_before({v_removed, v_kept}, false);
+    if (checks_tracked_surface()) tracked_surface_before({v_removed, v_kept}, false);
 
     size_t v1_id;
     Tuple new_loc;
@@ -300,6 +301,8 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
                             : !collapse_edge_after(new_loc)           ? OpEvent::after_hook
                             : !invariants(get_one_ring_tets_for_vertex(new_loc))
                                 ? OpEvent::invariants
+                            : checks_tracked_surface() && !tracked_surface_after({v_kept}, false)
+                                ? OpEvent::after_hook
                                 : OpEvent::committed;
     if (refused != OpEvent::committed) {
         // m_vertex_connectivity[v1_id].m_is_removed = false;

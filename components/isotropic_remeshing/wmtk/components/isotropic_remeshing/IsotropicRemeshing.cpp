@@ -113,19 +113,7 @@ void replace_nbr(std::vector<size_t>& nbrs, const size_t from, const size_t to)
     nbrs.erase(std::unique(nbrs.begin(), nbrs.end()), nbrs.end());
 }
 
-// Whether the triangle (a, b, c) faces along n, exactly: n . ((b - a) x (c - a)) > 0, which is
-// orient3d of the triangle and a point below it along n. Only that point is rounded, so n tilts
-// by a rounding error and a flat triangle stays flat; n is scaled to the coordinates for that.
-bool faces_along(
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c,
-    const Eigen::Vector3d& n)
-{
-    const Eigen::Vector3d below = a - (1 + a.lpNorm<Eigen::Infinity>()) * n.normalized();
-    return wmtk::utils::predicates::orient3d(a, b, c, below) ==
-           wmtk::utils::predicates::Orientation::POSITIVE;
-}
+using wmtk::utils::predicates::faces_along;
 } // namespace
 
 Eigen::Vector3d IsotropicRemeshing::area_normal(const std::vector<Tuple>& tris) const
