@@ -199,17 +199,27 @@ change. So the tracked surface gets ids of its own, in
   `remove_tets_by_ids` (tetwild's filters) resyncs it.
 - **Virtuals for the application:**
   - `is_tracked_face(tid, j)`: which faces are tracked;
-  - `orient_tracked_face(f)`: their corner order;
+  - `orient_tracked_face(f, tets)`: their corner order, given the face's tets. The
+    one-argument form looks the tets up; callers that hold only one corner pass them from
+    `faces_at_vertex` (see *Locking*);
   - `tracked_feature_edges()`: the curves on the surface.
-- **Locking.** An operation reads only stars of vertices in its one-ring, which it holds.
-  Anything that changes such a star must hold its centre. So the reads are race-free with the
-  existing ring locks. Dry runs (screening) return before any hook.
+- **Locking.** An operation holds its seed's one-ring (`{v1, v2} ∪ N(v1) ∪ N(v2)` for an
+  edge), and only part of the two-ring: see the note above `try_set_vertex_mutex_two_ring`.
+  - Reading the star of a held vertex u is race-free: anything that changes a tet at u must
+    hold u.
+  - The corners across u's star are two rings out and may not be held. Another thread can be
+    rewriting *their* tet lists. So find the star's faces from u's tets alone
+    (`TetMesh::faces_at_vertex`: face ids and tets included). Do not use `tuple_from_face`,
+    `Tuple::fid` or `tets_of_face`, which read all three corners' lists. The fold check first
+    did, and segfaulted now and then at 8 threads.
+  - Their positions are safe to read: moving a neighbour of u needs u.
+  - Dry runs (screening) return before any hook.
 
 `TetOptimizerMesh` (`src/wmtk/TetOptimizerMesh.{h,cpp}`), the base of tetwild and simwild,
 fills these in:
 - **`is_tracked_face`:** `m_is_surface_fs`.
-- **`orient_tracked_face`:** the input orientation `m_orientation`, ascending vertex order
-  where it is 0.
+- **`orient_tracked_face`:** the input orientation `m_orientation` on the face (its id from
+  its lowest tet), ascending vertex order where it is 0.
 - **`tracked_feature_edges`:** tagged feature edges (`m_feature_edge_attribute`) that are edges
   of tracked faces. tetwild's operations keep them by the history's rules: a split halves one,
   a collapse remaps, swaps refuse them.
@@ -354,7 +364,15 @@ Each of these shows up as warnings, never as a refusal to run:
 - patches that are not disks.
 
 For a bijective map, run tetwild with `preserve_topology: true`. It holds both the input
-simplification and the tet operations to the link condition.
+simplification and the tet operations to the link condition. (`simplify_use_link_condition`
+is gone; tetwild and triwild warn if a config still sets it.)
+
+What is left under `preserve_topology` (101168: 298 warnings, no welds):
+- collapses near a non-manifold vertex the input has and keeps, whose star is not a disk;
+- collapses where 4 to 12 feature curves meet. The curves cut the patch into one-face sides
+  the joint flattening refuses, and each such face is mapped onto itself by barycentric
+  coordinates. That is a bijection on the face, though possibly not consistent with its
+  neighbours along the curves; not looked into.
 
 ## Extending the mapping component
 
@@ -390,7 +408,17 @@ The checks used so far, from cheapest to strongest:
 3. **The map builds without warnings.** `build_warnings().total() == 0`; the `surface_map`
    `info` operation prints them, and the first offending edits.
 4. **Round trips.** `to_input(to_output(p)) == p`, and the reverse, below 1e-8 in barycentric
-   coordinates. A map that is not a bijection misses by far more.
+   coordinates. A map that is not a bijection misses by far more. So does one that stretches
+   a lot. To tell which, trace one point both ways, step by step, and replay the history
+   next to the traces, comparing the two in 3D after each edit. Compare in 3D, not by face
+   and barycentrics: a point on an edge has two names.
+   - The discrepancy should start at rounding (1e-14).
+   - A step that multiplies it by the same factor for every point stretches: that is the map.
+   - A step that multiplies it by about the square of a triangle's aspect ratio computes
+     badly. 101168 under `preserve_topology` had the embed doing that: barycentric
+     coordinates solved through the normal equations, on a sliver of aspect 3.5e4.
+   - The scaffolding for this was a temporary `trace()` on `SurfaceMap`. It is not in the
+     repository; it records `pts[0]` after each step in `map()`.
 5. **A check the map does not see:**
    - simwild's tags: an output interface face maps to an input face between the same two tag
      sets;
@@ -421,8 +449,42 @@ Both refuse a collapse, swap or smoothing if either of these grows:
 - the folds in the stars of the vertices it touches.
 
 Facing is exact: `orient3d` of the triangle and a point below it along the normal
-(`utils::predicates::faces_along`). The tet check turns colored smoothing off: it reads stars
-of a vertex's neighbours, which two vertices of one colour class can share.
+(`utils::predicates::faces_along`).
+
+The tet check (`TetOptimizerMesh::tracked_surface_before/after`, called by `TetMesh`'s
+operations through `checks_tracked_surface()`):
+- **Before:** the tracked faces around the operation. A collapse takes those at either end;
+  a swap, those inside its ring; a smoothing, those at the vertex. It records the patch's
+  summed area vector, how many faces do not face along it, and the star folds over the
+  patch's vertices. It skips operations with no surface vertex.
+- **After**, once the after-hook and invariants have passed: the same counts on the faces
+  there. More of either refuses the operation, like a failed after-hook, with a rollback.
+- **Splits** are not checked: they halve faces and move nothing.
+- **Colored smoothing is off** while the check is on. Colored smoothing moves vertices of a
+  class concurrently without locks, and the check reads the stars of a vertex's neighbours,
+  which two vertices of one class can share.
+- **Stars come from the vertex's own tets;** see *Locking*.
+
+What it does, from `test_surface_folds.cpp` (8 threads, 10 iterations, three runs each).
+These are folded star faces after insertion and at the end; insertion already leaves many,
+creases sharper than their star's average included:
+
+| model | check off, at the end | check on, at the end | after insertion |
+|---|---|---|---|
+| bunny | 9–12 | 0–1 | 122–143 |
+| crown | 35–77 | 13–31 | 1556–1801 |
+| thingi_100036 | 87–117 | 15–25 | 195 |
+| 37989_sf | 1851–1902 | 1681–1697 | ~3500 |
+| Octocat | 108–117 | 65–73 | 158–199 |
+
+On the octocat without simplification, folded local maps went from 3,456 to 112, for +5%
+final max energy. Keep it off by default (the user's decision, 2026-10-21).
+
+Tests:
+- `tetwild-surface-folds-refused`: a vertex moved past its star's outline is refused.
+- `tetwild-surface-folds-none-made`: a parallel bunny run ends with no more folds than the
+  insertion left.
+- `[.folds-compare]` (hidden): the table above.
 
 ## Costs
 

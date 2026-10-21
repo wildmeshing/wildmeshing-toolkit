@@ -22,6 +22,7 @@ set(SRC_FILES
     test_runner.cpp
     test_tetwild_history.cpp
     test_tetwild_tracking.cpp
+    test_surface_folds.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

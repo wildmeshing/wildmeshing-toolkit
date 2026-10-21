@@ -665,11 +665,20 @@ public:
     /// the operations keep by the history's rules (a split halves one, a collapse renames the
     /// removed end's, a swap never takes one). None, unless an application says otherwise.
     virtual std::vector<std::array<size_t, 2>> tracked_feature_edges() const { return {}; }
-    /// A tracked face's corners in the order that orients it, for a surface history. As given,
-    /// unless an application says otherwise.
-    virtual std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const
+    /// A tracked face's corners in the order that orients it, for a surface history, given the
+    /// face's tets (tets_of_face). As given, unless an application says otherwise. The tets are
+    /// passed in so that a caller holding one corner can find them from its tets alone
+    /// (faces_at_vertex).
+    virtual std::array<size_t, 3> orient_tracked_face(
+        const std::array<size_t, 3>& f,
+        const std::vector<size_t>& tets) const
     {
         return f;
+    }
+    /// orient_tracked_face, finding the face's tets.
+    std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const
+    {
+        return orient_tracked_face(f, tets_of_face(f));
     }
     /**
      * @brief The corners of `face`, a face of tet `tid`, ordered so that its normal points out of
@@ -681,9 +690,25 @@ public:
 protected:
     /// The tracked faces of the tets at the vertices `vs` that have a corner among them -- or,
     /// with `all`, all three -- as sorted vertex triples.
-    std::vector<std::array<size_t, 3>> tracked_faces_around(
-        const std::vector<size_t>& vs,
-        bool all) const;
+    std::vector<std::array<size_t, 3>> tracked_faces_around(const std::vector<size_t>& vs, bool all)
+        const;
+    /// A face at a vertex: its corners sorted, its face id (Tuple::fid) and its tets, sorted.
+    struct VertexFace
+    {
+        std::array<size_t, 3> face;
+        size_t fid;
+        std::vector<size_t> tets;
+    };
+    /**
+     * @brief The faces with v as a corner, found from v's tets alone.
+     *
+     * Those are all the tets of each face, so nothing is read of the other corners. An
+     * operation that holds v but not them must not read their tets: a thread changing those
+     * need not hold v. tuple_from_face, Tuple::fid and tets_of_face read all three corners'.
+     */
+    std::vector<VertexFace> faces_at_vertex(size_t v) const;
+    /// The face id (Tuple::fid) of f, a face of tet tid, its lowest; from tid alone.
+    size_t face_id_in(const std::array<size_t, 3>& f, size_t tid) const;
 
     /**
      * @brief Checks an application makes on what an operation does to the tracked surface.
