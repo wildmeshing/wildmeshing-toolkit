@@ -117,9 +117,19 @@ Composition (`SurfaceHistory.hpp`):
 
 ### File format
 
-Binary, varints (`SurfaceHistory.cpp`). The current version is 6; versions 3 to 5 still load.
-When you add to it, bump `kVersion` and keep loading older versions. The comment at the top
-of the file lists what each version added.
+Binary, varints (`SurfaceHistory.cpp`). Version 6 is the first released one; the earlier ones
+were development formats and no longer load. When you add to it, bump `kVersion`, keep loading
+version 6 and up, and note in the comment at the top of the file what each version added.
+
+Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
+crashing:
+- every count is bounded by the bytes left (each item takes at least one);
+- the snapshot's faces and feature edges name existing vertices;
+- each edit's ids name live vertices and faces of the replayed state (`ids_valid`), and the
+  ids it creates stay within what the rest of the file could still announce.
+
+A new edit kind needs its case in `ids_valid`. Tests: `history-load-refuses-damaged-files`,
+`surface-map-damaged-history`.
 
 ### Features
 

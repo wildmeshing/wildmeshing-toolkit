@@ -5,6 +5,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <random>
 #include <set>
 #include <string>
@@ -189,4 +191,68 @@ TEST_CASE("history-save-load-round-trip", "[history]")
             CHECK(h.edits[i].moves[k].pos == g.edits[i].moves[k].pos);
         }
     }
+}
+
+TEST_CASE("history-load-refuses-damaged-files", "[history]")
+{
+    // A history file damaged anywhere -- cut short, or a byte changed -- either loads, if what
+    // is left still makes sense, or throws. It never reads out of bounds or allocates without
+    // end.
+    TriMesh m;
+    const auto pos = make_grid(m, 6, 6);
+    const auto rec = m.start_history(
+        [&pos](size_t v) { return v < pos.size() ? pos[v] : Eigen::Vector3d::Zero().eval(); });
+    std::vector<TriMesh::Tuple> out;
+    for (int i = 0; i < 24; ++i) {
+        const auto edges = m.get_edges();
+        const auto& e = edges[(7 * size_t(i)) % edges.size()];
+        if (i % 3 == 0) {
+            m.split_edge(e, out);
+        } else if (i % 3 == 1) {
+            m.collapse_edge(e, out);
+        } else {
+            m.swap_edge(e, out);
+        }
+    }
+    m.consolidate_mesh();
+    rec->history().metadata = R"({"application": "test"})";
+
+    const auto dir = std::filesystem::temp_directory_path() / "wmtk_history_damaged";
+    std::filesystem::create_directories(dir);
+    const auto path = (dir / "history.bin").string();
+    rec->history().save(path);
+    std::string bytes;
+    {
+        std::ifstream in(path, std::ios::binary);
+        bytes.assign(std::istreambuf_iterator<char>(in), {});
+    }
+    const auto loads = [&](const std::string& data) {
+        {
+            std::ofstream o(path, std::ios::binary | std::ios::trunc);
+            o.write(data.data(), std::streamsize(data.size()));
+        }
+        try {
+            const history::SurfaceHistory h = history::SurfaceHistory::load(path);
+            history::Replay r(h);
+            r.apply_all(h);
+            return true;
+        } catch (const std::exception&) {
+            return false;
+        }
+    };
+    REQUIRE(loads(bytes));
+    // Every prefix is missing something the format requires.
+    size_t truncated_loaded = 0;
+    for (size_t n = 0; n < bytes.size(); ++n) truncated_loaded += loads(bytes.substr(0, n));
+    CHECK(truncated_loaded == 0);
+    // Any byte, changed: loaded or refused, but never a crash.
+    std::mt19937 rng(1);
+    size_t refused = 0;
+    for (int i = 0; i < 3000; ++i) {
+        std::string d = bytes;
+        d[rng() % d.size()] ^= char(1 + rng() % 255);
+        refused += !loads(d);
+    }
+    CHECK(refused > 0);
+    std::filesystem::remove_all(dir);
 }
