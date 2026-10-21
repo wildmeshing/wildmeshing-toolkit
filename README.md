@@ -25,7 +25,7 @@ You may need to install `gmp` before compiling the code. You can install `gmp` v
 ## Usage
 
 Components also support named, in-memory meshes and JSON parameters through the
-[C++ component I/O interface](docs/in-memory-io.md).
+[C++ and Python component I/O interfaces](docs/in-memory-io.md).
 
 When executing CMake, the [data repository](https://github.com/wildmeshing/data2) will be automatically cloned into the `data` folder. You can find example meshes and json files for testing there. After compiling the code, you can run the applications under the `app` folder, e.g. for isotropic remeshing:
 

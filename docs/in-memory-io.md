@@ -11,8 +11,8 @@ ComponentResult name(nlohmann::json options, const MeshMap& meshes);
 `MeshMap` is `std::map<std::string, MeshData>`. `ComponentResult` is a pair of named
 output meshes and a JSON report. The memory overload never resolves a selector as a filename,
 never changes its input meshes, and does not emit mesh, report, log, or debug files. It does not
-require `application`, `input_dir`, or output filenames. The existing Python dispatcher still
-uses the file-oriented interface; bindings for MeshData are not part of this change.
+require `application`, `input_dir`, or output filenames. Python exposes both interfaces,
+using plain dictionaries of NumPy arrays for mesh data.
 
 ```cpp
 #include <wmtk/io/mesh_io.hpp>
@@ -23,6 +23,68 @@ auto [outputs, report] = wmtk::components::qslim::qslim(
     {{"input", "surface"}, {"target_rel", 0.5}}, meshes);
 wmtk::io::write_mesh("simplified.vtu", outputs.at("mesh"));
 ```
+
+## Python
+
+Build and install in your active environment with `python -m pip install -e .`.
+Every enabled component exposes `name(options)` for the existing file interface and
+`name(options, meshes)` for the memory interface. The latter returns `(meshes, report)`.
+`wildmeshing(options)` remains compatible; `wildmeshing(options, meshes)` selects the memory
+component from `options["application"]`. Direct component calls do not require `application`.
+
+```python
+import numpy as np
+import wildmeshing as wm
+
+surface = {
+    "V": np.array([[0., 0., 0.], [1., 0., 0.], [0., 1., 0.]], dtype=np.float64),
+    "cells": {
+        "triangle": {"connectivity": np.array([[0, 1, 2]], dtype=np.int64)},
+    },
+}
+meshes, report = wm.qslim(
+    {"input": "surface", "target_rel": 1.0, "eps_rel": 0.0},
+    {"surface": surface},
+)
+positions = meshes["mesh"]["V"]
+# Explicit file I/O is separate from the memory call:
+wm.write_mesh("result.msh", meshes["mesh"])
+loaded = wm.read_mesh("result.msh")
+```
+
+The dictionary mirrors the C++ data structure:
+
+- `V`: an `(n, 3)` NumPy array. Floating coordinates are promoted to Float64; integer
+  coordinates must convert exactly. Returned positions always use Float64.
+- `cells`: a dictionary keyed by `point`, `edge`, `triangle`, `quad`, `tetrahedron`, `prism`,
+  or `pyramid`. Each block contains a two-dimensional integer `connectivity` array and an
+  optional `attributes` dictionary. Returned connectivity uses Int64.
+- Optional `vertex_attributes` and cell `attributes` map names to
+  `{"values": array, "labels": [column_names...]}`. Labels may be omitted; a bare array is also
+  accepted as an unlabeled input attribute. Attribute dtypes are Float64, Int64, or UInt8.
+  One-dimensional input attributes become column matrices. Returned fields always contain
+  `values` and `labels`.
+
+For example, overlapping region memberships are represented as:
+
+```python
+mesh["cells"]["tetrahedron"]["attributes"] = {
+    "tags": {
+        "values": np.array([[1, 1], [1, 0]], dtype=np.uint8),
+        "labels": ["region_a", "region_b"],
+    },
+}
+```
+
+Only selected dictionary entries are converted and validated. JSON selector arrays retain
+their order. Inputs may be read-only or strided arrays: the binding copies selected data into
+owning C++ arrays before computation. Outputs own their NumPy storage and can be passed directly
+into subsequent memory calls. Connectivity is never truncated from floating point, and Int64
+attributes never pass through Float64. Computation releases the Python GIL. Component attribute
+contracts and the shared readers' and writers' supported formats are the same as in C++.
+
+Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`;
+they are also included in the wheel tests.
 
 ## MeshData
 
