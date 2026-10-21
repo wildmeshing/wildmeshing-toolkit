@@ -1650,7 +1650,8 @@ std::shared_ptr<history::TrackedSurfaceRecorder> TetMesh::start_surface_history(
     m_surface_history = std::make_shared<history::TrackedSurfaceRecorder>(
         tracked_faces(),
         std::move(position),
-        [this](const std::array<size_t, 3>& f) { return orient_tracked_face(f); });
+        [this](const std::array<size_t, 3>& f) { return orient_tracked_face(f); },
+        tracked_feature_edges());
     return m_surface_history;
 }
 

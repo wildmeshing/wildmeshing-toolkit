@@ -661,6 +661,10 @@ public:
     /// Whether local face `j` of tet `tid` is tracked surface, for a surface history. None is,
     /// unless an application says so.
     virtual bool is_tracked_face(size_t tid, int j) const { return false; }
+    /// The feature curves on the tracked surface, for a surface history: edges of tracked faces
+    /// the operations keep by the history's rules (a split halves one, a collapse renames the
+    /// removed end's, a swap never takes one). None, unless an application says otherwise.
+    virtual std::vector<std::array<size_t, 2>> tracked_feature_edges() const { return {}; }
     /// A tracked face's corners in the order that orients it, for a surface history. As given,
     /// unless an application says otherwise.
     virtual std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const

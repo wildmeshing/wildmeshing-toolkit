@@ -109,6 +109,13 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input)
             }
         }
     }
+    // Where each output face comes from: the input face its centroid maps to, -1 for none.
+    auto& from = out.face_fields["input_face"];
+    from.resize(out_faces.size());
+    for (size_t i = 0; i < out_faces.size(); ++i) {
+        const uint64_t g = src[4 * i].face;
+        from[i] = {g < input.faces.size() ? double(g) : -1.};
+    }
     if (lost > 0) logger().warn("transfer: {} values had no source and were set to 0", lost);
     return out;
 }

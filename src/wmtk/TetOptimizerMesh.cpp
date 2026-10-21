@@ -749,6 +749,34 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
     return res;
 }
 
+std::vector<std::array<size_t, 2>> TetOptimizerMesh::tracked_feature_edges() const
+{
+    std::vector<std::array<size_t, 2>> out;
+    if (!m_track_feature_edges) return out;
+    for (const Tuple& e : get_edges()) {
+        if (!m_feature_edge_attribute.at(e.eid(*this)).m_is_feature_edge) continue;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        // An edge of a tracked face: a tet at it with a tracked face holding both ends.
+        bool on_surface = false;
+        for (const size_t tid : get_one_ring_tids_for_vertex(a)) {
+            const auto vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), b) == vs.end()) continue;
+            for (int j = 0; j < 4 && !on_surface; ++j) {
+                if (!is_tracked_face(tid, j)) continue;
+                int held = 0;
+                for (const auto& v : get_face_vertices(tuple_from_face(tid, j))) {
+                    held += v.vid(*this) == a || v.vid(*this) == b;
+                }
+                on_surface = held == 2;
+            }
+            if (on_surface) break;
+        }
+        if (on_surface) out.push_back({{std::min(a, b), std::max(a, b)}});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
 TetOptimizerMesh::PositionKey
 TetOptimizerMesh::position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c)
 {
@@ -798,6 +826,12 @@ void TetOptimizerMesh::save_surface_history(
     if (!m_recorded_surface) return;
     if (const size_t drift = resync_surface_history()) {
         logger().warn("surface history: {} tracked faces changed outside the operations", drift);
+    }
+    if (m_recorded_surface->feature_edges() != tracked_feature_edges()) {
+        logger().warn(
+            "surface history: the feature edges the history carried ({}) are not the mesh's ({})",
+            m_recorded_surface->feature_edges().size(),
+            tracked_feature_edges().size());
     }
     stop_surface_history();
     const auto st = m_recorded_surface->stats();
