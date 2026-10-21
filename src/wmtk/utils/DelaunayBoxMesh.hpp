@@ -34,7 +34,7 @@ namespace wmtk::utils {
  * @param[out] box_min, box_max  the PADDED box actually used
  */
 void delaunay_box_mesh(
-    const SampleEnvelope& envelope,
+    const Envelope& envelope,
     const Vector3d& bbox_min,
     const Vector3d& bbox_max,
     double diag,

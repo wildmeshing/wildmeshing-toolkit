@@ -20,7 +20,7 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
     NUM_THREADS = (num_threads);
     m_envelope.use_exact = use_exact_envelope;
     // A large envelope check may take the threads that have run out of work; see
-    // SampleEnvelope::set_max_threads.
+    // Envelope::set_max_threads.
     m_envelope.set_max_threads(NUM_THREADS);
     p_vertex_attrs = &vertex_attrs;
 

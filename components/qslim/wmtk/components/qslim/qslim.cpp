@@ -65,6 +65,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const double boundary_env_rel = json_params["boundary_eps_rel"];
     const double target_rel = json_params["target_rel"];
     const int num_thread = json_params["num_threads"];
+    const bool use_sample_envelope = json_params["use_sample_envelope"];
     double target_abs = json_params["target_abs"];
 
     const double remove_duplicate_eps = 1e-5;
@@ -89,7 +90,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
     }
 
-    QSlimMesh m(verts, num_thread);
+    QSlimMesh m(verts, num_thread, !use_sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.create_mesh(
         verts.size(),

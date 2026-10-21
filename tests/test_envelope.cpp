@@ -1,13 +1,13 @@
 // Containment queries that only the exact envelope can answer.
 //
-// Both of SampleEnvelope's backends describe the SAME envelope: the eps-neighbourhood of the
+// Both of Envelope's backends describe the SAME envelope: the eps-neighbourhood of the
 // input. They are handed the same eps and neither is meant to be wider or narrower than the
 // other. What differs is how much of that eps they manage to use.
 //
 // The sampled one places points along the query and asks the BVH whether each is within some
 // radius of the input. It cannot see what happens between two samples, so to guarantee the
 // whole query is within eps it has to shrink that radius by the sampling's covering radius --
-// eps/sqrt(3) for a triangle, eps/2 for a segment (see SampleEnvelope::eps2 and eps2_edge).
+// eps/sqrt(3) for a triangle, eps/2 for a segment (see Envelope::eps2 and eps2_edge).
 // That shrink is an implementation detail of staying conservative, not a smaller envelope: it
 // costs some of the eps budget, so the sampled test rejects geometry that is genuinely inside.
 //
@@ -41,7 +41,7 @@ using namespace wmtk;
 namespace {
 
 /// A single segment of the x axis, from the origin to (length, 0, 0).
-void init_axis_3d(SampleEnvelope& env, double length, double eps)
+void init_axis_3d(Envelope& env, double length, double eps)
 {
     const std::vector<Eigen::Vector3d> V = {
         Eigen::Vector3d(0, 0, 0),
@@ -51,7 +51,7 @@ void init_axis_3d(SampleEnvelope& env, double length, double eps)
 }
 
 /// The same in 2D.
-void init_axis_2d(SampleEnvelope& env, double length, double eps)
+void init_axis_2d(Envelope& env, double length, double eps)
 {
     const std::vector<Eigen::Vector2d> V = {Eigen::Vector2d(0, 0), Eigen::Vector2d(length, 0)};
     const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1)};
@@ -67,8 +67,8 @@ TEST_CASE("exact and sampled 3D segment envelopes agree away from the boundary",
     // is what says the exact path is wired to the right geometry at all -- a mis-dispatched
     // exact query would answer "outside" for everything, including the queries well inside.
     const double eps = 0.1;
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_3d(sampled, 4.0, eps);
     init_axis_3d(exact, 4.0, eps);
 
@@ -123,8 +123,8 @@ TEST_CASE("the sampled segment envelope is the stricter of the two", "[envelope]
     REQUIRE(offset > eps / 2); // sampled must reject
     REQUIRE(offset <= inscribed); // exact must accept
 
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_3d(sampled, 4.0, eps);
     init_axis_3d(exact, 4.0, eps);
 
@@ -137,8 +137,8 @@ TEST_CASE("the sampled segment envelope is the stricter of the two", "[envelope]
 TEST_CASE("the exact 2D envelope answers point and segment queries", "[envelope]")
 {
     const double eps = 0.1;
-    SampleEnvelope sampled(false);
-    SampleEnvelope exact(true);
+    Envelope sampled(false);
+    Envelope exact(true);
     init_axis_2d(sampled, 4.0, eps);
     init_axis_2d(exact, 4.0, eps);
 
@@ -194,7 +194,7 @@ TEST_CASE("only the exact envelope sees a gap between two input curves", "[envel
         Eigen::Vector2d(2 + gap, 0)};
     const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1), Eigen::Vector2i(2, 3)};
 
-    SampleEnvelope exact(true);
+    Envelope exact(true);
     exact.init(V, E, eps);
 
     // Inside one component: fine.
@@ -218,7 +218,7 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
 
     SECTION("triangle query against a 2D envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_2d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 3> tri = {
             {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(0, 1, 0)}};
@@ -226,7 +226,7 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
     }
     SECTION("triangle query against a 3D edge envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_3d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 3> tri = {
             {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(0, 1, 0)}};
@@ -234,25 +234,34 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
     }
     SECTION("3D segment query against a 2D envelope")
     {
-        SampleEnvelope exact(true);
+        Envelope exact(true);
         init_axis_2d(exact, 4.0, eps);
         const std::array<Eigen::Vector3d, 2> e = {
             {Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(3, 0, 0)}};
         CHECK_THROWS(exact.is_outside(e));
     }
-    SECTION("an exact envelope needs a positive epsilon")
+    SECTION("an exact envelope with zero epsilon serves nearest queries and refuses containment")
     {
         // Zero eps is legitimate for a nearest_point-only envelope (triwild's Delaunay
-        // seeding does it), but there is no zero-width exact envelope to build.
-        SampleEnvelope exact(true);
-        CHECK_THROWS(init_axis_2d(exact, 4.0, 0.0));
+        // seeding does it), but there is no zero-width exact envelope to build. So init skips
+        // the exact build instead of throwing, nearest queries go to the BVH as usual, and a
+        // containment query throws rather than answering "outside" for everything.
+        Envelope exact(true);
+        CHECK_NOTHROW(init_axis_2d(exact, 4.0, 0.0));
+        CHECK_THROWS(exact.is_outside(Eigen::Vector2d(1, 0)));
+        CHECK_THROWS(exact.is_outside(
+            std::array<Eigen::Vector2d, 2>{{Eigen::Vector2d(1, 0), Eigen::Vector2d(3, 0)}}));
+        Eigen::Vector2d foot;
+        const double d2 = exact.nearest_point(Eigen::Vector2d(1, 0.5), foot);
+        CHECK(std::abs(d2 - 0.25) < 1e-12);
+        CHECK((foot - Eigen::Vector2d(1, 0)).norm() < 1e-12);
 
-        SampleEnvelope sampled(false);
+        Envelope sampled(false);
         CHECK_NOTHROW(init_axis_2d(sampled, 4.0, 0.0));
     }
     SECTION("the sampled backend accepts every combination, as before")
     {
-        SampleEnvelope sampled(false);
+        Envelope sampled(false);
         init_axis_2d(sampled, 4.0, eps);
         const std::array<Eigen::Vector3d, 2> e = {
             {Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(3, 0, 0)}};
@@ -298,7 +307,7 @@ TEST_CASE("envelope_budget", "[envelope]")
 
     SECTION("a remainder that would be non-positive falls back to the full eps")
     {
-        // Never returns <= 0. SampleEnvelope::init SQUARES its argument, so a negative eps
+        // Never returns <= 0. Envelope::init SQUARES its argument, so a negative eps
         // would come back as a positive eps2 -- a silently smaller envelope rather than an
         // error -- and a zero one vetoes every operation.
         CHECK(optimization_envelope_eps(eps, eps, true, true) == eps);
@@ -327,8 +336,8 @@ TEST_CASE("a large sampled triangle query answers the same on several threads", 
             F.emplace_back(a, a + n + 2, a + n + 1);
         }
     }
-    SampleEnvelope serial(false);
-    SampleEnvelope split(false);
+    Envelope serial(false);
+    Envelope split(false);
     serial.init(V, F, eps);
     split.init(V, F, eps);
     split.set_max_threads(8);
@@ -407,7 +416,7 @@ Eigen::Matrix3d expected_hessian(
 }
 
 void check_closed_form(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const int64_t id,
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& foot,
@@ -424,7 +433,7 @@ void check_closed_form(
 
 /// Central differences of primitive_distance's value against its gradient, and of its gradient
 /// against its Hessian, at a point inside one closest-feature region of primitive `id`.
-void check_derivatives(const SampleEnvelope& env, const int64_t id, const Eigen::Vector3d& p)
+void check_derivatives(const Envelope& env, const int64_t id, const Eigen::Vector3d& p)
 {
     const double h = 1e-6;
     Eigen::Vector3d g;
@@ -444,7 +453,7 @@ void check_derivatives(const SampleEnvelope& env, const int64_t id, const Eigen:
 
 /// trace(H) d: 0 for a triangle's interior, 1 for an edge or a segment's interior, 2 for a
 /// vertex, an endpoint or a point -- the rank of the Hessian, so which region p is in.
-int region_rank(const SampleEnvelope& env, const int64_t id, const Eigen::Vector3d& p)
+int region_rank(const Envelope& env, const int64_t id, const Eigen::Vector3d& p)
 {
     Eigen::Matrix3d H;
     const double d = env.primitive_distance(id, p, nullptr, &H);
@@ -507,7 +516,7 @@ TEST_CASE("per-primitive distance: closed forms in every region", "[envelope]")
     SECTION("triangle: interior, edge, vertex")
     {
         // The triangle (0,0,0), (1,0,0), (0,1,0): every foot is known by inspection.
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(
             std::vector<Eigen::Vector3d>{
                 Eigen::Vector3d(0, 0, 0),
@@ -549,7 +558,7 @@ TEST_CASE("per-primitive distance: closed forms in every region", "[envelope]")
     SECTION("segment: interior, endpoint; and a point primitive")
     {
         // Segment 0 from the origin to (2,0,0); entry 1 the isolated point (5,5,5).
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(
             std::vector<Eigen::Vector3d>{
                 Eigen::Vector3d(0, 0, 0),
@@ -578,7 +587,7 @@ TEST_CASE("per-primitive triangle distance: closed forms", "[envelope]")
     using T = std::array<Eigen::Vector3d, 3>;
     SECTION("against a triangle")
     {
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(
             std::vector<Eigen::Vector3d>{
                 Eigen::Vector3d(0, 0, 0),
@@ -610,7 +619,7 @@ TEST_CASE("per-primitive triangle distance: closed forms", "[envelope]")
     }
     SECTION("against a segment and a point")
     {
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(
             std::vector<Eigen::Vector3d>{
                 Eigen::Vector3d(0, 0, 0),
@@ -651,7 +660,7 @@ TEST_CASE("per-primitive distance derivatives match central differences", "[enve
     SECTION("triangle, in each of its seven regions")
     {
         const std::vector<Eigen::Vector3d> V = skew_triangle_vertices();
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, std::vector<Eigen::Vector3i>{Eigen::Vector3i(0, 1, 2)}, 0.1);
         const Eigen::Vector3d n = (V[1] - V[0]).cross(V[2] - V[0]).normalized();
         const Eigen::Vector3d centroid = (V[0] + V[1] + V[2]) / 3;
@@ -683,7 +692,7 @@ TEST_CASE("per-primitive distance derivatives match central differences", "[enve
             Eigen::Vector3d(0.1, 0.2, 0.3),
             Eigen::Vector3d(1.3, -0.1, 0.5),
             Eigen::Vector3d(0.4, 1.1, -0.2)};
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(
             V,
             std::vector<Eigen::Vector2i>{Eigen::Vector2i(0, 1), Eigen::Vector2i(2, 2)},
@@ -726,7 +735,7 @@ TEST_CASE("primitives_in_box is every primitive whose box meets the query box", 
         return ids;
     };
     size_t empty = 0, nonempty = 0;
-    const auto compare = [&](const SampleEnvelope& env,
+    const auto compare = [&](const Envelope& env,
                              const std::vector<std::array<Eigen::Vector3d, 2>>& boxes) {
         for (int k = 0; k < 300; ++k) {
             Eigen::Vector3d lo, hi;
@@ -747,7 +756,7 @@ TEST_CASE("primitives_in_box is every primitive whose box meets the query box", 
         std::vector<Eigen::Vector3d> V;
         std::vector<Eigen::Vector3i> F;
         random_triangles(rng, 400, V, F);
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, F, 0.01);
         std::vector<std::array<Eigen::Vector3d, 2>> boxes;
         for (const auto& f : F) {
@@ -762,7 +771,7 @@ TEST_CASE("primitives_in_box is every primitive whose box meets the query box", 
         std::vector<Eigen::Vector3d> V;
         std::vector<Eigen::Vector2i> E;
         random_segments_and_points(rng, 300, 100, V, E);
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, E, 0.01);
         std::vector<std::array<Eigen::Vector3d, 2>> boxes;
         for (const auto& e : E) {
@@ -777,7 +786,7 @@ TEST_CASE("primitives_in_box is every primitive whose box meets the query box", 
         random_segments_and_points(rng, 300, 100, V3, E);
         std::vector<Eigen::Vector2d> V;
         for (const auto& v : V3) V.emplace_back(v[0], v[1]);
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, E, 0.01);
         std::vector<std::array<Eigen::Vector2d, 2>> boxes;
         for (const auto& e : E) {
@@ -815,7 +824,7 @@ TEST_CASE("min over a box's primitives is the BVH's nearest distance", "[envelop
     // foot point is computed with different arithmetic).
     std::mt19937 rng(5);
     std::uniform_real_distribution<double> U(-0.3, 1.3);
-    const auto check = [&](const SampleEnvelope& env, const size_t n_prim) {
+    const auto check = [&](const Envelope& env, const size_t n_prim) {
         for (int k = 0; k < 300; ++k) {
             const Eigen::Vector3d p(U(rng), U(rng), U(rng));
             const double r = std::sqrt(env.squared_distance(p));
@@ -843,7 +852,7 @@ TEST_CASE("min over a box's primitives is the BVH's nearest distance", "[envelop
         std::vector<Eigen::Vector3d> V;
         std::vector<Eigen::Vector3i> F;
         random_triangles(rng, 200, V, F);
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, F, 0.01);
         check(env, F.size());
     }
@@ -852,7 +861,7 @@ TEST_CASE("min over a box's primitives is the BVH's nearest distance", "[envelop
         std::vector<Eigen::Vector3d> V;
         std::vector<Eigen::Vector2i> E;
         random_segments_and_points(rng, 150, 50, V, E);
-        SampleEnvelope env(false);
+        Envelope env(false);
         env.init(V, E, 0.01);
         check(env, E.size());
     }
@@ -872,7 +881,7 @@ TEST_CASE("per-primitive queries refuse what they cannot answer", "[envelope]")
 
     SECTION("an envelope no init() has filled in")
     {
-        SampleEnvelope env(false);
+        Envelope env(false);
         CHECK_THROWS(env.primitives_in_box(lo, hi, ids));
         CHECK_THROWS(env.primitive_distance(0, lo));
         CHECK_THROWS(env.primitive_triangle_distance(0, tri));
@@ -882,13 +891,13 @@ TEST_CASE("per-primitive queries refuse what they cannot answer", "[envelope]")
     }
     SECTION("an id out of range")
     {
-        SampleEnvelope env3(false);
+        Envelope env3(false);
         init_axis_3d(env3, 4.0, 0.1);
         CHECK_NOTHROW(env3.primitive_distance(0, lo));
         CHECK_THROWS(env3.primitive_distance(1, lo));
         CHECK_THROWS(env3.primitive_distance(-1, lo));
         CHECK_THROWS(env3.primitive_triangle_distance(1, tri));
-        SampleEnvelope env2(false);
+        Envelope env2(false);
         init_axis_2d(env2, 4.0, 0.1);
         CHECK_NOTHROW(env2.primitive_distance(0, lo2));
         CHECK_THROWS(env2.primitive_distance(1, lo2));
@@ -897,7 +906,7 @@ TEST_CASE("per-primitive queries refuse what they cannot answer", "[envelope]")
     }
     SECTION("a 2D envelope answers the 2D queries only")
     {
-        SampleEnvelope env(false);
+        Envelope env(false);
         init_axis_2d(env, 4.0, 0.1);
         env.primitives_in_box(Eigen::Vector2d(1, -1), Eigen::Vector2d(2, 1), ids);
         CHECK(ids == std::vector<int64_t>{0});
@@ -910,7 +919,7 @@ TEST_CASE("per-primitive queries refuse what they cannot answer", "[envelope]")
     SECTION("a 3D envelope answers the 3D queries only")
     {
         for (const bool triangles : {true, false}) {
-            SampleEnvelope env(false);
+            Envelope env(false);
             if (triangles) {
                 env.init(
                     std::vector<Eigen::Vector3d>{tri[0], tri[1], tri[2]},
@@ -932,7 +941,7 @@ TEST_CASE("per-primitive queries refuse what they cannot answer", "[envelope]")
 namespace {
 
 void check_closed_form_2d(
-    const SampleEnvelope& env,
+    const Envelope& env,
     const int64_t id,
     const Eigen::Vector2d& p,
     const Eigen::Vector2d& foot,
@@ -953,7 +962,7 @@ void check_closed_form_2d(
     }
 }
 
-void check_derivatives_2d(const SampleEnvelope& env, const int64_t id, const Eigen::Vector2d& p)
+void check_derivatives_2d(const Envelope& env, const int64_t id, const Eigen::Vector2d& p)
 {
     const double h = 1e-6;
     Eigen::Vector2d g;
@@ -989,7 +998,7 @@ void random_segments_and_points_2d(
 TEST_CASE("per-primitive 2D distance: closed forms", "[envelope]")
 {
     // Segment 0 from the origin to (2,0); entry 1 the isolated point (5,5).
-    SampleEnvelope env(false);
+    Envelope env(false);
     env.init(
         std::vector<Eigen::Vector2d>{
             Eigen::Vector2d(0, 0),
@@ -1050,7 +1059,7 @@ TEST_CASE("per-primitive 2D distance derivatives match central differences", "[e
         Eigen::Vector2d(0.1, 0.2),
         Eigen::Vector2d(1.3, -0.1),
         Eigen::Vector2d(0.4, 1.1)};
-    SampleEnvelope env(false);
+    Envelope env(false);
     env.init(V, std::vector<Eigen::Vector2i>{Eigen::Vector2i(0, 1), Eigen::Vector2i(2, 2)}, 0.1);
     const Eigen::Vector2d e = (V[1] - V[0]).normalized();
     const Eigen::Vector2d n(-e[1], e[0]);
@@ -1079,7 +1088,7 @@ TEST_CASE("min over a 2D box's primitives is the BVH's nearest distance", "[enve
     std::vector<Eigen::Vector2d> V;
     std::vector<Eigen::Vector2i> E;
     random_segments_and_points_2d(rng, 150, 50, V, E);
-    SampleEnvelope env(false);
+    Envelope env(false);
     env.init(V, E, 0.01);
     std::uniform_real_distribution<double> U(-0.3, 1.3);
     for (int k = 0; k < 300; ++k) {

@@ -14,6 +14,7 @@ set(SRC_FILES
     test_wild_conformance.cpp
     test_embed_surface_components.cpp
     test_simplify_boundary.cpp
+    test_late_feature_tracking.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

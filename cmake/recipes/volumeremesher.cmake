@@ -104,11 +104,52 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # background mesh. It also pins NFG a35198d and Delaunay3D c9b3eec (wildmeshing forks).
 # FetchContent keeps VolumeRemesher's NFG declaration, so fast-envelope builds against a35198d
 # too; its own recipe still names the older commit until fast-envelope follows.
+#
+# Then #32 and #33. Neither changes any output here: all 50 registered configs are
+# byte-identical across them.
+#
+#   - #32 (c8329b3) adds the Python bindings: the CLI's writers are split into in-memory
+#     snapshots (BSPcomplex::extractSurface/extractVolume), parallel_blocks rethrows a worker's
+#     exception on the calling thread, and NFG moves to 2330267 -- upstream main
+#     (MarcoAttene/NFG#6 merged) plus MarcoAttene/NFG#7, under which ip_error throws when
+#     NFG_IP_ERROR_THROWS is defined. Nothing here defines it, and embed_tri_in_poly_mesh /
+#     embed_seg_in_tri_mesh call none of the rewritten writers. fast-envelope builds against
+#     2330267 too (VolumeRemesher's declaration wins).
+#   - #33 (57e7753) moves Delaunay3D to upstream main e18e96a, which inserts the vertices of
+#     tetrahedrize() in Morton order above 1150 of them, plus MarcoAttene/Delaunay3D#2 and #3
+#     (wildmeshing/Delaunay3D f1c7c19); #3 breaks ties between points in the same Morton cell
+#     by index, so the insertion order does not depend on the standard library's sort. It
+#     changes the order the tets are created in, not which tets are created: symbolic
+#     perturbation makes the set order-independent. VolumeRemesher's embedding never calls
+#     tetrahedrize() (it inserts into our background mesh), and our own delaunay3D -- the
+#     tetwild/simwild background grid, src/wmtk/utils/Delaunay.cpp -- sorts the tets it
+#     returns, so neither sees the new order. Measured on crown, octocat and thingi 36075, the
+#     background-grid Delaunay is 10-30 ms faster.
+#
+# Then #34 (45f72ed), which does move output. Delaunay3D does not support inserting a point at
+# an existing vertex's position (MarcoAttene/Delaunay3D#2), and the embedding did exactly that
+# for every surface vertex: tetwild and simwild build the background from the surface vertices
+# plus a lattice (init_from_delaunay_box_mesh, delaunay_box_mesh), and embed_tri_in_poly_mesh
+# then inserted the same vertices again. VolumeRemesher now skips a vertex that coincides with
+# one of the tet mesh and moves its constraints onto that vertex; Delaunay3D moves to 22bd3fe,
+# where #2 is reduced to the point overload of searchTetrahedron. The tets are the same, but
+# the copy of each surface vertex that survives is now the background's, so the output is
+# numbered differently: the 12 tetwild configs and simwild's two double-sphere embeds move,
+# the other 36 registered configs stay byte-identical. All of them still pass their checks
+# (every vertex rounded, Hausdorff 0.46-0.57 of eps, Euler characteristic where checked);
+# tetwild's iterations total 57 -> 39 over the registered set, and max energy moves both ways.
+#
+# Then #35 (8d5aac6): both forks are merged upstream, so NFG is MarcoAttene/NFG aeec975 (the same
+# numerics.h as 2330267) and Delaunay3D is MarcoAttene/Delaunay3D 362502e. The one difference
+# from 22bd3fe is upstream 60d00a8: tetrahedrize() returns no tets, instead of stopping in
+# ip_error, when the vertices do not span a volume. Our delaunay3D checks that before calling
+# it (spans_a_volume, src/wmtk/utils/Delaunay.cpp). No output changes: all 50 registered
+# configs are byte-identical to #34. fast-envelope #12 pins the same NFG (fenvelope.cmake).
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 9e74ca7119ff8f5e1db40498f08f4a60d89a4ab3
+    GIT_TAG 8d5aac6e80654a6e3b1ad931e3c2705b7dec2871
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
