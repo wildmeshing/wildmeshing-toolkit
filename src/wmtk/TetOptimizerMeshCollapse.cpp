@@ -157,6 +157,12 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         }
     }
 
+    // Feature-point anchors (see TetOptimizerMesh). Immediately before the application's
+    // hook, which is where tetwild asked it first.
+    if (collapse_breaks_feature_point(v1_id, v2_id)) {
+        return collapse_reject(CollapseReject::feature_point);
+    }
+
     // The application counts its own reasons (CollapseReject::app_*).
     if (!collapse_before_vertex(v1_id, v2_id, cache.edge_length)) {
         return false;
@@ -502,6 +508,13 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         collapse_after_features(v1_id, v2_id);
     }
 
+    // The survivor takes over the anchor the collapsed vertex carried, if it carries none.
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v2_id].m_feature_point_id == NO_FEATURE_POINT) {
+        m_feature_point_attribute[v2_id].m_feature_point_id =
+            m_feature_point_attribute[v1_id].m_feature_point_id;
+    }
+
     // Now that the vertex flag OR (above) and the face tags (the loop above) are the
     // post-collapse truth, decide whether the survivor keeps its open-boundary flag.
     collapse_after_vertex(v1_id, v2_id);
@@ -549,6 +562,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::quality: return "quality";
     case CollapseReject::substructure_link: return "substructure_link";
     case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
+    case CollapseReject::feature_point: return "feature_point";
     case CollapseReject::app_both_surfaces: return "app_both_surfaces";
     case CollapseReject::app_front_unlimited: return "app_front_unlimited";
     case CollapseReject::app_leaves_input: return "app_leaves_input";

@@ -633,7 +633,8 @@ void triwild(nlohmann::json json_params)
         }
         for (const auto& v : mesh.get_vertices()) {
             const size_t vid = v.vid(mesh);
-            if (mesh.m_vertex_extra[vid].m_feature_id != NO_FEATURE) {
+            if (mesh.m_feature_point_attribute[vid].m_feature_point_id !=
+                TriWildMesh::NO_FEATURE_POINT) {
                 collected_anchor_pts.push_back(mesh.m_vertex_attribute[vid].m_posf);
             }
         }

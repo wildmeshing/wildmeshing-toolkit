@@ -851,7 +851,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         for (const auto& v : mesh_new.get_vertices()) {
             const size_t vid = v.vid(mesh_new);
-            if (mesh_new.m_vertex_extra[vid].m_feature_point_id != TetWildMesh::NO_FEATURE) {
+            if (mesh_new.m_feature_point_attribute[vid].m_feature_point_id !=
+                TetWildMesh::NO_FEATURE_POINT) {
                 hybrid_anchor_pts.push_back(mesh_new.m_vertex_attribute[vid].m_posf);
             }
         }

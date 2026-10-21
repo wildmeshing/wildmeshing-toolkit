@@ -413,10 +413,11 @@ void TetWildMesh::init_from_Volumeremesher(
                         "Feature anchor ({}) is not a vertex of the initial mesh",
                         p.transpose());
                 }
-                if (m_vertex_extra[it->second].m_feature_point_id != NO_FEATURE) {
+                auto& anchor = m_feature_point_attribute[it->second];
+                if (anchor.m_feature_point_id != NO_FEATURE_POINT) {
                     continue;
                 }
-                m_vertex_extra[it->second].m_feature_point_id = m_feature_points.size();
+                anchor.m_feature_point_id = m_feature_points.size();
                 m_feature_points.push_back(p);
                 ++n_anchored;
             }

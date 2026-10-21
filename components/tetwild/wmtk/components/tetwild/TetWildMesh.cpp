@@ -6,7 +6,6 @@
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
-#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SizingField.hpp>
@@ -63,41 +62,6 @@ void TetWildMesh::optimization_sanity_checks_extra()
         }
         logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
     }
-}
-
-std::pair<size_t, size_t> TetWildMesh::feature_retention(double* worst_ratio) const
-{
-    if (worst_ratio) {
-        *worst_ratio = 0;
-    }
-    if (m_feature_points.empty()) {
-        return {0, 0};
-    }
-
-    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
-    // 2D version learned the hard way not to scan every vertex per feature.
-    std::vector<Vector3d> pts;
-    pts.reserve(vert_capacity());
-    for (const Tuple& v : get_vertices()) {
-        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
-    }
-    if (pts.empty()) {
-        return {0, m_feature_points.size()};
-    }
-    const KNN knn(pts);
-
-    size_t kept = 0;
-    for (const Vector3d& anchor : m_feature_points) {
-        uint32_t idx = 0;
-        double sq = 0;
-        knn.nearest_neighbor(anchor, idx, sq);
-        if (sq <= m_feature_eps * m_feature_eps) {
-            ++kept;
-        } else if (worst_ratio) {
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
-        }
-    }
-    return {kept, m_feature_points.size()};
 }
 
 std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const

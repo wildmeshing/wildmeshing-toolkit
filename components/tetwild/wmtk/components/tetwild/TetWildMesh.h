@@ -73,39 +73,20 @@ public:
     struct VertexExtras
     {
         /// Whether the vertex lies on an open boundary of the input surface. The 2D
-        /// counterpart is TriWildMesh::VertexExtras::m_feature_id, which differs deliberately
-        /// -- see the comment there.
+        /// counterpart is the base's feature-point id
+        /// (TriOptimizerMesh::FeaturePointAttributes), which differs deliberately -- see the
+        /// comment there.
         bool m_is_on_open_boundary = false;
         /// Whether the vertex lies on an input feature curve (see EdgeAttributes).
         bool m_is_on_feature_curve = false;
-        /**
-         * Index into TetWildMesh::m_feature_points, or NO_FEATURE. The port of
-         * TriWildMesh::VertexExtras::m_feature_id, and for the same reason: preserving a
-         * 0-dimensional feature -- an input point, or a feature curve's endpoint -- is a
-         * COVERAGE property, and a containment test passes trivially when one anchor
-         * vertex is collapsed onto another while the first quietly stops being
-         * represented. See the discussion there.
-         */
-        size_t m_feature_point_id = std::numeric_limits<size_t>::max();
     };
     wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
 
-
-    /// A vertex that stands for no input feature point. See VertexExtras::m_feature_point_id.
-    static constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
-
-    /**
-     * Anchor positions of the 0-dimensional features, indexed by
-     * VertexExtras::m_feature_point_id: the input feature points, and the feature-curve
-     * endpoints (junctions too, when allow_junction_cleanup is off). A vertex carrying
-     * feature f may never end up further than m_feature_eps from m_feature_points[f]; the
-     * anchor never moves, so the id is a direct lookup.
-     */
-    std::vector<Vector3d> m_feature_points;
-    /// Radius of the anchor ball. Set by the driver alongside m_feature_envelope; kept a
-    /// separate name from the tube eps for the same reason triwild keeps m_feature_eps
-    /// separate from m_envelope_eps.
-    double m_feature_eps = -1;
+    // The 0-dimensional features -- the input feature points, and the feature-curve
+    // endpoints (junctions too, when allow_junction_cleanup is off) -- are anchored by the
+    // base (TetOptimizerMesh's feature-point anchors), turned on in the constructor. The
+    // driver sets m_feature_eps alongside m_feature_envelope; init_from_Volumeremesher fills
+    // the anchors.
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
@@ -194,39 +175,11 @@ public:
     }
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
-        if (collapse_breaks_feature_point(v1, v2)) return false;
         if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
         return m_vertex_extra[v2].m_is_on_open_boundary ||
                !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
     }
 
-    /**
-     * True iff collapsing v1 into v2 would drop or displace a feature-point anchor.
-     * Port of TriWildMesh::collapse_breaks_feature, distance test included: two anchors
-     * within m_feature_eps of each other are allowed to merge -- the survivor covers both
-     * -- and forbidding that deadlocks the mesh (measured in 2D, see the triwild comment).
-     */
-    bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
-    {
-        if (!m_tet_params.preserve_feature_points) return false;
-        const size_t f1 = m_vertex_extra[v1_id].m_feature_point_id;
-        if (f1 == NO_FEATURE) return false;
-        return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-               m_feature_eps * m_feature_eps;
-    }
-
-    bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const override
-    {
-        const size_t f = m_vertex_extra[vid].m_feature_point_id;
-        if (f == NO_FEATURE || !m_tet_params.preserve_feature_points) return true;
-        // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
-        // anchor, exactly the freedom the envelope gives everywhere else.
-        return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
-    }
-
-    /// {anchors still represented within m_feature_eps, total}. Geometric, like triwild's:
-    /// "some vertex is within eps of this anchor", whether or not it carries the id.
-    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
     bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
     {
         return is_open_boundary_edge(e);
@@ -242,12 +195,8 @@ public:
             m_vertex_extra[v1].m_is_on_feature_curve || m_vertex_extra[v2].m_is_on_feature_curve;
         return true;
     }
-    void collapse_after_vertex(size_t v1, size_t v2) override
+    void collapse_after_vertex(size_t, size_t v2) override
     {
-        // The survivor picks up the anchor the collapsed vertex carried, if it has none.
-        if (m_vertex_extra[v2].m_feature_point_id == NO_FEATURE) {
-            m_vertex_extra[v2].m_feature_point_id = m_vertex_extra[v1].m_feature_point_id;
-        }
         if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
             m_vertex_extra[v2].m_is_on_open_boundary = false;
         }
@@ -265,8 +214,6 @@ public:
     void split_after_vertex_feature(size_t vid, bool on_feature) override
     {
         m_vertex_extra[vid].m_is_on_feature_curve = on_feature;
-        // A fresh split vertex stands for no anchor; its slot may be reused and stale.
-        m_vertex_extra[vid].m_feature_point_id = NO_FEATURE;
     }
 
 
@@ -277,6 +224,9 @@ public:
         , m_tet_params(_m_params)
     {
         m_vertex_attr_group.add(&m_vertex_extra);
+        // Registered unconditionally, as the ids always were: the driver exports and audits
+        // the anchors whether or not preserve_feature_points turns the policy on.
+        enable_feature_point_tracking(m_tet_params.preserve_feature_points);
         NUM_THREADS = _num_threads;
         m_tet_attr_group.add(&m_tet_attribute);
         p_tet_attrs = &m_tet_attr_group;
@@ -300,6 +250,7 @@ public:
         // The extras carry no data a caller supplies -- every field defaults -- so they only
         // have to be sized alongside the shared collection.
         m_vertex_extra.resize(_vertex_attribute.size());
+        m_feature_point_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
 
@@ -444,7 +395,8 @@ public:
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers
-     * m_edge_attribute with p_edge_attrs. Null => no feature tracking, nothing allocated.
+     * m_feature_edge_attribute with the base's edge group. Null => no feature tracking,
+     * nothing allocated.
      */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
