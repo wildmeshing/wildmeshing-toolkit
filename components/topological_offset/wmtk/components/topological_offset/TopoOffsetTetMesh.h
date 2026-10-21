@@ -2707,7 +2707,7 @@ public:
         std::vector<std::string> tag_names;
         // per vertex
         VectorXd labels, order, vid, sizing;
-        VectorXd in_dist, front_err, band_force, amips_force, front_change;
+        VectorXd in_dist, dist_ratio, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
         VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, f_dihedral,
             f_fold_dihedral, ring;

@@ -2417,6 +2417,10 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // Per vertex, the front's placement and what pushes it. NaN where a field does not apply.
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
+    //   distance_over_target  d / target_distance, the running loop's (a growth stage's own),
+    //                     every vertex: the settle loop's vertex test (EXPERIMENTAL_settle_mark
+    //                     "vertex") marks a front vertex where |this - 1| > front_conv /
+    //                     target_distance. NaN where input_distance is.
     //   front_error_bars  (d - target_distance) / front_conv at a front vertex: signed, in
     //                     bars, so |.| > 1 is what the settle loop's vertex test marks
     //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
@@ -2430,6 +2434,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //                     vertex they cancel.
     const double nan = std::numeric_limits<double>::quiet_NaN();
     fr.in_dist = VectorXd::Constant(vert_capacity(), nan);
+    fr.dist_ratio = VectorXd::Constant(vert_capacity(), nan);
     fr.front_err = VectorXd::Constant(vert_capacity(), nan);
     fr.band_force = VectorXd::Constant(vert_capacity(), nan);
     fr.amips_force = VectorXd::Constant(vert_capacity(), nan);
@@ -2536,6 +2541,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 fr.in_dist[vid] = band_env->primitive_distance(
                     nearest_primitive(*band_env, m_input_complex_pad, x),
                     x);
+                fr.dist_ratio[vid] = fr.in_dist[vid] / delta;
             }
         }
     });
@@ -2832,6 +2838,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         writer.add_field("vid", fr.vid);
         writer.add_field("sizing_scalar", fr.sizing);
         writer.add_field("input_distance", fr.in_dist);
+        writer.add_field("distance_over_target", fr.dist_ratio);
         writer.add_field("front_error_bars", fr.front_err);
         writer.add_field("band_force_n", fr.band_force);
         writer.add_field("amips_force_n", fr.amips_force);
@@ -2862,6 +2869,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         off_writer.add_field("vid", fr.vid);
         off_writer.add_field("sizing_scalar", fr.sizing);
         off_writer.add_field("input_distance", fr.in_dist);
+        off_writer.add_field("distance_over_target", fr.dist_ratio);
         off_writer.add_field("front_error_bars", fr.front_err);
         off_writer.add_field("front_ring_ratio", fr.ring);
         off_writer.add_field("band_force_n", fr.band_force);
