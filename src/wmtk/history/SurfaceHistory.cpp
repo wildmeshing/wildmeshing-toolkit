@@ -24,6 +24,9 @@ namespace {
 //       collapse_edge: removed kept
 //       swap_edge:     v0 v1 a b, fa fb
 //       replace_faces: n_removed n_added, the removed faces, then per added face: f c0 c1 c2
+//       relabel:       n, then per vertex slot its new id plus one (0: gone); m, then per face
+//                      slot the same (m = 0: by rank)
+//       embed:         n_faces, then per face: c0 c1 c2, n_sources, the sources
 //   -- then n_moves and per move: (vid << 1 | midpoint), and the position unless `midpoint`
 //   says it is exactly the midpoint of the edit's edge (v0,v1) / (removed,kept), as the
 //   vertices were before the edit. Saving and loading both replay the history to know it.
@@ -181,6 +184,57 @@ void Recorder::rebase(std::vector<Eigen::Vector3d> positions)
     m_known_valid.assign(m_known.size(), 1);
 }
 
+bool append(SurfaceHistory& h, const SurfaceHistory& next)
+{
+    Replay r(h);
+    r.apply_all(h);
+    // The live part of each must be the same; dead slots may differ in number.
+    const auto& V = r.vertices();
+    const auto& F = r.faces();
+    for (uint64_t v = 0; v < std::max(V.size(), next.vertices.size()); ++v) {
+        const bool a = v < V.size() && r.vertex_alive()[v];
+        const bool b = v < next.vertices.size() && next.vertex_alive[v];
+        if (a != b || (a && V[v] != next.vertices[v])) {
+            logger().error("history append: vertex {} differs where the next history starts", v);
+            return false;
+        }
+    }
+    for (uint64_t f = 0; f < std::max(F.size(), next.faces.size()); ++f) {
+        const bool a = f < F.size() && r.face_alive()[f];
+        const bool b = f < next.faces.size() && next.face_alive[f];
+        if (a != b || (a && F[f] != next.faces[f])) {
+            logger().error("history append: face {} differs where the next history starts", f);
+            return false;
+        }
+    }
+    h.edits.insert(h.edits.end(), next.edits.begin(), next.edits.end());
+    return true;
+}
+
+void append_embedded(
+    SurfaceHistory& h,
+    const SurfaceHistory& next,
+    const std::vector<std::vector<uint64_t>>& sources)
+{
+    Edit e{EditKind::embed, {}, {}, {}};
+    e.v.reserve(3 * next.faces.size());
+    for (size_t f = 0; f < next.faces.size(); ++f) {
+        if (!next.face_alive[f]) log_and_throw_error("append_embedded: face {} is not alive", f);
+        e.v.insert(e.v.end(), next.faces[f].begin(), next.faces[f].end());
+        const auto& src = f < sources.size() ? sources[f] : std::vector<uint64_t>();
+        e.faces.push_back(src.size());
+        e.faces.insert(e.faces.end(), src.begin(), src.end());
+    }
+    e.moves.reserve(next.vertices.size());
+    for (uint64_t v = 0; v < next.vertices.size(); ++v) {
+        if (!next.vertex_alive[v])
+            log_and_throw_error("append_embedded: vertex {} is not alive", v);
+        e.moves.push_back({v, next.vertices[v]});
+    }
+    h.edits.push_back(std::move(e));
+    h.edits.insert(h.edits.end(), next.edits.begin(), next.edits.end());
+}
+
 void SurfaceHistory::save(const std::string& path) const
 {
     Writer w(path);
@@ -218,11 +272,29 @@ void SurfaceHistory::save(const std::string& path) const
                 for (int c = 0; c < 3; ++c) w.varint(e.v[3 * k + c]);
             }
         }
-        if (e.kind != EditKind::replace_faces) {
+        if (e.kind == EditKind::relabel) {
+            w.varint(e.v.size());
+            for (const uint64_t v : e.v) w.varint(v == kNoVertex ? 0 : v + 1);
+            w.varint(e.faces.size());
+            for (const uint64_t f : e.faces) w.varint(f == kNoVertex ? 0 : f + 1);
+        }
+        if (e.kind == EditKind::embed) {
+            const size_t nf = e.v.size() / 3;
+            w.varint(nf);
+            for (size_t f = 0, i = 0; f < nf; ++f) {
+                for (int c = 0; c < 3; ++c) w.varint(e.v[3 * f + c]);
+                const uint64_t n = e.faces[i++];
+                w.varint(n);
+                for (uint64_t k = 0; k < n; ++k) w.varint(e.faces[i++]);
+            }
+        }
+        const bool generic = e.kind != EditKind::replace_faces && e.kind != EditKind::relabel &&
+                             e.kind != EditKind::embed;
+        if (generic) {
             for (const uint64_t v : e.v) w.varint(v);
         }
         if (e.kind == EditKind::split_edge) w.put(uint8_t(e.faces.size() / 2));
-        if (e.kind != EditKind::replace_faces) {
+        if (generic) {
             for (const uint64_t f : e.faces) w.varint(f);
         }
         const auto mid = predicted(e, r);
@@ -290,6 +362,26 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
             for (size_t k = 0; k < n_added; ++k) {
                 e.faces[n_removed + k] = r.varint();
                 for (int c = 0; c < 3; ++c) e.v[3 * k + c] = r.varint();
+            }
+        } else if (e.kind == EditKind::relabel) {
+            e.v.resize(r.varint());
+            for (uint64_t& v : e.v) {
+                const uint64_t n = r.varint();
+                v = n == 0 ? kNoVertex : n - 1;
+            }
+            e.faces.resize(r.varint());
+            for (uint64_t& f : e.faces) {
+                const uint64_t n = r.varint();
+                f = n == 0 ? kNoVertex : n - 1;
+            }
+        } else if (e.kind == EditKind::embed) {
+            const size_t nf = r.varint();
+            e.v.resize(3 * nf);
+            for (size_t f = 0; f < nf; ++f) {
+                for (int c = 0; c < 3; ++c) e.v[3 * f + c] = r.varint();
+                const uint64_t n = r.varint();
+                e.faces.push_back(n);
+                for (uint64_t k = 0; k < n; ++k) e.faces.push_back(r.varint());
             }
         } else {
             e.v.resize(vertex_ids(e.kind));

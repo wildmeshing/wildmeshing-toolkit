@@ -83,7 +83,7 @@ public:
     const std::set<std::array<uint64_t, 2>>& output_feature_edges() const { return m_out_features; }
 
     /// How many operations needed a local map, by kind (index: history::EditKind).
-    const std::array<size_t, 8>& cells_by_kind() const { return m_cells_by_kind; }
+    const std::array<size_t, 16>& cells_by_kind() const { return m_cells_by_kind; }
     /// Sides of collapses that removed a vertex on the boundary or on a feature curve. Its two
     /// edges along the curve become one; the map splits the triangle holding that new edge
     /// virtually where the removed vertex was, so both sides keep their area.
@@ -111,12 +111,21 @@ private:
     {
         std::vector<Face> before, after;
     };
+    /// An embed: the faces before and after, each with its corners in space and the faces of
+    /// the other side it lies on. A point keeps its place in space.
+    struct Embedding
+    {
+        std::vector<std::array<Eigen::Vector3d, 3>> before, after;
+        std::vector<std::vector<uint64_t>> to_after, to_before;
+    };
     struct Step
     {
         history::EditKind kind;
         std::vector<Cell> cells;
-        /// consolidate only: face renumbering.
+        /// consolidate (and relabel, which renumbers faces as one does): face renumbering.
         std::vector<uint64_t> old_to_new, new_to_old;
+        /// embed only.
+        Embedding embedding;
         /// Faces this step removes with nothing to map their points to (a collapse that could
         /// only be mapped by relabelling, a replace_faces).
         std::vector<uint64_t> dead;
@@ -131,7 +140,7 @@ private:
     MapWarnings m_build_warnings;
     std::vector<size_t> m_warned_edits;
     mutable MapWarnings m_map_warnings;
-    std::array<size_t, 8> m_cells_by_kind = {};
+    std::array<size_t, 16> m_cells_by_kind = {};
     size_t m_curve_collapses = 0;
     size_t m_kept_moves = 0;
     size_t m_folded_cells = 0;

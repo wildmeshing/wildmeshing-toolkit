@@ -4,6 +4,7 @@
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <algorithm>
 #include <filesystem>
@@ -109,15 +110,37 @@ void check_tags(
         };
         json.update(options);
         simwild::simwild(json);
-        // The mesh the history starts from: the input itself for a .msh, its embedding otherwise.
-        const auto in = interfaces(simwild::read_image_msh(out.string() + "_history_input.msh"));
-        REQUIRE(!in.empty());
         const auto h = history::SurfaceHistory::load(hist.string());
         const surface_map::SurfaceMap map(h);
         const auto o = interfaces(simwild::read_image_msh(out.string() + ".msh"));
         REQUIRE(!o.empty());
 
-        // The history starts at the input's interfaces and ends at the output's.
+        // A .msh is its own input, and the history starts at its interfaces. A surface input's
+        // history starts at its files, and input k bounds tag k: an interface between two tag
+        // sets lies on the inputs in one of them but not the other.
+        const bool surface = fs::path(inputs[0]).extension() != ".msh";
+        std::map<Key, Label> in;
+        std::vector<int64_t> file_of_face;
+        if (surface) {
+            for (size_t k = 0; k < inputs.size(); ++k) {
+                MatrixXd V;
+                MatrixXi F;
+                io::ReadProvenance read;
+                io::read_triangle_mesh({inputs[k]}, V, F, 0, -1, nullptr, &read);
+                file_of_face.resize(file_of_face.size() + read.F.rows(), int64_t(k));
+            }
+            CHECK(map.input_faces().size() == file_of_face.size());
+        } else {
+            in = interfaces(simwild::read_image_msh(inputs[0]));
+            REQUIRE(!in.empty());
+        }
+        const auto on_inputs = [&](const Label& l, const uint64_t input_face) {
+            if (!surface) return true;
+            const int64_t k = file_of_face[input_face];
+            return l.first.count(k) != l.second.count(k);
+        };
+
+        // The history ends at the output's interfaces, and, for a .msh, starts at the input's.
         size_t found_in = 0, found_out = 0;
         const auto in_labels = labels_of(
             map.input_vertices(),
@@ -131,10 +154,12 @@ void check_tags(
             map.output_face_alive(),
             o,
             found_out);
-        CHECK(found_in == in.size());
-        CHECK(
-            std::count(map.input_face_alive().begin(), map.input_face_alive().end(), 1) ==
-            long(in.size()));
+        if (!surface) {
+            CHECK(found_in == in.size());
+            CHECK(
+                std::count(map.input_face_alive().begin(), map.input_face_alive().end(), 1) ==
+                long(in.size()));
+        }
         CHECK(found_out == o.size());
         CHECK(
             std::count(map.output_face_alive().begin(), map.output_face_alive().end(), 1) ==
@@ -151,9 +176,12 @@ void check_tags(
         const auto back = map.to_input(pts);
         size_t lost = 0, wrong = 0;
         for (size_t i = 0; i < back.size(); ++i) {
-            if (back[i].face >= in_labels.size() || !in_labels[back[i].face]) {
+            if (back[i].face >= map.input_faces().size() || !map.input_face_alive()[back[i].face] ||
+                (!surface && !in_labels[back[i].face])) {
                 ++lost;
-            } else if (*in_labels[back[i].face] != *out_labels[from[i]]) {
+            } else if (
+                surface ? !on_inputs(*out_labels[from[i]], back[i].face)
+                        : *in_labels[back[i].face] != *out_labels[from[i]]) {
                 ++wrong;
             }
         }

@@ -43,8 +43,13 @@ void clean_triangle_mesh(
     MatrixXi& F,
     double tol_rel = -1,
     double tol_abs = -1,
-    std::vector<int>* face_tags = nullptr)
+    std::vector<int>* face_tags = nullptr,
+    std::vector<int>* vertex_map = nullptr)
 {
+    if (vertex_map) {
+        vertex_map->resize(V.rows());
+        for (int i = 0; i < int(V.rows()); ++i) (*vertex_map)[i] = i;
+    }
     assert(face_tags == nullptr || face_tags->size() == size_t(F.rows()));
     if (tol_abs >= 0 && tol_rel >= 0) {
         log_and_throw_error(
@@ -74,6 +79,9 @@ void clean_triangle_mesh(
             for (int j = 0; j < 3; ++j) {
                 F(i, j) = SVJ[F(i, j)];
             }
+        }
+        if (vertex_map) {
+            for (int& v : *vertex_map) v = SVJ[v];
         }
     }
 
@@ -115,6 +123,9 @@ void clean_triangle_mesh(
         MatrixXi temp_F = F;
         VectorXi I;
         igl::remove_unreferenced(temp_V, temp_F, V, F, I);
+        if (vertex_map) {
+            for (int& v : *vertex_map) v = I(v);
+        }
     }
 }
 
@@ -201,7 +212,8 @@ void read_triangle_mesh(
     Eigen::MatrixXi& F,
     double tol_rel,
     double tol_abs,
-    std::vector<int>* face_input)
+    std::vector<int>* face_input,
+    ReadProvenance* provenance)
 {
     V.resize(0, 3);
     F.resize(0, 3);
@@ -235,7 +247,17 @@ void read_triangle_mesh(
         if (face_input) face_input->resize(F.rows(), int(input));
     }
 
-    clean_triangle_mesh(V, F, tol_rel, tol_abs, face_input);
+    if (provenance) {
+        provenance->V = V;
+        provenance->F = F;
+    }
+    clean_triangle_mesh(
+        V,
+        F,
+        tol_rel,
+        tol_abs,
+        face_input,
+        provenance ? &provenance->vertex_map : nullptr);
 
     if (F.rows() == 0) {
         std::string joined;

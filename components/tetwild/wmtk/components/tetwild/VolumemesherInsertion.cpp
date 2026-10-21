@@ -51,7 +51,8 @@ void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& feature_edge_vertices, // optional feature-edge vertices
     const std::vector<std::array<size_t, 2>>& feature_edges, // optional feature edges
     const std::vector<Vector3d>& feature_points, // optional feature points
-    utils::EmbedFeaturesResult* features_out) // out: where the features ended up
+    utils::EmbedFeaturesResult* features_out, // out: where the features ended up
+    std::vector<std::vector<uint32_t>>* facet_sources) // out, optional: input triangles per facet
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
     if (!feature_edges.empty() || !feature_points.empty()) {
@@ -196,6 +197,8 @@ void TetWildMesh::insertion_by_volumeremesher(
         }
     }
 
+    utils::EmbedTrianglesProvenance provenance;
+    provenance.want_face_triangles = facet_sources != nullptr;
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -208,10 +211,11 @@ void TetWildMesh::insertion_by_volumeremesher(
         tets_after,
         tet_face_on_input_surface,
         opts,
-        nullptr,
+        facet_sources != nullptr ? &provenance : nullptr,
         tet_face_orientation,
         has_features ? &vr_features : nullptr,
         has_features ? features_out : nullptr);
+    if (facet_sources != nullptr) *facet_sources = std::move(provenance.face_triangles);
 
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is

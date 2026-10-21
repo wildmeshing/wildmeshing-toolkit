@@ -749,14 +749,51 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
     return res;
 }
 
+TetOptimizerMesh::PositionKey
+TetOptimizerMesh::position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c)
+{
+    PositionKey k = {{{{a[0], a[1], a[2]}}, {{b[0], b[1], b[2]}}, {{c[0], c[1], c[2]}}}};
+    std::sort(k.begin(), k.end());
+    return k;
+}
+
 void TetOptimizerMesh::record_surface_history(const std::string& metadata)
 {
     m_recorded_surface =
         start_surface_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
     m_recorded_surface->history().metadata = metadata;
+    m_recorded_sources.clear();
+    if (m_insertion_sources.empty()) return;
+    // The insertion gave each facet the input triangles it lies in, by the positions its
+    // corners have here too: m_posf is the rounding of the same exact coordinates.
+    std::sort(m_insertion_sources.begin(), m_insertion_sources.end());
+    const auto& h = m_recorded_surface->history();
+    m_recorded_sources.resize(h.faces.size());
+    size_t missing = 0;
+    for (size_t f = 0; f < h.faces.size(); ++f) {
+        const auto& t = h.faces[f];
+        const PositionKey key = position_key(h.vertices[t[0]], h.vertices[t[1]], h.vertices[t[2]]);
+        const auto it = std::lower_bound(
+            m_insertion_sources.begin(),
+            m_insertion_sources.end(),
+            key,
+            [](const auto& entry, const PositionKey& k) { return entry.first < k; });
+        if (it == m_insertion_sources.end() || it->first != key) {
+            ++missing;
+            continue;
+        }
+        m_recorded_sources[f].assign(it->second.begin(), it->second.end());
+    }
+    if (missing > 0) {
+        logger().warn("surface history: {} tracked faces lie on no input triangle known", missing);
+    }
+    m_insertion_sources.clear();
+    m_insertion_sources.shrink_to_fit();
 }
 
-void TetOptimizerMesh::save_surface_history(const std::string& path)
+void TetOptimizerMesh::save_surface_history(
+    const std::string& path,
+    const history::SurfaceHistory* input)
 {
     if (!m_recorded_surface) return;
     if (const size_t drift = resync_surface_history()) {
@@ -778,8 +815,16 @@ void TetOptimizerMesh::save_surface_history(const std::string& path)
     if (st.unknown > 0) {
         logger().error("surface history: lost track of {} faces", st.unknown);
     }
-    m_recorded_surface->history().save(path);
+    if (input != nullptr) {
+        history::SurfaceHistory chain = *input;
+        history::append_embedded(chain, m_recorded_surface->history(), m_recorded_sources);
+        chain.metadata = m_recorded_surface->history().metadata;
+        chain.save(path);
+    } else {
+        m_recorded_surface->history().save(path);
+    }
     m_recorded_surface.reset();
+    m_recorded_sources.clear();
 }
 
 void TetOptimizerMesh::update_attributes_and_history()

@@ -43,7 +43,22 @@ enum class EditKind : uint8_t {
     /// vertex it leaves without faces is retired; one an added face names is alive, its position
     /// among the moves if it was not alive before.
     replace_faces = 7,
+    /// v = the new id of every vertex slot, kNoVertex for one that goes; faces = the new id of
+    /// every face slot, kNoVertex for one that goes, or empty; moves = the position of every new
+    /// vertex. Vertices are renamed in place in every face -- several may become one -- and a
+    /// face left with a repeated corner goes; the faces that stay take the ids `faces` gives, or
+    /// are renumbered by rank. A weld of coincident vertices, a change of coordinates, a
+    /// reordering: each face keeps its corners, so a point keeps its barycentric coordinates.
+    relabel = 8,
+    /// The complex is replaced by one lying on it -- the same surface, cut differently (an
+    /// insertion into a tet mesh). v = the corners of its faces, three per face, in its own
+    /// vertex ids from 0; faces = per face, how many faces before it lies on, then those;
+    /// moves = the position of every vertex. A point stays where it is in space.
+    embed = 9,
 };
+
+/// No vertex: in a relabel, the slot of one that goes.
+constexpr uint64_t kNoVertex = uint64_t(-1);
 
 struct VertexMove
 {
@@ -91,6 +106,24 @@ struct SurfaceHistory
     void save(const std::string& path) const;
     static SurfaceHistory load(const std::string& path);
 };
+
+/**
+ * @brief The history of a pipeline: `h`, then `next`, which starts where `h` ends -- the same
+ * complex, ids and positions included (a mesh built from h's last state, recording from there).
+ * Appends next's edits. False, appending nothing, if next does not start there.
+ */
+bool append(SurfaceHistory& h, const SurfaceHistory& next);
+
+/**
+ * @brief `h`, then `next`, which starts on a complex lying on h's last state: the same surface,
+ * cut differently (an insertion into a tet mesh). Appends an embed edit onto next's first state
+ * -- `sources[f]` the faces of h's last state that next's face f lies on, every one where they
+ * overlap -- then next's edits. Every face and vertex of next's first state must be alive.
+ */
+void append_embedded(
+    SurfaceHistory& h,
+    const SurfaceHistory& next,
+    const std::vector<std::vector<uint64_t>>& sources);
 
 /**
  * @brief Collects the edits of operations that may commit concurrently.
