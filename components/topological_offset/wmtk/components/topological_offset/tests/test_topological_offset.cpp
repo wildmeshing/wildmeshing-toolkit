@@ -7,6 +7,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstring>
 #include <filesystem>
 #include <functional>
 #include <map>
@@ -207,14 +208,14 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     // loop's envelope comes back afterwards.
     const auto loop_env = mesh.m_envelope;
     mesh.build_final_envelopes();
-    mesh.m_freeze_front = true;
+    mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
     REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
     REQUIRE(mesh.m_envelope->is_outside(Eigen::Vector3d(0.2, 0.2, 0.2)));
-    mesh.m_freeze_front = false;
+    mesh.m_tetwild_pass = false;
     mesh.release_final_envelopes();
     REQUIRE(mesh.m_envelope == loop_env);
     REQUIRE(!mesh.face_is_held(face(1, 2, 3)));
@@ -1802,7 +1803,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
         for (size_t v = 0; v < 5; ++v) {
             const bool front = mesh->vertex_carries_offset_term(v);
             // A front vertex an envelope pins (here: one on the domain wall, held by its tag's
-            // tube) carries no offset term, so its chords' terms do move with it and are not in
+            // envelope) carries no offset term, so its chords' terms do move with it and are not in
             // its objective; the identity is the carrying vertices' and the off-front ones'.
             if (!front && mesh->m_vertex_extra[v].m_is_on_offset) continue;
             const std::vector<size_t> ring = mesh->get_one_ring_fids_for_vertex(v);
@@ -2503,6 +2504,140 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
         Catch::Matchers::ContainsSubstring("save_offset_correspondence requires"));
 }
 
+TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
+{
+    // gather_vtu_frame() and energy_parts() evaluate their cells, vertices and faces on the mesh's
+    // threads (diagnostic_parallel_for()); what they return must not depend on the thread count.
+    // Two identical meshes -- the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2, the field built under the exact rule, the optimization's labels -- one gathered
+    // at 1 thread and one at 4, each from its own empty value table, compared bit for bit (NaN
+    // equal to NaN).
+    Eigen::MatrixXd V(64, 3);
+    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
+    for (int k = 0; k < 4; ++k) {
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
+        }
+    }
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> center;
+    const std::array<std::array<int, 3>, 6> perms = {
+        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
+    for (int k = 0; k < 3; ++k) {
+        for (int j = 0; j < 3; ++j) {
+            for (int i = 0; i < 3; ++i) {
+                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
+                    std::array<int, 3> c = {{i, j, k}};
+                    std::array<int, 4> t;
+                    t[0] = vid(c[0], c[1], c[2]);
+                    for (int s = 0; s < 3; ++s) {
+                        ++c[size_t(pm[size_t(s)])];
+                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
+                    }
+                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
+                    T.push_back(positive(V, t));
+                }
+            }
+        }
+    }
+    Eigen::MatrixXi Tm(int(T.size()), 4);
+    for (size_t i = 0; i < T.size(); ++i) {
+        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
+    }
+    MatrixSi Tags(int(T.size()), 1);
+    for (const int t : center) Tags.coeffRef(t, 0) = 1;
+
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_frame_threads";
+    const auto make_mesh = [&](const int threads) {
+        auto mesh = std::make_unique<TopoOffsetTetMesh>(param, 0);
+        MatrixXd V_env;
+        MatrixXi F_env;
+        mesh->init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
+        mesh->m_offset_params.offset_selection = parse("tag_0", mesh->m_tag_name_to_id);
+        mesh->label_input_complex();
+        mesh->init_input_complex_bvh();
+        mesh->consolidate_mesh();
+        mesh->construct_offset(out);
+        mesh->init_offset_potential();
+        mesh->label_offset_boundary();
+        mesh->NUM_THREADS = threads;
+        return mesh;
+    };
+    const auto serial = make_mesh(1);
+    const auto threaded = make_mesh(4);
+    REQUIRE(serial->m_band_exact);
+    const size_t chunk = TopoOffsetTetMesh::kDiagnosticChunk;
+    INFO(serial->get_tets().size() << " tets, " << serial->get_vertices().size() << " vertices");
+    REQUIRE(serial->get_tets().size() > 4 * chunk); // every task has cells to evaluate
+
+    const auto [a_serial, b_serial] = serial->energy_parts();
+    const auto [a_threaded, b_threaded] = threaded->energy_parts();
+    CHECK(std::memcmp(&a_serial, &a_threaded, sizeof(double)) == 0);
+    CHECK(std::memcmp(&b_serial, &b_threaded, sizeof(double)) == 0);
+    CHECK(b_serial < 0.); // the band is inside the level set at construction
+
+    const TopoOffsetTetMesh::VtuFrame fs = serial->gather_vtu_frame(out.string() + "_serial");
+    const TopoOffsetTetMesh::VtuFrame ft = threaded->gather_vtu_frame(out.string() + "_threaded");
+    // Bit for bit, NaN equal to NaN; and how many entries are finite, so no field passes empty.
+    const auto same = [](const auto& x, const auto& y, size_t& n_finite) {
+        if (x.rows() != y.rows() || x.cols() != y.cols()) return false;
+        n_finite = 0;
+        for (Eigen::Index i = 0; i < x.size(); ++i) {
+            const double p = double(x.data()[i]), q = double(y.data()[i]);
+            if (std::isnan(p) && std::isnan(q)) continue;
+            if (std::memcmp(&p, &q, sizeof(double)) != 0) return false;
+            n_finite += std::isfinite(p) ? 1 : 0;
+        }
+        return true;
+    };
+    const std::vector<std::tuple<const char*, const VectorXd*, const VectorXd*>> fields = {
+        {"amips", &fs.amips, &ft.amips},
+        {"tet_energy", &fs.tet_e, &ft.tet_e},
+        {"amips_term", &fs.amips_term, &ft.amips_term},
+        {"band_term", &fs.band_term, &ft.band_term},
+        {"band_gap_bars", &fs.band_gap, &ft.band_gap},
+        {"plastic", &fs.plastic, &ft.plastic},
+        {"labels", &fs.labels, &ft.labels},
+        {"order", &fs.order, &ft.order},
+        {"vid", &fs.vid, &ft.vid},
+        {"sizing", &fs.sizing, &ft.sizing},
+        {"input_distance", &fs.in_dist, &ft.in_dist},
+        {"front_error_bars", &fs.front_err, &ft.front_err},
+        {"band_force_n", &fs.band_force, &ft.band_force},
+        {"amips_force_n", &fs.amips_force, &ft.amips_force},
+        {"front_last_change", &fs.front_change, &ft.front_change},
+        {"front_err_ratio", &fs.f_err, &ft.f_err},
+        {"chord_length", &fs.f_len, &ft.f_len},
+        {"settle_inside_bars", &fs.f_inside, &ft.f_inside},
+        {"settle_outside_bars", &fs.f_outside, &ft.f_outside},
+        {"offset_foldover", &fs.f_fold, &ft.f_fold},
+        {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
+        {"front_ring_ratio", &fs.ring, &ft.ring}};
+    for (const auto& [name, x, y] : fields) {
+        INFO(name);
+        size_t n_finite = 0;
+        CHECK(same(*x, *y, n_finite));
+        CHECK(n_finite > 0);
+    }
+    size_t n = 0;
+    CHECK(same(fs.V, ft.V, n));
+    CHECK(same(fs.T, ft.T, n));
+    CHECK(same(fs.F_in, ft.F_in, n));
+    CHECK(same(fs.F_off, ft.F_off, n));
+    CHECK(fs.F_off.rows() > 0);
+    CHECK(same(fs.E, ft.E, n));
+    REQUIRE(fs.tags.size() == ft.tags.size());
+    for (size_t i = 0; i < fs.tags.size(); ++i) CHECK(same(fs.tags[i], ft.tags[i], n));
+    CHECK(fs.tag_names == ft.tag_names);
+}
+
 TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
 {
     // The 2D twin: a 3 x 3 grid of unit squares, two triangles each along the same diagonal, the
@@ -2554,4 +2689,385 @@ TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
         return mesh.m_input_complex_bvh->dist(Vector2d(p.x(), p.y()));
     });
     std::filesystem::remove(out.string() + ".msh");
+}
+
+TEST_CASE("damping-factor-key", "[offset][3d]")
+{
+    // EXPERIMENTAL_damping_factor through the spec, as the app reads it: the default 0.5 (half
+    // the shortest edge, EXPERIMENTAL_damping's bound before the key existed), a value read
+    // through, and the two refusals -- a factor that is not > 0, and a factor other than the
+    // default with EXPERIMENTAL_damping false.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.damping);
+    CHECK(by_default.damping_factor == 0.5);
+    const Parameters set(
+        injected({{"EXPERIMENTAL_damping", true}, {"EXPERIMENTAL_damping_factor", 0.1}}));
+    CHECK(set.damping);
+    CHECK(set.damping_factor == 0.1);
+    const nlohmann::json without_damping = injected({{"EXPERIMENTAL_damping_factor", 0.1}});
+    CHECK_THROWS(Parameters{without_damping});
+    const nlohmann::json zero =
+        injected({{"EXPERIMENTAL_damping", true}, {"EXPERIMENTAL_damping_factor", 0.}});
+    CHECK_THROWS(Parameters{zero});
+}
+
+TEST_CASE("incremental-growth-keys", "[offset][3d]")
+{
+    // EXPERIMENTAL_incremental_growth and EXPERIMENTAL_incremental_growth_steps through the spec,
+    // as the app reads them: the defaults (off, 4 steps), values read through, and the refusals
+    // -- a step count other than the default with growth off, growth with construction_mode
+    // "midpoint_fallback" or with init_optimize, a step count below 1 (the spec's min). Then the
+    // stage targets.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto with_app = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](const nlohmann::json& j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(with_app(j), spec));
+        return spec_engine.inject_defaults(with_app(j), spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.incremental_growth);
+    CHECK(by_default.incremental_growth_steps == 4);
+    const Parameters set(injected(
+        {{"EXPERIMENTAL_incremental_growth", true}, {"EXPERIMENTAL_incremental_growth_steps", 1}}));
+    CHECK(set.incremental_growth);
+    CHECK(set.incremental_growth_steps == 1);
+    const nlohmann::json without_growth = injected({{"EXPERIMENTAL_incremental_growth_steps", 2}});
+    CHECK_THROWS(Parameters{without_growth});
+    const nlohmann::json midpoint = injected(
+        {{"EXPERIMENTAL_incremental_growth", true}, {"construction_mode", "midpoint_fallback"}});
+    CHECK_THROWS(Parameters{midpoint});
+    const nlohmann::json with_init_optimize =
+        injected({{"EXPERIMENTAL_incremental_growth", true}, {"init_optimize", true}});
+    CHECK_THROWS(Parameters{with_init_optimize});
+    {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(
+            with_app(
+                {{"EXPERIMENTAL_incremental_growth", true},
+                 {"EXPERIMENTAL_incremental_growth_steps", 0}}),
+            spec));
+    }
+
+    // Stage k of n at d0 + k (delta - d0) / n: d0 at k = 0, delta at k = n. With n = 1, two
+    // loops: at d0, then at delta.
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.3, 0.7, 0, 1) == 0.3);
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.3, 0.7, 1, 1) == 0.7);
+    const std::vector<double> quarters = {0.5, 1., 1.5, 2., 2.5};
+    for (int k = 0; k <= 4; ++k) {
+        CHECK(TopoOffsetTetMesh::growth_stage_target(0.5, 2.5, k, 4) == quarters[size_t(k)]);
+    }
+    // The last stage is delta itself, which the formula can miss by rounding (in IEEE double,
+    // 0.1 + 3 x (0.9 - 0.1) / 3 = 0.9000000000000001); the stages increase.
+    CHECK(TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, 3, 3) == 0.9);
+    for (int k = 0; k < 7; ++k) {
+        CHECK(
+            TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, k, 7) <
+            TopoOffsetTetMesh::growth_stage_target(0.1, 0.9, k + 1, 7));
+    }
+}
+
+TEST_CASE("optimize-construction-key", "[offset][3d]")
+{
+    // optimize_construction through the spec, as the app reads it: on by default, false read
+    // through, and accepted with optimize_offset false (the pass is then never reached). The keys
+    // it replaced, and the features removed with them (EXPERIMENTAL_amips_pow,
+    // EXPERIMENTAL_laplacian, EXPERIMENTAL_initial_smoothing_passes), are refused by the strict
+    // spec.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto base = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](nlohmann::json j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(base(j), spec));
+        return spec_engine.inject_defaults(base(j), spec);
+    };
+    CHECK(Parameters(injected(nlohmann::json::object())).optimize_construction);
+    CHECK_FALSE(Parameters(injected({{"optimize_construction", false}})).optimize_construction);
+    CHECK_NOTHROW(Parameters(injected({{"optimize_offset", false}})));
+    for (const char* removed :
+         {"EXPERIMENTAL_construction_tetwild_run",
+          "EXPERIMENTAL_refine_construction",
+          "EXPERIMENTAL_amips_pow"}) {
+        INFO(removed);
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(base({{removed, true}}), spec));
+    }
+    for (const char* removed :
+         {"EXPERIMENTAL_refine_construction_factor",
+          "EXPERIMENTAL_laplacian",
+          "EXPERIMENTAL_initial_smoothing_passes"}) {
+        INFO(removed);
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(base({{removed, 1.}}), spec));
+    }
+}
+
+TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
+{
+    // front_conv_rel is a fraction of target_distance since 2026-10-21 (Parameters::init()): the
+    // default 0.025, a value read through, an absolute front_conv with its fraction derived, and
+    // the refusal of a bar coarser than the offset. The box's diagonal is 13, so a bar read
+    // against it would come out 26 times the target-relative one here.
+    Eigen::MatrixXd V(2, 3);
+    V << 0, 0, 0, 3, 4, 12;
+    const Parameters by_default = construction_params({{"target_distance", 0.5}}, V);
+    CHECK(by_default.front_conv_rel == 0.025);
+    CHECK(by_default.front_conv == 0.025 * 0.5);
+    const Parameters rel =
+        construction_params({{"target_distance_rel", 0.02}, {"front_conv_rel", 0.1}}, V);
+    CHECK(rel.target_distance == Catch::Approx(0.26));
+    CHECK(rel.front_conv == 0.1 * rel.target_distance);
+    const Parameters abs = construction_params({{"target_distance", 0.5}, {"front_conv", 0.05}}, V);
+    CHECK(abs.front_conv == 0.05);
+    CHECK(abs.front_conv_rel == Catch::Approx(0.1));
+    CHECK_THROWS(construction_params({{"target_distance", 0.5}, {"front_conv_rel", 1.5}}, V));
+}
+
+TEST_CASE("foldover-face-angle", "[offset][3d]")
+{
+    // foldover_angle through the spec (default 30, range 0..180), and front_face_field_angle():
+    // the angle between a front face's normal, out of its band cell, and grad d at its centroid.
+    // One band tet, the unit tet, over an input plane x + y + z = -1, where grad d =
+    // (1, 1, 1) / sqrt(3): the face opposite vertex 0 faces along the field (0 degrees), each face
+    // through vertex 0 faces away from it, acos(-1 / sqrt(3)) = 125.26 degrees.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto with_app = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](const nlohmann::json& j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(with_app(j), spec));
+        return spec_engine.inject_defaults(with_app(j), spec);
+    };
+    CHECK(Parameters(injected(nlohmann::json::object())).foldover_angle == 30.);
+    // offset_envelope / offset_envelope_rel are gone (2026-10-20): the offset surface's envelope
+    // is envelope_size's; the strict spec refuses a config that still sets either.
+    for (const char* gone : {"offset_envelope", "offset_envelope_rel"}) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(with_app({{gone, 1e-3}}), spec));
+    }
+    CHECK(Parameters(injected({{"foldover_angle", 45.}})).foldover_angle == 45.);
+    for (const double bad : {-1., 181.}) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(with_app({{"foldover_angle", bad}}), spec));
+    }
+
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    // Before an input envelope exists nothing is measurable.
+    CHECK(std::isnan(mesh.front_face_field_angle(1, 2, 3)));
+    auto env = std::make_shared<Envelope>(true);
+    env->init(
+        std::vector<Eigen::Vector3d>{{-21., 10., 10.}, {10., -21., 10.}, {10., 10., -21.}},
+        std::vector<Eigen::Vector3i>{{0, 1, 2}},
+        0.1);
+    mesh.m_input_complex_envelope = env;
+    mesh.m_input_complex_pad = 1e-9;
+    // Not a band cell: no side to orient by.
+    mesh.m_tet_attribute[0].label = 0;
+    CHECK(std::isnan(mesh.front_face_field_angle(1, 2, 3)));
+    mesh.m_tet_attribute[0].label = 2;
+    const double away = std::acos(-1. / std::sqrt(3.)) * 180. / M_PI;
+    CHECK(mesh.front_face_field_angle(1, 2, 3) == Catch::Approx(0.).margin(1e-6));
+    CHECK(mesh.front_face_field_angle(3, 2, 1) == Catch::Approx(0.).margin(1e-6));
+    CHECK(mesh.front_face_field_angle(0, 1, 2) == Catch::Approx(away).epsilon(1e-9));
+    CHECK(mesh.front_face_field_angle(0, 1, 3) == Catch::Approx(away).epsilon(1e-9));
+    CHECK_FALSE(mesh.front_face_is_foldover(1, 2, 3));
+    CHECK(mesh.front_face_is_foldover(0, 1, 2));
+    mesh.m_offset_params.foldover_angle = 130.;
+    CHECK_FALSE(mesh.front_face_is_foldover(0, 1, 2));
+}
+
+TEST_CASE("debug-remote-output-key", "[offset][3d]")
+{
+    // DEBUG_remote_output: off by default; true overrides DEBUG_output (sets it), so every debug
+    // computation runs while the frames follow the remote schedule.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK_FALSE(by_default.debug_remote_output);
+    CHECK_FALSE(by_default.debug_output);
+    const Parameters remote(injected({{"DEBUG_remote_output", true}, {"DEBUG_output", false}}));
+    CHECK(remote.debug_remote_output);
+    CHECK(remote.debug_output);
+}
+
+TEST_CASE("op-rules-switch", "[offset][3d]")
+{
+    // m_op_rules: in the loop the engine's AMIPS^3 rules admit everything, the smoother gets the
+    // component's energy and the projected step the ring's sum of tet_energy(); under TetWild's
+    // rules (every TetWild pass) the base's own: q <= ring_max for a collapse, after < before for
+    // a swap, no extra energy (the raw AMIPS sum), the base's ring measure. One unit tet.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    REQUIRE(mesh.m_vertex_attribute[0].m_is_rounded);
+    const std::vector<TetMesh::Tuple> ring =
+        mesh.get_one_ring_tets_for_vertex(mesh.tuple_from_vertex(0));
+    for (const auto& t : ring) mesh.set_cell_quality(t.tid(mesh), mesh.get_quality(t));
+
+    REQUIRE(mesh.m_op_rules == TopoOffsetTetMesh::OpRules::Loop);
+    CHECK(mesh.collapse_quality_allowed(0, 2., 1.));
+    CHECK(mesh.swap_quality_allowed(2., 1., false));
+    CHECK(mesh.smoothing_extra_energy(0) != nullptr);
+    CHECK(mesh.smoothing_ring_energy(ring, true) == mesh.tet_energy(ring[0].tid(mesh)));
+    CHECK_FALSE(mesh.optimization_bare_coarsen_passes());
+
+    mesh.m_op_rules = TopoOffsetTetMesh::OpRules::TetWild;
+    CHECK_FALSE(mesh.collapse_quality_allowed(0, 2., 1.));
+    CHECK(mesh.collapse_quality_allowed(0, 1., 2.));
+    CHECK_FALSE(mesh.swap_quality_allowed(2., 1., false));
+    CHECK_FALSE(mesh.swap_quality_allowed(1., 1., false));
+    CHECK(mesh.swap_quality_allowed(1., 2., false));
+    CHECK(mesh.smoothing_extra_energy(0) == nullptr);
+    CHECK(mesh.optimization_bare_coarsen_passes());
+    CHECK(
+        mesh.smoothing_ring_energy(ring, true) ==
+        mesh.TetOptimizerMesh::smoothing_ring_energy(ring, true));
+}
+
+TEST_CASE("damping-loop-only", "[offset][3d]")
+{
+    // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is
+    // damping_factor x the shortest edge at the vertex there, and infinity in a TetWild pass
+    // (m_tetwild_pass: the optimize_construction pass, the final pass) and
+    // with damping off. The unit tet: every edge at vertex 0 has length 1.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    const double inf = std::numeric_limits<double>::infinity();
+    {
+        Parameters param;
+        param.damping = true;
+        param.damping_factor = 0.25;
+        TopoOffsetTetMesh mesh(param, 0);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+        REQUIRE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == 0.25);
+        mesh.m_tetwild_pass = true;
+        CHECK_FALSE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == inf);
+        mesh.m_tetwild_pass = false;
+        CHECK(mesh.damping_step(0) == 0.25);
+    }
+    {
+        Parameters param;
+        TopoOffsetTetMesh mesh(param, 0);
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+        CHECK_FALSE(mesh.damping_active());
+        CHECK(mesh.damping_step(0) == inf);
+    }
+}
+
+TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")
+{
+    // The construction's own splits (the simplicial embedding's, and the march's under
+    // EdgeSplitMode::Midpoint) give the new vertex the sizing field's value where it is: the mean
+    // of its edge's, face's or tet's scalars, as the engine's split does for an edge. So the field
+    // set before the march reaches the loop. Powers of two keep every sum exact in any
+    // order; with every scalar 1 the new one is exactly 1.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 3);
+    std::vector<std::string> tag_names = {"a", "b", "c"};
+    for (int i = 0; i < 3; i++) Tags.coeffRef(0, i) = T0_TAGS.count(tag_names[i]) ? 1 : 0;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+    REQUIRE(mesh.m_edge_split_mode == TopoOffsetTetMesh::EdgeSplitMode::Midpoint);
+    const std::array<double, 4> s = {{0.125, 0.25, 0.5, 1.}};
+    std::vector<TetMesh::Tuple> garbage;
+    // The one vertex the split added (the mesh had 0..3).
+    const auto new_scalar = [&]() {
+        std::vector<size_t> added;
+        for (const TetMesh::Tuple& v : mesh.get_vertices()) {
+            if (v.vid(mesh) > 3) added.push_back(v.vid(mesh));
+        }
+        REQUIRE(added.size() == 1);
+        return mesh.m_vertex_attribute[added[0]].m_sizing_scalar;
+    };
+    SECTION("every scalar 1")
+    {
+        REQUIRE(mesh.split_edge(mesh.tuple_from_edge({{0, 1}}), garbage));
+        CHECK(new_scalar() == 1.);
+    }
+    for (size_t v = 0; v < 4; ++v) mesh.m_vertex_attribute[v].m_sizing_scalar = s[v];
+    SECTION("edge")
+    {
+        REQUIRE(mesh.split_edge(mesh.tuple_from_edge({{0, 1}}), garbage));
+        CHECK(new_scalar() == (s[0] + s[1]) / 2);
+    }
+    SECTION("face")
+    {
+        REQUIRE(mesh.split_face(std::get<0>(mesh.tuple_from_face({{0, 1, 2}})), garbage));
+        CHECK(new_scalar() == (s[0] + s[1] + s[2]) / 3);
+    }
+    SECTION("tet")
+    {
+        REQUIRE(mesh.split_tet(mesh.tuple_from_tet(0), garbage));
+        CHECK(new_scalar() == (s[0] + s[1] + s[2] + s[3]) / 4);
+    }
 }

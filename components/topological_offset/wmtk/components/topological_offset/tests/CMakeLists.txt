@@ -14,6 +14,7 @@ set(SRC_FILES
     test_exact_band_front.cpp
     exact_band_integral_data.hpp
     exact_band_max_data.hpp
+    exact_band_parallel_data.hpp
     exact_band_side_data.hpp
     exact_band_front_data.hpp
     )

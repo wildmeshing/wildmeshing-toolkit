@@ -5,6 +5,7 @@
 
 #include "exact_band_integral_data.hpp"
 #include "exact_band_max_data.hpp"
+#include "exact_band_parallel_data.hpp"
 #include "exact_band_side_data.hpp"
 
 #include <algorithm>
@@ -1314,6 +1315,70 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             w_at,
             w_ub,
             w_eq);
+    }
+}
+
+/**
+ * ExactBandIntegral::max_distance on front faces nearly parallel to a side plane of an input
+ * triangle's region (exact_band_parallel_data.hpp: the faces 70565's debug1 and debug2 aborted
+ * on, 0.08 and 0.35 degrees off it, with the input around them). The cut by that plane snapped
+ * two neighbouring ring vertices onto it and both parts kept the edge between them, so the pieces
+ * counted a sliver twice; it is tol / sin(theta) wide across the face, and the former tiling
+ * bound (2 sqrt(3) tol D) ignored the angle: max_distance() threw. Units as
+ * exact-band-max-distance.
+ *  - no throw;
+ *  - upper bound: d on a 24-per-side barycentric grid never exceeds the max;
+ *  - exact: d at the returned point equals the max, where it does not come from a rule-(a) piece.
+ */
+TEST_CASE("exact-band-max-distance-parallel", "[offset][exact_band]")
+{
+    using namespace exact_band_parallel_data;
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    const double delta = 0x1.08e27cb760a9fp-8; // 70565's target_distance, 0.004041820000000001
+    std::printf(
+        "exact-band-max-distance-parallel: faces nearly parallel to a side plane of a region\n");
+    for (const ParallelCase& c : parallel_cases) {
+        Eigen::MatrixXd V(c.nV, 3);
+        for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(c.nF, 3);
+        for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+        const ExactBandIntegral eb(V, F);
+        const std::array<Vec3, 3> P = {
+            {Vec3(c.P[0], c.P[1], c.P[2]),
+             Vec3(c.P[3], c.P[4], c.P[5]),
+             Vec3(c.P[6], c.P[7], c.P[8])}};
+        INFO(c.name);
+        ExactBandIntegral::MaxInfo info;
+        double m = 0.;
+        REQUIRE_NOTHROW(m = eb.max_distance(P, &info));
+        double xs = 0.;
+        for (const Vec3& p : P) xs = std::max(xs, p.cwiseAbs().maxCoeff());
+        const double unit = EPS * (xs + delta);
+        constexpr int N = 24;
+        double smax = 0.;
+        for (int i = 0; i <= N; ++i) {
+            for (int j = 0; i + j <= N; ++j) {
+                const Vec3 x =
+                    P[0] + (double(i) / N) * (P[1] - P[0]) + (double(j) / N) * (P[2] - P[0]);
+                smax = std::max(smax, ref_distance(x, V, F));
+            }
+        }
+        CHECK(smax - m <= 64. * unit);
+        const double e = ref_distance(info.at, V, F) - m;
+        if (info.rule_a) {
+            CHECK(e <= 64. * unit);
+        } else {
+            CHECK(std::abs(e) <= 64. * unit);
+        }
+        std::printf(
+            "  %-17s max %.6f delta, %d candidates, %d pieces; grid - max %+.2f, d(at) - max "
+            "%+.2f (eps units)\n",
+            c.name,
+            m / delta,
+            info.candidates,
+            info.pieces,
+            (smax - m) / unit,
+            e / unit);
     }
 }
 

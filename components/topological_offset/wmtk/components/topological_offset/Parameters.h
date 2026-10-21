@@ -51,13 +51,12 @@ struct Parameters : public wmtk::OptimizerParameters
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
-    // ---- the two convergence epsilons (was the single front_conv_rel) ----
-    // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
-    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
-    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
-    // more, so changing the offset distance no longer silently changes the accuracy. init()
-    // refuses either one above target_distance: an epsilon coarser than the offset it measures
-    // cannot decide anything.
+    // ---- the convergence epsilon ----
+    // front_conv is an ABSOLUTE LENGTH, resolved in init(); if <= 0 it is computed from
+    // front_conv_rel, which since 2026-10-21 is a fraction of TARGET_DISTANCE -- the config's,
+    // fixed for the run, every growth stage included (from 2026-09-23 to 2026-10-20 it was a
+    // fraction of the bounding box diagonal). init() refuses a front_conv above target_distance:
+    // an epsilon coarser than the offset it measures cannot decide anything.
     //
     // THE ONE BAR, in 2D and in 3D. One quantity is measured everywhere -- over a simplex's
     // stencil (a face's in 3D, a front chord's in 2D), the RMS of the distance to the level set
@@ -184,6 +183,42 @@ struct Parameters : public wmtk::OptimizerParameters
     /// min). Where d is convex on the cell, Vol (md - d(c)) / delta bounds the corner bound's gap
     /// (bound - true integral) from above (Jensen). Exit also needs no such cell. See the spec doc.
     bool gap_refinement = false;
+    /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve of the loop may move its vertex at
+    /// most damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
+    /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
+    /// SmoothVertexOptions::max_step). Never in a TetWild pass or the repulsion passes
+    /// (TopoOffsetTetMesh::damping_active()). See the spec doc.
+    bool damping = false;
+    /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
+    /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
+    double damping_factor = 0.5;
+    /// 3D, with optimize_offset (2026-10-21): before the loop, TetWild's own pass on the mesh as
+    /// constructed, from the sizing field at 1 everywhere, the offset surface held in an envelope
+    /// of half the distance the march traced it to (TopoOffsetTetMesh::optimize_construction_pass()).
+    /// Ignored when optimize_offset is false. See the spec doc.
+    bool optimize_construction = true;
+    /// EXPERIMENTAL (2026-10-19), 3D: when the march traces the front below target_distance
+    /// (construction_mode "max_marchable_fallback", the target not below the maximum marchable
+    /// distance), the loop runs at the traced distance d_0 first, then at
+    /// d_0 + k (target_distance - d_0) / N for k = 1..N, each to convergence, the last the
+    /// ordinary loop (TopoOffsetTetMesh::incremental_growth()). See the spec doc.
+    bool incremental_growth = false;
+    /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to
+    /// target_distance, so N + 1 loops. At least 1 (the spec's min).
+    int incremental_growth_steps = 4;
+    /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
+    /// the field's normal (grad d at its centroid) exceeds this many degrees
+    /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face offset_foldover
+    /// and the end-of-run [foldover] count. See the spec doc.
+    double foldover_angle = 30.;
+    /// DEBUG (2026-10-20), 3D: debug frames for a remote machine short on space -- overrides
+    /// DEBUG_output (sets it, so every debug computation runs) and writes only the constructed
+    /// mesh, each TetWild pass's start and every iteration of it, the end of the construction
+    /// TetWild pass, the end of every turn of the loop, and the final mesh. See the spec doc.
+    bool debug_remote_output = false;
+    /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
+    /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
+    bool allow_mult_comp = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
     /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
     /// exceeds front_conv; its sizing is halved. "max": a face's max of
@@ -202,17 +237,15 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
-    /// frozen-front finishing pass.
+    /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
+    /// pass, and in 3D the construction pass (optimize_construction).
     int max_iterations;
-    // The offset envelope half-width: the leash the front is kept inside during the frozen-front
-    // final pass, built once before it (3D: build_offset_envelope(); 2D:
-    // rebuild_offset_envelope()). Absolute-or-relative exactly as envelope_size / envelope_size_rel
-    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
-    // tying it to target_distance made every change of the offset distance a silent change of the
-    // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
-    double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
-    double offset_envelope_rel;
+    // NO KEY since 2026-10-20 (offset_envelope / offset_envelope_rel removed): the offset
+    // surface's envelope in a TetWild pass has envelope_size's eps, like every other held surface
+    // (optimize_construction's pass alone widens it). init() sets these two to
+    // envelope_size / envelope_size_rel; only the 2D code still reads them.
+    double offset_envelope = -1.;
+    double offset_envelope_rel = -1.;
 
     // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
     // target_distance rather than of the bounding box because that is the scale the offset has;
@@ -299,6 +332,43 @@ struct Parameters : public wmtk::OptimizerParameters
         if (gap_refinement && !settle_refinement) {
             log_and_throw_error("EXPERIMENTAL_gap_refinement needs EXPERIMENTAL_settle_refinement");
         }
+        damping = json_params["EXPERIMENTAL_damping"];
+        damping_factor = json_params["EXPERIMENTAL_damping_factor"];
+        if (!(damping_factor > 0.)) {
+            log_and_throw_error("EXPERIMENTAL_damping_factor must be > 0, not {}", damping_factor);
+        }
+        // 0.5 is the spec's default: a factor set to anything else means damping was intended.
+        if (!damping && damping_factor != 0.5) {
+            log_and_throw_error(
+                "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
+                damping_factor);
+        }
+        optimize_construction = json_params["optimize_construction"];
+        incremental_growth = json_params["EXPERIMENTAL_incremental_growth"];
+        incremental_growth_steps = json_params["EXPERIMENTAL_incremental_growth_steps"];
+        // 4 is the spec's default: a count set to anything else means growth was intended.
+        if (!incremental_growth && incremental_growth_steps != 4) {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth_steps {} needs EXPERIMENTAL_incremental_growth "
+                "true",
+                incremental_growth_steps);
+        }
+        // Only max_marchable_fallback traces the front below the target, where the first stage
+        // runs; midpoint_fallback never does.
+        if (incremental_growth && construction_mode != "max_marchable_fallback") {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth needs construction_mode "
+                "\"max_marchable_fallback\", not \"{}\": the first stage runs at the distance the "
+                "march traced the front to, and only that mode traces below target_distance",
+                construction_mode);
+        }
+        if (incremental_growth && init_optimize) {
+            log_and_throw_error(
+                "EXPERIMENTAL_incremental_growth and init_optimize both decide the loops that "
+                "follow a march below target_distance: set only one of them");
+        }
+        foldover_angle = json_params["foldover_angle"];
+        allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(
@@ -311,8 +381,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
-        offset_envelope = json_params["offset_envelope"];
-        offset_envelope_rel = json_params["offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
         min_edge_length_rel = json_params["min_edge_length_rel"];
@@ -325,6 +393,10 @@ struct Parameters : public wmtk::OptimizerParameters
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
+        debug_remote_output = json_params["DEBUG_remote_output"];
+        // DEBUG_remote_output overrides DEBUG_output: everything debug output computes is on, and
+        // the frames follow the remote schedule (TopoOffsetTetMesh::remote_frames()).
+        if (debug_remote_output) debug_output = true;
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];
@@ -395,14 +467,13 @@ struct Parameters : public wmtk::OptimizerParameters
             envelope_size = envelope_size_rel * diag_l;
         }
 
-        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
-        // against the same reference. It is a length in space, so the bounding box diagonal is
-        // the reference, not target_distance: tying the accuracy to the offset distance made
-        // every change of target_distance a silent change of accuracy as well.
+        // The convergence epsilon, absolute or relative; relative to target_distance (resolved
+        // above), the offset it measures. A growth stage changes target_distance later, never
+        // this.
         if (front_conv > 0) {
-            front_conv_rel = front_conv / diag_l;
+            front_conv_rel = front_conv / target_distance;
         } else {
-            front_conv = front_conv_rel * diag_l;
+            front_conv = front_conv_rel * target_distance;
         }
 
         // An epsilon coarser than the offset it measures decides nothing: every front vertex is
@@ -418,23 +489,18 @@ struct Parameters : public wmtk::OptimizerParameters
                 target_distance);
         }
 
-        // The operation leash, the same absolute-or-relative pair as the envelope and the
-        // convergence epsilon, against the same reference.
-        if (offset_envelope > 0) {
-            offset_envelope_rel = offset_envelope / diag_l;
-        } else {
-            offset_envelope = offset_envelope_rel * diag_l;
-        }
+        // The offset surface's envelope is envelope_size's (no key of its own since 2026-10-20);
+        // the two fields only for the 2D code, which still reads them.
+        offset_envelope = envelope_size;
+        offset_envelope_rel = envelope_size_rel;
 
         // l_min is relative to the offset distance rather than the bounding box: it is the offset
         // that has to be resolved. See the declaration.
         if (min_edge_length_rel < 0) {
             // The envelope eps expressed as a multiple of target_distance, which is what this
-            // wants. offset_envelope_rel is a fraction of the BBOX DIAGONAL since 2026-09-24, so
-            // the conversion goes through the resolved absolute rather than being the identity it
-            // used to be -- the derived floor is unchanged in model units either way.
-            min_edge_length_rel =
-                std::max(offset_envelope / std::max(target_distance, 1e-16), 1e-12);
+            // wants: envelope_size, the offset surface's envelope too since offset_envelope went
+            // (2026-10-20), resolved to an absolute length above.
+            min_edge_length_rel = std::max(envelope_size / std::max(target_distance, 1e-16), 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;
