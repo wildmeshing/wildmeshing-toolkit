@@ -621,3 +621,44 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         CHECK(std::abs(out_area - in_area) < 1e-2 * in_area);
     }
 }
+
+TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
+{
+    // A sheet A, B, E and a fin F on the edge (0, 1), which is non-manifold, so A+E, B and F
+    // are flattened as three sides. Collapsing 1 into 0 removes B and F whole: their points have
+    // no image, while A's land on E.
+    history::SurfaceHistory h;
+    h.vertices = {
+        {0, 0, 0},
+        {1, 0, 0},
+        {0.5, 1, 0},
+        {0.5, -1, 0},
+        {0, 0, 0}, // unused
+        {0.5, 0, 1},
+        {1.5, 1, 0}};
+    h.vertex_alive = {1, 1, 1, 1, 0, 1, 1};
+    h.faces = {{{0, 1, 2}}, {{1, 0, 3}}, {{0, 1, 5}}, {{2, 1, 6}}}; // A, B, F, E
+    h.face_alive = {1, 1, 1, 1};
+    h.edits.push_back(
+        {history::EditKind::collapse_edge, {1, 0}, {}, {{0, Eigen::Vector3d(0.5, 0, 0)}}});
+
+    const SurfaceMap map(h);
+    REQUIRE(map.output_face_alive() == std::vector<uint8_t>{0, 0, 0, 1});
+    const auto pts = sample(map.input_face_alive(), 10, 3);
+    const auto there = map.to_output(pts);
+    size_t lost = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (pts[i].face == 1 || pts[i].face == 2) {
+            CHECK(there[i].face >= map.output_faces().size());
+            ++lost;
+        } else {
+            CHECK(there[i].face == 3);
+        }
+    }
+    CHECK(map.map_warnings().unlocated == lost);
+
+    // Back from the output, every point lands on the side that survived.
+    for (const auto& p : map.to_input(sample(map.output_face_alive(), 10, 4))) {
+        CHECK((p.face == 0 || p.face == 3));
+    }
+}
