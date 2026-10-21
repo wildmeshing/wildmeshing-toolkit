@@ -7,6 +7,8 @@
 
 #include <filesystem>
 #include <map>
+#include <random>
+#include <string>
 
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
@@ -38,7 +40,8 @@ void check_replay(
     m.stop_history();
 
     const auto path = (std::filesystem::temp_directory_path() /
-                       ("wmtk_remeshing_history_" + std::to_string(threads) + ".bin"))
+                       ("wmtk_remeshing_history_" + std::to_string(threads) + "_" +
+                        std::to_string(std::random_device{}()) + ".bin"))
                           .string();
     rec->history().save(path);
     const history::SurfaceHistory h = history::SurfaceHistory::load(path);

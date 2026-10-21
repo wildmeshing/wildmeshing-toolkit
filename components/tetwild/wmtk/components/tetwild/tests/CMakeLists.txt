@@ -19,11 +19,13 @@ set(SRC_FILES
     test_coarsen_pass.cpp
     test_colored_smoothing.cpp
     test_runner.cpp
-    test_tetwild_history.cpp
-    test_tetwild_tracking.cpp
     test_surface_folds.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
-# test_tetwild_history.cpp rebuilds the map between the inserted and the output surface.
-target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::surface_map)
+# The history tests rebuild the map with surface_map. It is added after this component, so its
+# option may not be set yet; unset, it defaults to on.
+if(NOT DEFINED WMTK_ENABLE_COMPONENT_surface_map OR WMTK_ENABLE_COMPONENT_surface_map)
+    target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE test_tetwild_history.cpp test_tetwild_tracking.cpp)
+    target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::surface_map)
+endif()
