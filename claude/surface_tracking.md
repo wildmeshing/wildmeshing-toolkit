@@ -284,7 +284,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - **`embed`:** location in space among the sources.
   - **`replace_faces`:** faces with nowhere to go.
 - **Warnings.** `build_warnings()` and `map_warnings()` say where the map is not a bijection:
-  - `not_a_disk`: a patch that cannot be flattened, mapped by relabelling;
+  - `not_a_disk`: a patch that cannot be flattened, mapped by relabelling -- or a side a
+    collapse removes whole, whose points then have no image;
   - `flat_triangle`;
   - `inverted`: a local map with a non-positive triangle;
   - `merged_faces`: two faces became one;
@@ -423,14 +424,29 @@ Facing is exact: `orient3d` of the triangle and a point below it along the norma
 (`utils::predicates::faces_along`). The tet check turns colored smoothing off: it reads stars
 of a vertex's neighbours, which two vertices of one colour class can share.
 
-## Costs (measured so far)
+## Costs
 
-- **Recording on:** about 7% on tetwild's octocat. The history is 3 to 10 MB on the three
-  challenging models measured so far (43,000 to 270,000 edits), 0.2 to 2 MB on the small
-  test models. Building the map takes about a second per 20,000 edits.
-- **Recording off:** one pointer test per operation.
-- **The serial on / off / `main` comparison** on the 15 challenging tetwild models is in
-  progress; this section will be updated with its results.
+Measured on the 15 challenging tetwild models (default parameters, so `preserve_topology`
+off), serially, comparing recording on, recording off, and `main` (43d74ecfe0). Scripts:
+`exp_challenging/run_eval.py` and `reinfo.py` in the session scratchpad, not in the repository.
+- **Recording off costs nothing.** Output meshes are byte-identical to `main`'s on all 15
+  models, with the same iteration counts. Instructions retired: -0.07% to +0.06% per model,
+  -0.04% in total. The hooks are one pointer test per operation.
+- **Recording on:** +0.7% to +8.2% instructions per model, +4.4% in total. Wall time
+  +6% in total. Peak memory +1% to +39%; the most is on 46024, whose 320k-face input the
+  history keeps as read.
+- **History size:** 0.5 to 38 MB; 35 to 80 bytes per edit, plus the input as read.
+  - 25.6 MB (750k edits) for the longest run, 1017020;
+  - 38 MB for 46024, mostly its input (190 bytes per edit).
+- **Building the map:** 0.4 to 31 s, about a second per 25,000 edits.
+- **Map quality with `preserve_topology` off:**
+  - there are always some not-a-disk and merged-face warnings (welds, sheets merging);
+  - 13 of the 15 models round-trip below 1e-3;
+  - 1017012 and 1017020 (3,000 and 4,450 welds) lose 5 and 9 output centroids and round-trip
+    up to the model's scale.
+
+Check memory by peak footprint (`/usr/bin/time -l`). At 16 threads, wall times vary with the
+iteration counts, and other load moves them too. Compare instruction counts.
 
 ## Where things are
 
