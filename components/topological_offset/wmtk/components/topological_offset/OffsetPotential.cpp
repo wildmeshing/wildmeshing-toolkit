@@ -836,11 +836,9 @@ bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 CubedAMIPSEnergy3D::CubedAMIPSEnergy3D(
     std::vector<std::array<double, 12>> cells,
-    const double weight,
-    const bool first_power)
+    const double weight)
     : m_cells(std::move(cells))
     , m_weight(weight)
-    , m_first_power(first_power)
 {}
 
 namespace {
@@ -895,58 +893,6 @@ double cubed_amips_vol_term(
     }
     return f;
 }
-
-/// vol AMIPS of the same cell (EXPERIMENTAL_amips_pow), from the same quantities as
-/// cubed_amips_vol_term(): f = (sqrt2/12) T^(3/2) a^(-1/2), since vol = (sqrt2/12) (T/a)^(3/2).
-double first_power_amips_vol_term(
-    const std::array<double, 12>& c,
-    const double a,
-    const Eigen::Vector3d& ga,
-    const Eigen::Matrix3d& ha,
-    const int need,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d& h)
-{
-    const Eigen::Vector3d p[4] = {
-        Eigen::Vector3d(c[0], c[1], c[2]),
-        Eigen::Vector3d(c[3], c[4], c[5]),
-        Eigen::Vector3d(c[6], c[7], c[8]),
-        Eigen::Vector3d(c[9], c[10], c[11])};
-    double T = 0.;
-    for (int i = 0; i < 4; ++i)
-        for (int j = i + 1; j < 4; ++j) T += (p[i] - p[j]).squaredNorm();
-    T *= 0.5;
-    const double k = std::sqrt(2.) / 12.;
-    const double sT = std::sqrt(T), sa = std::sqrt(a);
-    const double f = k * T * sT / sa;
-    if (need >= 1) {
-        const Eigen::Vector3d gT = 3. * p[0] - p[1] - p[2] - p[3];
-        g = k * (1.5 * sT / sa * gT - 0.5 * T * sT / (a * sa) * ga);
-        if (need >= 2) {
-            h = k *
-                (0.75 / (sT * sa) * gT * gT.transpose() -
-                 0.75 * sT / (a * sa) * (gT * ga.transpose() + ga * gT.transpose()) +
-                 4.5 * sT / sa * Eigen::Matrix3d::Identity() +
-                 0.75 * T * sT / (a * a * sa) * ga * ga.transpose() - 0.5 * T * sT / (a * sa) * ha);
-        }
-    }
-    return f;
-}
-
-/// The cell term of CubedAMIPSEnergy3D at its power.
-double amips_vol_term(
-    const bool first_power,
-    const std::array<double, 12>& c,
-    const double a,
-    const Eigen::Vector3d& ga,
-    const Eigen::Matrix3d& ha,
-    const int need,
-    Eigen::Vector3d& g,
-    Eigen::Matrix3d& h)
-{
-    return first_power ? first_power_amips_vol_term(c, a, ga, ha, need, g, h)
-                       : cubed_amips_vol_term(c, a, ga, ha, need, g, h);
-}
 } // namespace
 
 void CubedAMIPSEnergy3D::at_point(const TVector& x)
@@ -975,15 +921,8 @@ double CubedAMIPSEnergy3D::value(const TVector& x)
         const double a = m_a[k];
         Eigen::Vector3d g;
         Eigen::Matrix3d h;
-        res += amips_vol_term(
-            m_first_power,
-            c,
-            a,
-            Eigen::Vector3d::Zero(),
-            Eigen::Matrix3d::Zero(),
-            0,
-            g,
-            h);
+        res +=
+            cubed_amips_vol_term(c, a, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Zero(), 0, g, h);
     }
     m_value = m_weight * res;
     m_value_set = true;
@@ -1005,7 +944,7 @@ void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
         wmtk::AMIPS_jacobian(c, g);
         Eigen::Vector3d gf;
         Eigen::Matrix3d hf;
-        amips_vol_term(m_first_power, c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
+        cubed_amips_vol_term(c, a, g, Eigen::Matrix3d::Zero(), 1, gf, hf);
         gradv += gf;
     }
     gradv *= m_weight;
@@ -1026,7 +965,7 @@ void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
         wmtk::AMIPS_hessian(c, h);
         Eigen::Vector3d gf;
         Eigen::Matrix3d hf;
-        amips_vol_term(m_first_power, c, a, g, h, 2, gf, hf);
+        cubed_amips_vol_term(c, a, g, h, 2, gf, hf);
         hessian += hf;
     }
     hessian *= m_weight;
@@ -1084,14 +1023,10 @@ bool VolAMIPSEnergy3D::cell(
     out.rest_inv = R.inverse();
     out.s = out.rest_inv.transpose() * Eigen::Vector3d::Ones();
     out.c = detR * detR / 6.;
-    out.c1 = std::cbrt(detR * detR) / 6.;
     return true;
 }
 
-double VolAMIPSEnergy3D::value_of(
-    const std::array<Eigen::Vector3d, 4>& p,
-    const Eigen::Matrix3d& R,
-    const bool first_power)
+double VolAMIPSEnergy3D::value_of(const std::array<Eigen::Vector3d, 4>& p, const Eigen::Matrix3d& R)
 {
     const double detR = R.determinant();
     if (!(detR > 0.)) return std::numeric_limits<double>::infinity();
@@ -1100,18 +1035,13 @@ double VolAMIPSEnergy3D::value_of(
     const double g = E.determinant();
     if (!(g > 0.)) return std::numeric_limits<double>::infinity();
     const double f = (E * R.inverse()).squaredNorm();
-    const double v = first_power ? std::cbrt(detR * detR) / 6. * f * std::cbrt(g)
-                                 : f * f * f * detR * detR / (6. * g);
+    const double v = f * f * f * detR * detR / (6. * g);
     return std::isfinite(v) ? v : std::numeric_limits<double>::infinity();
 }
 
-VolAMIPSEnergy3D::VolAMIPSEnergy3D(
-    std::vector<Cell> cells,
-    const double weight,
-    const bool first_power)
+VolAMIPSEnergy3D::VolAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
     : m_cells(std::move(cells))
     , m_weight(weight)
-    , m_first_power(first_power)
 {}
 
 double VolAMIPSEnergy3D::eval(
@@ -1132,20 +1062,6 @@ double VolAMIPSEnergy3D::eval(
         if (!(g > 0.)) return std::numeric_limits<double>::infinity();
         const Eigen::Matrix3d F = Em * c.rest_inv;
         const double f = F.squaredNorm();
-        if (m_first_power) {
-            // vol A = c1 f g^(1/3) (see the class doc).
-            const double g13 = std::cbrt(g);
-            E += c.c1 * f * g13;
-            if (need < 1) continue;
-            const Eigen::Vector3d df = -2. * F * c.s;
-            gr += c.c1 * (g13 * df + f / (3. * g13 * g13) * dg);
-            if (need < 2) continue;
-            const Eigen::Matrix3d Hf = 2. * c.s.squaredNorm() * Eigen::Matrix3d::Identity();
-            const double g53 = g13 * g13 * g13 * g13 * g13;
-            H += c.c1 * (g13 * Hf + (df * dg.transpose() + dg * df.transpose()) / (3. * g13 * g13) -
-                         2. * f / (9. * g53) * (dg * dg.transpose()));
-            continue;
-        }
         const double f3 = f * f * f;
         E += c.c * f3 / g;
         if (need < 1) continue;
@@ -1815,85 +1731,6 @@ void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
         if (n > 0) H += He / double(n);
     }
     hess = m_weight * H;
-}
-
-LaplacianEnergy3D::LaplacianEnergy3D(const Eigen::Vector3d& centroid, const double stiffness)
-    : m_c(centroid)
-    , m_k(stiffness)
-{}
-
-double LaplacianEnergy3D::value(const TVector& x)
-{
-    return 0.5 * m_k * (Eigen::Vector3d(x.head<3>()) - m_c).squaredNorm();
-}
-
-void LaplacianEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    gradv = m_k * (Eigen::Vector3d(x.head<3>()) - m_c);
-}
-
-void LaplacianEnergy3D::hessian(const TVector&, MatrixXd& hessian)
-{
-    hessian = m_k * MatrixXd::Identity(3, 3);
-}
-
-bool LaplacianEnergy3D::fan_weights(
-    const Eigen::Vector3d& x,
-    const std::vector<std::array<size_t, 2>>& face_ids,
-    const std::vector<std::array<Eigen::Vector3d, 2>>& face_pos,
-    Eigen::Vector3d& centroid,
-    double& weight_sum,
-    double& mean_edge)
-{
-    // Per neighbour: its id, its position and its half-cotangents summed over the fan.
-    std::vector<size_t> ids;
-    std::vector<Eigen::Vector3d> pos;
-    std::vector<double> w;
-    const auto slot = [&](const size_t id, const Eigen::Vector3d& p) {
-        for (size_t i = 0; i < ids.size(); ++i) {
-            if (ids[i] == id) return i;
-        }
-        ids.push_back(id);
-        pos.push_back(p);
-        w.push_back(0.);
-        return ids.size() - 1;
-    };
-    // Half the cotangent of the angle at corner o between p - o and q - o. A corner whose sides
-    // are parallel reads +-infinity, which the clamp below turns into a bound.
-    const auto half_cot =
-        [](const Eigen::Vector3d& o, const Eigen::Vector3d& p, const Eigen::Vector3d& q) {
-            const Eigen::Vector3d u = p - o, v = q - o;
-            const double s = u.cross(v).norm();
-            const double c = u.dot(v);
-            if (!(s > 0.)) {
-                return c > 0. ? std::numeric_limits<double>::infinity()
-                              : -std::numeric_limits<double>::infinity();
-            }
-            return 0.5 * c / s;
-        };
-    for (size_t f = 0; f < face_ids.size() && f < face_pos.size(); ++f) {
-        const Eigen::Vector3d& b = face_pos[f][0];
-        const Eigen::Vector3d& c = face_pos[f][1];
-        // In face (x, b, c) the angle opposite edge (x, b) is at c, and opposite (x, c) at b.
-        const size_t ib = slot(face_ids[f][0], b);
-        const size_t ic = slot(face_ids[f][1], c);
-        w[ib] += half_cot(c, x, b);
-        w[ic] += half_cot(b, x, c);
-    }
-    if (ids.empty()) return false;
-    centroid.setZero();
-    weight_sum = 0.;
-    mean_edge = 0.;
-    for (size_t i = 0; i < ids.size(); ++i) {
-        // A NaN (+infinity and -infinity from two degenerate corners) reads as the weakest pull.
-        const double wi = std::isnan(w[i]) ? kWeightMin : std::clamp(w[i], kWeightMin, kWeightMax);
-        centroid += wi * pos[i];
-        weight_sum += wi;
-        mean_edge += (pos[i] - x).norm();
-    }
-    centroid /= weight_sum;
-    mean_edge /= double(ids.size());
-    return true;
 }
 
 } // namespace wmtk::components::topological_offset

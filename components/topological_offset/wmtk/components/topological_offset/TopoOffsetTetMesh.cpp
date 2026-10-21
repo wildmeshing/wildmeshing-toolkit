@@ -1933,7 +1933,6 @@ void TopoOffsetTetMesh::marching_tets()
     }
     const bool reachable = target < d_max;
     const std::string& mode = m_offset_params.construction_mode;
-    m_marchable_distance = d_max;
     m_construction_distance = target;
     m_edge_split_mode = EdgeSplitMode::SphereTrace;
     if (e_to_split.empty()) {

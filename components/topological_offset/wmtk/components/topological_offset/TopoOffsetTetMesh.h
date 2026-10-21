@@ -355,42 +355,29 @@ public:
     /// then). release_final_envelopes() puts the loop's envelope back.
     void build_final_envelopes();
     void release_final_envelopes();
-    /**
-     * @brief EXPERIMENTAL_refine_construction: the offset surface as constructed refined by
-     * TetWild, before the loop.
-     *
-     * The sizing scalar of every front vertex (m_is_on_offset) is lowered to
-     * s = min(a min(M, target_distance) / l, 1) (a = refine_construction_factor, M = the march's
-     * maximum marchable distance m_marchable_distance, l the base edge length), kept at or above
-     * the loop's refinement floor, and graded into the volume (grade_sizing()). Then
-     * construction_tetwild_run(): a TetWild pass (tetwild_pass()) with the offset surface held in
-     * an envelope of eps m_construction_distance / 2 (m_refine_front_envelope_eps, this pass only;
-     * the final pass keeps envelope_size) and every other tracked surface in m_envelope, under
-     * TetWild's own rules (m_op_rules: no band term), then the loop's setup redone. Its splits are
-     * the engine's (EdgeSplitMode::Optimization): the new vertex takes the mean of its edge's
-     * sizing scalars, so the loop starts from the field the pass leaves. Called by
-     * optimize_offset() after the "construction" frame, in place of construction_tetwild_run().
-     */
-    void refine_front_pass();
-    /// The sizing scalar refine_front_pass() gave the front; 0 when no pass ran.
-    double m_refine_front_scalar = 0.;
-    /// The offset surface's envelope eps while refine_front_pass() runs its TetWild pass: half the distance the
-    /// march traced the front to, m_construction_distance / 2. 0 at every other time, when
-    /// build_offset_envelope() takes envelope_size (the final pass included).
-    double m_refine_front_envelope_eps = 0.;
-    /// EXPERIMENTAL_refine_construction's log: the front vertices (sizing scalar min / median / max, how
-    /// many still at 1 or above) and the front faces' edges (median length against the edge
-    /// target m_refine_front_scalar x l, how many over the split gate, split_edge_is_due()).
-    std::string front_sizing_report() const;
     /// A TetWild pass: every tracked surface held (the final envelopes; the front in its envelope,
     /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
     /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
     /// re-derived. Returns the max AMIPS after it. The final pass and
-    /// construction_tetwild_run() both run it; `what` names it in the log.
+    /// optimize_construction_pass() both run it; `what` names it in the log.
     double tetwild_pass(const char* what, int max_its);
-    /// EXPERIMENTAL_construction_tetwild_run: tetwild_pass() on the mesh as constructed, before
-    /// the loop, then the loop's setup redone on its result (vertex order, plastic rests).
-    void construction_tetwild_run();
+    /**
+     * @brief optimize_construction: TetWild on the mesh as constructed, before the loop (and
+     * before an init_optimize loop). Called by optimize_offset() after the "construction" frame.
+     *
+     * Every vertex's sizing scalar is set to 1 first, so the pass starts from the field at 1
+     * everywhere. Then tetwild_pass() with the offset surface held in an envelope of eps
+     * m_construction_distance / 2 -- half the distance the march traced it to, d_0 under
+     * EXPERIMENTAL_incremental_growth (m_construction_envelope_eps, this pass only; the final pass
+     * keeps envelope_size) -- and every other tracked surface in m_envelope, under TetWild's own
+     * rules (m_op_rules: no band term); then the loop's setup redone on its result (vertex order,
+     * plastic rests). The loop starts from the sizing field the pass leaves.
+     */
+    void optimize_construction_pass();
+    /// The offset surface's envelope eps while optimize_construction_pass() runs: half the
+    /// distance the march traced the front to, m_construction_distance / 2. 0 at every other time,
+    /// when build_offset_envelope() takes envelope_size (the final pass included).
+    double m_construction_envelope_eps = 0.;
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
@@ -418,8 +405,8 @@ public:
      * smoother minimises the vertex's part of E (smoothing_extra_energy()) with this component's
      * solver criterion (smoothing_solver()).
      *
-     * TetWild (every TetWild pass, tetwild_pass(): EXPERIMENTAL_refine_construction's,
-     * EXPERIMENTAL_construction_tetwild_run's, the final pass): TetWild's own. The engine's rules
+     * TetWild (every TetWild pass, tetwild_pass(): optimize_construction's and the final pass):
+     * TetWild's own. The engine's rules
      * on the MAX of AMIPS^3 over those cells: collapse_quality_allowed() and swap_quality_allowed()
      * as the base has them, the base's scores in the 4-4 / 5-6 search and the base's face swap
      * gate; no sum rule and no split gate. The smoother is TetOptimizerMesh::smooth_after(): the
@@ -434,7 +421,7 @@ public:
 
     /**
      * @brief The envelope the offset surface may not leave during a TetWild pass (tetwild_pass()),
-     * of eps envelope_size (EXPERIMENTAL_refine_construction's pass: half the traced distance),
+     * of eps envelope_size (optimize_construction's pass: half the traced distance),
      * built by build_offset_envelope() from the surface as it is just
      * before that pass. Null until then: the loop holds the offset surface to no
      * envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
@@ -451,15 +438,12 @@ public:
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
     /// init_optimize loop: it returns on convergence without the final TetWild pass and
     /// without deciding the verdict.
-    /// `refine` false skips the halving. `label` names the loop in its log. `smoothing_passes` > 0
-    /// is the passes of every smoothing block (pre_smooth's and each operation group's) in place
-    /// of interleaved_smoothing_passes / num_smoothing_passes (EXPERIMENTAL_incremental_growth's
-    /// stage 0); 0 = those. Returns whether the loop converged within max_rounds.
+    /// `refine` false skips the halving. `label` names the loop in its log. Returns whether the
+    /// loop converged within max_rounds.
     bool optimize_offset_loop(
         bool final_stage = true,
         bool refine = true,
-        const std::string& label = std::string(),
-        int smoothing_passes = 0);
+        const std::string& label = std::string());
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
@@ -472,8 +456,7 @@ public:
     /// growth_stage_target(m_growth_start, target_distance, k, N). Before each stage
     /// target_distance is set to its target and the field rebuilt on it (init_offset_potential());
     /// stages before the last are optimize_offset_loop(false, true) to convergence, their frames
-    /// led by g<k>, stage 0's smoothing blocks at EXPERIMENTAL_initial_smoothing_passes passes;
-    /// stage N is the ordinary loop. A stage before the last that does not converge
+    /// led by g<k>; stage N is the ordinary loop. A stage before the last that does not converge
     /// stops the run there, target_distance and the field set back for the verdict.
     void incremental_growth();
     /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n
@@ -758,8 +741,6 @@ public:
     /// cancellation). Measured: a nearly flat tet (exact 6V = 1.5e-21, edges ~1.5) whose double
     /// determinant came out 0 was priced at 0 against an exact 1.7e21, and a collapse that made it
     /// passed the rule (one-slot model, stage 2: max AMIPS 1.9e14).
-    /// EXPERIMENTAL_amips_pow: vol AMIPS = (sqrt2/12) tr^(3/2) / sqrt(AMIPS) instead, which a
-    /// flattening cell drives to 0 (see the spec doc).
     double vol_amips3(const std::array<size_t, 4>& vids, const double amips3) const
     {
         double tr = 0.;
@@ -771,9 +752,6 @@ public:
             }
         }
         tr *= 0.5;
-        if (m_offset_params.amips_pow) {
-            return std::sqrt(2.) / 12. * tr * std::sqrt(tr) / std::sqrt(std::cbrt(amips3));
-        }
         return std::sqrt(2.) / 12. * tr * std::sqrt(tr) * std::sqrt(amips3);
     }
 
@@ -854,12 +832,10 @@ public:
     /// exact integral, built once by init_offset_potential() on m_input_complex_envelope.
     std::shared_ptr<const ExactBandIntegral> m_band_exact;
     /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
-    /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy. Under EXPERIMENTAL_amips_pow
-    /// w / s: the term is w vol AMIPS / s (vol_amips3() then gives vol AMIPS).
+    /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
     double band_amips_weight() const
     {
         const double s = optimization_stop_metric();
-        if (m_offset_params.amips_pow) return m_offset_params.offset_amips_weight / s;
         return m_offset_params.offset_amips_weight / (s * s * s);
     }
     /// One cell's energy from its corners, its AMIPS^3 and its band label; see tet_energy().
@@ -1301,9 +1277,6 @@ public:
     /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
     /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
     double m_construction_distance = 0.;
-    /// The march's maximum marchable distance M: the smallest distance to the input complex over
-    /// the outer ends of the marched edges (+inf if none), as marching_tets() found it.
-    double m_marchable_distance = 0.;
     /// EXPERIMENTAL_incremental_growth: d_0, the distance the march traced the front to when that
     /// is below target_distance (m_construction_distance, half the maximum marchable distance).
     /// Set by marching_tets() with the key on and optimize_offset true; 0 otherwise, and
@@ -1883,8 +1856,8 @@ public:
     /// (damping_active()).
     double damping_step(size_t vid) const;
     /// EXPERIMENTAL_damping acts in the loop's smoothing passes only: never in a TetWild pass
-    /// (m_tetwild_pass: EXPERIMENTAL_refine_construction's, EXPERIMENTAL_construction_tetwild_run's,
-    /// the final pass) nor in the repulsion passes before the march (m_repulsion_potential).
+    /// (m_tetwild_pass: optimize_construction's, the final pass) nor in the repulsion passes
+    /// before the march (m_repulsion_potential).
     bool damping_active() const
     {
         return m_offset_params.damping && !m_tetwild_pass && !m_repulsion_potential;
@@ -1980,9 +1953,6 @@ public:
         }
         if (vertex_carries_offset_term(vid)) {
             sum->add_energy(front_energy(vid));
-            // EXPERIMENTAL_laplacian: in this objective and nowhere else -- not in tet_energy(),
-            // so the veto after the solve still judges the move by E alone.
-            if (const auto lap = front_laplacian_energy(vid)) sum->add_energy(lap);
         } else if (!vertex_is_held(vid)) {
             // E's band term moves with this vertex too -- except a vertex held on the input.
             // There d = 0 at the vertex and d has a kink: the term's slope along the input's
@@ -2005,30 +1975,6 @@ public:
     /// The band term (band_cell_term()) of vid's band cells with vid moving (BandVolumeEnergy3D),
     /// null when vid has none. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> band_volume_energy_at(size_t vid) const;
-    /**
-     * @brief EXPERIMENTAL_laplacian: front vertex vid's pull toward the Laplace-Beltrami
-     * (cotangent) weighted centroid of its front neighbours (LaplacianEnergy3D), for its smoothing
-     * solve only; null when the key is 0, the turn's factor is 0 or vid has no live front face.
-     * Defined in FrontSmooth3d.cpp.
-     *
-     *     mu = laplacian x m_laplacian_factor x lbar,   stiffness mu W
-     *
-     * lbar is the mean length of vid's front edges, so mu is a length: the term is a volume, as
-     * every term of E is, and its force mu W |x - c| scales as l^2, like the band and AMIPS
-     * forces, whatever the front's resolution. Frozen for the solve: the weights, the centroid
-     * and the stiffness are read once, at the position the solve starts from.
-     */
-    std::shared_ptr<polysolve::nonlinear::Problem> front_laplacian_energy(size_t vid) const;
-    /**
-     * @brief EXPERIMENTAL_laplacian's factor for the running turn, set by the loop at each turn's
-     * start: 1 for turns 1 and 2, then min(1, |dE_{t-1}| / |dE_1|), dE_t the offset energy's
-     * change over turn t (offset_energy(), the settle test's dE). It dies down as the offset
-     * term settles. Proportional to dE, the weights' sum over the run is bounded by the offset
-     * energy's total variation: a summable perturbation of the smoother, which is what keeps the
-     * limit points of the descent those of E (.claude/foldover_findings_2026-10-16.md, section
-     * 7). Read only by front_laplacian_energy().
-     */
-    double m_laplacian_factor = 1.;
 
 
     /// Samples per offset face; see offset_face_samples().

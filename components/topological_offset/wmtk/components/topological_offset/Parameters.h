@@ -90,11 +90,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
     /// tri_energy = w AMIPS + the offset terms. See the spec.
     double offset_amips_weight = 1.;
-    /// EXPERIMENTAL (2026-10-19), 3D: the energy's AMIPS term to the first power,
-    /// (w / stop_energy) vol AMIPS in place of (w / stop_energy^3) vol AMIPS^3, wherever the energy
-    /// is read (TopoOffsetTetMesh::band_amips_weight(), vol_amips3(), the smoother's
-    /// CubedAMIPSEnergy3D and the plastic VolAMIPSEnergy3D). Default false. See the spec doc.
-    bool amips_pow = false;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -198,15 +193,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
-    /// EXPERIMENTAL (2026-10-16), 3D: the weight lambda of a Laplace-Beltrami pull in each front
-    /// vertex's smoothing objective only, scaled per turn by the offset energy's last change
-    /// (TopoOffsetTetMesh::front_laplacian_energy(), m_laplacian_factor). 0 (the default): off.
-    /// See the spec doc.
-    double laplacian = 0.;
-    /// EXPERIMENTAL (2026-10-16), 3D: before the loop, TetWild's own pass on the mesh as
-    /// constructed, run as the final TetWild pass runs it
-    /// (TopoOffsetTetMesh::construction_tetwild_run()). See the spec doc.
-    bool construction_tetwild_run = false;
+    /// 3D, with optimize_offset (2026-10-21): before the loop, TetWild's own pass on the mesh as
+    /// constructed, from the sizing field at 1 everywhere, the offset surface held in an envelope
+    /// of half the distance the march traced it to (TopoOffsetTetMesh::optimize_construction_pass()).
+    /// Ignored when optimize_offset is false. See the spec doc.
+    bool optimize_construction = true;
     /// EXPERIMENTAL (2026-10-19), 3D: when the march traces the front below target_distance
     /// (construction_mode "max_marchable_fallback", the target not below the maximum marchable
     /// distance), the loop runs at the traced distance d_0 first, then at
@@ -216,19 +207,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to
     /// target_distance, so N + 1 loops. At least 1 (the spec's min).
     int incremental_growth_steps = 4;
-    /// EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: the smoothing passes of every
-    /// smoothing block in stage 0, the loop at d_0 (in place of interleaved_smoothing_passes /
-    /// num_smoothing_passes). At least 1 (the spec's min). See the spec doc.
-    int initial_smoothing_passes = 10;
-    /// EXPERIMENTAL (2026-10-19), 3D, with optimize_offset: after the march, the front vertices
-    /// get the sizing scalar min(a min(M, target_distance) / l, 1), graded into the volume, and
-    /// the construction TetWild pass runs (the offset surface in an envelope of half the traced
-    /// distance, this pass only; TetWild's own rules, no band term;
-    /// TopoOffsetTetMesh::refine_front_pass()).
-    /// Its operations carry the field: the loop starts from it. See the spec doc.
-    bool refine_construction = false;
-    /// EXPERIMENTAL (2026-10-19), 3D, with refine_construction: "a" in that sizing scalar. Default 10.
-    double refine_construction_factor = 10.;
     /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
     /// the field's normal (grad d at its centroid) exceeds this many degrees
     /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face offset_foldover
@@ -261,11 +239,11 @@ struct Parameters : public wmtk::OptimizerParameters
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
     /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
-    /// pass, and in 3D the construction pass (EXPERIMENTAL_construction_tetwild_run).
+    /// pass, and in 3D the construction pass (optimize_construction).
     int max_iterations;
     // NO KEY since 2026-10-20 (offset_envelope / offset_envelope_rel removed): the offset
     // surface's envelope in a TetWild pass has envelope_size's eps, like every other held surface
-    // (EXPERIMENTAL_refine_construction's pass alone widens it). init() sets these two to
+    // (optimize_construction's pass alone widens it). init() sets these two to
     // envelope_size / envelope_size_rel; only the 2D code still reads them.
     double offset_envelope = -1.;
     double offset_envelope_rel = -1.;
@@ -366,14 +344,9 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
                 damping_factor);
         }
-        laplacian = json_params["EXPERIMENTAL_laplacian"];
-        if (!(laplacian >= 0.)) {
-            log_and_throw_error("EXPERIMENTAL_laplacian must be >= 0, not {}", laplacian);
-        }
-        construction_tetwild_run = json_params["EXPERIMENTAL_construction_tetwild_run"];
+        optimize_construction = json_params["optimize_construction"];
         incremental_growth = json_params["EXPERIMENTAL_incremental_growth"];
         incremental_growth_steps = json_params["EXPERIMENTAL_incremental_growth_steps"];
-        initial_smoothing_passes = json_params["EXPERIMENTAL_initial_smoothing_passes"];
         // 4 is the spec's default: a count set to anything else means growth was intended.
         if (!incremental_growth && incremental_growth_steps != 4) {
             log_and_throw_error(
@@ -395,28 +368,7 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_incremental_growth and init_optimize both decide the loops that "
                 "follow a march below target_distance: set only one of them");
         }
-        refine_construction = json_params["EXPERIMENTAL_refine_construction"];
-        refine_construction_factor = json_params["EXPERIMENTAL_refine_construction_factor"];
         foldover_angle = json_params["foldover_angle"];
-        if (!(refine_construction_factor > 0.)) {
-            log_and_throw_error(
-                "EXPERIMENTAL_refine_construction_factor must be > 0, not {}",
-                refine_construction_factor);
-        }
-        // 10 is the spec's default: a factor set to anything else means the pass was intended.
-        if (!refine_construction && refine_construction_factor != 10.) {
-            log_and_throw_error(
-                "EXPERIMENTAL_refine_construction_factor {} needs EXPERIMENTAL_refine_construction "
-                "true",
-                refine_construction_factor);
-        }
-        // The pass runs when the optimization starts (optimize_offset()).
-        if (refine_construction && !optimize_offset) {
-            log_and_throw_error(
-                "EXPERIMENTAL_refine_construction needs optimize_offset true: it refines the "
-                "offset "
-                "surface after the march, when the optimization starts");
-        }
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
@@ -475,7 +427,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
-        amips_pow = json_params["EXPERIMENTAL_amips_pow"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];

@@ -2722,8 +2722,7 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
 
 TEST_CASE("incremental-growth-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_incremental_growth, EXPERIMENTAL_incremental_growth_steps and
-    // EXPERIMENTAL_initial_smoothing_passes (default 10, min 1) through the spec,
+    // EXPERIMENTAL_incremental_growth and EXPERIMENTAL_incremental_growth_steps through the spec,
     // as the app reads them: the defaults (off, 4 steps), values read through, and the refusals
     // -- a step count other than the default with growth off, growth with construction_mode
     // "midpoint_fallback" or with init_optimize, a step count below 1 (the spec's min). Then the
@@ -2743,14 +2742,10 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
     const Parameters by_default(injected(nlohmann::json::object()));
     CHECK_FALSE(by_default.incremental_growth);
     CHECK(by_default.incremental_growth_steps == 4);
-    CHECK(by_default.initial_smoothing_passes == 10);
     const Parameters set(injected(
-        {{"EXPERIMENTAL_incremental_growth", true},
-         {"EXPERIMENTAL_incremental_growth_steps", 1},
-         {"EXPERIMENTAL_initial_smoothing_passes", 3}}));
+        {{"EXPERIMENTAL_incremental_growth", true}, {"EXPERIMENTAL_incremental_growth_steps", 1}}));
     CHECK(set.incremental_growth);
     CHECK(set.incremental_growth_steps == 1);
-    CHECK(set.initial_smoothing_passes == 3);
     const nlohmann::json without_growth = injected({{"EXPERIMENTAL_incremental_growth_steps", 2}});
     CHECK_THROWS(Parameters{without_growth});
     const nlohmann::json midpoint = injected(
@@ -2766,16 +2761,6 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
             with_app(
                 {{"EXPERIMENTAL_incremental_growth", true},
                  {"EXPERIMENTAL_incremental_growth_steps", 0}}),
-            spec));
-    }
-    {
-        // EXPERIMENTAL_initial_smoothing_passes: at least 1 (the spec's min).
-        jse::JSE spec_engine;
-        spec_engine.strict = true;
-        CHECK_FALSE(spec_engine.verify_json(
-            with_app(
-                {{"EXPERIMENTAL_incremental_growth", true},
-                 {"EXPERIMENTAL_initial_smoothing_passes", 0}}),
             spec));
     }
 
@@ -2797,41 +2782,46 @@ TEST_CASE("incremental-growth-keys", "[offset][3d]")
     }
 }
 
-TEST_CASE("refine-construction-keys", "[offset][3d]")
+TEST_CASE("optimize-construction-key", "[offset][3d]")
 {
-    // EXPERIMENTAL_refine_construction and EXPERIMENTAL_refine_construction_factor through the
-    // spec, as the app reads them: the defaults (off, a = 10), values read through, and the
-    // refusals -- a factor that is not > 0, a factor other than the default with the pass off, and
-    // the pass with optimize_offset false (it runs when the optimization starts).
+    // optimize_construction through the spec, as the app reads it: on by default, false read
+    // through, and accepted with optimize_offset false (the pass is then never reached). The keys
+    // it replaced, and the features removed with them (EXPERIMENTAL_amips_pow,
+    // EXPERIMENTAL_laplacian, EXPERIMENTAL_initial_smoothing_passes), are refused by the strict
+    // spec.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
-    const auto injected = [&](nlohmann::json j) {
+    const auto base = [](nlohmann::json j) {
         j["application"] = "topological_offset";
         j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](nlohmann::json j) {
         jse::JSE spec_engine;
         spec_engine.strict = true;
-        REQUIRE(spec_engine.verify_json(j, spec));
-        return spec_engine.inject_defaults(j, spec);
+        REQUIRE(spec_engine.verify_json(base(j), spec));
+        return spec_engine.inject_defaults(base(j), spec);
     };
-    const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK_FALSE(by_default.refine_construction);
-    CHECK(by_default.refine_construction_factor == 10.);
-    const Parameters set(injected(
-        {{"EXPERIMENTAL_refine_construction", true},
-         {"EXPERIMENTAL_refine_construction_factor", 5.}}));
-    CHECK(set.refine_construction);
-    CHECK(set.refine_construction_factor == 5.);
-    const nlohmann::json without_pass = injected({{"EXPERIMENTAL_refine_construction_factor", 5.}});
-    CHECK_THROWS(Parameters{without_pass});
-    const nlohmann::json zero = injected(
-        {{"EXPERIMENTAL_refine_construction", true},
-         {"EXPERIMENTAL_refine_construction_factor", 0.}});
-    CHECK_THROWS(Parameters{zero});
-    const nlohmann::json construction_only =
-        injected({{"EXPERIMENTAL_refine_construction", true}, {"optimize_offset", false}});
-    CHECK_THROWS(Parameters{construction_only});
-    // EXPERIMENTAL_amips_pow: off by default, read through.
-    CHECK_FALSE(by_default.amips_pow);
-    CHECK(Parameters(injected({{"EXPERIMENTAL_amips_pow", true}})).amips_pow);
+    CHECK(Parameters(injected(nlohmann::json::object())).optimize_construction);
+    CHECK_FALSE(Parameters(injected({{"optimize_construction", false}})).optimize_construction);
+    CHECK_NOTHROW(Parameters(injected({{"optimize_offset", false}})));
+    for (const char* removed :
+         {"EXPERIMENTAL_construction_tetwild_run",
+          "EXPERIMENTAL_refine_construction",
+          "EXPERIMENTAL_amips_pow"}) {
+        INFO(removed);
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(base({{removed, true}}), spec));
+    }
+    for (const char* removed :
+         {"EXPERIMENTAL_refine_construction_factor",
+          "EXPERIMENTAL_laplacian",
+          "EXPERIMENTAL_initial_smoothing_passes"}) {
+        INFO(removed);
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(base({{removed, 1.}}), spec));
+    }
 }
 
 TEST_CASE("foldover-face-angle", "[offset][3d]")
@@ -2972,7 +2962,7 @@ TEST_CASE("damping-loop-only", "[offset][3d]")
 {
     // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is
     // damping_factor x the shortest edge at the vertex there, and infinity in a TetWild pass
-    // (m_tetwild_pass: the refine_construction pass, the construction pass, the final pass) and
+    // (m_tetwild_pass: the optimize_construction pass, the final pass) and
     // with damping off. The unit tet: every edge at vertex 0 has length 1.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
