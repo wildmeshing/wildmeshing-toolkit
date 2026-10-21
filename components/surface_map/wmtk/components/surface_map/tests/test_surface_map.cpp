@@ -8,6 +8,7 @@
 #include <wmtk/utils/predicates.hpp>
 
 #include <igl/readOBJ.h>
+#include <Eigen/Geometry>
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
@@ -661,4 +662,53 @@ TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
     for (const auto& p : map.to_input(sample(map.output_face_alive(), 10, 4))) {
         CHECK((p.face == 0 || p.face == 3));
     }
+}
+
+TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
+{
+    // An input triangle and, embedded on it, three faces, one of them a sliver of aspect 1e5
+    // along an edge -- which an insertion leaves behind. Points on the sliver go to the input
+    // and come back where they were. Barycentric coordinates on a sliver are ill-conditioned:
+    // through the normal equations they came back off by 1e-6, and later steps amplified that.
+    const Eigen::Matrix3d R = (Eigen::AngleAxisd(0.7, Eigen::Vector3d(1, 2, 3).normalized()) *
+                               Eigen::AngleAxisd(1.3, Eigen::Vector3d::UnitX()))
+                                  .toRotationMatrix();
+    const Eigen::Vector3d o(0.37, -1.21, 2.9);
+    const auto at = [&](double x, double y) {
+        return Eigen::Vector3d(o + R * Eigen::Vector3d(x, y, 0));
+    };
+    history::SurfaceHistory h;
+    h.vertices = {at(0, 0), at(1.3, 0), at(0.2, 1.1)};
+    h.vertex_alive = {1, 1, 1};
+    h.faces = {{{0, 1, 2}}};
+    h.face_alive = {1};
+    // The sliver (0, 1, 3), vertex 3 a hair above the edge (0, 1); then (0, 3, 2), (3, 1, 2).
+    // Each lies on the input face 0.
+    history::Edit e{history::EditKind::embed, {0, 1, 3, 0, 3, 2, 3, 1, 2}, {1, 0, 1, 0, 1, 0}, {}};
+    for (uint64_t v = 0; v < 3; ++v) e.moves.push_back({v, h.vertices[v]});
+    e.moves.push_back({3, at(0.6180339887, 1.37e-5)});
+    h.edits.push_back(e);
+
+    const SurfaceMap map(h);
+    std::mt19937 rng(11);
+    std::uniform_real_distribution<double> u(0.02, 0.98);
+    std::vector<SurfacePoint> pts;
+    for (int i = 0; i < 200; ++i) {
+        double a = u(rng), b = u(rng);
+        if (a + b > 1) {
+            a = 1 - a;
+            b = 1 - b;
+        }
+        pts.push_back({0, Eigen::Vector3d(1 - a - b, a, b)});
+    }
+    const auto there = map.to_input(pts);
+    const auto back = map.to_output(there);
+    CHECK(map.map_warnings().total() == 0);
+    double err = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].face == 0);
+        REQUIRE(back[i].face == 0);
+        err = std::max(err, (back[i].bary - pts[i].bary).cwiseAbs().maxCoeff());
+    }
+    CHECK(err < 1e-9);
 }
