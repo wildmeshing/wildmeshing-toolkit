@@ -13,7 +13,6 @@
       "write_vtu",
       "preallocation_factor",
       "skip_simplify",
-      "simplify_use_link_condition",
       "simplify_use_sample_envelope",
       "simplify_envelope_ratio",
       "simplify_boundary_envelope",
@@ -181,12 +180,6 @@
     "type": "bool",
     "default": false,
     "doc": "If true, input simplification will be skipped."
-  },
-  {
-    "pointer": "/simplify_use_link_condition",
-    "type": "bool",
-    "default": false,
-    "doc": "Require the link condition when simplifying the input surface. When true the simplification cannot change the topology of the input, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed, so the input simplifies further, but the surface handed to the arrangement may differ topologically from the input."
   },
   {
     "pointer": "/simplify_use_sample_envelope",

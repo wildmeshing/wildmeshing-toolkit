@@ -148,7 +148,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
-    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
@@ -185,6 +184,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
 
     params.preserve_topology = json_params["preserve_topology"];
+    // preserve_topology holds the input simplification to the link condition as well, so the
+    // surface handed to the arrangement has the input's topology.
+    const bool simplify_use_link_condition = params.preserve_topology;
+    if (json_params.contains("simplify_use_link_condition")) {
+        logger().warn(
+            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
+            "condition of the input simplification",
+            params.preserve_topology);
+    }
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
@@ -509,9 +517,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // warn that it "still preserves topology", which neither has been true of.)
         if (!params.preserve_topology) {
             logger().info(
-                "simplification may change the surface topology (link condition {}, open "
+                "simplification may change the surface topology (link condition off, open "
                 "boundary {})",
-                simplify_use_link_condition ? "on" : "off",
                 simplify_boundary_eps > 0 ? "in a tube" : "frozen");
         }
         std::shared_ptr<history::Recorder> simplification;
