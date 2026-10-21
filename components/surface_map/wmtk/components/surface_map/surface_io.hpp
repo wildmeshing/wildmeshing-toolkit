@@ -25,11 +25,12 @@ struct SurfaceData
     std::map<std::string, std::vector<std::vector<double>>> corner_fields;
 };
 
-/// The triangles of a gmsh file in file order, and every per-face field stored with them.
+/// The triangles of a gmsh file in file order, and every per-face field stored with them. The
+/// file must be a single-block surface, as wmtk writes one (MshData::is_single_surface_block).
 SurfaceData read_surface_msh(const std::string& path);
 
 /**
- * @brief The surface the files hold, as they hold it: one gmsh file with its fields
+ * @brief The surface the files hold, as they hold it: one single-block gmsh file with its fields
  * (read_surface_msh), or triangle meshes of any format, concatenated, neither welded nor cleaned
  * -- the way an application's input history starts -- with no fields.
  */

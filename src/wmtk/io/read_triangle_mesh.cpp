@@ -152,22 +152,28 @@ void read_one_triangle_mesh(const std::string& path, MatrixXd& V, MatrixXi& F)
         return;
     }
     if (ext == ".msh") {
-        // The triangles of a gmsh file, in file order: a face's index is its index in the file,
-        // which is what lets per-face data stored next to them be matched up later.
+        // A surface as MshData writes one -- one block of nodes, one of triangles -- is read in
+        // file order: a face's index is its index in the file, which is what lets per-face data
+        // stored next to them be matched up later. Any other gmsh file (several entities, a tet
+        // mesh, a format mshio does not read) goes to libigl below, as it always did.
         MshData msh;
+        bool single = false;
         try {
             msh.load(path);
-        } catch (const std::exception& e) {
-            log_and_throw_error("Could not read mesh {}: {}", path, e.what());
+            single = msh.is_single_surface_block();
+        } catch (const std::exception&) {
         }
-        V.resize(msh.get_num_face_vertices(), 3);
-        F.resize(msh.get_num_faces(), 3);
-        msh.extract_face_vertices(
-            [&V](size_t i, double x, double y, double z) { V.row(i) << x, y, z; });
-        msh.extract_faces(
-            [&F](size_t i, size_t a, size_t b, size_t c) { F.row(i) << int(a), int(b), int(c); });
-        if (F.rows() == 0) log_and_throw_error("Could not read mesh {}: no triangles", path);
-        return;
+        if (single) {
+            V.resize(msh.get_num_face_vertices(), 3);
+            F.resize(msh.get_num_faces(), 3);
+            msh.extract_face_vertices(
+                [&V](size_t i, double x, double y, double z) { V.row(i) << x, y, z; });
+            msh.extract_faces([&F](size_t i, size_t a, size_t b, size_t c) {
+                F.row(i) << int(a), int(b), int(c);
+            });
+            if (F.rows() == 0) log_and_throw_error("Could not read mesh {}: no triangles", path);
+            return;
+        }
     }
 
     bool ok = false;
