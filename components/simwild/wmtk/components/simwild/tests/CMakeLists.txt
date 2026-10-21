@@ -15,10 +15,13 @@ set(SRC_FILES
     test_embed_surface_components.cpp
     test_simplify_boundary.cpp
     test_late_feature_tracking.cpp
+    test_simwild_history.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::tetwild)
+# test_simwild_history.cpp rebuilds the map between the input and output tag interfaces.
+target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::surface_map)
 # test_simplify_boundary.cpp builds its parameters the way the application does, defaults
 # injected from the spec.
 target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE jse::jse wmtk_${COMPONENT_NAME}_spec)

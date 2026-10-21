@@ -1,4 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
+#include <wmtk/history/TrackedSurface.hpp>
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/GeoUtils.h>
@@ -167,7 +168,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     };
 
     sanity_checks();
-    update_attributes();
+    update_attributes_and_history();
     size_t retry_count = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
         if (retry_count > 0) {
@@ -228,7 +229,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                     cnt_surface_swap_56.load());
             }
             sanity_checks();
-            update_attributes();
+            update_attributes_and_history();
         }
 
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
@@ -743,6 +744,63 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
     }
 
     return res;
+}
+
+void TetOptimizerMesh::record_surface_history(const std::string& metadata)
+{
+    m_recorded_surface =
+        start_surface_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
+    m_recorded_surface->history().metadata = metadata;
+}
+
+void TetOptimizerMesh::save_surface_history(const std::string& path)
+{
+    if (!m_recorded_surface) return;
+    if (const size_t drift = resync_surface_history()) {
+        logger().warn("surface history: {} tracked faces changed outside the operations", drift);
+    }
+    stop_surface_history();
+    const auto st = m_recorded_surface->stats();
+    logger().info(
+        "surface history: {} edits -- {} splits, {} collapses ({} welding two surface vertices), "
+        "{} swaps, {} moves; {} changes recorded as they are -- saved to {}",
+        m_recorded_surface->history().edits.size(),
+        st.split,
+        st.collapse,
+        st.weld,
+        st.swap,
+        st.move,
+        st.replaced,
+        path);
+    if (st.unknown > 0) {
+        logger().error("surface history: lost track of {} faces", st.unknown);
+    }
+    m_recorded_surface->history().save(path);
+    m_recorded_surface.reset();
+}
+
+void TetOptimizerMesh::update_attributes_and_history()
+{
+    update_attributes();
+    if (const size_t changed = resync_surface_history()) {
+        logger().warn(
+            "surface history: update_attributes changed {} tracked faces outside the operations",
+            changed);
+    }
+}
+
+bool TetOptimizerMesh::is_tracked_face(const size_t tid, const int j) const
+{
+    return m_face_attribute.at(tuple_from_face(tid, j).fid(*this)).m_is_surface_fs;
+}
+
+std::array<size_t, 3> TetOptimizerMesh::orient_tracked_face(const std::array<size_t, 3>& f) const
+{
+    std::array<size_t, 3> a = f;
+    std::sort(a.begin(), a.end());
+    const auto [_, fid] = tuple_from_face(a);
+    if (m_face_attribute.at(fid).orientation_along(a) < 0) std::swap(a[1], a[2]);
+    return a;
 }
 
 bool TetOptimizerMesh::is_edge_on_surface(const Tuple& loc)

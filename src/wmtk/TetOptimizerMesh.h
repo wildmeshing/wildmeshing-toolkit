@@ -565,9 +565,25 @@ public:
      * a no-op.
      */
     virtual void update_attributes() {}
+    /// update_attributes(), then the change it made to the tracked surface, if recording one.
+    void update_attributes_and_history();
+
+    /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along.
+    void record_surface_history(const std::string& metadata);
+    /// Bring the recorded surface up to date with the tracked faces, stop recording, log what the
+    /// history holds and save it to `path`. Nothing if not recording.
+    void save_surface_history(const std::string& path);
+
+    /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
+    bool is_tracked_face(size_t tid, int j) const override;
+    /// The input's orientation on the face (m_orientation), where insertion recorded one;
+    /// ascending vertex order where it did not.
+    std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const override;
 
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
+    std::shared_ptr<history::TrackedSurfaceRecorder> m_recorded_surface;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer

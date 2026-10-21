@@ -264,6 +264,30 @@ void run_3D(
 
     write_unique_vtu();
 
+    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags.
+    auto tagged_outputs = [&mesh]() {
+        MeshMap raw;
+        mesh.write_vtu("mesh", &raw);
+        io::compact_slot_outputs(mesh, raw);
+        MeshMap outputs = io::named_outputs(std::move(raw));
+        io::collect_tags(
+            mesh,
+            outputs,
+            CellType::Tetrahedron,
+            mesh.get_tets(),
+            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
+        io::collect_face_tags(mesh, outputs, mesh.m_face_tag_names);
+        return outputs;
+    };
+
+    // From here on the tracked surface -- the interfaces of the tags the input gave -- is recorded.
+    const std::string history_output = json_params["history_output"];
+    if (!history_output.empty()) {
+        // The tet mesh the history starts from, tags and all: for a surface input that is the
+        // embedding, which no file holds otherwise.
+        io::write_mesh(params.output_path + "_history_input.msh", tagged_outputs().at("mesh"));
+        mesh.record_surface_history(json_params.dump());
+    }
 
     if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
@@ -277,6 +301,10 @@ void run_3D(
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
+
+    // The tag operations change tags only, and leave the surface flags to the next run: the
+    // history ends where the flags are.
+    mesh.save_surface_history(history_output);
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written
@@ -316,17 +344,7 @@ void run_3D(
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     // One result for both routes: returned from memory calls, written as the .msh otherwise.
     {
-        MeshMap raw;
-        mesh.write_vtu("mesh", &raw);
-        io::compact_slot_outputs(mesh, raw);
-        component_io.result.first = io::named_outputs(std::move(raw));
-        io::collect_tags(
-            mesh,
-            component_io.result.first,
-            CellType::Tetrahedron,
-            mesh.get_tets(),
-            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
-        io::collect_face_tags(mesh, component_io.result.first, mesh.m_face_tag_names);
+        component_io.result.first = tagged_outputs();
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);

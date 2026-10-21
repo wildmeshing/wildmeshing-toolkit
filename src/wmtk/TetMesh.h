@@ -11,15 +11,24 @@
 #include <wmtk/threading/vertex_mutex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <Eigen/Core>
+
 #include <array>
 #include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
+#include <memory>
 #include <optional>
 #include <vector>
+
+namespace wmtk::history {
+class TrackedSurfaceRecorder;
+enum class EditKind : uint8_t;
+} // namespace wmtk::history
 
 namespace wmtk {
 class TetMesh
@@ -625,6 +634,46 @@ public:
      *
      */
     void consolidate_mesh();
+
+    /**
+     * @brief Record every change to the tracked surface from now on (see
+     * wmtk/history/TrackedSurface.hpp).
+     *
+     * The tracked surface is the faces is_tracked_face() names, oriented by
+     * orient_tracked_face(). Snapshots it and returns the recorder. Every operation then reports
+     * the tracked faces around it at its commit point, a consolidation renumbers the recorder's
+     * vertices, and remove_tets_by_ids() resyncs it. `position(v)` gives vertex v's position:
+     * it is called at the snapshot, and then from inside an operation while its locks are held,
+     * so it must read through const attribute access. Recording changes nothing the operations
+     * do.
+     */
+    std::shared_ptr<history::TrackedSurfaceRecorder> start_surface_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording. The recorder keeps what it has.
+    void stop_surface_history();
+    /// Brings the recorded surface in line with the tracked faces after a change outside the
+    /// operations (tags re-derived, say). Returns how many faces it removed and added: 0 when
+    /// nothing changed, or when not recording.
+    size_t resync_surface_history();
+    /// Every tracked face, oriented by orient_tracked_face().
+    std::vector<std::array<size_t, 3>> tracked_faces() const;
+    /// Whether local face `j` of tet `tid` is tracked surface, for a surface history. None is,
+    /// unless an application says so.
+    virtual bool is_tracked_face(size_t tid, int j) const { return false; }
+    /// A tracked face's corners in the order that orients it, for a surface history. As given,
+    /// unless an application says otherwise.
+    virtual std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const
+    {
+        return f;
+    }
+    /**
+     * @brief The corners of `face`, a face of tet `tid`, ordered so that its normal points out of
+     * the tet -- for a tet the right way round as TetOptimizerMesh has them, with its fourth
+     * vertex on the side of the first three's normal (orient3d negative).
+     */
+    std::array<size_t, 3> face_out_of(size_t tid, const std::array<size_t, 3>& face) const;
+    /// The tets with the face `f`, sorted: one on the boundary, two inside.
+    std::vector<size_t> tets_of_face(const std::array<size_t, 3>& f) const;
 
     /**
      * Get all unique undirected edges in the mesh.
@@ -1461,6 +1510,7 @@ public:
             if (v.m_is_removed) continue;
             if (v.m_conn_tets.empty()) v.m_is_removed = true;
         }
+        if (m_surface_history) resync_surface_history();
     }
     bool m_collapse_check_link_condition = true; // classical link condition
     bool m_collapse_check_topology = false; // sanity check
@@ -1582,6 +1632,24 @@ private:
         std::vector<size_t> one_ring;
     };
     wmtk::threading::enumerable_thread_specific<RingLockScratch> m_ring_lock_scratch;
+
+    std::shared_ptr<history::TrackedSurfaceRecorder> m_surface_history;
+    /// The tracked faces around the operation this thread is in, as they were before it.
+    wmtk::threading::enumerable_thread_specific<std::vector<std::array<size_t, 3>>>
+        m_surface_history_before;
+    /// The tracked faces of the tets at the vertices `vs` that have a corner among them -- or,
+    /// with `all`, all three -- as sorted vertex triples.
+    std::vector<std::array<size_t, 3>> tracked_faces_around(const std::vector<size_t>& vs, bool all)
+        const;
+    /// An operation's tracked faces before it changes the mesh, and at its commit point.
+    void surface_history_before(const std::vector<size_t>& vs, bool all);
+    void surface_history_commit(
+        history::EditKind kind,
+        std::vector<size_t> v,
+        const std::vector<size_t>& vs_after,
+        bool all);
+    /// The vertices of the tets `tids`, sorted.
+    std::vector<size_t> vertices_of_tets(const std::vector<size_t>& tids) const;
 
     /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
     bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);

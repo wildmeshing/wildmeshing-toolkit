@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/history/SurfaceHistory.hpp>
 
 #include <wmtk/utils/TetMeshElementTopology.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -269,6 +270,8 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     // The link condition and the connectivity change are one step (collapse_edge_conn), so a dry
     // run stops here; ~96% of collapse refusals on tetwild come from the before-hook anyway.
     if (dry_run()) return op_screened(OpKind::collapse);
+    const size_t v_removed = loc0.vid(*this), v_kept = loc0.switch_vertex(*this).vid(*this);
+    if (m_surface_history) surface_history_before({v_removed, v_kept}, false);
 
     size_t v1_id;
     Tuple new_loc;
@@ -305,6 +308,14 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         return op_refused(OpKind::collapse, refused);
     }
 
+    assert(v1_id == v_removed);
+    if (m_surface_history) {
+        surface_history_commit(
+            history::EditKind::collapse_edge,
+            {v_removed, v_kept},
+            {v_kept},
+            false);
+    }
     release_protect_attributes();
 
     for (size_t t_id : new_tet_id) {

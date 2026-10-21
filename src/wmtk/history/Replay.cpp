@@ -77,6 +77,7 @@ void Replay::apply(const Edit& e)
     case EditKind::swap_edge: swap_edge(e); break;
     case EditKind::move_vertices: break;
     case EditKind::consolidate: consolidate(); break;
+    case EditKind::replace_faces: replace_faces(e); break;
     default: log_and_throw_error("Replay: unknown edit kind {}", int(e.kind));
     }
     for (const VertexMove& m : e.moves) {
@@ -225,6 +226,41 @@ void Replay::swap_edge(const Edit& e)
     unlink(v0, fb);
     link(a, fa);
     link(b, fb);
+}
+
+void Replay::replace_faces(const Edit& e)
+{
+    const size_t n_added = e.v.size() / 3;
+    const size_t n_removed = e.faces.size() - n_added;
+    std::vector<uint64_t> touched;
+    for (size_t i = 0; i < n_removed; ++i) {
+        const uint64_t f = e.faces[i];
+        if (f >= m_faces.size() || !m_face_alive[f]) continue;
+        m_face_alive[f] = 0;
+        for (const uint64_t v : m_faces[f]) {
+            unlink(v, f);
+            touched.push_back(v);
+        }
+    }
+    for (size_t k = 0; k < n_added; ++k) {
+        const uint64_t f = e.faces[n_removed + k];
+        grow_faces(f);
+        for (int c = 0; c < 3; ++c) {
+            const uint64_t v = e.v[3 * k + c];
+            grow_vertices(v);
+            m_faces[f][c] = v;
+            m_vertex_alive[v] = 1;
+            link(v, f);
+        }
+        m_face_alive[f] = 1;
+    }
+    for (const uint64_t v : touched) {
+        if (!m_vertex_faces[v].empty()) continue;
+        m_vertex_alive[v] = 0;
+        // A retired vertex keeps no feature edges: a consolidation would have nowhere to put them.
+        const std::vector<uint64_t> nbrs = m_feature_nbrs[v];
+        for (const uint64_t x : nbrs) remove_feature(v, x);
+    }
 }
 
 void Replay::consolidate()

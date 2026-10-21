@@ -41,6 +41,7 @@ private:
     void split_face(const Edit& e);
     void collapse_edge(const Edit& e);
     void swap_edge(const Edit& e);
+    void replace_faces(const Edit& e);
     void consolidate();
 
     void grow_vertices(uint64_t vid);

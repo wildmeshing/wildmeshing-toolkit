@@ -22,14 +22,15 @@ void log_warnings(const char* what, const MapWarnings& w)
 {
     logger().info(
         "{}: {} warning(s) -- not a disk {}, flat triangle {}, inverted {}, merged faces {}, "
-        "unlocated {}",
+        "unlocated {}, replaced faces {}",
         what,
         w.total(),
         w.not_a_disk,
         w.flat_triangle,
         w.inverted,
         w.merged_faces,
-        w.unlocated);
+        w.unlocated,
+        w.replaced);
     if (w.total() > 0) logger().warn("{}: the map is not a bijection everywhere", what);
 }
 

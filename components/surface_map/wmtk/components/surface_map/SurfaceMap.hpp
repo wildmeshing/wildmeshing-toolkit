@@ -35,10 +35,13 @@ struct MapWarnings
     /// A mapped point that fell outside every face of the patch it was mapped into, or onto a
     /// face that an operation removed with nothing to map it to.
     size_t unlocated = 0;
+    /// Faces a change no operation describes removed or added (history::EditKind::replace_faces):
+    /// points there have nowhere to go.
+    size_t replaced = 0;
 
     size_t total() const
     {
-        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated;
+        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated + replaced;
     }
 };
 
@@ -115,8 +118,11 @@ private:
         /// consolidate only: face renumbering.
         std::vector<uint64_t> old_to_new, new_to_old;
         /// Faces this step removes with nothing to map their points to (a collapse that could
-        /// only be mapped by relabelling).
+        /// only be mapped by relabelling, a replace_faces).
         std::vector<uint64_t> dead;
+        /// Faces this step adds from nothing (a replace_faces): mapped back, their points have
+        /// nowhere to go.
+        std::vector<uint64_t> born;
     };
 
     std::vector<SurfacePoint> map(std::vector<SurfacePoint> points, bool forward) const;

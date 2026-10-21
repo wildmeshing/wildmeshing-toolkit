@@ -20,6 +20,9 @@ set(SRC_FILES
     test_colored_smoothing.cpp
     test_input_sets.cpp
     test_runner.cpp
+    test_tetwild_history.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+# test_tetwild_history.cpp rebuilds the map between the inserted and the output surface.
+target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::surface_map)

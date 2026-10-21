@@ -870,6 +870,14 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             }
             break;
         }
+        case EditKind::replace_faces: {
+            const size_t n_added = e.v.size() / 3, n_removed = e.faces.size() - n_added;
+            step.dead.assign(e.faces.begin(), e.faces.begin() + long(n_removed));
+            step.born.assign(e.faces.begin() + long(n_removed), e.faces.end());
+            m_build_warnings.replaced += e.faces.size();
+            r.apply(e);
+            break;
+        }
         case EditKind::consolidate: {
             step.old_to_new.assign(r.faces().size(), kNone);
             for (uint64_t f = 0; f < r.faces().size(); ++f) {
@@ -899,7 +907,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         default: r.apply(e); break;
         }
         if (m_build_warnings.total() > warnings_before) m_warned_edits.push_back(edit_index);
-        if (step.cells.empty() && step.dead.empty() && e.kind != EditKind::consolidate) continue;
+        if (step.cells.empty() && step.dead.empty() && step.born.empty() &&
+            e.kind != EditKind::consolidate) {
+            continue;
+        }
         ++m_cells_by_kind[size_t(e.kind) % m_cells_by_kind.size()];
         m_steps.push_back(std::move(step));
     }
@@ -1001,14 +1012,12 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
                 first = last;
             }
         }
-        if (forward) {
-            for (const uint64_t f : s.dead) {
-                const auto it = on_face.find(f);
-                if (it == on_face.end()) continue;
-                m_map_warnings.unlocated += it->second.size();
-                for (const size_t i : it->second) pts[i].face = kNone;
-                on_face.erase(it);
-            }
+        for (const uint64_t f : forward ? s.dead : s.born) {
+            const auto it = on_face.find(f);
+            if (it == on_face.end()) continue;
+            m_map_warnings.unlocated += it->second.size();
+            for (const size_t i : it->second) pts[i].face = kNone;
+            on_face.erase(it);
         }
         for (const auto& [f, i] : landed) on_face[f].push_back(i);
     };

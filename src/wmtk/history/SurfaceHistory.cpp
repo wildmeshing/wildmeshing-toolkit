@@ -11,8 +11,8 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 3). Every count and id is an unsigned LEB128 varint; a position is three
-// little-endian f64.
+// Layout (version 4; version 3 is the same without replace_faces, and still loads). Every count
+// and id is an unsigned LEB128 varint; a position is three little-endian f64.
 //
 //   "WMTKHIST" u32 version
 //   n_vertices, then per vertex: u8 alive, and its position if alive
@@ -23,12 +23,13 @@ namespace {
 //       split_face:    v0 v1 v2 new_v, f new_f1 new_f2
 //       collapse_edge: removed kept
 //       swap_edge:     v0 v1 a b, fa fb
+//       replace_faces: n_removed n_added, the removed faces, then per added face: f c0 c1 c2
 //   -- then n_moves and per move: (vid << 1 | midpoint), and the position unless `midpoint`
 //   says it is exactly the midpoint of the edit's edge (v0,v1) / (removed,kept), as the
 //   vertices were before the edit. Saving and loading both replay the history to know it.
 //   metadata length, metadata bytes
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 3;
+constexpr uint32_t kVersion = 4;
 
 class Writer
 {
@@ -207,9 +208,23 @@ void SurfaceHistory::save(const std::string& path) const
     w.varint(edits.size());
     for (const Edit& e : edits) {
         w.put(uint8_t(e.kind));
-        for (const uint64_t v : e.v) w.varint(v);
+        if (e.kind == EditKind::replace_faces) {
+            const size_t n_added = e.v.size() / 3, n_removed = e.faces.size() - n_added;
+            w.varint(n_removed);
+            w.varint(n_added);
+            for (size_t i = 0; i < n_removed; ++i) w.varint(e.faces[i]);
+            for (size_t k = 0; k < n_added; ++k) {
+                w.varint(e.faces[n_removed + k]);
+                for (int c = 0; c < 3; ++c) w.varint(e.v[3 * k + c]);
+            }
+        }
+        if (e.kind != EditKind::replace_faces) {
+            for (const uint64_t v : e.v) w.varint(v);
+        }
         if (e.kind == EditKind::split_edge) w.put(uint8_t(e.faces.size() / 2));
-        for (const uint64_t f : e.faces) w.varint(f);
+        if (e.kind != EditKind::replace_faces) {
+            for (const uint64_t f : e.faces) w.varint(f);
+        }
         const auto mid = predicted(e, r);
         w.varint(e.moves.size());
         for (const VertexMove& m : e.moves) {
@@ -233,9 +248,9 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
         log_and_throw_error("SurfaceHistory: {} is not a surface history", path);
     }
     const uint32_t version = r.get<uint32_t>();
-    if (version != kVersion) {
+    if (version != kVersion && version != 3) {
         log_and_throw_error(
-            "SurfaceHistory: {} has version {}, expected {}",
+            "SurfaceHistory: {} has version {}, expected 3 or {}",
             path,
             version,
             kVersion);
@@ -267,11 +282,22 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
     h.edits.resize(r.varint());
     for (Edit& e : h.edits) {
         e.kind = EditKind(r.get<uint8_t>());
-        e.v.resize(vertex_ids(e.kind));
-        for (uint64_t& v : e.v) v = r.varint();
-        e.faces.resize(
-            e.kind == EditKind::split_edge ? 2 * size_t(r.get<uint8_t>()) : face_ids(e.kind));
-        for (uint64_t& f : e.faces) f = r.varint();
+        if (e.kind == EditKind::replace_faces) {
+            const size_t n_removed = r.varint(), n_added = r.varint();
+            e.faces.resize(n_removed + n_added);
+            e.v.resize(3 * n_added);
+            for (size_t i = 0; i < n_removed; ++i) e.faces[i] = r.varint();
+            for (size_t k = 0; k < n_added; ++k) {
+                e.faces[n_removed + k] = r.varint();
+                for (int c = 0; c < 3; ++c) e.v[3 * k + c] = r.varint();
+            }
+        } else {
+            e.v.resize(vertex_ids(e.kind));
+            for (uint64_t& v : e.v) v = r.varint();
+            e.faces.resize(
+                e.kind == EditKind::split_edge ? 2 * size_t(r.get<uint8_t>()) : face_ids(e.kind));
+            for (uint64_t& f : e.faces) f = r.varint();
+        }
         const auto mid = predicted(e, replay);
         e.moves.resize(r.varint());
         for (VertexMove& m : e.moves) {

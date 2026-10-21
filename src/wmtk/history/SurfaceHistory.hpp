@@ -37,6 +37,12 @@ enum class EditKind : uint8_t {
     move_vertices = 5,
     /// Live vertices and faces renumbered by rank, in id order.
     consolidate = 6,
+    /// v = the corners of the faces it adds, three per face; faces = the faces it removes, then
+    /// the ones it adds, as many as v has triples. A change no other kind describes -- a tracked
+    /// surface re-derived, say -- with no correspondence between what goes and what comes. A
+    /// vertex it leaves without faces is retired; one an added face names is alive, its position
+    /// among the moves if it was not alive before.
+    replace_faces = 7,
 };
 
 struct VertexMove
