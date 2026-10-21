@@ -73,6 +73,16 @@ void run_pass_impl(
         executor.lock_vertices = make_locker<Mesh>(lock, ring);
     }
 
+    // The pass is running from here until body returns or throws; see
+    // TetOptimizerMesh::m_in_operation_pass. Restored rather than cleared, so a pass started
+    // from inside another leaves the outer one marked.
+    struct Restore
+    {
+        bool& flag;
+        bool saved;
+        ~Restore() { flag = saved; }
+    } restore{m.m_in_operation_pass, m.m_in_operation_pass};
+    m.m_in_operation_pass = true;
     body(executor, m);
 
     if (!label.empty()) {
