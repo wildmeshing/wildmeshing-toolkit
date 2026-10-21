@@ -120,6 +120,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
 <tr class="separator:ad52052e2b3b76abd0c11df589eb39839"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf21f58b42013d8a121db52ef78723d2" id="r_abf21f58b42013d8a121db52ef78723d2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#abf21f58b42013d8a121db52ef78723d2">project_line_search_nested_steps</a> = 0</td></tr>
 <tr class="separator:abf21f58b42013d8a121db52ef78723d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e215c3e1b21e360b8d4507fbb463472" id="r_a6e215c3e1b21e360b8d4507fbb463472"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a6e215c3e1b21e360b8d4507fbb463472">max_step</a> = std::numeric_limits&lt;double&gt;::infinity()</td></tr>
+<tr class="separator:a6e215c3e1b21e360b8d4507fbb463472"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Weights and policy for smooth_vertex_3d. </p>
@@ -151,6 +153,21 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6e215c3e1b21e360b8d4507fbb463472" name="a6e215c3e1b21e360b8d4507fbb463472"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e215c3e1b21e360b8d4507fbb463472">&#9670;&#160;</a></span>max_step</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::optimization::SmoothVertexOptions::max_step = std::numeric_limits&lt;double&gt;::infinity()</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The longest move one call may make, as a distance from the vertex's position on entry. Each solve's result is pulled back along its step onto the ball of this radius, before any accept check, and the projected path refuses a candidate outside it. Infinity (the default) bounds nothing, so every caller that does not set it is unchanged. Read by smooth_vertex_3d only. </p>
+
+</div>
+</div>
 <a id="abf21f58b42013d8a121db52ef78723d2" name="abf21f58b42013d8a121db52ef78723d2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abf21f58b42013d8a121db52ef78723d2">&#9670;&#160;</a></span>project_line_search_nested_steps</h2>
 
