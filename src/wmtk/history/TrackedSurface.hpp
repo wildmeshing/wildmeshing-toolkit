@@ -51,6 +51,9 @@ public:
 
     /// The feature edges as the edits have carried them, by mesh vertex ids, smaller first.
     std::vector<std::array<size_t, 2>> feature_edges() const;
+    /// The mesh vertex of every surface vertex, kNoVertex for one with none (gone); index with
+    /// the surface ids of the history's last state (SurfaceHistory::output_vertex_ids).
+    std::vector<uint64_t> mesh_vertex_ids() const;
 
     /// What an operation did to the tracked surface, as the mesh saw it at its commit point.
     struct Change

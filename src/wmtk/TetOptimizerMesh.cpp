@@ -907,6 +907,9 @@ void TetOptimizerMesh::save_surface_history(
             tracked_feature_edges().size());
     }
     stop_surface_history();
+    // The output names a point on the tracked surface by the tet mesh's vertices, numbered as
+    // they are now: the applications write the mesh as it is here.
+    m_recorded_surface->history().output_vertex_ids = m_recorded_surface->mesh_vertex_ids();
     const auto st = m_recorded_surface->stats();
     logger().info(
         "surface history: {} edits -- {} splits, {} collapses ({} welding two surface vertices), "
@@ -926,6 +929,7 @@ void TetOptimizerMesh::save_surface_history(
         history::SurfaceHistory chain = *input;
         history::append_embedded(chain, m_recorded_surface->history(), m_recorded_sources);
         chain.metadata = m_recorded_surface->history().metadata;
+        chain.output_vertex_ids = m_recorded_surface->history().output_vertex_ids;
         chain.save(path);
     } else {
         m_recorded_surface->history().save(path);

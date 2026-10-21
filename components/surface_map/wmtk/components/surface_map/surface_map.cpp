@@ -1,10 +1,13 @@
 #include "surface_map.hpp"
 #include "SurfaceMap.hpp"
+#include "Tracking.hpp"
 #include "surface_io.hpp"
 #include "transfer.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
+#include <fstream>
+#include <sstream>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -44,6 +47,105 @@ Eigen::Vector3d position(
     return p.bary[0] * V[f[0]] + p.bary[1] * V[f[1]] + p.bary[2] * V[f[2]];
 }
 
+/// One point per line, whitespace-separated numbers, '#' starting a comment. See the spec.
+std::vector<std::vector<double>> read_points(const std::string& path, const size_t n)
+{
+    std::ifstream in(path);
+    if (!in) log_and_throw_error("Could not read {}", path);
+    std::vector<std::vector<double>> rows;
+    std::string line;
+    for (size_t number = 1; std::getline(in, line); ++number) {
+        line = line.substr(0, line.find('#'));
+        std::istringstream ss(line);
+        std::vector<double> row;
+        for (double x; ss >> x;) row.push_back(x);
+        if (row.empty()) continue;
+        if (row.size() != n) {
+            log_and_throw_error("{}:{}: {} numbers, expected {}", path, number, row.size(), n);
+        }
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+uint64_t id_of(const double x)
+{
+    return x < 0 ? kNoId : uint64_t(x);
+}
+
+std::string id_text(const uint64_t id)
+{
+    return id == kNoId ? std::string("-1") : std::to_string(id);
+}
+
+/// The map operation: points on the input to the output, or back.
+void map_points(
+    const history::SurfaceHistory& h,
+    const nlohmann::json& json_params,
+    const std::filesystem::path& root)
+{
+    using wmtk::utils::resolve_path;
+    const std::string points_path = resolve_path(root, json_params["points"]).string();
+    const std::string output_points = json_params["output_points"];
+    if (output_points.empty()) log_and_throw_error("map: output_points is required");
+    const bool forward = json_params["direction"] == "to_output";
+    igl::Timer timer;
+    timer.start();
+    const Tracking tracking(h);
+    logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
+    const size_t n_out = tracking.output_by_vertices() ? 6 : 4;
+    std::ofstream out(output_points);
+    if (!out) log_and_throw_error("Could not write {}", output_points);
+    out.precision(17);
+    size_t lost = 0, total = 0;
+    timer.start();
+    if (forward) {
+        std::vector<InputPoint> pts;
+        for (const auto& r : read_points(points_path, 4)) {
+            pts.push_back({id_of(r[0]), Eigen::Vector3d(r[1], r[2], r[3])});
+        }
+        total = pts.size();
+        for (const OutputPoint& p : tracking.to_output(pts)) {
+            const bool none =
+                tracking.output_by_vertices() ? p.vertices[0] == kNoId : p.face == kNoId;
+            lost += none;
+            if (tracking.output_by_vertices()) {
+                for (const uint64_t v : p.vertices) out << id_text(none ? kNoId : v) << " ";
+            } else {
+                out << id_text(p.face) << " ";
+            }
+            out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+        }
+    } else {
+        std::vector<OutputPoint> pts;
+        for (const auto& r : read_points(points_path, n_out)) {
+            OutputPoint p;
+            if (tracking.output_by_vertices()) {
+                p.vertices = {{id_of(r[0]), id_of(r[1]), id_of(r[2])}};
+                p.bary = Eigen::Vector3d(r[3], r[4], r[5]);
+            } else {
+                p.face = id_of(r[0]);
+                p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+            }
+            pts.push_back(p);
+        }
+        total = pts.size();
+        for (const InputPoint& p : tracking.to_input(pts)) {
+            lost += p.face == kNoId;
+            out << id_text(p.face) << " " << p.bary[0] << " " << p.bary[1] << " " << p.bary[2]
+                << "\n";
+        }
+    }
+    logger().info(
+        "{} points mapped to the {} in {:.3}s, {} without an image; written to {}",
+        total,
+        forward ? "output" : "input",
+        timer.getElapsedTimeInSec(),
+        lost,
+        output_points);
+    log_warnings("mapping", tracking.map().map_warnings());
+}
+
 } // namespace
 
 void surface_map(nlohmann::json json_params)
@@ -75,6 +177,11 @@ void surface_map(nlohmann::json json_params)
         h.edits.size(),
         history_path,
         timer.getElapsedTimeInSec());
+
+    if (json_params["operation"] == "map") {
+        map_points(h, json_params, root);
+        return;
+    }
 
     timer.start();
     const SurfaceMap map(h);

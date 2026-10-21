@@ -175,10 +175,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    wmtk::io::ReadProvenance read;
     {
         MatrixXd V;
         MatrixXi F;
-        component_io.triangles(input_path, V, F, remove_duplicate_eps);
+        component_io.triangles(
+            std::vector<std::string>{input_path},
+            V,
+            F,
+            remove_duplicate_eps,
+            -1,
+            nullptr,
+            history_output.empty() ? nullptr : &read);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -262,11 +272,41 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     if (history) {
         m.stop_history();
-        history->history().save(history_output);
-        logger().info(
-            "history: {} edits saved to {}",
-            history->history().edits.size(),
-            history_output);
+        // The file as read, the weld to the mesh remeshed, then the remeshing: the history maps
+        // the input file to the output file.
+        history::SurfaceHistory chain;
+        for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+            chain.vertices.push_back(read.V.row(v).transpose());
+        }
+        chain.vertex_alive.assign(chain.vertices.size(), 1);
+        for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+            chain.faces.push_back(
+                {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
+        }
+        chain.face_alive.assign(chain.faces.size(), 1);
+        // The feature curves on vertices of the file, which the weld takes onto the mesh's.
+        std::vector<uint64_t> raw_of(verts.size(), history::kNoVertex);
+        for (size_t r = 0; r < read.vertex_map.size(); ++r) {
+            const int w = read.vertex_map[r];
+            if (w >= 0 && raw_of[w] == history::kNoVertex) raw_of[w] = r;
+        }
+        for (const auto& e : history->history().feature_edges) {
+            std::array<uint64_t, 2> raw = {{raw_of[e[0]], raw_of[e[1]]}};
+            if (raw[0] > raw[1]) std::swap(raw[0], raw[1]);
+            chain.feature_edges.push_back(raw);
+        }
+        history::Edit weld{history::EditKind::relabel, {}, {}, {}};
+        for (const int w : read.vertex_map) {
+            weld.v.push_back(w < 0 ? history::kNoVertex : uint64_t(w));
+        }
+        for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
+        chain.edits.push_back(std::move(weld));
+        if (!history::append(chain, history->history())) {
+            log_and_throw_error("history_output: the remeshing does not start at the input");
+        }
+        chain.metadata = history->history().metadata;
+        chain.save(history_output);
+        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
     }
 
     if (!m.check_mesh_connectivity_validity()) {

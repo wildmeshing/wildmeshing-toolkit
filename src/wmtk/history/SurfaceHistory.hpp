@@ -104,6 +104,15 @@ struct SurfaceHistory
     /// Free-form text saved with the history; the recording application's parameters, say.
     std::string metadata;
 
+    /**
+     * The id the application's output gives each vertex of the last state, kNoVertex for one it
+     * does not write -- for an application whose output numbers vertices its own way: a tet
+     * mesh's, whose tracked surface is no element of the output, so a point on it is named by
+     * the output's three vertices. Empty when the last state's ids are the output's own, as a
+     * TriMesh application's are.
+     */
+    std::vector<uint64_t> output_vertex_ids;
+
     void save(const std::string& path) const;
     static SurfaceHistory load(const std::string& path);
 };

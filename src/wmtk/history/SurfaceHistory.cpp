@@ -11,9 +11,9 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 5). Version 4 is the same without the feature edges of an embed, and version 3
-// without replace_faces, relabel and embed; both still load. Every count and id is an unsigned
-// LEB128 varint; a position is three little-endian f64.
+// Layout (version 6). Version 5 is the same without the output vertex ids, 4 also without the
+// feature edges of an embed, and 3 also without replace_faces, relabel and embed; all still load.
+// Every count and id is an unsigned LEB128 varint; a position is three little-endian f64.
 //
 //   "WMTKHIST" u32 version
 //   n_vertices, then per vertex: u8 alive, and its position if alive
@@ -33,8 +33,9 @@ namespace {
 //   says it is exactly the midpoint of the edit's edge (v0,v1) / (removed,kept), as the
 //   vertices were before the edit. Saving and loading both replay the history to know it.
 //   metadata length, metadata bytes
+//   n_output_vertex_ids, then each plus one (0: none)
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 5;
+constexpr uint32_t kVersion = 6;
 
 class Writer
 {
@@ -316,6 +317,8 @@ void SurfaceHistory::save(const std::string& path) const
     }
     w.varint(metadata.size());
     w.bytes(metadata.data(), metadata.size());
+    w.varint(output_vertex_ids.size());
+    for (const uint64_t v : output_vertex_ids) w.varint(v == kNoVertex ? 0 : v + 1);
     w.finish();
 }
 
@@ -417,6 +420,13 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
     }
     h.metadata.resize(r.varint());
     r.bytes(h.metadata.data(), h.metadata.size());
+    if (version >= 6) {
+        h.output_vertex_ids.resize(r.varint());
+        for (uint64_t& v : h.output_vertex_ids) {
+            const uint64_t n = r.varint();
+            v = n == 0 ? kNoVertex : n - 1;
+        }
+    }
     return h;
 }
 

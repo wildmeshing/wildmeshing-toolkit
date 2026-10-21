@@ -16,6 +16,7 @@ set(SRC_FILES
     test_simplify_boundary.cpp
     test_late_feature_tracking.cpp
     test_simwild_history.cpp
+    test_simwild_tracking.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
