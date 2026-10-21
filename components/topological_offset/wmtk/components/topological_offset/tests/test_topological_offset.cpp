@@ -2824,6 +2824,27 @@ TEST_CASE("optimize-construction-key", "[offset][3d]")
     }
 }
 
+TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
+{
+    // front_conv_rel is a fraction of target_distance since 2026-10-21 (Parameters::init()): the
+    // default 0.025, a value read through, an absolute front_conv with its fraction derived, and
+    // the refusal of a bar coarser than the offset. The box's diagonal is 13, so a bar read
+    // against it would come out 26 times the target-relative one here.
+    Eigen::MatrixXd V(2, 3);
+    V << 0, 0, 0, 3, 4, 12;
+    const Parameters by_default = construction_params({{"target_distance", 0.5}}, V);
+    CHECK(by_default.front_conv_rel == 0.025);
+    CHECK(by_default.front_conv == 0.025 * 0.5);
+    const Parameters rel =
+        construction_params({{"target_distance_rel", 0.02}, {"front_conv_rel", 0.1}}, V);
+    CHECK(rel.target_distance == Catch::Approx(0.26));
+    CHECK(rel.front_conv == 0.1 * rel.target_distance);
+    const Parameters abs = construction_params({{"target_distance", 0.5}, {"front_conv", 0.05}}, V);
+    CHECK(abs.front_conv == 0.05);
+    CHECK(abs.front_conv_rel == Catch::Approx(0.1));
+    CHECK_THROWS(construction_params({{"target_distance", 0.5}, {"front_conv_rel", 1.5}}, V));
+}
+
 TEST_CASE("foldover-face-angle", "[offset][3d]")
 {
     // foldover_angle through the spec (default 30, range 0..180), and front_face_field_angle():

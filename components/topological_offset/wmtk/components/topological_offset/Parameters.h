@@ -51,13 +51,12 @@ struct Parameters : public wmtk::OptimizerParameters
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
-    // ---- the two convergence epsilons (was the single front_conv_rel) ----
-    // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
-    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
-    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
-    // more, so changing the offset distance no longer silently changes the accuracy. init()
-    // refuses either one above target_distance: an epsilon coarser than the offset it measures
-    // cannot decide anything.
+    // ---- the convergence epsilon ----
+    // front_conv is an ABSOLUTE LENGTH, resolved in init(); if <= 0 it is computed from
+    // front_conv_rel, which since 2026-10-21 is a fraction of TARGET_DISTANCE -- the config's,
+    // fixed for the run, every growth stage included (from 2026-09-23 to 2026-10-20 it was a
+    // fraction of the bounding box diagonal). init() refuses a front_conv above target_distance:
+    // an epsilon coarser than the offset it measures cannot decide anything.
     //
     // THE ONE BAR, in 2D and in 3D. One quantity is measured everywhere -- over a simplex's
     // stencil (a face's in 3D, a front chord's in 2D), the RMS of the distance to the level set
@@ -468,14 +467,13 @@ struct Parameters : public wmtk::OptimizerParameters
             envelope_size = envelope_size_rel * diag_l;
         }
 
-        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
-        // against the same reference. It is a length in space, so the bounding box diagonal is
-        // the reference, not target_distance: tying the accuracy to the offset distance made
-        // every change of target_distance a silent change of accuracy as well.
+        // The convergence epsilon, absolute or relative; relative to target_distance (resolved
+        // above), the offset it measures. A growth stage changes target_distance later, never
+        // this.
         if (front_conv > 0) {
-            front_conv_rel = front_conv / diag_l;
+            front_conv_rel = front_conv / target_distance;
         } else {
-            front_conv = front_conv_rel * diag_l;
+            front_conv = front_conv_rel * target_distance;
         }
 
         // An epsilon coarser than the offset it measures decides nothing: every front vertex is

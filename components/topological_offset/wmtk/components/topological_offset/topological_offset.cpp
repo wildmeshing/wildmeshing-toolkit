@@ -104,7 +104,7 @@ void topological_offset(nlohmann::json json_params)
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
         logger().info(
-            "front_conv: {} ({} x the bbox diagonal)",
+            "front_conv: {} ({} x target_distance)",
             params.front_conv,
             params.front_conv_rel);
         logger().info("stencil_order: {}", params.stencil_order);

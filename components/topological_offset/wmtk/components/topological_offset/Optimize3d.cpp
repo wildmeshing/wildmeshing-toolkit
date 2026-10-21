@@ -4347,7 +4347,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         "\tLOOP: TetWild's operation groups with the front placed inside their "
         "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
         "relative error over a stencil_order {} stencil ({} points per face) against front_conv "
-        "{:.6g} ({:.6g} x the bbox diagonal)",
+        "{:.6g} ({:.6g} x the configured target_distance)",
         m_front_gradient_reference,
         m_offset_params.stencil_order,
         stencil_points_per_face(),
