@@ -11,8 +11,9 @@ namespace wmtk::history {
 
 namespace {
 
-// Layout (version 4; version 3 is the same without replace_faces, and still loads). Every count
-// and id is an unsigned LEB128 varint; a position is three little-endian f64.
+// Layout (version 5). Version 4 is the same without the feature edges of an embed, and version 3
+// without replace_faces, relabel and embed; both still load. Every count and id is an unsigned
+// LEB128 varint; a position is three little-endian f64.
 //
 //   "WMTKHIST" u32 version
 //   n_vertices, then per vertex: u8 alive, and its position if alive
@@ -26,13 +27,14 @@ namespace {
 //       replace_faces: n_removed n_added, the removed faces, then per added face: f c0 c1 c2
 //       relabel:       n, then per vertex slot its new id plus one (0: gone); m, then per face
 //                      slot the same (m = 0: by rank)
-//       embed:         n_faces, then per face: c0 c1 c2, n_sources, the sources
+//       embed:         n_faces, then per face: c0 c1 c2, n_sources, the sources; then
+//                      n_features and their vertex pairs
 //   -- then n_moves and per move: (vid << 1 | midpoint), and the position unless `midpoint`
 //   says it is exactly the midpoint of the edit's edge (v0,v1) / (removed,kept), as the
 //   vertices were before the edit. Saving and loading both replay the history to know it.
 //   metadata length, metadata bytes
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
-constexpr uint32_t kVersion = 4;
+constexpr uint32_t kVersion = 5;
 
 class Writer
 {
@@ -225,6 +227,8 @@ void append_embedded(
         e.faces.push_back(src.size());
         e.faces.insert(e.faces.end(), src.begin(), src.end());
     }
+    e.faces.push_back(next.feature_edges.size());
+    for (const auto& fe : next.feature_edges) e.faces.insert(e.faces.end(), fe.begin(), fe.end());
     e.moves.reserve(next.vertices.size());
     for (uint64_t v = 0; v < next.vertices.size(); ++v) {
         if (!next.vertex_alive[v])
@@ -281,12 +285,16 @@ void SurfaceHistory::save(const std::string& path) const
         if (e.kind == EditKind::embed) {
             const size_t nf = e.v.size() / 3;
             w.varint(nf);
-            for (size_t f = 0, i = 0; f < nf; ++f) {
+            size_t i = 0;
+            for (size_t f = 0; f < nf; ++f) {
                 for (int c = 0; c < 3; ++c) w.varint(e.v[3 * f + c]);
                 const uint64_t n = e.faces[i++];
                 w.varint(n);
                 for (uint64_t k = 0; k < n; ++k) w.varint(e.faces[i++]);
             }
+            const uint64_t nfe = i < e.faces.size() ? e.faces[i++] : 0;
+            w.varint(nfe);
+            for (uint64_t k = 0; k < 2 * nfe; ++k) w.varint(e.faces[i++]);
         }
         const bool generic = e.kind != EditKind::replace_faces && e.kind != EditKind::relabel &&
                              e.kind != EditKind::embed;
@@ -320,9 +328,9 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
         log_and_throw_error("SurfaceHistory: {} is not a surface history", path);
     }
     const uint32_t version = r.get<uint32_t>();
-    if (version != kVersion && version != 3) {
+    if (version < 3 || version > kVersion) {
         log_and_throw_error(
-            "SurfaceHistory: {} has version {}, expected 3 or {}",
+            "SurfaceHistory: {} has version {}, expected 3 to {}",
             path,
             version,
             kVersion);
@@ -383,6 +391,9 @@ SurfaceHistory SurfaceHistory::load(const std::string& path)
                 e.faces.push_back(n);
                 for (uint64_t k = 0; k < n; ++k) e.faces.push_back(r.varint());
             }
+            const uint64_t nfe = version >= 5 ? r.varint() : 0;
+            e.faces.push_back(nfe);
+            for (uint64_t k = 0; k < 2 * nfe; ++k) e.faces.push_back(r.varint());
         } else {
             e.v.resize(vertex_ids(e.kind));
             for (uint64_t& v : e.v) v = r.varint();

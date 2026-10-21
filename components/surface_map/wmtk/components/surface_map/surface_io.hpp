@@ -28,7 +28,25 @@ struct SurfaceData
 /// The triangles of a gmsh file in file order, and every per-face field stored with them.
 SurfaceData read_surface_msh(const std::string& path);
 
+/**
+ * @brief The surface the files hold, as they hold it: one gmsh file with its fields
+ * (read_surface_msh), or triangle meshes of any format, concatenated, neither welded nor cleaned
+ * -- the way an application's input history starts -- with no fields.
+ */
+SurfaceData read_surface(const std::vector<std::string>& paths);
+
 void write_surface_msh(const std::string& path, const SurfaceData& s);
+
+/**
+ * @brief `s` added to a copy of the tet mesh in the gmsh file `tet_mesh`, written to `path`: its
+ * triangles as an element block on the tet mesh's own nodes, its fields on them. Every vertex of
+ * `s` must be a node of the tet mesh, at the same position -- as the tracked surface of a tet
+ * mesh's history is.
+ */
+void write_surface_into_msh(
+    const std::string& tet_mesh,
+    const std::string& path,
+    const SurfaceData& s);
 
 /**
  * @brief The surface as a Wavefront OBJ, textured: the first two components of the per-corner

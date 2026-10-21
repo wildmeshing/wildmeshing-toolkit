@@ -342,6 +342,12 @@ void Replay::embed(const Edit& e)
             m_vertex_alive[v] = 1;
         }
     }
+    size_t i = 0;
+    for (uint64_t f = 0; f < nf; ++f) i += 1 + e.faces[i]; // the sources
+    if (i < e.faces.size()) {
+        const uint64_t n = e.faces[i++];
+        for (uint64_t k = 0; k < n; ++k, i += 2) add_feature(e.faces[i], e.faces[i + 1]);
+    }
 }
 
 void Replay::consolidate()

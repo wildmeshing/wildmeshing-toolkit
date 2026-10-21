@@ -41,7 +41,16 @@ public:
     using Orient = std::function<Triangle(const Triangle&)>;
 
     /// The tracked surface now, any corner order; `orient` orders the faces of the snapshot.
-    TrackedSurfaceRecorder(const std::vector<Triangle>& faces, Positions position, Orient orient);
+    /// `feature_edges`: the mesh's feature curves on it (SurfaceHistory::feature_edges), by mesh
+    /// vertex ids. The mesh must keep them by the edits' rules.
+    TrackedSurfaceRecorder(
+        const std::vector<Triangle>& faces,
+        Positions position,
+        Orient orient,
+        const std::vector<std::array<size_t, 2>>& feature_edges = {});
+
+    /// The feature edges as the edits have carried them, by mesh vertex ids, smaller first.
+    std::vector<std::array<size_t, 2>> feature_edges() const;
 
     /// What an operation did to the tracked surface, as the mesh saw it at its commit point.
     struct Change

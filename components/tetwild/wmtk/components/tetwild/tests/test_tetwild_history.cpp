@@ -1,8 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
+#include <wmtk/components/surface_map/surface_io.hpp>
+#include <wmtk/components/surface_map/transfer.hpp>
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <igl/readOBJ.h>
 
@@ -158,4 +161,88 @@ TEST_CASE("tetwild-surface-history-octocat", "[tetwild][history][.]")
     CHECK(map.build_warnings().total() == 0);
     CHECK(map.map_warnings().total() == 0);
     CHECK(err < 1e-8);
+}
+
+TEST_CASE("tetwild-surface-history-transfers-onto-the-tet-mesh", "[tetwild][history]")
+{
+    // Per-face labels on the input, carried to the tracked surface of the output and written into
+    // the tet mesh tetwild wrote: its triangles on the tet mesh's own nodes, each with the label
+    // of the input face it maps to.
+    const fs::path dir = fs::current_path() / "tetwild_history_test";
+    fs::create_directories(dir);
+    Eigen::MatrixXd SV;
+    Eigen::MatrixXi SF;
+    REQUIRE(igl::readOBJ((fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string(), SV, SF));
+    surface_map::SurfaceData labelled;
+    for (Eigen::Index v = 0; v < SV.rows(); ++v) labelled.vertices.push_back(SV.row(v).transpose());
+    auto& label = labelled.face_fields["label"];
+    for (Eigen::Index f = 0; f < SF.rows(); ++f) {
+        labelled.faces.push_back({{uint64_t(SF(f, 0)), uint64_t(SF(f, 1)), uint64_t(SF(f, 2))}});
+        label.push_back({double(f % 7)});
+    }
+    const fs::path input = dir / "sphere_labels.msh";
+    surface_map::write_surface_msh(input.string(), labelled);
+
+    const fs::path out = dir / "labels";
+    const fs::path hist = dir / "labels.wmtkhist";
+    const auto exported = tetwild::tetwild_with_export({
+        {"application", "tetwild"},
+        {"input", {input.string()}},
+        {"output", out.string()},
+        {"history_output", hist.string()},
+        {"max_iterations", 3},
+        {"write_vtu", false},
+    });
+    const surface_map::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
+    const auto in = surface_map::read_surface({input.string()});
+    std::string why;
+    REQUIRE(surface_map::matches_input(map, in, why));
+    const auto transferred = surface_map::transfer_fields(map, in);
+    REQUIRE(transferred.faces.size() == size_t(exported.F.rows()));
+    const fs::path with_labels = dir / "labels_final_with_labels.msh";
+    surface_map::write_surface_into_msh(
+        out.string() + "_final.msh",
+        with_labels.string(),
+        transferred);
+
+    MshData msh;
+    msh.load(with_labels.string());
+    CHECK(msh.get_num_tets() == size_t(exported.T.rows()));
+    const mshio::ElementBlock* triangles = nullptr;
+    for (const auto& b : msh.m_spec.elements.entity_blocks) {
+        if (b.entity_dim == 2) triangles = &b;
+    }
+    REQUIRE(triangles != nullptr);
+    REQUIRE(triangles->num_elements_in_block == transferred.faces.size());
+    // Its nodes are the tet mesh's, where the surface has its vertices.
+    std::map<size_t, Eigen::Vector3d> node;
+    for (const auto& b : msh.m_spec.nodes.entity_blocks) {
+        for (size_t i = 0; i < b.num_nodes_in_block; ++i) {
+            node[b.tags[i]] = Eigen::Vector3d(b.data[3 * i], b.data[3 * i + 1], b.data[3 * i + 2]);
+        }
+    }
+    size_t misplaced = 0, mislabelled = 0;
+    std::map<size_t, size_t> face_of_tag;
+    for (size_t i = 0; i < transferred.faces.size(); ++i) {
+        face_of_tag[triangles->data[4 * i]] = i;
+        for (int k = 0; k < 3; ++k) {
+            misplaced += node.at(triangles->data[4 * i + 1 + k]) !=
+                         transferred.vertices[transferred.faces[i][k]];
+        }
+    }
+    bool found = false;
+    for (const auto& data : msh.m_spec.element_data) {
+        if (data.header.string_tags.front() != "label") continue;
+        found = true;
+        CHECK(data.entries.size() == transferred.faces.size());
+        for (const auto& entry : data.entries) {
+            const size_t i = face_of_tag.at(entry.tag);
+            const double source = transferred.face_fields.at("input_face")[i][0];
+            REQUIRE(source >= 0);
+            mislabelled += entry.data[0] != label[size_t(source)][0];
+        }
+    }
+    CHECK(found);
+    CHECK(misplaced == 0);
+    CHECK(mislabelled == 0);
 }

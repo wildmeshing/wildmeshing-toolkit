@@ -54,7 +54,8 @@ SurfaceHistory snapshot(
     const TrackedSurfaceRecorder::Positions& position,
     const TrackedSurfaceRecorder::Orient& orient,
     std::vector<uint64_t>& surface_of,
-    std::vector<size_t>& mesh_of)
+    std::vector<size_t>& mesh_of,
+    const std::vector<std::array<size_t, 2>>& feature_edges)
 {
     SurfaceHistory h;
     for (const Triangle& f : as_set(faces)) {
@@ -74,6 +75,17 @@ SurfaceHistory snapshot(
     }
     h.vertex_alive.assign(h.vertices.size(), 1);
     h.face_alive.assign(h.faces.size(), 1);
+    for (const auto& e : feature_edges) {
+        if (e[0] >= surface_of.size() || e[1] >= surface_of.size()) continue;
+        uint64_t a = surface_of[e[0]], b = surface_of[e[1]];
+        if (a == kNoSurface || b == kNoSurface) continue;
+        if (a > b) std::swap(a, b);
+        h.feature_edges.push_back({{a, b}});
+    }
+    std::sort(h.feature_edges.begin(), h.feature_edges.end());
+    h.feature_edges.erase(
+        std::unique(h.feature_edges.begin(), h.feature_edges.end()),
+        h.feature_edges.end());
     return h;
 }
 
@@ -82,14 +94,27 @@ SurfaceHistory snapshot(
 TrackedSurfaceRecorder::TrackedSurfaceRecorder(
     const std::vector<Triangle>& faces,
     Positions position,
-    Orient orient)
+    Orient orient,
+    const std::vector<std::array<size_t, 2>>& feature_edges)
     : m_position(std::move(position))
     , m_orient(std::move(orient))
-    , m_history(snapshot(faces, m_position, m_orient, m_surface_of, m_mesh_of))
+    , m_history(snapshot(faces, m_position, m_orient, m_surface_of, m_mesh_of, feature_edges))
     , m_replay(m_history)
     , m_known(m_history.vertices)
     , m_next_face(m_history.faces.size())
 {}
+
+std::vector<std::array<size_t, 2>> TrackedSurfaceRecorder::feature_edges() const
+{
+    std::vector<std::array<size_t, 2>> out;
+    for (const auto& e : m_replay.feature_edges()) {
+        std::array<size_t, 2> m = {{m_mesh_of[e[0]], m_mesh_of[e[1]]}};
+        if (m[0] > m[1]) std::swap(m[0], m[1]);
+        out.push_back(m);
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
 
 std::optional<uint64_t> TrackedSurfaceRecorder::live(const size_t v) const
 {

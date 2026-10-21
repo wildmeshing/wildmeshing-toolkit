@@ -112,9 +112,26 @@ void surface_map(nlohmann::json json_params)
     }
 
     if (json_params["operation"] == "transfer") {
-        const std::string input = resolve_path(root, json_params["input"]).string();
+        // The input: as given, or the files the history's application read, from its parameters.
+        std::vector<std::string> inputs;
+        if (!std::string(json_params["input"]).empty()) {
+            inputs.push_back(resolve_path(root, json_params["input"]).string());
+        } else {
+            const auto app = nlohmann::json::parse(h.metadata, nullptr, false);
+            if (app.is_discarded() || !app.contains("input")) {
+                log_and_throw_error("{} names no input; give one", history_path);
+            }
+            const std::filesystem::path app_root =
+                app.contains("input_dir") ? std::filesystem::path(std::string(app["input_dir"]))
+                                          : std::filesystem::path();
+            const auto& in_json = app["input"];
+            for (const auto& p : in_json.is_array() ? in_json : nlohmann::json::array({in_json})) {
+                inputs.push_back(resolve_path(app_root, std::string(p)).string());
+            }
+        }
+        const std::string input = nlohmann::json(inputs).dump();
         const std::string output = json_params["output"];
-        const SurfaceData in = read_surface_msh(input);
+        const SurfaceData in = read_surface(inputs);
         std::string why;
         if (!matches_input(map, in, why)) {
             log_and_throw_error(
@@ -127,6 +144,17 @@ void surface_map(nlohmann::json json_params)
         const SurfaceData out = transfer_fields(map, in);
         log_warnings("output centroids to the input", map.map_warnings());
         write_surface_msh(output, out);
+        const std::string tet_mesh = json_params["tet_mesh"];
+        const std::string output_tet_mesh = json_params["output_tet_mesh"];
+        if (!tet_mesh.empty()) {
+            if (output_tet_mesh.empty())
+                log_and_throw_error("tet_mesh given without output_tet_mesh");
+            write_surface_into_msh(resolve_path(root, tet_mesh).string(), output_tet_mesh, out);
+            logger().info(
+                "fields written onto the tracked surface of {}: {}",
+                tet_mesh,
+                output_tet_mesh);
+        }
         const std::string output_obj = json_params["output_obj"];
         if (!output_obj.empty()) {
             write_surface_obj(output_obj, out, json_params["uv_field"], json_params["texture"]);

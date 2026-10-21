@@ -15,6 +15,8 @@
       "output_obj",
       "uv_field",
       "texture",
+      "tet_mesh",
+      "output_tet_mesh",
       "log_file"
     ]
   },
@@ -35,7 +37,7 @@
     "pointer": "/input",
     "type": "string",
     "default": "",
-    "doc": "transfer: a gmsh file holding the surface the history starts from -- the same triangles in the same order -- with per-face fields (labels, say) to carry onto the output."
+    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, with per-face and per-corner fields (labels, texture coordinates) to carry onto the output, or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to."
   },
   {
     "pointer": "/output",
@@ -82,5 +84,17 @@
     "type": "string",
     "default": "",
     "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/tet_mesh",
+    "type": "string",
+    "default": "",
+    "doc": "transfer: the tet mesh (gmsh) the history's application wrote, whose tracked surface is where the history ends. With output_tet_mesh, the fields are written onto it: a copy of it, with the tracked surface as triangles on its own nodes carrying the fields."
+  },
+  {
+    "pointer": "/output_tet_mesh",
+    "type": "string",
+    "default": "",
+    "doc": "transfer: where to write tet_mesh with the fields on its tracked surface."
   }
 ]

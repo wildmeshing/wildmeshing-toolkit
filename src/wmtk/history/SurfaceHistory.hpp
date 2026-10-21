@@ -52,8 +52,9 @@ enum class EditKind : uint8_t {
     relabel = 8,
     /// The complex is replaced by one lying on it -- the same surface, cut differently (an
     /// insertion into a tet mesh). v = the corners of its faces, three per face, in its own
-    /// vertex ids from 0; faces = per face, how many faces before it lies on, then those;
-    /// moves = the position of every vertex. A point stays where it is in space.
+    /// vertex ids from 0; faces = per face, how many faces before it lies on, then those, and
+    /// after them its feature edges, how many then their vertex pairs; moves = the position of
+    /// every vertex. A point stays where it is in space.
     embed = 9,
 };
 
