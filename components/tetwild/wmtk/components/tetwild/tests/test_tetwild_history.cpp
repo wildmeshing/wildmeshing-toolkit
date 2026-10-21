@@ -38,6 +38,8 @@ TEST_CASE("tetwild-surface-history-replays-to-the-tracked-surface", "[tetwild][h
     // triangle soup, every vertex repeated per face, so the weld has work to do -- through the
     // insertion and the optimization to the output's tracked surface. It ends exactly there,
     // the map is a bijection, and an output face maps onto the file of the sphere it is on.
+    // Under preserve_topology: without it, a parallel run may weld or merge a few faces, and
+    // the map is then rightly not a bijection there.
     const fs::path input = fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj";
     REQUIRE(fs::exists(input));
     const fs::path dir = fs::current_path() / "tetwild_history_test";
@@ -72,6 +74,7 @@ TEST_CASE("tetwild-surface-history-replays-to-the-tracked-surface", "[tetwild][h
             {"history_output", hist.string()},
             {"max_iterations", 5},
             {"num_threads", threads},
+            {"preserve_topology", true},
             {"write_vtu", false},
         });
         const auto h = history::SurfaceHistory::load(hist.string());
