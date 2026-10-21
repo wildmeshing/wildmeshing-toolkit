@@ -2588,17 +2588,30 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
               same(a.E, b.E) && a.tag_names == b.tag_names && a.tags.size() == b.tags.size();
     for (size_t i = 0; ok && i < a.tags.size(); ++i) ok = same(a.tags[i], b.tags[i]);
     for (const auto m :
-         {&TopoOffsetTetMesh::VtuFrame::amips,         &TopoOffsetTetMesh::VtuFrame::tet_e,
-          &TopoOffsetTetMesh::VtuFrame::amips_term,    &TopoOffsetTetMesh::VtuFrame::band_term,
-          &TopoOffsetTetMesh::VtuFrame::band_gap,      &TopoOffsetTetMesh::VtuFrame::plastic,
-          &TopoOffsetTetMesh::VtuFrame::labels,        &TopoOffsetTetMesh::VtuFrame::order,
-          &TopoOffsetTetMesh::VtuFrame::vid,           &TopoOffsetTetMesh::VtuFrame::sizing,
-          &TopoOffsetTetMesh::VtuFrame::in_dist,       &TopoOffsetTetMesh::VtuFrame::front_err,
-          &TopoOffsetTetMesh::VtuFrame::band_force,    &TopoOffsetTetMesh::VtuFrame::amips_force,
-          &TopoOffsetTetMesh::VtuFrame::front_change,  &TopoOffsetTetMesh::VtuFrame::f_err,
-          &TopoOffsetTetMesh::VtuFrame::f_len,         &TopoOffsetTetMesh::VtuFrame::f_inside,
-          &TopoOffsetTetMesh::VtuFrame::f_outside,     &TopoOffsetTetMesh::VtuFrame::f_fold,
-          &TopoOffsetTetMesh::VtuFrame::f_field_angle, &TopoOffsetTetMesh::VtuFrame::ring}) {
+         {&TopoOffsetTetMesh::VtuFrame::amips,
+          &TopoOffsetTetMesh::VtuFrame::tet_e,
+          &TopoOffsetTetMesh::VtuFrame::amips_term,
+          &TopoOffsetTetMesh::VtuFrame::band_term,
+          &TopoOffsetTetMesh::VtuFrame::band_gap,
+          &TopoOffsetTetMesh::VtuFrame::plastic,
+          &TopoOffsetTetMesh::VtuFrame::labels,
+          &TopoOffsetTetMesh::VtuFrame::order,
+          &TopoOffsetTetMesh::VtuFrame::vid,
+          &TopoOffsetTetMesh::VtuFrame::sizing,
+          &TopoOffsetTetMesh::VtuFrame::in_dist,
+          &TopoOffsetTetMesh::VtuFrame::front_err,
+          &TopoOffsetTetMesh::VtuFrame::band_force,
+          &TopoOffsetTetMesh::VtuFrame::amips_force,
+          &TopoOffsetTetMesh::VtuFrame::front_change,
+          &TopoOffsetTetMesh::VtuFrame::f_err,
+          &TopoOffsetTetMesh::VtuFrame::f_len,
+          &TopoOffsetTetMesh::VtuFrame::f_inside,
+          &TopoOffsetTetMesh::VtuFrame::f_outside,
+          &TopoOffsetTetMesh::VtuFrame::f_fold,
+          &TopoOffsetTetMesh::VtuFrame::f_field_angle,
+          &TopoOffsetTetMesh::VtuFrame::f_dihedral,
+          &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral,
+          &TopoOffsetTetMesh::VtuFrame::ring}) {
         ok = ok && same(a.*m, b.*m);
     }
     return ok;
@@ -2677,6 +2690,8 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"settle_outside_bars", &fs.f_outside, &ft.f_outside},
         {"offset_foldover", &fs.f_fold, &ft.f_fold},
         {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
+        {"dihedral_angle", &fs.f_dihedral, &ft.f_dihedral},
+        {"offset_foldover_dihedral", &fs.f_fold_dihedral, &ft.f_fold_dihedral},
         {"front_ring_ratio", &fs.ring, &ft.ring}};
     for (const auto& [name, x, y] : fields) {
         INFO(name);
@@ -2961,6 +2976,40 @@ TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
     CHECK(abs.front_conv == 0.05);
     CHECK(abs.front_conv_rel == Catch::Approx(0.1));
     CHECK_THROWS(construction_params({{"target_distance", 0.5}, {"front_conv_rel", 1.5}}, V));
+}
+
+TEST_CASE("band-side-dihedral", "[offset][3d]")
+{
+    // The debug frames' dihedral angle (band_side_dihedral()) and its foldover test
+    // (dihedral_is_foldover()). Face 1 lies in z = 0 with its normal +z out of the band and runs
+    // the shared edge along +y; face 2 turns about that edge by phi, its normal (sin phi, 0, cos
+    // phi): phi > 0 bends the front away from the band (convex seen from the offset side), the
+    // band-side angle 180 - phi; phi -> 180 folds face 2 flat onto face 1 from the offset side
+    // (angle -> 0), phi -> -180 from the band side (-> 360).
+    const Vector3d n1(0., 0., 1.), t(0., 1., 0.);
+    const auto n2 = [](const double deg) {
+        const double r = deg * M_PI / 180.;
+        return Vector3d(std::sin(r), 0., std::cos(r));
+    };
+    const auto angle = [&](const double deg) {
+        return TopoOffsetTetMesh::band_side_dihedral(n1, n2(deg), t);
+    };
+    CHECK(angle(0.) == Catch::Approx(180.));
+    CHECK(angle(45.) == Catch::Approx(135.));
+    CHECK(angle(-45.) == Catch::Approx(225.));
+    CHECK(angle(170.) == Catch::Approx(10.));
+    CHECK(angle(-170.) == Catch::Approx(350.));
+    // Swapping the faces runs the edge the other way: the same angle.
+    CHECK(TopoOffsetTetMesh::band_side_dihedral(n2(45.), n1, -t) == Catch::Approx(135.));
+    // Within foldover_angle of a full fold, either way, is a foldover; a crease is not.
+    const double th = 30.;
+    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(170.), th));
+    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(-170.), th));
+    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(90.), th)); // a 90-degree crease
+    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(-90.), th));
+    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(0.), th));
+    CHECK_FALSE(TopoOffsetTetMesh::dihedral_is_foldover(angle(149.), th)); // 31 degrees left
+    CHECK(TopoOffsetTetMesh::dihedral_is_foldover(angle(151.), th)); // 29 degrees left
 }
 
 TEST_CASE("smart-growth-schedule", "[offset][3d]")

@@ -1171,6 +1171,27 @@ public:
      * the folded faces. The 2D code still labels vertices (TopoOffsetTriMesh).
      */
     double front_face_field_angle(size_t a, size_t b, size_t c) const;
+    /// Front face (a, b, c)'s area normal (b - a) x (c - a) in `n`, turned out of its band cell
+    /// (away from front_face_band_cell()'s fourth corner). False, `n` unusable, where it cannot be
+    /// measured: a degenerate face, or no band cell. front_face_field_angle()'s normal.
+    bool front_face_out_normal(size_t a, size_t b, size_t c, Vector3d& n) const;
+    /// The dihedral angle in degrees, in [0, 360), across an offset-surface edge between two faces
+    /// with unit normals n1, n2 out of the band, measured on the band side: 180 flat, below 180
+    /// where the front bends away from the band (convex seen from the offset side), toward 0 or
+    /// toward 360 as the two faces fold flat onto each other one way or the other. `t` is the
+    /// edge's unit direction as the first face runs it, its corners counterclockwise seen from the
+    /// side n1 points to.
+    static double band_side_dihedral(const Vector3d& n1, const Vector3d& n2, const Vector3d& t)
+    {
+        return 180. - std::atan2(n1.cross(n2).dot(t), n1.dot(n2)) * 180. / M_PI;
+    }
+    /// foldover_angle's dihedral test: the two faces close to within `angle` degrees of each other,
+    /// either way -- a band-side dihedral (band_side_dihedral()) below `angle` or above
+    /// 360 - `angle`. The debug frames' offset_foldover_dihedral.
+    static bool dihedral_is_foldover(const double dihedral, const double angle)
+    {
+        return dihedral < angle || dihedral > 360. - angle;
+    }
     /// front_face_field_angle() > foldover_angle; an unmeasurable face is not a foldover.
     bool front_face_is_foldover(size_t a, size_t b, size_t c) const
     {
@@ -2649,7 +2670,8 @@ public:
         VectorXd labels, order, vid, sizing;
         VectorXd in_dist, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, f_dihedral,
+            f_fold_dihedral, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.

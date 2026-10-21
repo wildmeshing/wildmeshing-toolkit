@@ -4036,23 +4036,38 @@ void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
         invalid);
 }
 
+bool TopoOffsetTetMesh::front_face_out_normal(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    Vector3d& n) const
+{
+    // See the declaration.
+    const Vector3d& pa = m_vertex_attribute[a].m_posf;
+    const Vector3d& pb = m_vertex_attribute[b].m_posf;
+    const Vector3d& pc = m_vertex_attribute[c].m_posf;
+    n = (pb - pa).cross(pc - pa);
+    if (!(n.norm() > 0.)) return false;
+    const int64_t bc = front_face_band_cell(a, b, c);
+    if (bc < 0) return false;
+    for (const size_t v : oriented_tet_vids(size_t(bc))) {
+        if (v == a || v == b || v == c) continue;
+        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
+    }
+    return true;
+}
+
 double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b, const size_t c)
     const
 {
     // See the declaration.
     const double nan = std::numeric_limits<double>::quiet_NaN();
     if (!m_input_complex_envelope) return nan;
+    Vector3d n;
+    if (!front_face_out_normal(a, b, c, n)) return nan;
     const Vector3d& pa = m_vertex_attribute[a].m_posf;
     const Vector3d& pb = m_vertex_attribute[b].m_posf;
     const Vector3d& pc = m_vertex_attribute[c].m_posf;
-    Vector3d n = (pb - pa).cross(pc - pa);
-    if (!(n.norm() > 0.)) return nan;
-    const int64_t bc = front_face_band_cell(a, b, c);
-    if (bc < 0) return nan;
-    for (const size_t v : oriented_tet_vids(size_t(bc))) {
-        if (v == a || v == b || v == c) continue;
-        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
-    }
     const Vector3d x = (pa + pb + pc) / 3.;
     const Envelope& env = *m_input_complex_envelope;
     const int64_t prim = nearest_primitive(env, m_input_complex_pad, x);

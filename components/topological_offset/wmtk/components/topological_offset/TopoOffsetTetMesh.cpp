@@ -23,6 +23,7 @@
 #include <exception>
 #include <limits>
 #include <queue>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -2643,9 +2644,19 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //                       normal, out of the band, and grad d at its centroid. NaN where it
         //                       cannot be measured.
         //   offset_foldover     1 where field_normal_angle > foldover_angle (a foldover), else 0.
+        //   dihedral_angle      the band-side dihedral angle (band_side_dihedral(); 180 flat,
+        //                       toward 0 or 360 as two faces fold onto each other) across the
+        //                       face's most folded edge, the one closest to 0 or 360; edges with
+        //                       other than two offset faces, or a neighbour without a normal, are
+        //                       not measured. NaN with no measured edge.
+        //   offset_foldover_dihedral  1 where that angle is below foldover_angle or above 360
+        //                       minus it (dihedral_is_foldover()), else 0: a fold between
+        //                       neighbouring faces, whatever the field does.
         fr.f_err.resize(faces_off.size());
         fr.f_fold = VectorXd::Zero(faces_off.size());
         fr.f_field_angle = VectorXd::Constant(faces_off.size(), nan);
+        fr.f_dihedral = VectorXd::Constant(faces_off.size(), nan);
+        fr.f_fold_dihedral = VectorXd::Zero(faces_off.size());
         fr.f_len.resize(faces_off.size());
         fr.f_inside = VectorXd::Constant(faces_off.size(), nan);
         fr.f_outside = VectorXd::Constant(faces_off.size(), nan);
@@ -2660,6 +2671,10 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         // its three corners are front vertices and its term (face_offset_term()).
         std::vector<double> face_term(faces_off.size(), -1.);
         std::vector<char> face_all_front(faces_off.size(), 0);
+        // and for the dihedral angles below: its unit normal out of the band, whether its corners
+        // run clockwise seen from it, whether it has one
+        std::vector<Vector3d> face_n(faces_off.size(), Vector3d::Zero());
+        std::vector<char> face_flip(faces_off.size(), 0), face_has_n(faces_off.size(), 0);
         std::atomic<size_t> n_outside_threw{0}; // faces whose exact max threw: outside_bars NaN
         const size_t n_off = faces_off.size();
         diagnostic_parallel_for(n_off, kDiagnosticChunk, [&](const size_t fb, const size_t fe) {
@@ -2674,6 +2689,12 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
                 fr.f_field_angle[i] = front_face_field_angle(a, b, c);
                 fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
+                Vector3d n;
+                if (front_face_out_normal(a, b, c, n)) {
+                    face_n[i] = n.normalized();
+                    face_flip[i] = n.dot((pb - pa).cross(pc - pa)) < 0. ? 1 : 0;
+                    face_has_n[i] = 1;
+                }
                 if (!band_env) continue;
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
@@ -2709,6 +2730,56 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                     v_ring_n[int(u)] += 1.;
                 }
             }
+        }
+        // The dihedral angles: every face's three edges, each run counterclockwise as seen from
+        // its normal, sorted so the two faces of an edge are adjacent (and in face order, so the
+        // result does not depend on the thread count); the first face's run gives the edge's
+        // direction.
+        struct EdgeUse
+        {
+            size_t lo, hi, face, from, to;
+        };
+        std::vector<EdgeUse> uses;
+        uses.reserve(3 * n_off);
+        for (size_t i = 0; i < n_off; ++i) {
+            if (!face_has_n[i]) continue;
+            for (size_t k = 0; k < 3; ++k) {
+                size_t u = faces_off[i][k], v = faces_off[i][(k + 1) % 3];
+                if (face_flip[i]) std::swap(u, v);
+                uses.push_back({std::min(u, v), std::max(u, v), i, u, v});
+            }
+        }
+        std::sort(uses.begin(), uses.end(), [](const EdgeUse& x, const EdgeUse& y) {
+            return std::tie(x.lo, x.hi, x.face) < std::tie(y.lo, y.hi, y.face);
+        });
+        // per face, its most folded edge's distance from a full fold, min(angle, 360 - angle)
+        std::vector<double> fold_margin(n_off, std::numeric_limits<double>::infinity());
+        for (size_t e = 0; e < uses.size();) {
+            size_t m = 1;
+            while (e + m < uses.size() && uses[e + m].lo == uses[e].lo &&
+                   uses[e + m].hi == uses[e].hi) {
+                ++m;
+            }
+            if (m == 2) {
+                const EdgeUse& f1 = uses[e];
+                const EdgeUse& f2 = uses[e + 1];
+                const Vector3d t = (VA[f1.to].m_posf - VA[f1.from].m_posf).normalized();
+                const double ang = band_side_dihedral(face_n[f1.face], face_n[f2.face], t);
+                const double margin = std::min(ang, 360. - ang);
+                for (const size_t fi : {f1.face, f2.face}) {
+                    if (margin < fold_margin[fi]) {
+                        fold_margin[fi] = margin;
+                        fr.f_dihedral[int(fi)] = ang;
+                    }
+                }
+            }
+            e += m;
+        }
+        for (size_t i = 0; i < n_off; ++i) {
+            if (!std::isfinite(fr.f_dihedral[int(i)])) continue;
+            fr.f_fold_dihedral[int(i)] =
+                dihedral_is_foldover(fr.f_dihedral[int(i)], m_offset_params.foldover_angle) ? 1.
+                                                                                            : 0.;
         }
         fr.ring = VectorXd::Constant(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
         for (size_t vid = 0; vid < vert_capacity(); ++vid) {
@@ -2780,6 +2851,8 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         off_writer.add_cell_field("chord_length", fr.f_len);
         off_writer.add_cell_field("field_normal_angle", fr.f_field_angle);
         off_writer.add_cell_field("offset_foldover", fr.f_fold);
+        off_writer.add_cell_field("dihedral_angle", fr.f_dihedral);
+        off_writer.add_cell_field("offset_foldover_dihedral", fr.f_fold_dihedral);
         off_writer.add_field("vid", fr.vid);
         off_writer.add_field("sizing_scalar", fr.sizing);
         off_writer.add_field("input_distance", fr.in_dist);
