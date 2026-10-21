@@ -78,6 +78,8 @@ void Replay::apply(const Edit& e)
     case EditKind::move_vertices: break;
     case EditKind::consolidate: consolidate(); break;
     case EditKind::replace_faces: replace_faces(e); break;
+    case EditKind::relabel: relabel(e); break;
+    case EditKind::embed: embed(e); break;
     default: log_and_throw_error("Replay: unknown edit kind {}", int(e.kind));
     }
     for (const VertexMove& m : e.moves) {
@@ -260,6 +262,85 @@ void Replay::replace_faces(const Edit& e)
         // A retired vertex keeps no feature edges: a consolidation would have nowhere to put them.
         const std::vector<uint64_t> nbrs = m_feature_nbrs[v];
         for (const uint64_t x : nbrs) remove_feature(v, x);
+    }
+}
+
+void Replay::relabel(const Edit& e)
+{
+    uint64_t nv = 0;
+    for (const uint64_t n : e.v) {
+        if (n != kNoVertex) nv = std::max(nv, n + 1);
+    }
+    const auto renamed = [&e](const uint64_t v) { return v < e.v.size() ? e.v[v] : kNoVertex; };
+    std::vector<std::array<uint64_t, 3>> faces;
+    std::vector<uint8_t> placed;
+    for (uint64_t f = 0; f < m_faces.size(); ++f) {
+        if (!m_face_alive[f]) continue;
+        std::array<uint64_t, 3> t = m_faces[f];
+        for (uint64_t& v : t) v = renamed(v);
+        if (t[0] == kNoVertex || t[1] == kNoVertex || t[2] == kNoVertex || t[0] == t[1] ||
+            t[1] == t[2] || t[0] == t[2]) {
+            continue;
+        }
+        if (e.faces.empty()) {
+            faces.push_back(t);
+            continue;
+        }
+        const uint64_t g = f < e.faces.size() ? e.faces[f] : kNoVertex;
+        if (g == kNoVertex) continue;
+        if (g >= faces.size()) {
+            faces.resize(g + 1, {{0, 0, 0}});
+            placed.resize(g + 1, 0);
+        }
+        faces[g] = t;
+        placed[g] = 1;
+    }
+    if (!e.faces.empty() && std::count(placed.begin(), placed.end(), 0) > 0) {
+        log_and_throw_error("Replay: a relabel leaves face ids unused");
+    }
+    std::vector<std::vector<uint64_t>> nbrs(nv);
+    for (uint64_t a = 0; a < m_feature_nbrs.size(); ++a) {
+        for (const uint64_t b : m_feature_nbrs[a]) {
+            const uint64_t na = renamed(a), nb = renamed(b);
+            if (na == kNoVertex || nb == kNoVertex || na == nb) continue;
+            if (std::find(nbrs[na].begin(), nbrs[na].end(), nb) == nbrs[na].end()) {
+                nbrs[na].push_back(nb);
+            }
+        }
+    }
+    m_vertices.assign(nv, Eigen::Vector3d::Zero());
+    m_vertex_alive.assign(nv, 0);
+    m_faces = std::move(faces);
+    m_face_alive.assign(m_faces.size(), 1);
+    m_vertex_faces.assign(nv, {});
+    for (uint64_t f = 0; f < m_faces.size(); ++f) {
+        for (const uint64_t v : m_faces[f]) {
+            m_vertex_faces[v].push_back(f);
+            m_vertex_alive[v] = 1;
+        }
+    }
+    m_feature_nbrs = std::move(nbrs);
+}
+
+void Replay::embed(const Edit& e)
+{
+    const size_t nf = e.v.size() / 3;
+    uint64_t nv = 0;
+    for (const uint64_t v : e.v) nv = std::max(nv, v + 1);
+    for (const VertexMove& m : e.moves) nv = std::max(nv, m.vid + 1);
+    m_vertices.assign(nv, Eigen::Vector3d::Zero());
+    m_vertex_alive.assign(nv, 0);
+    m_faces.assign(nf, {{0, 0, 0}});
+    m_face_alive.assign(nf, 1);
+    m_vertex_faces.assign(nv, {});
+    m_feature_nbrs.assign(nv, {});
+    for (uint64_t f = 0; f < nf; ++f) {
+        for (int k = 0; k < 3; ++k) {
+            const uint64_t v = e.v[3 * f + k];
+            m_faces[f][k] = v;
+            m_vertex_faces[v].push_back(f);
+            m_vertex_alive[v] = 1;
+        }
     }
 }
 

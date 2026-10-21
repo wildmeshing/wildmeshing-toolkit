@@ -216,6 +216,8 @@ InputData read_mesh(
     const double tol_rel = remove_duplicate_eps;
     const double tol_abs = -1;
 
+    const bool record_history = !std::string(json_params["history_output"]).empty();
+
     // convert mesh into tet mesh
     EmbedSurface image_mesh(
         input_paths,
@@ -223,7 +225,8 @@ InputData read_mesh(
         tol_rel,
         tol_abs,
         split_connected_components,
-        component_io);
+        component_io,
+        record_history);
     image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
@@ -290,6 +293,11 @@ InputData read_mesh(
         input_data.V_input_r = image_mesh.V_emb_r();
     }
     input_data.T_input = image_mesh.T_emb();
+    if (record_history) {
+        input_data.has_input_history = true;
+        input_data.input_history = image_mesh.input_history();
+        input_data.facet_sources = std::move(image_mesh.facet_sources());
+    }
     const auto& T_tags = image_mesh.T_tags();
     // An input's name, or tag_<i> without one.
     auto name = [&](size_t i) {

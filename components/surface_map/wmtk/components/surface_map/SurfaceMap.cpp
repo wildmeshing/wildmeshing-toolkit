@@ -57,6 +57,18 @@ Eigen::Vector3d position_after(const Edit& e, const uint64_t vid, const Eigen::V
     return fallback;
 }
 
+/// Barycentric coordinates of p, projected onto the plane of the 3D triangle (a, b, c); not
+/// finite if it is degenerate.
+Eigen::Vector3d barycentric3(const Eigen::Vector3d& p, const std::array<Eigen::Vector3d, 3>& t)
+{
+    const Eigen::Vector3d e0 = t[1] - t[0], e1 = t[2] - t[0], ep = p - t[0];
+    const double d00 = e0.dot(e0), d01 = e0.dot(e1), d11 = e1.dot(e1);
+    const double d20 = ep.dot(e0), d21 = ep.dot(e1);
+    const double den = d00 * d11 - d01 * d01;
+    const double l1 = (d11 * d20 - d01 * d21) / den, l2 = (d00 * d21 - d01 * d20) / den;
+    return {1 - l1 - l2, l1, l2};
+}
+
 /// Barycentric coordinates of p in the 3D triangle (a, b, c), kept strictly inside it.
 Eigen::Vector3d inside_barycentric(
     const Eigen::Vector3d& p,
@@ -878,6 +890,61 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             r.apply(e);
             break;
         }
+        case EditKind::relabel: {
+            // Faces keep their corners, so their points keep their coordinates: a renumbering,
+            // with the faces a weld leaves degenerate gone.
+            step.kind = EditKind::consolidate;
+            step.old_to_new.assign(r.faces().size(), kNone);
+            const auto renamed = [&e](uint64_t v) { return v < e.v.size() ? e.v[v] : kNone; };
+            for (uint64_t f = 0; f < r.faces().size(); ++f) {
+                if (!r.face_alive()[f]) continue;
+                std::array<uint64_t, 3> t = r.faces()[f];
+                for (uint64_t& v : t) v = renamed(v);
+                if (t[0] == kNone || t[1] == kNone || t[2] == kNone || t[0] == t[1] ||
+                    t[1] == t[2] || t[0] == t[2]) {
+                    continue;
+                }
+                const uint64_t g = e.faces.empty()      ? step.new_to_old.size()
+                                   : f < e.faces.size() ? e.faces[f]
+                                                        : kNone;
+                if (g == kNone) continue;
+                step.old_to_new[f] = g;
+                if (g >= step.new_to_old.size()) step.new_to_old.resize(g + 1, kNone);
+                step.new_to_old[g] = f;
+            }
+            r.apply(e);
+            break;
+        }
+        case EditKind::embed: {
+            Embedding& em = step.embedding;
+            const auto& P = r.vertices();
+            em.before.resize(r.faces().size());
+            em.to_after.assign(r.faces().size(), {});
+            for (uint64_t f = 0; f < r.faces().size(); ++f) {
+                if (!r.face_alive()[f]) continue;
+                for (int k = 0; k < 3; ++k) em.before[f][k] = P[r.faces()[f][k]];
+            }
+            std::vector<Eigen::Vector3d> Q;
+            for (const auto& m : e.moves) {
+                if (m.vid >= Q.size()) Q.resize(m.vid + 1, Eigen::Vector3d::Zero());
+                Q[m.vid] = m.pos;
+            }
+            const size_t nf = e.v.size() / 3;
+            em.after.resize(nf);
+            em.to_before.resize(nf);
+            for (size_t f = 0, i = 0; f < nf; ++f) {
+                for (int k = 0; k < 3; ++k) em.after[f][k] = Q[e.v[3 * f + k]];
+                const uint64_t n = e.faces[i++];
+                for (uint64_t j = 0; j < n; ++j) {
+                    const uint64_t g = e.faces[i++];
+                    em.to_before[f].push_back(g);
+                    if (g < em.to_after.size()) em.to_after[g].push_back(f);
+                }
+            }
+            step.kind = EditKind::embed;
+            r.apply(e);
+            break;
+        }
         case EditKind::consolidate: {
             step.old_to_new.assign(r.faces().size(), kNone);
             for (uint64_t f = 0; f < r.faces().size(); ++f) {
@@ -908,7 +975,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         }
         if (m_build_warnings.total() > warnings_before) m_warned_edits.push_back(edit_index);
         if (step.cells.empty() && step.dead.empty() && step.born.empty() &&
-            e.kind != EditKind::consolidate) {
+            step.kind != EditKind::consolidate && step.kind != EditKind::embed) {
             continue;
         }
         ++m_cells_by_kind[size_t(e.kind) % m_cells_by_kind.size()];
@@ -949,6 +1016,46 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
                 if (g != kNone) renamed[g] = std::move(on);
             }
             on_face = std::move(renamed);
+            return;
+        }
+        if (s.kind == EditKind::embed) {
+            // Each point stays where it is in space, on whichever face of the other side that
+            // lies on its own holds it best.
+            const Embedding& em = s.embedding;
+            const auto& from = forward ? em.before : em.after;
+            const auto& to = forward ? em.after : em.before;
+            const auto& candidates = forward ? em.to_after : em.to_before;
+            std::unordered_map<uint64_t, std::vector<size_t>> moved;
+            for (auto& [f, on] : on_face) {
+                for (const size_t i : on) {
+                    if (f >= candidates.size() || candidates[f].empty()) {
+                        ++m_map_warnings.unlocated;
+                        pts[i].face = kNone;
+                        continue;
+                    }
+                    const auto& c = from[f];
+                    const Eigen::Vector3d p =
+                        pts[i].bary[0] * c[0] + pts[i].bary[1] * c[1] + pts[i].bary[2] * c[2];
+                    double best = -std::numeric_limits<double>::infinity();
+                    uint64_t best_g = candidates[f].front();
+                    Eigen::Vector3d best_l(1. / 3, 1. / 3, 1. / 3);
+                    for (const uint64_t g : candidates[f]) {
+                        const Eigen::Vector3d l = barycentric3(p, to[g]);
+                        if (std::isfinite(l.minCoeff()) && l.minCoeff() > best) {
+                            best = l.minCoeff();
+                            best_g = g;
+                            best_l = l;
+                        }
+                    }
+                    if (!(best >= -1e-9)) ++m_map_warnings.unlocated;
+                    best_l = best_l.cwiseMax(0.);
+                    best_l = best_l.sum() > 0 ? Eigen::Vector3d(best_l / best_l.sum())
+                                              : Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
+                    pts[i] = {best_g, best_l};
+                    moved[best_g].push_back(i);
+                }
+            }
+            on_face = std::move(moved);
             return;
         }
         landed.clear();

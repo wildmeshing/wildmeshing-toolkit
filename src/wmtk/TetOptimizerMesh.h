@@ -569,11 +569,28 @@ public:
     void update_attributes_and_history();
 
     /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
-    /// `metadata` (the application's parameters, say) saved along.
+    /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.
     void record_surface_history(const std::string& metadata);
-    /// Bring the recorded surface up to date with the tracked faces, stop recording, log what the
-    /// history holds and save it to `path`. Nothing if not recording.
-    void save_surface_history(const std::string& path);
+    /**
+     * @brief Bring the recorded surface up to date with the tracked faces, stop recording, log
+     * what the history holds and save it to `path`. Nothing if not recording.
+     *
+     * With `input`, the history of the input the mesh was made from (read, welded, simplified):
+     * the saved history is that, then the insertion -- each tracked face on the input faces it
+     * lies on, from m_insertion_sources -- then the recorded one, so it maps the input files to
+     * the output.
+     */
+    void save_surface_history(
+        const std::string& path,
+        const history::SurfaceHistory* input = nullptr);
+
+    /// A tracked face by its corners' positions, sorted.
+    using PositionKey = std::array<std::array<double, 3>, 3>;
+    static PositionKey position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c);
+    /// Where the tracked faces lie on the input the mesh was made from: by position key, sorted,
+    /// the input triangles. Filled at insertion when a surface history is to start from the
+    /// input; record_surface_history takes it.
+    std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
 
     /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
     bool is_tracked_face(size_t tid, int j) const override;
@@ -584,6 +601,8 @@ public:
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     std::shared_ptr<history::TrackedSurfaceRecorder> m_recorded_surface;
+    /// The input triangles each face of the recorded surface's first state lies on.
+    std::vector<std::vector<uint64_t>> m_recorded_sources;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer

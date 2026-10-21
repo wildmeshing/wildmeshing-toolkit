@@ -419,7 +419,8 @@ public:
         const std::vector<Vector3d>& feature_points = {},
         utils::EmbedFeaturesResult* features_out = nullptr,
         const std::vector<int>* face_input = nullptr,
-        std::vector<InputSet>* facet_input_set = nullptr);
+        std::vector<InputSet>* facet_input_set = nullptr,
+        std::vector<std::vector<uint32_t>>* facet_sources = nullptr);
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers

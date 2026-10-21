@@ -27,6 +27,7 @@
 
 namespace wmtk::history {
 class TrackedSurfaceRecorder;
+struct SurfaceHistory;
 enum class EditKind : uint8_t;
 } // namespace wmtk::history
 

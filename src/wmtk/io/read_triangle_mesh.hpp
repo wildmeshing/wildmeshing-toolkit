@@ -4,12 +4,17 @@
 
 namespace wmtk::io {
 
+/**
+ * @param vertex_map If not null, receives for every vertex of V as given the vertex of the
+ * cleaned V it became, -1 for one that went.
+ */
 void clean_triangle_mesh(
     MatrixXd& V,
     MatrixXi& F,
     double tol_rel = -1,
     double tol_abs = -1,
-    std::vector<int>* face_tags = nullptr);
+    std::vector<int>* face_tags = nullptr,
+    std::vector<int>* vertex_map = nullptr);
 
 /**
  * @brief Reads a triangle mesh from a file.
@@ -39,11 +44,22 @@ void read_triangle_mesh(
     double tol_rel = 2e-4,
     double tol_abs = -1);
 
+/// What cleaning a mesh changed: the meshes as the files hold them, concatenated, and the vertex
+/// of the result each of their vertices became, -1 for one that went. The faces keep their
+/// order, less those left with a repeated vertex.
+struct ReadProvenance
+{
+    MatrixXd V;
+    MatrixXi F;
+    std::vector<int> vertex_map;
+};
+
 /**
  * @brief Reads several triangle meshes into one, cleaned as a whole as above.
  *
  * @param face_input If not null, receives for every face of F the index into `paths` of the file
  * it was read from, kept in step with the cleaning (which removes degenerate faces).
+ * @param provenance If not null, receives the meshes as read and where their vertices went.
  */
 void read_triangle_mesh(
     const std::vector<std::string>& paths,
@@ -51,6 +67,7 @@ void read_triangle_mesh(
     Eigen::MatrixXi& F,
     double tol_rel = 2e-4,
     double tol_abs = -1,
-    std::vector<int>* face_input = nullptr);
+    std::vector<int>* face_input = nullptr,
+    ReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::io

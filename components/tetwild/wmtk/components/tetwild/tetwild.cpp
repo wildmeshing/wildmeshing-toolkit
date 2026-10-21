@@ -11,6 +11,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
@@ -208,6 +209,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.skip_good_regions = json_params["skip_good_regions"];
     params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
+    // Recording the tracked surface: from the input files as read, through the weld, the
+    // simplification and the insertion, to the output.
+    const std::string history_output = json_params["history_output"];
+    const bool record_history = !history_output.empty() && !json_params["use_legacy_code"];
+    if (!history_output.empty() && !record_history) {
+        logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
+    }
+    history::SurfaceHistory input_history; // the files as read, welded, simplified
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::vector<int> tri_input; // the input each of `tris` came from
@@ -227,7 +237,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
-        component_io.triangles(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
+        io::ReadProvenance read;
+        component_io.triangles(
+            input_paths,
+            V,
+            F,
+            remove_duplicate_eps,
+            -1,
+            &tri_input,
+            record_history ? &read : nullptr);
         // Each tracked face records the inputs it covers in max_inputs bits (see
         // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
         // own inputs. Refused here, before any work, rather than answered by the union.
@@ -240,6 +258,25 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
+        if (record_history) {
+            // The files as they are, then the weld: each vertex renamed to the one it became.
+            auto& h = input_history;
+            for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+                h.vertices.push_back(read.V.row(v).transpose());
+            }
+            h.vertex_alive.assign(h.vertices.size(), 1);
+            for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
+                h.faces.push_back(
+                    {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
+            }
+            h.face_alive.assign(h.faces.size(), 1);
+            history::Edit weld{history::EditKind::relabel, {}, {}, {}};
+            for (const int n : read.vertex_map) {
+                weld.v.push_back(n < 0 ? history::kNoVertex : uint64_t(n));
+            }
+            for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
+            h.edits.push_back(std::move(weld));
+        }
     }
     // Feature inputs: an edge mesh to force into the tetrahedralization as tet edges, and
     // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
@@ -490,10 +527,22 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 simplify_use_link_condition ? "on" : "off",
                 simplify_boundary_eps > 0 ? "in a tube" : "frozen");
         }
+        std::shared_ptr<history::Recorder> simplification;
+        if (record_history) {
+            simplification = surf_mesh.start_history(
+                [&surf_mesh](size_t v) { return surf_mesh.vertex_attrs.at(v).pos; });
+        }
         surf_mesh.collapse_shortest(0);
 
         surf_mesh.m_envelope.use_exact = saved_use_exact;
         surf_mesh.consolidate_mesh();
+        if (simplification) {
+            surf_mesh.stop_history();
+            if (!history::append(input_history, simplification->history())) {
+                log_and_throw_error(
+                    "history_output: the simplification does not start at the input");
+            }
+        }
         if (!surf_mesh.check_mesh_connectivity_validity()) {
             log_and_throw_error("Simplification produced an invalid mesh connectivity.");
         }
@@ -739,6 +788,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // mesh; the remesher's own tets are used directly, so no Steiner points.
     utils::EmbedFeaturesResult features_out;
     std::vector<InputSet> facet_input_set; // per facet, with several inputs only
+    std::vector<std::vector<uint32_t>> facet_sources;
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -753,7 +803,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         feature_points,
         &features_out,
         input_envelopes.empty() ? nullptr : &fsimp_input,
-        input_envelopes.empty() ? nullptr : &facet_input_set);
+        input_envelopes.empty() ? nullptr : &facet_input_set,
+        record_history ? &facet_sources : nullptr);
 
     if (!feature_edges.empty() || !feature_points.empty()) {
         size_t tiling_edges = 0;
@@ -779,6 +830,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
+    // Where each facet on the input lies there, by the positions its corners will have.
+    for (size_t i = 0; i < facet_sources.size(); ++i) {
+        if (facet_sources[i].empty()) continue;
+        const auto& f = facets[i];
+        mesh_new.m_insertion_sources.emplace_back(
+            TetWildMesh::position_key(
+                to_double(v_rational[f[0]]),
+                to_double(v_rational[f[1]]),
+                to_double(v_rational[f[2]])),
+            std::move(facet_sources[i]));
+    }
+    facet_sources = {};
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
@@ -871,15 +934,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     mesh_new.consolidate_mesh();
 
-    // From here on the tracked surface -- the input as inserted -- is recorded.
-    const std::string history_output = json_params["history_output"];
-    if (!history_output.empty()) {
-        if (json_params["use_legacy_code"]) {
-            logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
-        } else {
-            mesh_new.record_surface_history(json_params.dump());
-        }
-    }
+    // From here on the tracked surface is recorded, starting where the insertion left it.
+    if (record_history) mesh_new.record_surface_history(json_params.dump());
 
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
@@ -1018,7 +1074,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
     mesh_new.consolidate_mesh();
     // A filter removes the tracked faces of the tets it drops, which no operation maps.
-    mesh_new.save_surface_history(history_output);
+    mesh_new.save_surface_history(history_output, &input_history);
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins

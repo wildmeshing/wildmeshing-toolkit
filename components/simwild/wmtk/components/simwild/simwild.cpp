@@ -209,10 +209,7 @@ double optimization_envelope_eps(const Parameters& params, bool is_3d)
 
 } // namespace
 
-void run_3D(
-    const nlohmann::json& json_params,
-    const InputData& input_data,
-    io::ComponentIO& component_io)
+void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
@@ -286,6 +283,8 @@ void run_3D(
         // The tet mesh the history starts from, tags and all: for a surface input that is the
         // embedding, which no file holds otherwise.
         io::write_mesh(params.output_path + "_history_input.msh", tagged_outputs().at("mesh"));
+        // A surface input: from the files, through the arrangement, to here.
+        mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(json_params.dump());
     }
 
@@ -304,7 +303,9 @@ void run_3D(
 
     // The tag operations change tags only, and leave the surface flags to the next run: the
     // history ends where the flags are.
-    mesh.save_surface_history(history_output);
+    mesh.save_surface_history(
+        history_output,
+        input_data.has_input_history ? &input_data.input_history : nullptr);
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written
