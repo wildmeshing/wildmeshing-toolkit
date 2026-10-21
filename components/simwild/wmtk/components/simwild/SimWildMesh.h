@@ -186,6 +186,9 @@ public:
      * @see check_interface_faces_tagged, which verifies the post-condition in both directions.
      */
     void update_attributes() override;
+    /// Out of the tet whose tags come first (std::set order) into the other: a sheet between two
+    /// tag sets is oriented the same way all over, from the tags alone.
+    std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const override;
 
     std::vector<size_t> active_vertices() const override;
 

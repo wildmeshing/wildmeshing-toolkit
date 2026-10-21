@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/history/SurfaceHistory.hpp>
 
 #include <algorithm>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -17,6 +18,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     const Tuple loc2 = switch_vertex(loc1);
     const size_t v2_id = loc2.vid(*this);
     logger().trace("{} {}", v1_id, v2_id);
+    if (m_surface_history) surface_history_before({v1_id, v2_id}, false);
 
     // infomation needed for return tuple
     // refer to illustrations
@@ -106,6 +108,14 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
         operation_failure_rollback_imp(rollback_vert_conn, n12_t_ids, new_tet_id, old_tets_conn);
 
         return op_refused(OpKind::split, refused);
+    }
+    if (m_surface_history) {
+        const size_t vn = size_t(v_id);
+        surface_history_commit(
+            history::EditKind::split_edge,
+            {v1_id, v2_id, vn},
+            {v1_id, v2_id, vn},
+            false);
     }
     release_protect_attributes();
 

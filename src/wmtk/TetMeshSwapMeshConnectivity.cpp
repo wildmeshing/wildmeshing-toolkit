@@ -1,5 +1,6 @@
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/history/SurfaceHistory.hpp>
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -206,6 +207,9 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         wmtk::array_replace_inline(new_tets[1], v1_id, (size_t)n2_id);
     }
     if (dry_run()) return op_screened(OpKind::swap_32);
+    const std::vector<size_t> ring_vs =
+        m_surface_history ? vertices_of_tets(affected) : std::vector<size_t>();
+    if (m_surface_history) surface_history_before(ring_vs, true);
 
     auto new_tet_id = affected;
     bool conn_ok = true;
@@ -247,6 +251,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
         return op_refused(OpKind::swap_32, refused);
     }
+    if (m_surface_history) surface_history_commit(history::EditKind::swap_edge, {}, ring_vs, true);
     release_protect_attributes();
 
 
@@ -304,6 +309,9 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
     }
     if (dry_run()) return op_screened(OpKind::swap_face);
+    const std::vector<size_t> ring_vs =
+        m_surface_history ? vertices_of_tets(affected) : std::vector<size_t>();
+    if (m_surface_history) surface_history_before(ring_vs, true);
 
     {
         auto new_tet_id = affected;
@@ -350,6 +358,8 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
             return op_refused(OpKind::swap_face, refused);
         }
+        if (m_surface_history)
+            surface_history_commit(history::EditKind::swap_edge, {}, ring_vs, true);
         release_protect_attributes();
     }
 
@@ -586,6 +596,9 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
     if (dry_run()) return op_screened(OpKind::swap_44);
+    const std::vector<size_t> ring_vs =
+        m_surface_history ? vertices_of_tets(affected) : std::vector<size_t>();
+    if (m_surface_history) surface_history_before(ring_vs, true);
 
     std::vector<size_t> new_tet_id = affected;
     {
@@ -634,6 +647,8 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
             return op_refused(OpKind::swap_44, refused);
         }
+        if (m_surface_history)
+            surface_history_commit(history::EditKind::swap_edge, {}, ring_vs, true);
         release_protect_attributes();
         op_event(OpKind::swap_44, OpEvent::committed);
         return true;
@@ -823,6 +838,9 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             any_case_allowed ? OpEvent::no_better_case : OpEvent::no_case_allowed);
     }
     if (dry_run()) return op_screened(OpKind::swap_56);
+    const std::vector<size_t> ring_vs =
+        m_surface_history ? vertices_of_tets(affected) : std::vector<size_t>();
+    if (m_surface_history) surface_history_before(ring_vs, true);
 
     std::vector<size_t> new_tet_id = affected;
     bool is_succeed = false;
@@ -871,6 +889,8 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
             operation_failure_rollback_imp(rollback_vert_conn, affected, new_tet_id, old_tets);
             return op_refused(OpKind::swap_56, refused);
         }
+        if (m_surface_history)
+            surface_history_commit(history::EditKind::swap_edge, {}, ring_vs, true);
         release_protect_attributes();
         op_event(OpKind::swap_56, OpEvent::committed);
         return true;

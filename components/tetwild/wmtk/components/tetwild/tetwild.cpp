@@ -795,6 +795,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     mesh_new.consolidate_mesh();
 
+    // From here on the tracked surface -- the input as inserted -- is recorded.
+    const std::string history_output = json_params["history_output"];
+    if (!history_output.empty()) {
+        if (json_params["use_legacy_code"]) {
+            logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
+        } else {
+            mesh_new.record_surface_history(json_params.dump());
+        }
+    }
+
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
     // mesh_new.output_faces("test_embed_output_bbox.obj", [](auto& f) {
@@ -931,6 +941,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
     mesh_new.consolidate_mesh();
+    // A filter removes the tracked faces of the tets it drops, which no operation maps.
+    mesh_new.save_surface_history(history_output);
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins
