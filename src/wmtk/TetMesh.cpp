@@ -1752,6 +1752,42 @@ std::vector<std::array<size_t, 3>> TetMesh::tracked_faces_around(
     return faces;
 }
 
+size_t TetMesh::face_id_in(const std::array<size_t, 3>& f, const size_t tid) const
+{
+    std::array<int, 3> local;
+    for (int k = 0; k < 3; ++k) local[k] = m_tet_connectivity[tid].find(f[k]);
+    std::sort(local.begin(), local.end());
+    return 4 * tid + size_t(
+                         std::find(m_local_faces.begin(), m_local_faces.end(), local) -
+                         m_local_faces.begin());
+}
+
+std::vector<TetMesh::VertexFace> TetMesh::faces_at_vertex(const size_t v) const
+{
+    std::vector<std::tuple<std::array<size_t, 3>, size_t, int>> candidates;
+    for (const size_t tid : m_vertex_connectivity[v].m_conn_tets) {
+        for (int j = 0; j < 4; ++j) {
+            std::array<size_t, 3> f;
+            for (int k = 0; k < 3; ++k) f[k] = m_tet_connectivity[tid][m_local_faces[j][k]];
+            if (f[0] != v && f[1] != v && f[2] != v) continue;
+            std::sort(f.begin(), f.end());
+            candidates.emplace_back(f, tid, j);
+        }
+    }
+    // By face, then tet: each face's first is its lowest tet, whose local face names it.
+    std::sort(candidates.begin(), candidates.end());
+    std::vector<VertexFace> faces;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        const auto& [f, tid, j] = candidates[i];
+        if (i > 0 && f == std::get<0>(candidates[i - 1])) {
+            faces.back().tets.push_back(tid);
+            continue;
+        }
+        faces.push_back({f, 4 * tid + size_t(j), {tid}});
+    }
+    return faces;
+}
+
 void TetMesh::surface_history_before(const std::vector<size_t>& vs, const bool all)
 {
     m_surface_history_before.local() = tracked_faces_around(vs, all);

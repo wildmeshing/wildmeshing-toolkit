@@ -593,7 +593,10 @@ public:
     bool is_tracked_face(size_t tid, int j) const override;
     /// The input's orientation on the face (m_orientation), where insertion recorded one;
     /// ascending vertex order where it did not.
-    std::array<size_t, 3> orient_tracked_face(const std::array<size_t, 3>& f) const override;
+    using TetMesh::orient_tracked_face;
+    std::array<size_t, 3> orient_tracked_face(
+        const std::array<size_t, 3>& f,
+        const std::vector<size_t>& tets) const override;
     /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
     std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
 

@@ -820,9 +820,27 @@ size_t TetOptimizerMesh::tracked_star_folds(const std::vector<std::array<size_t,
     std::sort(vs.begin(), vs.end());
     vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
     size_t count = 0;
+    const auto& p = m_vertex_attribute;
+    std::vector<std::array<size_t, 3>> star;
     for (const size_t v : vs) {
-        const auto star = tracked_faces_around({v}, false);
-        count += tracked_not_facing(star, tracked_area_normal(star));
+        // The star from v's tets alone (faces_at_vertex): the operation holds v, not the
+        // corners across its star. Their positions are safe to read -- moving one would need v.
+        star.clear();
+        Eigen::Vector3d n = Eigen::Vector3d::Zero();
+        for (const VertexFace& vf : faces_at_vertex(v)) {
+            if (!m_face_attribute.at(vf.fid).m_is_surface_fs) continue;
+            const auto f = orient_tracked_face(vf.face, vf.tets);
+            n += (p.at(f[1]).m_posf - p.at(f[0]).m_posf)
+                     .cross(p.at(f[2]).m_posf - p.at(f[0]).m_posf);
+            star.push_back(f);
+        }
+        for (const auto& f : star) {
+            count += !utils::predicates::faces_along(
+                p.at(f[0]).m_posf,
+                p.at(f[1]).m_posf,
+                p.at(f[2]).m_posf,
+                n);
+        }
     }
     return count;
 }
@@ -956,12 +974,17 @@ bool TetOptimizerMesh::is_tracked_face(const size_t tid, const int j) const
     return m_face_attribute.at(tuple_from_face(tid, j).fid(*this)).m_is_surface_fs;
 }
 
-std::array<size_t, 3> TetOptimizerMesh::orient_tracked_face(const std::array<size_t, 3>& f) const
+std::array<size_t, 3> TetOptimizerMesh::orient_tracked_face(
+    const std::array<size_t, 3>& f,
+    const std::vector<size_t>& tets) const
 {
     std::array<size_t, 3> a = f;
     std::sort(a.begin(), a.end());
-    const auto [_, fid] = tuple_from_face(a);
-    if (m_face_attribute.at(fid).orientation_along(a) < 0) std::swap(a[1], a[2]);
+    if (tets.empty()) return a;
+    // The face's id from its lowest tet, with nothing read of its corners' tets.
+    if (m_face_attribute.at(face_id_in(a, tets.front())).orientation_along(a) < 0) {
+        std::swap(a[1], a[2]);
+    }
     return a;
 }
 
