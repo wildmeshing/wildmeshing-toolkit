@@ -227,7 +227,7 @@ double TopoOffsetTetMesh::face_offset_mean_sq(
 {
     // The mean over the stencil of relative_residual(q)^2 (for the euclidean field
     // ((d - delta) / delta)^2): face_offset_term()'s mean before its 1 / front_conv_frac()^2
-    // scale, and THE OFFSET ERROR of one face (face_offset_error()). -1 unmeasurable.
+    // scale. -1 unmeasurable.
     const double level = pot.target_level();
     if (!(level > 0.)) return -1.;
     double sum = 0.;
@@ -263,7 +263,7 @@ double TopoOffsetTetMesh::face_offset_error(const size_t a, const size_t b, cons
     // See the declaration: the union field, never the per-region ones (safe between the region
     // map's rebuilds, which the per-region choice is not).
     if (!m_offset_potential) return -1.;
-    return face_offset_mean_sq(
+    return face_offset_error_of(
         *m_offset_potential,
         m_vertex_attribute[a].m_posf,
         m_vertex_attribute[b].m_posf,

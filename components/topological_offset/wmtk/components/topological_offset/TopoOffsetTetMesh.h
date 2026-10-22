@@ -432,9 +432,9 @@ public:
      * face_offset_error()) -- no tet-quality guard at all beyond the engine's inversion, envelope
      * and link conditions. The smoother: a front vertex the loop places (vertex_front_placed())
      * minimises the ring barrier plus the offset error over its front faces, NO AMIPS
-     * (smoothing_extra_energy(): RingBarrier3D + FaceStencilError3D), vetoed on that objective;
-     * every other vertex is TetWild's smoother -- the raw sum of AMIPS over the one-ring with the
-     * quality veto (smooth_nonfront_vertex()). The split gate
+     * (smoothing_extra_energy(): RingBarrier3D + FoldBarrier3D + FaceOffsetError3D), vetoed on that
+     * objective; every other vertex is TetWild's smoother -- the raw sum of AMIPS over the one-ring
+     * with the quality veto (smooth_nonfront_vertex()). The split gate
      * (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums. use_rest_pose: the same
      * rules on PLASTIC AMIPS -- a plastic cell's quality is measured against its stamped rest
      * wherever these rules read it (plastic_quality(), plastic_amips_energy(),
@@ -1928,11 +1928,15 @@ public:
         const Vector3d& pb,
         const Vector3d& pc) const;
     /**
-     * @brief THE OFFSET ERROR of one offset face f: the mean over f's stencil of
-     * ((d(q) - target_distance) / target_distance)^2 (face_offset_mean_sq() on the union field
-     * m_offset_potential -- one distance to the whole input, never the per-region fields, so it
-     * is safe between region-map rebuilds). -1 when unmeasurable. Shared stencil points
-     * double-count across faces, by design (the discrete energy's definition, 2026-10-22).
+     * @brief THE OFFSET ERROR of one offset face f (since 2026-10-22, area weighted): its area
+     * times the mean of ((d(q) - target_distance) / target_distance)^2 over 3 interior points,
+     * barycentric (2/3, 1/6, 1/6) and permutations (face_offset_error_of(), OffsetPotential.hpp),
+     * on the union field m_offset_potential -- one distance to the whole input, never the
+     * per-region fields, so it is safe between region-map rebuilds. Approximates
+     * (1/target_distance^2) int_f (d - target_distance)^2 dA (exact where d is affine on f), so
+     * offset_error() converges to the integral over the offset surface. -1 when unmeasurable.
+     * Independent of stencil_order, which sets only the criterion's face measure
+     * (face_offset_term()).
      */
     double face_offset_error(size_t a, size_t b, size_t c) const;
     /**
@@ -1954,7 +1958,7 @@ public:
     /// plus front_error_energy(), NO AMIPS. What front_vertex_normal_gradient() differentiates
     /// and smooth_front_vertex() vetoes on. Throws where front_fold_barrier_energy() does.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
-    /// The offset error over vid's live offset faces, vid moving (FaceStencilError3D on the union
+    /// The offset error over vid's live offset faces, vid moving (FaceOffsetError3D on the union
     /// field); null when it has none. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_error_energy(size_t vid) const;
     /// The IPC barrier on the boundary of vid's one-ring (RingBarrier3D): per ring tet the face

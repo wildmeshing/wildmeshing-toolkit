@@ -1354,8 +1354,8 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
         INFO("stencil_order " << k);
         CHECK(by_hand > 10.); // the fixture really is off the level set
         CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
-        // The offset error of one face (face_offset_mean_sq()) is the same mean without the
-        // 1 / front_conv_frac()^2 scale: mean of ((d - delta) / delta)^2.
+        // face_offset_mean_sq() is the same mean without the 1 / front_conv_frac()^2 scale:
+        // mean of ((d - delta) / delta)^2 over the stencil.
         double by_err = 0.;
         for (const auto& [q1, q2] : others) {
             by_err += mesh.face_offset_mean_sq(*pot, x, q1, q2);
@@ -1364,37 +1364,39 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     }
 }
 
-TEST_CASE("face-stencil-error-3d", "[offset][3d]")
+TEST_CASE("face-offset-error-3d", "[offset][3d]")
 {
-    // FaceStencilError3D, the front smoother's offset error term: its value with the moving
-    // corner at x equals the sum over its faces of face_offset_mean_sq() at the same positions,
-    // and its gradient and Hessian match central differences, at several x above and astride the
-    // level set.
-    Parameters param;
-    param.target_distance = kEnergyDelta;
-    param.front_conv = kEnergyConv;
-    param.stencil_order = 1;
-    TopoOffsetTetMesh mesh(param, 0);
+    // The offset error since 2026-10-22: per face its area times the mean of
+    // ((d - delta) / delta)^2 over the 3 interior points (2/3, 1/6, 1/6) and permutations
+    // (face_offset_error_of()). Above the input triangle's interior d = z is affine, so the
+    // integrand is quadratic and the rule is EXACT: E_f = (1/delta^2) int_f (z - delta)^2 dA
+    // = A/6 (L1^2 + L2^2 + L3^2 + L1 L2 + L2 L3 + L3 L1), L_i = (z_i - delta) / delta. And
+    // FaceOffsetError3D, the smoother's term, sums face_offset_error_of() over the faces at the
+    // moving corner x, with gradient and Hessian matching central differences, at several x above
+    // and astride the level set.
     const auto pot = plane_field();
-    std::vector<std::array<double, 3>> weights;
-    mesh.for_each_face_sample(
-        Vector3d::Zero(),
-        Vector3d::UnitX(),
-        Vector3d::UnitY(),
-        [&](const Vector3d&, const double wa, const double wb, const double wc) {
-            weights.push_back({{wa, wb, wc}});
-        });
-    REQUIRE(int(weights.size()) == mesh.stencil_points_per_face());
-    const std::vector<FaceStencilError3D::Face> faces = {
+    const std::vector<FaceOffsetError3D::Face> faces = {
         {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
         {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
         {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
-    FaceStencilError3D energy(pot, faces, weights);
+    FaceOffsetError3D energy(pot, faces);
+    const auto exact = [](const Vector3d& a, const Vector3d& b, const Vector3d& c) {
+        const double A = 0.5 * (b - a).cross(c - a).norm();
+        const double l1 = (a.z() - kEnergyDelta) / kEnergyDelta,
+                     l2 = (b.z() - kEnergyDelta) / kEnergyDelta,
+                     l3 = (c.z() - kEnergyDelta) / kEnergyDelta;
+        return A / 6. * (l1 * l1 + l2 * l2 + l3 * l3 + l1 * l2 + l2 * l3 + l3 * l1);
+    };
     for (const Vector3d& x :
          {Vector3d(0.1, -0.05, 0.53), Vector3d(-0.02, 0.12, 0.74), Vector3d(0.3, 0.2, 0.05)}) {
         INFO("x " << x.transpose());
-        double want = 0.;
-        for (const auto& f : faces) want += mesh.face_offset_mean_sq(*pot, x, f.q1, f.q2);
+        double want = 0., want_exact = 0.;
+        for (const auto& f : faces) {
+            want += face_offset_error_of(*pot, x, f.q1, f.q2);
+            want_exact += exact(x, f.q1, f.q2);
+        }
+        CHECK(want == Catch::Approx(want_exact).epsilon(1e-12)); // the rule is exact here
+        CHECK(want > 0.);
         Eigen::VectorXd xv = x;
         CHECK(energy.value(xv) == Catch::Approx(want).epsilon(1e-12));
         const double h = 1e-6;

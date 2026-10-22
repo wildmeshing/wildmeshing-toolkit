@@ -851,20 +851,41 @@ private:
 };
 
 /**
- * @brief A vertex's part of the offset error (TopoOffsetTetMesh::offset_error()), the vertex
- * moving: the sum over its live offset faces f of the face's stencil term
+ * @name The offset error of one face (2026-10-22, area weighted)
  *
- *     (1/N) sum over the N stencil samples q of relative_residual(q)^2,
+ *     E_f = A_f * (1/3) sum over the 3 interior points q_k of relative_residual(q_k)^2,
  *
- * relative_residual = (d(q) - target_distance) / target_distance for the euclidean field. The
- * sample q = wv x + w1 q1 + w2 q2 moves affinely with the vertex x (q1, q2 the face's fixed
- * corners, (wv, w1, w2) the barycentric stencil weights with the moving corner first), so per
- * sample grad_x r = wv grad r(q) and hess_x r = wv^2 hess r(q), the potential's exact
- * derivatives of d / target_distance. The stencil weights are the mesh's
- * for_each_face_sample() weights, one shared list (every face is sampled the same way).
- * A sample whose residual is not finite makes the value +inf (the line search refuses it).
+ * relative_residual = (d - target_distance) / target_distance for the euclidean field, A_f the
+ * face's area, q_k the barycentric points (2/3, 1/6, 1/6) and its two permutations: the symmetric
+ * 3-point interior rule, equally weighted, exact for quadratic integrands. So E_f approximates
+ * (1/target_distance^2) int_f (d - target_distance)^2 dA, exactly where d is affine on f, and the
+ * sum over the front converges to that integral over the offset surface. No sample on a face's
+ * boundary: no point is shared between faces.
+ * @{
  */
-class FaceStencilError3D : public polysolve::nonlinear::Problem
+/// The 3 interior points' barycentric weights, row k = (w_a, w_b, w_c) of point q_k.
+constexpr std::array<std::array<double, 3>, 3> kFaceErrorPoints = {
+    {{{2. / 3., 1. / 6., 1. / 6.}}, {{1. / 6., 2. / 3., 1. / 6.}}, {{1. / 6., 1. / 6., 2. / 3.}}}};
+/// E_f of the triangle (a, b, c) on `pot`; -1 when a sample's residual is not finite.
+double face_offset_error_of(
+    const OffsetPotential3D& pot,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c);
+/** @} */
+
+/**
+ * @brief A vertex's part of the offset error (TopoOffsetTetMesh::offset_error()), the vertex x
+ * moving: the sum over its live offset faces (x, q1, q2) of E_f (face_offset_error_of()).
+ *
+ * Per face E_f = A(x) m(x): A = |N| / 2 with N = (q1 - x) x (q2 - x) = q1 x q2 + (q2 - q1) x x
+ * affine in x (dN/dx = [q2 - q1]_x), so grad A and hess A are exact; m = (1/3) sum_k r(q_k)^2
+ * with q_k = w_k x + ... affine in x, grad r = w_k grad r(q_k), hess r = w_k^2 hess r(q_k) (the
+ * potential's exact derivatives). grad E_f = A grad m + m grad A, hess E_f = A hess m +
+ * grad A grad m^T + grad m grad A^T + m hess A. A face of zero area contributes its value 0 and
+ * no area derivative. A sample whose residual is not finite makes the value +inf.
+ */
+class FaceOffsetError3D : public polysolve::nonlinear::Problem
 {
 public:
     using typename polysolve::nonlinear::Problem::Scalar;
@@ -875,11 +896,7 @@ public:
     {
         Eigen::Vector3d q1, q2;
     };
-    /// weights: the stencil's barycentric triples (wv, w1, w2), the moving corner's weight first.
-    FaceStencilError3D(
-        std::shared_ptr<const OffsetPotential3D> pot,
-        std::vector<Face> faces,
-        std::vector<std::array<double, 3>> weights);
+    FaceOffsetError3D(std::shared_ptr<const OffsetPotential3D> pot, std::vector<Face> faces);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -895,7 +912,6 @@ private:
     double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
     std::shared_ptr<const OffsetPotential3D> m_pot;
     std::vector<Face> m_faces;
-    std::vector<std::array<double, 3>> m_weights;
 };
 
 /**

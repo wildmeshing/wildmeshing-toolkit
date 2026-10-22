@@ -364,14 +364,13 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_error_en
     const size_t vid) const
 {
     // The vertex's part of the offset error (face_offset_error() per face, offset_error() over
-    // the front): its live offset faces' stencil terms with vid moving, on the union field. The
-    // stencil weights are gathered once, the moving corner's weight first; every face shares them
-    // (for_each_face_sample() samples every face the same way).
+    // the front): its live offset faces' area-weighted 3-point terms with vid moving, on the
+    // union field (FaceOffsetError3D).
     if (!m_offset_potential) return nullptr;
-    std::vector<FaceStencilError3D::Face> faces;
+    std::vector<FaceOffsetError3D::Face> faces;
     for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
         const std::array<size_t, 3> f = get_face_vids(ft);
-        FaceStencilError3D::Face fe;
+        FaceOffsetError3D::Face fe;
         int k = 0;
         for (const size_t u : f) {
             if (u == vid) continue;
@@ -382,19 +381,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_error_en
         faces.push_back(fe);
     }
     if (faces.empty()) return nullptr;
-    std::vector<std::array<double, 3>> weights;
-    weights.reserve(size_t(stencil_points_per_face()));
-    for_each_face_sample(
-        Vector3d::Zero(),
-        Vector3d::UnitX(),
-        Vector3d::UnitY(),
-        [&](const Vector3d&, const double wa, const double wb, const double wc) {
-            weights.push_back({{wa, wb, wc}});
-        });
-    return std::make_shared<FaceStencilError3D>(
-        m_offset_potential,
-        std::move(faces),
-        std::move(weights));
+    return std::make_shared<FaceOffsetError3D>(m_offset_potential, std::move(faces));
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::ring_barrier_energy(
