@@ -1202,26 +1202,6 @@ std::shared_ptr<Envelope> plane_triangles()
     return env;
 }
 
-/// The distance to the triangle at a point above its interior or beyond its apex, the two
-/// regions the fixtures use.
-double plane_distance(const Vector3d& q)
-{
-    const Vector3d t = q - kApex;
-    if (t.y() > 0. && std::abs(t.x()) < 2. * t.y()) return t.norm();
-    return std::abs(q.z());
-}
-
-/// The band term b(t) the energy definition states, computed here from the corners: unsigned
-/// volume times (mean corner distance - delta) / delta (one triangle, so the min over triangles is
-/// that triangle).
-double band_term_by_hand(const std::array<Vector3d, 4>& p)
-{
-    const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-    double mean = 0.;
-    for (const Vector3d& q : p) mean += plane_distance(q) / 4.;
-    return vol * (mean - kEnergyDelta) / kEnergyDelta;
-}
-
 /// The face term O(f) the face measure's definition states, computed here from the stencil
 /// for_each_face_sample() visits and nothing else: mean over the points of
 /// (relative_residual(q) / front_conv_frac())^2.
@@ -1345,10 +1325,10 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
     // tet_energy() against its definition computed by hand: (w / s^3) vol AMIPS^3 for every
-    // cell, plus the band term b = vol (mean corner d - delta) / delta for a band cell; MAX_ENERGY
+    // cell; MAX_ENERGY
     // for a degenerate cell. Four cells around the edge (a, b): 0 and 1 band, 2 background, 3
-    // input complex. At (w, s) = (1, stop_energy 3), where both terms matter, (1, 100) and the
-    // default w at 100.
+    // input complex (the label changes nothing since the band term's removal, 2026-10-22). At
+    // (w, s) = (1, stop_energy 3), (1, 100) and the default w at 100.
     // Lifted 0.25 above the level set, so the band cells' mean distance is off it.
     Eigen::MatrixXd V(6, 3);
     V << 0., 0., 0.37, // a
@@ -1379,11 +1359,9 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
             REQUIRE(a3 < TetOptimizerMesh::MAX_ENERGY);
             const auto p = corners(*mesh, tid);
             const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-            const double want =
-                w / (s * s * s) * vol * a3 + (labels[tid] == 2 ? band_term_by_hand(p) : 0.);
+            const double want = w / (s * s * s) * vol * a3;
             INFO("w " << w << ", s " << s << ", tet " << tid);
             CHECK(mesh->tet_energy(tid) == Catch::Approx(want).epsilon(1e-10));
-            if (labels[tid] == 2) CHECK(std::abs(band_term_by_hand(p)) > 1e-3);
         }
         // A degenerate cell: c3 into the plane y = 0 of a, b, c0 and c2 flattens cells 2 and 3.
         mesh->set_vertex_position(size_t(c3), Vector3d(0.2, 0., 0.75));
@@ -1444,11 +1422,10 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
         const std::vector<std::array<int, 4>>& T;
         std::vector<int> labels;
         size_t not_front; ///< the one vertex on no front face
-        bool has_band_ring; ///< whether that vertex's ring holds band cells
     };
     const std::vector<Fixture> fixtures = {
-        {V1, T1, {2, 2, 0, 1}, 5, false},
-        {V2, T2, std::vector<int>(8, 2), 0, true}};
+        {V1, T1, {2, 2, 0, 1}, 5},
+        {V2, T2, std::vector<int>(8, 2), 0}};
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
         for (const auto& [w, s, plastic] : std::vector<std::tuple<double, double, bool>>{
@@ -1508,15 +1485,12 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                     for (const size_t tid : ring) e += mesh->tet_energy(tid);
                     return e;
                 };
-                const bool front = mesh->vertex_carries_offset_term(v);
+                const bool front = mesh->m_vertex_extra[v].m_is_on_offset;
                 INFO(
                     "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
                                << ", vertex " << v << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
-                if (v == fx.not_front) {
-                    REQUIRE((mesh->band_volume_energy_at(v) != nullptr) == fx.has_band_ring);
-                }
                 const auto energy = mesh->smoothing_extra_energy(v);
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
@@ -2037,231 +2011,6 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
     }
 }
 
-TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
-{
-    // The face swap's gate (TopoOffsetTetMesh::swap_face_before()) compares the sum of the energy
-    // over the three new cells with the sum over the two old ones, not AMIPS^3. Two regular tets
-    // glued on (a,b,c), beyond the input triangle's apex, their axis (d,e) on a ray from the apex:
-    // AMIPS^3 is 27 on both, its minimum, so the swap raises AMIPS and the engine's AMIPS gate
-    // refuses it. d, the distance to the apex, is linear along the axis and convex across it, so
-    // the band term's corner mean -- the integral of the linear interpolant of d -- is lower when
-    // the cells share the edge (d,e) than when they share the face (a,b,c): with both cells band
-    // the energy's sum falls and the gate admits the swap. With both cells background the energy
-    // is the AMIPS term alone and the swap is refused. The whole engine swap runs, with
-    // perform_sanity_checks, so swap_after_cells() applies its rule and compares the gate's score
-    // with the mesh.
-    const auto pot = plane_field();
-    const double L = 0.4, h = L * std::sqrt(2. / 3.), R = L / std::sqrt(3.);
-    const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
-    Eigen::MatrixXd V(5, 3);
-    for (int i = 0; i < 3; ++i) {
-        const double t = 2. * M_PI * i / 3.;
-        V.row(i) = (m + Vector3d(R * std::cos(t), 0., R * std::sin(t))).transpose();
-    }
-    V.row(3) = (m + Vector3d(0., h, 0.)).transpose();
-    V.row(4) = (m - Vector3d(0., h, 0.)).transpose();
-    const int a = 0, b = 1, c = 2, d = 3, e = 4;
-    const std::vector<std::array<int, 4>> TA = {{{a, b, c, d}}, {{a, b, c, e}}};
-    const std::vector<std::array<int, 4>> TB = {{{a, b, d, e}}, {{b, c, d, e}}, {{c, a, d, e}}};
-
-    for (const int x : {2, 0}) {
-        INFO("label " << x);
-        Parameters pa, pb;
-        pa.perform_sanity_checks = true;
-        auto A = energy_mesh(pa, V, TA, {x, x}, pot);
-        auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
-        double amips_a = 0., amips_b = 0., energy_a = 0., energy_b = 0.;
-        for (size_t t = 0; t < 2; ++t) {
-            amips_a = std::max(amips_a, A->TetOptimizerMesh::get_quality(A->oriented_tet_vids(t)));
-            energy_a += A->tet_energy(t);
-        }
-        for (size_t t = 0; t < 3; ++t) {
-            amips_b = std::max(amips_b, B->TetOptimizerMesh::get_quality(B->oriented_tet_vids(t)));
-            energy_b += B->tet_energy(t);
-        }
-        // The premises: AMIPS alone refuses this swap, and the energy admits it on the band.
-        REQUIRE(amips_a == Catch::Approx(27.).epsilon(1e-9));
-        REQUIRE(amips_b > amips_a);
-        REQUIRE((energy_b < energy_a) == (x == 2));
-
-        std::vector<TopoOffsetTetMesh::Tuple> new_tets;
-        const auto [face, fid] =
-            A->tuple_from_face(std::array<size_t, 3>{{size_t(a), size_t(b), size_t(c)}});
-        (void)fid;
-        CHECK(A->swap_face(face, new_tets) == (x == 2));
-        CHECK(A->m_swap_scoring_mismatch.load() == 0);
-        CHECK(A->m_swap_scoring_checked.load() == (x == 2 ? 1 : 0));
-        if (x != 2) continue;
-        REQUIRE(new_tets.size() == 3);
-        double energy_new = 0.;
-        for (const auto& t : new_tets) energy_new += A->tet_energy(t.tid(*A));
-        CHECK(energy_new == Catch::Approx(energy_b).epsilon(1e-12));
-    }
-}
-
-TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
-{
-    // The 4-4 case search (TetMesh::swap_edge_44()) scores the sum of the energy through
-    // TopoOffsetTetMesh::swap_edge_44_energy(). An octahedron around the edge (a,b) beyond the
-    // input triangle's apex, (a,b) slightly shorter than the other two diagonals (c0,c2) and
-    // (c1,c3), so both 4-4 cases raise max AMIPS^3 and the engine's AMIPS search takes neither.
-    // (c1,c3) lies on a ray from the apex, along which d is linear, while d is convex across it:
-    // the band term's corner mean over the four cells around a diagonal is lowest around (c1,c3)
-    // and highest around the longer (c0,c2). With the ring band the energy's sum falls under the
-    // case (c1,c3) alone; the engine commits it, the after-hook's rule agrees, and the sanity check
-    // compares the case search's score with the mesh. With the ring background the energy is the
-    // AMIPS term and nothing is taken.
-    const auto pot = plane_field();
-    const double s = 0.2;
-    const Vector3d m = kApex + Vector3d(0., 0.6, 0.);
-    Eigen::MatrixXd V(6, 3);
-    V.row(0) = (m + Vector3d(-0.95 * s, 0., 0.)).transpose(); // a
-    V.row(1) = (m + Vector3d(0.95 * s, 0., 0.)).transpose(); // b
-    V.row(2) = (m + Vector3d(0., 0., s)).transpose(); // c0
-    V.row(3) = (m + Vector3d(0., s, 0.)).transpose(); // c1, on the ray from the apex
-    V.row(4) = (m + Vector3d(0., 0., -s)).transpose(); // c2
-    V.row(5) = (m + Vector3d(0., -s, 0.)).transpose(); // c3, on the ray from the apex
-    const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-    const std::vector<std::array<int, 4>> TA = {
-        {{a, b, c0, c1}},
-        {{a, b, c1, c2}},
-        {{a, b, c2, c3}},
-        {{a, b, c3, c0}}};
-    const std::vector<std::array<int, 4>> T02 = {
-        {{a, c0, c1, c2}},
-        {{b, c0, c1, c2}},
-        {{a, c0, c2, c3}},
-        {{b, c0, c2, c3}}};
-    const std::vector<std::array<int, 4>> T13 = {
-        {{a, c1, c2, c3}},
-        {{b, c1, c2, c3}},
-        {{a, c3, c0, c1}},
-        {{b, c3, c0, c1}}};
-    for (const int x : {2, 0}) {
-        INFO("label " << x);
-        const std::vector<int> lab(4, x);
-        Parameters pa, p02, p13;
-        pa.perform_sanity_checks = true;
-        auto A = energy_mesh(pa, V, TA, lab, pot);
-        auto B02 = energy_mesh(p02, V, T02, lab, pot);
-        auto B13 = energy_mesh(p13, V, T13, lab, pot);
-        const auto amips_and_sum = [](TopoOffsetTetMesh& mesh) {
-            double amips = 0., energy = 0.;
-            for (size_t t = 0; t < 4; ++t) {
-                amips =
-                    std::max(amips, mesh.TetOptimizerMesh::get_quality(mesh.oriented_tet_vids(t)));
-                energy += mesh.tet_energy(t);
-            }
-            return std::make_pair(amips, energy);
-        };
-        const auto [amips_a, energy_a] = amips_and_sum(*A);
-        const auto [amips_02, energy_02] = amips_and_sum(*B02);
-        const auto [amips_13, energy_13] = amips_and_sum(*B13);
-        // The premises: AMIPS takes no case; on the band the energy takes (c1,c3) alone.
-        REQUIRE(amips_02 > amips_a);
-        REQUIRE(amips_13 > amips_a);
-        REQUIRE((energy_13 < energy_a) == (x == 2));
-        REQUIRE(!(energy_02 < energy_a));
-
-        std::vector<TopoOffsetTetMesh::Tuple> new_tets;
-        const auto edge = A->tuple_from_edge(std::array<size_t, 2>{{size_t(a), size_t(b)}});
-        CHECK(A->swap_edge_44(edge, new_tets) == (x == 2));
-        CHECK(A->m_swap_scoring_mismatch.load() == 0);
-        CHECK(A->m_swap_scoring_checked.load() == (x == 2 ? 1 : 0));
-        if (x != 2) continue;
-        REQUIRE(new_tets.size() == 4);
-        double energy_new = 0.;
-        bool has_c1c3 = true;
-        for (const auto& t : new_tets) {
-            const auto vs = A->oriented_tet_vids(t);
-            energy_new += A->tet_energy(t.tid(*A));
-            has_c1c3 = has_c1c3 && std::count(vs.begin(), vs.end(), size_t(c1)) == 1 &&
-                       std::count(vs.begin(), vs.end(), size_t(c3)) == 1;
-        }
-        CHECK(has_c1c3);
-        CHECK(energy_new == Catch::Approx(energy_13).epsilon(1e-12));
-    }
-}
-
-TEST_CASE("exact-band-offset-side-inward-and-outward", "[offset][3d][exact_band]")
-{
-    // The exact rule's band integral counts the offset side of the input only (ExactBandIntegral's
-    // class doc), and the band is outside the label-1 region for both directions: that region is
-    // the selection for offset_out and everything outside it for offset_in. On a 3 x 3 x 3 grid of
-    // unit cubes with the center cube as tag_0, a cell just inside tag_0 and its mirror just
-    // outside, both within delta of the face x = 0.5: the band side gives the unclipped integral,
-    // the other side 0. MEASURED before this test (Geneva base, offset_in, 2026-10-13): the side
-    // was read against the selection while the faces were oriented against the region outside
-    // it, the clip kept the far side, and the band term at construction was 0 against -7.5046.
-    Eigen::MatrixXd V(64, 3);
-    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
-    for (int k = 0; k < 4; ++k) {
-        for (int j = 0; j < 4; ++j) {
-            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
-        }
-    }
-    std::vector<std::array<int, 4>> T;
-    std::vector<int> center;
-    const std::array<std::array<int, 3>, 6> perms = {
-        {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
-    for (int k = 0; k < 3; ++k) {
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
-                for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
-                    std::array<int, 3> c = {{i, j, k}};
-                    std::array<int, 4> t;
-                    t[0] = vid(c[0], c[1], c[2]);
-                    for (int s = 0; s < 3; ++s) {
-                        ++c[size_t(pm[size_t(s)])];
-                        t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
-                    }
-                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
-                    T.push_back(positive(V, t));
-                }
-            }
-        }
-    }
-    Eigen::MatrixXi Tm(int(T.size()), 4);
-    for (size_t i = 0; i < T.size(); ++i) {
-        for (int j = 0; j < 4; ++j) Tm(int(i), j) = T[i][size_t(j)];
-    }
-    MatrixSi Tags(int(T.size()), 1);
-    for (const int t : center) Tags.coeffRef(t, 0) = 1;
-
-    const double delta = 0.2;
-    const std::array<Vector3d, 4> inside = {
-        {{0.45, -0.1, -0.1}, {0.45, 0.1, -0.1}, {0.45, 0., 0.1}, {0.35, 0., 0.}}};
-    std::array<Vector3d, 4> outside = inside;
-    for (Vector3d& q : outside) q.x() = 1. - q.x();
-
-    for (const bool inward : {true, false}) {
-        Parameters param;
-        param.offset_in = inward;
-        param.offset_out = !inward;
-        param.offset_field = "euclidean";
-        param.band_volume_rule = "exact";
-        param.target_distance = delta;
-        TopoOffsetTetMesh mesh(param, 0);
-        MatrixXd V_env;
-        MatrixXi F_env;
-        mesh.init_from_image(V, Tm, Tags, V_env, F_env, {"tag_0"});
-        mesh.m_offset_params.offset_selection = parse("tag_0", mesh.m_tag_name_to_id);
-        mesh.label_input_complex();
-        mesh.init_input_complex_bvh();
-        mesh.init_offset_potential();
-        REQUIRE(mesh.m_band_exact);
-        const ExactBandIntegral plain(mesh.m_phi_V, mesh.m_phi_F);
-        const auto& band = inward ? inside : outside;
-        const auto& far_side = inward ? outside : inside;
-        INFO((inward ? "offset_in" : "offset_out"));
-        const double J_band = mesh.m_band_exact->value(band, delta);
-        CHECK(J_band < 0.);
-        CHECK(J_band == plain.value(band, delta));
-        CHECK(mesh.m_band_exact->value(far_side, delta) == 0.);
-        CHECK(plain.value(far_side, delta) < 0.);
-    }
-}
-
 namespace {
 /// Parameters as the app builds them: the spec's defaults injected into `j`, then the bounding
 /// box. A default-constructed Parameters leaves most keys unset, and construction reads many.
@@ -2588,19 +2337,16 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
               same(a.E, b.E) && a.tag_names == b.tag_names && a.tags.size() == b.tags.size();
     for (size_t i = 0; ok && i < a.tags.size(); ++i) ok = same(a.tags[i], b.tags[i]);
     for (const auto m :
-         {&TopoOffsetTetMesh::VtuFrame::amips,       &TopoOffsetTetMesh::VtuFrame::tet_e,
-          &TopoOffsetTetMesh::VtuFrame::amips_term,  &TopoOffsetTetMesh::VtuFrame::band_term,
-          &TopoOffsetTetMesh::VtuFrame::band_gap,    &TopoOffsetTetMesh::VtuFrame::plastic,
-          &TopoOffsetTetMesh::VtuFrame::labels,      &TopoOffsetTetMesh::VtuFrame::order,
-          &TopoOffsetTetMesh::VtuFrame::vid,         &TopoOffsetTetMesh::VtuFrame::sizing,
-          &TopoOffsetTetMesh::VtuFrame::in_dist,     &TopoOffsetTetMesh::VtuFrame::dist_ratio,
-          &TopoOffsetTetMesh::VtuFrame::front_err,   &TopoOffsetTetMesh::VtuFrame::band_force,
-          &TopoOffsetTetMesh::VtuFrame::amips_force, &TopoOffsetTetMesh::VtuFrame::front_change,
-          &TopoOffsetTetMesh::VtuFrame::f_err,       &TopoOffsetTetMesh::VtuFrame::f_len,
-          &TopoOffsetTetMesh::VtuFrame::f_inside,    &TopoOffsetTetMesh::VtuFrame::f_outside,
-          &TopoOffsetTetMesh::VtuFrame::f_fold,      &TopoOffsetTetMesh::VtuFrame::f_field_angle,
-          &TopoOffsetTetMesh::VtuFrame::f_dihedral,  &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral,
-          &TopoOffsetTetMesh::VtuFrame::ring}) {
+         {&TopoOffsetTetMesh::VtuFrame::amips,           &TopoOffsetTetMesh::VtuFrame::tet_e,
+          &TopoOffsetTetMesh::VtuFrame::plastic,         &TopoOffsetTetMesh::VtuFrame::labels,
+          &TopoOffsetTetMesh::VtuFrame::order,           &TopoOffsetTetMesh::VtuFrame::vid,
+          &TopoOffsetTetMesh::VtuFrame::sizing,          &TopoOffsetTetMesh::VtuFrame::in_dist,
+          &TopoOffsetTetMesh::VtuFrame::dist_ratio,      &TopoOffsetTetMesh::VtuFrame::front_err,
+          &TopoOffsetTetMesh::VtuFrame::front_change,    &TopoOffsetTetMesh::VtuFrame::f_err,
+          &TopoOffsetTetMesh::VtuFrame::f_len,           &TopoOffsetTetMesh::VtuFrame::f_inside,
+          &TopoOffsetTetMesh::VtuFrame::f_outside,       &TopoOffsetTetMesh::VtuFrame::f_fold,
+          &TopoOffsetTetMesh::VtuFrame::f_field_angle,   &TopoOffsetTetMesh::VtuFrame::f_dihedral,
+          &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral, &TopoOffsetTetMesh::VtuFrame::ring}) {
         ok = ok && same(a.*m, b.*m);
     }
     return ok;
@@ -2609,19 +2355,16 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
 
 TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
 {
-    // gather_vtu_frame() and energy_parts() evaluate their cells, vertices and faces on the mesh's
-    // threads (diagnostic_parallel_for()); what they return must not depend on the thread count.
-    // Two identical meshes -- the grid of save-offset-correspondence-3d, constructed serially at
-    // target 0.2, the field built under the exact rule, the optimization's labels -- one gathered
-    // at 1 thread and one at 4, each from its own empty value table, compared bit for bit (NaN
+    // gather_vtu_frame() and global_energy_parallel() evaluate their cells, vertices and faces on
+    // the mesh's threads (diagnostic_parallel_for()); what they return must not depend on the
+    // thread count. Two identical meshes -- the grid of save-offset-correspondence-3d, constructed
+    // serially at target 0.2, the optimization's labels -- one gathered
+    // at 1 thread and one at 4, compared bit for bit (NaN
     // equal to NaN).
     const GridInput g = grid_input();
 
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
-         {"num_threads", 0},
-         {"target_distance", 0.2},
-         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
         g.V);
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_frame_threads";
@@ -2632,16 +2375,15 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     };
     const auto serial = make_mesh(1);
     const auto threaded = make_mesh(4);
-    REQUIRE(serial->m_band_exact);
     const size_t chunk = TopoOffsetTetMesh::kDiagnosticChunk;
     INFO(serial->get_tets().size() << " tets, " << serial->get_vertices().size() << " vertices");
     REQUIRE(serial->get_tets().size() > 4 * chunk); // every task has cells to evaluate
 
-    const auto [a_serial, b_serial] = serial->energy_parts();
-    const auto [a_threaded, b_threaded] = threaded->energy_parts();
-    CHECK(std::memcmp(&a_serial, &a_threaded, sizeof(double)) == 0);
-    CHECK(std::memcmp(&b_serial, &b_threaded, sizeof(double)) == 0);
-    CHECK(b_serial < 0.); // the band is inside the level set at construction
+    const double e_serial = serial->global_energy_parallel();
+    const double e_threaded = threaded->global_energy_parallel();
+    const double e_plain = serial->global_energy();
+    CHECK(std::memcmp(&e_serial, &e_threaded, sizeof(double)) == 0);
+    CHECK(std::memcmp(&e_serial, &e_plain, sizeof(double)) == 0);
 
     const TopoOffsetTetMesh::VtuFrame fs = serial->gather_vtu_frame(out.string() + "_serial");
     const TopoOffsetTetMesh::VtuFrame ft = threaded->gather_vtu_frame(out.string() + "_threaded");
@@ -2660,9 +2402,6 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     const std::vector<std::tuple<const char*, const VectorXd*, const VectorXd*>> fields = {
         {"amips", &fs.amips, &ft.amips},
         {"tet_energy", &fs.tet_e, &ft.tet_e},
-        {"amips_term", &fs.amips_term, &ft.amips_term},
-        {"band_term", &fs.band_term, &ft.band_term},
-        {"band_gap_bars", &fs.band_gap, &ft.band_gap},
         {"plastic", &fs.plastic, &ft.plastic},
         {"labels", &fs.labels, &ft.labels},
         {"order", &fs.order, &ft.order},
@@ -2671,8 +2410,6 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"input_distance", &fs.in_dist, &ft.in_dist},
         {"distance_over_target", &fs.dist_ratio, &ft.dist_ratio},
         {"front_error_bars", &fs.front_err, &ft.front_err},
-        {"band_force_n", &fs.band_force, &ft.band_force},
-        {"amips_force_n", &fs.amips_force, &ft.amips_force},
         {"front_last_change", &fs.front_change, &ft.front_change},
         {"front_err_ratio", &fs.f_err, &ft.f_err},
         {"chord_length", &fs.f_len, &ft.f_len},
@@ -2710,10 +2447,7 @@ TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]")
     // sizing field, which adds vertices and cells.
     const GridInput g = grid_input();
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
-         {"num_threads", 0},
-         {"target_distance", 0.2},
-         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
         g.V);
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_snapshot";
@@ -2759,10 +2493,7 @@ TEST_CASE("folded-faces-at-vertex", "[offset][3d]")
     // which turns its offset faces back toward the input: folds to find.
     const GridInput g = grid_input();
     Parameters param = construction_params(
-        {{"offset_selection", "tag_0"},
-         {"num_threads", 0},
-         {"target_distance", 0.2},
-         {"EXPERIMENTAL_band_volume_rule", "exact"}},
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
         g.V);
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_folded_faces";

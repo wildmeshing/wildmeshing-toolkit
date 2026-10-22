@@ -26,8 +26,7 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The whole objective arrives
     // through smoothing_extra_energy() -- the vertex's part of the energy, the AMIPS term over the
-    // ring and the band term of its band cells -- and w_amips 0 keeps the smoother from adding an
-    // AMIPS term of its own; a front vertex an input envelope pins carries no band term. The
+    // ring -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own. The
     // smoother holds a front vertex to no envelope (see smoothing_containment_envelope()), so
     // neither the projected path nor the containment check applies -- solve, exact inversion
     // test, then the veto on tet_energy() below.
@@ -93,20 +92,8 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
         // smooth_vertex_3d() refuses an already-inverted ring before solving; nothing after the
         // solve touches the solver, so it still holds that solve's state here.
         optimization::NewtonCounters one;
-        // EXPERIMENTAL_band_volume_rule "front_flux": the band term's exceptions (a curved
-        // bisector crossing a piece, a partition that does not tile) are errors, not failed line
-        // searches; the shared smoother takes any exception out of a solve for the latter, so
-        // the term keeps its message (BandVolumeEnergy3D::front_flux_error()) and it is rethrown
-        // here.
-        std::string& ff_error = BandVolumeEnergy3D::front_flux_error();
-        ff_error.clear();
         const bool ok =
             optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects, &one);
-        if (!ff_error.empty()) {
-            const std::string msg = std::move(ff_error);
-            ff_error.clear();
-            log_and_throw_error("front smoother, vertex {}: {}", vid, msg);
-        }
         if (one.solves() > 0) {
             m_newton_front.record(*solver, one.threw.load() > 0);
             if (m_offset_params.debug_output) {
@@ -291,107 +278,10 @@ Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objective(
     const size_t vid) const
 {
-    // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
-    // term included unconditionally: the AMIPS term over the one-ring and the band term
-    // (front_energy()).
-    auto sum = std::make_shared<optimization::EnergySum>();
-    sum->add_energy(amips3_energy(vid));
-    sum->add_energy(front_energy(vid));
-    return sum;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
-    const size_t vid) const
-{
-    // The vertex's part of the energy's band term; see band_volume_energy_at().
-    auto sum = std::make_shared<optimization::EnergySum>();
-    if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
-    return sum;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
-    const size_t vid) const
-{
-    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
-    if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
-        log_and_throw_error(
-            "the energy's band term reads one field, and this input has {} regions",
-            m_n_regions);
-    }
-    std::vector<BandVolumeEnergy3D::Cell> cells;
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-        if (!cell_is_offset_band(tid)) continue;
-        BandVolumeEnergy3D::Cell c;
-        int k = 0;
-        for (const size_t u : oriented_tet_vids(tid)) {
-            if (u == vid) continue;
-            (k == 0 ? c.q1 : k == 1 ? c.q2 : c.q3) = m_vertex_attribute[u].m_posf;
-            ++k;
-        }
-        if (k != 3) continue;
-        cells.push_back(c);
-    }
-    if (cells.empty()) return nullptr;
-    auto e = std::make_shared<BandVolumeEnergy3D>(
-        m_input_complex_envelope,
-        m_input_complex_pad,
-        std::move(cells),
-        m_vertex_attribute[vid].m_posf,
-        m_offset_params.target_distance);
-    // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
-    if (m_offset_params.band_volume_rule == "exact") {
-        e->set_exact_integral(m_band_exact, m_offset_params.target_distance);
-    }
-    // EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same term
-    // (BandVolumeEnergy3D::set_front_flux()), over the band's boundary faces through vid. A face
-    // through vid lies in one or two cells of vid's one-ring, so pairing the ring's faces through
-    // vid finds them without reading beyond the ring: a boundary face has exactly one band cell
-    // among its cells (the other not a band cell, or none on the domain boundary). Each is
-    // ordered (vid, a, b) with its normal out of its band cell, away from the cell's fourth corner.
-    if (m_offset_params.band_volume_rule == "front_flux") {
-        struct Rec
-        {
-            size_t lo, hi;
-            int band = 0;
-            BandVolumeEnergy3D::Face f;
-        };
-        std::vector<Rec> recs;
-        const Vector3d& x = m_vertex_attribute[vid].m_posf;
-        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-            const bool band = cell_is_offset_band(tid);
-            std::array<size_t, 3> o;
-            int k = 0;
-            for (const size_t u : oriented_tet_vids(tid)) {
-                if (u != vid && k < 3) o[size_t(k++)] = u;
-            }
-            if (k != 3) continue;
-            for (int i = 0; i < 3; ++i) {
-                const size_t u = o[size_t(i)], w = o[size_t((i + 1) % 3)],
-                             z = o[size_t((i + 2) % 3)];
-                const size_t lo = std::min(u, w), hi = std::max(u, w);
-                Rec* r = nullptr;
-                for (Rec& q : recs) {
-                    if (q.lo == lo && q.hi == hi) r = &q;
-                }
-                if (!r) {
-                    recs.push_back({lo, hi, 0, {}});
-                    r = &recs.back();
-                }
-                if (!band) continue;
-                ++r->band;
-                Vector3d a = m_vertex_attribute[u].m_posf, b = m_vertex_attribute[w].m_posf;
-                if ((a - x).cross(b - x).dot(m_vertex_attribute[z].m_posf - x) > 0.)
-                    std::swap(a, b);
-                r->f = {a, b};
-            }
-        }
-        std::vector<BandVolumeEnergy3D::Face> faces;
-        for (const Rec& r : recs) {
-            if (r.band == 1) faces.push_back(r.f);
-        }
-        e->set_front_flux(m_band_exact, m_offset_params.target_distance, std::move(faces));
-    }
-    return e;
+    // smoothing_extra_energy() at a front vertex the loop places: the AMIPS term over the
+    // one-ring. (The volumetric band term this once added was removed 2026-10-22; its
+    // replacement, the surface error term, is not implemented yet.)
+    return amips3_energy(vid);
 }
 
 } // namespace wmtk::components::topological_offset

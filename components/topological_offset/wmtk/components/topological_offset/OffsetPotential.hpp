@@ -6,7 +6,6 @@
 #include <wmtk/envelope/Envelope.hpp>
 
 #include <wmtk/threading/enumerable_thread_specific.hpp>
-#include "ExactBandIntegral.hpp"
 #include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -746,13 +745,12 @@ private:
 };
 
 /**
- * @name The band term's searches on the input envelope
+ * @name The distance searches on the input envelope
  *
  * The distance d to the input is the min over its primitives P (the triangles of
  * TopoOffsetTetMesh::m_input_complex_envelope) of d_P, the distance to P alone,
- * Envelope::primitive_distance(). Each d_P is convex (the distance to a convex set), which
- * the band term's corner bound needs (TopoOffsetTetMesh::band_cell_term()). These are the
- * searches the band term, the settle loop's face tests and the debug frames run over the P, on
+ * Envelope::primitive_distance(). Each d_P is convex (the distance to a convex set). These are
+ * the searches the settle loop's tests and the debug frames run over the P, on
  * Envelope's per-primitive queries.
  *
  * Every search is exact, by one argument: a starting primitive gives a value m that the result
@@ -771,7 +769,7 @@ private:
  */
 
 /// The allowance the searches below pad their boxes by: 1e-9 of the diagonal of V's bounding box
-/// (V the input's vertices, n x 3), as InputTriangles and ExactBandIntegral padded their trees'
+/// (V the input's vertices, n x 3), as InputTriangles padded its tree's
 /// boxes, so that a box distance never exceeds a primitive distance by rounding. Computed once,
 /// where the envelope is built (TopoOffsetTetMesh::m_input_complex_pad).
 double input_pad(const Eigen::MatrixXd& V);
@@ -780,38 +778,6 @@ double input_pad(const Eigen::MatrixXd& V);
 /// (its BVH), then the min of primitive_distance() over the primitives in p's box grown by
 /// d + pad -- any primitive at distance d from p has a point within d of p, so it is listed.
 int64_t nearest_primitive(const Envelope& env, double pad, const Eigen::Vector3d& p);
-
-/// The band term's min: min over ALL primitives P of (1/n) sum_i d_P(p_i), n points (the cell's
-/// corners), and the minimiser in `best` (the lowest index on a tie). Starts from `hint` when
-/// >= 0, else from p[0]'s nearest primitive; its mean m bounds the min. A P with mean <= m has
-/// some p_i with d_P(p_i) <= m, so P meets the points' box grown by m; the min is taken over the
-/// primitives listed there. The result does not depend on the start.
-double min_mean_distance(
-    const Envelope& env,
-    double pad,
-    const Eigen::Vector3d* p,
-    int n,
-    int64_t& best,
-    int64_t hint = -1);
-
-/// A primitive and its distances to three fixed points (ball_candidates()).
-struct BallCandidate
-{
-    int64_t tri = -1;
-    double d1 = 0., d2 = 0., d3 = 0.;
-};
-/// Every primitive that is min_mean_distance()'s minimiser of the four points {x, q[0], q[1],
-/// q[2]} (x first), or tied with it, for some x with (x - c).norm() <= r; ascending index, each
-/// with its distances to q. So the minimum over `out` of that mean, summed in
-/// min_mean_distance()'s order and scanned with its comparison, is min_mean_distance() bit for
-/// bit at every such x (proof in the .cpp).
-void ball_candidates(
-    const Envelope& env,
-    double pad,
-    const Eigen::Vector3d& c,
-    double r,
-    const std::array<Eigen::Vector3d, 3>& q,
-    std::vector<BallCandidate>& out);
 
 /// EXPERIMENTAL_settle_refinement: min over ALL primitives P of the distance between P and the
 /// triangle abc (Envelope::primitive_triangle_distance()), i.e. min over the triangle abc of
@@ -847,169 +813,5 @@ double face_mean_sq_cos(
 
 /** @} */
 
-/**
- * @brief A vertex's part of the energy's band term (TopoOffsetTetMesh::band_cell_term()), the
- * vertex moving:
- *
- *     E(x) = sum over the vertex's band cells t of  Vol_t(x) * m_t(x),
- *     m_t(x) = min over ALL input triangles P of (1/4) sum over t's 4 corners q of
- *              (d_P(q) - delta) / delta,
- *
- * the four corners being x and the cell's three fixed ones, Vol_t the cell's signed volume,
- * positive on a valid cell. Each cell's term is band_cell_term() at x, so the solve descends
- * exactly the cell terms E sums.
- *
- * Vol_t(x) = (q1 - x) . ((q2 - q1) x (q3 - q1)) / 6 is affine in x: its gradient is
- * -(q2 - q1) x (q3 - q1) / 6 and its Hessian zero. The gradient and Hessian of m_t are the
- * minimising triangle P's: grad m_t = grad d_P(x) / (4 delta), hess m_t = hess d_P(x) / (4 delta).
- * So grad E_t = m_t grad Vol + Vol grad m_t and hess E_t = grad Vol grad m_t^T +
- * grad m_t grad Vol^T + Vol hess m_t. The outer-product pair is indefinite in general;
- * polysolve's Newton regularises, and the AMIPS term beside it carries the shape.
- *
- * Every value, gradient and Hessian equals, bit for bit, that of a min_mean_distance() call per
- * cell and evaluation; the work behind them is cut twice (exact_minima()):
- *  - the last point's minima are kept, so value, gradient and Hessian at one x (polysolve asks for
- *    each separately, and again in its line search) search once;
- *  - each cell searches only its certified candidates (ball_candidates()), valid at every x in
- *    a ball around the point they were built at. r, the ball's radius, is the
- *    distance from that point to the nearest plane through a cell's three fixed corners: the
- *    largest ball around it in which none of these cells can invert. The solver evaluates only
- *    points where no ring cell is inverted (polysolve tests is_step_valid() before each trial
- *    value), so it leaves this ball only away from the nearest face. Correctness does not depend
- *    on r, only the speed. Outside the ball the candidates are rebuilt around the new point; where
- *    no ball can be certified there (r <= 0 or not finite), that evaluation runs
- *    min_mean_distance() itself.
- * Measured on the cube (cube_on, 3 turns, serial): 7.45M evaluations, 57% at the last point; of
- * the rest 96% inside the ball, with 1.37 candidates per cell; the whole tree 8 times. Smoothing
- * 68 s -> 15 s, the run 76 s -> 23 s, the output bit-identical.
- */
-class BandVolumeEnergy3D : public polysolve::nonlinear::Problem
-{
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    /// One band cell of the ring: its three other corners, at their current positions.
-    struct Cell
-    {
-        Eigen::Vector3d q1, q2, q3;
-    };
-    /// env and pad: the input's primitives and input_pad() of its vertices (the band term's
-    /// searches). x0: the moving vertex's current position. Each cell's corners are ordered here
-    /// so that its volume at x0 is positive (the ring the smoother starts from is valid). delta =
-    /// target_distance.
-    BandVolumeEnergy3D(
-        std::shared_ptr<const Envelope> env,
-        double pad,
-        std::vector<Cell> cells,
-        const Eigen::Vector3d& x0,
-        double delta);
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, MatrixXd& hessian) override;
-    void solution_changed(const TVector& new_x) override {}
-    /**
-     * @brief EXPERIMENTAL_band_volume_rule "exact": a cell's Vol_t m_t becomes J_t / delta,
-     * J_t = int_t (d - delta) dV in closed form (ExactBandIntegral), the moving vertex x one of
-     * t's corners -- the term band_cell_term() reads. Values from ExactBandIntegral::value(), the
-     * function band_cell_term() calls (the corners in another order); gradient and Hessian from
-     * ExactBandIntegral::value_grad_hess() in x (its J equals value() to rounding): exact, except
-     * on rule-(a) pieces (the bound's derivative) and at a kink of d on a face of t through x (the
-     * one-sided limit for x moving into t). The last point's value, and its gradient and Hessian,
-     * are kept: polysolve asks for each separately at one x. The corner bound's minima and
-     * certified ball are not used.
-     */
-    void set_exact_integral(std::shared_ptr<const ExactBandIntegral> eb, double delta);
-    /// A boundary face of the band through x, its other two corners: (x, a, b) ordered with its
-    /// normal (a - x) x (b - x) out of the band.
-    struct Face
-    {
-        Eigen::Vector3d a, b;
-    };
-    /**
-     * @brief EXPERIMENTAL_band_volume_rule "front_flux": the front form of the same band term
-     * (ExactBandIntegral.hpp): the value is
-     *     (sum over the band's boundary faces f through x of int_f G.n dA
-     *      + sum over the cells t of D_t, for the flagged cells) / delta,
-     * which differs from the "exact" rule's sum over the cells of J_t / delta by the flux through
-     * the faces that do not hold x, a constant in x: a face holding x lies in two cells of x's
-     * ring, so its fluxes cancel unless one side is not a band cell. Gradient and Hessian are
-     * those of E(B) / delta in x (ExactBandIntegral::front_face(), summed over `faces`); they have
-     * no D_t term. D_t is evaluated for a cell flagged by ExactBandIntegral::front_flux_flag(),
-     * or whose bound on d exceeds front_flux_reach() (the flag's polytopes hold the bisector
-     * points with d <= reach only): U_t = ExactBandIntegral::distance_bound(), kept per cell with
-     * the x it was computed at and read as U_t + |x - x_U| at a later x, a bound too (each d_P is
-     * 1-Lipschitz and only x moves), the search repeated where that exceeds the reach. Why U_t and
-     * not d(x) + max |q - x| (d 1-Lipschitz): MEASURED (stored cube_out band, 52957 cells, reach
-     * 2 delta), the latter put 10618 band cells beyond the reach, 5.0 D_t evaluations per front
-     * vertex, where the cube outward has no region overlaps on its offset side at all. The
-     * certified ball and the exact rule's integrals are not used. Any exception from the band term
-     * is kept (front_flux_error()) before it propagates: the shared smoother takes an exception out
-     * of a solve for a failed line search.
-     */
-    void set_front_flux(
-        std::shared_ptr<const ExactBandIntegral> eb,
-        double delta,
-        std::vector<Face> faces);
-    /// The message of the last exception the front-flux band term threw on this thread, until
-    /// the caller clears it (smooth_front_vertex() rethrows it after the solve).
-    static std::string& front_flux_error();
-    /// The current certified ball, its centre and radius (radius < 0: none yet). For the tests.
-    std::pair<Eigen::Vector3d, double> certified_ball() const { return {m_ball_c, m_ball_r}; }
-
-private:
-    /// need: 0 value, 1 + gradient, 2 + Hessian.
-    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
-    /// m_min_md and m_min_tri at x (see the class comment).
-    void exact_minima(const Eigen::Vector3d& x) const;
-    /// Centre the certified ball at x, when its radius there is positive and finite; false (the
-    /// old ball kept) otherwise.
-    bool certify_ball(const Eigen::Vector3d& x) const;
-    std::shared_ptr<const Envelope> m_env; ///< the input's primitives
-    double m_pad = 0.; ///< input_pad() of the input
-    double m_delta = 1.;
-    mutable std::vector<int64_t> m_hint; ///< per cell: the last minimiser (search start only)
-    /// exact_minima(): per cell min_mean_distance() and its minimiser at m_min_x (bitwise), the
-    /// last point evaluated; valid once m_min_set.
-    mutable bool m_min_set = false;
-    mutable Eigen::Vector3d m_min_x = Eigen::Vector3d::Zero();
-    mutable std::vector<double> m_min_md;
-    mutable std::vector<int64_t> m_min_tri;
-    /// certify_ball(): the ball's centre and radius (< 0: none), and per cell its candidates.
-    mutable Eigen::Vector3d m_ball_c = Eigen::Vector3d::Zero();
-    mutable double m_ball_r = -1.;
-    mutable std::vector<std::vector<BallCandidate>> m_ball_cand;
-    /// set_exact_integral(): the integral, and the last point's value / gradient and Hessian.
-    std::shared_ptr<const ExactBandIntegral> m_eb;
-    /// Per cell its partition at the last x it was evaluated at, shared by value() and
-    /// value_grad_hess() (ExactBandIntegral::Partition).
-    mutable std::vector<ExactBandIntegral::Partition> m_eb_parts;
-    mutable bool m_eb_val_set = false, m_eb_der_set = false;
-    mutable Eigen::Vector3d m_eb_val_x = Eigen::Vector3d::Zero();
-    mutable Eigen::Vector3d m_eb_der_x = Eigen::Vector3d::Zero();
-    mutable double m_eb_E = 0.;
-    mutable Eigen::Vector3d m_eb_g = Eigen::Vector3d::Zero();
-    mutable Eigen::Matrix3d m_eb_H = Eigen::Matrix3d::Zero();
-    /// set_front_flux(): on, and the band's boundary faces through x; per cell its bound U_t on d
-    /// and the x it was computed at (m_ff_Ux_set: computed).
-    bool m_ff = false;
-    std::vector<Face> m_ff_faces;
-    /// per face its labelled parts at the last x (ExactBandIntegral::FaceParts), shared by the
-    /// value and the derivatives
-    mutable std::vector<ExactBandIntegral::FaceParts> m_ff_fparts;
-    mutable std::vector<double> m_ff_U;
-    mutable std::vector<Eigen::Vector3d> m_ff_Ux;
-    mutable std::vector<char> m_ff_Ux_set;
-    /// The front form's value / derivatives at x (eval()).
-    double ff_eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H)
-        const;
-
-    std::vector<Cell> m_cells;
-};
 
 } // namespace wmtk::components::topological_offset
