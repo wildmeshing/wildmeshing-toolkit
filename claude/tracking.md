@@ -551,11 +551,13 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
   they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
   `history_output` anchors them (`allow_junction_cleanup` defaults to false then, unless the
-  config gives it). The cost the option's doc warns of, a self-intersecting input frozen by
-  its anchored crossings, does not show on its own example: 242427 converges either way at
-  default topology (max energy 99.5 free, 99.2 anchored; 17.5 s and 22.3 s with recording),
-  and with `preserve_topology` it is still at 1e50 either way when stopped after 10 minutes
-  (2.3M edges).
+  config gives it). The freeze the option was introduced for in August, a self-intersecting
+  input stuck at MAX_ENERGY by its anchored crossings, no longer happens on its example:
+  242427 converges either way at default topology, anchored keeping about 2.5 times the
+  vertices (stop_energy 100: max energy 99.5 and 3443 vertices free, 99.2 and 8483 anchored,
+  17.5 s and 22.3 s with recording; stop_energy 10: 5476 and 14257 vertices). With
+  `preserve_topology` it is still at 1e50 either way when stopped after 10 minutes (2.3M
+  edges).
 - **Not a warning either: hairpins removed.** A curve that folds back on itself narrower than
   the envelope can lose the whole fold to one collapse: on 226193 a 776-unit hairpin went to
   1.08. The map squeezes the fold onto what is left, so a point near its tip drifts as far as
