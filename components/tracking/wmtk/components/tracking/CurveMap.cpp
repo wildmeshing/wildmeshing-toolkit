@@ -292,6 +292,7 @@ void CurveMap::build_local(CurveReplay& r, const Edit& e, Step& step, const bool
                 if (next == kNone) break;
                 f = next;
             }
+            measure(w.chain);
             w.ends = looped ? Segment{{kNone, kNone}} : Segment{{from, cur}};
             out.push_back(std::move(w));
         };
@@ -497,6 +498,86 @@ void CurveMap::build_embed(CurveReplay& r, const Edit& e, Step& step)
         }
         if (step.to_before[g].size() > 1) ++m_build_warnings.overlapping;
     }
+
+    // Each segment before and the segments after on it, end to end from its first corner: a
+    // chain pair, mapped by arc length like a local map. On collinear pieces that is where a
+    // point is in space; it also tells apart pieces of no length, which a position cannot.
+    for (uint64_t f = 0; f < step.to_after.size(); ++f) {
+        const auto& gs = step.to_after[f];
+        if (gs.empty()) continue;
+        std::map<uint64_t, std::vector<uint64_t>> at;
+        for (const uint64_t g : gs) {
+            for (const uint64_t v : r.faces()[g]) at[v].push_back(g);
+        }
+        uint64_t from = kNone;
+        double nearest = std::numeric_limits<double>::infinity();
+        size_t n_ends = 0;
+        for (const auto& [v, segs] : at) {
+            if (segs.size() > 2) n_ends = 3; // not a path
+            if (segs.size() != 1) continue;
+            ++n_ends;
+            const double d = (r.vertices()[v] - step.before[f][0]).squaredNorm();
+            if (d < nearest) {
+                nearest = d;
+                from = v;
+            }
+        }
+        if (n_ends != 2) continue; // projected instead
+        Chain a, b;
+        std::set<uint64_t> done;
+        uint64_t cur = from, g = at[from].front();
+        while (true) {
+            done.insert(g);
+            const Segment& c = r.faces()[g];
+            const bool fwd = c[0] == cur;
+            a.segments.push_back(g);
+            a.forward.push_back(fwd);
+            a.length.push_back((step.after[g][1] - step.after[g][0]).norm());
+            cur = fwd ? c[1] : c[0];
+            uint64_t next = kNone;
+            for (const uint64_t x : at[cur]) {
+                if (!done.count(x)) next = x;
+            }
+            if (next == kNone) break;
+            g = next;
+        }
+        if (done.size() != gs.size()) continue;
+        b.segments = {f};
+        b.forward = {1};
+        b.length = {(step.before[f][1] - step.before[f][0]).norm()};
+        measure(a);
+        measure(b);
+        const uint32_t k = uint32_t(step.chains.size());
+        step.before_at.push_back({f, {k, 0}});
+        for (size_t x = 0; x < a.segments.size(); ++x) {
+            step.after_at.push_back({a.segments[x], {k, uint32_t(x)}});
+        }
+        step.chains.push_back({std::move(b), std::move(a)});
+    }
+    // A segment after on more than one before maps back onto the first.
+    const auto by_segment = [](const auto& x, const auto& y) { return x.first < y.first; };
+    std::stable_sort(step.after_at.begin(), step.after_at.end(), by_segment);
+    step.after_at.erase(
+        std::unique(
+            step.after_at.begin(),
+            step.after_at.end(),
+            [](const auto& x, const auto& y) { return x.first == y.first; }),
+        step.after_at.end());
+}
+
+void CurveMap::measure(Chain& c)
+{
+    const size_t n = c.length.size();
+    double total = 0;
+    for (const double l : c.length) total += l;
+    const double floor = total > 0 ? 1e-9 * total / double(n) : 0;
+    c.start.assign(n, 0);
+    c.total = 0;
+    for (size_t k = 0; k < n; ++k) {
+        c.length[k] = total > 0 ? std::max(c.length[k], floor) : 1;
+        c.start[k] = c.total;
+        c.total += c.length[k];
+    }
 }
 
 void CurveMap::build_replace(CurveReplay& r, const Edit& e, Step& step)
@@ -541,6 +622,11 @@ bool CurveMap::forward(const Step& s, CurvePoint& p)
         return true;
     }
     case EditKind::embed: {
+        if (const Place* at = find_in(s.before_at, p.segment)) {
+            const auto& [b, a] = s.chains[at->first];
+            p = along(b, at->second, p.bary, a);
+            return true;
+        }
         if (p.segment >= s.to_after.size() || s.to_after[p.segment].empty()) return false;
         const auto& b = s.before[p.segment];
         const Eigen::Vector3d x = p.bary[0] * b[0] + p.bary[1] * b[1];
@@ -585,6 +671,11 @@ bool CurveMap::backward(const Step& s, CurvePoint& p)
         return true;
     }
     case EditKind::embed: {
+        if (const Place* at = find_in(s.after_at, p.segment)) {
+            const auto& [b, a] = s.chains[at->first];
+            p = along(a, at->second, p.bary, b);
+            return true;
+        }
         if (p.segment >= s.to_before.size() || s.to_before[p.segment].empty()) return false;
         const auto& a = s.after[p.segment];
         const Eigen::Vector3d y = p.bary[0] * a[0] + p.bary[1] * a[1];

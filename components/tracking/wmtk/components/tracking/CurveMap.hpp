@@ -109,10 +109,17 @@ private:
     {
         std::vector<uint64_t> segments;
         std::vector<uint8_t> forward;
-        /// The arc length at each segment's start, and each segment's length.
+        /// The arc length at each segment's start, and each segment's length, as measure() counts
+        /// them.
         std::vector<double> start, length;
         double total = 0;
     };
+    /// Sets a chain's starts and total from its segments' lengths, each counting for at least a
+    /// billionth of the chain's mean segment -- or all alike, if the chain has no length. A
+    /// segment of no length in doubles, two vertices the arrangement set apart by less than
+    /// their rounding, then keeps a sliver of the chain, and the map stays one to one; any other
+    /// chain is measured by its arc length exactly.
+    static void measure(Chain& c);
     /// A segment's image: another segment, its corners the same way round or not; kNone for
     /// none.
     struct Image
@@ -135,7 +142,8 @@ private:
         /// consolidate, relabel: every segment's new id, and back; any other has none.
         std::vector<Image> old_to_new, new_to_old;
         /// embed: the segments before and after, by their corners' positions, and which of the
-        /// other side's each lies on.
+        /// other side's each lies on -- for those whose segments after lie end to end, the
+        /// chains above instead: each segment before paired with them.
         std::vector<std::array<Eigen::Vector3d, 2>> before, after;
         std::vector<std::vector<uint64_t>> to_after, to_before;
     };

@@ -328,3 +328,61 @@ TEST_CASE("curve-map-end-erodes", "[tracking][curves]")
         (at(p, map.output_vertices(), map.output_segments()) - Eigen::Vector3d(1.25, 0, 0)).norm() <
         1e-12); // a quarter of 1..2
 }
+
+TEST_CASE("curve-map-segment-of-no-length", "[tracking][curves]")
+{
+    // Vertices 1 and 2 coincide in doubles -- an arrangement can set two apart by less than
+    // their rounding -- so segment 1 has no length, until vertex 2 moves away. Its points keep a
+    // sliver of the chain, so the map stays one to one: they come back where they were.
+    CurveHistory h = polyline({0, 1, 1, 2});
+    h.edits.push_back({EditKind::move_vertices, {}, {}, {{2, Eigen::Vector3d(1.5, 0, 0)}}});
+    const CurveMap map(h);
+    CHECK(map.build_warnings().total() == 0);
+    for (const bool on_input : {true, false}) {
+        const auto pts = random_points(map, on_input, 300);
+        const auto there = on_input ? map.to_output(pts) : map.to_input(pts);
+        const auto back = on_input ? map.to_input(there) : map.to_output(there);
+        for (size_t i = 0; i < pts.size(); ++i) {
+            REQUIRE(there[i].segment != kNoVertex);
+            REQUIRE(back[i].segment == pts[i].segment);
+            CHECK((back[i].bary - pts[i].bary).norm() < 1e-6);
+        }
+    }
+    // Points on the segment of no length go to distinct places, near vertex 1.
+    const auto a = map.to_output({{1, Eigen::Vector2d(0.75, 0.25)}})[0];
+    const auto b = map.to_output({{1, Eigen::Vector2d(0.25, 0.75)}})[0];
+    const Eigen::Vector3d pa = at(a, map.output_vertices(), map.output_segments());
+    const Eigen::Vector3d pb = at(b, map.output_vertices(), map.output_segments());
+    CHECK(pa != pb);
+    CHECK((pa - Eigen::Vector3d(1, 0, 0)).norm() < 1e-6);
+    CHECK((pb - Eigen::Vector3d(1, 0, 0)).norm() < 1e-6);
+}
+
+TEST_CASE("curve-map-embed-piece-of-no-length", "[tracking][curves]")
+{
+    // An embed cuts segment (0, 2) into three pieces, the middle one of no length at x = 1:
+    // each piece keeps its own part of the segment, the middle one a sliver.
+    CurveHistory h = polyline({0, 2});
+    Edit embed{EditKind::embed, {0, 1, 1, 2, 2, 3}, {1, 0, 1, 0, 1, 0, 0}, {}};
+    embed.moves = {
+        {0, Eigen::Vector3d(0, 0, 0)},
+        {1, Eigen::Vector3d(1, 0, 0)},
+        {2, Eigen::Vector3d(1, 0, 0)},
+        {3, Eigen::Vector3d(2, 0, 0)}};
+    h.edits.push_back(embed);
+    const CurveMap map(h);
+    for (const uint64_t g : {0, 1, 2}) {
+        for (const double t : {0.1, 0.5, 0.9}) {
+            const CurvePoint p{g, Eigen::Vector2d(1 - t, t)};
+            const auto q = map.to_output(map.to_input({p}))[0];
+            REQUIRE(q.segment == g);
+            CHECK((q.bary - p.bary).norm() < 1e-6);
+        }
+    }
+    // On the pieces of positive length a point keeps its place in space, but for the sliver
+    // (a billionth of the segment) the middle piece takes from them.
+    const auto q = map.to_input({{2, Eigen::Vector2d(0.5, 0.5)}})[0];
+    CHECK(
+        (at(q, map.input_vertices(), map.input_segments()) - Eigen::Vector3d(1.5, 0, 0)).norm() <
+        1e-8);
+}
