@@ -57,6 +57,20 @@ public:
         for (const auto& v : selectors) out.push_back(path(root, v));
         return out;
     }
+    // One named input, uncleaned: the memory twin of reading one file.
+    void raw_triangles(const std::string& name, MatrixXd& V, MatrixXi& F) const
+    {
+        const auto& data = mesh(name);
+        attributes(data.vertex_attributes, reader_vertex_attributes);
+        for (const auto& [type, c] : data.cells) {
+            if (type != CellType::Triangle)
+                throw std::runtime_error("Expected triangle input: " + name);
+            attributes(c.attributes, reader_corner_attributes);
+        }
+        V = data.V;
+        F = indices(data.cell(CellType::Triangle).connectivity);
+        if (!F.rows()) throw std::runtime_error("Empty triangle input: " + name);
+    }
     void triangles(
         const std::string& name,
         MatrixXd& V,
@@ -68,19 +82,12 @@ public:
             read_triangle_mesh(name, V, F, rel, abs);
             return;
         }
-        const auto& data = mesh(name);
-        attributes(data.vertex_attributes, reader_vertex_attributes);
-        for (const auto& [type, c] : data.cells) {
-            if (type != CellType::Triangle)
-                throw std::runtime_error("Expected triangle input: " + name);
-            attributes(c.attributes, reader_corner_attributes);
-        }
-        V = data.V;
-        F = indices(data.cell(CellType::Triangle).connectivity);
-        if (!F.rows()) throw std::runtime_error("Empty triangle input: " + name);
+        raw_triangles(name, V, F);
         clean_triangle_mesh(V, F, rel, abs);
         if (!F.rows()) throw std::runtime_error("No faces after cleaning: " + name);
     }
+    // Like read_triangle_mesh(paths): concatenate the raw inputs, then clean them once, so
+    // vertex merging sees the same vertices (isolated ones included) in the same order.
     void triangles(
         const std::vector<std::string>& names,
         MatrixXd& V,
@@ -99,7 +106,7 @@ public:
         for (size_t i = 0; i < names.size(); ++i) {
             MatrixXd v;
             MatrixXi f;
-            triangles(names[i], v, f, -1, -1);
+            raw_triangles(names[i], v, f);
             const auto nv = V.rows(), nf = F.rows();
             f.array() += nv;
             V.conservativeResize(nv + v.rows(), 3);

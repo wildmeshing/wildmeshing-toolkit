@@ -206,6 +206,36 @@ TEST_CASE("Named input selection is strict and ordered", "[mesh_data][io]")
     inputs.at("a").vertex_attributes["unexpected"].values = DataMatrix<double>::Zero(3, 1).eval();
     REQUIRE_THROWS(context.triangles("a", V, F));
 }
+TEST_CASE("Several memory inputs are cleaned like several files", "[mesh_data][io]")
+{
+    // An isolated vertex of the first input lies within the merge tolerance of a referenced
+    // vertex of the second. Cleaning each input first would drop it before the merge.
+    TempMesh first(".obj"), second(".obj");
+    std::ofstream(first.path) << "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 5.0004 0 0\nf 1 2 3\n";
+    std::ofstream(second.path) << "v 5 0 0\nv 6 0 0\nv 5 1 0\nf 1 2 3\n";
+    MatrixXd V_file, V_memory;
+    MatrixXi F_file, F_memory;
+    std::vector<int> source_file, source_memory;
+    io::read_triangle_mesh(
+        {first.path.string(), second.path.string()},
+        V_file,
+        F_file,
+        -1,
+        1e-3,
+        &source_file);
+    MeshMap inputs{{"first", io::read_mesh(first.path)}, {"second", io::read_mesh(second.path)}};
+    io::ComponentIO context(&inputs);
+    context.triangles(
+        std::vector<std::string>{"first", "second"},
+        V_memory,
+        F_memory,
+        -1,
+        1e-3,
+        &source_memory);
+    REQUIRE(V_memory == V_file);
+    REQUIRE(F_memory == F_file);
+    REQUIRE(source_memory == source_file);
+}
 TEST_CASE("MSH source IDs survive arbitrary node tags", "[mesh_data][io]")
 {
     MeshData mesh;
