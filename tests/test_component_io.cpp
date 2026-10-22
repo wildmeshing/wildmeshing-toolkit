@@ -16,6 +16,7 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #endif
 #ifdef WMTK_TEST_simwild
+#include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
 #endif
 #ifdef WMTK_TEST_triwild
@@ -160,6 +161,30 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     auto result = simwild::simwild(options, {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
+}
+TEST_CASE("Tagged meshes use an embedded envelope block", "[component_io]")
+{
+    // A tagged tet plus an envelope triangle on two extra vertices, as read_mesh returns a
+    // simwild .msh written with write_envelope.
+    auto data = tet();
+    add_tags(data, CellType::Tetrahedron);
+    data.V.conservativeResize(6, 3);
+    data.V.bottomRows(2) << 5, 5, 5, 6, 5, 5;
+    auto& envelope = data.cells[CellType::Triangle];
+    envelope.connectivity.resize(1, 3);
+    envelope.connectivity << 4, 5, 0;
+    envelope.attributes["tags"] = {DataMatrix<uint8_t>::Ones(1, 1).eval(), {"EnvelopeSurface"}};
+    const auto input = simwild::read_mesh_data(data);
+    REQUIRE(input.V_input.rows() == 4);
+    REQUIRE(input.V_input.colwise().maxCoeff().maxCoeff() == 1);
+    REQUIRE(input.V_envelope.rows() == 3);
+    REQUIRE(input.F_envelope.rows() == 1);
+    REQUIRE(input.envelope_name == "EnvelopeSurface");
+    const auto separate = triangle();
+    REQUIRE_THROWS(simwild::read_mesh_data(data, &separate));
+    data.cells[CellType::Edge].connectivity.resize(1, 2);
+    data.cells[CellType::Edge].connectivity << 0, 1;
+    REQUIRE_THROWS(simwild::read_mesh_data(data));
 }
 TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component_io]")
 {

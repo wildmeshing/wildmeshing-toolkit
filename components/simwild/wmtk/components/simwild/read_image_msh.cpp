@@ -750,14 +750,21 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         "settle_inside_bars",
         "settle_outside_bars",
         "chord_length"};
+    // A lower-dimensional block of the envelope's type is an embedded envelope, as a lower
+    // physical group is on the .msh route (simwild writes its envelope as `EnvelopeSurface`).
+    const auto envelope_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
     for (const auto& [t, c] : mesh.cells) {
-        if (t != type && cell_dimension(t) >= cell_dimension(type))
+        if (t != type && t != envelope_type)
             throw std::runtime_error("Incompatible tagged mesh topology");
         io::ComponentIO::attributes(
             c.attributes,
             fields,
             t == type ? std::set<std::string>{"tags"} : std::set<std::string>{});
     }
+    const auto embedded = mesh.cells.find(envelope_type);
+    const bool has_embedded = embedded != mesh.cells.end() && embedded->second.connectivity.rows();
+    if (has_embedded && envelope)
+        throw std::runtime_error("Tagged mesh has an embedded envelope and an `envelope` input");
     const auto& a = block.attributes.at("tags");
     if (!std::holds_alternative<DataMatrix<uint8_t>>(a.values) ||
         a.labels.size() != size_t(a.cols()))
@@ -765,8 +772,22 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     const auto& tags = std::get<DataMatrix<uint8_t>>(a.values);
     if ((tags.array() > 1).any()) throw std::runtime_error("tags must be binary");
     InputData out;
-    out.V_input = mesh.V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
-    out.T_input = io::ComponentIO::indices(block.connectivity);
+    const int dim = type == CellType::Tetrahedron ? 3 : 2;
+    // The vertices of `cells` only, renumbered in order: the .msh route reads each group's own
+    // vertices, so an embedded envelope's vertices must not enter V_input (and its bbox).
+    auto referenced = [&](const DataMatrix<int64_t>& cells, MatrixXd& V, MatrixXi& C) {
+        std::vector<int> remap(mesh.V.rows(), -1);
+        for (Eigen::Index i = 0; i < cells.size(); ++i) remap[cells.data()[i]] = 0;
+        int n = 0;
+        for (auto& r : remap)
+            if (r == 0) r = n++;
+        V.resize(n, dim);
+        for (Eigen::Index v = 0; v < mesh.V.rows(); ++v)
+            if (remap[v] >= 0) V.row(remap[v]) = mesh.V.row(v).head(dim);
+        C = io::ComponentIO::indices(cells);
+        for (Eigen::Index i = 0; i < C.size(); ++i) C.data()[i] = remap[C.data()[i]];
+    };
+    referenced(block.connectivity, out.V_input, out.T_input);
     std::vector<int> columns;
     for (int j = 0; j < tags.cols(); ++j)
         if (a.labels[j] != "ambient" && a.labels[j] != "ImageVolume") {
@@ -788,6 +809,14 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.V_envelope = envelope->V.leftCols(type == CellType::Tetrahedron ? 3 : 2);
         out.F_envelope = io::ComponentIO::indices(envelope->cell(t).connectivity);
         out.envelope_name = "EnvelopeSurface";
+    }
+    if (has_embedded) {
+        referenced(embedded->second.connectivity, out.V_envelope, out.F_envelope);
+        const auto tag = embedded->second.attributes.find("tags");
+        out.envelope_name = tag != embedded->second.attributes.end() && tag->second.cols() == 1 &&
+                                    tag->second.labels.size() == 1
+                                ? tag->second.labels[0]
+                                : "EnvelopeSurface";
     }
     return out;
 }

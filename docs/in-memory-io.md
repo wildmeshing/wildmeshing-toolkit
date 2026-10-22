@@ -132,7 +132,10 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 
 For tagged inputs, `tags` is required on the top-dimensional cells. Its labels name regions
 such as `tag_0`; `ambient` is the untagged region. Existing exported diagnostics have fixed allowed
-names in the adapters and may be supplied again. Extra unrelated fields are errors.
+names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
+`.msh` route, a lower-dimensional block of the envelope's type (triangles in a tet mesh, edges in
+a triangle mesh) is the envelope, e.g. simwild's `EnvelopeSurface`; it cannot be combined with an
+`envelope` input. Other lower-dimensional blocks are rejected.
 
 The prismatic adapter accepts scalar `tag_0` and `offset_tag`, or the corresponding columns of
 `tags`. `vid` defaults to vertex row IDs; absent `labels` are derived from input-volume cells and
