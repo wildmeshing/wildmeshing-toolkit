@@ -298,6 +298,21 @@ TEST_CASE("Memory exports map to result keys explicitly", "[mesh_data][io]")
     unknown["mesh_offset.vtu"] = MeshData();
     REQUIRE_THROWS(io::named_outputs(std::move(unknown)));
 }
+TEST_CASE("The memory logger scope keeps the configured levels", "[mesh_data][io]")
+{
+    const auto level = logger().level(), opt_level = opt_logger().level();
+    logger().set_level(spdlog::level::err);
+    opt_logger().set_level(spdlog::level::off);
+    {
+        detail::ComponentLoggerScope scope(true);
+        REQUIRE(logger().level() == spdlog::level::err);
+        REQUIRE(opt_logger().level() == spdlog::level::off);
+    }
+    REQUIRE(logger().level() == spdlog::level::err);
+    REQUIRE(opt_logger().level() == spdlog::level::off);
+    logger().set_level(level);
+    opt_logger().set_level(opt_level);
+}
 TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
 {
     MeshData mesh;

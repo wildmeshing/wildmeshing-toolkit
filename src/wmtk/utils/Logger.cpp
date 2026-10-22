@@ -64,14 +64,20 @@ detail::ComponentLoggerScope::ComponentLoggerScope(bool memory)
     , m_memory(memory)
 {
     if (!memory) return;
-    const auto level = logger().level();
+    // The console loggers keep the configured levels (WMTK_LOGGER_LEVEL, or the caller's).
+    auto& previous = logger();
+    auto& previous_opt = opt_logger();
     m_previous = get_shared_logger();
     m_previous_opt = get_shared_opt_logger();
     auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto console = std::make_shared<spdlog::logger>("wmtk", sink);
-    console->set_level(level);
+    console->set_level(previous.level());
+    console->flush_on(previous.flush_level());
+    auto opt = std::make_shared<spdlog::logger>("wmtk-opt", sink);
+    opt->set_level(previous_opt.level());
+    opt->flush_on(previous_opt.flush_level());
     set_logger(console);
-    set_opt_logger(std::make_shared<spdlog::logger>("wmtk-opt", sink));
+    set_opt_logger(opt);
 }
 
 detail::ComponentLoggerScope::~ComponentLoggerScope()
