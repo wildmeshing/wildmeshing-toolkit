@@ -1,8 +1,10 @@
 #pragma once
 
-#include <wmtk/io/ComponentIO.hpp>
-
 #include <wmtk/Types.hpp>
+
+namespace wmtk::io {
+class ComponentIO;
+}
 
 namespace wmtk::utils {
 

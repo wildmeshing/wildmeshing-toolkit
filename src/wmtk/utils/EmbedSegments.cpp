@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
