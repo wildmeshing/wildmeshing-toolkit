@@ -28,10 +28,8 @@ run_remeshing(std::string input, double len, std::string output, IsotropicRemesh
     if (!output.empty()) m.write_triangle_mesh(output);
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime {:.4}s", timer.getElapsedTimeInSec());
-    if (!output.empty()) {
-        wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
-        wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
-    }
+    wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
+    wmtk::logger().info("peak_memory {}", getPeakRSS() / (1024. * 1024));
     wmtk::logger().info("after remesh properties: {}", properties);
     wmtk::logger().info(
         "After_vertices#: {} \n\t After_tris#: {}",
