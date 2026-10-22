@@ -1425,12 +1425,11 @@ TEST_CASE("fold-barrier-3d", "[offset][3d]")
 {
     // FoldBarrier3D, the front smoother's per-face fold barrier: 0 while the angle between the
     // face normal ((a - x) x (b - x)) and g is at most foldover_angle, positive and climbing past
-    // it, +inf at and past 90 degrees; gradient and Hessian against central differences inside
-    // the active range; max_step_size() is 0.9x the exact first 90-degree crossing.
+    // it, finite past 90 degrees, +inf at 180 (the normal straight against g); gradient and
+    // Hessian against central differences in the active range, past 90 degrees included.
     // One face: a = (1, 0, 0), b = (0, 1, 0), x moving; g = +z. With x = (0, 0, h) the normal
-    // (a - x) x (b - x) = (h, h, 1), so cos = 1 / sqrt(1 + 2 h^2): h = 0 is 0 degrees, and the
-    // angle grows with h; x = (s, s, 0) tilts nothing (the face stays in z = 0), x = (s, s, z)
-    // with s > 1/2 turns the normal over.
+    // (a - x) x (b - x) = (h, h, 1), so cos = 1 / sqrt(1 + 2 h^2); x = (s, s, 0) with s > 1/2 puts
+    // the normal at (0, 0, 1 - 2s), straight down: 180 degrees.
     const double theta = 60.;
     const double c0 = std::cos(theta * M_PI / 180.);
     const FoldBarrier3D::Face f{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}};
@@ -1447,11 +1446,17 @@ TEST_CASE("fold-barrier-3d", "[offset][3d]")
     CHECK(at(Vector3d(0., 0., 0.99 * h60)) == 0.);
     CHECK(at(Vector3d(0., 0., 1.5 * h60)) > 0.);
     CHECK(at(Vector3d(0., 0., 4. * h60)) > at(Vector3d(0., 0., 1.5 * h60)));
-    // Past 90 degrees (the normal turned over): +inf.
-    CHECK(std::isinf(at(Vector3d(0.7, 0.7, -0.1))));
-    // Derivatives in the active range, at points off the symmetry axis.
+    // Past 90 degrees (here about 161): finite, and larger still.
+    const Vector3d past90(0.7, 0.7, -0.1);
+    REQUIRE(FoldBarrier3D::cosine(f, past90) < -0.9);
+    CHECK(std::isfinite(at(past90)));
+    CHECK(at(past90) > at(Vector3d(0., 0., 4. * h60)));
+    // At 180 degrees: +inf.
+    CHECK(FoldBarrier3D::cosine(f, Vector3d(0.8, 0.8, 0.)) == Catch::Approx(-1.));
+    CHECK(std::isinf(at(Vector3d(0.8, 0.8, 0.))));
+    // Derivatives in the active range.
     for (const Vector3d& x :
-         {Vector3d(0.1, -0.05, 1.6), Vector3d(-0.2, 0.15, 2.5), Vector3d(0.05, 0.3, 4.)}) {
+         {Vector3d(0.1, -0.05, 1.6), Vector3d(-0.2, 0.15, 2.5), Vector3d(0.05, 0.3, 4.), past90}) {
         INFO("x " << x.transpose());
         REQUIRE(at(x) > 0.);
         Eigen::VectorXd xv = x;
@@ -1475,14 +1480,12 @@ TEST_CASE("fold-barrier-3d", "[offset][3d]")
             }
         }
     }
-    // p = N.g = 1 - x_x - x_y (affine): from (0, 0, 0) to (1, 1, 0) it hits 0 at t = 1/2.
+    // is_step_valid() refuses a step that ends at 180 degrees, admits one that ends past 90.
     Eigen::VectorXd x0(3), x1(3);
     x0 << 0., 0., 0.;
-    x1 << 1., 1., 0.;
-    CHECK(b.max_step_size(x0, x1) == Catch::Approx(0.45).epsilon(1e-12));
+    x1 << 0.8, 0.8, 0.;
     CHECK_FALSE(b.is_step_valid(x0, x1));
-    x1 << 0.2, 0.1, 0.5;
-    CHECK(b.max_step_size(x0, x1) == 1.);
+    x1 = past90;
     CHECK(b.is_step_valid(x0, x1));
 }
 
@@ -1490,11 +1493,11 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
 {
     // front_fold_barrier_energy() on the fan fixture reads the debug frames' own angle
     // (front_face_field_angle(), the field_normal_angle field): at each front vertex whose faces
-    // are all below 90 degrees, its value is the sum over the faces of b(cos(angle) / c0) (0 for
-    // angles within foldover_angle); at a vertex with a face at or past 90 degrees it throws. Run
-    // on the fan and on it with the band and background labels swapped, which turns the fan
-    // faces' normals out of the band around (angle -> 180 - angle): the fan values, the swap
-    // throws. foldover_angle 90 is refused.
+    // are below 180 degrees, its value is the sum over the faces of b((cos(angle) + 1) / (c0 + 1))
+    // (0 for angles within foldover_angle); at a vertex with a face at 180 degrees it would throw.
+    // Run on the fan and on it with the band and background labels swapped, which turns the fan
+    // faces' normals out of the band around (angle -> 180 - angle, here past 90 but short of
+    // 180): both value, neither throws. foldover_angle 180 is refused.
     const FanFixture fan = fan_fixture();
     const double theta = 3.; // below the fan's ~5-10 degree tilts: the barrier is active
     const double c0 = std::cos(theta * M_PI / 180.);
@@ -1520,13 +1523,13 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
                 const double ang = mesh->front_face_field_angle(f[0], f[1], f[2]);
                 if (!std::isfinite(ang)) continue;
                 worst = std::max(worst, ang);
-                want += b_of(std::cos(ang * M_PI / 180.) / c0);
+                want += b_of((std::cos(ang * M_PI / 180.) + 1.) / (c0 + 1.));
             }
             INFO(
                 "labels " << (labels == fan.labels ? "fan" : "swapped") << ", vertex " << v
                           << ", worst front-face angle " << worst);
             ++n_checked;
-            if (worst >= 90.) {
+            if (worst >= 180.) {
                 CHECK_THROWS(mesh->front_fold_barrier_energy(v));
                 ++n_threw;
                 continue;
@@ -1538,8 +1541,8 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
             ++n_valued;
             if (got > 0.) ++n_active;
         }
-        // foldover_angle 90 or more is refused.
-        mesh->m_offset_params.foldover_angle = 90.;
+        // foldover_angle 180 or more is refused.
+        mesh->m_offset_params.foldover_angle = 180.;
         for (size_t v = 0; v < size_t(fan.V.rows()); ++v) {
             if (mesh->m_vertex_extra[v].m_is_on_offset) {
                 CHECK_THROWS(mesh->front_fold_barrier_energy(v));
@@ -1548,7 +1551,7 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
         }
     }
     INFO(n_checked << " vertices checked, " << n_threw << " threw, " << n_valued << " valued");
-    CHECK(n_threw > 0);
+    CHECK(n_threw == 0); // no face of the fan or its swap is at 180 degrees
     CHECK(n_valued > 0);
     CHECK(n_active > 0); // the barrier is really on somewhere (angles past foldover_angle)
 }
@@ -1667,13 +1670,12 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
     // extra energy (nullptr: the engine's raw AMIPS sum). Three fixtures: the per-tet-energy one
     // (front vertices a, b, c0, c1, c2; c3 on no front face), a star of eight band cells around
     // an off-front vertex -- both with front faces past 90 degrees from the field gradient, where
-    // the objective must throw (the fold barrier) -- and the fan (fan_fixture()), whose front is
-    // unfolded. The front objective's value at the build position against the sum of
-    // face_offset_error() over the vertex's live front faces plus the fold barrier, and its
-    // gradient and Hessian against central differences (small enough steps that the ring
-    // barrier stays 0 and flat).
-    // use_rest_pose: the plastic machinery still prices tet_energy() (checked below), although no
-    // operation rule reads it any more.
+    // the fold barrier is large -- and the fan (fan_fixture()), whose front is unfolded. The front
+    // objective's value at the build position against the sum of face_offset_error() over the
+    // vertex's live front faces plus the fold barrier, and its gradient and Hessian against central
+    // differences (small enough steps that the ring barrier stays 0 and flat). use_rest_pose: the
+    // plastic machinery still prices tet_energy() (checked below), although no operation rule reads
+    // it any more.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1795,15 +1797,16 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                     }
                     continue;
                 }
-                // A front face at or past 90 degrees from the field gradient: the fold barrier
-                // cannot start there and the objective throws (fixtures 0 and 1 have such faces).
+                // A front face at 180 degrees from the field gradient: the fold barrier cannot
+                // start there and the objective throws (no fixture has one; fixtures 0 and 1 have
+                // faces past 90, where the barrier is large but finite).
                 double worst = -1.;
                 for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
                     const auto f = mesh->get_face_vids(ft);
                     const double ang = mesh->front_face_field_angle(f[0], f[1], f[2]);
                     if (std::isfinite(ang)) worst = std::max(worst, ang);
                 }
-                if (worst >= 90.) {
+                if (worst >= 180.) {
                     CHECK_THROWS(mesh->smoothing_extra_energy(v));
                     continue;
                 }
@@ -1834,7 +1837,7 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                 // every sample stays inside the ring barrier's zero region). Not next to the fold
                 // barrier's wall, where it is near-infinite and a difference step can cross it.
                 INFO("worst front-face angle " << worst);
-                if (worst > 85.) continue;
+                if (worst > 175.) continue;
                 const double h = 1e-6;
                 Eigen::VectorXd g(3);
                 Eigen::MatrixXd H(3, 3);

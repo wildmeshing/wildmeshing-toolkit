@@ -1970,8 +1970,9 @@ public:
     /// The IPC fold barrier on vid's live offset faces (FoldBarrier3D): per face the angle
     /// between its normal out of its band cell and the unit gradient of d (the input envelope's
     /// nearest primitive, as front_face_field_angle()) at its centroid, the gradient frozen for
-    /// the solve; 0 up to foldover_angle, +inf at 90 degrees. THROWS when a face is already at or
-    /// past 90 degrees (the barrier cannot start there), and when foldover_angle is not below 90.
+    /// the solve; 0 up to foldover_angle, +inf at 180 degrees (a face turned straight back at the
+    /// input). THROWS when a face is already at 180 degrees (the barrier cannot start there), and
+    /// when foldover_angle is not below 180.
     /// Faces whose angle cannot be measured (no band cell, zero area, zero gradient) are left out.
     /// Null when no face is measurable. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_fold_barrier_energy(size_t vid) const;

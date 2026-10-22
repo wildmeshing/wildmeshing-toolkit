@@ -303,10 +303,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_fold_bar
     // gradient of d at the centroid now, exactly as front_face_angle_to_field() reads it.
     if (!m_input_complex_envelope) return nullptr;
     const double theta = m_offset_params.foldover_angle;
-    if (!(theta < 90.)) {
+    if (!(theta < 180.)) {
         log_and_throw_error(
-            "front fold barrier: foldover_angle {} is not below 90 degrees; the barrier is 0 "
-            "below foldover_angle and +inf at 90",
+            "front fold barrier: foldover_angle {} is not below 180 degrees; the barrier is 0 "
+            "below foldover_angle and +inf at 180",
             theta);
     }
     const double c0 = std::cos(theta * M_PI / 180.);
@@ -336,13 +336,13 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_fold_bar
         if (!(gn > 0.) || !std::isfinite(gn)) continue;
         fb.g = g / gn;
         const double c = FoldBarrier3D::cosine(fb, x);
-        if (!(c > 0.)) {
+        if (!(c > -1.)) {
             const double ang =
                 std::atan2((fb.a - x).cross(fb.b - x).normalized().cross(fb.g).norm(), c) * 180. /
                 M_PI;
             log_and_throw_error(
                 "front fold barrier: offset face ({}, {}, {}) at front vertex {} is already "
-                "{:.4g} degrees from the field gradient (>= 90; foldover_angle {}), centroid "
+                "{:.4g} degrees from the field gradient (180; foldover_angle {}), centroid "
                 "({:.6g}, {:.6g}, {:.6g}): the barrier cannot start there",
                 f[0],
                 f[1],
