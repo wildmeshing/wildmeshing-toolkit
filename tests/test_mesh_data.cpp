@@ -7,6 +7,7 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/MeshData.hpp>
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 using namespace wmtk;
@@ -255,6 +256,26 @@ TEST_CASE("MSH source IDs survive arbitrary node tags", "[mesh_data][io]")
     REQUIRE(
         loaded.vertex_attributes.at("vid").integers() ==
         (DataMatrix<int64_t>(3, 1) << 41, 98, 6).finished());
+}
+TEST_CASE("A reused memory writer starts each mesh without fields", "[mesh_data][io]")
+{
+    MeshMap outputs;
+    io::DataWriter writer(&outputs);
+    Eigen::MatrixXd V(3, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0;
+    Eigen::MatrixXi F(1, 3);
+    F << 0, 1, 2;
+    writer.add_field("quality", Eigen::MatrixXd::Ones(3, 1));
+    writer.add_cell_field("energy", Eigen::MatrixXd::Ones(1, 1));
+    writer.write_mesh("first.vtu", V, F, paraviewo::CellType::Triangle);
+    Eigen::MatrixXd E_V(2, 3);
+    E_V << 0, 0, 0, 1, 0, 0;
+    Eigen::MatrixXi E(1, 2);
+    E << 0, 1;
+    REQUIRE_NOTHROW(writer.write_mesh("second.vtu", E_V, E, paraviewo::CellType::Line));
+    REQUIRE(outputs.at("first.vtu").vertex_attributes.count("quality"));
+    REQUIRE(outputs.at("second.vtu").vertex_attributes.empty());
+    REQUIRE(outputs.at("second.vtu").cell(CellType::Edge).attributes.empty());
 }
 TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
 {

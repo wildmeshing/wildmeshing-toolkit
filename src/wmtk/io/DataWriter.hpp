@@ -85,6 +85,9 @@ public:
             }
         data.validate();
         output->insert_or_assign(path, std::move(data));
+        // Like VTUWriter::write_mesh, which clears its fields after every write.
+        points.clear();
+        fields.clear();
         return true;
     }
 };
