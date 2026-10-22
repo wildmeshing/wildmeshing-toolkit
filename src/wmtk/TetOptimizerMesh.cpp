@@ -71,6 +71,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         logger().info("max energy {:.6} | stop {:.6}", max_metric, optimization_stop_metric());
+        optimization_iteration_done(it);
 
         std::atomic<int> n_round = 0;
         std::atomic<int> n_verts = 0;

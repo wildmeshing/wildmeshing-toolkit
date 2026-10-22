@@ -901,6 +901,9 @@ protected:
      * enough.
      */
     virtual bool optimization_bare_coarsen_passes() const { return true; }
+    /// Called at the end of each iteration of mesh_improvement(), after its operation groups and
+    /// before the stop test (`it` from 0). No-op by default.
+    virtual void optimization_iteration_done(int /*it*/) {}
     virtual void write_optimization_debug_output(const std::string& path) = 0;
     virtual void optimization_sanity_checks_extra() {}
 
