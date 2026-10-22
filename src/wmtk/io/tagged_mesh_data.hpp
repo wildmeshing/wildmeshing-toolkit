@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 
@@ -60,12 +61,21 @@ MeshData feature_data(
 template <typename Mesh, typename TupleRange, typename Tags>
 void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange& cells, Tags tags)
 {
-    auto& block = outputs.at("mesh").cells.at(type);
+    // A result without cells has no block yet: the exporter only creates the ones it fills.
+    auto& block = outputs.at("mesh").cells[type];
+    if (block.connectivity.cols() != cell_size(type)) block.connectivity.resize(0, cell_size(type));
+    // An unnamed tag is called tag_<id>, unless that name is taken, in which case '_' is
+    // appended as SimWildMesh::write_msh does; labels must be unique.
+    std::set<std::string> named, labelled;
+    for (const auto& [id, name] : mesh.m_tag_id_to_name) named.insert(name);
     std::vector<std::string> labels;
     for (size_t j = 0; j < mesh.m_tags_count; ++j) {
         const auto it = mesh.m_tag_id_to_name.find(j);
-        labels.push_back(
-            it == mesh.m_tag_id_to_name.end() ? "tag_" + std::to_string(j) : it->second);
+        const bool unnamed = it == mesh.m_tag_id_to_name.end();
+        std::string label = unnamed ? "tag_" + std::to_string(j) : it->second;
+        while (labelled.count(label) || (unnamed && named.count(label))) label += "_";
+        labelled.insert(label);
+        labels.push_back(label);
     }
     DataMatrix<uint8_t> values = DataMatrix<uint8_t>::Zero(cells.size(), labels.size());
     for (size_t i = 0; i < cells.size(); ++i)

@@ -90,6 +90,24 @@ void check(const ComponentResult& result)
     REQUIRE(std::filesystem::is_empty(std::filesystem::current_path()));
 }
 } // namespace
+TEST_CASE("Tag labels are unique and empty results are tagged", "[component_io]")
+{
+    struct Tagged
+    {
+        size_t m_tags_count = 3;
+        std::map<int64_t, std::string> m_tag_id_to_name{{0, "tag_1"}};
+    } mesh;
+    MeshMap outputs{{"mesh", tet()}};
+    const std::vector<int> cells = {0};
+    const auto tags = [](int) { return std::set<int64_t>{0, 1}; };
+    simwild::collect_tags(mesh, outputs, CellType::Tetrahedron, cells, tags);
+    const auto& field = outputs.at("mesh").cell(CellType::Tetrahedron).attributes.at("tags");
+    REQUIRE(field.labels == std::vector<std::string>{"tag_1", "tag_1_", "tag_2"});
+    REQUIRE(field.integers() == (DataMatrix<int64_t>(1, 3) << 1, 1, 0).finished());
+    MeshMap empty{{"mesh", MeshData()}};
+    simwild::collect_tags(mesh, empty, CellType::Tetrahedron, std::vector<int>{}, tags);
+    REQUIRE_NOTHROW(empty.at("mesh").validate());
+}
 TEST_CASE("Surface components operate on named meshes without files", "[component_io]")
 {
     WorkingDirectory cwd;
