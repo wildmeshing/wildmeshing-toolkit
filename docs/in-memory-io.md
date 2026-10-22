@@ -171,7 +171,12 @@ The file-oriented entry points retain existing configurations, relative-path con
 output filenames, intermediate exports, and report files. An explicit per-call output policy
 turns off their file observers for memory calls. Component entry points serialize their use of
 the legacy process-wide loggers, temporarily using console sinks during memory calls and restoring
-the previous logger afterward. Existing algorithm options, filtering,
+the previous logger afterward.
+
+Component calls do not run concurrently. Every call -- file or memory, from C++ or Python -- holds
+one process-wide lock for its whole duration, so calls from several threads run one after
+another; the Python bindings release the GIL, but a second call still waits for the first. Use
+`num_threads` for parallelism within a call. Existing algorithm options, filtering,
 cleaning, and exact-arithmetic decisions are shared between the two routes.
 
 ## Shared file utilities

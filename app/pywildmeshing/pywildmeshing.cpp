@@ -101,7 +101,8 @@ PYBIND11_MODULE(wildmeshing, m, py::mod_gil_not_used())
             },
             "options"_a,
             "meshes"_a,
-            "Run on named NumPy mesh dictionaries and return (meshes, report) without file I/O.");
+            "Run on named NumPy mesh dictionaries and return (meshes, report) without file I/O. "
+            "Component calls run one at a time per process.");
         m.def(
             name.c_str(),
             [name, component = components_map.at(name)](const py::dict& options) {

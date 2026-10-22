@@ -15,6 +15,8 @@ namespace wmtk {
 namespace detail {
 // Component entry points share legacy process-wide loggers. Serialize their setup and
 // temporarily use console sinks for a memory call, including messages from worker threads.
+// The lock is held for the whole component call, file calls included: component calls in one
+// process never run concurrently (see docs/in-memory-io.md).
 class ComponentLoggerScope
 {
 public:
