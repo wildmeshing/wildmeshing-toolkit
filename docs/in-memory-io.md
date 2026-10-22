@@ -161,6 +161,13 @@ geometry under fixed keys:
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
 
+For tetwild, triwild, simwild and topological_offset, `surface`, `edges` and `offset` share the
+`mesh` vertex rows: their connectivity indexes the same `V`, with the same vertex fields, so row
+`i` is the same vertex in every one of them, and vertices an output does not reference are kept.
+This is deliberate -- it maps a boundary vertex to its volume vertex without a search -- at the
+cost of one vertex array per output. `envelope`, `features`, manifold extraction's `surface` and
+prismatic's offset faces have vertices of their own.
+
 The exporters' legacy file names map to these keys through one explicit table
 (`io::default_output_keys`); an unmapped export or two exports with one key is an error, never
 a silently dropped output. Reports contain the existing
