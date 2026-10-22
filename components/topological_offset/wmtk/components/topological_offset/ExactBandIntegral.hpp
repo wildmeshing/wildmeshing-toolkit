@@ -265,6 +265,22 @@ public:
         Eigen::Vector3d& grad,
         Eigen::Matrix3d& hess,
         Partition& keep) const;
+    /**
+     * @brief value_grad_hess()'s gradient and Hessian alone, t's partition read from or written
+     * to `keep`: J's own integration over the elementary pieces is skipped (the smoother reads
+     * the value from value() and only the derivatives from here -- BandVolumeEnergy3D::eval()).
+     * The elementary pieces themselves are read from `keep` when a value() call with `keep`
+     * captured them for this t (bit for bit) and delta, else built as value_grad_hess() builds
+     * them; grad and hess equal value_grad_hess()'s bit for bit either way
+     * (exact-band-grad-hess-cache).
+     */
+    void grad_hess(
+        const std::array<Eigen::Vector3d, 4>& t,
+        int kv,
+        double delta,
+        Eigen::Vector3d& grad,
+        Eigen::Matrix3d& hess,
+        Partition& keep) const;
 
     /// What max_distance() found besides the max.
     struct MaxInfo
@@ -520,7 +536,8 @@ private:
     /// value(t, delta, stats, keep) through the value table (value()).
     double value_tabled(const std::array<Eigen::Vector3d, 4>& t, double delta, Partition* keep)
         const;
-    /// value_grad_hess() with cell_partition()'s `keep`.
+    /// value_grad_hess() with cell_partition()'s `keep`; `want_value` false (grad_hess()) skips
+    /// J's integration over the elementary pieces and returns NaN.
     double value_grad_hess_impl(
         const std::array<Eigen::Vector3d, 4>& t,
         int kv,
@@ -528,7 +545,8 @@ private:
         Eigen::Vector3d& grad,
         Eigen::Matrix3d& hess,
         Stats* stats,
-        Partition* keep) const;
+        Partition* keep,
+        bool want_value) const;
     /// The value table (value()): slots of the 13 inputs and the result; locked by stripes of
     /// kValueStripes slots. Empty: no table.
     struct ValueSlot
