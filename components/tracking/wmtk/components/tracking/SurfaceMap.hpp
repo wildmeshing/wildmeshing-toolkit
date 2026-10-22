@@ -9,7 +9,7 @@
 #include <set>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /// A point on a triangle complex: a face id, and barycentric coordinates with respect to the
 /// face's corners in the order the face stores them.
@@ -186,4 +186,4 @@ private:
     std::set<std::array<uint64_t, 2>> m_out_features;
 };
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

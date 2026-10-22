@@ -9,7 +9,7 @@ to the repository root.
 
 An application that remeshes a surface -- or a tet mesh whose tracked faces are a surface --
 can record every change it makes to that surface. From the record (a *history*, saved as a
-*tracking file*) the `surface_map` component rebuilds a map between the input surface and the
+*tracking file*) the `tracking` component rebuilds a map between the input surface and the
 output surface, both ways. Users map their own points, and through them their own attributes:
 labels, texture coordinates, any per-vertex or per-face data.
 
@@ -32,10 +32,10 @@ bytes of the file the file route writes (bytes in Python). `history::write_histo
 `wm.write_history` save them as that file. simwild also returns the mesh its history starts from
 as the output mesh `history_input`.
 
-Map points with the `surface_map` application of the same `wmtk_app` binary:
+Map points with the `tracking` application of the same `wmtk_app` binary:
 
 ```json
-{"application": "surface_map", "history": "out.wmtkhist", "operation": "map",
+{"application": "tracking", "history": "out.wmtkhist", "operation": "map",
  "points": "points.txt", "output_points": "mapped.txt", "direction": "to_output"}
 ```
 
@@ -56,18 +56,19 @@ Map points with the `surface_map` application of the same `wmtk_app` binary:
 `direction` is `to_output` or `to_input` (the inverse map). A point with no image comes back
 with id `-1`.
 
-From C++ (`components/surface_map/wmtk/components/surface_map/Tracking.hpp`):
+From C++ (`components/tracking/wmtk/components/tracking/tracking.hpp`, the component's one
+public header):
 
 ```cpp
-const auto tracking = surface_map::Tracking::load("out.wmtkhist");
-std::vector<surface_map::InputPoint> pts = {{face, {b0, b1, b2}}};
-auto on_output = tracking.to_output(pts);    // OutputPoint: .face, or .vertices for a tet output
-auto back = tracking.to_input(on_output);    // InputPoint: .face, or .vertices (input_by_vertices)
-auto triangles = tracking.output_triangles(); // the output's tracked faces, in its own ids
+const auto t = tracking::Tracking::load("out.wmtkhist");
+std::vector<tracking::InputPoint> pts = {{face, {b0, b1, b2}}};
+auto on_output = t.to_output(pts);    // OutputPoint: .face, or .vertices for a tet output
+auto back = t.to_input(on_output);    // InputPoint: .face, or .vertices (input_by_vertices)
+auto triangles = t.output_triangles(); // the output's tracked faces, in its own ids
 ```
 
 Worked examples, one per application, are unit tests:
-- `components/surface_map/wmtk/components/surface_map/tests/test_tracking.cpp` (isotropic)
+- `components/tracking/wmtk/components/tracking/tests/test_tracking.cpp` (isotropic)
 - `components/tetwild/wmtk/components/tetwild/tests/test_tetwild_tracking.cpp`
 - `components/simwild/wmtk/components/simwild/tests/test_simwild_tracking.cpp`
 - `components/qslim/wmtk/components/qslim/tests/test_qslim_tracking.cpp`
@@ -93,7 +94,7 @@ Remapping attributes:
 - **Feature edges:** curves the edits keep. See *Features* below.
 - **The edits,** in commit order.
 - **`metadata`:** free text. The applications store their JSON parameters there, with `route`,
-  `file` or `memory` (`ComponentIO::history_metadata`), which is how `surface_map` finds an
+  `file` or `memory` (`ComponentIO::history_metadata`), which is how `tracking` finds an
   application's input files when it is not given them -- and knows that a history recorded on
   the memory route names meshes, not files, and refuses to look for them.
 - **`output_vertex_ids`:** for applications whose output numbers vertices its own way.
@@ -309,9 +310,9 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 | `simwild`, `.msh` input | the tag interfaces of `<output>_history_input.msh` (input points: three of its vertex ids + barycentrics) | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 | `simwild`, surface input | the input files as read | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 
-## The map: `surface_map`
+## The map: the `tracking` component
 
-`components/surface_map/wmtk/components/surface_map/`:
+`components/tracking/wmtk/components/tracking/`:
 - **`SurfaceMap`.** Built from a history alone. It replays the edits and keeps a *step* per
   edit:
   - **Splits:** exact affine maps of the new faces onto the old.
@@ -390,7 +391,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     (`tet_mesh` / `output_tet_mesh`): its vertices are the tet mesh's by `output_vertex_ids`
     (`output_rows`), a tracked face already in the triangle block (a simwild face tag) takes
     the fields on its row, and any other is a row added after them.
-- **The app** (`surface_map.cpp`, spec `surface_map_spec.json`):
+- **The app** (`app.cpp`, spec `tracking_spec.json`; `tracking.hpp` declares it):
   - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
     they lie from their preimages (drift, in output edge lengths);
   - `transfer`: fields onto the output;
@@ -398,7 +399,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
-  On the memory route (`surface_map(options, meshes)`) `history` is the bytes of a history,
+  On the memory route (`tracking(options, meshes)`) `history` is the bytes of a history,
   never a file name; `info` and `transfer` run, `map` is refused. `transfer` needs `input`, a
   key of `meshes`, and returns the output surface as `mesh` (`mesh_from_surface`), and with
   `tet_mesh`, another key, that mesh with the fields as `tet_mesh` (`add_surface`).
@@ -476,7 +477,7 @@ What is left under `preserve_topology` (101168: 298 warnings, no welds):
   way, set `output_vertex_ids`. `Tracking` then speaks in vertex triplets. Anything else --
   tet ids and local faces, say -- belongs in `Tracking`, converting to and from history face
   ids.
-- **A new operation:** add it to `surface_map.cpp` and to `operation`'s options in the spec,
+- **A new operation:** add it to `app.cpp` and to `operation`'s options in the spec,
   with every new option documented there.
 - **Curves (2D, triwild).** Not supported. The history and the map are for triangle complexes;
   tracking curves would need a 1D history and 1D local maps.
@@ -494,7 +495,7 @@ The checks used so far, from cheapest to strongest:
    - welds = 0 under `preserve_topology`.
 
    Also: no "feature edges ... are not the mesh's" warning at save.
-3. **The map builds without warnings.** `build_warnings().total() == 0`; the `surface_map`
+3. **The map builds without warnings.** `build_warnings().total() == 0`; the `tracking`
    `info` operation prints them, and the first offending edits.
 4. **Round trips.** `to_input(to_output(p)) == p`, and the reverse, below 1e-8 in barycentric
    coordinates. A map that is not a bijection misses by far more. So does one that stretches
@@ -611,7 +612,7 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | TetOptimizerMesh side, fold check | `src/wmtk/TetOptimizerMesh.{h,cpp}`, `OptimizerParameters.h` |
 | read provenance | `src/wmtk/io/read_triangle_mesh.{hpp,cpp}` |
 | insertion sources | `src/wmtk/utils/EmbedTriangles.{hpp,cpp}` (`facet_triangles`) |
-| map, transfer, tracking, app | `components/surface_map/wmtk/components/surface_map/` |
+| map, transfer, tracking, app | `components/tracking/wmtk/components/tracking/` |
 | isotropic recording | `components/isotropic_remeshing/.../isotropic_remeshing.cpp` |
 | tetwild recording | `components/tetwild/.../tetwild.cpp`, `VolumemesherInsertion.cpp` |
 | simwild recording | `components/simwild/.../simwild.cpp`, `EmbedSurface.cpp`, `read_image_msh.cpp`, `SimWildMesh.cpp` |

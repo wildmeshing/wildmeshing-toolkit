@@ -1,11 +1,11 @@
 // The fields of a surface, through the toolkit's mesh files: what io::write_mesh and
-// wm.write_mesh write, isotropic_remeshing's feature_fields and surface_map's transfer read, and
+// wm.write_mesh write, isotropic_remeshing's feature_fields and tracking's transfer read, and
 // what transfer writes, io::read_mesh and wm.read_mesh read -- per-face fields as triangle
 // attributes, per-corner ones (uv, normal) as triangle attributes of three values per corner.
 
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk/components/surface_map/surface_io.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/components/tracking/surface_io.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
@@ -87,7 +87,7 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
 
     // 1. A file io::write_mesh wrote is read as a surface: uv per corner, the labels per face,
     // their types kept; written again, it reads back as it was.
-    const surface_map::SurfaceData s = surface_map::read_surface_msh(input.string());
+    const tracking::SurfaceData s = tracking::read_surface_msh(input.string());
     REQUIRE(s.faces.size() == size_t(in_triangles.connectivity.rows()));
     REQUIRE(s.corner_fields.count("uv"));
     REQUIRE(s.face_fields.count("side"));
@@ -97,7 +97,7 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
     for (size_t f = 0; f < s.faces.size(); ++f) {
         for (int k = 0; k < 6; ++k) REQUIRE(s.corner_fields.at("uv")[f][k] == uv(f, k));
     }
-    surface_map::write_surface_msh((dir / "again.msh").string(), s);
+    tracking::write_surface_msh((dir / "again.msh").string(), s);
     const MeshData again = io::read_mesh(dir / "again.msh");
     const auto& again_triangles = again.cells.at(CellType::Triangle);
     CHECK(again_triangles.connectivity == in_triangles.connectivity);
@@ -132,8 +132,8 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
     // their types, uv of six columns, input_face Int64; and the textured OBJ.
     const fs::path transferred = dir / "transferred.msh";
     const fs::path textured = dir / "transferred.obj";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "transfer"},
         {"output", transferred.string()},
@@ -177,7 +177,7 @@ TEST_CASE("surface-io-reads-standard-gmsh-element-data", "[surface_map][io]")
           << "$Elements\n2\n1 2 2 1 1 1 2 3\n2 2 2 2 2 2 4 3\n$EndElements\n"
           << "$ElementData\n1\n\"label\"\n1\n0.0\n3\n0\n1\n2\n1 5\n2 7\n$EndElementData\n";
     }
-    const surface_map::SurfaceData s = surface_map::read_surface_msh(path.string());
+    const tracking::SurfaceData s = tracking::read_surface_msh(path.string());
     REQUIRE(s.faces.size() == 2);
     REQUIRE(s.face_fields.count("label"));
     CHECK(s.face_fields.at("label") == std::vector<std::vector<double>>{{5.}, {7.}});

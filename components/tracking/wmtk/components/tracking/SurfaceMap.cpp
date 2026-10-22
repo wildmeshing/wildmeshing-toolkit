@@ -17,7 +17,7 @@
 #include <set>
 #include <unordered_map>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 using history::Edit;
 using history::EditKind;
@@ -1207,4 +1207,4 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
     return pts;
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

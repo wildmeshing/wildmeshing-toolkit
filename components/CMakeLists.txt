@@ -30,7 +30,7 @@ add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
 add_subdirectory("manifold_extraction/wmtk/components/manifold_extraction")
 add_subdirectory("topological_offset/wmtk/components/topological_offset")
 add_subdirectory("prismatic_mesh/wmtk/components/prismatic_mesh")
-add_subdirectory("surface_map/wmtk/components/surface_map")
+add_subdirectory("tracking/wmtk/components/tracking")
 
 if(BUILD_TESTING AND WMTK_COMPONENT_TESTS)
     include(wmtk_data)

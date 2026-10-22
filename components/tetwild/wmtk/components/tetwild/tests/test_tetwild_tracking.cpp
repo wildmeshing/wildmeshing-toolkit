@@ -3,9 +3,8 @@
 // three vertices of the tet mesh -- the corners of the tracked face holding it -- and
 // barycentric coordinates, since the tracked surface is no element of the output file.
 
-#include <wmtk/components/surface_map/Tracking.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
 #include <wmtk/components/tetwild/tetwild.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -20,10 +19,10 @@
 namespace fs = std::filesystem;
 using namespace wmtk;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 // A whole run, too slow for the Debug CI jobs: Release builds only.
 #ifdef NDEBUG
@@ -148,8 +147,8 @@ TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]" + release_only)
         }
     }
     const fs::path mapped = dir / "points_on_input.txt";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "map"},
         {"points", points.string()},

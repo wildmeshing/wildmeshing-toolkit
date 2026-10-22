@@ -4,7 +4,7 @@
 
 #include <limits>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string& why)
 {
@@ -145,4 +145,4 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, Map
     return out;
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

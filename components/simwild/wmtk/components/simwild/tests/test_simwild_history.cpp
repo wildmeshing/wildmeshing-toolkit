@@ -2,8 +2,8 @@
 
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
-#include <wmtk/components/surface_map/SurfaceMap.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/components/tracking/SurfaceMap.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
@@ -121,7 +121,7 @@ void check_tags(
         json.update(options);
         simwild::simwild(json);
         const auto h = history::SurfaceHistory::load(hist.string());
-        const surface_map::SurfaceMap map(h);
+        const tracking::SurfaceMap map(h);
         const auto o = interfaces(simwild::read_image_msh(out.string() + ".msh"));
         REQUIRE(!o.empty());
 
@@ -176,14 +176,14 @@ void check_tags(
             long(o.size()));
 
         // Every output face's centre lands on the input between the same two tag sets.
-        std::vector<surface_map::SurfacePoint> pts;
+        std::vector<tracking::SurfacePoint> pts;
         std::vector<uint64_t> from;
         for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
             if (!map.output_face_alive()[f] || !out_labels[f]) continue;
             pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
             from.push_back(f);
         }
-        surface_map::MapWarnings back_warnings;
+        tracking::MapWarnings back_warnings;
         const auto back = map.to_input(pts, &back_warnings);
         size_t lost = 0, wrong = 0;
         for (size_t i = 0; i < back.size(); ++i) {
@@ -300,8 +300,8 @@ TEST_CASE("simwild-transfer-onto-face-tags", "[simwild][history]" + release_only
     REQUIRE(tagged.connectivity.rows() > 0);
 
     const fs::path surface = dir / "transferred.msh", with_fields = dir / "with_fields.msh";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", hist.string()},
         {"operation", "transfer"},
         {"output", surface.string()},

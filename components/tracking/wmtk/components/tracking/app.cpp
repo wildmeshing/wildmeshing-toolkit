@@ -1,7 +1,6 @@
-#include "surface_map.hpp"
 #include "SurfaceMap.hpp"
-#include "Tracking.hpp"
 #include "surface_io.hpp"
+#include "tracking.hpp"
 #include "transfer.hpp"
 
 #include <igl/Timer.h>
@@ -13,12 +12,12 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
-#include <surface_map_spec.hpp>
+#include <tracking_spec.hpp>
 
 #include <algorithm>
 #include <cmath>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 namespace {
 
@@ -188,7 +187,7 @@ void map_points(
 
 void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
-    component_io.prepare(json_params, "surface_map");
+    component_io.prepare(json_params, "tracking");
     using wmtk::utils::resolve_path;
     // On the memory route the history is the bytes of one, a producer's report["history"],
     // never a file name; the spec describes the file route's option, a path.
@@ -196,19 +195,19 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (json_params.contains("history") && json_params["history"].is_binary()) {
         if (!component_io.memory()) {
             throw std::runtime_error(
-                "surface_map: history is a file on the file route; the bytes of one are taken "
+                "tracking: history is a file on the file route; the bytes of one are taken "
                 "on the memory route");
         }
         history_bytes = json_params["history"].get_binary();
         json_params["history"] = "";
     } else if (component_io.memory() && json_params.contains("history")) {
         throw std::runtime_error(
-            "surface_map: on the memory route history is the bytes of a history -- a "
+            "tracking: on the memory route history is the bytes of a history -- a "
             "component's report[\"history\"], or history::read_history / wm.read_history of a "
             "file -- not a file name");
     }
     {
-        const auto spec = jse::embed::wmtk_surface_map_spec::surface_map_spec::spec();
+        const auto spec = jse::embed::wmtk_tracking_spec::tracking_spec::spec();
         jse::JSE spec_engine;
         if (!spec_engine.verify_json(json_params, spec)) {
             log_and_throw_error(spec_engine.log2str());
@@ -219,7 +218,7 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // map reads and writes text files of points; in memory, map points through Tracking.
         if (json_params["operation"] == "map") {
             throw std::runtime_error(
-                "surface_map: operation map reads and writes files of points; on the memory "
+                "tracking: operation map reads and writes files of points; on the memory "
                 "route only info and transfer are supported");
         }
         // The memory route writes no files: the meshes come back in the result.
@@ -298,7 +297,7 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
             // The memory route never resolves a name as a file: the input is a mesh given.
             if (input_name.empty()) {
                 throw std::runtime_error(
-                    "surface_map: a transfer on the memory route needs input, the mesh the "
+                    "tracking: a transfer on the memory route needs input, the mesh the "
                     "history starts from");
             }
             input = "input " + input_name;
@@ -553,16 +552,16 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
 } // namespace
 
-void surface_map(nlohmann::json json_params)
+void tracking(nlohmann::json json_params)
 {
     io::ComponentIO context;
     run(std::move(json_params), context);
 }
-ComponentResult surface_map(nlohmann::json json_params, const MeshMap& meshes)
+ComponentResult tracking(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
     return std::move(context.result);
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

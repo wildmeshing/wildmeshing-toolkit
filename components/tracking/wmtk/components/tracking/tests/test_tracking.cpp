@@ -4,8 +4,7 @@
 // tet outputs, where it is three vertices of the tet mesh instead.
 
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk/components/surface_map/Tracking.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
@@ -20,10 +19,10 @@
 
 namespace fs = std::filesystem;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 namespace {
 
@@ -53,7 +52,7 @@ std::vector<InputPoint> random_points(const size_t n_faces, const size_t n, cons
 
 } // namespace
 
-TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
+TEST_CASE("tracking-example-isotropic", "[tracking]")
 {
     const fs::path dir = fs::current_path() / "tracking_example_isotropic";
     fs::create_directories(dir);
@@ -81,7 +80,7 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     REQUIRE(!tracking.output_by_vertices()); // a surface output names its own triangles
     REQUIRE(tracking.input_faces().size() == size_t(F_in.rows()));
     const std::vector<InputPoint> pts = random_points(F_in.rows(), 500, 7);
-    surface_map::MapWarnings to_output_warnings, to_input_warnings;
+    tracking::MapWarnings to_output_warnings, to_input_warnings;
     const std::vector<OutputPoint> there = tracking.to_output(pts, &to_output_warnings);
     const std::vector<InputPoint> back = tracking.to_input(there, &to_input_warnings);
 
@@ -135,7 +134,7 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     CHECK(worst < 4 * 2 * mean_edge); // |grad f| < 4
 
     // 4. The same from the command line, as the wmtk binary runs it: a file of points, one
-    // `face b0 b1 b2` per line, mapped by the surface_map application.
+    // `face b0 b1 b2` per line, mapped by the tracking application.
     const fs::path points = dir / "points.txt";
     {
         std::ofstream o(points);
@@ -146,8 +145,8 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
         }
     }
     const fs::path mapped = dir / "points_on_output.txt";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "map"},
         {"points", points.string()},
@@ -168,11 +167,11 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     CHECK(same == pts.size());
 }
 
-TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
+TEST_CASE("tracking-memory-route", "[tracking]")
 {
     // The memory route: an application records its history from the mesh it is given and
     // returns it in its report, as the bytes of the file the file route would write, which it
-    // does not write; surface_map's info reports on it, the report returned rather than logged
+    // does not write; tracking's info reports on it, the report returned rather than logged
     // only.
     const fs::path dir = fs::current_path() / "tracking_memory_route";
     fs::remove_all(dir);
@@ -204,10 +203,10 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
         for (int k = 0; k < 3; ++k) CHECK(triangles[f][k] == uint64_t(F_out(f, k)));
     }
 
-    // surface_map on the memory route takes the bytes.
+    // tracking on the memory route takes the bytes.
     const nlohmann::json history = nlohmann::json::binary(bytes);
     const auto [none, report] =
-        surface_map::surface_map({{"history", history}, {"operation", "info"}}, {});
+        tracking::tracking({{"history", history}, {"operation", "info"}}, {});
     CHECK(none.empty());
     CHECK(report.at("edits").get<size_t>() > 0);
     CHECK(report.at("build_warnings").at("total") == 0);
@@ -222,7 +221,7 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
     wmtk::DataMatrix<int64_t> label(t.connectivity.rows(), 1);
     for (Eigen::Index f = 0; f < label.rows(); ++f) label(f, 0) = f % 5;
     t.attributes["label"].values = label;
-    const auto [carried, transfer_report] = surface_map::surface_map(
+    const auto [carried, transfer_report] = tracking::tracking(
         {{"history", history},
          {"operation", "transfer"},
          {"input", "sphere"},
@@ -245,17 +244,17 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
     // What the memory route refuses: a file name for the history, which it never resolves;
     // a transfer without the mesh it starts from; map, whose points are text files.
     CHECK_THROWS_WITH(
-        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "info"}}, {}),
+        tracking::tracking({{"history", tracking_file.string()}, {"operation", "info"}}, {}),
         Catch::Matchers::ContainsSubstring("not a file name"));
     CHECK_THROWS_WITH(
-        surface_map::surface_map({{"history", history}, {"operation", "transfer"}}, labelled),
+        tracking::tracking({{"history", history}, {"operation", "transfer"}}, labelled),
         Catch::Matchers::ContainsSubstring("needs input"));
     CHECK_THROWS_WITH(
-        surface_map::surface_map({{"history", history}, {"operation", "map"}}, {}),
+        tracking::tracking({{"history", history}, {"operation", "map"}}, {}),
         Catch::Matchers::ContainsSubstring("only info and transfer"));
     // And the file route refuses bytes for a file.
     CHECK_THROWS_WITH(
-        surface_map::surface_map({{"application", "surface_map"}, {"history", history}}),
+        tracking::tracking({{"application", "tracking"}, {"history", history}}),
         Catch::Matchers::ContainsSubstring("history is a file on the file route"));
 
     // The history says it was recorded on the memory route, whose input was a mesh, named by its
@@ -269,8 +268,8 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
         o << "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
     }
     CHECK_THROWS_WITH(
-        surface_map::surface_map(
-            {{"application", "surface_map"},
+        tracking::tracking(
+            {{"application", "tracking"},
              {"history", tracking_file.string()},
              {"operation", "transfer"},
              {"output", (dir / "transferred.msh").string()}}),
@@ -283,8 +282,8 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
         std::ofstream o(dir / "points.txt");
         o << "0 0.2 0.3 0.5\n";
     }
-    surface_map::surface_map(
-        {{"application", "surface_map"},
+    tracking::tracking(
+        {{"application", "tracking"},
          {"input_dir", dir.string()},
          {"history", tracking_file.filename().string()},
          {"operation", "map"},

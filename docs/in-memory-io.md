@@ -129,7 +129,7 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
-| `surface_map` (`transfer`) | `input`; optional `tet_mesh` | The triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
+| `tracking` (`transfer`) | `input`; optional `tet_mesh` | The triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
@@ -199,7 +199,7 @@ cleaning, and exact-arithmetic decisions are shared between the two routes.
 ## Surface histories
 
 `isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild` and simwild in 3D record the
-history of their surface with `history_output`, from which `surface_map` rebuilds the map
+history of their surface with `history_output`, from which `tracking` rebuilds the map
 between input and output. The file route saves it to that file. The memory route writes no file:
 any non-empty `history_output` turns the recording on, and the report returns the history as
 `history`, the bytes of the file the file route would write -- a `nlohmann::json` binary value in
@@ -209,7 +209,7 @@ C++. On the memory route the history starts at the meshes given and ends at the 
 mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
 mesh.
 
-`surface_map` takes the bytes as `history` on the memory route, where a string is refused, as
+`tracking` takes the bytes as `history` on the memory route, where a string is refused, as
 every memory call refuses to take a name for a file. `info` returns its report. `transfer` needs
 `input`, the mesh the history starts from -- the history's own parameters name meshes of an
 earlier call, or files, neither of which the memory route reads -- and returns the output

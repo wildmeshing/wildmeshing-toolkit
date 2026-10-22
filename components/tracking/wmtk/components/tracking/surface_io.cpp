@@ -10,7 +10,7 @@
 #include <fstream>
 #include <map>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 namespace {
 
@@ -87,7 +87,7 @@ SurfaceData surface_from_mesh(const MeshData& mesh, const std::string& what, con
         if (io::ComponentIO::reader_vertex_attributes.count(name)) continue;
         if (strict) {
             throw std::runtime_error(
-                "surface_map: " + what + " has the vertex field " + name +
+                "tracking: " + what + " has the vertex field " + name +
                 ", which a transfer does not carry: it carries the fields of the triangles");
         }
         logger().warn(
@@ -99,7 +99,7 @@ SurfaceData surface_from_mesh(const MeshData& mesh, const std::string& what, con
         if (type == CellType::Triangle || c.connectivity.rows() == 0) continue;
         if (strict) {
             throw std::runtime_error(
-                "surface_map: " + what +
+                "tracking: " + what +
                 " holds cells other than triangles, which a transfer "
                 "does not read");
         }
@@ -338,4 +338,4 @@ void write_surface_obj(
     }
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

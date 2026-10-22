@@ -13,7 +13,7 @@ import numpy as np
 import wildmeshing as wm
 
 # The component that maps through a history.
-TRACKING = "surface_map"
+TRACKING = "tracking"
 
 
 def sphere(n_lat=8, n_lon=16):

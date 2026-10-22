@@ -5,6 +5,8 @@
 #include <wmtk/history/SurfaceHistory.hpp>
 
 #include <Eigen/Core>
+#include <nlohmann/json.hpp>
+#include <wmtk/MeshData.hpp>
 
 #include <array>
 #include <cstdint>
@@ -13,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /// No face, no vertex: a point that has no image.
 constexpr uint64_t kNoId = std::numeric_limits<uint64_t>::max();
@@ -138,4 +140,17 @@ private:
     std::map<std::array<uint64_t, 3>, uint64_t> m_output_face_of, m_input_face_of;
 };
 
-} // namespace wmtk::components::surface_map
+/// The tracking application: maps points, transfers fields and reports on a tracking file
+/// (tracking_spec.json).
+void tracking(nlohmann::json json_params);
+/**
+ * @brief The memory route. `history` is the bytes of a history (a JSON binary value: a
+ * component's report["history"]), never a file name. info returns its report. transfer takes its
+ * surface from `meshes` by `input`, which it needs, and returns the output surface as "mesh",
+ * the carried fields as triangle attributes; with `tet_mesh`, also a key of `meshes`, that mesh
+ * with the fields on its tracked surface as "tet_mesh" (add_surface). map, whose points are
+ * text files, throws.
+ */
+ComponentResult tracking(nlohmann::json json_params, const MeshMap& meshes);
+
+} // namespace wmtk::components::tracking

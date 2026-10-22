@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /**
  * @brief Whether `input` is the surface the map starts from: the same faces, in the same order,
@@ -39,4 +39,4 @@ std::vector<uint64_t> transferred_vertices(const SurfaceMap& map);
  */
 std::vector<int64_t> output_rows(const SurfaceMap& map, const std::vector<uint64_t>& output_ids);
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking
