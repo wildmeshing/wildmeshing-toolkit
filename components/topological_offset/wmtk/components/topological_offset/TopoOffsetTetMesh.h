@@ -1136,27 +1136,6 @@ public:
     /// group; logged as [op reject].
     mutable std::atomic<int> m_fold_reject_collapse{0}, m_fold_reject_swap{0},
         m_fold_reject_smooth{0};
-    /// THE 90-DEGREE RULE (2026-10-22, Spencer: "refuse such operations"): in the loop, an
-    /// operation that leaves an offset face it changes at or past 90 degrees from the field
-    /// gradient (front_face_field_angle()) is refused -- a collapse touching the offset surface
-    /// (collapse_after_connectivity(), the faces through the survivor), a flip of the offset
-    /// surface (swap_after_cells(), its two new faces) and a held front vertex's smoothing move
-    /// (smooth_nonfront_vertex(), the faces through it; front-placed vertices have the fold
-    /// barrier instead). The fold barrier cannot start from such a face and throws, so without
-    /// this rule an operation could stop the run at the face's next smoothing. Not in a TetWild
-    /// pass. Whether any live offset face through vid is at or past 90 degrees; lock-safe as
-    /// folded_front_faces_at().
-    bool front_face_past_90_at(size_t vid) const;
-    /// Whether face (a, b, c), its band cell among `cells`, is at or past 90 degrees.
-    bool face_past_90_in(size_t a, size_t b, size_t c, const std::vector<size_t>& cells) const;
-    /// Whether the 90-degree rule applies now: in the loop, with the field built.
-    bool fold90_rule_active() const
-    {
-        return !tetwild_rules() && !m_tetwild_pass && !m_repulsion_potential && m_offset_potential;
-    }
-    /// Operations refused by the 90-degree rule, per operation group (the [energy] line).
-    mutable std::atomic<int> m_fold90_reject_collapse{0}, m_fold90_reject_swap{0},
-        m_fold90_reject_smooth{0};
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.

@@ -1494,8 +1494,7 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
     // angles within foldover_angle); at a vertex with a face at or past 90 degrees it throws. Run
     // on the fan and on it with the band and background labels swapped, which turns the fan
     // faces' normals out of the band around (angle -> 180 - angle): the fan values, the swap
-    // throws. foldover_angle 90 is refused. front_face_past_90_at() (the operations' 90-degree
-    // rule) agrees with the frames' angle vertex for vertex.
+    // throws. foldover_angle 90 is refused.
     const FanFixture fan = fan_fixture();
     const double theta = 3.; // below the fan's ~5-10 degree tilts: the barrier is active
     const double c0 = std::cos(theta * M_PI / 180.);
@@ -1527,8 +1526,6 @@ TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
                 "labels " << (labels == fan.labels ? "fan" : "swapped") << ", vertex " << v
                           << ", worst front-face angle " << worst);
             ++n_checked;
-            // The operations' 90-degree rule asks the same question of the same angle.
-            CHECK(mesh->front_face_past_90_at(v) == (worst >= 90.));
             if (worst >= 90.) {
                 CHECK_THROWS(mesh->front_fold_barrier_energy(v));
                 ++n_threw;
