@@ -623,12 +623,16 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
                        << in_area);
         CHECK(jump < 1e-5);
         CHECK(std::abs(out_area - in_area) < 1e-2 * in_area);
-        // The remesher folds nothing over (IsotropicRemeshing::set_check_inversions), so no local
-        // map has to stretch across a fold, and no texture triangle turns over. Exactly so for
-        // the serial run, the same on every platform. A parallel run, which the schedule orders,
-        // has left one folded patch about once in 80 runs, and one texture triangle turned over
-        // about once in 40: a texture interpolated linearly over a coarse triangle can turn over
-        // even where the map is a bijection. One in a hundred of either.
+        // The remesher folds no vertex's star over (IsotropicRemeshing::set_check_inversions), so
+        // here no local map has to stretch across a fold, and no texture triangle turns over.
+        // Exactly so for the serial run, the same on every platform. Neither is guaranteed,
+        // though, and a parallel run, which the schedule orders, samples other histories:
+        // - about once in 80 runs, one folded cell. The patch of a collapse -- both endpoints'
+        //   stars -- held a face at 94 degrees to its summed normal, where every star was fine;
+        //   that collapse removed it.
+        // - about once in 40, one texture triangle turned over. A texture interpolated linearly
+        //   over a coarse triangle can turn over even where the map is a bijection.
+        // One in a hundred of either.
         if (threads == 0) {
             CHECK(map.folded_cells() == 0);
             CHECK(flipped == 0);
