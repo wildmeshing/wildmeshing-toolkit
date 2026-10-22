@@ -82,21 +82,42 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         hybrid = build_prism_dominant_mesh(input, optimization.min_tet_volume);
     if (component_io.memory()) {
         MeshMap raw;
-        write_prismatic_mesh(input, "mesh.vtu", hybrid ? &*hybrid : nullptr, true, &raw);
+        nlohmann::json hybrid_report;
+        write_prismatic_mesh(
+            input,
+            "mesh.vtu",
+            hybrid ? &*hybrid : nullptr,
+            true,
+            &raw,
+            &hybrid_report);
         component_io.result.first = io::named_outputs(std::move(raw));
         component_io.result.second = {
             {"jacobian_smoothing", input.jacobian_smoothing_report},
             {"background_remeshing", input.background_remeshing_report}};
-        if (hybrid) component_io.result.second["hybrid"] = hybrid->report;
+        if (hybrid) component_io.result.second["hybrid"] = std::move(hybrid_report);
     } else
         write_prismatic_mesh(input, output_path, hybrid ? &*hybrid : nullptr);
     logger().info("Wrote result mesh: {}", output_path.string());
     for (const auto& out : extra_outputs) {
         if (component_io.memory()) {
+            // One result for the .msh and .vtu pair: the mesh, its offset faces and its
+            // export report, as the files hold them.
             if (!component_io.result.first.count("input_and_shell")) {
                 MeshMap raw;
-                write_prismatic_mesh(input, "mesh.vtu", hybrid ? &*hybrid : nullptr, false, &raw);
-                component_io.result.first["input_and_shell"] = std::move(raw.at("mesh.vtu"));
+                nlohmann::json hybrid_report;
+                write_prismatic_mesh(
+                    input,
+                    "mesh.vtu",
+                    hybrid ? &*hybrid : nullptr,
+                    false,
+                    &raw,
+                    &hybrid_report);
+                auto keys = io::default_output_keys();
+                keys["mesh.vtu"] = "input_and_shell";
+                keys["mesh_offset_faces.vtu"] = "input_and_shell_offset";
+                component_io.result.first.merge(io::named_outputs(std::move(raw), keys));
+                if (hybrid)
+                    component_io.result.second["input_and_shell_hybrid"] = std::move(hybrid_report);
             }
         } else
             write_prismatic_mesh(input, out, hybrid ? &*hybrid : nullptr, false);

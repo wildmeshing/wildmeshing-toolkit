@@ -176,7 +176,8 @@ void write_prismatic_mesh(
     const std::filesystem::path& path,
     const PrismDominantMesh* hybrid = nullptr,
     bool include_background = true,
-    MeshMap* output = nullptr);
+    MeshMap* output = nullptr,
+    nlohmann::json* hybrid_report = nullptr);
 // Keep band tetrahedra in their original order and filter cell attributes with them.
 // Vertex arrays/IDs stay unchanged; unused vertices are inactive in the rebuilt TetMesh.
 void keep_offset_band(PrismaticMeshInput& input);

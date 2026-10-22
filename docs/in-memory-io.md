@@ -157,7 +157,9 @@ geometry under fixed keys:
 - `edges`: simwild's 3D feature edges.
 - `offset`: the offset surface or front; prismatic's classified offset faces.
 - `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
-- Prismatic `export_input_and_shell` adds `input_and_shell`.
+- Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
+  `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
+  `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
 
 The exporters' legacy file names map to these keys through one explicit table
 (`io::default_output_keys`); an unmapped export or two exports with one key is an error, never

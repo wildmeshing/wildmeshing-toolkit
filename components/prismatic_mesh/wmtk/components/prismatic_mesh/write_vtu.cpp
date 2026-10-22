@@ -36,7 +36,8 @@ void write_prismatic_mesh(
     const std::filesystem::path& path,
     const PrismDominantMesh* hybrid,
     bool include_background,
-    MeshMap* output)
+    MeshMap* output,
+    nlohmann::json* hybrid_report)
 {
     if (path.extension() != ".vtu" && path.extension() != ".msh")
         log_and_throw_error("Prismatic mesh output must be a .vtu or .msh file.");
@@ -187,9 +188,7 @@ void write_prismatic_mesh(
         if (!writer.write_mesh(path.string(), vertices, mixed_cells))
             log_and_throw_error("Could not write result mesh: {}", path.string());
     }
-    if (!output && hybrid) {
-        const auto report_path = path.parent_path() / (path.stem().string() + "_hybrid.json");
-        std::ofstream report(report_path);
+    if (hybrid) {
         auto export_report = hybrid->report;
         if (!include_background) {
             size_t reference_tets = 0;
@@ -207,8 +206,15 @@ void write_prismatic_mesh(
             export_report["full_reference_tetrahedra"] = input.tetrahedra.rows();
             export_report["source_tet_id_space"] = "full_reconstructed_mesh";
         }
-        report << export_report.dump(2) << '\n';
-        if (!report) log_and_throw_error("Could not write hybrid report: {}", report_path.string());
+        if (output) {
+            if (hybrid_report) *hybrid_report = std::move(export_report);
+        } else {
+            const auto report_path = path.parent_path() / (path.stem().string() + "_hybrid.json");
+            std::ofstream report(report_path);
+            report << export_report.dump(2) << '\n';
+            if (!report)
+                log_and_throw_error("Could not write hybrid report: {}", report_path.string());
+        }
     }
     if (!output && !input.background_remeshing_report.is_null()) {
         const auto report_path =

@@ -482,5 +482,17 @@ TEST_CASE(
     auto prism =
         prismatic_mesh::prismatic_mesh({{"input", "mesh"}, {"iterations", 0}}, offset.first);
     check(prism);
+    // The input-and-shell export returns what its files hold: mesh, offset faces, report.
+    auto shell = prismatic_mesh::prismatic_mesh(
+        {{"input", "mesh"},
+         {"iterations", 0},
+         {"export_input_and_shell", true},
+         {"prism_dominant", true}},
+        offset.first);
+    check(shell);
+    REQUIRE(shell.first.count("input_and_shell"));
+    REQUIRE(shell.first.count("input_and_shell_offset") == shell.first.count("offset"));
+    REQUIRE(shell.second.at("input_and_shell_hybrid").at("export_scope") == "input_and_shell");
+    REQUIRE(!shell.second.at("hybrid").contains("export_scope"));
 }
 #endif
