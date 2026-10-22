@@ -79,9 +79,12 @@ std::string id_text(const uint64_t id)
 }
 
 /// The map operation: points on the input to the output, or back.
-Smoothing smoothing_of(const nlohmann::json& json_params)
+SurfaceMapOptions options_of(const nlohmann::json& json_params)
 {
-    return json_params["smoothing"] == "barycentric" ? Smoothing::barycentric : Smoothing::flatten;
+    SurfaceMapOptions options;
+    if (json_params["smoothing"] == "barycentric") options.smoothing = Smoothing::barycentric;
+    if (json_params["scaffold"] == "ring") options.scaffold = Scaffold::ring;
+    return options;
 }
 
 void map_points(
@@ -96,7 +99,7 @@ void map_points(
     const bool forward = json_params["direction"] == "to_output";
     igl::Timer timer;
     timer.start();
-    const Tracking tracking(h, smoothing_of(json_params));
+    const Tracking tracking(h, options_of(json_params));
     logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
     const size_t n_out = tracking.output_by_vertices() ? 6 : 4;
     std::ofstream out(output_points);
@@ -189,7 +192,7 @@ void surface_map(nlohmann::json json_params)
     }
 
     timer.start();
-    const SurfaceMap map(h, smoothing_of(json_params));
+    const SurfaceMap map(h, options_of(json_params));
     const auto& cells = map.cells_by_kind();
     logger().info(
         "map built in {:.3}s: {} edge splits, {} face splits, {} collapses, {} swaps, {} "

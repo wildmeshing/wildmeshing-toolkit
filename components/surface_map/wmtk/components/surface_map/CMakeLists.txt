@@ -11,6 +11,8 @@ set(SRC_FILES
 
 	slim2d.hpp
 	slim2d.cpp
+	scaffold2d.hpp
+	scaffold2d.cpp
 
 	surface_io.hpp
 	surface_io.cpp

@@ -40,6 +40,9 @@ SlimElement slim_element(
     const Eigen::Vector2d& q2,
     double weight);
 
+/// The elements' energy in the layout `x`: infinite if one is not positively oriented, exactly.
+double slim_energy(const std::vector<Eigen::Vector2d>& x, const std::vector<SlimElement>& elements);
+
 /**
  * @brief SLIM (Rabinovich et al. 2017) on a 2D layout.
  *

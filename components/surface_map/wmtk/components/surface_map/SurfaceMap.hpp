@@ -57,19 +57,40 @@ enum class Smoothing {
     flatten,
 };
 
+/// The scaffold of each joint flattening (Jiang et al. 2017): triangles around the outline the
+/// two patches share, which keep it a simple polygon while SLIM lowers their distortion.
+enum class Scaffold {
+    /// The region between the outline and a box three times the patch, triangulated anew before
+    /// every SLIM iteration (box_scaffold, a constrained Delaunay triangulation), each triangle
+    /// resting in its current shape, as in the paper: it never pulls the outline back, and
+    /// follows the patch wherever SLIM takes it.
+    box,
+    /// One ring of triangles out to a copy of the outline three times as far, held there, resting
+    /// in its first shape: about 2.4 times faster to build the map with, but it pulls the outline
+    /// back towards where it started and keeps it from stretching past the ring.
+    ring,
+};
+
+/// How a SurfaceMap is built.
+struct SurfaceMapOptions
+{
+    Smoothing smoothing = Smoothing::flatten;
+    Scaffold scaffold = Scaffold::box;
+};
+
 /**
  * @brief The map between the first and the last state of a SurfaceHistory.
  *
  * Built from the history alone, one local map per operation (BijectiveRemesh). A split maps its
  * new faces affinely onto the face they subdivide, with the new vertex where the history put it;
  * a collapse and a swap map through a joint embedding of the faces they touch, before and after,
- * on a shared outline, Tutte's lowered in distortion by SLIM; a vertex move follows `smoothing`
- * (see Smoothing). A consolidation renumbers faces.
+ * on a shared outline, Tutte's lowered in distortion by SLIM within a scaffold (see Scaffold); a
+ * vertex move follows the options' smoothing (see Smoothing). A consolidation renumbers faces.
  */
 class SurfaceMap
 {
 public:
-    explicit SurfaceMap(const history::SurfaceHistory& h, Smoothing smoothing = Smoothing::flatten);
+    explicit SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions& options = {});
 
     /// Points on the last state, mapped onto the first.
     std::vector<SurfacePoint> to_input(std::vector<SurfacePoint> points) const;

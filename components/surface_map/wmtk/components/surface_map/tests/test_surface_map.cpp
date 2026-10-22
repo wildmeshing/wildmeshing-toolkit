@@ -1,5 +1,6 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <wmtk/components/surface_map/SurfaceMap.hpp>
+#include <wmtk/components/surface_map/scaffold2d.hpp>
 #include <wmtk/components/surface_map/surface_io.hpp>
 #include <wmtk/components/surface_map/transfer.hpp>
 #include <wmtk/history/Replay.hpp>
@@ -11,6 +12,7 @@
 #include <Eigen/Geometry>
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -812,7 +814,7 @@ TEST_CASE("surface-map-smoothing", "[surface_map]")
         return d / double(pts.size());
     };
 
-    const SurfaceMap bary(h, surface_map::Smoothing::barycentric);
+    const SurfaceMap bary(h, {surface_map::Smoothing::barycentric});
     const auto there_b = bary.to_output(pts);
     for (size_t i = 0; i < pts.size(); ++i) {
         CHECK(there_b[i].face == pts[i].face);
@@ -828,6 +830,85 @@ TEST_CASE("surface-map-smoothing", "[surface_map]")
     for (const SurfaceMap* map : {&bary, &flat}) {
         size_t warnings = 0;
         CHECK(round_trip(*map, pts, true, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+    }
+}
+
+TEST_CASE("surface-map-box-scaffold", "[surface_map]")
+{
+    // The region between a polygon and a box around it: every triangle positive, the triangles
+    // covering exactly the box minus the polygon, and every polygon edge an edge of exactly one
+    // of them. A polygon that crosses itself, or repeats a vertex, is refused.
+    using utils::predicates::orient2d;
+    using utils::predicates::Orientation;
+    const Eigen::Vector2d lo(-3, -3), hi(3.5, 3);
+    const auto check = [&](const std::vector<Eigen::Vector2d>& polygon) {
+        std::vector<Eigen::Vector2d> corners;
+        std::vector<std::array<int, 3>> tris;
+        REQUIRE(surface_map::box_scaffold(polygon, lo, hi, corners, tris));
+        const size_t n = polygon.size();
+        const auto at = [&](const int i) {
+            return i < int(n) ? polygon[size_t(i)] : corners[size_t(i) - n];
+        };
+        double area = 0;
+        std::map<std::pair<int, int>, int> edges;
+        for (const auto& t : tris) {
+            CHECK(orient2d(at(t[0]), at(t[1]), at(t[2])) == Orientation::POSITIVE);
+            const Eigen::Vector2d a = at(t[1]) - at(t[0]), b = at(t[2]) - at(t[0]);
+            area += 0.5 * (a.x() * b.y() - a.y() * b.x());
+            for (int k = 0; k < 3; ++k) ++edges[std::minmax(t[k], t[(k + 1) % 3])];
+        }
+        // The triangulation fills the box of its corners -- the arrangement adds its own, a
+        // tenth beyond the points'.
+        Eigen::Vector2d clo = corners[0], chi = corners[0];
+        for (const auto& c : corners) {
+            clo = clo.cwiseMin(c);
+            chi = chi.cwiseMax(c);
+        }
+        const double box = (chi - clo).prod();
+        double poly = 0;
+        for (size_t i = 0; i < n; ++i) {
+            const Eigen::Vector2d& p = polygon[i];
+            const Eigen::Vector2d& q = polygon[(i + 1) % n];
+            poly += 0.5 * (p.x() * q.y() - p.y() * q.x());
+        }
+        CHECK(std::abs(area - (box - std::abs(poly))) < 1e-12 * box);
+        for (size_t i = 0; i < n; ++i) {
+            CHECK(edges[std::minmax(int(i), int((i + 1) % n))] == 1);
+        }
+    };
+    std::vector<Eigen::Vector2d> hexagon, star;
+    for (int k = 0; k < 6; ++k)
+        hexagon.emplace_back(std::cos(k * M_PI / 3), std::sin(k * M_PI / 3));
+    for (int k = 0; k < 10; ++k) {
+        const double r = k % 2 ? 0.4 : 1.7;
+        star.emplace_back(r * std::cos(k * M_PI / 5 + 0.1), r * std::sin(k * M_PI / 5 + 0.1));
+    }
+    check(hexagon);
+    check(star);
+    std::reverse(star.begin(), star.end()); // either orientation
+    check(star);
+
+    std::vector<Eigen::Vector2d> corners;
+    std::vector<std::array<int, 3>> tris;
+    const std::vector<Eigen::Vector2d> bowtie = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
+    CHECK_FALSE(surface_map::box_scaffold(bowtie, lo, hi, corners, tris));
+    const std::vector<Eigen::Vector2d> repeated = {{0, 0}, {1, 0}, {1, 1}, {1, 0}, {0, 1}};
+    CHECK_FALSE(surface_map::box_scaffold(repeated, lo, hi, corners, tris));
+}
+
+TEST_CASE("surface-map-scaffolds", "[surface_map]")
+{
+    // Both scaffolds keep every local map a bijection: the map round-trips exactly.
+    const auto h = remesh("sphere.obj", 0, 0.6, 2);
+    for (const auto scaffold : {surface_map::Scaffold::box, surface_map::Scaffold::ring}) {
+        INFO("scaffold " << int(scaffold));
+        const SurfaceMap map(h, {surface_map::Smoothing::flatten, scaffold});
+        CHECK(map.build_warnings().total() == 0);
+        size_t warnings = 0;
+        CHECK(round_trip(map, sample(map.input_face_alive(), 3, 1), true, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+        CHECK(round_trip(map, sample(map.output_face_alive(), 3, 2), false, warnings) < kRoundTrip);
         CHECK(warnings == 0);
     }
 }
