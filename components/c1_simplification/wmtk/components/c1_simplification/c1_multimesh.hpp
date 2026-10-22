@@ -160,6 +160,7 @@ public:
 class MMSurfaceMesh : public wmtk::TriMesh
 {
 public:
+    bool output_enabled = true;
     MMSurfaceMesh() {}
     MMSurfaceMesh(
         std::shared_ptr<MMTetMesh>& t_ptr,

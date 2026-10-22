@@ -4,6 +4,13 @@
 
 namespace wmtk::io {
 
+void clean_triangle_mesh(
+    MatrixXd& V,
+    MatrixXi& F,
+    double tol_rel = -1,
+    double tol_abs = -1,
+    std::vector<int>* face_tags = nullptr);
+
 /**
  * @brief Reads a triangle mesh from a file.
  * The mesh is cleaned by removing duplicated vertices, degenerate faces, and unreferenced vertices.

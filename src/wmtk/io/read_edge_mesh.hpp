@@ -3,6 +3,7 @@
 #include <wmtk/Types.hpp>
 
 namespace wmtk::io {
+void clean_edge_mesh(MatrixXd& V, MatrixXi& E, double tol_rel = -1, double tol_abs = -1);
 
 /**
  * @brief Reads an edge mesh from a file.
