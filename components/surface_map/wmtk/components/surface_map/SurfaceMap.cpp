@@ -245,7 +245,7 @@ bool same_loop(const std::vector<uint64_t>& loop, const std::vector<uint64_t>& i
 
 } // namespace
 
-SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
+SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const Smoothing smoothing)
     : m_in_vertices(h.vertices)
     , m_in_faces(h.faces)
     , m_in_face_alive(h.face_alive)
@@ -663,13 +663,14 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
         return sides;
     };
 
-    // The cells of moving vertex v to `to`: one per side of its star, the same faces before and
-    // after (the vertex smoothing of the paper), so the points stay where they were on the
-    // surface as far as the joint embedding can, instead of riding along with the vertex. On a
-    // curve or the boundary v keeps to the outline: both its places are on it, each a virtual
-    // vertex on the edge of the patch it is not a corner of, matched by arc length along the
-    // curve -- the same on both sides. False where v is on more than one curve: the points then
-    // keep their barycentric coordinates, which is a bijection too.
+    // The cells of moving vertex v to `to` (Smoothing::flatten): one per side of its star, the
+    // same faces before and after, so the points stay where they were on the surface as far as
+    // the joint embedding can, instead of riding along with the vertex as they do in the paper's
+    // smoothing (Smoothing::barycentric). On a curve or the boundary v keeps to the outline: both
+    // its places are on it, each a virtual vertex on the edge of the patch it is not a corner of,
+    // matched by arc length along the curve -- the same on both sides. False where v is on more
+    // than one curve: the points then keep their barycentric coordinates, which is a bijection
+    // too.
     const auto move_cells =
         [&](const uint64_t v, const Eigen::Vector3d& to, std::vector<Cell>& cells) {
             const std::vector<uint64_t> star = r.faces_of(v);
@@ -968,7 +969,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h)
             for (const history::VertexMove& m : e.moves) {
                 std::vector<Cell> cells;
                 const bool mapped = m.vid < r.vertex_alive().size() && r.vertex_alive()[m.vid] &&
-                                    r.vertices()[m.vid] != m.pos && move_cells(m.vid, m.pos, cells);
+                                    r.vertices()[m.vid] != m.pos &&
+                                    smoothing == Smoothing::flatten &&
+                                    move_cells(m.vid, m.pos, cells);
                 r.apply(Edit{EditKind::move_vertices, {}, {}, {m}});
                 if (!mapped) {
                     ++m_kept_moves;

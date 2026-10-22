@@ -4,8 +4,8 @@
 
 namespace wmtk::components::surface_map {
 
-Tracking::Tracking(const history::SurfaceHistory& h)
-    : m_map(h)
+Tracking::Tracking(const history::SurfaceHistory& h, const Smoothing smoothing)
+    : m_map(h, smoothing)
     , m_output_ids(h.output_vertex_ids)
 {
     for (uint64_t v = 0; v < m_output_ids.size(); ++v) {
@@ -13,9 +13,9 @@ Tracking::Tracking(const history::SurfaceHistory& h)
     }
 }
 
-Tracking Tracking::load(const std::string& path)
+Tracking Tracking::load(const std::string& path, const Smoothing smoothing)
 {
-    return Tracking(history::SurfaceHistory::load(path));
+    return Tracking(history::SurfaceHistory::load(path), smoothing);
 }
 
 std::vector<std::array<uint64_t, 3>> Tracking::output_triangles() const

@@ -56,9 +56,9 @@ struct OutputPoint
 class Tracking
 {
 public:
-    explicit Tracking(const history::SurfaceHistory& h);
+    explicit Tracking(const history::SurfaceHistory& h, Smoothing smoothing = Smoothing::flatten);
     /// The tracking file an application wrote.
-    static Tracking load(const std::string& path);
+    static Tracking load(const std::string& path, Smoothing smoothing = Smoothing::flatten);
 
     /// Whether output points are named by vertex triplets (a tet output) rather than triangles.
     bool output_by_vertices() const { return !m_output_ids.empty(); }

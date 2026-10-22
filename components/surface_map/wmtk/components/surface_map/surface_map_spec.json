@@ -20,6 +20,7 @@
       "points",
       "output_points",
       "direction",
+      "smoothing",
       "log_file"
     ]
   },
@@ -119,5 +120,12 @@
     "options": ["to_output", "to_input"],
     "default": "to_output",
     "doc": "map: to_output maps points on the input to the output; to_input maps points on the output back to the input, the inverse map."
+  },
+  {
+    "pointer": "/smoothing",
+    "type": "string",
+    "options": ["flatten", "barycentric"],
+    "default": "flatten",
+    "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move. barycentric: points keep their face and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
   }
 ]

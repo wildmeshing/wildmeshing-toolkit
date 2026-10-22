@@ -79,6 +79,11 @@ std::string id_text(const uint64_t id)
 }
 
 /// The map operation: points on the input to the output, or back.
+Smoothing smoothing_of(const nlohmann::json& json_params)
+{
+    return json_params["smoothing"] == "barycentric" ? Smoothing::barycentric : Smoothing::flatten;
+}
+
 void map_points(
     const history::SurfaceHistory& h,
     const nlohmann::json& json_params,
@@ -91,7 +96,7 @@ void map_points(
     const bool forward = json_params["direction"] == "to_output";
     igl::Timer timer;
     timer.start();
-    const Tracking tracking(h);
+    const Tracking tracking(h, smoothing_of(json_params));
     logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
     const size_t n_out = tracking.output_by_vertices() ? 6 : 4;
     std::ofstream out(output_points);
@@ -184,7 +189,7 @@ void surface_map(nlohmann::json json_params)
     }
 
     timer.start();
-    const SurfaceMap map(h);
+    const SurfaceMap map(h, smoothing_of(json_params));
     const auto& cells = map.cells_by_kind();
     logger().info(
         "map built in {:.3}s: {} edge splits, {} face splits, {} collapses, {} swaps, {} "
@@ -348,6 +353,37 @@ void surface_map(nlohmann::json json_params)
         timer.getElapsedTimeInSec(),
         max_err,
         lost);
+
+    // How far the map moves points: each output centroid from its preimage on the input, in 3D,
+    // against the output's mean edge length.
+    double edges = 0;
+    size_t n_edges = 0;
+    std::vector<double> drift;
+    for (size_t i = 0; i < centroids.size(); ++i) {
+        const auto& t = map.output_faces()[centroids[i].face];
+        for (int k = 0; k < 3; ++k) {
+            edges += (map.output_vertices()[t[k]] - map.output_vertices()[t[(k + 1) % 3]]).norm();
+        }
+        n_edges += 3;
+        if (in[i].face >= map.input_faces().size()) continue;
+        drift.push_back((position(centroids[i], map.output_vertices(), map.output_faces()) -
+                         position(in[i], map.input_vertices(), map.input_faces()))
+                            .norm());
+    }
+    if (!drift.empty() && n_edges > 0) {
+        std::sort(drift.begin(), drift.end());
+        const double mean_edge = edges / double(n_edges);
+        double mean = 0;
+        for (const double d : drift) mean += d;
+        mean /= double(drift.size());
+        logger().info(
+            "output centroids lie from their preimages: mean {:.3g}, 99th percentile {:.3g}, max "
+            "{:.3g} output edge lengths (mean edge {:.3g})",
+            mean / mean_edge,
+            drift[drift.size() * 99 / 100] / mean_edge,
+            drift.back() / mean_edge,
+            mean_edge);
+    }
 }
 
 } // namespace wmtk::components::surface_map

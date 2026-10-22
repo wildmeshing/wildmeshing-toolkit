@@ -298,8 +298,23 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     - Curves that end inside a patch are cut into wedges.
     - Where a vertex is removed on the outline, the after face is split virtually, so both
       sides keep their area.
-  - **Vertex moves:** the vertex's star before and after, per side. A curve vertex slides
-    along the curve by arc length.
+  - **Vertex moves** (smoothing), by `Smoothing`:
+    - `flatten`, the default: the vertex's star before and after, flattened jointly per side,
+      so points stay where they were on the surface. A curve vertex slides along the curve by
+      arc length.
+    - `barycentric`: points keep their face and barycentric coordinates and ride along with
+      the vertex. The paper does this.
+
+    Measured 2026-10-22, flatten against barycentric:
+    - Barycentric builds the map 1.3–3× faster (101168: 9.0 against 3.4 s; the bunny through
+      isotropic remeshing: 5.7 against 2.8 s).
+    - Points drift about 3× further: 0.26 against 0.09 edge lengths on the bunny.
+    - Transferred textures suffer most. On the remeshed bunny, symmetric Dirichlet 232 against
+      10.6 (the input's 4.1) and 266 flipped triangles against 83; through tetwild, 68 against
+      5.2.
+    - The time saved is at most a few percent of a tetwild run. So flatten stays the default.
+    - A tangent-plane projection with a flatten fallback kept flatten's quality at half its
+      cost, but saved only 1–8% of a whole tetwild run, and was not worth its complexity.
   - **`relabel`:** a renumbering.
   - **`embed`:** location in space among the sources.
   - **`replace_faces`:** faces with nowhere to go.
@@ -322,7 +337,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - `write_surface_into_msh` writes the result into a copy of a tet mesh file, on its own
     nodes (`tet_mesh` / `output_tet_mesh`).
 - **The app** (`surface_map.cpp`, spec `surface_map_spec.json`):
-  - `info`: what the map holds, its warnings, and the output centroids' round trip;
+  - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
+    they lie from their preimages (drift, in output edge lengths);
   - `transfer`: fields onto the output;
   - `map`: user points.
 
