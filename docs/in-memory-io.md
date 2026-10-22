@@ -169,7 +169,8 @@ It preserves row identity and isolated vertices; cleaning belongs to component p
 Nonstandard MSH node tags are preserved as zero-based source IDs in `vid`, unless an explicit
 `vid` field is supplied.
 OBJ polylines retain orientation, and UV/normal values are represented per triangle corner
-(`uv`: six columns; `normal`: nine columns). Existing component-specific VTU input remains
+(`uv`: six columns; `normal`: nine columns), read only when every face corner references a value.
+Existing component-specific VTU input remains
 unchanged; the shared utilities do not add a VTU reader.
 
 `io::write_mesh(path, data)` writes MSH or delegates VTU output to the existing

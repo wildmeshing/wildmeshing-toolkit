@@ -152,6 +152,39 @@ TEST_CASE("MeshData reads OBJ attributes and orientation without cleaning", "[me
     REQUIRE(m.cell(CellType::Edge).connectivity(0, 0) == 2);
     REQUIRE(m.cell(CellType::Edge).connectivity(1, 1) == 0);
 }
+TEST_CASE("OBJ corner fields need a value on every corner", "[mesh_data][io]")
+{
+    TempMesh file(".obj");
+    SECTION("unreferenced vt and vn records")
+    {
+        std::ofstream(file.path) << "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nvn 0 0 1\nf 1 2 3\n";
+    }
+    SECTION("only some corners reference them")
+    {
+        std::ofstream(file.path) << "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nvn 0 0 1\n"
+                                    "f 1/1/1 2 3/1/1\n";
+    }
+    const auto m = io::read_mesh(file.path);
+    REQUIRE(m.cell(CellType::Triangle).connectivity.rows() == 1);
+    REQUIRE(m.cell(CellType::Triangle).attributes.empty());
+}
+TEST_CASE("OBJ rejects out-of-range indices", "[mesh_data][io]")
+{
+    TempMesh file(".obj");
+    SECTION("relative vertex")
+    {
+        std::ofstream(file.path) << "v 0 0 0\nv 1 0 0\nf -1 -2 -3\n";
+    }
+    SECTION("relative UV")
+    {
+        std::ofstream(file.path) << "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nf 1/-2 2/1 3/1\n";
+    }
+    SECTION("UV")
+    {
+        std::ofstream(file.path) << "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nf 1/2 2/1 3/1\n";
+    }
+    REQUIRE_THROWS(io::read_mesh(file.path));
+}
 TEST_CASE("Named input selection is strict and ordered", "[mesh_data][io]")
 {
     MeshData a;

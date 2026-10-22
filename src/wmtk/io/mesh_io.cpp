@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::io {
 namespace {
@@ -481,7 +482,9 @@ MeshData read_mesh(const std::filesystem::path& path)
         auto index = [](const std::string& s, size_t n) {
             const auto v = std::stoll(s);
             require(v != 0, "OBJ index is zero");
-            return v > 0 ? v - 1 : int64_t(n) + v;
+            const int64_t i = v > 0 ? v - 1 : int64_t(n) + v;
+            require(i >= 0, "OBJ relative index out of range");
+            return i;
         };
         while (std::getline(file, line)) {
             std::istringstream in(line);
@@ -535,20 +538,33 @@ MeshData read_mesh(const std::filesystem::path& path)
             for (size_t i = 0; i < rows.size(); ++i)
                 for (size_t j = 0; j < rows[i].size(); ++j) c(i, j) = rows[i][j];
         }
-        auto corners =
-            [&](const auto& source, const auto& ids, const std::string& name, int width) {
-                if (source.empty() || ids.empty()) return;
-                DataMatrix<double> values(ids.size(), 3 * width);
-                for (size_t i = 0; i < ids.size(); ++i)
-                    for (int j = 0; j < 3; ++j) {
-                        require(
-                            ids[i][j] >= 0 && size_t(ids[i][j]) < source.size(),
-                            "missing or invalid OBJ " + name);
-                        for (int k = 0; k < width; ++k)
-                            values(i, j * width + k) = source[ids[i][j]][k];
+        auto corners = [&](const auto& source,
+                           const auto& ids,
+                           const std::string& name,
+                           int width) {
+            if (source.empty() || ids.empty()) return;
+            // A per-corner field needs a value on every corner. Exporters commonly write
+            // vt/vn records that the faces do not (all) reference; skip the field then,
+            // as other OBJ readers do, rather than reject the geometry.
+            for (const auto& corner : ids)
+                for (const auto id : corner)
+                    if (id < 0) {
+                        logger().warn(
+                            "OBJ {}: not every face corner references a {} value; the {} "
+                            "field is not read",
+                            path.string(),
+                            name,
+                            name);
+                        return;
                     }
-                out.cells[CellType::Triangle].attributes[name].values = std::move(values);
-            };
+            DataMatrix<double> values(ids.size(), 3 * width);
+            for (size_t i = 0; i < ids.size(); ++i)
+                for (int j = 0; j < 3; ++j) {
+                    require(size_t(ids[i][j]) < source.size(), "invalid OBJ " + name + " index");
+                    for (int k = 0; k < width; ++k) values(i, j * width + k) = source[ids[i][j]][k];
+                }
+            out.cells[CellType::Triangle].attributes[name].values = std::move(values);
+        };
         corners(uv, ft, "uv", 2);
         corners(normals, fn, "normal", 3);
     } else {
