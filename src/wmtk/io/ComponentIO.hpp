@@ -27,6 +27,11 @@ public:
         it->second.validate();
         return it->second;
     }
+    // Fields io::read_mesh attaches to plain geometry files: MSH source IDs and OBJ per-corner
+    // UVs/normals. Geometry-only inputs carry no attributes through the algorithm, so these are
+    // ignored, as the file readers ignore them; any other attribute is still rejected.
+    inline static const std::set<std::string> reader_vertex_attributes = {"vid"};
+    inline static const std::set<std::string> reader_corner_attributes = {"uv", "normal"};
     static void attributes(
         const MeshAttributes& a,
         const std::set<std::string>& allowed,
@@ -64,11 +69,11 @@ public:
             return;
         }
         const auto& data = mesh(name);
-        attributes(data.vertex_attributes, {});
+        attributes(data.vertex_attributes, reader_vertex_attributes);
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Triangle)
                 throw std::runtime_error("Expected triangle input: " + name);
-            attributes(c.attributes, {});
+            attributes(c.attributes, reader_corner_attributes);
         }
         V = data.V;
         F = indices(data.cell(CellType::Triangle).connectivity);
@@ -114,7 +119,7 @@ public:
             return;
         }
         const auto& data = mesh(name);
-        attributes(data.vertex_attributes, {});
+        attributes(data.vertex_attributes, reader_vertex_attributes);
         for (const auto& [type, c] : data.cells) {
             if (type != CellType::Edge && type != CellType::Point)
                 throw std::runtime_error("Expected curves or points: " + name);

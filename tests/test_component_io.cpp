@@ -332,6 +332,25 @@ TEST_CASE("File and memory QSlim interfaces agree", "[component_io][io]")
     expected.erase("time_sec");
     REQUIRE(report == expected);
 }
+TEST_CASE("Geometry inputs accept the fields read_mesh attaches", "[component_io][io]")
+{
+    WorkingDirectory cwd;
+    {
+        std::ofstream f("input.obj");
+        f << "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nvt 0 0\nvn 0 0 1\n"
+             "f 2/1/1 3/1/1 4/1/1\nf 1/1/1 4/1/1 3/1/1\nf 1/1/1 2/1/1 4/1/1\nf 1/1/1 3/1/1 2/1/1\n";
+    }
+    auto data = io::read_mesh("input.obj");
+    std::filesystem::remove("input.obj");
+    REQUIRE(data.cell(CellType::Triangle).attributes.count("uv"));
+    REQUIRE(data.cell(CellType::Triangle).attributes.count("normal"));
+    const auto result = qslim::qslim(
+        {{"input", "source"}, {"target_abs", 4}, {"num_threads", 1}},
+        {{"source", data}});
+    check(result);
+    data.vertex_attributes["unrelated"].values = DataMatrix<double>::Zero(4, 1).eval();
+    REQUIRE_THROWS(qslim::qslim({{"input", "source"}, {"num_threads", 1}}, {{"source", data}}));
+}
 TEST_CASE("Memory inputs with degenerate cells are cleaned like files", "[component_io][io]")
 {
     WorkingDirectory cwd;

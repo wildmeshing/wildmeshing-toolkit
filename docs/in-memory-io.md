@@ -113,7 +113,9 @@ Selectors retain their component-specific JSON fields. A single selector is a di
 ordered selector arrays preserve input order and existing `input_names` / transform semantics.
 Unselected dictionary entries are not validated. Missing keys and incompatible inputs throw
 `std::runtime_error` before computation. Unknown attributes are rejected; this interface does
-not transfer arbitrary user attributes through topology changes.
+not transfer arbitrary user attributes through topology changes. Geometry-only inputs ("no
+attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry files: vertex
+`vid`, and triangle `uv` and `normal`.
 
 | Component | Mesh selectors | Required data |
 | --- | --- | --- |
