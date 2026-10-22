@@ -1,4 +1,7 @@
+#include <algorithm>
+#include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <chrono>
 #include <filesystem>
@@ -512,5 +515,143 @@ TEST_CASE(
     REQUIRE(shell.first.count("input_and_shell_offset") == shell.first.count("offset"));
     REQUIRE(shell.second.at("input_and_shell_hybrid").at("export_scope") == "input_and_shell");
     REQUIRE(!shell.second.at("hybrid").contains("export_scope"));
+}
+#endif
+
+// The two routes must agree on real inputs: a memory call on io::read_mesh(file) and a file call
+// on the same file give the same report (timings aside). The memory call runs first because
+// check() requires that it writes nothing.
+namespace {
+[[maybe_unused]] std::string data_file(const std::string& name)
+{
+    return (std::filesystem::path(WMTK_DATA_DIR) / "models" / name).string();
+}
+[[maybe_unused]] nlohmann::json without_timings(nlohmann::json report)
+{
+    for (const auto* key : {"time", "time_sec", "insertion_and_preprocessing"}) report.erase(key);
+    return report;
+}
+// The top-dimensional cells as sorted sets of corner positions: equal for the same geometry,
+// whatever the vertex and cell order of the two outputs.
+[[maybe_unused]] std::vector<std::vector<std::array<double, 3>>> cell_geometry(const MeshData& m)
+{
+    const auto type =
+        m.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
+    const auto& c = m.cell(type).connectivity;
+    std::vector<std::vector<std::array<double, 3>>> cells(c.rows());
+    for (Eigen::Index r = 0; r < c.rows(); ++r) {
+        for (Eigen::Index j = 0; j < c.cols(); ++j)
+            cells[r].push_back({{m.V(c(r, j), 0), m.V(c(r, j), 1), m.V(c(r, j), 2)}});
+        std::sort(cells[r].begin(), cells[r].end());
+    }
+    std::sort(cells.begin(), cells.end());
+    return cells;
+}
+template <typename Component>
+[[maybe_unused]] void compare_routes(
+    Component component,
+    const std::string& application,
+    nlohmann::json options,
+    const nlohmann::json& file_input,
+    const nlohmann::json& memory_input,
+    const MeshMap& meshes,
+    const std::string& file_output = "out.msh")
+{
+    options["input"] = memory_input;
+    const ComponentResult memory = component(options, meshes);
+    check(memory);
+    options["application"] = application;
+    options["input"] = file_input;
+    options["output"] = "out";
+    options["report"] = "report.json";
+    component(options);
+    const auto file_report = nlohmann::json::parse(std::ifstream("report.json"));
+    REQUIRE(without_timings(file_report) == without_timings(memory.second));
+    REQUIRE(cell_geometry(io::read_mesh(file_output)) == cell_geometry(memory.first.at("mesh")));
+}
+} // namespace
+#ifdef WMTK_TEST_tetwild
+TEST_CASE(
+    "TetWild gives the same result from memory and from a file",
+    "[component_io][equivalence]")
+{
+    WorkingDirectory cwd;
+    const auto path = data_file("sphere.obj");
+    compare_routes(
+        [](auto&&... args) { return tetwild::tetwild(args...); },
+        "tetwild",
+        {{"max_iterations", 2}, {"num_threads", 1}},
+        {path},
+        {"surface"},
+        {{"surface", io::read_mesh(path)}},
+        "out_final.msh");
+}
+#endif
+#ifdef WMTK_TEST_triwild
+TEST_CASE(
+    "TriWild gives the same result from memory and from a file",
+    "[component_io][equivalence]")
+{
+    WorkingDirectory cwd;
+    const auto path = data_file("triwild_polylines.obj");
+    compare_routes(
+        [](auto&&... args) { return triwild::triwild(args...); },
+        "triwild",
+        {{"max_iterations", 2}, {"num_threads", 1}, {"stop_energy", 20}},
+        {path},
+        {"curves"},
+        {{"curves", io::read_mesh(path)}});
+}
+#endif
+#ifdef WMTK_TEST_simwild
+TEST_CASE(
+    "SimWild gives the same result from memory and from a file",
+    "[component_io][equivalence]")
+{
+    WorkingDirectory cwd;
+    // Tagged .msh inputs: physical-group order, the embedded EnvelopeSurface and the ambient group
+    // all have to come through read_mesh as the .msh route reads them.
+    const auto file = GENERATE(as<std::string>{}, "topo_annots_groups.msh", "double_sphere.msh");
+    INFO(file);
+    const auto path = data_file(file);
+    compare_routes(
+        [](auto&&... args) { return simwild::simwild(args...); },
+        "simwild",
+        {{"max_iterations", 2}, {"num_threads", 1}},
+        {path},
+        {"tagged"},
+        {{"tagged", io::read_mesh(path)}});
+}
+#endif
+#ifdef WMTK_TEST_manifold_extraction
+TEST_CASE(
+    "Manifold extraction gives the same result from memory and from a file",
+    "[component_io][equivalence]")
+{
+    WorkingDirectory cwd;
+    const auto path = data_file("double_sphere_hole.msh");
+    compare_routes(
+        [](auto&&... args) { return manifold_extraction::manifold_extraction(args...); },
+        "manifold_extraction",
+        {{"tag_selection", "tag_0 | tag_1"}, {"fill_tags", nlohmann::json::array()}},
+        path,
+        "tagged",
+        {{"tagged", io::read_mesh(path)}});
+}
+#endif
+#ifdef WMTK_TEST_topological_offset
+TEST_CASE(
+    "Topological offset gives the same result from memory and from a file",
+    "[component_io][equivalence]")
+{
+    WorkingDirectory cwd;
+    const auto path = data_file("double_sphere_hole.msh");
+    compare_routes(
+        [](auto&&... args) { return topological_offset::topological_offset(args...); },
+        "topological_offset",
+        {{"offset_selection", "tag_0"}, {"optimize_offset", false}, {"num_threads", 1}},
+        path,
+        "tagged",
+        {{"tagged", io::read_mesh(path)}});
 }
 #endif
