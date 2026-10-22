@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /// A triangle surface and named per-face fields, as read from or written to a gmsh file.
 struct SurfaceData
@@ -60,4 +60,4 @@ void write_surface_obj(
     const std::string& uv_field,
     const std::string& texture);
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

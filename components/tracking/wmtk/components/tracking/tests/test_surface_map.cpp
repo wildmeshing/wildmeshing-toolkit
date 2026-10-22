@@ -1,8 +1,8 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
-#include <wmtk/components/surface_map/SurfaceMap.hpp>
-#include <wmtk/components/surface_map/scaffold2d.hpp>
-#include <wmtk/components/surface_map/surface_io.hpp>
-#include <wmtk/components/surface_map/transfer.hpp>
+#include <wmtk/components/tracking/SurfaceMap.hpp>
+#include <wmtk/components/tracking/scaffold2d.hpp>
+#include <wmtk/components/tracking/surface_io.hpp>
+#include <wmtk/components/tracking/transfer.hpp>
 #include <wmtk/history/Replay.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
@@ -23,8 +23,8 @@
 
 using namespace wmtk;
 using namespace wmtk::components;
-using surface_map::SurfaceMap;
-using surface_map::SurfacePoint;
+using tracking::SurfaceMap;
+using tracking::SurfacePoint;
 
 namespace {
 
@@ -167,11 +167,11 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
     MatrixXd V;
     MatrixXi F;
     wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, F, 0);
-    surface_map::SurfaceData in;
+    tracking::SurfaceData in;
     for (int i = 0; i < V.rows(); ++i) in.vertices.push_back(V.row(i).transpose());
     auto& side = in.face_fields["side"];
     auto& octant = in.face_fields["octant"];
-    const auto centroid = [](const surface_map::SurfaceData& s, size_t f) {
+    const auto centroid = [](const tracking::SurfaceData& s, size_t f) {
         return (s.vertices[s.faces[f][0]] + s.vertices[s.faces[f][1]] + s.vertices[s.faces[f][2]]) /
                3;
     };
@@ -185,8 +185,8 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
         (std::filesystem::temp_directory_path() /
          ("wmtk_surface_map_labels_" + std::to_string(std::random_device{}()) + ".msh"))
             .string();
-    surface_map::write_surface_msh(path, in);
-    const surface_map::SurfaceData reread = surface_map::read_surface_msh(path);
+    tracking::write_surface_msh(path, in);
+    const tracking::SurfaceData reread = tracking::read_surface_msh(path);
     REQUIRE(reread.faces == in.faces);
     REQUIRE(reread.face_fields == in.face_fields);
 
@@ -195,12 +195,12 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
     const SurfaceMap map(h);
     std::string why;
     INFO(why);
-    REQUIRE(surface_map::matches_input(map, reread, why));
+    REQUIRE(tracking::matches_input(map, reread, why));
 
-    const surface_map::SurfaceData out = surface_map::transfer_fields(map, reread);
+    const tracking::SurfaceData out = tracking::transfer_fields(map, reread);
     CHECK(map.map_warnings().total() == 0);
     REQUIRE(out.face_fields.at("side").size() == out.faces.size());
-    const auto longest_edge = [](const surface_map::SurfaceData& s) {
+    const auto longest_edge = [](const tracking::SurfaceData& s) {
         double h = 0;
         for (const auto& t : s.faces) {
             for (int k = 0; k < 3; ++k) {
@@ -229,12 +229,12 @@ namespace {
 /// The sphere, labelled per face by the sides of three tilted planes through the centroid. They
 /// cut across the sphere's latitude-longitude grid, so the label boundaries zigzag along its
 /// edges, with triangles holding two boundary edges at the corners.
-surface_map::SurfaceData labelled_sphere()
+tracking::SurfaceData labelled_sphere()
 {
     MatrixXd V;
     MatrixXi F;
     wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, F, 0);
-    surface_map::SurfaceData s;
+    tracking::SurfaceData s;
     for (int i = 0; i < V.rows(); ++i) s.vertices.push_back(V.row(i).transpose());
     for (int f = 0; f < F.rows(); ++f) {
         s.faces.push_back({{uint64_t(F(f, 0)), uint64_t(F(f, 1)), uint64_t(F(f, 2))}});
@@ -250,7 +250,7 @@ surface_map::SurfaceData labelled_sphere()
 }
 
 /// Edges between two faces with different values of any field.
-std::vector<std::array<size_t, 2>> label_boundaries(const surface_map::SurfaceData& s)
+std::vector<std::array<size_t, 2>> label_boundaries(const tracking::SurfaceData& s)
 {
     std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
     for (size_t f = 0; f < s.faces.size(); ++f) {
@@ -280,7 +280,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
     // With the label boundaries kept as feature curves, every output face lies inside one label
     // region: points anywhere in it map to input faces of one label, the labels hold exactly,
     // and the output's label boundaries are its feature curves.
-    const surface_map::SurfaceData in = labelled_sphere();
+    const tracking::SurfaceData in = labelled_sphere();
     std::vector<Eigen::Vector3d> verts(in.vertices.begin(), in.vertices.end());
     std::vector<std::array<size_t, 3>> tris;
     for (const auto& f : in.faces) tris.push_back({{size_t(f[0]), size_t(f[1]), size_t(f[2])}});
@@ -350,7 +350,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         CHECK(mixed == 0);
 
         // The transferred labels change exactly across feature edges.
-        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
+        const tracking::SurfaceData out = tracking::transfer_fields(map, in);
         std::map<std::array<uint64_t, 2>, std::vector<size_t>> edge_faces;
         for (size_t f = 0; f < out.faces.size(); ++f) {
             for (int k = 0; k < 3; ++k) {
@@ -407,7 +407,7 @@ TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
     MatrixXi F0;
     wmtk::io::read_triangle_mesh(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V0, F0, 0);
     // The sphere less its top cap: an open boundary.
-    surface_map::SurfaceData in;
+    tracking::SurfaceData in;
     std::map<int, uint64_t> vid;
     for (int f = 0; f < F0.rows(); ++f) {
         double y = 0;
@@ -473,7 +473,7 @@ TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
             kRoundTrip);
         CHECK(trip_warnings == 0);
 
-        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
+        const tracking::SurfaceData out = tracking::transfer_fields(map, in);
         std::set<double> labels_in, labels_out;
         for (const auto& l : label) labels_in.insert(l[0]);
         for (const auto& l : out.face_fields.at("label")) labels_out.insert(l[0]);
@@ -490,7 +490,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
     Eigen::MatrixXd V, TC, N;
     Eigen::MatrixXi F, FTC, FN;
     REQUIRE(igl::readOBJ(std::string(WMTK_DATA_DIR) + "/models/sphere.obj", V, TC, N, F, FTC, FN));
-    surface_map::SurfaceData in;
+    tracking::SurfaceData in;
     for (int i = 0; i < V.rows(); ++i) in.vertices.push_back(V.row(i).transpose());
     auto& uv = in.corner_fields["uv"];
     for (int f = 0; f < F.rows(); ++f) {
@@ -500,7 +500,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         uv.push_back(c);
     }
     // Seams: edges whose two faces disagree on the texture coordinates at either end.
-    const auto corner = [](const surface_map::SurfaceData& s,
+    const auto corner = [](const tracking::SurfaceData& s,
                            const std::vector<std::vector<double>>& field,
                            size_t f,
                            uint64_t v) {
@@ -509,7 +509,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         }
         return Eigen::Vector2d(NAN, NAN);
     };
-    const auto edge_faces = [](const surface_map::SurfaceData& s) {
+    const auto edge_faces = [](const tracking::SurfaceData& s) {
         std::map<std::array<uint64_t, 2>, std::vector<size_t>> ef;
         for (size_t f = 0; f < s.faces.size(); ++f) {
             for (int k = 0; k < 3; ++k) {
@@ -592,7 +592,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         const SurfaceMap map(rec->history());
         CHECK(map.build_warnings().total() == 0);
 
-        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
+        const tracking::SurfaceData out = tracking::transfer_fields(map, in);
         CHECK(map.map_warnings().total() == 0);
         const auto& ouv = out.corner_fields.at("uv");
         REQUIRE(ouv.size() == out.faces.size());
@@ -769,7 +769,7 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
         try {
             const SurfaceMap map(
                 history::SurfaceHistory::load(path),
-                {surface_map::Smoothing::barycentric, surface_map::Scaffold::ring});
+                {tracking::Smoothing::barycentric, tracking::Scaffold::ring});
             map.to_output(sample(map.input_face_alive(), 1, 3));
             map.to_input(sample(map.output_face_alive(), 1, 4));
             ++built;
@@ -838,7 +838,7 @@ TEST_CASE("surface-map-smoothing", "[surface_map]")
         return d / double(pts.size());
     };
 
-    const SurfaceMap bary(h, {surface_map::Smoothing::barycentric});
+    const SurfaceMap bary(h, {tracking::Smoothing::barycentric});
     const auto there_b = bary.to_output(pts);
     for (size_t i = 0; i < pts.size(); ++i) {
         CHECK(there_b[i].face == pts[i].face);
@@ -869,7 +869,7 @@ TEST_CASE("surface-map-box-scaffold", "[surface_map]")
     const auto check = [&](const std::vector<Eigen::Vector2d>& polygon) {
         std::vector<Eigen::Vector2d> corners;
         std::vector<std::array<int, 3>> tris;
-        REQUIRE(surface_map::box_scaffold(polygon, lo, hi, corners, tris));
+        REQUIRE(tracking::box_scaffold(polygon, lo, hi, corners, tris));
         const size_t n = polygon.size();
         const auto at = [&](const int i) {
             return i < int(n) ? polygon[size_t(i)] : corners[size_t(i) - n];
@@ -916,18 +916,18 @@ TEST_CASE("surface-map-box-scaffold", "[surface_map]")
     std::vector<Eigen::Vector2d> corners;
     std::vector<std::array<int, 3>> tris;
     const std::vector<Eigen::Vector2d> bowtie = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
-    CHECK_FALSE(surface_map::box_scaffold(bowtie, lo, hi, corners, tris));
+    CHECK_FALSE(tracking::box_scaffold(bowtie, lo, hi, corners, tris));
     const std::vector<Eigen::Vector2d> repeated = {{0, 0}, {1, 0}, {1, 1}, {1, 0}, {0, 1}};
-    CHECK_FALSE(surface_map::box_scaffold(repeated, lo, hi, corners, tris));
+    CHECK_FALSE(tracking::box_scaffold(repeated, lo, hi, corners, tris));
 }
 
 TEST_CASE("surface-map-scaffolds", "[surface_map]")
 {
     // Both scaffolds keep every local map a bijection: the map round-trips exactly.
     const auto h = remesh("sphere.obj", 0, 0.6, 2);
-    for (const auto scaffold : {surface_map::Scaffold::box, surface_map::Scaffold::ring}) {
+    for (const auto scaffold : {tracking::Scaffold::box, tracking::Scaffold::ring}) {
         INFO("scaffold " << int(scaffold));
-        const SurfaceMap map(h, {surface_map::Smoothing::flatten, scaffold});
+        const SurfaceMap map(h, {tracking::Smoothing::flatten, scaffold});
         CHECK(map.build_warnings().total() == 0);
         size_t warnings = 0;
         CHECK(round_trip(map, sample(map.input_face_alive(), 3, 1), true, warnings) < kRoundTrip);

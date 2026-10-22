@@ -3,7 +3,7 @@
 // Its own translation unit: the arrangement's header brings IPs into the global namespace.
 #include <VolumeRemesher/2d/arrangement2d.h>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 bool box_scaffold(
     const std::vector<Eigen::Vector2d>& polygon,
@@ -91,4 +91,4 @@ bool box_scaffold(
     return true;
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

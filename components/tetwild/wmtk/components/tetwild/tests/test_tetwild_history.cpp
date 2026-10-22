@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/surface_map/SurfaceMap.hpp>
-#include <wmtk/components/surface_map/surface_io.hpp>
-#include <wmtk/components/surface_map/transfer.hpp>
 #include <wmtk/components/tetwild/tetwild.hpp>
+#include <wmtk/components/tracking/SurfaceMap.hpp>
+#include <wmtk/components/tracking/surface_io.hpp>
+#include <wmtk/components/tracking/transfer.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -89,7 +89,7 @@ TEST_CASE(
             {"write_vtu", false},
         });
         const auto h = history::SurfaceHistory::load(hist.string());
-        const surface_map::SurfaceMap map(h);
+        const tracking::SurfaceMap map(h);
         // It starts at the files: every face of both, the soup's vertices not yet welded.
         CHECK(map.input_faces().size() == size_t(2 * SF.rows()));
         CHECK(map.input_vertices().size() == size_t(SV.rows() + 3 * SF.rows()));
@@ -110,7 +110,7 @@ TEST_CASE(
         }
         CHECK(replayed == tracked);
 
-        std::vector<surface_map::SurfacePoint> pts;
+        std::vector<tracking::SurfacePoint> pts;
         for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
             if (map.output_face_alive()[f]) pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
         }
@@ -166,8 +166,8 @@ TEST_CASE("tetwild-surface-history-octocat", "[tetwild][history][.]")
         {"preserve_topology", true},
         {"write_vtu", false},
     });
-    const surface_map::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
-    std::vector<surface_map::SurfacePoint> pts;
+    const tracking::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
+    std::vector<tracking::SurfacePoint> pts;
     for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
         if (map.output_face_alive()[f]) pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
     }
@@ -194,7 +194,7 @@ TEST_CASE(
     Eigen::MatrixXd SV;
     Eigen::MatrixXi SF;
     REQUIRE(igl::readOBJ((fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string(), SV, SF));
-    surface_map::SurfaceData labelled;
+    tracking::SurfaceData labelled;
     for (Eigen::Index v = 0; v < SV.rows(); ++v) labelled.vertices.push_back(SV.row(v).transpose());
     auto& label = labelled.face_fields["label"];
     for (Eigen::Index f = 0; f < SF.rows(); ++f) {
@@ -202,7 +202,7 @@ TEST_CASE(
         label.push_back({double(f % 7)});
     }
     const fs::path input = dir / "sphere_labels.msh";
-    surface_map::write_surface_msh(input.string(), labelled);
+    tracking::write_surface_msh(input.string(), labelled);
 
     const fs::path out = dir / "labels";
     const fs::path hist = dir / "labels.wmtkhist";
@@ -214,14 +214,14 @@ TEST_CASE(
         {"max_iterations", 3},
         {"write_vtu", false},
     });
-    const surface_map::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
-    const auto in = surface_map::read_surface({input.string()});
+    const tracking::SurfaceMap map(history::SurfaceHistory::load(hist.string()));
+    const auto in = tracking::read_surface({input.string()});
     std::string why;
-    REQUIRE(surface_map::matches_input(map, in, why));
-    const auto transferred = surface_map::transfer_fields(map, in);
+    REQUIRE(tracking::matches_input(map, in, why));
+    const auto transferred = tracking::transfer_fields(map, in);
     REQUIRE(transferred.faces.size() == size_t(exported.F.rows()));
     const fs::path with_labels = dir / "labels_final_with_labels.msh";
-    surface_map::write_surface_into_msh(
+    tracking::write_surface_into_msh(
         out.string() + "_final.msh",
         with_labels.string(),
         transferred);

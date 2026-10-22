@@ -2,7 +2,7 @@
 
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
-#include <wmtk/components/surface_map/SurfaceMap.hpp>
+#include <wmtk/components/tracking/SurfaceMap.hpp>
 #include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
@@ -119,7 +119,7 @@ void check_tags(
         json.update(options);
         simwild::simwild(json);
         const auto h = history::SurfaceHistory::load(hist.string());
-        const surface_map::SurfaceMap map(h);
+        const tracking::SurfaceMap map(h);
         const auto o = interfaces(simwild::read_image_msh(out.string() + ".msh"));
         REQUIRE(!o.empty());
 
@@ -174,7 +174,7 @@ void check_tags(
             long(o.size()));
 
         // Every output face's centre lands on the input between the same two tag sets.
-        std::vector<surface_map::SurfacePoint> pts;
+        std::vector<tracking::SurfacePoint> pts;
         std::vector<uint64_t> from;
         for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
             if (!map.output_face_alive()[f] || !out_labels[f]) continue;

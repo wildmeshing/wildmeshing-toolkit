@@ -1,8 +1,8 @@
-#include "Tracking.hpp"
+#include "tracking.hpp"
 
 #include <algorithm>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 Tracking::Tracking(const history::SurfaceHistory& h, const SurfaceMapOptions& options)
     : m_map(h, options)
@@ -108,4 +108,4 @@ std::vector<InputPoint> Tracking::to_input(const std::vector<OutputPoint>& point
     return out;
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

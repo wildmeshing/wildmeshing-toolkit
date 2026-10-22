@@ -9,7 +9,7 @@
 #include <limits>
 #include <map>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 namespace {
 /// A single-block surface .msh (MshData::is_single_surface_block) with its fields; `msh` loaded.
@@ -300,4 +300,4 @@ void write_surface_obj(
     }
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

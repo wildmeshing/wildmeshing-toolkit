@@ -427,7 +427,7 @@
     "pointer": "/history_output",
     "type": "string",
     "default": "",
-    "doc": "3D only. Record every change to the tracked surface -- the interfaces between unlike tags -- from the mesh the input initialises to the output, and save the history here (see wmtk/history): the surface_map component rebuilds the map between the two from it. The mesh the history starts from is written next to the output as <output>_history_input.msh. Empty: no recording."
+    "doc": "3D only. Record every change to the tracked surface -- the interfaces between unlike tags -- from the mesh the input initialises to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The mesh the history starts from is written next to the output as <output>_history_input.msh. Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",

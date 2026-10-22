@@ -4,8 +4,7 @@
 // tet outputs, where it is three vertices of the tet mesh instead.
 
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk/components/surface_map/Tracking.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
@@ -17,10 +16,10 @@
 
 namespace fs = std::filesystem;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 namespace {
 
@@ -50,7 +49,7 @@ std::vector<InputPoint> random_points(const size_t n_faces, const size_t n, cons
 
 } // namespace
 
-TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
+TEST_CASE("tracking-example-isotropic", "[tracking]")
 {
     const fs::path dir = fs::current_path() / "tracking_example_isotropic";
     fs::create_directories(dir);
@@ -130,7 +129,7 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     CHECK(worst < 4 * 2 * mean_edge); // |grad f| < 4
 
     // 4. The same from the command line, as the wmtk binary runs it: a file of points, one
-    // `face b0 b1 b2` per line, mapped by the surface_map application.
+    // `face b0 b1 b2` per line, mapped by the tracking application.
     const fs::path points = dir / "points.txt";
     {
         std::ofstream o(points);
@@ -141,8 +140,8 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
         }
     }
     const fs::path mapped = dir / "points_on_output.txt";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "map"},
         {"points", points.string()},

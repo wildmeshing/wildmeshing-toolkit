@@ -1,7 +1,6 @@
-#include "surface_map.hpp"
 #include "SurfaceMap.hpp"
-#include "Tracking.hpp"
 #include "surface_io.hpp"
+#include "tracking.hpp"
 #include "transfer.hpp"
 
 #include <igl/Timer.h>
@@ -12,12 +11,12 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
-#include <surface_map_spec.hpp>
+#include <tracking_spec.hpp>
 
 #include <algorithm>
 #include <cmath>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 namespace {
 
@@ -156,11 +155,11 @@ void map_points(
 
 } // namespace
 
-void surface_map(nlohmann::json json_params)
+void tracking(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
     {
-        const auto spec = jse::embed::wmtk_surface_map_spec::surface_map_spec::spec();
+        const auto spec = jse::embed::wmtk_tracking_spec::tracking_spec::spec();
         jse::JSE spec_engine;
         if (!spec_engine.verify_json(json_params, spec)) {
             log_and_throw_error(spec_engine.log2str());
@@ -389,4 +388,4 @@ void surface_map(nlohmann::json json_params)
     }
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

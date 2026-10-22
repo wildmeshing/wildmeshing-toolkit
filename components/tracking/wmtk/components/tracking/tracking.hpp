@@ -5,6 +5,7 @@
 #include <wmtk/history/SurfaceHistory.hpp>
 
 #include <Eigen/Core>
+#include <nlohmann/json.hpp>
 
 #include <array>
 #include <cstdint>
@@ -13,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /// No face, no vertex: a point that has no image.
 constexpr uint64_t kNoId = std::numeric_limits<uint64_t>::max();
@@ -85,4 +86,8 @@ private:
     std::map<uint64_t, uint64_t> m_history_vertex;
 };
 
-} // namespace wmtk::components::surface_map
+/// The tracking application: maps points, transfers fields and reports on a tracking file
+/// (tracking_spec.json).
+void tracking(nlohmann::json json_params);
+
+} // namespace wmtk::components::tracking

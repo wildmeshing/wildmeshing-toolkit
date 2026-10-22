@@ -19,11 +19,11 @@ set(SRC_FILES
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::tetwild)
-# The history tests rebuild the map with surface_map. It is added after this component, so its
+# The history tests rebuild the map with the tracking component. It is added after this component, so its
 # option may not be set yet; unset, it defaults to on.
-if(NOT DEFINED WMTK_ENABLE_COMPONENT_surface_map OR WMTK_ENABLE_COMPONENT_surface_map)
+if(NOT DEFINED WMTK_ENABLE_COMPONENT_tracking OR WMTK_ENABLE_COMPONENT_tracking)
     target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE test_simwild_history.cpp test_simwild_tracking.cpp)
-    target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::surface_map)
+    target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::tracking)
 endif()
 # test_simplify_boundary.cpp builds its parameters the way the application does, defaults
 # injected from the spec.
