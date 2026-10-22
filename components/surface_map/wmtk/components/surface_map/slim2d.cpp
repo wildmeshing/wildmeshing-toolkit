@@ -27,8 +27,9 @@ bool positive(const std::vector<Eigen::Vector2d>& x, const SlimElement& e)
            utils::predicates::Orientation::POSITIVE;
 }
 
-/// The energy of the layout; infinite if an element is not positively oriented.
-double energy(const std::vector<Eigen::Vector2d>& x, const std::vector<SlimElement>& elements)
+} // namespace
+
+double slim_energy(const std::vector<Eigen::Vector2d>& x, const std::vector<SlimElement>& elements)
 {
     double E = 0;
     for (const SlimElement& e : elements) {
@@ -41,6 +42,8 @@ double energy(const std::vector<Eigen::Vector2d>& x, const std::vector<SlimEleme
     }
     return E;
 }
+
+namespace {
 
 /// The largest step along `d` before an element's edge determinant reaches zero, in floating
 /// point: only where the line search starts, which checks every step exactly.
@@ -126,7 +129,7 @@ double slim(
     for (int i = 0; i < n; ++i) {
         if (!fixed[i]) free_index[i] = n_free++;
     }
-    double E = energy(x, elements);
+    double E = slim_energy(x, elements);
     if (n_free == 0 || !std::isfinite(E)) return E;
 
     // vec(W X D) = (D^T kron W) vec(X), X = [x0 x1 x2] column by column.
@@ -201,7 +204,7 @@ double slim(
         for (int k = 0; k < 30 && step > 1e-12; ++k, step *= 0.5) {
             std::vector<Eigen::Vector2d> y = x;
             for (int i = 0; i < n; ++i) y[i] += step * d[i];
-            const double Ey = energy(y, elements);
+            const double Ey = slim_energy(y, elements);
             if (Ey < E) {
                 x = std::move(y);
                 improved = E - Ey > 1e-4 * E;

@@ -21,6 +21,7 @@
       "output_points",
       "direction",
       "smoothing",
+      "scaffold",
       "log_file"
     ]
   },
@@ -127,5 +128,12 @@
     "options": ["flatten", "barycentric"],
     "default": "flatten",
     "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move. barycentric: points keep their face and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
+  },
+  {
+    "pointer": "/scaffold",
+    "type": "string",
+    "options": ["box", "ring"],
+    "default": "box",
+    "doc": "The scaffold of each local map's joint flattening, which keeps the outline the two patches share a simple polygon while SLIM lowers their distortion. box: the region between the outline and a box three times the patch, triangulated anew before every iteration, as in BijectiveRemesh; it follows the patch wherever the flattening takes it. ring: one ring of triangles out to a fixed copy of the outline; about 2.4 times faster, but it pulls the outline back and keeps it from stretching, so local maps are more distorted."
   }
 ]

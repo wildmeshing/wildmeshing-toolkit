@@ -1,5 +1,6 @@
 #include "SurfaceMap.hpp"
 
+#include "scaffold2d.hpp"
 #include "slim2d.hpp"
 
 #include <wmtk/history/Replay.hpp>
@@ -245,7 +246,7 @@ bool same_loop(const std::vector<uint64_t>& loop, const std::vector<uint64_t>& i
 
 } // namespace
 
-SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const Smoothing smoothing)
+SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions& options)
     : m_in_vertices(h.vertices)
     , m_in_faces(h.faces)
     , m_in_face_alive(h.face_alive)
@@ -279,54 +280,58 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const Smoothing smoothi
     // every triangle, the scaffold's included, positive. The outline `slots` is free but shared:
     // each slot is one point, a corner of `before` and one of `after`. The embedding must be on
     // a circle about the origin, as the Tutte ones are; it is rescaled to the 3D area.
-    const auto refine =
-        [&](const Slots& slots, const Patch& before, const Patch& after, UV& uv_b, UV& uv_a) {
-            const std::vector<Tri> before_t = before.tris(), after_t = after.tris();
-            double area_3d = 0, area_2d = 0;
-            for (const Tri& t : before_t) {
-                const auto& P = before.P;
-                area_3d += 0.5 * (P.at(t[1]) - P.at(t[0])).cross(P.at(t[2]) - P.at(t[0])).norm();
-                const Eigen::Vector2d a = uv_b.at(t[1]) - uv_b.at(t[0]);
-                const Eigen::Vector2d b = uv_b.at(t[2]) - uv_b.at(t[0]);
-                area_2d += 0.5 * (a.x() * b.y() - a.y() * b.x());
-            }
-            if (!(area_3d > 0) || !(area_2d > 0)) return;
-            const double scale = std::sqrt(area_3d / area_2d);
+    const auto refine = [&](const Slots& slots,
+                            const Patch& before,
+                            const Patch& after,
+                            UV& uv_b,
+                            UV& uv_a) {
+        const std::vector<Tri> before_t = before.tris(), after_t = after.tris();
+        double area_3d = 0, area_2d = 0;
+        for (const Tri& t : before_t) {
+            const auto& P = before.P;
+            area_3d += 0.5 * (P.at(t[1]) - P.at(t[0])).cross(P.at(t[2]) - P.at(t[0])).norm();
+            const Eigen::Vector2d a = uv_b.at(t[1]) - uv_b.at(t[0]);
+            const Eigen::Vector2d b = uv_b.at(t[2]) - uv_b.at(t[0]);
+            area_2d += 0.5 * (a.x() * b.y() - a.y() * b.x());
+        }
+        if (!(area_3d > 0) || !(area_2d > 0)) return;
+        const double scale = std::sqrt(area_3d / area_2d);
 
-            std::vector<Eigen::Vector2d> x;
-            std::vector<char> fixed;
-            std::map<uint64_t, int> var_b, var_a;
-            for (const auto& [b, a] : slots) {
-                var_b[b] = var_a[a] = int(x.size());
-                x.push_back(scale * uv_b.at(b));
+        std::vector<Eigen::Vector2d> x;
+        std::vector<char> fixed;
+        std::map<uint64_t, int> var_b, var_a;
+        for (const auto& [b, a] : slots) {
+            var_b[b] = var_a[a] = int(x.size());
+            x.push_back(scale * uv_b.at(b));
+            fixed.push_back(0);
+        }
+        const auto var = [&](std::map<uint64_t, int>& vars, const UV& uv, uint64_t v) {
+            const auto [it, inserted] = vars.emplace(v, int(x.size()));
+            if (inserted) {
+                x.push_back(scale * uv.at(v));
                 fixed.push_back(0);
             }
-            const auto var = [&](std::map<uint64_t, int>& vars, const UV& uv, uint64_t v) {
-                const auto [it, inserted] = vars.emplace(v, int(x.size()));
-                if (inserted) {
-                    x.push_back(scale * uv.at(v));
-                    fixed.push_back(0);
-                }
-                return it->second;
-            };
-            std::vector<SlimElement> elements;
-            const auto add =
-                [&](const Patch& p, const std::vector<Tri>& ts, auto& vars, const UV& uv) {
-                    for (const Tri& t : ts) {
-                        elements.push_back(slim_element(
-                            {{var(vars, uv, t[0]), var(vars, uv, t[1]), var(vars, uv, t[2])}},
-                            p.P.at(t[0]),
-                            p.P.at(t[1]),
-                            p.P.at(t[2]),
-                            1.));
-                    }
-                };
-            add(before, before_t, var_b, uv_b);
-            add(after, after_t, var_a, uv_a);
-            // The scaffold: the ring between the outline and its copy three times as far out,
-            // held there, weighted so it gives way to the patch.
-            const double scaffold_weight = 1e-2 * area_3d / double(before_t.size());
-            const size_t n = slots.size();
+            return it->second;
+        };
+        std::vector<SlimElement> elements;
+        const auto add = [&](const Patch& p, const std::vector<Tri>& ts, auto& vars, const UV& uv) {
+            for (const Tri& t : ts) {
+                elements.push_back(slim_element(
+                    {{var(vars, uv, t[0]), var(vars, uv, t[1]), var(vars, uv, t[2])}},
+                    p.P.at(t[0]),
+                    p.P.at(t[1]),
+                    p.P.at(t[2]),
+                    1.));
+            }
+        };
+        add(before, before_t, var_b, uv_b);
+        add(after, after_t, var_a, uv_a);
+        // The scaffold keeps the shared outline -- slots 0 to n - 1 -- a simple polygon, so the
+        // two patches lay out the same polygon whatever SLIM does; weighted so it gives way to
+        // them. See Scaffold.
+        const double scaffold_weight = 1e-2 * area_3d / double(before_t.size());
+        const size_t n = slots.size();
+        if (options.scaffold == Scaffold::ring) {
             std::vector<int> outer(n);
             for (size_t i = 0; i < n; ++i) {
                 outer[i] = int(x.size());
@@ -339,13 +344,49 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const Smoothing smoothi
                 elements.push_back(slim_element({{a, d, b}}, x[a], x[d], x[b], scaffold_weight));
             }
             slim(x, fixed, elements, 10);
-            for (auto& [v, uv] : uv_b) {
-                if (const auto it = var_b.find(v); it != var_b.end()) uv = x[it->second];
+        } else {
+            // Rebuilt around the patch before every iteration, so SLIM's stopping rule -- an
+            // iteration lowering the energy by less than 1e-4 of it -- is applied across the
+            // rebuilds. box_scaffold refuses only an outline that is not simple, which the
+            // scaffold itself prevents.
+            const size_t n_vars = x.size(), n_patch = elements.size();
+            std::vector<Eigen::Vector2d> polygon(n), corners;
+            std::vector<std::array<int, 3>> tris;
+            const auto var = [&](const int i) {
+                return i < int(n) ? i : int(n_vars) + (i - int(n));
+            };
+            for (int it = 0; it < 10; ++it) {
+                x.resize(n_vars);
+                fixed.resize(n_vars);
+                elements.resize(n_patch);
+                Eigen::Vector2d lo = x[0], hi = x[0];
+                for (const Eigen::Vector2d& p : x) {
+                    lo = lo.cwiseMin(p);
+                    hi = hi.cwiseMax(p);
+                }
+                const Eigen::Vector2d mid = (lo + hi) / 2, half = 1.5 * (hi - lo);
+                std::copy(x.begin(), x.begin() + long(n), polygon.begin());
+                if (!box_scaffold(polygon, mid - half, mid + half, corners, tris)) break;
+                for (const Eigen::Vector2d& c : corners) {
+                    x.push_back(c);
+                    fixed.push_back(1);
+                }
+                for (const auto& t : tris) {
+                    const std::array<int, 3> v = {{var(t[0]), var(t[1]), var(t[2])}};
+                    elements.push_back(slim_element(v, x[v[0]], x[v[1]], x[v[2]], scaffold_weight));
+                }
+                const double before = slim_energy(x, elements);
+                const double after = slim(x, fixed, elements, 1);
+                if (!(before - after > 1e-4 * before)) break;
             }
-            for (auto& [v, uv] : uv_a) {
-                if (const auto it = var_a.find(v); it != var_a.end()) uv = x[it->second];
-            }
-        };
+        }
+        for (auto& [v, uv] : uv_b) {
+            if (const auto it = var_b.find(v); it != var_b.end()) uv = x[it->second];
+        }
+        for (auto& [v, uv] : uv_a) {
+            if (const auto it = var_a.find(v); it != var_a.end()) uv = x[it->second];
+        }
+    };
 
     // The cell of a joint embedding of `before` and `after` in one planar domain, whose outline
     // both share: `slots`, in the order of before's outline, each a corner of `before` and one
@@ -970,7 +1011,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const Smoothing smoothi
                 std::vector<Cell> cells;
                 const bool mapped = m.vid < r.vertex_alive().size() && r.vertex_alive()[m.vid] &&
                                     r.vertices()[m.vid] != m.pos &&
-                                    smoothing == Smoothing::flatten &&
+                                    options.smoothing == Smoothing::flatten &&
                                     move_cells(m.vid, m.pos, cells);
                 r.apply(Edit{EditKind::move_vertices, {}, {}, {m}});
                 if (!mapped) {

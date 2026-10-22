@@ -291,9 +291,26 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - **Collapses and swaps:** a joint flattening of the patch before and after on a shared
     outline (Liu et al. 2021).
     - Tutte embeddings on the unit circle start it, the outline spaced by 3D length.
-    - SLIM (`slim2d.cpp`, Rabinovich et al. 2017) with a scaffold shared by both patches
-      (Jiang et al. 2017) lowers the distortion. Its line search keeps every triangle
-      positive by exact `orient2d`.
+    - SLIM (`slim2d.cpp`, Rabinovich et al. 2017) lowers the distortion of both patches at
+      once. They share the outline's vertices as unknowns, so the boundaries match by
+      construction. Its line search keeps every triangle positive by exact `orient2d`.
+    - A scaffold (Jiang et al. 2017) keeps the outline a simple polygon (`Scaffold`):
+      - `box`, the default, as in the paper. The region between the outline and a box three
+        times the patch, triangulated anew before every SLIM iteration, each triangle resting
+        in its current shape. `box_scaffold` (`scaffold2d.cpp`) is a constrained Delaunay
+        triangulation from VolumeRemesher's 2D arrangement (`vr2d::build_arrangement`: Delaunay,
+        then the outline's edges forced in by flips). Nothing crosses, so it adds only corners;
+        the outside is a flood fill from them that never crosses the outline.
+      - `ring`: one band of triangles out to a fixed copy of the outline, resting in its first
+        shape. It pulls the outline back and caps how far it stretches; renders of local maps
+        made that plain (a long thin patch: distortion 44 with the ring, 4.0 with the box).
+      - Measured 2026-10-22, box against ring:
+        - the map takes about 2.4 times as long to build (101168: 21.6 against 9.0 s);
+        - local maps with energy above 8 (twice an isometry's) drop by more than half;
+        - mean drift is 25% lower on 101168;
+        - texture symmetric Dirichlet is 8–22% lower.
+      - Do not use `utils::embed_segments` for this. It meshes a background grid and computes
+        rational coordinates, and was 100 times slower.
     - Feature curves split a patch into sides, each flattened on its own.
     - Curves that end inside a patch are cut into wedges.
     - Where a vertex is removed on the outline, the after face is split virtually, so both
