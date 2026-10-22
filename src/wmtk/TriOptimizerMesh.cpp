@@ -4,6 +4,8 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/envelope/KNN.hpp>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -642,6 +644,92 @@ bool TriOptimizerMesh::is_edge_on_surface(const Tuple& loc) const
     const size_t eid = loc.eid(*this);
     return m_edge_attribute[eid].m_is_surface_fs;
 }
+void TriOptimizerMesh::record_curve_history(
+    const std::string& metadata,
+    const CurveSources& sources)
+{
+    m_recorded_curves = start_curve_history([this](size_t v) {
+        const Vector2d& p = m_vertex_attribute.at(v).m_posf;
+        return Eigen::Vector3d(p[0], p[1], 0);
+    });
+    m_recorded_curves->history().metadata = metadata;
+    m_recorded_curve_sources.clear();
+    if (sources.empty()) return;
+    const auto& h = m_recorded_curves->history();
+    const std::vector<uint64_t> mesh_of = m_recorded_curves->mesh_vertex_ids();
+    m_recorded_curve_sources.resize(h.faces.size());
+    size_t missing = 0;
+    for (size_t f = 0; f < h.faces.size(); ++f) {
+        const size_t a = size_t(std::min(mesh_of[h.faces[f][0]], mesh_of[h.faces[f][1]]));
+        const size_t b = size_t(std::max(mesh_of[h.faces[f][0]], mesh_of[h.faces[f][1]]));
+        const auto it = sources.find({{a, b}});
+        if (it == sources.end()) {
+            ++missing;
+            continue;
+        }
+        m_recorded_curve_sources[f] = it->second;
+    }
+    if (missing > 0) {
+        logger().warn("curve history: {} tracked edges lie on no input segment known", missing);
+    }
+}
+
+void TriOptimizerMesh::save_curve_history(
+    const std::string& path,
+    const history::CurveHistory* input)
+{
+    if (!m_recorded_curves) return;
+    if (const size_t drift = resync_curve_history(tracked_edges())) {
+        logger().warn("curve history: {} tracked edges changed outside the operations", drift);
+    }
+    std::vector<std::array<size_t, 1>> points;
+    for (const size_t v : tracked_feature_points()) points.push_back({{v}});
+    if (m_recorded_curves->features() != points) {
+        logger().warn(
+            "curve history: the feature points the history carried ({}) are not the mesh's ({})",
+            m_recorded_curves->features().size(),
+            points.size());
+    }
+    stop_curve_history();
+    m_recorded_curves->history().output_vertex_ids = m_recorded_curves->mesh_vertex_ids();
+    const auto st = m_recorded_curves->stats();
+    logger().info(
+        "curve history: {} edits -- {} splits, {} collapses ({} welding two curve vertices), {} "
+        "moves; {} changes recorded as they are -- saved to {}",
+        m_recorded_curves->history().edits.size(),
+        st.split,
+        st.collapse,
+        st.weld,
+        st.move,
+        st.replaced,
+        path);
+    if (st.unknown > 0) logger().error("curve history: lost track of {} segments", st.unknown);
+    if (input != nullptr) {
+        history::CurveHistory chain = *input;
+        history::append_embedded(chain, m_recorded_curves->history(), m_recorded_curve_sources);
+        chain.metadata = m_recorded_curves->history().metadata;
+        chain.output_vertex_ids = m_recorded_curves->history().output_vertex_ids;
+        chain.save(path);
+    } else {
+        m_recorded_curves->history().save(path);
+    }
+    m_recorded_curves.reset();
+    m_recorded_curve_sources.clear();
+}
+
+std::vector<size_t> TriOptimizerMesh::tracked_feature_points() const
+{
+    std::vector<size_t> out;
+    if (!m_track_feature_points) return out;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (m_feature_point_attribute.at(vid).m_feature_point_id != NO_FEATURE_POINT) {
+            out.push_back(vid);
+        }
+    }
+    return out;
+}
+
 bool TriOptimizerMesh::is_edge_on_surface(const std::array<size_t, 2>& vids) const
 {
     if (!m_vertex_attribute.at(vids[0]).m_is_on_surface ||

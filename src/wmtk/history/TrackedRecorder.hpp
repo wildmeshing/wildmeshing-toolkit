@@ -59,7 +59,8 @@ public:
         Orient orient,
         const std::vector<MeshFeature>& features = {});
 
-    /// The features as the edits have carried them, by mesh vertex ids, each sorted, sorted.
+    /// The features as the edits have carried them, by mesh vertex ids, each sorted, sorted;
+    /// those with a vertex the mesh no longer has left out.
     std::vector<MeshFeature> features() const;
     /// The mesh vertex of every vertex of the complex, kNoVertex for one with none (gone); index
     /// with the ids of the history's last state (History::output_vertex_ids).

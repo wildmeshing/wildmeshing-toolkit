@@ -4,6 +4,18 @@
 
 namespace wmtk::io {
 
+/// What cleaning an edge mesh changed: the vertices and segments as the file holds them (a
+/// polyline's consecutive pairs, in order), the vertex of the result each vertex became, and
+/// the segment each segment became -- the one it duplicates, for a duplicate -- or -1 for one
+/// left with a single vertex.
+struct EdgeReadProvenance
+{
+    MatrixXd V;
+    MatrixXi E;
+    std::vector<int> vertex_map;
+    std::vector<int> edge_map;
+};
+
 /**
  * @brief Reads an edge mesh from a file.
  *
@@ -20,12 +32,14 @@ namespace wmtk::io {
  * @param E Output edge indices. Size is #E by 2.
  * @param tol_rel Merge tolerance relative to the bounding-box diagonal. Negative disables.
  * @param tol_abs Absolute merge tolerance. Takes precedence over tol_rel when non-negative.
+ * @param provenance If not null, receives the mesh as the file holds it and where it went.
  */
 void read_edge_mesh(
     const std::string& path,
     MatrixXd& V,
     MatrixXi& E,
     double tol_rel = -1,
-    double tol_abs = -1);
+    double tol_abs = -1,
+    EdgeReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::io

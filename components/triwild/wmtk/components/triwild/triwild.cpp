@@ -9,6 +9,8 @@
 #include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/EnvelopeBudget.hpp>
@@ -244,6 +246,12 @@ void triwild(nlohmann::json json_params)
 
     const std::string filter_option = json_params["filter"];
 
+    // Recording the tracked curves: from the input files as read, through the weld, the
+    // simplification and the arrangement, to the output.
+    const std::string history_output = json_params["history_output"];
+    const bool record_history = !history_output.empty();
+    io::EdgeReadProvenance read; // the files as read, then where they went
+
     // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
     // does not have to parse every file a second time; V_in/E_in is their union, which is
     // what gets simplified and arranged.
@@ -257,7 +265,14 @@ void triwild(nlohmann::json json_params)
     // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
     const double remove_duplicate_eps =
         params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
-    wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
+    wmtk::utils::read_input_curves(
+        input_paths,
+        remove_duplicate_eps,
+        V_in,
+        E_in,
+        Vs,
+        Es,
+        record_history ? &read : nullptr);
 
     // Input point files: every vertex is a feature point, appended to V_in as an isolated
     // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
@@ -271,7 +286,14 @@ void triwild(nlohmann::json json_params)
         for (const std::string& path : point_paths) {
             MatrixXd Vp;
             MatrixXi Ep;
-            io::read_edge_mesh(path, Vp, Ep, remove_duplicate_eps);
+            io::EdgeReadProvenance read_points;
+            io::read_edge_mesh(
+                path,
+                Vp,
+                Ep,
+                remove_duplicate_eps,
+                -1,
+                record_history ? &read_points : nullptr);
             if (Ep.rows() > 0) {
                 logger().warn(
                     "input_points file {} has {} edges; only its {} vertices are used",
@@ -283,6 +305,15 @@ void triwild(nlohmann::json json_params)
             const int base = V_in.rows();
             V_in.conservativeResize(base + Vp.rows(), 2);
             V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
+            if (record_history) {
+                // The points after the curves, as the files hold them; their edges are not input.
+                const Eigen::Index raw = read.V.rows();
+                read.V.conservativeResize(raw + read_points.V.rows(), 2);
+                read.V.bottomRows(read_points.V.rows()) = read_points.V.leftCols(2);
+                for (const int v : read_points.vertex_map) {
+                    read.vertex_map.push_back(v < 0 ? -1 : base + v);
+                }
+            }
         }
     }
 
@@ -370,6 +401,8 @@ void triwild(nlohmann::json json_params)
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
+    std::vector<history::Edit> collapses;
+    std::vector<int> surviving_vertices;
     const bool skip_simplify = json_params["skip_simplify"];
     if (skip_simplify) {
         logger().info("skip simplification");
@@ -380,7 +413,10 @@ void triwild(nlohmann::json json_params)
             V_simp,
             E_simp,
             simplify_envelope,
-            simplify_use_link_condition);
+            simplify_use_link_condition,
+            nullptr,
+            record_history ? &collapses : nullptr,
+            record_history ? &surviving_vertices : nullptr);
         logger().info(
             "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed). Link "
             "condition {}.",
@@ -419,6 +455,7 @@ void triwild(nlohmann::json json_params)
     // The input's direction on each constraint edge, so the tracked curves can be oriented as
     // the input was (filter "tracked"). See SurfaceTagAttributes::m_orientation.
     std::vector<int> E_orientation;
+    std::vector<std::vector<int>> E_sources; // the simplified segments each of E lies on
     wmtk::utils::embed_segments(
         V_simp,
         E_simp,
@@ -426,7 +463,7 @@ void triwild(nlohmann::json json_params)
         V_rational,
         F,
         E,
-        nullptr,
+        record_history ? &E_sources : nullptr,
         &E_orientation,
         free_points.empty() ? nullptr : &point_map);
 
@@ -542,6 +579,26 @@ void triwild(nlohmann::json json_params)
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, &E_orientation, free_point_vids);
+    history::CurveHistory input_history;
+    if (record_history) {
+        input_history = history::curves_from_input(
+            read,
+            V_in,
+            E_in,
+            collapses,
+            V_simp,
+            E_simp,
+            surviving_vertices);
+        // The mesh's vertices are the arrangement's rows, so E names its tracked edges.
+        TriWildMesh::CurveSources sources;
+        for (Eigen::Index i = 0; i < E.rows(); ++i) {
+            const size_t a = size_t(std::min(E(i, 0), E(i, 1)));
+            const size_t b = size_t(std::max(E(i, 0), E(i, 1)));
+            auto& s = sources[{{a, b}}];
+            for (const int e : E_sources[i]) s.push_back(uint64_t(e));
+        }
+        mesh.record_curve_history(json_params.dump(), sources);
+    }
     // The arrangement now lives in `mesh`. These are function locals, so without this they --
     // the exact coordinates above all -- would be held through the optimization, which is where
     // the run peaks.
@@ -876,6 +933,8 @@ void triwild(nlohmann::json json_params)
         mesh.write_vtu(output_path);
     }
     mesh.write_msh_groups(output_path + ".msh");
+    // After writing, which numbers the vertices as the history's output ids do.
+    mesh.save_curve_history(history_output, record_history ? &input_history : nullptr);
 
     // The tracked curves and feature anchors, as an edge mesh with point records -- the 2D
     // counterpart of tetwild's _features.obj, from the same pre-filter collections. Only

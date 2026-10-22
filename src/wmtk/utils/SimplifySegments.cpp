@@ -28,12 +28,20 @@ size_t simplify_segments(
     MatrixXi& E,
     const Envelope& envelope,
     bool use_link_condition,
-    std::vector<int>* surviving_edges)
+    std::vector<int>* surviving_edges,
+    std::vector<history::Edit>* collapses,
+    std::vector<int>* surviving_vertices)
 {
     const int nv = static_cast<int>(V.rows());
     const int ne = static_cast<int>(E.rows());
     if (surviving_edges != nullptr) {
         surviving_edges->clear();
+        for (int e = 0; e < ne; ++e) surviving_edges->push_back(e);
+    }
+    if (collapses != nullptr) collapses->clear();
+    if (surviving_vertices != nullptr) {
+        surviving_vertices->clear();
+        for (int v = 0; v < nv; ++v) surviving_vertices->push_back(v);
     }
     if (ne == 0 || nv == 0) {
         return 0;
@@ -205,6 +213,15 @@ size_t simplify_segments(
             present.insert(key_of(seg[f][0], seg[f][1]));
             v2e[keep].push_back(f);
         }
+        if (collapses != nullptr) {
+            history::Edit h{
+                history::EditKind::collapse_edge,
+                {uint64_t(drop), uint64_t(keep)},
+                {},
+                {}};
+            if (m != pos[keep]) h.moves.push_back({uint64_t(keep), Eigen::Vector3d(m[0], m[1], 0)});
+            collapses->push_back(std::move(h));
+        }
         pos[keep] = m;
         edge_alive[e] = 0;
         vert_alive[drop] = 0;
@@ -253,9 +270,11 @@ size_t simplify_segments(
     // the arrangement still triangulates.
     std::vector<int> remap(nv, -1);
     int nv_new = 0;
+    if (surviving_vertices != nullptr) surviving_vertices->clear();
     for (int v = 0; v < nv; ++v) {
         if (vert_alive[v]) {
             remap[v] = nv_new++;
+            if (surviving_vertices != nullptr) surviving_vertices->push_back(v);
         }
     }
     MatrixXd V_new(nv_new, 2);
@@ -270,6 +289,7 @@ size_t simplify_segments(
     }
     MatrixXi E_new(ne_new, 2);
     if (surviving_edges != nullptr) {
+        surviving_edges->clear();
         surviving_edges->reserve(ne_new);
     }
     int idx = 0;
