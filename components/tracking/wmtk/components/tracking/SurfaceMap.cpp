@@ -477,7 +477,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             for (int k = 0; k < 3; ++k) {
                 uint64_t a = t[k], b = t[(k + 1) % 3];
                 if (a > b) std::swap(a, b);
-                if (r.is_feature(a, b)) fs.insert({{a, b}});
+                if (r.is_feature({{a, b}})) fs.insert({{a, b}});
             }
         }
         return fs;
@@ -695,7 +695,8 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             }
         }
         for (const auto& [edge, fs] : edge_faces) {
-            if (fs.size() == 2 && !r.is_feature(edge[0], edge[1])) root[find(fs[0])] = find(fs[1]);
+            if (fs.size() == 2 && !r.is_feature({{edge[0], edge[1]}}))
+                root[find(fs[0])] = find(fs[1]);
         }
         std::map<size_t, std::vector<size_t>> groups;
         for (size_t i = 0; i < ts.size(); ++i) groups[find(i)].push_back(i);
@@ -1037,7 +1038,7 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     m_out_vertices = r.vertices();
     m_out_faces = r.faces();
     m_out_face_alive = r.face_alive();
-    m_out_features = r.feature_edges();
+    m_out_features = r.features();
 }
 
 std::vector<SurfacePoint> SurfaceMap::to_input(std::vector<SurfacePoint> points) const

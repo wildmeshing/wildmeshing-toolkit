@@ -4,7 +4,7 @@
 #include <wmtk/components/tracking/SurfaceMap.hpp>
 #include <wmtk/components/tracking/surface_io.hpp>
 #include <wmtk/components/tracking/transfer.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <igl/readOBJ.h>

@@ -1,5 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
-#include <wmtk/history/TrackedSurface.hpp>
+#include <wmtk/history/TrackedRecorder.hpp>
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/GeoUtils.h>
@@ -921,10 +921,10 @@ void TetOptimizerMesh::save_surface_history(
     if (const size_t drift = resync_surface_history()) {
         logger().warn("surface history: {} tracked faces changed outside the operations", drift);
     }
-    if (m_recorded_surface->feature_edges() != tracked_feature_edges()) {
+    if (m_recorded_surface->features() != tracked_feature_edges()) {
         logger().warn(
             "surface history: the feature edges the history carried ({}) are not the mesh's ({})",
-            m_recorded_surface->feature_edges().size(),
+            m_recorded_surface->features().size(),
             tracked_feature_edges().size());
     }
     stop_surface_history();

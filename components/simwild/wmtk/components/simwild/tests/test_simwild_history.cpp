@@ -3,7 +3,7 @@
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/tracking/SurfaceMap.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <algorithm>

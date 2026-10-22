@@ -4,8 +4,8 @@
 #include <wmtk/components/tetwild/TetWildMesh.h>
 #include <wmtk/components/tetwild/tetwild.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include <catch2/catch_test_macros.hpp>

@@ -28,10 +28,10 @@ SurfaceHistory from_input(
         const int w = read.vertex_map[r];
         if (w >= 0 && size_t(w) < raw_of.size() && raw_of[w] == kNoVertex) raw_of[w] = r;
     }
-    for (const auto& e : recorded.feature_edges) {
+    for (const auto& e : recorded.features) {
         std::array<uint64_t, 2> raw = {{raw_of[e[0]], raw_of[e[1]]}};
         if (raw[0] > raw[1]) std::swap(raw[0], raw[1]);
-        chain.feature_edges.push_back(raw);
+        chain.features.push_back(raw);
     }
 
     Edit weld{EditKind::relabel, {}, {}, {}};
