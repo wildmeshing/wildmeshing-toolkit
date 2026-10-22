@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CurveMap.hpp"
 #include "SurfaceMap.hpp"
 
 #include <wmtk/history/History.hpp>
@@ -81,6 +82,86 @@ public:
 private:
     SurfaceMap m_map;
     /// The output's id of each vertex of the history's last state; empty for a surface output.
+    std::vector<uint64_t> m_output_ids;
+    /// Output vertex -> vertex of the last state.
+    std::map<uint64_t, uint64_t> m_history_vertex;
+};
+
+/// A point on a curve application's input: a segment of its input curve files -- the segments of
+/// all of them, in order, a polyline's consecutive vertex pairs as the files hold them -- and
+/// barycentric coordinates with respect to that segment's ends in file order.
+struct InputCurvePoint
+{
+    uint64_t segment = kNoId;
+    Eigen::Vector2d bary = Eigen::Vector2d::Constant(0.5);
+};
+
+/**
+ * @brief A point on an application's output curves.
+ *
+ * An application whose output is the curves themselves would name it by a segment of its output
+ * file. One whose tracked curves are edges of a triangle mesh (triwild), which are no element of
+ * the file, names it by two vertices of the mesh -- the ends of a tracked edge -- and barycentric
+ * coordinates in their order.
+ */
+struct OutputCurvePoint
+{
+    /// Curve outputs: the output segment.
+    uint64_t segment = kNoId;
+    /// Triangle mesh outputs: the output's vertices at the ends of the tracked edge holding it.
+    std::array<uint64_t, 2> vertices = {{kNoId, kNoId}};
+    Eigen::Vector2d bary = Eigen::Vector2d::Constant(0.5);
+};
+
+/// A feature point of an application's input -- an end or a junction of its curves, or a point of
+/// its point files -- by vertex of its files (the curve files', in order, then the point
+/// files'), and the output vertex it ended at, kNoId if none.
+struct FeaturePoint
+{
+    uint64_t input_vertex = kNoId;
+    uint64_t output_vertex = kNoId;
+};
+
+/**
+ * @brief The map between a curve application's input curves and its output's, read from the
+ * tracking file the application wrote (its history_output option), in the terms its files use:
+ * Tracking's counterpart for curves (triwild).
+ *
+ * Built from the history alone; see CurveMap for how. A point that cannot be mapped comes back
+ * with no segment and no vertices (kNoId), and map().map_warnings() counts it.
+ */
+class CurveTracking
+{
+public:
+    explicit CurveTracking(const history::CurveHistory& h, const CurveMapOptions& options = {});
+    /// The tracking file an application wrote.
+    static CurveTracking load(const std::string& path, const CurveMapOptions& options = {});
+
+    /// Whether output points are named by vertex pairs (a triangle mesh output) rather than
+    /// segments.
+    bool output_by_vertices() const { return !m_output_ids.empty(); }
+
+    /// Input points to the output.
+    std::vector<OutputCurvePoint> to_output(const std::vector<InputCurvePoint>& points) const;
+    /// Output points to the input, the inverse map. A point named by vertices may list them in
+    /// either order, its barycentric coordinates following them.
+    std::vector<InputCurvePoint> to_input(const std::vector<OutputCurvePoint>& points) const;
+
+    /// The output's tracked curves: for an output by vertices, its tracked edges by the output's
+    /// vertex ids, the pairs an OutputCurvePoint may name; otherwise its segments, by index.
+    std::vector<std::array<uint64_t, 2>> output_segments() const;
+    /// The segments of the input files, in order, as the history holds them.
+    const std::vector<std::array<uint64_t, 2>>& input_segments() const
+    {
+        return m_map.input_segments();
+    }
+    /// The input's feature points and where each ended (see FeaturePoint).
+    std::vector<FeaturePoint> feature_points() const;
+    const CurveMap& map() const { return m_map; }
+
+private:
+    CurveMap m_map;
+    /// The output's id of each vertex of the history's last state; empty for a curve output.
     std::vector<uint64_t> m_output_ids;
     /// Output vertex -> vertex of the last state.
     std::map<uint64_t, uint64_t> m_history_vertex;
