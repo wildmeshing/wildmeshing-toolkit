@@ -517,6 +517,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
+    m_swap_folds_before.local() = -1; // an interior swap changes no offset face
     if (!swap_capture_tag(tids)) return false;
     // The energy rule's before-half (see swap_after_cells()): the sum over the ring. A cell's
     // energy is its own corners' and label's, so no cell outside the ring changes energy.
@@ -560,6 +561,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
         sides.saw_case = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
+    m_swap_folds_before.local() = -1; // set below for a flip of the offset surface
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
     // the ring of a surface flip always spans band and background, which is what makes its faces
@@ -605,6 +607,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // followed through the rest of the swap by [flip funnel]. It is judged by the energy rule like
     // every other swap (swap_after_cells()); no rule of its own.
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
+        // growth_mode "individual_op_reject": the folded faces among the two the flip replaces
+        // (their band cells are in the ring), for swap_after_cells().
+        if (fold_reject_active()) {
+            m_swap_folds_before.local() =
+                int(face_folded_in(a, b, c, tids)) + int(face_folded_in(a, b, d, tids));
+        }
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
@@ -775,6 +783,24 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     // vertices (a background cell in every ring) and held vertices (an input cell) never have one.
     const bool cancels_before = !projected && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tet_energy_sum(ring, false) : 0.;
+    // growth_mode "individual_op_reject": a front vertex held on a surface (the domain wall, say)
+    // moves its offset faces too; the move may not raise the folded ones among them.
+    int folds_before = -1;
+    if (fold_reject_active() && m_vertex_extra[vid].m_is_on_offset) {
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(vid, f);
+        folds_before = int(f.size());
+    }
+    const auto raises_folds = [&]() {
+        if (folds_before < 0) return false;
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(vid, f);
+        if (int(f.size()) <= folds_before) return false;
+        ++m_fold_reject_smooth;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return true;
+    };
     if (!optimization::smooth_vertex_3d(
             *this,
             t,
@@ -784,6 +810,7 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
+    if (raises_folds()) return false;
     if (projected) {
         count_damped_move(vid, x0, opts.max_step);
         return true;
@@ -1129,6 +1156,18 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
     close_labels(tids);
+    // growth_mode "individual_op_reject": the flip may not raise the folded faces among the two it
+    // changes -- (a,b,c), (a,b,d) out, (a,c,d), (b,c,d) in, whose band cells are new cells now.
+    // Counted as app_sag_raised, the engine's name for a flip that makes the surface worse.
+    if (const int before = m_swap_folds_before.local(); before >= 0) {
+        const auto& q = sides.abcd;
+        const int after = int(face_folded_in(q[0], q[2], q[3], tids)) +
+                          int(face_folded_in(q[1], q[2], q[3], tids));
+        if (after > before) {
+            ++m_fold_reject_swap;
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+    }
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
@@ -1184,6 +1223,20 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
         return collapse_reject(CollapseReject::app_substructure_link);
+    }
+    // growth_mode "individual_op_reject": the folded faces through the two ends, for
+    // collapse_after_connectivity(); -1 (no rule) when neither end is on the front.
+    {
+        const auto& cc = collapse_cache.local();
+        int& folds = m_collapse_folds_before.local();
+        folds = -1;
+        if (fold_reject_active() &&
+            (m_vertex_extra[cc.v1_id].m_is_on_offset || m_vertex_extra[cc.v2_id].m_is_on_offset)) {
+            std::set<std::array<size_t, 3>> f;
+            folded_front_faces_at(cc.v1_id, f);
+            folded_front_faces_at(cc.v2_id, f);
+            folds = int(f.size());
+        }
     }
     // The energy rule's before-half is taken in collapse_before_vertex().
     return true;
@@ -1323,6 +1376,17 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
+    // growth_mode "individual_op_reject": the faces through the survivor are every offset face
+    // the collapse changed (it moves no vertex); refused, the base counts after_connectivity and
+    // rolls back, as for the energy rule below.
+    if (const int before = m_collapse_folds_before.local(); before >= 0) {
+        std::set<std::array<size_t, 3>> f;
+        folded_front_faces_at(v2_id, f);
+        if (int(f.size()) > before) {
+            ++m_fold_reject_collapse;
+            return false;
+        }
+    }
     // THE ENERGY RULE for a collapse (see tet_energy()): the sum of tet_energy() over the cells
     // the collapse changed -- the survivor's ring less v2's old cells outside v1's ring, which
     // keep their slots, corners and labels -- may not exceed the sum over v1's old ring
@@ -3931,7 +3995,8 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
     return result;
 }
 
-bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+template <typename F>
+bool TopoOffsetTetMesh::for_each_live_offset_face_at(const size_t vid, F&& fn) const
 {
     // Reads vid's own tet list and the tets in it, nothing else. Every face through vid is shared
     // by at most two tets, and both contain vid, so both are in vid's list: pairing the faces
@@ -3971,13 +4036,56 @@ bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
         while (j < sides.size() && sides[j].face == sides[i].face) ++j;
         const size_t ta = sides[i].tid;
         if (j - i == 1) {
-            if (cell_is_offset_band(ta)) return true; // band face on the domain boundary
+            // a band face on the domain boundary
+            if (cell_is_offset_band(ta) && fn(sides[i].face, ta)) return true;
         } else {
             const size_t tb = sides[i + 1].tid;
             const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
-            if (a != b && !cell_is_input_complex(a ? tb : ta)) return true;
+            if (a != b && !cell_is_input_complex(a ? tb : ta) && fn(sides[i].face, a ? ta : tb)) {
+                return true;
+            }
         }
         i = j;
+    }
+    return false;
+}
+
+bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+{
+    // See for_each_live_offset_face_at(): any face at all.
+    return for_each_live_offset_face_at(vid, [](const std::array<size_t, 3>&, size_t) {
+        return true;
+    });
+}
+
+void TopoOffsetTetMesh::folded_front_faces_at(
+    const size_t vid,
+    std::set<std::array<size_t, 3>>& out) const
+{
+    // See the declaration.
+    for_each_live_offset_face_at(vid, [&](const std::array<size_t, 3>& f, const size_t band) {
+        if (front_face_field_angle_in(f[0], f[1], f[2], band) > m_offset_params.foldover_angle) {
+            out.insert(f);
+        }
+        return false;
+    });
+}
+
+bool TopoOffsetTetMesh::face_folded_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const std::vector<size_t>& cells) const
+{
+    // See the declaration.
+    for (const size_t t : cells) {
+        if (!cell_is_offset_band(t)) continue;
+        const auto tv = oriented_tet_vids(t);
+        const auto has = [&](const size_t v) {
+            return std::find(tv.begin(), tv.end(), v) != tv.end();
+        };
+        if (!has(a) || !has(b) || !has(c)) continue;
+        return front_face_field_angle_in(a, b, c, t) > m_offset_params.foldover_angle;
     }
     return false;
 }
@@ -4036,8 +4144,67 @@ void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
         invalid);
 }
 
+bool TopoOffsetTetMesh::front_face_out_normal(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    Vector3d& n) const
+{
+    // See the declaration.
+    const int64_t bc = front_face_band_cell(a, b, c);
+    return bc >= 0 && front_face_out_normal_in(a, b, c, size_t(bc), n);
+}
+
+bool TopoOffsetTetMesh::front_face_out_normal_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t band_tid,
+    Vector3d& n) const
+{
+    // See the declaration.
+    const Vector3d& pa = m_vertex_attribute[a].m_posf;
+    const Vector3d& pb = m_vertex_attribute[b].m_posf;
+    const Vector3d& pc = m_vertex_attribute[c].m_posf;
+    n = (pb - pa).cross(pc - pa);
+    if (!(n.norm() > 0.)) return false;
+    for (const size_t v : oriented_tet_vids(band_tid)) {
+        if (v == a || v == b || v == c) continue;
+        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
+    }
+    return true;
+}
+
 double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b, const size_t c)
     const
+{
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
+    Vector3d n;
+    if (!front_face_out_normal(a, b, c, n)) return nan;
+    return front_face_angle_to_field(a, b, c, n);
+}
+
+double TopoOffsetTetMesh::front_face_field_angle_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t band_tid) const
+{
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
+    Vector3d n;
+    if (!front_face_out_normal_in(a, b, c, band_tid, n)) return nan;
+    return front_face_angle_to_field(a, b, c, n);
+}
+
+double TopoOffsetTetMesh::front_face_angle_to_field(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const Vector3d& n) const
 {
     // See the declaration.
     const double nan = std::numeric_limits<double>::quiet_NaN();
@@ -4045,14 +4212,6 @@ double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b,
     const Vector3d& pa = m_vertex_attribute[a].m_posf;
     const Vector3d& pb = m_vertex_attribute[b].m_posf;
     const Vector3d& pc = m_vertex_attribute[c].m_posf;
-    Vector3d n = (pb - pa).cross(pc - pa);
-    if (!(n.norm() > 0.)) return nan;
-    const int64_t bc = front_face_band_cell(a, b, c);
-    if (bc < 0) return nan;
-    for (const size_t v : oriented_tet_vids(size_t(bc))) {
-        if (v == a || v == b || v == c) continue;
-        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
-    }
     const Vector3d x = (pa + pb + pc) / 3.;
     const Envelope& env = *m_input_complex_envelope;
     const int64_t prim = nearest_primitive(env, m_input_complex_pad, x);
@@ -4062,6 +4221,29 @@ double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b,
     if (!(g.norm() > 0.)) return nan;
     // atan2 of the cross and dot products: accurate at every angle, unlike acos near 0 and 180.
     return std::atan2(n.cross(g).norm(), n.dot(g)) * 180. / M_PI;
+}
+
+TopoOffsetTetMesh::FoldCensus TopoOffsetTetMesh::fold_census() const
+{
+    // See the declaration.
+    FoldCensus c;
+    for (const auto& f : offset_surface_faces()) {
+        ++c.n_faces;
+        const double ang = front_face_field_angle(f[0], f[1], f[2]);
+        if (!std::isfinite(ang)) {
+            ++c.n_unmeasured;
+            continue;
+        }
+        if (!(ang > m_offset_params.foldover_angle)) continue;
+        ++c.n_fold;
+        if (ang > c.worst) {
+            c.worst = ang;
+            c.worst_at = (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
+                          m_vertex_attribute[f[2]].m_posf) /
+                         3.;
+        }
+    }
+    return c;
 }
 
 const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
@@ -4330,7 +4512,9 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
-    const std::string& label)
+    const std::string& label,
+    const int max_turns,
+    const bool fold_free)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
     // with the front placed by the offset objective inside the smoothing passes. No envelope
@@ -4358,7 +4542,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         "to an envelope; a TetWild pass does (eps envelope_size {:.6g})",
         m_offset_params.envelope_size);
     (void)rounds;
-    const int budget = std::max(1, m_offset_params.max_rounds);
+    // max_turns > 0: growth_mode "smart"'s attempt (smart_growth_attempts) in place of max_rounds.
+    const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
+    const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
     // What mesh_improvement() adds and is left out here on purpose is its stall response, which
     // refines around the worst elements: a moving front stretches cells by design.
@@ -4433,6 +4619,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
+            const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
+                      fold_m0 = m_fold_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             // [energy step] lines: the group's baseline here, then one per smoothing pass from
@@ -4462,6 +4650,17 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
                     m_volume_reject_split.load() - vol_p0);
+                if (fold_reject_active()) {
+                    logger().info(
+                        "\t[op reject] turn {} {} group: refused for raising the folded offset "
+                        "faces (growth_mode individual_op_reject): {} collapses, {} offset-surface "
+                        "flips, {} smoothing moves",
+                        it + 1,
+                        group_names[gi],
+                        m_fold_reject_collapse.load() - fold_c0,
+                        m_fold_reject_swap.load() - fold_s0,
+                        m_fold_reject_smooth.load() - fold_m0);
+                }
                 if (m_plastic_active) {
                     logger().info(
                         "\t[plastic tie] turn {} {} group: {} swaps refused outright, {} collapses "
@@ -4705,6 +4904,28 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
         const bool resolved = settle ? settle_exit : ec.converged();
+        // fold_free (growth_mode "smart"): a converged loop with a folded offset face has failed,
+        // judged here, before the verdict and the final TetWild pass, which it does not get.
+        if (resolved && fold_free) {
+            const FoldCensus fc = fold_census();
+            if (fc.n_fold > 0) {
+                logger().warn(
+                    "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
+                    "offset faces are folded (more than foldover_angle {} degrees from grad d; the "
+                    "worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4})): not fold-free",
+                    label,
+                    m_offset_params.target_distance,
+                    it + 1,
+                    fc.n_fold,
+                    fc.n_faces,
+                    m_offset_params.foldover_angle,
+                    fc.worst,
+                    fc.worst_at[0],
+                    fc.worst_at[1],
+                    fc.worst_at[2]);
+                return false;
+            }
+        }
         if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
@@ -4795,13 +5016,14 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         }
     }
     logger().warn(
-        "The loop did not converge in {} turns (max_rounds){}",
+        "The loop did not converge in {} turns ({}){}",
         budget,
-        final_stage ? std::string()
-                    : fmt::format(
-                          " -- {} at target_distance {:.6g}",
-                          label,
-                          m_offset_params.target_distance));
+        budget_name,
+        label.empty() ? std::string()
+                      : fmt::format(
+                            " -- {} at target_distance {:.6g}",
+                            label,
+                            m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
     return false;
 }
@@ -4858,7 +5080,7 @@ void TopoOffsetTetMesh::optimize_construction_pass()
             n_reset);
     }
     // The offset surface's envelope in this pass only: half the distance the march traced it to
-    // (d_0 under EXPERIMENTAL_incremental_growth, else target_distance); every other tracked
+    // (d_0 when growth_mode applies, else target_distance); every other tracked
     // surface keeps m_envelope (envelope_size). Nothing marched: envelope_size for it too.
     m_construction_envelope_eps = m_construction_distance > 0. ? 0.5 * m_construction_distance : 0.;
     const double amips0 = std::get<0>(optimization_quality_stats());
@@ -4912,6 +5134,51 @@ void TopoOffsetTetMesh::optimize_construction_pass()
         std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 }
 
+TopoOffsetTetMesh::MeshSnapshot TopoOffsetTetMesh::take_snapshot()
+{
+    // See the declaration.
+    if (m_track_feature_edges || m_track_feature_points) {
+        log_and_throw_error(
+            "take_snapshot: feature-edge or feature-point tracking is on, and the image does not "
+            "hold their collections");
+    }
+    consolidate_mesh();
+    MeshSnapshot s;
+    s.n_vertices = vert_capacity();
+    const size_t n_tets = tet_capacity();
+    s.tets.resize(n_tets);
+    for (size_t t = 0; t < n_tets; ++t) s.tets[t] = oriented_tet_vids(t);
+    // The live slots of a collection, [0, n): consolidate_mesh() packed them there.
+    const auto head = [](const auto& c, const size_t n) {
+        return std::vector(c.m_attributes.begin(), c.m_attributes.begin() + std::ptrdiff_t(n));
+    };
+    s.vertex = head(m_vertex_attribute, s.n_vertices);
+    s.vertex_extra = head(m_vertex_extra, s.n_vertices);
+    s.face = head(m_face_attribute, 4 * n_tets);
+    s.face_extra = head(m_face_extra, 4 * n_tets);
+    s.edge = head(m_edge_attribute, 6 * n_tets);
+    s.tet = head(m_tet_attribute, n_tets);
+    restore_snapshot(s);
+    return s;
+}
+
+void TopoOffsetTetMesh::restore_snapshot(const MeshSnapshot& s)
+{
+    // See the declaration. init_with_isolated_vertices() leaves every collection cleared and
+    // sized to the new capacity, at least the live count, so the copies fit.
+    init_with_isolated_vertices(s.n_vertices, s.tets);
+    const auto put = [](auto& c, const auto& v) {
+        std::copy(v.begin(), v.end(), c.m_attributes.begin());
+    };
+    put(m_vertex_attribute, s.vertex);
+    put(m_vertex_extra, s.vertex_extra);
+    put(m_face_attribute, s.face);
+    put(m_face_extra, s.face_extra);
+    put(m_edge_attribute, s.edge);
+    put(m_tet_attribute, s.tet);
+    assign_band_regions(/*log=*/false);
+}
+
 double TopoOffsetTetMesh::growth_stage_target(
     const double d0,
     const double delta,
@@ -4921,16 +5188,17 @@ double TopoOffsetTetMesh::growth_stage_target(
     return k >= n ? delta : d0 + double(k) * (delta - d0) / double(n);
 }
 
-void TopoOffsetTetMesh::incremental_growth()
+void TopoOffsetTetMesh::linear_growth()
 {
-    // See the declaration and the spec doc (EXPERIMENTAL_incremental_growth). Between stages only
+    // See the declaration and the spec doc (growth_mode "linear"). Between stages only
     // target_distance changes, and what init_offset_potential() builds on it: the field, the
     // per-piece fields, the exact integral's reach. Every other reader of target_distance (the
     // band term, the settle test, the measures, the front smoother) asks for it when it runs, and
     // no pass is running here.
     const double delta = m_offset_params.target_distance;
     const double d0 = m_growth_start;
-    const int n = m_offset_params.incremental_growth_steps;
+    // growth_mode "individual_op_reject": d_0, then target_distance, nothing between.
+    const int n = m_offset_params.growth_mode == "linear" ? m_offset_params.linear_growth_steps : 1;
     const auto set_target = [&](const double d) {
         m_offset_params.target_distance = d;
         init_offset_potential();
@@ -5002,6 +5270,156 @@ void TopoOffsetTetMesh::incremental_growth()
         delta,
         done);
     optimize_offset_loop();
+}
+
+void TopoOffsetTetMesh::smart_growth()
+{
+    // See the declaration and the spec doc (growth_mode "smart"). As in linear_growth(), only
+    // target_distance changes between loops, and what init_offset_potential() builds on it.
+    const auto t0 = std::chrono::steady_clock::now();
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    const int attempts = m_offset_params.smart_growth_attempts;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    // Parameters::init() refuses front_conv above target_distance itself; a smaller loop's target
+    // below it is not refused, only said.
+    const auto warn_front_conv = [&](const std::string& what) {
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[smart growth] {}: front_conv {:.6g} exceeds its target_distance {:.6g}, so its "
+                "tests read nearly every front vertex as within the bar",
+                what,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+    };
+
+    // Level 0: the loop at d_0, from the front as the march left it.
+    set_target(d0);
+    m_frame_prefix = "s0";
+    logger().info(
+        "======== [smart growth] level 0: target_distance {:.6g} ({:.4g}x target_distance {:.6g}), "
+        "the distance the march traced to; up to max_rounds {} turns ========",
+        d0,
+        d0 / delta,
+        delta,
+        m_offset_params.max_rounds);
+    warn_front_conv("level 0");
+    if (!optimize_offset_loop(/*final_stage=*/false, /*refine=*/true, "smart growth level 0")) {
+        m_frame_prefix.clear();
+        log_and_throw_error(
+            "[smart growth] level 0 at the traced distance {:.6g} did not converge in max_rounds "
+            "{} "
+            "turns",
+            d0,
+            m_offset_params.max_rounds);
+    }
+    m_converged = false;
+    m_energy_verdict.reset();
+    std::string history = fmt::format("level 0 at {:.6g} in {} turn(s)", d0, m_iterations_used);
+    MeshSnapshot snap = take_snapshot();
+    logger().info(
+        "[smart growth] level 0 converged at target_distance {:.6g}; the mesh is stored (#V {}, "
+        "#T {})",
+        d0,
+        vertex_size(),
+        tet_size());
+    SmartGrowthSchedule sched{d0, delta, m_offset_params.smart_growth_max_fails};
+    int n_reverted = 0;
+    for (;;) {
+        // j == 0 is target_distance itself, set exactly (not by the formula).
+        const bool at_delta = sched.j == 0;
+        const double t = at_delta ? delta : sched.target();
+        const int level = sched.level, attempt = sched.j + 1;
+        const std::string label = fmt::format("smart growth level {} attempt {}", level, attempt);
+        set_target(t);
+        m_frame_prefix = fmt::format("s{}a{}", level, attempt);
+        logger().info(
+            "======== [smart growth] level {} attempt {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}), from the converged {:.6g}{}; up to smart_growth_attempts {} "
+            "turns, converged and fold-free to succeed ========",
+            level,
+            attempt,
+            t,
+            t / delta,
+            delta,
+            sched.base,
+            at_delta ? ", the final stage" : "",
+            attempts);
+        warn_front_conv(label);
+        const bool ok = optimize_offset_loop(
+            /*final_stage=*/at_delta,
+            /*refine=*/true,
+            label,
+            attempts,
+            /*fold_free=*/true);
+        const int turns = m_iterations_used;
+        const double base = sched.base;
+        switch (sched.report(ok)) {
+        case SmartGrowthSchedule::Next::Done:
+            m_frame_prefix.clear();
+            logger().info(
+                "[smart growth] target_distance {:.6g} reached: {}, level {} at it in {} turn(s); "
+                "{} failed attempt(s) reverted; {:.3g} s",
+                delta,
+                history,
+                level,
+                turns,
+                n_reverted,
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+            return;
+        case SmartGrowthSchedule::Next::Advance:
+            m_converged = false;
+            m_energy_verdict.reset();
+            history += fmt::format(", level {} at {:.6g} in {} turn(s)", level, t, turns);
+            snap = take_snapshot();
+            logger().info(
+                "[smart growth] level {} converged at target_distance {:.6g} (attempt {}); the "
+                "mesh is stored (#V {}, #T {}), the next attempt is at target_distance {:.6g}",
+                level,
+                t,
+                attempt,
+                vertex_size(),
+                tet_size(),
+                delta);
+            break;
+        case SmartGrowthSchedule::Next::Retry:
+        case SmartGrowthSchedule::Next::GiveUp:
+            ++n_reverted;
+            m_converged = false;
+            m_energy_verdict.reset();
+            restore_snapshot(snap);
+            logger().warn(
+                "[smart growth] level {} attempt {} at target_distance {:.6g} failed (not "
+                "converged in {} turn(s), or folded; see above): the mesh is back at the "
+                "converged {:.6g} (#V {}, #T {}){}",
+                level,
+                attempt,
+                t,
+                turns,
+                base,
+                vertex_size(),
+                tet_size(),
+                sched.j < m_offset_params.smart_growth_max_fails
+                    ? fmt::format("; next attempt at {:.6g}", sched.target())
+                    : std::string());
+            if (sched.j >= m_offset_params.smart_growth_max_fails) {
+                m_frame_prefix.clear();
+                log_and_throw_error(
+                    "[smart growth] {} attempts from the converged distance {:.6g} failed "
+                    "(smart_growth_max_fails), the last at target_distance {:.6g}; converged "
+                    "before: {}",
+                    m_offset_params.smart_growth_max_fails,
+                    base,
+                    t,
+                    history);
+            }
+            break;
+        }
+    }
 }
 
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -5112,10 +5530,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.stencil_order);
     }
 
-    // EXPERIMENTAL_incremental_growth (see marching_tets()): the loop in stages, the last of them
-    // the ordinary loop at target_distance.
-    if (m_growth_start > 0.) {
-        incremental_growth();
+    // growth_mode (see marching_tets()): "linear" in stages, the last of them the ordinary loop at
+    // target_distance; "smart" in attempts, the one that reaches target_distance its final stage.
+    if (m_growth_start > 0. && m_offset_params.growth_mode == "smart") {
+        smart_growth();
+    } else if (m_growth_start > 0.) {
+        linear_growth();
     } else {
         optimize_offset_loop();
     }
@@ -5294,39 +5714,21 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // a run that did not converge too. A face is a foldover when its normal, out of the band, is
     // more than foldover_angle from the field's normal (front_face_field_angle()).
     {
-        size_t n_fold = 0, n_faces = 0, n_unmeasured = 0;
-        double worst = 0.;
-        Vector3d worst_at = Vector3d::Zero();
-        for (const auto& f : offset_surface_faces()) {
-            ++n_faces;
-            const double ang = front_face_field_angle(f[0], f[1], f[2]);
-            if (!std::isfinite(ang)) {
-                ++n_unmeasured;
-                continue;
-            }
-            if (!(ang > m_offset_params.foldover_angle)) continue;
-            ++n_fold;
-            if (ang > worst) {
-                worst = ang;
-                worst_at = (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
-                            m_vertex_attribute[f[2]].m_posf) /
-                           3.;
-            }
-        }
-        if (n_fold > 0) {
+        const FoldCensus fc = fold_census();
+        if (fc.n_fold > 0) {
             logger().warn(
                 "[foldover] {} of {} offset faces are folded: their normal, out of the band, is "
                 "more "
                 "than foldover_angle {} degrees from the field's normal (grad d at the centroid); "
                 "the worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4}). {} face(s) not measurable. {}",
-                n_fold,
-                n_faces,
+                fc.n_fold,
+                fc.n_faces,
                 m_offset_params.foldover_angle,
-                worst,
-                worst_at[0],
-                worst_at[1],
-                worst_at[2],
-                n_unmeasured,
+                fc.worst,
+                fc.worst_at[0],
+                fc.worst_at[1],
+                fc.worst_at[2],
+                fc.n_unmeasured,
                 m_offset_params.debug_output
                     ? "The per-face flag offset_foldover is on the debug frames' _off files."
                     : "Set DEBUG_output to get the per-face offset_foldover field.");
