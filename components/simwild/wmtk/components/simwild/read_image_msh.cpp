@@ -614,16 +614,35 @@ int resolve_input_dimension(
     const io::ComponentIO* component_io)
 {
     if (component_io) {
+        // A memory input states its topology, so a forced dimension is always checked: a
+        // tagged tet mesh is 3D and a tagged triangle mesh 2D (both take the tagged-mesh route,
+        // 0); an untagged triangle surface is 3D and a curve network 2D.
         const auto& data = component_io->mesh(input_paths.at(0));
-        if (data.cells.count(CellType::Tetrahedron) ||
-            (data.cells.count(CellType::Triangle) &&
-             data.cell(CellType::Triangle).attributes.count("tags")))
-            return 0;
-        const int dimension = data.cells.count(CellType::Triangle) ? 3 : 2;
-        if (!json_params["dimension"].is_string() &&
-            json_params["dimension"].get<int>() != dimension)
-            log_and_throw_error("Input mesh topology disagrees with dimension");
-        return dimension;
+        const bool tets = data.cells.count(CellType::Tetrahedron) != 0;
+        const bool triangles = data.cells.count(CellType::Triangle) != 0;
+        const bool tagged =
+            tets || (triangles && data.cell(CellType::Triangle).attributes.count("tags"));
+        const int topology = tets || (triangles && !tagged) ? 3 : 2;
+        const std::string d = json_params.value("dimension", std::string("auto"));
+        if (d != "auto") {
+            const int forced = std::stoi(d);
+            if (forced != 2 && forced != 3) {
+                log_and_throw_error("dimension must be \"auto\", \"2\" or \"3\", not \"{}\"", d);
+            }
+            if (forced != topology) {
+                log_and_throw_error(
+                    "dimension is set to {} but input mesh {} is a {}D input ({}). Remove the "
+                    "dimension key to accept the detected one.",
+                    forced,
+                    input_paths[0],
+                    topology,
+                    tets        ? "tagged tetrahedra"
+                    : tagged    ? "tagged triangles"
+                    : triangles ? "a triangle surface"
+                                : "curves");
+            }
+        }
+        return tagged ? 0 : topology;
     }
 
     // 0 means "let the .msh reader decide from the file's content", which is what it has

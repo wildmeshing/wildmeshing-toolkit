@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -159,6 +160,29 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     auto result = simwild::simwild(options, {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
+}
+TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component_io]")
+{
+    WorkingDirectory cwd;
+    auto surface = tet();
+    surface.cells.clear();
+    surface.cells[CellType::Triangle].connectivity.resize(4, 3);
+    surface.cells[CellType::Triangle].connectivity << 1, 2, 3, 0, 3, 2, 0, 1, 3, 0, 2, 1;
+    MeshData curves = triangle();
+    curves.cells.clear();
+    curves.cells[CellType::Edge].connectivity.resize(3, 2);
+    curves.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+    auto tagged = tet();
+    add_tags(tagged, CellType::Tetrahedron);
+    const MeshMap inputs{{"surface", surface}, {"curves", curves}, {"tagged", tagged}};
+    auto run = [&](const std::string& input, const std::string& dimension) {
+        simwild::simwild(
+            {{"input", input}, {"dimension", dimension}, {"max_iterations", 0}, {"num_threads", 1}},
+            inputs);
+    };
+    REQUIRE_THROWS_WITH(run("surface", "2"), Catch::Matchers::ContainsSubstring("dimension"));
+    REQUIRE_THROWS_WITH(run("curves", "3"), Catch::Matchers::ContainsSubstring("dimension"));
+    REQUIRE_THROWS_WITH(run("tagged", "2"), Catch::Matchers::ContainsSubstring("dimension"));
 }
 #endif
 #ifdef WMTK_TEST_triwild
