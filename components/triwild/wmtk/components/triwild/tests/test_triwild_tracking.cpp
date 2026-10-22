@@ -72,7 +72,8 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
 
     // 1. Run triwild with tracking on: history_output names the tracking file. The mesh is
     // written to <output>.msh, whose vertices the tracking names. preserve_topology keeps the
-    // map a bijection.
+    // map a bijection; with history_output set, triwild anchors the junctions too
+    // (allow_junction_cleanup), so the map is not stretched by one sliding along a curve.
     triwild::triwild({
         {"application", "triwild"},
         {"input", {(dir / "circle.obj").string(), (dir / "open.obj").string()}},
