@@ -124,6 +124,19 @@ TEST_CASE("MeshData validates and rejects lossy I/O", "[mesh_data][io]")
         REQUIRE_THROWS(m.validate());
     }
 }
+TEST_CASE("MeshData keeps degenerate cells for component cleaning", "[mesh_data][io]")
+{
+    auto m = example();
+    m.cells[CellType::Triangle].connectivity(1, 2) = 0;
+    REQUIRE_NOTHROW(m.validate());
+    TempMesh file(".obj");
+    {
+        std::ofstream f(file.path);
+        f << "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\nf 2 2 3\n";
+    }
+    const auto read = io::read_mesh(file.path);
+    REQUIRE(read.cell(CellType::Triangle).connectivity.rows() == 2);
+}
 TEST_CASE("MeshData reads OBJ attributes and orientation without cleaning", "[mesh_data][io]")
 {
     TempMesh file(".obj");

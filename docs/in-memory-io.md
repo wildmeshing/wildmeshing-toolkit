@@ -99,7 +99,8 @@ they are also included in the wheel tests.
   one named column per physical/material group, allowing overlapping memberships. Group
   names are labels of this fixed field, rather than arbitrary extra attribute names.
 - `validate()` checks geometry, connectivity, and attribute dimensions. Coordinates must be
-  finite. Attributes may contain undefined numerical diagnostics such as NaN.
+  finite. Attributes may contain undefined numerical diagnostics such as NaN. A cell may repeat
+  a vertex: components clean degenerate input cells exactly as their file readers do.
 
 Only top-dimensional connectivity is needed to construct an algorithm's mesh. Explicit lower
 blocks identify the edges/faces carrying attributes; their row order is independent of internal

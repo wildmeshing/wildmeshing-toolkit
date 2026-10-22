@@ -332,6 +332,30 @@ TEST_CASE("File and memory QSlim interfaces agree", "[component_io][io]")
     expected.erase("time_sec");
     REQUIRE(report == expected);
 }
+TEST_CASE("Memory inputs with degenerate cells are cleaned like files", "[component_io][io]")
+{
+    WorkingDirectory cwd;
+    {
+        std::ofstream f("input.obj");
+        f << "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+             "f 2 3 4\nf 1 4 3\nf 1 2 4\nf 1 3 2\nf 2 2 3\n";
+    }
+    const nlohmann::json memory_options = {
+        {"input", "source"},
+        {"target_abs", 4},
+        {"num_threads", 1}};
+    const auto result = qslim::qslim(memory_options, {{"source", io::read_mesh("input.obj")}});
+    auto file_options = memory_options;
+    file_options["application"] = "qslim";
+    file_options["input"] = "input.obj";
+    file_options["output"] = "output.obj";
+    qslim::qslim(file_options);
+    const auto reread = io::read_mesh("output.obj");
+    REQUIRE(result.first.at("mesh").V == reread.V);
+    REQUIRE(
+        result.first.at("mesh").cell(CellType::Triangle).connectivity ==
+        reread.cell(CellType::Triangle).connectivity);
+}
 #endif
 #if defined(WMTK_TEST_simwild) && defined(WMTK_TEST_topological_offset) && \
     defined(WMTK_TEST_prismatic_mesh)

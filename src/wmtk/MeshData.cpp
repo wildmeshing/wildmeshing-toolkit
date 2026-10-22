@@ -111,13 +111,11 @@ void MeshData::validate() const
     for (const auto& [type, block] : cells) {
         const auto& c = block.connectivity;
         require(c.cols() == cell_size(type), "incorrect connectivity width");
-        for (Eigen::Index r = 0; r < c.rows(); ++r) {
-            std::set<int64_t> vertices;
-            for (Eigen::Index j = 0; j < c.cols(); ++j) {
-                require(c(r, j) >= 0 && c(r, j) < V.rows(), "vertex index out of range");
-                require(vertices.insert(c(r, j)).second, "repeated vertex in cell");
-            }
-        }
+        // A cell may repeat a vertex. Degenerate cells occur in real input files, and the
+        // components remove them during cleaning exactly as the file readers do.
+        require(
+            c.size() == 0 || (c.minCoeff() >= 0 && c.maxCoeff() < V.rows()),
+            "vertex index out of range");
         validate_attributes(block.attributes, c.rows());
     }
 }
