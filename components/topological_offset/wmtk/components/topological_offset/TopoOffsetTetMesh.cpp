@@ -1,9 +1,9 @@
 #include <wmtk/io/DataWriter.hpp>
 
-#include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
+#include "TopoOffsetTetMesh.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>

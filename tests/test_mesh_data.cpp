@@ -246,7 +246,8 @@ TEST_CASE("MeshData VTU output uses the existing writer", "[mesh_data][io]")
         Eigen::Index row = 0;
         for (auto& [type, block] : mesh.cells) {
             auto values =
-                DataMatrix<double>::Constant(block.connectivity.rows(), 1, double(int(type))).eval();
+                DataMatrix<double>::Constant(block.connectivity.rows(), 1, double(int(type)))
+                    .eval();
             block.attributes["quality"].values = values;
             quality.middleRows(row, values.rows()) = values;
             row += values.rows();
