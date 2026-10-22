@@ -18,14 +18,14 @@ void collect_memory_output(
     context.result.first = io::named_outputs(std::move(raw), keys);
     auto& data = context.result.first.at("mesh");
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
-        simwild::collect_tags(
+        io::collect_tags(
             mesh,
             context.result.first,
             CellType::Tetrahedron,
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tag; });
     } else {
-        simwild::collect_tags(
+        io::collect_tags(
             mesh,
             context.result.first,
             CellType::Triangle,
@@ -41,7 +41,7 @@ void collect_memory_output(
         data.vertex_attributes["vid"].values = ids;
     }
     if (mesh.m_has_envelope) {
-        context.result.first["envelope"] = simwild::geometry_data(
+        context.result.first["envelope"] = io::geometry_data(
             mesh.m_V_envelope,
             mesh.m_F_envelope,
             std::is_base_of_v<TetMesh, Mesh> ? CellType::Triangle : CellType::Edge);

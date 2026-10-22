@@ -64,7 +64,7 @@ MeshData triangle()
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0;
     MatrixXi F(1, 3);
     F << 0, 1, 2;
-    return simwild::geometry_data(V, F, CellType::Triangle);
+    return io::geometry_data(V, F, CellType::Triangle);
 }
 MeshData tet()
 {
@@ -72,7 +72,7 @@ MeshData tet()
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     MatrixXi T(1, 4);
     T << 0, 1, 2, 3;
-    return simwild::geometry_data(V, T, CellType::Tetrahedron);
+    return io::geometry_data(V, T, CellType::Tetrahedron);
 }
 void add_tags(MeshData& data, CellType type)
 {
@@ -100,12 +100,12 @@ TEST_CASE("Tag labels are unique and empty results are tagged", "[component_io]"
     MeshMap outputs{{"mesh", tet()}};
     const std::vector<int> cells = {0};
     const auto tags = [](int) { return std::set<int64_t>{0, 1}; };
-    simwild::collect_tags(mesh, outputs, CellType::Tetrahedron, cells, tags);
+    io::collect_tags(mesh, outputs, CellType::Tetrahedron, cells, tags);
     const auto& field = outputs.at("mesh").cell(CellType::Tetrahedron).attributes.at("tags");
     REQUIRE(field.labels == std::vector<std::string>{"tag_1", "tag_1_", "tag_2"});
     REQUIRE(field.integers() == (DataMatrix<int64_t>(1, 3) << 1, 1, 0).finished());
     MeshMap empty{{"mesh", MeshData()}};
-    simwild::collect_tags(mesh, empty, CellType::Tetrahedron, std::vector<int>{}, tags);
+    io::collect_tags(mesh, empty, CellType::Tetrahedron, std::vector<int>{}, tags);
     REQUIRE_NOTHROW(empty.at("mesh").validate());
 }
 TEST_CASE("Surface components operate on named meshes without files", "[component_io]")

@@ -216,7 +216,7 @@ void ManExtractTriMesh::write_curve(const std::string& path, MeshMap* output)
         MatrixXi edges(ordered_edges.size(), 2);
         for (size_t i = 0; i < ordered_edges.size(); ++i)
             for (int j = 0; j < 2; ++j) edges(i, j) = ordered_edges[i][j];
-        (*output)["surface"] = simwild::geometry_data(V_out, edges, CellType::Edge);
+        (*output)["surface"] = io::geometry_data(V_out, edges, CellType::Edge);
         return;
     }
     // write obj file (v <x> <y> <z> ... l <v1> <v2> ...)

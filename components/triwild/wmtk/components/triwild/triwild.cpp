@@ -921,15 +921,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         component_io.result.first = io::named_outputs(std::move(raw));
         if (!free_points.empty())
             component_io.result.first["features"] =
-                simwild::feature_data(collected_curve_segs, collected_anchor_pts);
-        simwild::collect_tags(
+                io::feature_data(collected_curve_segs, collected_anchor_pts);
+        io::collect_tags(
             mesh,
             component_io.result.first,
             CellType::Triangle,
             mesh.get_faces(),
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
         component_io.result.first["envelope"] =
-            simwild::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+            io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
     }
     logger().info("======= finish =========");
 }

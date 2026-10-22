@@ -470,7 +470,7 @@ void ManExtractTetMesh::write_surface(const std::string& path, MeshMap* output)
     }
 
     if (output)
-        (*output)["surface"] = simwild::geometry_data(V_out, F_out, CellType::Triangle);
+        (*output)["surface"] = io::geometry_data(V_out, F_out, CellType::Triangle);
     else
         igl::write_triangle_mesh(path + ".obj", V_out, F_out);
 }

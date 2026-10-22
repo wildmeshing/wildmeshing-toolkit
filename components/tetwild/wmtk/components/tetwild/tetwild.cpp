@@ -590,7 +590,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
         tet_envelope->init(env_V, env_F, opt_eps);
         if (component_io.memory())
-            memory_envelope = simwild::geometry_data(env_V, env_F, CellType::Triangle);
+            memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
     }
 
     // params.eps is deliberately NOT narrowed to match.
@@ -1339,7 +1339,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         component_io.result.first = io::named_outputs(std::move(raw));
         if (features_present)
             component_io.result.first["features"] =
-                simwild::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
+                io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
         component_io.result.first["envelope"] = std::move(memory_envelope);
         return {}; // the memory overload returns component_io.result instead
     }

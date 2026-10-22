@@ -3,7 +3,7 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 
-namespace wmtk::components::simwild {
+namespace wmtk::io {
 inline MeshData geometry_data(const MatrixXd& V, const MatrixXi& C, CellType type)
 {
     MeshData data;
@@ -91,4 +91,4 @@ void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange&
     }
     block.attributes["tags"] = {std::move(values), std::move(labels)};
 }
-} // namespace wmtk::components::simwild
+} // namespace wmtk::io

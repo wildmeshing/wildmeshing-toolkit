@@ -313,7 +313,7 @@ void run_3D(
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
-        collect_tags(
+        io::collect_tags(
             mesh,
             component_io.result.first,
             CellType::Tetrahedron,
@@ -321,7 +321,7 @@ void run_3D(
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
-                geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+                io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
     }
     if (params.write_vtu) {
         mesh.write_surface(params.output_path + "_surface.obj");
@@ -420,7 +420,7 @@ void run_2D(
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
-        collect_tags(
+        io::collect_tags(
             mesh,
             component_io.result.first,
             CellType::Triangle,
@@ -428,7 +428,7 @@ void run_2D(
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
-                geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+                io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
     }
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
