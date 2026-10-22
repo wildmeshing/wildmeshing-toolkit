@@ -24,10 +24,7 @@
 #include <set>
 #include <vector>
 
-namespace wmtk::history {
-class Recorder;
-struct Edit;
-} // namespace wmtk::history
+#include <wmtk/history/Fwd.hpp>
 
 namespace wmtk {
 

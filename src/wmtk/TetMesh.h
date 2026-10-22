@@ -25,11 +25,7 @@
 #include <optional>
 #include <vector>
 
-namespace wmtk::history {
-class TrackedSurfaceRecorder;
-struct SurfaceHistory;
-enum class EditKind : uint8_t;
-} // namespace wmtk::history
+#include <wmtk/history/Fwd.hpp>
 
 namespace wmtk {
 class TetMesh
@@ -643,7 +639,7 @@ public:
 
     /**
      * @brief Record every change to the tracked surface from now on (see
-     * wmtk/history/TrackedSurface.hpp).
+     * wmtk/history/TrackedRecorder.hpp).
      *
      * The tracked surface is the faces is_tracked_face() names, oriented by
      * orient_tracked_face(). Snapshots it and returns the recorder. Every operation then reports

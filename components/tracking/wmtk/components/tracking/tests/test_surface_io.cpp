@@ -6,7 +6,7 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/tracking/surface_io.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -124,9 +124,7 @@ TEST_CASE("surface-io-fields-through-mesh-files", "[surface_map][io]")
     CHECK(nlohmann::json::parse(h.metadata).at("route") == "file");
     const auto expected = boundaries(sphere);
     REQUIRE(!expected.empty());
-    CHECK(
-        std::set<std::array<uint64_t, 2>>(h.feature_edges.begin(), h.feature_edges.end()) ==
-        expected);
+    CHECK(std::set<std::array<uint64_t, 2>>(h.features.begin(), h.features.end()) == expected);
 
     // 3. transfer writes the output with every field, as io::read_mesh reads it: the labels of
     // their types, uv of six columns, input_face Int64; and the textured OBJ.

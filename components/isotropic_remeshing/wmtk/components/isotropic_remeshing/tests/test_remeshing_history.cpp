@@ -1,6 +1,6 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
+#include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <catch2/catch_test_macros.hpp>

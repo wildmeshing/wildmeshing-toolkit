@@ -5,7 +5,7 @@
 
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>

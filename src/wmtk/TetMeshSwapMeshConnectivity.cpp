@@ -1,6 +1,6 @@
 
 #include <wmtk/TetMesh.h>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/TupleUtils.hpp>

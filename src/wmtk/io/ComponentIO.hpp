@@ -3,7 +3,7 @@
 #include <set>
 #include <wmtk/MeshData.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>

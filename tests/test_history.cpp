@@ -1,6 +1,6 @@
 #include <wmtk/TriMesh.h>
+#include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -282,7 +282,7 @@ TEST_CASE("history-bytes-are-the-file", "[history]")
     other[0] = 'X';
     CHECK_THROWS_WITH(
         history::write_history(dir / "other.wmtkhist", other),
-        Catch::Matchers::ContainsSubstring("the history given is not a surface history"));
+        Catch::Matchers::ContainsSubstring("the history given is not a history"));
     CHECK(!std::filesystem::exists(dir / "other.wmtkhist"));
     CHECK_THROWS_WITH(
         history::SurfaceHistory::from_bytes({bytes.begin(), bytes.begin() + 20}),
@@ -293,7 +293,7 @@ TEST_CASE("history-bytes-are-the-file", "[history]")
     }
     CHECK_THROWS_WITH(
         history::read_history(dir / "mesh.obj"),
-        Catch::Matchers::ContainsSubstring("is not a surface history"));
+        Catch::Matchers::ContainsSubstring("is not a history"));
     CHECK_THROWS(history::read_history(dir / "missing.wmtkhist"));
     std::filesystem::remove_all(dir);
 }

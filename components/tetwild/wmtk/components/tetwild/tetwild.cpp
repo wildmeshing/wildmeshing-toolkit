@@ -11,7 +11,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SurfaceHistory.hpp"
+#include "History.hpp"
 
 #include <wmtk/io/read_triangle_mesh.hpp>
 

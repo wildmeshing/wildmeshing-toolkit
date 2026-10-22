@@ -7,7 +7,7 @@
 #include <jse/jse.h>
 #include <fstream>
 #include <sstream>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>

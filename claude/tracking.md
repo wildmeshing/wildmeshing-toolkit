@@ -89,7 +89,7 @@ Remapping attributes:
 
 ## The history
 
-`src/wmtk/history/SurfaceHistory.hpp`. A `SurfaceHistory` holds:
+`src/wmtk/history/History.hpp`. A `SurfaceHistory` holds:
 - **A snapshot** of a triangle complex: vertex and face *slots*, live or not.
 - **Feature edges:** curves the edits keep. See *Features* below.
 - **The edits,** in commit order.

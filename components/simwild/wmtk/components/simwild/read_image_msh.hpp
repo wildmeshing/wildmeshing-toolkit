@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <wmtk/Types.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 
 namespace wmtk::components::simwild {
 

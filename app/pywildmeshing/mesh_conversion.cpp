@@ -4,7 +4,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 #include <pybind11_json/pybind11_json.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <cstring>

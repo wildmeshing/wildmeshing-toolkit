@@ -4,7 +4,7 @@
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/tracking/SurfaceMap.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 

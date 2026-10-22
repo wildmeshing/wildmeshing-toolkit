@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
 
 #include <Eigen/Core>
 

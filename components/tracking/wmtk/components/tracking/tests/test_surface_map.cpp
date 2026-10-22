@@ -3,8 +3,8 @@
 #include <wmtk/components/tracking/scaffold2d.hpp>
 #include <wmtk/components/tracking/surface_io.hpp>
 #include <wmtk/components/tracking/transfer.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -296,8 +296,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         m.create_mesh(verts.size(), tris, {}, true, 0, 0);
         m.set_feature_edges(features);
         const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
-        for (const auto& e : m.feature_edges())
-            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        for (const auto& e : m.feature_edges()) rec->history().features.push_back({{e[0], e[1]}});
         m.uniform_remeshing(0.6 * m.average_len_valen()[0], 2);
         m.consolidate_mesh();
         m.stop_history();
@@ -308,7 +307,7 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
         r.apply_all(h);
         std::set<std::array<uint64_t, 2>> mesh_features;
         for (const auto& e : m.feature_edges()) mesh_features.insert({{e[0], e[1]}});
-        CHECK(r.feature_edges() == mesh_features);
+        CHECK(r.features() == mesh_features);
         CHECK(mesh_features.size() > features.size() / 4);
 
         const SurfaceMap map(h);
@@ -459,8 +458,7 @@ TEST_CASE("surface-map-small-regions-survive", "[surface_map]")
         m.create_mesh(verts.size(), tris, {}, false, 0, 0);
         m.set_feature_edges(features);
         const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
-        for (const auto& e : m.feature_edges())
-            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        for (const auto& e : m.feature_edges()) rec->history().features.push_back({{e[0], e[1]}});
         m.uniform_remeshing(1.5 * m.average_len_valen()[0], 3);
         m.consolidate_mesh();
         m.stop_history();
@@ -588,8 +586,7 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         m.create_mesh(verts.size(), tris, {}, true, 0, 0);
         m.set_feature_edges(seams);
         const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
-        for (const auto& e : m.feature_edges())
-            rec->history().feature_edges.push_back({{e[0], e[1]}});
+        for (const auto& e : m.feature_edges()) rec->history().features.push_back({{e[0], e[1]}});
         m.uniform_remeshing(0.6 * m.average_len_valen()[0], 2);
         m.consolidate_mesh();
         m.stop_history();
