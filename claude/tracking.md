@@ -482,7 +482,9 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   by normalised arc length: monotone, so a bijection, with constant stretch along the chain.
   Splits, collapses and smoothing (`Smoothing::flatten`; `barycentric` keeps coordinates) are
   all mapped so. Chains with no partner -- the topology changed -- map by relabelling where the
-  segment still exists. An `embed` maps by position on the segments each lies on; a `relabel`
+  segment still exists. An `embed` maps each segment before onto the segments after lying on
+  it, end to end, as a chain by the same arc length -- on collinear pieces, exactly where a
+  point is in space -- and by projection where those pieces do not form a path; a `relabel`
   by renumbering, flipping coordinates for a duplicate given reversed. Warnings
   (`CurveMapWarnings`): `topology` (also a collapse along no segment, a weld), `merged_segments`,
   `overlapping` (input segments that overlap), `unlocated`, `replaced`. `feature_points()`
@@ -493,6 +495,14 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     runs on through it. A junction sliding along a branch, and a curve's end eroding onto its
     neighbour, map as the shortening they are, without a warning; a collapse of two junctions,
     or one along no segment (a weld), is a topology change.
+  - **Segments of no length.** The arrangement can set two vertices apart by less than their
+    rounding; in the history's doubles their segment has no length, until an operation moves
+    one (11502: two such segments grew to 0.09 when a junction collapsed there). By arc length
+    such a segment has no room, and all its points map to one end. So `measure()` counts each
+    segment for at least a billionth of its chain's mean segment (all alike if the chain has
+    no length): chains without one keep their arc length exactly, and the others stay one to
+    one at the cost of a billionth of their length. The chain-based embed does the same for
+    pieces of no length.
   - **Mapping points** moves, per step, only the points on that step's segments (an index from
     segment to points), so it costs little more than the steps that touch them: 0.37 s for
     19,804 points through 520k edits.
@@ -580,7 +590,28 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   times and the others shrink as much. Points then drift far along the curves (mean 0.97,
   max 174 segment lengths), and a point that rides the junction loses precision through the
   steps that stretch it (round trip 6.76 there). With `allow_junction_cleanup: false` the
-  junctions stay within eps: round trip 7e-12, drift mean 0.09, max 5.6 segment lengths.
+  junctions stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths.
+- **Not a warning either: hairpins removed.** A curve that folds back on itself narrower than
+  the envelope can lose the whole fold to one collapse: on 226193 a 776-unit hairpin went to
+  1.08. The map squeezes the fold onto what is left, so a point near its tip drifts as far as
+  the fold was long (1,648 units there). The 99th percentile stays below a segment length;
+  these are a handful of points.
+
+Measured 2026-10-22 on 24 networks of the 2D dataset (22 KB to 2.6 MB, 4 threads), `info`
+on each history:
+
+| triwild settings | topology warnings | worst round trip | below 1e-8 | drift, median of means | edits | map build |
+|---|---|---|---|---|---|---|
+| default | on 22 of 24 (welds) | 2.8e-10 | 24 of 24 | 0.044 segment lengths | 0.5k–49k | at most 0.16 s |
+| `preserve_topology` | 0 | 6.76 (190246; next 1.5e-4) | 14 of 24 | 0.099 | up to 1.9M | up to 8.7 s |
+| `preserve_topology`, `allow_junction_cleanup: false` | 0 | 3.3e-6 | 18 of 24 | 0.045 | up to 2.0M | up to 9.3 s |
+
+The other warnings are the input's: duplicate segments (`merged_segments`, up to 4,144 on
+202361) and overlapping ones (`overlapping`). No point is lost anywhere; every input feature
+point reaches an output vertex but 9 of 584 on 226193 at default settings, where the input
+simplification without the link condition retires their vertices. Recording costs 2.6–4.0%
+instructions at default settings (12 models, serial), with the output `.msh` byte-identical
+with recording off and on and to the parent commit's.
 
 ### What breaks bijectivity
 
