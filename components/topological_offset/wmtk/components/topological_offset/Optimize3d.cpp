@@ -808,6 +808,14 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             return false;
         }
     }
+    // THE 90-DEGREE RULE (see front_face_past_90_at()): a held front vertex has no fold barrier,
+    // so its move may not leave an offset face through it at or past 90 degrees.
+    if (m_vertex_extra[vid].m_is_on_offset && fold90_rule_active() && front_face_past_90_at(vid)) {
+        ++m_fold90_reject_smooth;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return false;
+    }
     count_damped_move(vid, x0, opts.max_step);
     return true;
 }
@@ -963,6 +971,12 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         const double before = m_swap_error_before.local();
         if (before >= 0.) {
             const auto& q = m_swap_sides.local().abcd;
+            // THE 90-DEGREE RULE (see front_face_past_90_at()): neither new face at or past 90.
+            if (fold90_rule_active() && (face_past_90_in(q[0], q[2], q[3], tids) ||
+                                         face_past_90_in(q[1], q[2], q[3], tids))) {
+                ++m_fold90_reject_swap;
+                return swap_reject(SwapReject::app_sag_raised);
+            }
             const double after = std::max(face_offset_error(q[0], q[2], q[3]), 0.) +
                                  std::max(face_offset_error(q[1], q[2], q[3]), 0.);
             if (after < before) return true;
@@ -1271,6 +1285,12 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     if (!m_coarsen_mode && !tetwild_rules()) {
         for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) stamp_rest_cell(tid);
         const double before = m_collapse_front_error.local();
+        // THE 90-DEGREE RULE (see front_face_past_90_at()): no offset face through the survivor
+        // at or past 90 degrees.
+        if (before >= 0. && fold90_rule_active() && front_face_past_90_at(v2_id)) {
+            ++m_fold90_reject_collapse;
+            return false;
+        }
         if (before >= 0.) {
             const double after = offset_error_at(v2_id);
             if (!(after <= before)) {
@@ -3864,6 +3884,36 @@ bool TopoOffsetTetMesh::face_folded_in(
     return false;
 }
 
+bool TopoOffsetTetMesh::front_face_past_90_at(const size_t vid) const
+{
+    // See the declaration. NaN (unmeasurable) is not past 90.
+    bool past = false;
+    for_each_live_offset_face_at(vid, [&](const std::array<size_t, 3>& f, const size_t band) {
+        past = front_face_field_angle_in(f[0], f[1], f[2], band) >= 90.;
+        return past; // stop at the first
+    });
+    return past;
+}
+
+bool TopoOffsetTetMesh::face_past_90_in(
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const std::vector<size_t>& cells) const
+{
+    // See the declaration.
+    for (const size_t t : cells) {
+        if (!cell_is_offset_band(t)) continue;
+        const auto tv = oriented_tet_vids(t);
+        const auto has = [&](const size_t v) {
+            return std::find(tv.begin(), tv.end(), v) != tv.end();
+        };
+        if (!has(a) || !has(b) || !has(c)) continue;
+        return front_face_field_angle_in(a, b, c, t) >= 90.;
+    }
+    return false;
+}
+
 void TopoOffsetTetMesh::refresh_offset_membership(const size_t vid)
 {
     m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_face(vid);
@@ -4392,6 +4442,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int pl_c0 = m_plastic_reject_collapse.load(),
                       pl_s0 = m_plastic_reject_swap.load();
+            const int f90_c0 = m_fold90_reject_collapse.load(),
+                      f90_s0 = m_fold90_reject_swap.load(), f90_m0 = m_fold90_reject_smooth.load();
             const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
                       fold_m0 = m_fold_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
@@ -4414,7 +4466,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 logger().info(
                     "\t[energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | "
                     "refused for raising the offset error over the changed offset faces: {} "
-                    "collapses, {} flips; {} splits refused by the split gate",
+                    "collapses, {} flips; {} splits refused by the split gate | refused for "
+                    "leaving an offset face at or past 90 degrees: {} collapses, {} flips, {} "
+                    "held-vertex moves",
                     it + 1,
                     group_names[gi],
                     energy_before_group,
@@ -4422,7 +4476,10 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     energy_after_group - energy_before_group,
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
-                    m_volume_reject_split.load() - vol_p0);
+                    m_volume_reject_split.load() - vol_p0,
+                    m_fold90_reject_collapse.load() - f90_c0,
+                    m_fold90_reject_swap.load() - f90_s0,
+                    m_fold90_reject_smooth.load() - f90_m0);
                 if (fold_reject_active()) {
                     logger().info(
                         "\t[op reject] turn {} {} group: refused for raising the folded offset "
