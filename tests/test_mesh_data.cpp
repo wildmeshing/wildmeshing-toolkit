@@ -256,6 +256,25 @@ TEST_CASE("MSH source IDs survive arbitrary node tags", "[mesh_data][io]")
         loaded.vertex_attributes.at("vid").integers() ==
         (DataMatrix<int64_t>(3, 1) << 41, 98, 6).finished());
 }
+TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
+{
+    MeshData mesh;
+    mesh.V.resize(4, 3);
+    mesh.V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    mesh.cells[CellType::Tetrahedron].connectivity.resize(1, 4);
+    mesh.cells[CellType::Tetrahedron].connectivity << 0, 1, 2, 3;
+    const std::vector<std::string> labels = {"ambient", "tag_2", "tag_10"};
+    mesh.cells[CellType::Tetrahedron].attributes["tags"] = {
+        DataMatrix<uint8_t>::Ones(1, 3).eval(),
+        labels};
+    auto spec = io::to_msh(mesh);
+    // Keep only the physical groups, as gmsh and the simwild writer store region membership.
+    spec.element_data.clear();
+    const auto loaded = io::from_msh(spec);
+    const auto& tags = loaded.cell(CellType::Tetrahedron).attributes.at("tags");
+    REQUIRE(tags.labels == labels);
+    REQUIRE(tags.integers() == DataMatrix<int64_t>::Ones(1, 3));
+}
 TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
 {
     MeshData mesh;

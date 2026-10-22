@@ -265,7 +265,12 @@ MeshData from_msh(const mshio::MshSpec& s)
         for (const auto& r : rows) names.insert(r.begin(), r.end());
         if (names.empty()) continue;
         MeshAttribute a;
-        a.labels.assign(names.begin(), names.end());
+        // Columns follow the file's physical-group order, not the names' sort order: readers
+        // that number regions by position (the simwild .msh route) must see the same ids.
+        for (const auto& g : s.physical_groups)
+            if (names.count(g.name) &&
+                std::find(a.labels.begin(), a.labels.end(), g.name) == a.labels.end())
+                a.labels.push_back(g.name);
         DataMatrix<uint8_t> values = DataMatrix<uint8_t>::Zero(rows.size(), names.size());
         for (size_t i = 0; i < rows.size(); ++i)
             for (size_t j = 0; j < a.labels.size(); ++j) values(i, j) = rows[i].count(a.labels[j]);
