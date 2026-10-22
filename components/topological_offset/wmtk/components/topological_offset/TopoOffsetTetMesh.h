@@ -435,7 +435,10 @@ public:
      * (smoothing_extra_energy(): RingBarrier3D + FaceStencilError3D), vetoed on that objective;
      * every other vertex is TetWild's smoother -- the raw sum of AMIPS over the one-ring with the
      * quality veto (smooth_nonfront_vertex()). The split gate
-     * (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums.
+     * (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums. use_rest_pose: the same
+     * rules on PLASTIC AMIPS -- a plastic cell's quality is measured against its stamped rest
+     * wherever these rules read it (plastic_quality(), plastic_amips_energy(),
+     * smoothing_cell_energy()); stamping as before.
      *
      * TetWild (every TetWild pass, tetwild_pass(): optimize_construction's and the final pass):
      * TetWild's own, for everything. The engine's rules
@@ -685,11 +688,11 @@ public:
      *
      *     tet_energy(t) = cell_energy(oriented_tet_vids(t), get_quality(t))
      *
-     *     cell_energy(vids, A^3) = MAX_ENERGY           if A^3 >= MAX_ENERGY
-     *                            = (w / s^3) vol A^3    otherwise
+     *     cell_energy(vids, A^3) = MAX_ENERGY             if A^3 >= MAX_ENERGY
+     *                            = vol (A / s)^3           otherwise
      *
-     * w = offset_amips_weight, s = stop_energy (optimization_stop_metric()), so a cell at the stop
-     * energy costs about w vol. A^3 is the base's TetOptimizerMesh::get_quality(), the AMIPS^3 the
+     * s = stop_energy (optimization_stop_metric()), so a cell at the stop
+     * energy costs about vol. A^3 is the base's TetOptimizerMesh::get_quality(), the AMIPS^3 the
      * engine stores as the cell quality; its MAX_ENERGY (unscoreable) is the cell's energy. vol A^3
      * is vol_amips3(), from the exact AMIPS^3 and the edge lengths, never from a determinant. The
      * term is a volume, so E converges under refinement. Before the
@@ -700,8 +703,10 @@ public:
      * the band and the complex) AMIPS term is vol A^3 against its stamped rest
      * (TetAttributes::rest_pos, VolAMIPSEnergy3D::value_of()), so a restamp changes it too: every
      * plastic cell after each smoothing pass, and the cells an operation makes or changes at that
-     * operation. (Since 2026-10-22 the operation rules no longer compare E, so use_rest_pose
-     * changes only what the logs and frames read; plastic_tie() survives as a tested helper.)
+     * operation. (Since 2026-10-22 the operation rules no longer compare E; use_rest_pose enters
+     * them as PLASTIC AMIPS instead, plastic_quality(): the max rules, the case scores and the
+     * smoothing veto read a plastic cell's AMIPS^3 against its rest, and the smoother's raw AMIPS
+     * sum takes the rest for its plastic cells, plastic_amips_energy().)
      *
      * E HAS NO OFFSET ERROR TERM (2026-10-22). The volumetric band term -- a band cell's part of
      * int_B (d - delta) / delta dV, under EXPERIMENTAL_band_volume_rule as a corner bound, the
@@ -729,7 +734,7 @@ public:
      * Read on the mesh as it is in both calls: the engine asks for the value before the move
      * (`stored`) before its solve moves the vertex, and a candidate's after the candidate is
      * placed. Until this hook the step took the first position where the ring's MAX of
-     * offset_amips_weight AMIPS^3 dropped, and the veto after it refused a move that raised the
+     * weighted AMIPS^3 dropped, and the veto after it refused a move that raised the
      * sum -- measured on the cube (target 1e-2, bar 1e-4, serial, 7 turns): 5,270 such refusals
      * of 21,687 held moves, 2,964 of them moves whose AMIPS part fell and whose band part rose.
      * Now the step looks on along its shorter steps for a position E accepts.
@@ -760,18 +765,21 @@ public:
         return std::sqrt(2.) / 12. * tr * std::sqrt(tr) * std::sqrt(amips3);
     }
 
-    /// The AMIPS term's weight, w / s^3 (w = offset_amips_weight, s = stop_energy): the term is
-    /// w vol (AMIPS / s)^3, about w vol for a cell at the stop energy.
-    double band_amips_weight() const
+    /// The AMIPS term's weight, 1 / s^3 (s = stop_energy, optimization_stop_metric()): the term
+    /// is vol (AMIPS / s)^3, about vol for a cell at the stop energy. (offset_amips_weight, the w
+    /// that once multiplied this, was removed 2026-10-22 -- E is diagnostic, no rule reads it;
+    /// the Parameters field survives for 2D alone. The 1 / s^3 normalisation stays: the repulsion
+    /// passes balance repulsion_cell_term() against this term.)
+    double amips_term_weight() const
     {
         const double s = optimization_stop_metric();
-        return m_offset_params.offset_amips_weight / (s * s * s);
+        return 1. / (s * s * s);
     }
     /// One cell's energy from its corners and its AMIPS^3; see tet_energy().
     double cell_energy(const std::array<size_t, 4>& vids, const double amips3) const
     {
         if (amips3 >= MAX_ENERGY) return MAX_ENERGY;
-        double a = band_amips_weight() * vol_amips3(vids, amips3);
+        double a = amips_term_weight() * vol_amips3(vids, amips3);
         if (m_repulsion_potential) a += repulsion_cell_term(vids);
         return a;
     }
@@ -912,6 +920,42 @@ public:
      * compares E, so nothing calls this; it is kept as the tested statement of the tie.)
      */
     bool plastic_tie(const std::vector<size_t>& before, const std::vector<int>& after_labels) const;
+    /**
+     * @brief PLASTIC AMIPS (use_rest_pose, 2026-10-22): the quality the loop's rules read. The
+     * engine's AMIPS^3 for an ordinary cell; for a plastic cell with a valid rest
+     * (plastic_rest()), AMIPS^3 against that rest at the cell's current corners -- 27 at the
+     * rest, MAX_ENERGY when the cell or its rest is degenerate. With the medium off (or in a
+     * TetWild pass, where m_plastic_active is false) it IS the engine's quality. Read by the
+     * plastic max rules (collapse_edge_before() / collapse_after_connectivity(),
+     * swap_before_interior() / swap_before_surface() / swap_after_cells(), the case scores) and
+     * the smoothing veto (smoothing_cell_energy()).
+     */
+    double plastic_quality(size_t tid) const;
+    /// plastic_quality() of a cell an operation is about to make: stamped at creation, a plastic
+    /// cell (the medium on, a label other than 1 and 2) reads 27 exactly; every other candidate
+    /// the engine's AMIPS^3 at its positions.
+    double candidate_plastic_quality(const std::array<size_t, 4>& vids, const int label) const
+    {
+        if (m_plastic_active && label != 1 && label != 2) return 27.;
+        return get_quality(vids);
+    }
+    /// Whether vid's one-ring holds a plastic cell with a valid rest: whether the smoother's raw
+    /// AMIPS sum must come from plastic_amips_energy() (smooth_nonfront_vertex(),
+    /// smoothing_extra_energy() -- both must agree, so both ask this).
+    bool ring_has_plastic_rest(size_t vid) const;
+    /// TetWild's raw AMIPS smoothing sum over vid's ring with each plastic cell against its
+    /// stamped rest (PlasticAMIPSEnergy3D; ordinary cells against the regular tet, so the value
+    /// is the engine's on them). Null when the ring has no plastic cell (the engine's own AMIPS
+    /// term then serves) or the medium is off. Defined in Optimize3d.cpp.
+    std::shared_ptr<polysolve::nonlinear::Problem> plastic_amips_energy(size_t vid) const;
+    /// The quality the smoothing veto and the projected step compare per cell: as passed, except
+    /// a plastic cell, which reads PLASTIC AMIPS at its current corners (plastic_quality();
+    /// cell_is_plastic() is false in a TetWild pass, so those passes stay the base's).
+    double smoothing_cell_energy(const size_t tid, const double quality) const override
+    {
+        if (cell_is_plastic(tid)) return plastic_quality(tid);
+        return quality;
+    }
 
     /// The 3D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
@@ -1674,6 +1718,21 @@ public:
     /// collapse touches no offset face (no rule; the base's max rule decides,
     /// collapse_quality_allowed()).
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_front_error{-1.};
+    /// The plastic collapse rule's before half (use_rest_pose, collapse_edge_before()): the max
+    /// of plastic_quality() over v1's one-ring, whether v1 was rounded (an unrounded v1 passes,
+    /// as the base's rule does), and v1's ring tids (the cells the collapse reshapes keep their
+    /// slots; the after-max is taken over them alone, as the base judges only the reshaped
+    /// cells). before < 0: no plastic rule (the medium off, a front or coarsening collapse).
+    struct CollapsePlastic
+    {
+        double before = -1.;
+        bool v1_rounded = true;
+        std::vector<size_t> tids;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<CollapsePlastic> m_collapse_plastic;
+    /// Collapses and swaps refused by the plastic max rule, per operation group (the [plastic]
+    /// line).
+    mutable std::atomic<int> m_plastic_reject_collapse{0}, m_plastic_reject_swap{0};
     /**
      * @brief The link of the collapsed edge, captured in collapse_before_vertex().
      *
@@ -1732,6 +1791,9 @@ public:
     bool swap_quality_allowed(double after, double before, bool is_surface_flip) const override
     {
         if (!tetwild_rules() && m_swap_sides.local().worthwhile) return true;
+        // The plastic max rule decides in swap_after_cells(), on plastic AMIPS (the labels are
+        // not written and the new cells not stamped until there).
+        if (!tetwild_rules() && m_swap_plastic_before.local() >= 0.) return true;
         return TetOptimizerMesh::swap_quality_allowed(after, before, is_surface_flip);
     }
     /**
@@ -1805,8 +1867,9 @@ public:
     /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
     /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
     void count_damped_move(size_t vid, const Vector3d& x0, double max_step);
-    /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum vol AMIPS^3 (band_amips_weight(),
-    /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
+    /// The energy's AMIPS term over vid's one-ring, (1 / s^3) sum vol AMIPS^3
+    /// (amips_term_weight(), vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D). The
+    /// repulsion smoothing objective's AMIPS half.
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
     /// smooth_front_vertex() minimises. +inf if unmeasurable.
@@ -1924,6 +1987,10 @@ public:
         // A front vertex the loop places: the ring barrier plus the offset error over its front
         // faces, NO AMIPS (front_objective()).
         if (vertex_front_placed(vid)) return front_objective(vid);
+        // use_rest_pose: a ring with a plastic cell takes the raw AMIPS sum with that cell
+        // against its stamped rest (smooth_nonfront_vertex() passes w_amips 0 for exactly this
+        // ring, by the same ring_has_plastic_rest() test).
+        if (const auto pa = plastic_amips_energy(vid)) return pa;
         // Every other vertex: none -- smooth_nonfront_vertex() runs the engine's raw AMIPS sum.
         return nullptr;
     }
@@ -2299,6 +2366,7 @@ public:
         if (tetwild_rules()) return TetOptimizerMesh::collapse_quality_allowed(v1, q, ring_max);
         if (m_coarsen_mode) return true; // coarsening's absolute bar decides, as before
         if (m_collapse_front_error.local() >= 0.) return true; // the face rule decides
+        if (m_collapse_plastic.local().before >= 0.) return true; // the plastic max rule decides
         return TetOptimizerMesh::collapse_quality_allowed(v1, q, ring_max);
     }
 
@@ -2652,6 +2720,13 @@ private:
     /// by swap_after_cells() against the two faces it makes. -1: not a flip of the offset surface
     /// (no face rule; the base's max rule decides).
     mutable wmtk::threading::enumerable_thread_specific<double> m_swap_error_before{-1.};
+    /// The plastic swap rule's before half (use_rest_pose): the max of plastic_quality() over the
+    /// cells the swap replaces, taken in swap_before_interior() / swap_before_surface() (never
+    /// for a flip of the offset surface, whose face rule stands alone) and compared by
+    /// swap_after_cells() against the max over the cells it makes (strictly lower, the base's
+    /// strictness). The 4-4 / 5-6 case scores read it for op_case 0 and score candidates with
+    /// candidate_plastic_quality(). -1: no plastic rule.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_swap_plastic_before{-1.};
 
 public:
     // substructure functions

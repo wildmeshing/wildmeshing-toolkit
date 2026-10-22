@@ -85,9 +85,9 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_collapse_veto = true, offset_swap_veto = true;
     bool offset_front_smooth_veto = false;
     bool offset_collapse_changed_cells = true;
-    /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
-    /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
-    /// tri_energy = w AMIPS + the offset terms. See the spec.
+    /// 2D ONLY since 2026-10-22 (the key is gone; the strict spec refuses a config that sets it):
+    /// the weight w of AMIPS in 2D's tri_energy = w AMIPS + the offset terms. 3D's AMIPS term is
+    /// unweighted, (1 / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::amips_term_weight()).
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
@@ -433,7 +433,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];

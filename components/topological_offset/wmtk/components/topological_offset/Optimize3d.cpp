@@ -323,7 +323,7 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid) const
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vids[size_t(k)]].m_posf;
         const double v = VolAMIPSEnergy3D::value_of(p, R);
         if (!std::isfinite(v)) return MAX_ENERGY;
-        double e = band_amips_weight() * v;
+        double e = amips_term_weight() * v;
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
@@ -355,6 +355,22 @@ void TopoOffsetTetMesh::stamp_plastic_rests()
     // See the declaration.
     if (!m_plastic_active) return;
     for (const Tuple& t : get_tets()) stamp_rest_cell(t.tid(*this));
+}
+
+double TopoOffsetTetMesh::plastic_quality(const size_t tid) const
+{
+    // See the declaration: AMIPS^3 against the stamped rest for a plastic cell with a valid rest
+    // (VolAMIPSEnergy3D::value_of() is vol * A^3; dividing by the cell's volume recovers A^3),
+    // the engine's AMIPS^3 for every other cell.
+    Eigen::Matrix3d R;
+    if (!plastic_rest(tid, R)) return get_quality(tuple_from_tet(tid));
+    const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+    std::array<Vector3d, 4> p;
+    for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+    const double vol6 = (p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]));
+    if (!(vol6 > 0.)) return MAX_ENERGY;
+    const double q = VolAMIPSEnergy3D::value_of(p, R) * 6. / vol6;
+    return std::isfinite(q) ? q : MAX_ENERGY;
 }
 
 bool TopoOffsetTetMesh::all_plastic(const std::vector<size_t>& tids) const
@@ -493,9 +509,16 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     }
     m_swap_folds_before.local() = -1; // an interior swap changes no offset face
     m_swap_error_before.local() = -1.; // likewise: no face rule
+    m_swap_plastic_before.local() = -1.;
     if (!swap_capture_tag(tids)) return false;
     // An interior swap changes no offset-surface face: the base's max rule decides
-    // (swap_quality_allowed(), the base case scores).
+    // (swap_quality_allowed(), the base case scores) -- on PLASTIC AMIPS under use_rest_pose
+    // (the before half here, the rule in swap_after_cells(), the case scores on it too).
+    if (m_plastic_active && !tetwild_rules()) {
+        double mx = 0.;
+        for (const size_t tid : tids) mx = std::max(mx, plastic_quality(tid));
+        m_swap_plastic_before.local() = mx;
+    }
     return true;
 }
 
@@ -519,6 +542,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
     }
     m_swap_folds_before.local() = -1; // set below for a flip of the offset surface
     m_swap_error_before.local() = -1.; // likewise: the flip rule's before half
+    m_swap_plastic_before.local() = -1.; // set at the end, never for an offset flip
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
     // the ring of a surface flip always spans band and background, which is what makes its faces
@@ -589,7 +613,14 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
     // triangles with surface_triangle_is_outside(), which holds a held face to m_envelope, and
     // that envelope is the geometric constraint. The class-match and same-boundary refusals above
-    // are the topology half; the base's max rule (swap_quality_allowed()) is the quality half.
+    // are the topology half; the base's max rule (swap_quality_allowed()) is the quality half --
+    // on PLASTIC AMIPS under use_rest_pose (never for a flip of the offset surface, whose face
+    // rule stands alone).
+    if (m_plastic_active && !tetwild_rules() && m_swap_error_before.local() < 0.) {
+        double mx = 0.;
+        for (const size_t tid : tids) mx = std::max(mx, plastic_quality(tid));
+        m_swap_plastic_before.local() = mx;
+    }
     return true;
 }
 
@@ -667,12 +698,63 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
         cells.push_back(c);
     }
     // (w / s^3) sum vol AMIPS^3, the energy's AMIPS term -- a volume, as the band term is.
-    auto elastic = std::make_shared<CubedAMIPSEnergy3D>(std::move(cells), band_amips_weight());
+    auto elastic = std::make_shared<CubedAMIPSEnergy3D>(std::move(cells), amips_term_weight());
     if (plastic.empty()) return elastic;
     auto sum = std::make_shared<optimization::EnergySum>();
     sum->add_energy(elastic);
-    sum->add_energy(std::make_shared<VolAMIPSEnergy3D>(std::move(plastic), band_amips_weight()));
+    sum->add_energy(std::make_shared<VolAMIPSEnergy3D>(std::move(plastic), amips_term_weight()));
     return sum;
+}
+
+bool TopoOffsetTetMesh::ring_has_plastic_rest(const size_t vid) const
+{
+    if (!m_plastic_active || tetwild_rules()) return false;
+    Eigen::Matrix3d R;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        if (plastic_rest(tid, R)) return true;
+    }
+    return false;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::plastic_amips_energy(
+    const size_t vid) const
+{
+    // See the declaration: TetWild's raw AMIPS sum, each plastic cell against its stamped rest
+    // and every other cell against the regular tet (PlasticAMIPSEnergy3D reads the engine's value
+    // on those). The cells are assembled exactly as amips3_energy() assembles its plastic ones:
+    // the moving vertex first, orientation preserved, the rest's corners re-ordered with it.
+    if (!ring_has_plastic_rest(vid)) return nullptr;
+    const Eigen::Matrix3d regular = VolAMIPSEnergy3D::regular_rest();
+    std::vector<PlasticAMIPSEnergy3D::Cell> cells;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        const std::array<size_t, 4> orig = oriented_tet_vids(tid);
+        const auto vs = wmtk::orient_preserve_tet_reorder(orig, vid);
+        std::array<Vector3d, 3> q;
+        for (int k = 1; k < 4; ++k) q[size_t(k - 1)] = m_vertex_attribute[vs[k]].m_posf;
+        Eigen::Matrix3d R_orig;
+        PlasticAMIPSEnergy3D::Cell c;
+        if (plastic_rest(tid, R_orig)) {
+            // The rest's corners re-ordered as vs is: rest_pos is in orig's order.
+            const TetAttributes& ta = m_tet_attribute[tid];
+            std::array<int, 4> from{};
+            for (int k = 0; k < 4; ++k) {
+                for (int j = 0; j < 4; ++j) {
+                    if (orig[size_t(j)] == vs[size_t(k)]) from[size_t(k)] = j;
+                }
+            }
+            Eigen::Matrix3d R;
+            for (int k = 1; k < 4; ++k) {
+                R.col(k - 1) = ta.rest_pos[size_t(from[size_t(k)])] - ta.rest_pos[size_t(from[0])];
+            }
+            if (VolAMIPSEnergy3D::cell(q, R, c)) {
+                cells.push_back(c);
+                continue;
+            }
+        }
+        if (VolAMIPSEnergy3D::cell(q, regular, c)) cells.push_back(c);
+    }
+    if (cells.empty()) return nullptr;
+    return std::make_shared<PlasticAMIPSEnergy3D>(std::move(cells), m_params.w_amips);
 }
 
 bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
@@ -680,10 +762,13 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     // See the declaration. TetOptimizerMesh::smooth_after()'s options as TetWild runs them --
     // the engine's own AMIPS term (w_amips), no extra energy (smoothing_extra_energy() returns
     // null here), the quality veto on the ring's max -- plus this component's damping
-    // (opts.max_step) and the fold check below.
+    // (opts.max_step) and the fold check below. use_rest_pose: a ring with a plastic cell takes
+    // the same raw AMIPS sum with that cell against its rest from smoothing_extra_energy()
+    // instead (plastic_amips_energy(); w_amips 0, so the engine adds no second term), and the
+    // quality veto reads plastic AMIPS through smoothing_cell_energy().
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_params.w_amips;
+    opts.w_amips = ring_has_plastic_rest(vid) ? 0. : m_params.w_amips;
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
@@ -760,12 +845,39 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
     // See the declaration: the base's score (the max of AMIPS^3 over the cells), except that a
     // flip of the offset surface scores the CURRENT cells (op_case 0) double::max(): the search
     // never keeps the current cells on quality grounds, it picks the best-shaped candidate, and
-    // the offset error over the flip's two faces decides in swap_after_cells().
+    // the offset error over the flip's two faces decides in swap_after_cells(). Under
+    // use_rest_pose (m_swap_plastic_before taken) the score is PLASTIC AMIPS: op_case 0 is the
+    // before half, a candidate the max of candidate_plastic_quality() over its cells with the
+    // label each will take (an inverted cell double::max(), as the base scores it).
     SwapSurfaceSides& sides = m_swap_sides.local();
     const bool front_flip = !tetwild_rules() && sides.worthwhile;
-    const double e = front_flip && op_case == 0
-                         ? std::numeric_limits<double>::max()
-                         : TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
+    const double plastic_before =
+        !tetwild_rules() && !front_flip ? m_swap_plastic_before.local() : -1.;
+    double e = -1.;
+    if (front_flip && op_case == 0) {
+        e = std::numeric_limits<double>::max();
+    } else if (plastic_before >= 0. && op_case == 0) {
+        e = plastic_before;
+    } else if (plastic_before >= 0.) {
+        e = 0.;
+        for (const std::array<size_t, 4>& vids : tets) {
+            if (is_inverted(vids)) {
+                e = std::numeric_limits<double>::max();
+                break;
+            }
+            int label = m_swap_label.local();
+            for (const size_t v : vids) {
+                const auto it = sides.by_vertex.find(v);
+                if (it != sides.by_vertex.end()) {
+                    label = it->second.second;
+                    break;
+                }
+            }
+            e = std::max(e, candidate_plastic_quality(vids, label));
+        }
+    } else {
+        e = TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
+    }
     if (!front_flip || dry_run()) return e; // the funnel follows real attempts
     if (op_case == 0) {
         sides.case0_energy = e;
@@ -847,14 +959,33 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // A refusal is rolled back by the engine. It is counted as app_sag_raised, the engine's name
     // for this after-hook refusal (SwapReject lives in the engine, which this does not change).
     const auto energy_lowered = [&]() {
+        if (tetwild_rules()) return true;
         const double before = m_swap_error_before.local();
-        if (tetwild_rules() || before < 0.) return true; // no face rule: quality decided already
-        const auto& q = m_swap_sides.local().abcd;
-        const double after = std::max(face_offset_error(q[0], q[2], q[3]), 0.) +
-                             std::max(face_offset_error(q[1], q[2], q[3]), 0.);
-        if (after < before) return true;
-        ++m_volume_reject_swap;
-        return swap_reject(SwapReject::app_sag_raised);
+        if (before >= 0.) {
+            const auto& q = m_swap_sides.local().abcd;
+            const double after = std::max(face_offset_error(q[0], q[2], q[3]), 0.) +
+                                 std::max(face_offset_error(q[1], q[2], q[3]), 0.);
+            if (after < before) return true;
+            ++m_volume_reject_swap;
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+        // THE PLASTIC SWAP RULE (use_rest_pose, 2026-10-22): the base's strict max rule on
+        // plastic AMIPS over the cells the swap made (labelled and stamped above, so a plastic
+        // one reads 27) against the max over the cells it replaced (swap_before_interior() /
+        // swap_before_surface()). Strict, as the base is: an all-plastic swap at rest reads
+        // 27 < 27 and is refused, so a swap pass terminates.
+        const double plastic_before = m_swap_plastic_before.local();
+        if (plastic_before >= 0.) {
+            double after = 0.;
+            for (const size_t t : tids) after = std::max(after, plastic_quality(t));
+            if (after < plastic_before) return true;
+            ++m_plastic_reject_swap;
+            if (current_op_kind() == OpKind::swap_face) {
+                return swap_reject_kind_only(SwapReject::app_sag_raised);
+            }
+            return swap_reject(SwapReject::app_sag_raised);
+        }
+        return true; // no face and no plastic rule: the base's max rule decided already
     };
 
     if (!is_surface_flip) {
@@ -990,6 +1121,20 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         err = -1.;
         if (front && !tetwild_rules() && !m_coarsen_mode && m_offset_potential) {
             err = offset_error_at(cc.v1_id, cc.v2_id);
+        }
+        // THE PLASTIC COLLAPSE RULE's before half (use_rest_pose, see m_collapse_plastic): the
+        // base's max rule on PLASTIC AMIPS -- the max of plastic_quality() over v1's one-ring,
+        // judged against the reshaped cells in collapse_after_connectivity(). Never beside the
+        // front rule, whose face error stands alone.
+        CollapsePlastic& cp = m_collapse_plastic.local();
+        cp.before = -1.;
+        if (m_plastic_active && !tetwild_rules() && !m_coarsen_mode && err < 0.) {
+            cp.tids = get_one_ring_tids_for_vertex(cc.v1_id);
+            double mx = 0.;
+            for (const size_t tid : cp.tids) mx = std::max(mx, plastic_quality(tid));
+            std::sort(cp.tids.begin(), cp.tids.end());
+            cp.before = mx;
+            cp.v1_rounded = m_vertex_attribute[cc.v1_id].m_is_rounded;
         }
     }
     return true;
@@ -1130,6 +1275,23 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             const double after = offset_error_at(v2_id);
             if (!(after <= before)) {
                 ++m_volume_reject_collapse;
+                return false;
+            }
+        }
+        // THE PLASTIC COLLAPSE RULE (use_rest_pose, 2026-10-22): the base's max rule on plastic
+        // AMIPS. The reshaped cells are v1's old ring in their own slots (the dead ones are gone
+        // from the survivor's ring); each was stamped above, so a plastic one reads 27, and only
+        // a band or complex cell can really block. An unrounded v1 passes, as the base's rule
+        // does; after <= before passes (the base's tie).
+        const CollapsePlastic& cp = m_collapse_plastic.local();
+        if (cp.before >= 0. && cp.v1_rounded) {
+            double after = 0.;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+                if (!std::binary_search(cp.tids.begin(), cp.tids.end(), tid)) continue;
+                after = std::max(after, plastic_quality(tid));
+            }
+            if (!(after <= cp.before)) {
+                ++m_plastic_reject_collapse;
                 return false;
             }
         }
@@ -4033,7 +4195,7 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
             const auto vids = oriented_tet_vids(t.tid(*this));
             const double amips3 = get_quality(t);
             amips +=
-                amips3 >= MAX_ENERGY ? MAX_ENERGY : band_amips_weight() * vol_amips3(vids, amips3);
+                amips3 >= MAX_ENERGY ? MAX_ENERGY : amips_term_weight() * vol_amips3(vids, amips3);
         }
         std::ofstream f(
             m_offset_params.output_path + "_energy.txt",
@@ -4228,6 +4390,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             }
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
+            const int pl_c0 = m_plastic_reject_collapse.load(),
+                      pl_s0 = m_plastic_reject_swap.load();
             const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
                       fold_m0 = m_fold_reject_smooth.load();
             if (gi == 1) needle_scan("collapse pass");
@@ -4269,6 +4433,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                         m_fold_reject_collapse.load() - fold_c0,
                         m_fold_reject_swap.load() - fold_s0,
                         m_fold_reject_smooth.load() - fold_m0);
+                }
+                if (m_plastic_active) {
+                    logger().info(
+                        "\t[plastic] turn {} {} group: refused by the plastic max rule "
+                        "(use_rest_pose, plastic AMIPS): {} collapses, {} swaps",
+                        it + 1,
+                        group_names[gi],
+                        m_plastic_reject_collapse.load() - pl_c0,
+                        m_plastic_reject_swap.load() - pl_s0);
                 }
             }
         }

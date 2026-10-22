@@ -1214,6 +1214,84 @@ double face_mean_sq_cos(
 
 
 // ---------------------------------------------------------------------------------------------
+// PlasticAMIPSEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+PlasticAMIPSEnergy3D::PlasticAMIPSEnergy3D(std::vector<Cell> cells, const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+double PlasticAMIPSEnergy3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // See the class doc: per cell A = f h^(-2/3), f = tr(J^T J) quadratic in x, h = det(J) affine
+    // in x (so hess h = 0); +inf on an inverted cell.
+    g.setZero();
+    H.setZero();
+    double e = 0.;
+    for (const Cell& c : m_cells) {
+        Eigen::Matrix3d D;
+        for (int k = 0; k < 3; ++k) D.col(k) = c.q[size_t(k)] - x;
+        const Eigen::Matrix3d J = D * c.rest_inv;
+        const double h = J.determinant();
+        if (!(h > 0.)) return std::numeric_limits<double>::infinity();
+        const double f = J.squaredNorm();
+        const double w = std::pow(h, -2. / 3.);
+        e += f * w;
+        if (need < 1) continue;
+        const Eigen::Vector3d gf = -2. * (J * c.s);
+        const Eigen::Vector3d gh = -h * (J.inverse().transpose() * c.s);
+        const Eigen::Vector3d gw = (-2. / 3.) * std::pow(h, -5. / 3.) * gh;
+        g += w * gf + f * gw;
+        if (need < 2) continue;
+        const Eigen::Matrix3d Hf = (2. * c.s.squaredNorm()) * Eigen::Matrix3d::Identity();
+        const Eigen::Matrix3d Hw = (10. / 9.) * std::pow(h, -8. / 3.) * (gh * gh.transpose());
+        H += w * Hf + gf * gw.transpose() + gw * gf.transpose() + f * Hw;
+    }
+    g *= m_weight;
+    H *= m_weight;
+    return m_weight * e;
+}
+
+double PlasticAMIPSEnergy3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head(3), 0, g, H);
+}
+
+void PlasticAMIPSEnergy3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 1, g, H);
+    gradv = g;
+}
+
+void PlasticAMIPSEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 2, g, H);
+    hess = H;
+}
+
+bool PlasticAMIPSEnergy3D::is_step_valid(const TVector& /*x0v*/, const TVector& x1v)
+{
+    const Eigen::Vector3d x1 = x1v.head(3);
+    for (const Cell& c : m_cells) {
+        Eigen::Matrix3d D;
+        for (int k = 0; k < 3; ++k) D.col(k) = c.q[size_t(k)] - x1;
+        if (!((D * c.rest_inv).determinant() > 0.)) return false;
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------------------------
 // FaceStencilError3D
 // ---------------------------------------------------------------------------------------------
 

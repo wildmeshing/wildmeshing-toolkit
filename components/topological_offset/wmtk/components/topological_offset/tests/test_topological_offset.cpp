@@ -1444,7 +1444,7 @@ TEST_CASE("ring-barrier-3d", "[offset][3d]")
 
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
-    // tet_energy() against its definition computed by hand: (w / s^3) vol AMIPS^3 for every
+    // tet_energy() against its definition computed by hand: (1 / s^3) vol AMIPS^3 for every
     // cell; MAX_ENERGY
     // for a degenerate cell. Four cells around the edge (a, b): 0 and 1 band, 2 background, 3
     // input complex (the label changes nothing since the band term's removal, 2026-10-22). At
@@ -1459,12 +1459,8 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
         0., -0.4, 0.75; // c3
     const int a = 0, b = 1, c0 = 2, c1 = 3, c2 = 4, c3 = 5;
     const std::vector<int> labels = {2, 2, 0, 1};
-    for (const auto& [w, s] : std::vector<std::pair<double, double>>{
-             {1., 3.},
-             {1., 100.},
-             {Parameters().offset_amips_weight, 100.}}) {
+    for (const double s : {3., 100.}) {
         Parameters param;
-        param.offset_amips_weight = w;
         param.stop_energy = s;
         const auto pot = plane_field();
         auto mesh = energy_mesh(
@@ -1479,8 +1475,8 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
             REQUIRE(a3 < TetOptimizerMesh::MAX_ENERGY);
             const auto p = corners(*mesh, tid);
             const double vol = std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-            const double want = w / (s * s * s) * vol * a3;
-            INFO("w " << w << ", s " << s << ", tet " << tid);
+            const double want = vol * a3 / (s * s * s);
+            INFO("s " << s << ", tet " << tid);
             CHECK(mesh->tet_energy(tid) == Catch::Approx(want).epsilon(1e-10));
         }
         // A degenerate cell: c3 into the plane y = 0 of a, b, c0 and c2 flattens cells 2 and 3.
@@ -1546,14 +1542,13 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
         {V2, T2, std::vector<int>(8, 2), 0}};
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
-        for (const auto& [w, s, plastic] : std::vector<std::tuple<double, double, bool>>{
-                 {1., 3., false},
-                 {Parameters().offset_amips_weight, 100., false},
-                 {1., 3., true},
-                 {Parameters().offset_amips_weight, 100., true}}) {
+        for (const auto& [s, plastic] : std::vector<std::pair<double, bool>>{
+                 {3., false},
+                 {100., false},
+                 {3., true},
+                 {100., true}}) {
             if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
             Parameters param;
-            param.offset_amips_weight = w;
             param.stop_energy = s;
             const auto pot = plane_field();
             auto mesh = energy_mesh(param, fx.V, fx.T, fx.labels, pot);
@@ -1587,27 +1582,40 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                 Eigen::Matrix3d R;
                 REQUIRE(mesh->plastic_rest(2, R));
                 const auto p = corners(*mesh, 2);
-                const double rest_term = w / (s * s * s) * VolAMIPSEnergy3D::value_of(p, R);
+                const double rest_term = VolAMIPSEnergy3D::value_of(p, R) / (s * s * s);
                 const double a3 = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(2));
                 const double vol =
                     std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
-                INFO("w " << w << ", s " << s << ", plastic cell 2");
+                INFO("s " << s << ", plastic cell 2");
                 CHECK(mesh->tet_energy(2) == Catch::Approx(rest_term).epsilon(1e-10));
-                CHECK(
-                    std::abs(rest_term - w / (s * s * s) * vol * a3) > 1e-3 * std::abs(rest_term));
+                CHECK(std::abs(rest_term - vol * a3 / (s * s * s)) > 1e-3 * std::abs(rest_term));
             }
             for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
                 const bool front = mesh->m_vertex_extra[v].m_is_on_offset;
                 INFO(
-                    "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
-                               << ", vertex " << v << (front ? " (front)" : ""));
+                    "fixture " << fi << ", s " << s << ", plastic " << plastic << ", vertex " << v
+                               << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
                 REQUIRE(mesh->vertex_front_placed(v) == front);
                 const auto energy = mesh->smoothing_extra_energy(v);
                 if (!front) {
-                    // Off the front: no extra energy, the engine's raw AMIPS sum smooths it.
-                    CHECK(energy == nullptr);
+                    if (mesh->ring_has_plastic_rest(v)) {
+                        // use_rest_pose with a plastic ring cell: the raw AMIPS sum with that
+                        // cell against its stamped rest -- per cell the cube root of
+                        // plastic_quality(), the regular-rest cells reading the engine's value.
+                        REQUIRE(energy != nullptr);
+                        double want = 0.;
+                        for (const size_t tid : mesh->get_one_ring_tids_for_vertex(v)) {
+                            want += std::cbrt(mesh->plastic_quality(tid));
+                        }
+                        want *= mesh->m_params.w_amips;
+                        Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf;
+                        CHECK(energy->value(xv) == Catch::Approx(want).epsilon(1e-10));
+                    } else {
+                        // Off the front: no extra energy, the engine's raw AMIPS sum smooths it.
+                        CHECK(energy == nullptr);
+                    }
                     continue;
                 }
                 REQUIRE(energy != nullptr);
@@ -2563,6 +2571,91 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
     CHECK_THROWS(Parameters{zero});
 }
 
+TEST_CASE("plastic-amips-quality", "[offset][3d]")
+{
+    // use_rest_pose since 2026-10-22: the loop's rules read PLASTIC AMIPS. plastic_quality() is
+    // 27 exactly for a plastic cell at its stamped rest, the strained value against the rest
+    // after a corner moves, and the engine's AMIPS^3 for an ordinary cell;
+    // candidate_plastic_quality() is 27 for a plastic label and the engine's value otherwise;
+    // smoothing_cell_energy() routes a plastic cell to plastic_quality() and passes everything
+    // else through. plastic_amips_energy() is the raw AMIPS sum over a ring with the plastic
+    // cell against its rest: its value is the sum of the cube roots of plastic_quality(), and
+    // its gradient and Hessian match central differences.
+    Eigen::MatrixXd V(6, 3);
+    V << 0., 0., 0.37, 0., 0., 1.13, 0.4, 0., 0.75, 0., 0.4, 0.8, -0.4, 0., 0.7, 0., -0.4, 0.75;
+    const std::vector<std::array<int, 4>> T = {
+        {{0, 1, 2, 3}},
+        {{0, 1, 3, 4}},
+        {{0, 1, 4, 5}},
+        {{0, 1, 5, 2}}};
+    Parameters param;
+    const auto pot = plane_field();
+    auto mesh = energy_mesh(param, V, T, {2, 2, 0, 1}, pot);
+    mesh->m_plastic_active = true;
+    mesh->stamp_plastic_rests();
+    REQUIRE(mesh->cell_is_plastic(2));
+    REQUIRE(!mesh->cell_is_plastic(0)); // band
+    REQUIRE(!mesh->cell_is_plastic(3)); // input complex
+    // At the stamped rest a plastic cell reads the regular tet's value exactly.
+    CHECK(mesh->plastic_quality(2) == Catch::Approx(27.).epsilon(1e-12));
+    // An ordinary cell reads the engine's AMIPS^3.
+    CHECK(
+        mesh->plastic_quality(0) ==
+        mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(0)));
+    // Strain cell 2 off its rest: its corner c2 (vertex 4) moves.
+    const Vector3d x4 = mesh->m_vertex_attribute[4].m_posf;
+    mesh->set_vertex_position(4, x4 + Vector3d(0.03, -0.02, 0.025));
+    const double pq = mesh->plastic_quality(2);
+    const double eq = mesh->TetOptimizerMesh::get_quality(mesh->oriented_tet_vids(2));
+    CHECK(pq > 27.);
+    CHECK(std::abs(pq - eq) > 1e-6 * eq); // against the rest, not the regular tet
+    // The smoothing veto's per-cell hook.
+    CHECK(mesh->smoothing_cell_energy(2, 123.) == pq);
+    CHECK(mesh->smoothing_cell_energy(0, 123.) == 123.);
+    // Candidates: a plastic label is stamped at creation and reads 27; others the engine's value.
+    const auto vids0 = mesh->oriented_tet_vids(0);
+    CHECK(mesh->candidate_plastic_quality(vids0, 0) == 27.);
+    CHECK(mesh->candidate_plastic_quality(vids0, 2) == mesh->TetOptimizerMesh::get_quality(vids0));
+    // The plastic smoothing sum at vertex 5 (ring: plastic cell 2, complex cell 3).
+    REQUIRE(mesh->ring_has_plastic_rest(5));
+    const auto energy = mesh->plastic_amips_energy(5);
+    REQUIRE(energy != nullptr);
+    double want = 0.;
+    for (const size_t tid : mesh->get_one_ring_tids_for_vertex(5)) {
+        want += std::cbrt(mesh->plastic_quality(tid));
+    }
+    want *= mesh->m_params.w_amips;
+    Eigen::VectorXd xv = mesh->m_vertex_attribute[5].m_posf;
+    CHECK(energy->value(xv) == Catch::Approx(want).epsilon(1e-10));
+    // Derivatives against central differences.
+    const double h = 1e-6;
+    Eigen::VectorXd g(3);
+    Eigen::MatrixXd H(3, 3);
+    energy->gradient(xv, g);
+    energy->hessian(xv, H);
+    CHECK(g.norm() > 0.);
+    for (int i = 0; i < 3; ++i) {
+        Eigen::VectorXd xp = xv, xm = xv;
+        xp[i] += h;
+        xm[i] -= h;
+        const double fd = (energy->value(xp) - energy->value(xm)) / (2. * h);
+        CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
+        Eigen::VectorXd gp(3), gm(3);
+        energy->gradient(xp, gp);
+        energy->gradient(xm, gm);
+        for (int j = 0; j < 3; ++j) {
+            const double fdh = (gp[j] - gm[j]) / (2. * h);
+            CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+        }
+    }
+    // A ring without a plastic cell gives no plastic sum (vertex 3's cells are both band).
+    CHECK(!mesh->ring_has_plastic_rest(3));
+    CHECK(mesh->plastic_amips_energy(3) == nullptr);
+    // With the medium off, plastic_quality() is the engine's everywhere.
+    mesh->m_plastic_active = false;
+    CHECK(mesh->plastic_quality(2) == eq);
+}
+
 TEST_CASE("settle-rel-thresh-key", "[offset][3d]")
 {
     // settle_rel_thresh through the spec, as the app reads it: the default 0.1, a value read
@@ -2592,9 +2685,11 @@ TEST_CASE("settle-rel-thresh-key", "[offset][3d]")
     const Parameters zero(injected({{"settle_rel_thresh", 0.}}));
     CHECK(zero.settle_rel_thresh == 0.);
     CHECK_FALSE(verify({{"settle_rel_thresh", -0.1}}));
-    // The volumetric band term's keys are gone: the strict spec refuses a config that sets them.
+    // The volumetric band term's keys and the AMIPS weight are gone: the strict spec refuses a
+    // config that sets any of them.
     CHECK_FALSE(verify({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_gap_refinement", true}}));
+    CHECK_FALSE(verify({{"offset_amips_weight", 1.}}));
 }
 
 TEST_CASE("growth-mode-keys", "[offset][3d]")

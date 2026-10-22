@@ -632,8 +632,8 @@ private:
 
 /**
  * @brief The per-tet energy's AMIPS term as the smoother minimises it: w * sum over cells of
- * vol AMIPS^3 (TopoOffsetTetMesh::tet_energy(), whose caller passes w = offset_amips_weight /
- * stop_energy^3).
+ * vol AMIPS^3 (TopoOffsetTetMesh::tet_energy(), whose caller passes w = 1 / stop_energy^3,
+ * amips_term_weight()).
  *
  * Each cell's vol AMIPS^3 is (sqrt2/12) T^(3/2) AMIPS^(3/2) with T = (1/2) sum |e|^2 -- the volume
  * never from a determinant (see cubed_amips_vol_term() in the .cpp). Cells in the shared
@@ -812,6 +812,43 @@ double face_mean_sq_cos(
     double delta);
 
 /** @} */
+
+/**
+ * @brief The raw sum of AMIPS over a one-ring with per-cell reference shapes, the moving vertex
+ * first: TetWild's smoothing objective with a plastic cell (use_rest_pose) measured against its
+ * stamped rest instead of the regular tet (TopoOffsetTetMesh::plastic_amips_energy()). A cell's
+ * term is A(J) = tr(J^T J) det(J)^(-2/3), J = D(x) rest_inv with D's columns q_k - x: 3 at the
+ * reference shape, +inf when the cell is inverted (det <= 0). Reuses VolAMIPSEnergy3D::Cell (its
+ * rest_inv, and s = rest_inv^T 1, which is exactly dJ/dx's rank-1 factor: J = J_c - x s^T).
+ * Exact gradient and Hessian: f = tr(J^T J) is quadratic in x (grad f = -2 J s, hess f =
+ * 2 |s|^2 I) and h = det(J) is AFFINE in x (the matrix determinant lemma on the rank-1 move;
+ * grad h = -h J^-T s, hess h = 0), so with w = h^(-2/3): grad A = w grad f + f grad w and
+ * hess A = w hess f + grad f grad w^T + grad w grad f^T + (10/9) f h^(-8/3) grad h grad h^T.
+ */
+class PlasticAMIPSEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    using Cell = VolAMIPSEnergy3D::Cell;
+    PlasticAMIPSEnergy3D(std::vector<Cell> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::vector<Cell> m_cells;
+    double m_weight;
+};
 
 /**
  * @brief A vertex's part of the offset error (TopoOffsetTetMesh::offset_error()), the vertex
