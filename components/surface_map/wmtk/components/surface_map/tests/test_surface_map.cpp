@@ -781,3 +781,53 @@ TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[surface_map]")
     CHECK(back[1].face >= map.input_faces().size());
     CHECK(map.map_warnings().unlocated == 1);
 }
+
+TEST_CASE("surface-map-smoothing", "[surface_map]")
+{
+    // A flat hexagonal fan whose centre moves. Smoothing::barycentric, as the paper does: a
+    // point keeps its face and barycentric coordinates, and so moves with the centre.
+    // Smoothing::flatten, the default: the point stays where it was on the surface, as far as
+    // the joint flattening can -- here, the fan being flat, much closer than barycentric.
+    history::SurfaceHistory h;
+    h.vertices.push_back(Eigen::Vector3d::Zero());
+    for (int k = 0; k < 6; ++k) {
+        const double a = k * M_PI / 3;
+        h.vertices.push_back(Eigen::Vector3d(std::cos(a), std::sin(a), 0));
+    }
+    h.vertex_alive.assign(7, 1);
+    for (uint64_t k = 0; k < 6; ++k) h.faces.push_back({{0, 1 + k, 1 + (k + 1) % 6}});
+    h.face_alive.assign(6, 1);
+    h.edits.push_back(
+        {history::EditKind::move_vertices, {}, {}, {{0, Eigen::Vector3d(0.3, 0.1, 0)}}});
+
+    const auto pts = sample(h.face_alive, 20, 5);
+    const auto drift = [&](const SurfaceMap& map, const std::vector<SurfacePoint>& there) {
+        double d = 0;
+        for (size_t i = 0; i < pts.size(); ++i) {
+            REQUIRE(there[i].face < map.output_faces().size());
+            d += (position(there[i], map.output_vertices(), map.output_faces()) -
+                  position(pts[i], map.input_vertices(), map.input_faces()))
+                     .norm();
+        }
+        return d / double(pts.size());
+    };
+
+    const SurfaceMap bary(h, surface_map::Smoothing::barycentric);
+    const auto there_b = bary.to_output(pts);
+    for (size_t i = 0; i < pts.size(); ++i) {
+        CHECK(there_b[i].face == pts[i].face);
+        CHECK(there_b[i].bary == pts[i].bary);
+    }
+    CHECK(bary.kept_moves() == 1);
+
+    const SurfaceMap flat(h); // Smoothing::flatten
+    const auto there_f = flat.to_output(pts);
+    CHECK(flat.kept_moves() == 0);
+    CHECK(drift(flat, there_f) < 0.5 * drift(bary, there_b));
+
+    for (const SurfaceMap* map : {&bary, &flat}) {
+        size_t warnings = 0;
+        CHECK(round_trip(*map, pts, true, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+    }
+}

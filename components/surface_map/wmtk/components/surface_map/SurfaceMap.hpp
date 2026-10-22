@@ -45,20 +45,31 @@ struct MapWarnings
     }
 };
 
+/// How the map follows a vertex smoothing step (EditKind::move_vertices).
+enum class Smoothing {
+    /// Points keep their face and barycentric coordinates, riding along with the vertex by at
+    /// most its step: a bijection at no cost, as BijectiveRemesh does it.
+    barycentric,
+    /// The vertex's star before and after the move, flattened jointly, so points stay where they
+    /// were on the surface as far as the flattening can: one SLIM solve per move. Measured on a
+    /// remeshed textured bunny: a third of barycentric's drift, and the texture's symmetric
+    /// Dirichlet energy 10.6 against 232 (the input's 4.1), for twice the time to build the map.
+    flatten,
+};
+
 /**
  * @brief The map between the first and the last state of a SurfaceHistory.
  *
- * Built from the history alone, one local map per operation (BijectiveRemesh). A vertex move
- * keeps every (face, barycentric) point where it is; a split maps its new faces affinely onto
- * the face they subdivide, with the new vertex where the history put it; a collapse and a swap
- * map through a joint Tutte embedding of the faces they touch, before and after, on a shared
- * convex outline -- a boundary vertex the collapse removes sits on the straight segment between
- * its boundary neighbours, so the boundary maps onto itself. A consolidation renumbers faces.
+ * Built from the history alone, one local map per operation (BijectiveRemesh). A split maps its
+ * new faces affinely onto the face they subdivide, with the new vertex where the history put it;
+ * a collapse and a swap map through a joint embedding of the faces they touch, before and after,
+ * on a shared outline, Tutte's lowered in distortion by SLIM; a vertex move follows `smoothing`
+ * (see Smoothing). A consolidation renumbers faces.
  */
 class SurfaceMap
 {
 public:
-    explicit SurfaceMap(const history::SurfaceHistory& h);
+    explicit SurfaceMap(const history::SurfaceHistory& h, Smoothing smoothing = Smoothing::flatten);
 
     /// Points on the last state, mapped onto the first.
     std::vector<SurfacePoint> to_input(std::vector<SurfacePoint> points) const;
