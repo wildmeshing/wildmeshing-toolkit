@@ -1341,6 +1341,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             component_io.result.first["features"] =
                 simwild::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
         component_io.result.first["envelope"] = std::move(memory_envelope);
+        return {}; // the memory overload returns component_io.result instead
     }
     return mesh_new.export_mesh_data();
 }
