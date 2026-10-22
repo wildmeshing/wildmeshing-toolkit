@@ -277,6 +277,27 @@ TEST_CASE("A reused memory writer starts each mesh without fields", "[mesh_data]
     REQUIRE(outputs.at("second.vtu").vertex_attributes.empty());
     REQUIRE(outputs.at("second.vtu").cell(CellType::Edge).attributes.empty());
 }
+TEST_CASE("Memory exports map to result keys explicitly", "[mesh_data][io]")
+{
+    auto raw = [] {
+        MeshMap m;
+        m["mesh.vtu"] = MeshData();
+        m["mesh_surf.vtu"] = MeshData();
+        return m;
+    };
+    const auto named = io::named_outputs(raw());
+    REQUIRE(named.size() == 2);
+    REQUIRE(named.count("mesh"));
+    REQUIRE(named.count("surface"));
+    auto keys = io::default_output_keys();
+    keys["mesh_surf.vtu"] = "";
+    REQUIRE(io::named_outputs(raw(), keys).size() == 1);
+    keys["mesh_surf.vtu"] = "mesh";
+    REQUIRE_THROWS(io::named_outputs(raw(), keys));
+    auto unknown = raw();
+    unknown["mesh_offset.vtu"] = MeshData();
+    REQUIRE_THROWS(io::named_outputs(std::move(unknown)));
+}
 TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
 {
     MeshData mesh;

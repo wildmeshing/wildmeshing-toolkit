@@ -5,12 +5,17 @@
 
 namespace wmtk::components::topological_offset {
 template <typename Mesh>
-void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
+void collect_memory_output(
+    Mesh& mesh,
+    io::ComponentIO& context,
+    io::OutputKeys keys = io::default_output_keys())
 {
+    // In 2D, `_surf` is the envelope curve itself, which is returned as `envelope` below.
+    if constexpr (!std::is_base_of_v<TetMesh, Mesh>) keys["mesh_surf.vtu"] = "";
     MeshMap raw;
     mesh.write_vtu("mesh", &raw);
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) io::compact_slot_outputs(mesh, raw);
-    context.result.first = io::named_outputs(std::move(raw));
+    context.result.first = io::named_outputs(std::move(raw), keys);
     auto& data = context.result.first.at("mesh");
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) {
         simwild::collect_tags(

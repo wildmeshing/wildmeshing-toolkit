@@ -275,12 +275,28 @@ TEST_CASE("Manifold extraction accepts named tagged meshes", "[component_io]")
     WorkingDirectory cwd;
     auto data = triangle();
     add_tags(data, CellType::Triangle);
+    MeshData envelope = triangle();
+    envelope.cells.clear();
+    envelope.cells[CellType::Edge].connectivity.resize(3, 2);
+    envelope.cells[CellType::Edge].connectivity << 0, 1, 1, 2, 2, 0;
+    nlohmann::json options = {
+        {"input", "tagged"},
+        {"tag_selection", "tag_0"},
+        {"DEBUG_output", true}};
+    SECTION("without an envelope") {}
+    SECTION("with an envelope")
+    {
+        options["envelope"] = "boundary";
+    }
     const auto result = manifold_extraction::manifold_extraction(
-        {{"input", "tagged"}, {"tag_selection", "tag_0"}, {"DEBUG_output", true}},
-        {{"tagged", data}});
+        options,
+        {{"tagged", data}, {"boundary", envelope}});
     check(result);
     REQUIRE(result.first.count("surface"));
     REQUIRE(result.first.at("surface").cells.count(CellType::Edge));
+    // A 2D offset exports no input complex; its `_surf` export is the envelope curve.
+    REQUIRE(!result.first.count("input_complex"));
+    REQUIRE(result.first.count("envelope") == options.count("envelope"));
 }
 #endif
 #ifdef WMTK_TEST_prismatic_mesh

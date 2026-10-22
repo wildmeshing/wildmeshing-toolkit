@@ -126,21 +126,31 @@ void compact_slot_outputs(const Mesh& mesh, MeshMap& outputs)
     for (const auto& v : mesh.get_vertices()) rows.push_back(v.vid(mesh));
     for (auto& [name, data] : outputs) compact_vertices(data, rows);
 }
-// Rename the stable legacy export suffixes into public result keys.
-inline MeshMap named_outputs(MeshMap raw)
+// The result key of each memory export. The exporters keep their legacy file naming,
+// <stem><suffix>.vtu, and the memory calls use the stem "mesh". An empty key drops an export
+// that the caller returns in another form.
+using OutputKeys = std::map<std::string, std::string>;
+inline OutputKeys default_output_keys()
+{
+    return {
+        {"mesh.vtu", "mesh"},
+        {"mesh_surf.vtu", "surface"},
+        {"mesh_edge.vtu", "edges"},
+        {"mesh_off.vtu", "offset"},
+        {"mesh_front.vtu", "offset"},
+        {"mesh_offset_faces.vtu", "offset"}};
+}
+// Rename the exports into public result keys. An export missing from `keys`, or two exports
+// with the same key, is an error rather than a silently dropped output.
+inline MeshMap named_outputs(MeshMap raw, const OutputKeys& keys = default_output_keys())
 {
     MeshMap result;
     for (auto& [path, data] : raw) {
-        std::string key = "mesh";
-        if (path.find("_surf") != std::string::npos)
-            key = "surface";
-        else if (path.find("_off") != std::string::npos)
-            key = "offset";
-        else if (path.find("_front") != std::string::npos)
-            key = "offset";
-        else if (path.find("_edge") != std::string::npos)
-            key = "edges";
-        result.emplace(key, std::move(data));
+        const auto key = keys.find(path);
+        if (key == keys.end()) throw std::runtime_error("Unexpected memory export: " + path);
+        if (key->second.empty()) continue;
+        if (!result.emplace(key->second, std::move(data)).second)
+            throw std::runtime_error("Two memory exports map to the result key " + key->second);
     }
     return result;
 }

@@ -150,9 +150,18 @@ unchanged.
 ## Results and compatibility
 
 `mesh` is the primary output key. Components also return their applicable existing secondary
-geometry under keys such as `surface`, `uv`, `edges`, `offset`, `envelope`, and `features`.
-Manifold extraction returns its extracted boundary as `surface`, retaining an input-complex
-preview as `input_complex` when available. Prismatic `export_input_and_shell` adds `input_and_shell`. Reports contain the existing
+geometry under fixed keys:
+
+- `surface`: the boundary (triangles in 3D; in 2D -- triwild, 2D simwild -- the boundary edges).
+  Manifold extraction returns its extracted boundary here.
+- `edges`: simwild's 3D feature edges.
+- `offset`: the offset surface or front; prismatic's classified offset faces.
+- `envelope`, `features`, `uv`, and manifold extraction's 3D input-complex preview `input_complex`.
+- Prismatic `export_input_and_shell` adds `input_and_shell`.
+
+The exporters' legacy file names map to these keys through one explicit table
+(`io::default_output_keys`); an unmapped export or two exports with one key is an error, never
+a silently dropped output. Reports contain the existing
 algorithm counts, quality measures, and timings; prismatic reports also contain hybrid and
 smoothing/remeshing reports. Report values are available without a report filename.
 
