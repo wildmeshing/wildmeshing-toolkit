@@ -6,6 +6,7 @@
 #include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <algorithm>
+#include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
@@ -96,6 +97,24 @@ public:
     /// edge. Named for the order rather than for "open boundary" because that is what
     /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
     std::shared_ptr<Envelope> m_order2_envelope;
+
+    /**
+     * @brief One envelope per input surface, when there are several: a tracked face is held to
+     * those of its input set (FaceAttributes::input_set()), m_envelope stays their union.
+     *
+     * Empty with one input, and then every face is held to m_envelope as it always was. Built
+     * by the driver around the same surface as m_envelope, at the same eps and predicate.
+     */
+    wmtk::InputEnvelopes m_input_envelopes;
+
+    /// A tracked face's containment: the envelopes of its input set (see m_input_envelopes).
+    std::shared_ptr<Envelope> surface_envelope_for_face(
+        const std::array<size_t, 3>& vids,
+        const FaceAttributes& attr) const override
+    {
+        if (m_input_envelopes.empty()) return m_envelope;
+        return m_input_envelopes.containment(attr.input_set());
+    }
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.
@@ -335,6 +354,23 @@ public:
         const std::vector<int>& face_input,
         int n_inputs);
 
+    /**
+     * @brief The tracked surface's winding number split by input: W(i, p) is the winding number
+     * at barycenters.row(i) of the tracked faces whose input set contains p, in the orientation
+     * compute_winding_number gives the tracked surface (the input's, when the mesh tracks it).
+     * One column per input up to the largest in `inputs`; the others are 0.
+     *
+     * Exact membership, no envelope test: each face carries its input set from the insertion,
+     * and stays within eps of every input in it. A face on several inputs counts for each, with
+     * the one orientation it carries -- m_orientation is the net count over every input that
+     * covers it, not one per input. Each column is oriented on its own, as
+     * compute_input_winding_numbers orients each input. With one input every tracked face is on
+     * it, and the column is the winding number filter "tracked" uses.
+     */
+    Eigen::MatrixXd tracked_winding_numbers_per_input(
+        const Eigen::MatrixXd& barycenters,
+        const std::vector<size_t>& inputs) const;
+
     /// Which of the finalization's per-tet fields were computed, so that the writers leave
     /// out the ones that were not rather than writing their defaults as if they were values.
     bool m_has_input_winding_number = false;
@@ -345,11 +381,34 @@ public:
     void filter_with_tracked_surface_winding_number();
     void filter_with_flood_fill();
 
+    /**
+     * The 'hybrid' filter: remove every tet tid with keep[tid] false. The driver decides keep
+     * -- inside at least one volume-role input by tracked_winding_numbers_per_input -- and
+     * collects the surface-role faces and the feature curves with the same keep BEFORE calling
+     * this, because they live on the tets this deletes.
+     */
+    void filter_with_roles(const std::vector<bool>& keep);
+
+    /**
+     * Write the mixed-dimensional output of the hybrid filter: the (already filtered)
+     * tet mesh, plus the collected surface-role triangles as a face block and the
+     * feature curves as an edge block and the anchor points as 0D point elements.
+     */
+    void output_hybrid_mesh(
+        const std::string& file,
+        const std::vector<std::array<Vector3d, 3>>& sheet_triangles,
+        const std::vector<std::array<Vector3d, 2>>& curve_segments,
+        const std::vector<Vector3d>& anchor_points);
+
 
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 private:
+    /// The tracked surface as compute_winding_number evaluates it, as a soup over every vertex
+    /// slot: oriented as the input when m_tracks_orientation, by bfs_orient otherwise.
+    void tracked_surface_soup(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
     // built up while triangles are inserted.
     wmtk::threading::concurrent_map<std::array<size_t, 3>, std::vector<int>> tet_face_tags;
@@ -378,6 +437,11 @@ public:
      * output ids, see utils::EmbedFeaturesResult), which is required when features are
      * passed. Features and their forcing-triangle apexes must lie inside the background
      * box; the caller grows the input bounding box over them (tetwild.cpp does).
+     *
+     * `face_input` (optional, per face of `faces`: the input it came from, -1 for none) asks
+     * for `facet_input_set`: per facet of `facets_after`, the inputs it covers, one bit each --
+     * the union over the coplanar groups of input triangles the facet tiles, of the inputs of
+     * their triangles. Zero off the input surface.
      */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
@@ -391,12 +455,17 @@ public:
         const std::vector<Vector3d>& feature_edge_vertices = {},
         const std::vector<std::array<size_t, 2>>& feature_edges = {},
         const std::vector<Vector3d>& feature_points = {},
-        utils::EmbedFeaturesResult* features_out = nullptr);
+        utils::EmbedFeaturesResult* features_out = nullptr,
+        const std::vector<int>* face_input = nullptr,
+        std::vector<uint16_t>* facet_input_set = nullptr);
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers
      * m_feature_edge_attribute with the base's edge group. Null => no feature tracking,
      * nothing allocated.
+     *
+     * `facet_input_set` (from insertion_by_volumeremesher) gives each tracked face its input
+     * set; null => one input, and every tracked face gets input 0.
      */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
@@ -406,7 +475,8 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<Vector3d>* feature_anchors = nullptr);
+        const std::vector<Vector3d>* feature_anchors = nullptr,
+        const std::vector<uint16_t>* facet_input_set = nullptr);
 
     void init_from_file(std::string input_dir);
 

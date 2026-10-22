@@ -349,7 +349,8 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     // invariant, invisible in the sweep because DEBUG_hausdorff is off by default.
     //
     // The face split is (v1,v2,other) -> (v1,v_id,other) + (v2,v_id,other), which is the same
-    // pair of new triangles the attribute update below writes.
+    // pair of new triangles the attribute update below writes -- with the parent's attributes,
+    // which are therefore what the halves are checked with (their own slots are not written yet).
     if (cache.is_edge_on_surface) {
         for (const auto& info : cache.changed_faces) {
             if (!info.first.m_is_surface_fs) continue;
@@ -364,14 +365,14 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
                 }
             }
             if (n_shared != 2) continue; // face does not contain the split edge
-            if (surface_triangle_is_outside(v1_id, v_id, other)) {
+            if (surface_triangle_is_outside(v1_id, v_id, other, info.first)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
                     v1_id,
                     v2_id);
                 return false;
             }
-            if (surface_triangle_is_outside(v2_id, v_id, other)) {
+            if (surface_triangle_is_outside(v2_id, v_id, other, info.first)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
                     v1_id,
