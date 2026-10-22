@@ -1,7 +1,6 @@
 #include "qslim.hpp"
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Preallocation.hpp>
-#include "qslim.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>

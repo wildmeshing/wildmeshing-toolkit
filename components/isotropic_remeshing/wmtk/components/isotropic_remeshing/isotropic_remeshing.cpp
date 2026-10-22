@@ -1,7 +1,6 @@
 #include "isotropic_remeshing.hpp"
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Preallocation.hpp>
-#include "isotropic_remeshing.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
