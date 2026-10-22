@@ -46,6 +46,7 @@
       "throw_on_fail",
       "log_file",
       "report",
+      "history_output",
       "write_vtu",
       "preallocation_factor",
       "DEBUG_output",
@@ -317,6 +318,12 @@
     "type": "string",
     "default": "",
     "doc": "Logs are not just printed on the terminal but also saved in this file."
+  },
+  {
+    "pointer": "/history_output",
+    "type": "string",
+    "default": "",
+    "doc": "Record every change to the tracked curves, from the input files as read to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The output names a point on its curves by two vertices of the output mesh. A filter's removal of tracked edges is recorded too, as segments no map can follow. Empty: no recording."
   },
   {
     "pointer": "/report",

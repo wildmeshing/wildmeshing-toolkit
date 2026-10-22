@@ -53,7 +53,8 @@ enum class EditKind : uint8_t {
     /// every face slot, kNoVertex for one that goes, or empty; moves = the position of every new
     /// vertex. Vertices are renamed in place in every face -- several may become one -- and a
     /// face left with a repeated corner goes; the faces that stay take the ids `faces` gives, or
-    /// are renumbered by rank. A weld of coincident vertices, a change of coordinates, a
+    /// are renumbered by rank. Several faces given one id -- duplicates a weld leaves -- become
+    /// one, with the first's corners. A weld of coincident vertices, a change of coordinates, a
     /// reordering: each face keeps its corners, so a point keeps its barycentric coordinates.
     relabel = 8,
     /// The complex is replaced by one lying on it -- the same surface or curves, cut differently

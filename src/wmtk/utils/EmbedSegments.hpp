@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
 
 namespace wmtk::io {
 class ComponentIO;
@@ -82,6 +83,10 @@ void embed_segments(
  * @param V_all, E_all       the concatenated segment network
  * @param Vs_out, Es_out     the per-input meshes as read, so the winding-number pass does
  *                           not have to re-read every file from disk
+ * @param component_io       optional: the memory route, whose input_paths name its meshes
+ * @param provenance         optional: the files (the meshes, on the memory route) as they hold
+ *                           the curves, concatenated in the same order, and where each vertex
+ *                           and segment went in V_all, E_all
  */
 void read_input_curves(
     const std::vector<std::string>& input_paths,
@@ -90,6 +95,7 @@ void read_input_curves(
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    io::EdgeReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::utils

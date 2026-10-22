@@ -364,6 +364,7 @@ void BasicReplay<N>::relabel(const Edit& e)
             faces.resize(g + 1, Face{});
             placed.resize(g + 1, 0);
         }
+        if (placed[g]) continue; // a duplicate: the face keeps the first's corners
         faces[g] = t;
         placed[g] = 1;
     }

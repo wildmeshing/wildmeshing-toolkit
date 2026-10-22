@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -32,8 +33,16 @@ namespace {
  * turns every closed loop into an inconsistently oriented one, so the winding-number
  * tagging that decides which faces belong to an input degenerates into noise.
  */
-void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol)
+void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol, EdgeReadProvenance* prov)
 {
+    if (prov != nullptr) {
+        prov->V = V;
+        prov->E = E;
+        prov->vertex_map.resize(V.rows());
+        for (int v = 0; v < int(V.rows()); ++v) prov->vertex_map[v] = v;
+        prov->edge_map.resize(E.rows());
+        for (int e = 0; e < int(E.rows()); ++e) prov->edge_map[e] = e;
+    }
     if (tol < 0 || V.rows() == 0) {
         return;
     }
@@ -41,24 +50,28 @@ void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol)
     MatrixXd SV;
     Eigen::VectorXi SVI, SVJ; // SVJ maps old vertex index -> new
     igl::remove_duplicate_vertices(V, tol, SV, SVI, SVJ);
+    if (prov != nullptr) {
+        for (int v = 0; v < int(V.rows()); ++v) prov->vertex_map[v] = SVJ(v);
+    }
 
     if (SV.rows() == V.rows() && E.rows() == 0) {
         V = SV;
         return;
     }
 
-    std::set<std::pair<int, int>> seen; // keyed on the sorted pair, for dedup only
+    std::map<std::pair<int, int>, int> seen; // the sorted pair's edge, for dedup only
     std::vector<std::pair<int, int>> kept; // the edges themselves, as oriented
     kept.reserve(static_cast<size_t>(E.rows()));
     for (int i = 0; i < E.rows(); ++i) {
         const int a = SVJ(E(i, 0));
         const int b = SVJ(E(i, 1));
-        if (a == b) {
-            continue; // collapsed to a point
+        int into = -1;
+        if (a != b) { // otherwise collapsed to a point
+            const auto [it, fresh] = seen.try_emplace(std::minmax(a, b), int(kept.size()));
+            if (fresh) kept.emplace_back(a, b);
+            into = it->second;
         }
-        if (seen.insert(std::minmax(a, b)).second) {
-            kept.emplace_back(a, b);
-        }
+        if (prov != nullptr) prov->edge_map[i] = into;
     }
 
     const int n_dropped = static_cast<int>(E.rows()) - static_cast<int>(kept.size());
@@ -86,7 +99,8 @@ void read_edge_mesh(
     MatrixXd& V,
     MatrixXi& E,
     double tol_rel,
-    double tol_abs)
+    double tol_abs,
+    EdgeReadProvenance* provenance)
 {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -147,17 +161,22 @@ void read_edge_mesh(
         E.row(i) = e_list[i];
     }
 
-    clean_edge_mesh(V, E, tol_rel, tol_abs);
+    clean_edge_mesh(V, E, tol_rel, tol_abs, provenance);
 }
 
-void clean_edge_mesh(MatrixXd& V, MatrixXi& E, double tol_rel, double tol_abs)
+void clean_edge_mesh(
+    MatrixXd& V,
+    MatrixXi& E,
+    double tol_rel,
+    double tol_abs,
+    EdgeReadProvenance* provenance)
 {
     double tol = tol_abs;
     if (tol < 0 && tol_rel >= 0 && V.rows() > 0) {
         const double diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
         tol = tol_rel * diag;
     }
-    merge_duplicate_vertices(V, E, tol);
+    merge_duplicate_vertices(V, E, tol, provenance);
 }
 
 } // namespace wmtk::io

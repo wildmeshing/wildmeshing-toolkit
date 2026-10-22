@@ -161,11 +161,18 @@ public:
         clean_triangle_mesh(V, F, rel, abs, provenance, read ? &read->vertex_map : nullptr);
         if (!F.rows()) throw std::runtime_error("No faces after cleaning");
     }
-    void edges(const std::string& name, MatrixXd& V, MatrixXi& E, double rel = -1, double abs = -1)
-        const
+    // `read`, as read_edge_mesh's provenance: the input as given, and where its vertices and
+    // segments went.
+    void edges(
+        const std::string& name,
+        MatrixXd& V,
+        MatrixXi& E,
+        double rel = -1,
+        double abs = -1,
+        EdgeReadProvenance* read = nullptr) const
     {
         if (!memory()) {
-            read_edge_mesh(name, V, E, rel, abs);
+            read_edge_mesh(name, V, E, rel, abs, read);
             return;
         }
         const auto& data = mesh(name);
@@ -179,7 +186,7 @@ public:
         E.resize(0, 2);
         auto it = data.cells.find(CellType::Edge);
         if (it != data.cells.end()) E = indices(it->second.connectivity);
-        clean_edge_mesh(V, E, rel, abs);
+        clean_edge_mesh(V, E, rel, abs, read);
     }
     static MatrixXi indices(const DataMatrix<int64_t>& c)
     {

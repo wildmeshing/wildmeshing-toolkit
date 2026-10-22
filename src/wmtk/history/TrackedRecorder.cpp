@@ -139,6 +139,8 @@ std::vector<typename TrackedRecorder<N>::MeshFeature> TrackedRecorder<N>::featur
     for (const auto& e : m_replay.features()) {
         MeshFeature m;
         for (int k = 0; k < N - 1; ++k) m[k] = m_mesh_of[e[k]];
+        // A feature point off the curves outlives its mesh vertex, if a filter removed it.
+        if (std::find(m.begin(), m.end(), kNoMesh) != m.end()) continue;
         out.push_back(sorted(m));
     }
     std::sort(out.begin(), out.end());
