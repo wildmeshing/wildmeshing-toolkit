@@ -738,7 +738,9 @@ TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
 TEST_CASE("surface-map-damaged-history", "[surface_map]")
 {
     // A damaged tracking file that still loads -- a byte changed where the format cannot tell --
-    // builds a map that may be wrong, but builds it or throws: no crash.
+    // builds a map that may be wrong, but builds it or throws: no crash. The cheapest map does:
+    // what is under test is the loading, and a hundred maps with the box scaffold took most of
+    // this suite's time in a Windows Debug build, which tries a quarter as many files.
     const auto h = remesh("sphere.obj", 0, 1.5, 2);
     const auto dir = std::filesystem::temp_directory_path() /
                      ("wmtk_surface_map_damaged_" + std::to_string(std::random_device{}()));
@@ -752,7 +754,12 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
     }
     std::mt19937 rng(2);
     size_t built = 0;
-    for (int i = 0; i < 100; ++i) {
+#ifdef NDEBUG
+    const int n_damaged = 100;
+#else
+    const int n_damaged = 25;
+#endif
+    for (int i = 0; i < n_damaged; ++i) {
         std::string d = bytes;
         d[rng() % d.size()] ^= char(1 + rng() % 255);
         {
@@ -760,7 +767,9 @@ TEST_CASE("surface-map-damaged-history", "[surface_map]")
             o.write(d.data(), std::streamsize(d.size()));
         }
         try {
-            const SurfaceMap map(history::SurfaceHistory::load(path));
+            const SurfaceMap map(
+                history::SurfaceHistory::load(path),
+                {surface_map::Smoothing::barycentric, surface_map::Scaffold::ring});
             map.to_output(sample(map.input_face_alive(), 1, 3));
             map.to_input(sample(map.output_face_alive(), 1, 4));
             ++built;
