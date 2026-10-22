@@ -183,6 +183,11 @@ TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component
     REQUIRE_THROWS_WITH(run("surface", "2"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("curves", "3"), Catch::Matchers::ContainsSubstring("dimension"));
     REQUIRE_THROWS_WITH(run("tagged", "2"), Catch::Matchers::ContainsSubstring("dimension"));
+    REQUIRE_THROWS_WITH(
+        simwild::simwild(
+            {{"input", "surface"}, {"envelope", "surface"}, {"max_iterations", 0}},
+            inputs),
+        Catch::Matchers::ContainsSubstring("envelope"));
 }
 #endif
 #ifdef WMTK_TEST_triwild

@@ -478,6 +478,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         input_paths,
         json_params,
         component_io.memory() ? &component_io : nullptr);
+    // Surface and curve inputs build their envelope from the input itself.
+    if (dimension != 0 && !envelope_selector.is_null()) {
+        log_and_throw_error("`envelope` applies to tagged mesh inputs only");
+    }
     if (component_io.memory() && dimension == 0) {
         input_data = read_mesh_data(
             component_io.mesh(input_paths.at(0)),
