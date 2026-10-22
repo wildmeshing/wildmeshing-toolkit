@@ -78,3 +78,21 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
 
 endif()
+# The NumPy memory-interface tests of the Python module, registered when the interpreter the
+# module was built for has NumPy (the Linux CI jobs install it). The wheel builds run the same
+# file through cibuildwheel.
+if(TARGET wildmeshing AND Python_EXECUTABLE)
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -c "import numpy"
+        RESULT_VARIABLE WMTK_PYTHON_NUMPY_RESULT
+        OUTPUT_QUIET ERROR_QUIET)
+    if(WMTK_PYTHON_NUMPY_RESULT EQUAL 0)
+        add_test(
+            NAME python_memory_io
+            COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>"
+                    "${Python_EXECUTABLE}" -m unittest discover
+                    -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_memory_io.py")
+    else()
+        message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io is not registered")
+    endif()
+endif()
