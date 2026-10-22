@@ -4,6 +4,7 @@
 #include <igl/Timer.h>
 #include <jse/jse.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -65,10 +66,22 @@ void qslim(nlohmann::json json_params)
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     double target_abs = json_params["target_abs"];
 
+    const std::string history_output = json_params["history_output"];
+
     const double remove_duplicate_eps = 1e-5;
     MatrixXd V;
     MatrixXi F;
-    io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    io::ReadProvenance read;
+    io::read_triangle_mesh(
+        std::vector<std::string>{input_path},
+        V,
+        F,
+        remove_duplicate_eps,
+        -1,
+        nullptr,
+        history_output.empty() ? nullptr : &read);
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
@@ -101,9 +114,24 @@ void qslim(nlohmann::json json_params)
         target_abs = verts.size() * target_rel;
     }
 
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        history->history().metadata = json_params.dump();
+    }
+
     const double runtime = run_qslim_collapse(input_path, target_abs, output, m);
     m.consolidate_mesh();
     m.write_triangle_mesh(output);
+
+    if (history) {
+        // The file as read, the weld, then the simplification: the input file to the output file,
+        // which is written in the history's last numbering.
+        m.stop_history();
+        const history::SurfaceHistory chain = history::from_input(read, verts, history->history());
+        chain.save(history_output);
+        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+    }
     logger().info("After #V = {}, #F = {}", m.vert_capacity(), m.tri_capacity());
 
     if (json_params["throw_on_fail"]) {

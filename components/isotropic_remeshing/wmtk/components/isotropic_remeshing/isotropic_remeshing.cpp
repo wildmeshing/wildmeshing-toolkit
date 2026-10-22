@@ -6,7 +6,7 @@
 
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -275,37 +275,7 @@ void isotropic_remeshing(nlohmann::json json_params)
         m.stop_history();
         // The file as read, the weld to the mesh remeshed, then the remeshing: the history maps
         // the input file to the output file.
-        history::SurfaceHistory chain;
-        for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
-            chain.vertices.push_back(read.V.row(v).transpose());
-        }
-        chain.vertex_alive.assign(chain.vertices.size(), 1);
-        for (Eigen::Index f = 0; f < read.F.rows(); ++f) {
-            chain.faces.push_back(
-                {{uint64_t(read.F(f, 0)), uint64_t(read.F(f, 1)), uint64_t(read.F(f, 2))}});
-        }
-        chain.face_alive.assign(chain.faces.size(), 1);
-        // The feature curves on vertices of the file, which the weld takes onto the mesh's.
-        std::vector<uint64_t> raw_of(verts.size(), history::kNoVertex);
-        for (size_t r = 0; r < read.vertex_map.size(); ++r) {
-            const int w = read.vertex_map[r];
-            if (w >= 0 && raw_of[w] == history::kNoVertex) raw_of[w] = r;
-        }
-        for (const auto& e : history->history().feature_edges) {
-            std::array<uint64_t, 2> raw = {{raw_of[e[0]], raw_of[e[1]]}};
-            if (raw[0] > raw[1]) std::swap(raw[0], raw[1]);
-            chain.feature_edges.push_back(raw);
-        }
-        history::Edit weld{history::EditKind::relabel, {}, {}, {}};
-        for (const int w : read.vertex_map) {
-            weld.v.push_back(w < 0 ? history::kNoVertex : uint64_t(w));
-        }
-        for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
-        chain.edits.push_back(std::move(weld));
-        if (!history::append(chain, history->history())) {
-            log_and_throw_error("history_output: the remeshing does not start at the input");
-        }
-        chain.metadata = history->history().metadata;
+        const history::SurfaceHistory chain = history::from_input(read, verts, history->history());
         chain.save(history_output);
         logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
     }

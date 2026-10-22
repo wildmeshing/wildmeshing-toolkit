@@ -20,6 +20,7 @@ is a bijection, so is the whole map.
 ## Quick start
 
 Turn tracking on with `history_output` -- the same option in every application that has it:
+`isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild`, `simwild`.
 
 ```json
 {"application": "tetwild", "input": ["model.obj"], "output": "out", "history_output": "out.wmtkhist"}
@@ -60,6 +61,8 @@ Worked examples, one per application, are unit tests:
 - `components/surface_map/wmtk/components/surface_map/tests/test_tracking.cpp` (isotropic)
 - `components/tetwild/wmtk/components/tetwild/tests/test_tetwild_tracking.cpp`
 - `components/simwild/wmtk/components/simwild/tests/test_simwild_tracking.cpp`
+- `components/qslim/wmtk/components/qslim/tests/test_qslim_tracking.cpp`
+- `components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/tests/test_sec_tracking.cpp`
 
 Each one runs the application with tracking on, maps random input points to the output and
 back, remaps a per-vertex attribute onto the output's vertices, and does the same from the
@@ -164,8 +167,9 @@ Rules for an application on a TriMesh:
 - **Number the output file by the history's last state.** Consolidate, then write faces in id
   order with their stored corner order. Then output face ids *are* the history's.
 
-Users: `isotropic_remeshing` (`history_output`, `feature_fields`), and the input simplification
-of tetwild and simwild (`ShortestEdgeCollapse`).
+Users: `isotropic_remeshing` (`history_output`, `feature_fields`), `qslim` and
+`shortest_edge_collapse` (`history_output`), and the input simplification of tetwild and simwild
+(`ShortestEdgeCollapse`).
 
 ## Recording a tracked surface on a TetMesh
 
@@ -277,7 +281,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 
 | application | history starts at | ends at | output point |
 |---|---|---|---|
-| `isotropic_remeshing` | the input file as read | the output file | output triangle + barycentrics |
+| `isotropic_remeshing`, `qslim`, `shortest_edge_collapse` | the input file as read | the output file | output triangle + barycentrics |
 | `tetwild` | the input files as read | the tracked faces of `<output>_final.msh` (after any filter) | three tet vertex ids + barycentrics |
 | `simwild`, `.msh` input | the input's tag interfaces | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 | `simwild`, surface input | the input files as read | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
@@ -370,9 +374,10 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 2. Make the application change the surface only through `split_edge`, `split_face`,
    `collapse_edge`, `swap_edge` and `smooth_vertex`. If it has feature curves, enforce the
    feature rules and add them to `rec->history().feature_edges`.
-3. Start from the input file. Read with `ReadProvenance`, build a snapshot of the file as read
-   plus a `relabel` to the mesh, then `history::append(chain, rec->history())`. Copy
-   `isotropic_remeshing.cpp`.
+3. Start from the input file. Read with `io::read_triangle_mesh(paths, ..., &provenance)`, then
+   save `history::from_input(provenance, welded_positions, rec->history())`
+   (`src/wmtk/history/InputHistory.hpp`): the file as read, a `relabel` to the mesh, then the
+   recorded edits. `qslim.cpp` is the shortest example.
 4. At the end, `consolidate_mesh()`, then `stop_history()`. Write the output by the history's
    last state: consolidated, face ids and corner order as stored.
 5. Save the history with `metadata` set to the JSON parameters.
