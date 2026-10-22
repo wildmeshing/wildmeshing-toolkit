@@ -36,7 +36,7 @@
   {
     "pointer": "/history",
     "type": "string",
-    "doc": "A surface history, recorded by an application's history_output, from which the map is rebuilt: on the file route the file it wrote, on the memory route the bytes it returned in its report as history (a JSON binary value, bytes in Python; wm.read_history reads them from a file). The memory route never takes a file name here."
+    "doc": "A history, recorded by an application's history_output, from which the map is rebuilt: a surface's (isotropic_remeshing, qslim, shortest_edge_collapse, tetwild, simwild) or curves' (triwild); the history says which. On the file route the file it wrote, on the memory route the bytes it returned in its report as history (a JSON binary value, bytes in Python; wm.read_history reads them from a file). The memory route never takes a file name here."
   },
   {
     "pointer": "/input",
@@ -80,10 +80,11 @@
     "options": [
       "info",
       "transfer",
-      "map"
+      "map",
+      "features"
     ],
     "default": "info",
-    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back. transfer: carry every field of `input`'s triangles onto the output surface and write it to `output` (on the memory route: return it as mesh). map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`; file route only."
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids (segment midpoints, for curves) move when mapped to the input and back. transfer (surfaces): carry every field of `input`'s triangles onto the output surface and write it to `output` (on the memory route: return it as mesh). map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`; file route only. features (curves): write the input's feature points -- curve ends, junctions, input points -- to `output_points`, one `input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices, in order, then the point files', from 0) and the output vertex it ended at, -1 for none; file route only."
   },
   {
     "pointer": "/log_file",
@@ -107,13 +108,13 @@
     "pointer": "/points",
     "type": "string",
     "default": "",
-    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order; for a history that starts at a tet mesh's tracked surface (simwild on a .msh input), `v0 v1 v2 b0 b1 b2`, three vertices of the tet mesh the history starts from (<output>_history_input.msh) at the corners of a tracked face, in any order, with barycentric coordinates in that order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild)."
+    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order; for a history that starts at a tet mesh's tracked surface (simwild on a .msh input), `v0 v1 v2 b0 b1 b2`, three vertices of the tet mesh the history starts from (<output>_history_input.msh) at the corners of a tracked face, in any order, with barycentric coordinates in that order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild). On curves (triwild): `segment b0 b1` on the input, a segment of the input curve files -- the segments of all of them, in order, a polyline's consecutive vertex pairs, from 0 -- with barycentric coordinates with respect to its ends in file order; `v0 v1 b0 b1` on the output, two vertices of the output mesh at the ends of a tracked edge, in either order, with barycentric coordinates in that order."
   },
   {
     "pointer": "/output_points",
     "type": "string",
     "default": "",
-    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order, as described for `points` on the side they are mapped to, relative to input_dir as `points` is. A point with no image has the id -1."
+    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order, as described for `points` on the side they are mapped to, relative to input_dir as `points` is. A point with no image has the id -1. features: where to write the feature points, relative to input_dir too."
   },
   {
     "pointer": "/direction",
@@ -127,7 +128,7 @@
     "type": "string",
     "options": ["flatten", "barycentric"],
     "default": "flatten",
-    "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move. barycentric: points keep their face and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
+    "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move; on curves, points keep their place along the curve, by arc length. barycentric: points keep their face (segment) and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
   },
   {
     "pointer": "/scaffold",

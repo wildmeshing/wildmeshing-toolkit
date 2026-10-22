@@ -162,4 +162,112 @@ std::vector<InputPoint> Tracking::to_input(
     return out;
 }
 
+CurveTracking::CurveTracking(const history::CurveHistory& h, const CurveMapOptions& options)
+    : m_map(h, options)
+    , m_output_ids(h.output_vertex_ids)
+{
+    for (uint64_t v = 0; v < m_output_ids.size(); ++v) {
+        if (m_output_ids[v] != history::kNoVertex) m_history_vertex[m_output_ids[v]] = v;
+    }
+}
+
+CurveTracking CurveTracking::load(const std::string& path, const CurveMapOptions& options)
+{
+    return CurveTracking(history::CurveHistory::load(path), options);
+}
+
+std::vector<std::array<uint64_t, 2>> CurveTracking::output_segments() const
+{
+    std::vector<std::array<uint64_t, 2>> out;
+    const auto& segments = m_map.output_segments();
+    for (uint64_t f = 0; f < segments.size(); ++f) {
+        if (!m_map.output_segment_alive()[f]) continue;
+        std::array<uint64_t, 2> s = segments[f];
+        if (output_by_vertices()) {
+            for (uint64_t& v : s) v = v < m_output_ids.size() ? m_output_ids[v] : kNoId;
+        }
+        out.push_back(s);
+    }
+    return out;
+}
+
+std::vector<OutputCurvePoint> CurveTracking::to_output(
+    const std::vector<InputCurvePoint>& points) const
+{
+    std::vector<CurvePoint> pts;
+    pts.reserve(points.size());
+    for (const InputCurvePoint& p : points) pts.push_back({p.segment, p.bary});
+    const std::vector<CurvePoint> mapped = m_map.to_output(std::move(pts));
+    const auto& segments = m_map.output_segments();
+    const auto& alive = m_map.output_segment_alive();
+    std::vector<OutputCurvePoint> out(mapped.size());
+    for (size_t i = 0; i < mapped.size(); ++i) {
+        const CurvePoint& p = mapped[i];
+        if (p.segment >= segments.size() || !alive[p.segment]) continue;
+        out[i].bary = p.bary;
+        if (!output_by_vertices()) {
+            out[i].segment = p.segment;
+            continue;
+        }
+        for (int k = 0; k < 2; ++k) {
+            const uint64_t v = segments[p.segment][k];
+            out[i].vertices[k] = v < m_output_ids.size() ? m_output_ids[v] : kNoId;
+        }
+    }
+    return out;
+}
+
+std::vector<InputCurvePoint> CurveTracking::to_input(
+    const std::vector<OutputCurvePoint>& points) const
+{
+    const auto& segments = m_map.output_segments();
+    const auto& alive = m_map.output_segment_alive();
+    // A point named by vertices: the segment of the last state with those ends, and the
+    // coordinates in its order.
+    std::map<std::array<uint64_t, 2>, uint64_t> segment_of;
+    if (output_by_vertices()) {
+        for (uint64_t f = 0; f < segments.size(); ++f) {
+            if (!alive[f]) continue;
+            const uint64_t a = std::min(segments[f][0], segments[f][1]);
+            const uint64_t b = std::max(segments[f][0], segments[f][1]);
+            segment_of[{{a, b}}] = f;
+        }
+    }
+    std::vector<CurvePoint> pts(points.size(), CurvePoint{kNoId, Eigen::Vector2d::Zero()});
+    for (size_t i = 0; i < points.size(); ++i) {
+        const OutputCurvePoint& p = points[i];
+        if (!output_by_vertices()) {
+            if (p.segment < segments.size() && alive[p.segment]) pts[i] = {p.segment, p.bary};
+            continue;
+        }
+        const auto i0 = m_history_vertex.find(p.vertices[0]);
+        const auto i1 = m_history_vertex.find(p.vertices[1]);
+        if (i0 == m_history_vertex.end() || i1 == m_history_vertex.end()) continue;
+        const uint64_t a = std::min(i0->second, i1->second), b = std::max(i0->second, i1->second);
+        const auto it = segment_of.find({{a, b}});
+        if (it == segment_of.end()) continue;
+        const bool same_order = segments[it->second][0] == i0->second;
+        pts[i] = {it->second, same_order ? p.bary : Eigen::Vector2d(p.bary[1], p.bary[0])};
+    }
+    const std::vector<CurvePoint> mapped = m_map.to_input(std::move(pts));
+    std::vector<InputCurvePoint> out(mapped.size());
+    for (size_t i = 0; i < mapped.size(); ++i) {
+        if (mapped[i].segment < m_map.input_segments().size()) {
+            out[i] = {mapped[i].segment, mapped[i].bary};
+        }
+    }
+    return out;
+}
+
+std::vector<FeaturePoint> CurveTracking::feature_points() const
+{
+    std::vector<FeaturePoint> out;
+    for (const auto& [in, v] : m_map.feature_points()) {
+        uint64_t o = v;
+        if (output_by_vertices()) o = v < m_output_ids.size() ? m_output_ids[v] : kNoId;
+        out.push_back({in, o == history::kNoVertex ? kNoId : o});
+    }
+    return out;
+}
+
 } // namespace wmtk::components::tracking

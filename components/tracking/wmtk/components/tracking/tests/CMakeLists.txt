@@ -14,6 +14,7 @@ add_component_test(${COMPONENT_NAME})
 set(SRC_FILES
     test_surface_io.cpp
     test_surface_map.cpp
+    test_curve_map.cpp
     test_tracking.cpp
 )
 

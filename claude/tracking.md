@@ -1,9 +1,10 @@
-# Surface tracking: recording, mapping, extending
+# Tracking: recording, mapping, extending
 
 Notes on the tracking framework added for BijectiveRemesh (arXiv 2605.30744): how it works, how
 to use it, how to bring it to another application, and how to check that it is right. Written
-from the implementation on the `danielepanozzo/surface-history` branch; file paths are relative
-to the repository root.
+from the implementation on the `danielepanozzo/surface-history` branch (surfaces) and
+`danielepanozzo/curve-tracking` (curves, triwild); file paths are relative to the repository
+root.
 
 ## What it is for
 
@@ -17,10 +18,16 @@ The map is built as BijectiveRemesh builds it: one local map per operation, betw
 patch the operation replaced and the patch it left, composed in order. Where every local map
 is a bijection, so is the whole map.
 
+The same holds one dimension down. triwild tracks curves -- the input's segments, inserted as
+edges of its triangle mesh -- and records every change to them; the map then takes the input
+curves onto the output's tracked edges, and the input's feature points (curve ends, junctions,
+input points) onto the output vertices they became. See *Curves* below.
+
 ## Quick start
 
 Turn tracking on with `history_output` -- the same option in every application that has it:
-`isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild`, `simwild`.
+`isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild`, `simwild` (surfaces) and
+`triwild` (curves).
 
 ```json
 {"application": "tetwild", "input": ["model.obj"], "output": "out", "history_output": "out.wmtkhist"}
@@ -56,6 +63,17 @@ Map points with the `tracking` application of the same `wmtk_app` binary:
 `direction` is `to_output` or `to_input` (the inverse map). A point with no image comes back
 with id `-1`.
 
+On curves (triwild) the file says it holds curves, and the points are:
+- on the input: `segment b0 b1`. `segment` is a segment of the input curve files, counting from
+  0 over all of them in order -- a polyline `l` line gives its consecutive vertex pairs -- and
+  `b` are barycentric coordinates with respect to its ends in file order;
+- on the output: `v0 v1 b0 b1`, two vertices of the output mesh at the ends of a tracked edge,
+  in either order, the coordinates following them.
+
+`"operation": "features"` writes the input's feature points to `output_points`, one
+`input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices in
+order, then the point files') and the output vertex it ended at, `-1` for none.
+
 From C++ (`components/tracking/wmtk/components/tracking/tracking.hpp`, the component's one
 public header):
 
@@ -65,6 +83,12 @@ std::vector<tracking::InputPoint> pts = {{face, {b0, b1, b2}}};
 auto on_output = t.to_output(pts);    // OutputPoint: .face, or .vertices for a tet output
 auto back = t.to_input(on_output);    // InputPoint: .face, or .vertices (input_by_vertices)
 auto triangles = t.output_triangles(); // the output's tracked faces, in its own ids
+
+// Curves: the same, one dimension down.
+const auto c = tracking::CurveTracking::load("curves.wmtkhist");
+std::vector<tracking::InputCurvePoint> on_input = {{segment, {b0, b1}}};
+auto on_curves = c.to_output(on_input);   // OutputCurvePoint: .vertices, two mesh vertices
+auto features = c.feature_points();       // {input_vertex, output_vertex} per feature point
 ```
 
 Worked examples, one per application, are unit tests:
@@ -73,6 +97,7 @@ Worked examples, one per application, are unit tests:
 - `components/simwild/wmtk/components/simwild/tests/test_simwild_tracking.cpp`
 - `components/qslim/wmtk/components/qslim/tests/test_qslim_tracking.cpp`
 - `components/shortest_edge_collapse/wmtk/components/shortest_edge_collapse/tests/test_sec_tracking.cpp`
+- `components/triwild/wmtk/components/triwild/tests/test_triwild_tracking.cpp` (curves)
 
 Each one runs the application with tracking on, maps random input points to the output and
 back, remaps a per-vertex attribute onto the output's vertices, and does the same from the
@@ -89,9 +114,14 @@ Remapping attributes:
 
 ## The history
 
-`src/wmtk/history/History.hpp`. A `SurfaceHistory` holds:
-- **A snapshot** of a triangle complex: vertex and face *slots*, live or not.
-- **Feature edges:** curves the edits keep. See *Features* below.
+`src/wmtk/history/History.hpp`. `History<N>` records a complex whose faces have N corners:
+`SurfaceHistory` (N = 3, triangles) or `CurveHistory` (N = 2, segments; the faces of a curve
+history *are* its segments). `history/Fwd.hpp` names them all: `Replay`/`CurveReplay`,
+`Recorder`/`CurveRecorder`, `TrackedSurfaceRecorder`/`TrackedCurveRecorder` are aliases of
+`BasicReplay<N>`, `BasicRecorder<N>`, `TrackedRecorder<N>`. A history holds:
+- **A snapshot** of the complex: vertex and face *slots*, live or not.
+- **Features:** cells one dimension down that the edits keep -- feature edges of a surface,
+  feature points of curves. See *Features* below.
 - **The edits,** in commit order.
 - **`metadata`:** free text. The applications store their JSON parameters there, with `route`,
   `file` or `memory` (`ComponentIO::history_metadata`), which is how `tracking` finds an
@@ -111,14 +141,17 @@ terms.
 | kind | ids | meaning |
 |---|---|---|
 | `split_edge` | `v = {v0, v1, new}`; faces in pairs `(f, new_f)` | each face on the edge keeps its `v0` half (`v1` renamed `new` in place); `new_f` is `f` with `v0` renamed `new` |
-| `split_face` | `v = {v0, v1, v2, new}`; faces `{f, f1, f2}` | `f`, `f1` and `f2` are the three faces at the new vertex, each the old face with one corner renamed |
+| `split_face` | `v = {v0, v1, v2, new}`; faces `{f, f1, f2}` | surfaces only. `f`, `f1` and `f2` are the three faces at the new vertex, each the old face with one corner renamed |
 | `collapse_edge` | `v = {removed, kept}` | faces with both go; `removed` is renamed `kept` elsewhere; duplicate faces merge into the smallest id; a vertex left without faces is retired |
-| `swap_edge` | `v = {v0, v1, a, b}`; faces `{fa, fb}` | edge `(v0,v1)` becomes `(a,b)`: in `fa` (apex `b`) `v1` becomes `a`, in `fb` (apex `a`) `v0` becomes `b` |
+| `swap_edge` | `v = {v0, v1, a, b}`; faces `{fa, fb}` | surfaces only. Edge `(v0,v1)` becomes `(a,b)`: in `fa` (apex `b`) `v1` becomes `a`, in `fb` (apex `a`) `v0` becomes `b` |
 | `move_vertices` | none | only positions change |
 | `consolidate` | none | live vertices and faces renumbered by rank |
 | `replace_faces` | `v` = corners of added faces; faces = removed, then added | a change no other kind describes; no correspondence; the map cannot follow it |
-| `relabel` | `v` = new id per vertex slot; faces = new id per face slot, or empty for rank order | vertices renamed in place (several may become one); faces with a repeated corner go. The weld, a coordinate change, a reordering. A point keeps its barycentric coordinates |
-| `embed` | `v` = corners of the new complex; faces = per new face, its sources (count, then ids), then feature edges | the complex is replaced by one lying on it (an insertion). A point keeps its place in space |
+| `relabel` | `v` = new id per vertex slot; faces = new id per face slot, or empty for rank order | vertices renamed in place (several may become one); faces with a repeated corner go; several faces given one id become one, with the first's corners. The weld, a coordinate change, a reordering. A point keeps its barycentric coordinates |
+| `embed` | `v` = corners of the new complex; faces = per new face, its sources (count, then ids), then the features | the complex is replaced by one lying on it (an insertion, an arrangement). A point keeps its place in space |
+
+On curves the rules read the same with segments for faces: a split's face on the edge is the
+segment itself, a collapse removes the segment it collapses and merges duplicates.
 
 Every edit carries `moves`: the position, after the edit, of every live vertex it wrote.
 Positions that did not change are dropped.
@@ -127,7 +160,7 @@ Positions that did not change are dropped.
 k-th edit it holds the recording mesh's surface after its k-th committed operation: the same
 ids, corner order and positions. Everything downstream relies on that.
 
-Composition (`SurfaceHistory.hpp`):
+Composition (`History.hpp`):
 - **`history::append(h, next)`.** `next` starts exactly where `h` ends. It checks live
   vertices and faces, then appends `next`'s edits.
 - **`history::append_embedded(h, next, sources)`.** `next` starts on a complex lying on `h`'s
@@ -135,16 +168,18 @@ Composition (`SurfaceHistory.hpp`):
 
 ### File format
 
-Binary, varints (`SurfaceHistory.cpp`). Version 7 is the first released one; the earlier ones
-were development formats and no longer load. After the version comes one byte, the number of
-corners of a face: 3, a surface. When you add to it, bump `kVersion`, keep loading version 7
-and up, and note in the comment at the top of the file what each version added.
+Binary, varints (`History.cpp`). Version 7 is the first released one; the earlier ones were
+development formats and no longer load. A byte after the version gives N, the corners of a
+face: 3 for a surface, 2 for curves. Faces carry N ids and features N - 1.
+`history::face_size(path)` (or `face_size(bytes)`) reads it, and loading a history as the other
+kind throws. When you add to the format, bump `kVersion`, keep loading version 7 and up, and
+note in the comment at the top of the file what each version added.
 
-In memory a history is the bytes of its file: `to_bytes()` and `SurfaceHistory::from_bytes`,
-which the memory route of a component returns and takes. `history::read_history(path)` and
+In memory a history is the bytes of its file: `to_bytes()` and `History<N>::from_bytes`, which
+the memory route of a component returns and takes. `history::read_history(path)` and
 `history::write_history(path, bytes)` move those bytes to and from a file unchanged, as
-`io::read_mesh` and `io::write_mesh` do for a mesh; they check only the header. `save` and
-`load` are the two together.
+`io::read_mesh` and `io::write_mesh` do for a mesh; they check only the header, of either kind.
+`save` and `load` are the two together.
 
 Loading checks what it reads before using it, so a damaged file throws "is corrupt" instead of
 crashing:
@@ -159,7 +194,7 @@ A new edit kind needs its case in `ids_valid`. Tests: `history-load-refuses-dama
 
 ### Features
 
-`feature_edges` are curves the map must take onto themselves: label boundaries, UV seams,
+A surface's `features` are its feature edges, curves the map must take onto themselves: label boundaries, UV seams,
 tetwild feature curves. They are listed only in the snapshot (or in an `embed`). The edits
 carry them by fixed rules, which the recording mesh must follow:
 - **Split:** a split feature edge leaves two feature halves.
@@ -168,6 +203,17 @@ carry them by fixed rules, which the recording mesh must follow:
 
 The map flattens each side of a feature curve separately (`sides_of` in `SurfaceMap.cpp`). A
 non-manifold edge -- three or more faces -- separates sides without being declared.
+
+On curves the features are points: the ends and junctions of the input's curves and its input
+points (`input_points` files, and isolated vertices of the curve files), and, from the
+insertion on, the points the mesh anchors (`TriOptimizerMesh`'s feature point ids). Their rules:
+- **Split:** makes none.
+- **Collapse:** a removed feature point goes to the survivor.
+- **A feature point keeps its vertex alive** with no segment: an input point may lie off every
+  curve. A filter that removes its mesh vertex leaves it in the history with no output id.
+
+The map ends its arc-length chains at them (and at every vertex of valence other than two), so
+they map onto themselves.
 
 ## Recording a TriMesh (surface only)
 
@@ -185,7 +231,7 @@ non-manifold edge -- three or more faces -- separates sides without being declar
 Rules for an application on a TriMesh:
 - **Change the surface only through these operations.** Anything else that changes
   connectivity or positions escapes the history.
-- **Feature curves:** follow the rules above, and put them in the snapshot's `feature_edges`.
+- **Feature curves:** follow the rules above, and put them in the snapshot's `features`.
   `isotropic_remeshing` does this from `feature_fields`.
 - **Number the output file by the history's last state.** Consolidate, then write faces in id
   order with their stored corner order. Then output face ids *are* the history's.
@@ -199,7 +245,7 @@ Users: `isotropic_remeshing` (`history_output`, `feature_fields`), `qslim` and
 A tet mesh's tracked surface is a subset of its faces, and faces have no stable ids: a face's
 attribute slot is `4 * lowest incident tet + local index`, which moves whenever its tets
 change. So the tracked surface gets ids of its own, in
-`history::TrackedSurfaceRecorder` (`src/wmtk/history/TrackedSurface.{hpp,cpp}`).
+`history::TrackedSurfaceRecorder`, `TrackedRecorder<3>` (`src/wmtk/history/TrackedRecorder.{hpp,cpp}`).
 
 - **Its own ids.** The recorder keeps a surface vertex id per mesh vertex on the surface, and
   surface face ids through its own `Replay`. A mesh renumbering (`consolidate_mesh`) only
@@ -273,6 +319,40 @@ fills these in:
 comes first, so a sheet between two tag sets is oriented the same way everywhere, from the
 tags alone.
 
+## Recording tracked curves on a TriMesh (triwild)
+
+The curve twin of the tet case. A triangle mesh's tracked curves are some of its edges, and
+edges have no stable ids either (`3 * lowest incident triangle + local index`), so they get ids
+of their own in `history::TrackedCurveRecorder`, `TrackedRecorder<2>`
+(`src/wmtk/history/TrackedRecorder.{hpp,cpp}`) -- the same recorder as the tet one: commits as
+diffs of the tracked segments around an operation, the edit that explains them found and
+verified, a `replace_faces` otherwise.
+
+`TriMesh` (`src/wmtk/TriMesh.{h,cpp}`) calls it, next to its own `commit_history`:
+- **Start and stop:** `start_curve_history(position)`, `stop_curve_history()`.
+- **Capture and commit:** `curve_history_before(vs)` once an operation's before-hook and dry run
+  have passed, `curve_history_commit(kind, v, vs_after)` at its commit point. The tracked edges
+  at a vertex are read from that vertex's own triangles (`tracked_edges_around`), which the
+  operation holds. Hooked: `split_edge` (`{v1, v2}`, then with the new vertex), `collapse_edge`
+  (`{removed, kept}`, then `{kept}`), `swap_edge` (its four vertices; a swap never takes a
+  tracked edge), `split_face`, `smooth_vertex`.
+- **Renumbering and resyncing.** `consolidate_mesh` renumbers the recorder;
+  `remove_tris_by_ids` (the filters) resyncs it. `remove_tris_by_ids` now moves an edge's
+  attributes to the surviving triangle's slot when it removes the edge's lowest triangle, as
+  `remove_tets_by_ids` does in 3D; before, a tracked edge on the filtered region's boundary read
+  whatever that slot last held (`DEBUG_hausdorff` and `write_vtu` read them after the filter).
+- **A lone feature point.** A collapse that removes a feature point no segment holds changes no
+  segment; the recorder records it all the same, as the collapse or, if the survivor is not on
+  the curves, as a move.
+- **Virtuals for the application:** `is_tracked_edge(e)` and `tracked_feature_points()`.
+
+`TriOptimizerMesh` (`src/wmtk/TriOptimizerMesh.{h,cpp}`), the base of triwild, fills them in
+(`m_is_surface_fs`, and the vertices with a feature point id) and adds
+`record_curve_history(metadata, sources)` and `save_curve_history(path, input)`, as
+`TetOptimizerMesh` does for surfaces: `save` resyncs, checks the feature points against the
+mesh's, fills `output_vertex_ids` (the mesh's vertex ids, which `write_msh_groups` writes in
+order), and saves the chain from the input files.
+
 ## From the input files: the chain
 
 The tet histories, and isotropic's, start at the input files as read, so that a user's
@@ -302,6 +382,21 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   the split into components and the concatenation as one `relabel` with an explicit face map,
   then the optional simplification, then the embedding. simwild also writes the tet mesh the
   history starts from as `<output>_history_input.msh`.
+- **triwild's curves** (`history::curves_from_input`, `src/wmtk/history/InputHistory.hpp`):
+  - **Read and weld.** `io::read_edge_mesh(..., EdgeReadProvenance*)` gives each file's vertices
+    and segments as written and where each went, a duplicate segment to the one it duplicates;
+    `utils::read_input_curves` concatenates them as it concatenates the network, and triwild
+    appends the point files' vertices. The snapshot is the files as read, then a `relabel` with
+    an explicit segment map (duplicates onto one).
+  - **Simplify.** `utils::simplify_segments` reports its collapses as history edits on the
+    welded network's rows, and which vertices survive its compaction. The collapse rule keeps
+    the smaller of two duplicate segments where the simplification keeps the one it did not
+    move -- the same set, other ids -- so a last `relabel` onto the compacted rows matches
+    segments by their vertices.
+  - **Insert.** `utils::embed_segments` already gives each arrangement edge the input segments
+    it tiles (`E_out_sources`). The mesh's vertices are the arrangement's rows, so triwild keys
+    them by vertex pair (`TriOptimizerMesh::CurveSources`); `save_curve_history` appends the
+    `embed`, then the mesh's edits.
 
 | application | history starts at | ends at | output point |
 |---|---|---|---|
@@ -309,6 +404,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 | `tetwild` | the input files as read | the tracked faces of `<output>_final.msh` (after any filter) | three tet vertex ids + barycentrics |
 | `simwild`, `.msh` input | the tag interfaces of `<output>_history_input.msh` (input points: three of its vertex ids + barycentrics) | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 | `simwild`, surface input | the input files as read | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
+| `triwild` | the input curve files (and point files) as read | the tracked edges of `<output>.msh` (after any filter) | two mesh vertex ids + barycentrics |
 
 ## The map: the `tracking` component
 
@@ -378,6 +474,28 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   bijections, but stretched.
 - **`Tracking`.** The user-facing wrapper: input points by file triangles or by
   `input_vertex_ids` triplets; output points by triangles or by `output_vertex_ids` triplets.
+- **`CurveMap` and `CurveTracking`** (`CurveMap.{hpp,cpp}`, `tracking.hpp`): the same for
+  curves, where a joint flattening is exact. Each operation's segments before and after are
+  split into chains between *anchors* -- vertices it leaves where they were, junctions, ends,
+  feature points -- and each chain before is paired with the chain after between the same two
+  anchors (the removed vertex named as the survivor). The local map takes one onto the other
+  by normalised arc length: monotone, so a bijection, with constant stretch along the chain.
+  Splits, collapses and smoothing (`Smoothing::flatten`; `barycentric` keeps coordinates) are
+  all mapped so. Chains with no partner -- the topology changed -- map by relabelling where the
+  segment still exists. An `embed` maps by position on the segments each lies on; a `relabel`
+  by renumbering, flipping coordinates for a duplicate given reversed. Warnings
+  (`CurveMapWarnings`): `topology` (also a collapse along no segment, a weld), `merged_segments`,
+  `overlapping` (input segments that overlap), `unlocated`, `replaced`. `feature_points()`
+  follows each input feature point's vertex through collapses, relabels and (by position)
+  embeds to the output vertex it became.
+  - **A junction, an end or a feature point collapsed onto a plain curve vertex** moves there:
+    the survivor ends no chain before the collapse, so the chain the collapsed segment was on
+    runs on through it. A junction sliding along a branch, and a curve's end eroding onto its
+    neighbour, map as the shortening they are, without a warning; a collapse of two junctions,
+    or one along no segment (a weld), is a topology change.
+  - **Mapping points** moves, per step, only the points on that step's segments (an index from
+    segment to points), so it costs little more than the steps that touch them: 0.37 s for
+    19,804 points through 520k edits.
 - **`transfer_fields` / `surface_io`.** Fields of a gmsh input carried onto the output.
   - The files are read and written through `io::read_mesh` / `io::write_mesh`, so they are
     what `wm.read_mesh` reads and `wm.write_mesh` writes, and a plain gmsh `$ElementData`
@@ -393,9 +511,13 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
     the fields on its row, and any other is a row added after them.
 - **The app** (`app.cpp`, spec `tracking_spec.json`; `tracking.hpp` declares it):
   - `info`: what the map holds, its warnings, the output centroids' round trip, and how far
-    they lie from their preimages (drift, in output edge lengths);
-  - `transfer`: fields onto the output;
-  - `map`: user points.
+    they lie from their preimages (drift, in output edge lengths); for curves, the output
+    segments' midpoints, in output segment lengths;
+  - `transfer` (surfaces): fields onto the output;
+  - `map`: user points;
+  - `features` (curves): the input's feature points and the output vertices they became.
+
+  The file says whether it holds a surface or curves (`history::face_size`); the app picks.
 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
@@ -412,7 +534,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
    The position read must be const.
 2. Make the application change the surface only through `split_edge`, `split_face`,
    `collapse_edge`, `swap_edge` and `smooth_vertex`. If it has feature curves, enforce the
-   feature rules and add them to `rec->history().feature_edges`.
+   feature rules and add them to `rec->history().features`.
 3. Start from the input file. Read with `io::read_triangle_mesh(paths, ..., &provenance)`, then
    save `history::from_input(provenance, welded_positions, rec->history())`
    (`src/wmtk/history/InputHistory.hpp`): the file as read, a `relabel` to the mesh, then the
@@ -445,6 +567,21 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
    (`m_insertion_sources`), and finish with the input history
    (`finish_surface_history(&input)`).
 
+### What breaks bijectivity on curves
+
+- Welds (a collapse joining two curves along no segment), junctions merged, loops closed, and
+  the input simplification without the link condition: all of them `topology` warnings. With
+  `preserve_topology` there are none of these left.
+- Duplicate segments in the input files (`merged_segments`), which the weld makes one.
+- **Not a warning, but a distortion: junctions that slide.** triwild anchors only curve ends by
+  default (`allow_junction_cleanup`); a junction is free to move, and does: on 190246 one
+  slid 14 units in a single smoothing step, zipping two curves that run side by side inside
+  the envelope. The map still takes the junction to the junction, so one branch stretches 12
+  times and the others shrink as much. Points then drift far along the curves (mean 0.97,
+  max 174 segment lengths), and a point that rides the junction loses precision through the
+  steps that stretch it (round trip 6.76 there). With `allow_junction_cleanup: false` the
+  junctions stay within eps: round trip 7e-12, drift mean 0.09, max 5.6 segment lengths.
+
 ### What breaks bijectivity
 
 Each of these shows up as warnings, never as a refusal to run:
@@ -469,7 +606,7 @@ What is left under `preserve_topology` (101168: 298 warnings, no welds):
 - **A new edit kind:**
   1. Add it to `EditKind` with its semantics.
   2. Implement it in `Replay::apply`.
-  3. Write and read it in `SurfaceHistory.cpp`, bumping the version.
+  3. Write and read it in `History.cpp`, bumping the version.
   4. Give `SurfaceMap`'s constructor a case that builds a `Step`, and teach `map()`'s `visit` to
      move points through it, both directions.
   5. Add the warnings it can raise to `MapWarnings`.
@@ -479,8 +616,14 @@ What is left under `preserve_topology` (101168: 298 warnings, no welds):
   ids.
 - **A new operation:** add it to `app.cpp` and to `operation`'s options in the spec,
   with every new option documented there.
-- **Curves (2D, triwild).** Not supported. The history and the map are for triangle complexes;
-  tracking curves would need a 1D history and 1D local maps.
+- **Another curve application.** On a `TriOptimizerMesh`, `record_curve_history` and
+  `save_curve_history` come with it. Otherwise override `is_tracked_edge` and
+  `tracked_feature_points` on your `TriMesh` and call `start_curve_history(position)`. Keep the
+  feature points by the rules (a collapse renames a removed one to the survivor), and start from
+  the input with `history::curves_from_input` if the input is curve files.
+- **A curve edit kind** goes through the same steps as above, in `CurveMap` instead of
+  `SurfaceMap`. `split_face` and `swap_edge` have no curve meaning, and loading a curve history
+  that holds one fails.
 
 ## Evaluating correctness
 
@@ -521,7 +664,15 @@ The checks used so far, from cheapest to strongest:
 7. **Quality of the map.** `folded_cells()` counts local maps that must stretch. For UVs,
    compare the distortion of the transferred texture with the input's: flipped texture
    triangles, and the conformal distortion of each triangle's 3D-to-UV map.
-8. **Recording changes nothing.** With deterministic (serial) runs, an application with
+8. **Curves.** The same checks: the history's last segments, by `output_vertex_ids`, are edges
+   of the output mesh at the same positions; the recorder's `replaced` and `unknown` are 0 and
+   `save_curve_history` warns about nothing; the map builds without warnings under
+   `preserve_topology`; round trips are at rounding (1e-16 on the examples, arc length being
+   exact); input feature points end at output vertices within eps of themselves; a point at a
+   curve's end maps onto the end's output vertex. Tests: `test_curve_map.cpp` (exact maps on
+   hand-built histories: a straight line is the identity, arc length on a bend, junctions and
+   loops, a weld, duplicates and an embed, the file format) and `test_triwild_tracking.cpp`.
+9. **Recording changes nothing.** With deterministic (serial) runs, an application with
    recording on, with it off, and current `main` must write byte-identical meshes.
    - Compare instruction counts (`/usr/bin/time -l`) for the cost, not wall time.
    - At 16 threads, runs differ in their iteration counts, which swamps the overhead in wall
@@ -604,10 +755,13 @@ iteration counts, and other load moves them too. Compare instruction counts.
 
 | what | where |
 |---|---|
-| history, edit kinds, file format, composition | `src/wmtk/history/SurfaceHistory.{hpp,cpp}` |
+| history, edit kinds, file format, composition | `src/wmtk/history/History.{hpp,cpp}`, `Fwd.hpp` |
 | replay | `src/wmtk/history/Replay.{hpp,cpp}` |
-| tracked-surface recorder | `src/wmtk/history/TrackedSurface.{hpp,cpp}` |
-| TriMesh hooks | `src/wmtk/TriMesh.{h,cpp}` (`start_history`, `commit_history`) |
+| tracked-surface and tracked-curve recorder | `src/wmtk/history/TrackedRecorder.{hpp,cpp}` |
+| input chains | `src/wmtk/history/InputHistory.{hpp,cpp}` (`from_input`, `curves_from_input`) |
+| TriMesh hooks | `src/wmtk/TriMesh.{h,cpp}` (`start_history`, `commit_history`; `start_curve_history`, `curve_history_commit`) |
+| TriOptimizerMesh side (curves) | `src/wmtk/TriOptimizerMesh.{h,cpp}` |
+| curve read provenance, simplification, insertion sources | `src/wmtk/io/read_edge_mesh.{hpp,cpp}`, `src/wmtk/utils/SimplifySegments.{hpp,cpp}`, `src/wmtk/utils/EmbedSegments.{hpp,cpp}` |
 | TetMesh hooks | `src/wmtk/TetMesh.{h,cpp}`, `TetMeshEdgeSplittingConn.cpp`, `TetMeshEdgeCollapsingConn.cpp`, `TetMeshSwapMeshConnectivity.cpp` |
 | TetOptimizerMesh side, fold check | `src/wmtk/TetOptimizerMesh.{h,cpp}`, `OptimizerParameters.h` |
 | read provenance | `src/wmtk/io/read_triangle_mesh.{hpp,cpp}` |
@@ -616,4 +770,5 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | isotropic recording | `components/isotropic_remeshing/.../isotropic_remeshing.cpp` |
 | tetwild recording | `components/tetwild/.../tetwild.cpp`, `VolumemesherInsertion.cpp` |
 | simwild recording | `components/simwild/.../simwild.cpp`, `EmbedSurface.cpp`, `read_image_msh.cpp`, `SimWildMesh.cpp` |
-| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_tracking.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp` |
+| triwild recording | `components/triwild/.../triwild.cpp` |
+| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp` |
