@@ -399,6 +399,16 @@ TEST_CASE("MeshData VTU output uses the existing writer", "[mesh_data][io]")
         std::string(std::istreambuf_iterator<char>(actual), {}) ==
         std::string(std::istreambuf_iterator<char>(expected), {}));
 }
+TEST_CASE("MeshData VTU output rounds tiny values like the component writers", "[mesh_data][io]")
+{
+    MeshData mesh;
+    mesh.V = DataMatrix<double>::Zero(3, 3);
+    mesh.cells[CellType::Triangle].connectivity = (DataMatrix<int64_t>(1, 3) << 0, 1, 2).finished();
+    mesh.vertex_attributes["diagnostic"].values = DataMatrix<double>::Constant(3, 1, 1e-20).eval();
+    TempMesh file(".vtu");
+    REQUIRE_NOTHROW(io::write_mesh(file.path, mesh));
+    REQUIRE(std::filesystem::exists(file.path));
+}
 TEST_CASE("MeshData VTU adapter rejects unsupported data", "[mesh_data][io]")
 {
     MeshData mesh;
@@ -417,11 +427,6 @@ TEST_CASE("MeshData VTU adapter rejects unsupported data", "[mesh_data][io]")
     {
         mesh.vertex_attributes["vid"].values =
             DataMatrix<int64_t>::Constant(3, 1, 9007199254740993LL).eval();
-    }
-    SECTION("small floating values")
-    {
-        mesh.vertex_attributes["diagnostic"].values =
-            DataMatrix<double>::Constant(3, 1, 1e-20).eval();
     }
     SECTION("attribute names requiring XML escaping")
     {

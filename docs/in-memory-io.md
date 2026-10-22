@@ -188,8 +188,9 @@ unchanged; the shared utilities do not add a VTU reader.
 `io::write_mesh(path, data)` writes MSH or delegates VTU output to the existing
 `paraviewo::VTUWriter`, without a new serializer or custom VTU metadata. VTU attributes use the
 existing Float64 representation, with exact numeric conversion required. Attribute labels,
-two-column fields (which the writer pads), values it would round to zero, names requiring XML
-escaping, and differing attribute schemas across cell blocks are rejected. Use MSH when those
+two-column fields (which the writer pads), names requiring XML escaping, and differing attribute
+schemas across cell blocks are rejected. The writer rounds values below 1e-16 in magnitude to
+zero, as in every component's own VTU output; this is reported as a warning. Use MSH when those
 fields need to be preserved. MSH fields use
 reversible scalar splitting with type/shape/label metadata in their data headers. Integer values
 that cannot be represented exactly by MSH's Float64 field values are rejected. Physical groups

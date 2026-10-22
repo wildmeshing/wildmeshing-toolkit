@@ -42,9 +42,15 @@ Eigen::MatrixXd vtu_field(const std::string& name, const MeshAttribute& attribut
         name.find_first_of("\"<>&\r\n\t") == std::string::npos,
         "VTU writer cannot escape attribute name: " + name);
     Eigen::MatrixXd values = attribute.doubles();
-    require(
-        !((values.array().abs() > 0) && (values.array().abs() < 1e-16)).any(),
-        "VTU writer would round small attribute values to zero: " + name);
+    // paraviewo writes |x| < 1e-16 as 0, as it does for every component's own VTU output.
+    // That is harmless for viewing, so warn rather than refuse; MSH keeps the exact values.
+    const auto tiny = ((values.array().abs() > 0) && (values.array().abs() < 1e-16)).count();
+    if (tiny > 0)
+        logger().warn(
+            "VTU writer rounds {} value(s) of {} below 1e-16 in magnitude to zero; write MSH to "
+            "keep them",
+            tiny,
+            name);
     return values;
 }
 void write_vtu(const std::filesystem::path& path, const MeshData& mesh)
