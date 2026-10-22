@@ -899,6 +899,57 @@ private:
 };
 
 /**
+ * @brief The IPC fold barrier on a front vertex's offset faces
+ * (TopoOffsetTetMesh::front_fold_barrier_energy()): per face f through the moving vertex x,
+ *
+ *     c_f(x) = N_f(x) . g_f / |N_f(x)|,     N_f(x) = (a - x) x (b - x) = a x b + (b - a) x x,
+ *
+ * the cosine of the angle between the face's normal out of its band cell and g_f, the unit field
+ * gradient at the face's centroid (frozen at the solve's start). With c0 = cos(foldover_angle),
+ *
+ *     b(u) = -(u - 1)^2 ln u   on u = c_f / c0 in (0, 1),   0 for u >= 1,   +inf for u <= 0,
+ *
+ * so the barrier is 0 while the angle is at most foldover_angle and climbs to +inf as it reaches
+ * 90 degrees. N_f is affine in x (dN/dx = [b - a]_x), so the value, gradient and Hessian are
+ * exact (p = N.g affine, r = |N|), and max_step_size() takes the exact first crossing of 90
+ * degrees along the step (p affine; 0.9x, IPC's backoff); is_step_valid() refuses a crossing.
+ */
+class FoldBarrier3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One offset face through the moving vertex: its other corners ordered so that
+    /// (a - x) x (b - x) points out of the band, and g the unit field gradient at its centroid.
+    struct Face
+    {
+        Eigen::Vector3d a, b, g;
+    };
+    /// c0 = cos(foldover_angle), in (0, 1].
+    FoldBarrier3D(std::vector<Face> faces, double c0, double stiffness = 1.);
+    /// The cosine c_f at x of one face (as the class doc defines it).
+    static double cosine(const Face& f, const Eigen::Vector3d& x);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    double max_step_size(const TVector& x0, const TVector& x1) override;
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::vector<Face> m_faces;
+    double m_c0 = 1.;
+    double m_stiffness = 1.;
+};
+
+/**
  * @brief The IPC barrier that keeps a smoothing solve's vertex strictly inside its one-ring
  * (TopoOffsetTetMesh::ring_barrier_energy()): per boundary face of the ring (the triangle
  * opposite the vertex in each ring tet, a FIXED plane during the solve) the clamped log barrier

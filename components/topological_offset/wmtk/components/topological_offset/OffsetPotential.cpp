@@ -1358,6 +1358,115 @@ void FaceStencilError3D::hessian(const TVector& xv, MatrixXd& hess)
 }
 
 // ---------------------------------------------------------------------------------------------
+// FoldBarrier3D
+// ---------------------------------------------------------------------------------------------
+
+FoldBarrier3D::FoldBarrier3D(std::vector<Face> faces, const double c0, const double stiffness)
+    : m_faces(std::move(faces))
+    , m_c0(c0)
+    , m_stiffness(stiffness)
+{}
+
+double FoldBarrier3D::cosine(const Face& f, const Eigen::Vector3d& x)
+{
+    const Eigen::Vector3d N = (f.a - x).cross(f.b - x);
+    const double r = N.norm();
+    if (!(r > 0.)) return -std::numeric_limits<double>::infinity();
+    return N.dot(f.g) / r;
+}
+
+double FoldBarrier3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // See the class doc. Per face: N = (a - x) x (b - x) = a x b + e x x, e = b - a, so
+    // dN/dx = E = [e]_x; p = N.g (affine: grad p = E^T g), r = |N| (grad r = E^T N / r,
+    // hess r = E^T E / r - grad r grad r^T / r), c = p / r; b(u) with u = c / c0.
+    g.setZero();
+    H.setZero();
+    double e = 0.;
+    for (const Face& f : m_faces) {
+        const Eigen::Vector3d N = (f.a - x).cross(f.b - x);
+        const double r = N.norm();
+        const double p = N.dot(f.g);
+        if (!(r > 0.) || !(p > 0.)) return std::numeric_limits<double>::infinity();
+        const double c = p / r;
+        const double u = c / m_c0;
+        if (u >= 1.) continue;
+        const double lu = std::log(u);
+        const double um1 = u - 1.;
+        e += m_stiffness * (-(um1 * um1) * lu);
+        if (need < 1) continue;
+        const Eigen::Vector3d ev = f.b - f.a;
+        Eigen::Matrix3d E;
+        E << 0., -ev.z(), ev.y(), ev.z(), 0., -ev.x(), -ev.y(), ev.x(), 0.;
+        const Eigen::Vector3d gp = E.transpose() * f.g;
+        const Eigen::Vector3d gr = E.transpose() * N / r;
+        const Eigen::Vector3d gc = gp / r - (p / (r * r)) * gr;
+        const double db = -2. * um1 * lu - um1 * um1 / u;
+        g += (m_stiffness * db / m_c0) * gc;
+        if (need < 2) continue;
+        const Eigen::Matrix3d Hr = (E.transpose() * E - gr * gr.transpose()) / r;
+        const Eigen::Matrix3d Hc = -(gp * gr.transpose() + gr * gp.transpose()) / (r * r) +
+                                   (2. * p / (r * r * r)) * (gr * gr.transpose()) -
+                                   (p / (r * r)) * Hr;
+        const double ddb = -2. * lu - 4. * um1 / u + um1 * um1 / (u * u);
+        H += m_stiffness * ((ddb / (m_c0 * m_c0)) * (gc * gc.transpose()) + (db / m_c0) * Hc);
+    }
+    return e;
+}
+
+double FoldBarrier3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head(3), 0, g, H);
+}
+
+void FoldBarrier3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 1, g, H);
+    gradv = g;
+}
+
+void FoldBarrier3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 2, g, H);
+    hess = H;
+}
+
+double FoldBarrier3D::max_step_size(const TVector& x0v, const TVector& x1v)
+{
+    // p = N.g is affine in x, so along the step it is affine in t: the first p = 0 (90 degrees)
+    // is exact. 0.9x, IPC's backoff; is_step_valid() backs it up.
+    const Eigen::Vector3d x0 = x0v.head(3), x1 = x1v.head(3);
+    double t = 1.;
+    for (const Face& f : m_faces) {
+        const double p0 = (f.a - x0).cross(f.b - x0).dot(f.g);
+        const double p1 = (f.a - x1).cross(f.b - x1).dot(f.g);
+        if (p1 > 0.) continue;
+        if (!(p0 > 0.)) return 0.;
+        t = std::min(t, 0.9 * p0 / (p0 - p1));
+    }
+    return t;
+}
+
+bool FoldBarrier3D::is_step_valid(const TVector& /*x0v*/, const TVector& x1v)
+{
+    const Eigen::Vector3d x1 = x1v.head(3);
+    for (const Face& f : m_faces) {
+        if (!((f.a - x1).cross(f.b - x1).dot(f.g) > 0.)) return false;
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------------------------
 // RingBarrier3D
 // ---------------------------------------------------------------------------------------------
 

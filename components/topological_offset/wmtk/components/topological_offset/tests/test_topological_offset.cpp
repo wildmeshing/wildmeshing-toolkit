@@ -1289,6 +1289,41 @@ std::array<Vector3d, 4> corners(const TopoOffsetTetMesh& m, const size_t tid)
     return p;
 }
 
+/// A closed fan of front faces over the input triangle's interior (d = z there, g = +z): front
+/// vertex 0 near the level set z = delta = 0.5 with ring 1-4; band cells below the front on
+/// input-complex cells (so their lower faces are no offset surface), background cells above. The
+/// only offset faces are the four (0, i, i+1), nearly horizontal, normals out of the band
+/// within ~10 degrees of +z. Vertices 5 (below), 6 (above), 7 (bottom) are on no front face.
+struct FanFixture
+{
+    Eigen::MatrixXd V;
+    std::vector<std::array<int, 4>> T;
+    std::vector<int> labels; ///< band 2, background 0, input complex 1
+};
+FanFixture fan_fixture()
+{
+    FanFixture f;
+    f.V.resize(8, 3);
+    f.V << 0.02, -0.01, 0.56, // 0: the front vertex
+        0.4, 0., 0.5, // 1
+        0., 0.4, 0.47, // 2
+        -0.4, 0., 0.53, // 3
+        0., -0.4, 0.5, // 4
+        0., 0., 0.15, // 5: below the front, in the band
+        0., 0., 1.0, // 6: above the front
+        0., 0., -0.2; // 7: below the input-complex cells
+    for (int i = 1; i <= 4; ++i) {
+        const int j = i % 4 + 1;
+        f.T.push_back({{0, i, j, 5}});
+        f.labels.push_back(2);
+        f.T.push_back({{0, i, j, 6}});
+        f.labels.push_back(0);
+        f.T.push_back({{i, j, 5, 7}});
+        f.labels.push_back(1);
+    }
+    return f;
+}
+
 } // namespace
 
 TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
@@ -1382,6 +1417,138 @@ TEST_CASE("face-stencil-error-3d", "[offset][3d]")
             }
         }
     }
+}
+
+TEST_CASE("fold-barrier-3d", "[offset][3d]")
+{
+    // FoldBarrier3D, the front smoother's per-face fold barrier: 0 while the angle between the
+    // face normal ((a - x) x (b - x)) and g is at most foldover_angle, positive and climbing past
+    // it, +inf at and past 90 degrees; gradient and Hessian against central differences inside
+    // the active range; max_step_size() is 0.9x the exact first 90-degree crossing.
+    // One face: a = (1, 0, 0), b = (0, 1, 0), x moving; g = +z. With x = (0, 0, h) the normal
+    // (a - x) x (b - x) = (h, h, 1), so cos = 1 / sqrt(1 + 2 h^2): h = 0 is 0 degrees, and the
+    // angle grows with h; x = (s, s, 0) tilts nothing (the face stays in z = 0), x = (s, s, z)
+    // with s > 1/2 turns the normal over.
+    const double theta = 60.;
+    const double c0 = std::cos(theta * M_PI / 180.);
+    const FoldBarrier3D::Face f{{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}};
+    FoldBarrier3D b({f}, c0);
+    const auto at = [&](const Vector3d& x) {
+        Eigen::VectorXd xv = x;
+        return b.value(xv);
+    };
+    const auto cos_at_h = [](double h) { return 1. / std::sqrt(1. + 2. * h * h); };
+    CHECK(FoldBarrier3D::cosine(f, Vector3d(0., 0., 0.3)) == Catch::Approx(cos_at_h(0.3)));
+    // cos 60 = 0.5 at h = sqrt(3/2): below it the barrier is 0, beyond it positive.
+    const double h60 = std::sqrt(1.5);
+    CHECK(at(Vector3d(0., 0., 0.)) == 0.);
+    CHECK(at(Vector3d(0., 0., 0.99 * h60)) == 0.);
+    CHECK(at(Vector3d(0., 0., 1.5 * h60)) > 0.);
+    CHECK(at(Vector3d(0., 0., 4. * h60)) > at(Vector3d(0., 0., 1.5 * h60)));
+    // Past 90 degrees (the normal turned over): +inf.
+    CHECK(std::isinf(at(Vector3d(0.7, 0.7, -0.1))));
+    // Derivatives in the active range, at points off the symmetry axis.
+    for (const Vector3d& x :
+         {Vector3d(0.1, -0.05, 1.6), Vector3d(-0.2, 0.15, 2.5), Vector3d(0.05, 0.3, 4.)}) {
+        INFO("x " << x.transpose());
+        REQUIRE(at(x) > 0.);
+        Eigen::VectorXd xv = x;
+        const double h = 1e-6;
+        Eigen::VectorXd g(3);
+        Eigen::MatrixXd H(3, 3);
+        b.gradient(xv, g);
+        b.hessian(xv, H);
+        for (int i = 0; i < 3; ++i) {
+            Eigen::VectorXd xp = xv, xm = xv;
+            xp[i] += h;
+            xm[i] -= h;
+            const double fd = (b.value(xp) - b.value(xm)) / (2. * h);
+            CHECK(g[i] == Catch::Approx(fd).epsilon(1e-5).margin(1e-8 * (1. + g.norm())));
+            Eigen::VectorXd gp(3), gm(3);
+            b.gradient(xp, gp);
+            b.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-4).margin(1e-6 * (1. + H.norm())));
+            }
+        }
+    }
+    // p = N.g = 1 - x_x - x_y (affine): from (0, 0, 0) to (1, 1, 0) it hits 0 at t = 1/2.
+    Eigen::VectorXd x0(3), x1(3);
+    x0 << 0., 0., 0.;
+    x1 << 1., 1., 0.;
+    CHECK(b.max_step_size(x0, x1) == Catch::Approx(0.45).epsilon(1e-12));
+    CHECK_FALSE(b.is_step_valid(x0, x1));
+    x1 << 0.2, 0.1, 0.5;
+    CHECK(b.max_step_size(x0, x1) == 1.);
+    CHECK(b.is_step_valid(x0, x1));
+}
+
+TEST_CASE("front-fold-barrier-on-the-mesh", "[offset][3d]")
+{
+    // front_fold_barrier_energy() on the fan fixture reads the debug frames' own angle
+    // (front_face_field_angle(), the field_normal_angle field): at each front vertex whose faces
+    // are all below 90 degrees, its value is the sum over the faces of b(cos(angle) / c0) (0 for
+    // angles within foldover_angle); at a vertex with a face at or past 90 degrees it throws. Run
+    // on the fan and on it with the band and background labels swapped, which turns the fan
+    // faces' normals out of the band around (angle -> 180 - angle): the fan values, the swap
+    // throws. foldover_angle 90 is refused.
+    const FanFixture fan = fan_fixture();
+    const double theta = 3.; // below the fan's ~5-10 degree tilts: the barrier is active
+    const double c0 = std::cos(theta * M_PI / 180.);
+    const auto b_of = [](const double u) {
+        return u >= 1. ? 0. : -(u - 1.) * (u - 1.) * std::log(u);
+    };
+    size_t n_checked = 0, n_threw = 0, n_valued = 0, n_active = 0;
+    std::vector<int> swapped = fan.labels; // band <-> background, the complex kept
+    for (int& l : swapped) l = l == 2 ? 0 : l == 0 ? 2 : l;
+    for (const std::vector<int>& labels : {fan.labels, swapped}) {
+        Parameters param;
+        param.foldover_angle = theta;
+        const auto pot = plane_field();
+        auto mesh = energy_mesh(param, fan.V, fan.T, labels, pot);
+        for (size_t v = 0; v < size_t(fan.V.rows()); ++v) {
+            mesh->m_vertex_extra[v].m_is_on_offset = !mesh->offset_surface_faces_live_at(v).empty();
+        }
+        for (size_t v = 0; v < size_t(fan.V.rows()); ++v) {
+            if (!mesh->m_vertex_extra[v].m_is_on_offset) continue;
+            double worst = -1., want = 0.;
+            for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
+                const auto f = mesh->get_face_vids(ft);
+                const double ang = mesh->front_face_field_angle(f[0], f[1], f[2]);
+                if (!std::isfinite(ang)) continue;
+                worst = std::max(worst, ang);
+                want += b_of(std::cos(ang * M_PI / 180.) / c0);
+            }
+            INFO(
+                "labels " << (labels == fan.labels ? "fan" : "swapped") << ", vertex " << v
+                          << ", worst front-face angle " << worst);
+            ++n_checked;
+            if (worst >= 90.) {
+                CHECK_THROWS(mesh->front_fold_barrier_energy(v));
+                ++n_threw;
+                continue;
+            }
+            const auto fold = mesh->front_fold_barrier_energy(v);
+            Eigen::VectorXd xv = mesh->m_vertex_attribute[v].m_posf;
+            const double got = fold ? fold->value(xv) : 0.;
+            CHECK(got == Catch::Approx(want).epsilon(1e-9).margin(1e-12));
+            ++n_valued;
+            if (got > 0.) ++n_active;
+        }
+        // foldover_angle 90 or more is refused.
+        mesh->m_offset_params.foldover_angle = 90.;
+        for (size_t v = 0; v < size_t(fan.V.rows()); ++v) {
+            if (mesh->m_vertex_extra[v].m_is_on_offset) {
+                CHECK_THROWS(mesh->front_fold_barrier_energy(v));
+                break;
+            }
+        }
+    }
+    INFO(n_checked << " vertices checked, " << n_threw << " threw, " << n_valued << " valued");
+    CHECK(n_threw > 0);
+    CHECK(n_valued > 0);
+    CHECK(n_active > 0); // the barrier is really on somewhere (angles past foldover_angle)
 }
 
 TEST_CASE("ring-barrier-3d", "[offset][3d]")
@@ -1495,11 +1662,14 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
     // The smoothing objective since 2026-10-22: a front vertex the loop places gets the ring
     // barrier plus the offset error over its live front faces (front_objective(); the barrier is
     // exactly 0 at the position the objective is built at), NO AMIPS; every other vertex gets no
-    // extra energy (nullptr: the engine's raw AMIPS sum). Two fixtures: the per-tet-energy one
-    // (front vertices a, b, c0, c1, c2; c3 on no front face), and a star of eight band cells
-    // around an off-front vertex. The front objective's value at the build position against the
-    // sum of face_offset_error() over the vertex's live front faces, and its gradient and Hessian
-    // against central differences (small enough steps that the barrier stays 0 and flat).
+    // extra energy (nullptr: the engine's raw AMIPS sum). Three fixtures: the per-tet-energy one
+    // (front vertices a, b, c0, c1, c2; c3 on no front face), a star of eight band cells around
+    // an off-front vertex -- both with front faces past 90 degrees from the field gradient, where
+    // the objective must throw (the fold barrier) -- and the fan (fan_fixture()), whose front is
+    // unfolded. The front objective's value at the build position against the sum of
+    // face_offset_error() over the vertex's live front faces plus the fold barrier, and its
+    // gradient and Hessian against central differences (small enough steps that the ring
+    // barrier stays 0 and flat).
     // use_rest_pose: the plastic machinery still prices tet_energy() (checked below), although no
     // operation rule reads it any more.
     Eigen::MatrixXd V1(6, 3);
@@ -1530,16 +1700,19 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
     for (const int x : {1, 2})
         for (const int y : {3, 4})
             for (const int z : {5, 6}) T2.push_back({{0, x, y, z}});
+    const FanFixture fan = fan_fixture();
     struct Fixture
     {
         const Eigen::MatrixXd& V;
         const std::vector<std::array<int, 4>>& T;
         std::vector<int> labels;
-        size_t not_front; ///< the one vertex on no front face
+        std::vector<size_t> not_front; ///< the vertices on no front face
     };
     const std::vector<Fixture> fixtures = {
-        {V1, T1, {2, 2, 0, 1}, 5},
-        {V2, T2, std::vector<int>(8, 2), 0}};
+        {V1, T1, {2, 2, 0, 1}, {5}},
+        {V2, T2, std::vector<int>(8, 2), {0}},
+        {fan.V, fan.T, fan.labels, {5, 6, 7}}};
+    size_t n_front_valued = 0;
     for (size_t fi = 0; fi < fixtures.size(); ++fi) {
         const Fixture& fx = fixtures[fi];
         for (const auto& [s, plastic] : std::vector<std::pair<double, bool>>{
@@ -1595,11 +1768,13 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                 INFO(
                     "fixture " << fi << ", s " << s << ", plastic " << plastic << ", vertex " << v
                                << (front ? " (front)" : ""));
-                REQUIRE(front == (v != fx.not_front));
+                REQUIRE(
+                    front ==
+                    (std::find(fx.not_front.begin(), fx.not_front.end(), v) == fx.not_front.end()));
                 REQUIRE(!mesh->vertex_is_held(v));
                 REQUIRE(mesh->vertex_front_placed(v) == front);
-                const auto energy = mesh->smoothing_extra_energy(v);
                 if (!front) {
+                    const auto energy = mesh->smoothing_extra_energy(v);
                     if (mesh->ring_has_plastic_rest(v)) {
                         // use_rest_pose with a plastic ring cell: the raw AMIPS sum with that
                         // cell against its stamped rest -- per cell the cube root of
@@ -1618,9 +1793,23 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                     }
                     continue;
                 }
+                // A front face at or past 90 degrees from the field gradient: the fold barrier
+                // cannot start there and the objective throws (fixtures 0 and 1 have such faces).
+                double worst = -1.;
+                for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
+                    const auto f = mesh->get_face_vids(ft);
+                    const double ang = mesh->front_face_field_angle(f[0], f[1], f[2]);
+                    if (std::isfinite(ang)) worst = std::max(worst, ang);
+                }
+                if (worst >= 90.) {
+                    CHECK_THROWS(mesh->smoothing_extra_energy(v));
+                    continue;
+                }
+                const auto energy = mesh->smoothing_extra_energy(v);
                 REQUIRE(energy != nullptr);
-                // At the build position the barrier is 0, so the objective is the offset error
-                // over the vertex's live front faces.
+                ++n_front_valued;
+                // At the build position the ring barrier is 0, so the objective is the offset
+                // error over the vertex's live front faces plus the fold barrier.
                 double want = 0.;
                 size_t n_faces = 0;
                 for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
@@ -1633,11 +1822,17 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                 REQUIRE(n_faces > 0);
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
-                CHECK(energy->value(xv) == Catch::Approx(want).epsilon(1e-12));
                 CHECK(want > 0.); // the fixture is off the level set
+                // Plus the fold barrier at the build position (0 for faces within
+                // foldover_angle of the field gradient).
+                if (const auto fold = mesh->front_fold_barrier_energy(v)) want += fold->value(xv);
+                CHECK(energy->value(xv) == Catch::Approx(want).epsilon(1e-12));
 
                 // The objective's derivatives against central differences (h small enough that
-                // every sample stays inside the barrier's zero region).
+                // every sample stays inside the ring barrier's zero region). Not next to the fold
+                // barrier's wall, where it is near-infinite and a difference step can cross it.
+                INFO("worst front-face angle " << worst);
+                if (worst > 85.) continue;
                 const double h = 1e-6;
                 Eigen::VectorXd g(3);
                 Eigen::MatrixXd H(3, 3);
@@ -1660,6 +1855,7 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
             }
         }
     }
+    CHECK(n_front_valued > 0); // the fan fixture exercises the whole front objective
 }
 
 TEST_CASE("stencil-order-point-counts-2d", "[offset][2d]")

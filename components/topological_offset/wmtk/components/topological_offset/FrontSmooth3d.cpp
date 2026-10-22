@@ -289,8 +289,75 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objectiv
     // vertex chases the level set freely inside its ring and can never leave or invert it.
     auto sum = std::make_shared<optimization::EnergySum>();
     if (const auto barrier = ring_barrier_energy(vid)) sum->add_energy(barrier);
+    if (const auto fold = front_fold_barrier_energy(vid)) sum->add_energy(fold);
     if (const auto error = front_error_energy(vid)) sum->add_energy(error);
     return sum;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_fold_barrier_energy(
+    const size_t vid) const
+{
+    // See the declaration. Per live offset face through vid: its other two corners ordered so
+    // that (a - x) x (b - x) points out of the band at the current position (the orientation
+    // front_face_out_normal() gives: away from the band cell's fourth corner), and g the unit
+    // gradient of d at the centroid now, exactly as front_face_angle_to_field() reads it.
+    if (!m_input_complex_envelope) return nullptr;
+    const double theta = m_offset_params.foldover_angle;
+    if (!(theta < 90.)) {
+        log_and_throw_error(
+            "front fold barrier: foldover_angle {} is not below 90 degrees; the barrier is 0 "
+            "below foldover_angle and +inf at 90",
+            theta);
+    }
+    const double c0 = std::cos(theta * M_PI / 180.);
+    const Vector3d& x = m_vertex_attribute[vid].m_posf;
+    const Envelope& env = *m_input_complex_envelope;
+    std::vector<FoldBarrier3D::Face> faces;
+    for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
+        const std::array<size_t, 3> f = get_face_vids(ft);
+        std::array<size_t, 2> o{};
+        int k = 0;
+        for (const size_t u : f) {
+            if (u != vid && k < 2) o[size_t(k++)] = u;
+        }
+        if (k != 2) continue;
+        Vector3d n;
+        if (!front_face_out_normal(vid, o[0], o[1], n)) continue; // no band cell, zero area
+        FoldBarrier3D::Face fb;
+        fb.a = m_vertex_attribute[o[0]].m_posf;
+        fb.b = m_vertex_attribute[o[1]].m_posf;
+        if ((fb.a - x).cross(fb.b - x).dot(n) < 0.) std::swap(fb.a, fb.b);
+        const Vector3d ctr = (x + fb.a + fb.b) / 3.;
+        const int64_t prim = nearest_primitive(env, m_input_complex_pad, ctr);
+        if (prim < 0) continue;
+        Vector3d g;
+        env.primitive_distance(prim, ctr, &g);
+        const double gn = g.norm();
+        if (!(gn > 0.) || !std::isfinite(gn)) continue;
+        fb.g = g / gn;
+        const double c = FoldBarrier3D::cosine(fb, x);
+        if (!(c > 0.)) {
+            const double ang =
+                std::atan2((fb.a - x).cross(fb.b - x).normalized().cross(fb.g).norm(), c) * 180. /
+                M_PI;
+            log_and_throw_error(
+                "front fold barrier: offset face ({}, {}, {}) at front vertex {} is already "
+                "{:.4g} degrees from the field gradient (>= 90; foldover_angle {}), centroid "
+                "({:.6g}, {:.6g}, {:.6g}): the barrier cannot start there",
+                f[0],
+                f[1],
+                f[2],
+                vid,
+                ang,
+                theta,
+                ctr.x(),
+                ctr.y(),
+                ctr.z());
+        }
+        faces.push_back(fb);
+    }
+    if (faces.empty()) return nullptr;
+    return std::make_shared<FoldBarrier3D>(std::move(faces), c0);
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_error_energy(

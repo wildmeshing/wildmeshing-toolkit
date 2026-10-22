@@ -1950,9 +1950,9 @@ public:
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a vertex the loop
-    /// places (smoothing_extra_energy()): ring_barrier_energy() plus front_error_energy(), NO
-    /// AMIPS. What front_vertex_normal_gradient() differentiates and smooth_front_vertex()
-    /// vetoes on.
+    /// places (smoothing_extra_energy()): ring_barrier_energy() plus front_fold_barrier_energy()
+    /// plus front_error_energy(), NO AMIPS. What front_vertex_normal_gradient() differentiates
+    /// and smooth_front_vertex() vetoes on. Throws where front_fold_barrier_energy() does.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
     /// The offset error over vid's live offset faces, vid moving (FaceStencilError3D on the union
     /// field); null when it has none. Defined in FrontSmooth3d.cpp.
@@ -1963,6 +1963,14 @@ public:
     /// is not positive now (a degenerate or inverted ring cell) are skipped. Defined in
     /// FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> ring_barrier_energy(size_t vid) const;
+    /// The IPC fold barrier on vid's live offset faces (FoldBarrier3D): per face the angle
+    /// between its normal out of its band cell and the unit gradient of d (the input envelope's
+    /// nearest primitive, as front_face_field_angle()) at its centroid, the gradient frozen for
+    /// the solve; 0 up to foldover_angle, +inf at 90 degrees. THROWS when a face is already at or
+    /// past 90 degrees (the barrier cannot start there), and when foldover_angle is not below 90.
+    /// Faces whose angle cannot be measured (no band cell, zero area, zero gradient) are left out.
+    /// Null when no face is measurable. Defined in FrontSmooth3d.cpp.
+    std::shared_ptr<polysolve::nonlinear::Problem> front_fold_barrier_energy(size_t vid) const;
     /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
     /// the energy E, the sum of tet_energy() over vid's ring up to the terms that do not move with
     /// vid. The AMIPS term over the ring (amips3_energy()) for every vertex -- the smoother adds no
