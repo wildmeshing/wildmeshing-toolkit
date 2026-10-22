@@ -6,6 +6,7 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "history_output",
       "input_dir",
       "use_sample_envelope",
       "num_threads",
@@ -94,5 +95,11 @@
     "type": "bool",
     "default": false,
     "doc": "Throw exception if the output does not fulfil the desired criteria. No output will be generated."
+  },
+  {
+    "pointer": "/history_output",
+    "type": "string",
+    "default": "",
+    "doc": "Record every committed operation and save the history here (see wmtk/history): the input surface and its edits, from which the map between input and output is rebuilt (the surface_map application). Empty: no recording."
   }
 ]

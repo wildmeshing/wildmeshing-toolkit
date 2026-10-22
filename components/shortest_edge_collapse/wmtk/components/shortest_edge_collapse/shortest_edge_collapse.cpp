@@ -12,6 +12,7 @@
 #include <jse/jse.h>
 #include <nlohmann/json.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -72,10 +73,21 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const int num_threads = json_params["num_threads"];
     const bool use_link_condition = json_params["use_link_condition"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const std::string history_output = json_params["history_output"];
 
     MatrixXd V;
     MatrixXi F;
-    component_io.triangles(path, V, F, remove_duplicate_eps, -1);
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    io::ReadProvenance read;
+    component_io.triangles(
+        std::vector<std::string>{path},
+        V,
+        F,
+        remove_duplicate_eps,
+        -1,
+        nullptr,
+        history_output.empty() ? nullptr : &read);
     logger().info("Input: #V = {}, #F = {}", V.rows(), F.rows());
 
 
@@ -128,9 +140,22 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             n_nonmanifold_verts,
             use_link_condition ? "on" : "off");
     }
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t i) { return m.vertex_attrs.at(i).pos; });
+        history->history().metadata = json_params.dump();
+    }
     logger().info("collapsing mesh {}", path);
     int target_verts = v.size() * target_pec;
     run_shortest_collapse(path, target_verts, output, m);
+    if (history) {
+        // The file as read, the weld, then the simplification: the input file to the output file,
+        // which is written in the history's last numbering.
+        m.stop_history();
+        const history::SurfaceHistory chain = history::from_input(read, v, history->history());
+        chain.save(history_output);
+        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+    }
 
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid after collapsing!");
