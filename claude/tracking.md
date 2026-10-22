@@ -542,14 +542,20 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   the input simplification without the link condition: all of them `topology` warnings. With
   `preserve_topology` there are none of these left.
 - Duplicate segments in the input files (`merged_segments`), which the weld makes one.
-- **Not a warning, but a distortion: junctions that slide.** triwild anchors only curve ends by
-  default (`allow_junction_cleanup`); a junction is free to move, and does: on 190246 one
-  slid 14 units in a single smoothing step, zipping two curves that run side by side inside
-  the envelope. The map still takes the junction to the junction, so one branch stretches 12
-  times and the others shrink as much. Points then drift far along the curves (mean 0.97,
-  max 174 segment lengths), and a point that rides the junction loses precision through the
-  steps that stretch it (round trip 6.76 there). With `allow_junction_cleanup: false` the
-  junctions stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths.
+- **Not a warning, but a distortion: junctions that slide.** Without tracking, triwild anchors
+  only curve ends (`allow_junction_cleanup` defaults to true); a junction is free to move, and
+  does: on 190246 one slid 14 units in a single smoothing step, zipping two curves that run
+  side by side inside the envelope. The map still takes the junction to the junction, so one
+  branch stretches 12 times and the others shrink as much. Points then drift far along the
+  curves (mean 0.97, max 174 segment lengths), and a point that rides the junction loses
+  precision through the steps that stretch it (round trip 6.76 there). With junctions anchored
+  they stay within eps: round trip 2e-13, drift mean 0.11, max 4.0 segment lengths. So
+  `history_output` anchors them (`allow_junction_cleanup` defaults to false then, unless the
+  config gives it). The cost the option's doc warns of, a self-intersecting input frozen by
+  its anchored crossings, does not show on its own example: 242427 converges either way at
+  default topology (max energy 99.5 free, 99.2 anchored; 17.5 s and 22.3 s with recording),
+  and with `preserve_topology` it is still at 1e50 either way when stopped after 10 minutes
+  (2.3M edges).
 - **Not a warning either: hairpins removed.** A curve that folds back on itself narrower than
   the envelope can lose the whole fold to one collapse: on 226193 a 776-unit hairpin went to
   1.08. The map squeezes the fold onto what is left, so a point near its tip drifts as far as
@@ -559,18 +565,21 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 Measured 2026-10-22 on 24 networks of the 2D dataset (22 KB to 2.6 MB, 4 threads), `info`
 on each history:
 
-| triwild settings | topology warnings | worst round trip | below 1e-8 | drift, median of means | edits | map build |
-|---|---|---|---|---|---|---|
-| default | on 22 of 24 (welds) | 2.8e-10 | 24 of 24 | 0.044 segment lengths | 0.5k–49k | at most 0.16 s |
-| `preserve_topology` | 0 | 6.76 (190246; next 1.5e-4) | 14 of 24 | 0.099 | up to 1.9M | up to 8.7 s |
-| `preserve_topology`, `allow_junction_cleanup: false` | 0 | 3.3e-6 | 18 of 24 | 0.045 | up to 2.0M | up to 9.3 s |
+| triwild settings | junctions | topology warnings | worst round trip | below 1e-8 | drift, median of means | edits | map build |
+|---|---|---|---|---|---|---|---|
+| default | anchored (the default with `history_output`) | on 22 of 24 (welds) | 2.4e-9 | 24 of 24 | 0.043 segment lengths | 0.5k–51k | at most 0.20 s |
+| default | free (`allow_junction_cleanup: true`) | on 22 of 24 (welds) | 2.8e-10 | 24 of 24 | 0.044 | 0.5k–49k | at most 0.16 s |
+| `preserve_topology` | anchored (the default with `history_output`) | 0 | 3.3e-6 | 18 of 24 | 0.045 | up to 2.0M | up to 9.3 s |
+| `preserve_topology` | free (`allow_junction_cleanup: true`) | 0 | 6.76 (190246; next 1.5e-4) | 14 of 24 | 0.099 | up to 1.9M | up to 8.7 s |
 
 The other warnings are the input's: duplicate segments (`merged_segments`, up to 4,144 on
 202361) and overlapping ones (`overlapping`). No point is lost anywhere; every input feature
-point reaches an output vertex but 9 of 584 on 226193 at default settings, where the input
-simplification without the link condition retires their vertices. Recording costs 2.6–4.0%
-instructions at default settings (12 models, serial), with the output `.msh` byte-identical
-with recording off and on and to the parent commit's.
+point reaches an output vertex but 9 of 584 on 226193 at default topology with junctions free,
+where the input simplification without the link condition retires their vertices. Recording
+costs 2.6–4.0% instructions at default settings with junctions free (12 models, serial), with
+the output `.msh` byte-identical with recording off and on and to the parent commit's. Since
+`history_output` anchors the junctions, recording changes the output unless the config gives
+`allow_junction_cleanup`.
 
 ### What breaks bijectivity
 

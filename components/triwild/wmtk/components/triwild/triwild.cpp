@@ -232,10 +232,17 @@ void triwild(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
 
+    // Recording anchors junctions unless allow_junction_cleanup is given: a junction the
+    // operations slide along a curve drags the curve map with it, stretched by large factors.
+    const bool junction_cleanup_given = json_params.contains("allow_junction_cleanup");
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
         false);
+    if (!junction_cleanup_given && !json_params["history_output"].get<std::string>().empty()) {
+        json_params["allow_junction_cleanup"] = false;
+        logger().info("history_output: junctions anchored (allow_junction_cleanup false)");
+    }
     const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
 
     triwild::Parameters params(json_params);
