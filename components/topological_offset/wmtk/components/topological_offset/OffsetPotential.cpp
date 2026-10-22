@@ -1114,7 +1114,7 @@ bool VolAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 
 // ---------------------------------------------------------------------------------------------
-// The band term's searches on the input envelope
+// The distance searches on the input envelope
 // ---------------------------------------------------------------------------------------------
 
 double input_pad(const Eigen::MatrixXd& V)
@@ -1212,6 +1212,158 @@ double face_mean_sq_cos(
     return q;
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// FaceStencilError3D
+// ---------------------------------------------------------------------------------------------
+
+FaceStencilError3D::FaceStencilError3D(
+    std::shared_ptr<const OffsetPotential3D> pot,
+    std::vector<Face> faces,
+    std::vector<std::array<double, 3>> weights)
+    : m_pot(std::move(pot))
+    , m_faces(std::move(faces))
+    , m_weights(std::move(weights))
+{}
+
+double FaceStencilError3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // See the class doc: per face the mean over the stencil of r(q)^2, r = relative_residual,
+    // q = wv x + w1 q1 + w2 q2; grad_x r = wv grad r(q), hess_x r = wv^2 hess r(q).
+    g.setZero();
+    H.setZero();
+    if (m_weights.empty()) return 0.;
+    double e = 0.;
+    const double inv_n = 1. / double(m_weights.size());
+    for (const Face& f : m_faces) {
+        for (const auto& w : m_weights) {
+            const Eigen::Vector3d q = w[0] * x + w[1] * f.q1 + w[2] * f.q2;
+            const double r = m_pot->relative_residual(q);
+            if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
+            e += inv_n * r * r;
+            if (need < 1) continue;
+            const Eigen::Vector3d gr = w[0] * m_pot->gradient(q);
+            g += inv_n * 2. * r * gr;
+            if (need < 2) continue;
+            const Eigen::Matrix3d hr = (w[0] * w[0]) * m_pot->hessian(q);
+            H += inv_n * 2. * (gr * gr.transpose() + r * hr);
+        }
+    }
+    return e;
+}
+
+double FaceStencilError3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head(3), 0, g, H);
+}
+
+void FaceStencilError3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 1, g, H);
+    gradv = g;
+}
+
+void FaceStencilError3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 2, g, H);
+    hess = H;
+}
+
+// ---------------------------------------------------------------------------------------------
+// RingBarrier3D
+// ---------------------------------------------------------------------------------------------
+
+RingBarrier3D::RingBarrier3D(std::vector<Wall> walls, const double stiffness)
+    : m_walls(std::move(walls))
+    , m_stiffness(stiffness)
+{}
+
+double RingBarrier3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // b(u) = -(u - 1)^2 ln u on (0, 1), 0 at u >= 1, +inf at u <= 0 (see the class doc);
+    // b'(u) = -2 (u - 1) ln u - (u - 1)^2 / u, b''(u) = -2 ln u - 4 (u - 1) / u + (u - 1)^2 / u^2.
+    g.setZero();
+    H.setZero();
+    double e = 0.;
+    for (const Wall& w : m_walls) {
+        const double s = w.n.dot(x) - w.o;
+        if (!(s > 0.)) return std::numeric_limits<double>::infinity();
+        const double u = s / w.dhat;
+        if (u >= 1.) continue;
+        const double lu = std::log(u);
+        const double um1 = u - 1.;
+        e += m_stiffness * (-(um1 * um1) * lu);
+        if (need < 1) continue;
+        const double db = -2. * um1 * lu - um1 * um1 / u;
+        g += (m_stiffness * db / w.dhat) * w.n;
+        if (need < 2) continue;
+        const double ddb = -2. * lu - 4. * um1 / u + um1 * um1 / (u * u);
+        H += (m_stiffness * ddb / (w.dhat * w.dhat)) * (w.n * w.n.transpose());
+    }
+    return e;
+}
+
+double RingBarrier3D::value(const TVector& xv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    return eval(xv.head(3), 0, g, H);
+}
+
+void RingBarrier3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 1, g, H);
+    gradv = g;
+}
+
+void RingBarrier3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head(3), 2, g, H);
+    hess = H;
+}
+
+double RingBarrier3D::max_step_size(const TVector& x0v, const TVector& x1v)
+{
+    // s is affine along the step, so the first boundary crossing is exact: per wall with
+    // s1 <= 0, t = s0 / (s0 - s1). 0.9x, IPC's backoff; is_step_valid() backs it up.
+    const Eigen::Vector3d x0 = x0v.head(3), x1 = x1v.head(3);
+    double t = 1.;
+    for (const Wall& w : m_walls) {
+        const double s0 = w.n.dot(x0) - w.o;
+        const double s1 = w.n.dot(x1) - w.o;
+        if (s1 > 0.) continue;
+        if (!(s0 > 0.)) return 0.;
+        t = std::min(t, 0.9 * s0 / (s0 - s1));
+    }
+    return t;
+}
+
+bool RingBarrier3D::is_step_valid(const TVector& /*x0v*/, const TVector& x1v)
+{
+    const Eigen::Vector3d x1 = x1v.head(3);
+    for (const Wall& w : m_walls) {
+        if (!(w.n.dot(x1) - w.o > 0.)) return false;
+    }
+    return true;
+}
 
 // ---------------------------------------------------------------------------------------------
 // StencilEnergy2D

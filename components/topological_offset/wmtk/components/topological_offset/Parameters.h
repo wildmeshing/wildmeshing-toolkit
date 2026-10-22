@@ -158,13 +158,16 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-09), 3D. Each turn the settle test marks the front against the level
-    /// set by distance -- settle_mark below -- and halves the marked corners' sizing;
-    /// exit = nothing marked. (Until 2026-10-22 only a "settled" turn did so: a turn whose
-    /// volumetric offset energy fell by less than the bar energy. That energy was removed with the
-    /// band term.) The energy criterion's own refinement and exit are off.
-    /// See the spec doc.
+    /// EXPERIMENTAL (2026-10-09), 3D. A turn is settled when the global offset error
+    /// (TopoOffsetTetMesh::offset_error()) fell by less than settle_rel_thresh times its previous
+    /// value; a settled turn marks the front against the level set by distance -- settle_mark
+    /// below -- and halves the marked corners' sizing; exit = settled and nothing marked. The
+    /// energy criterion's own refinement and exit are off. See the spec doc.
     bool settle_refinement = true;
+    /// 3D (2026-10-22), with settle_refinement: the settled gate's relative threshold, like
+    /// TetWild's stuck_refine. Settled when E_prev - E < settle_rel_thresh * |E_prev|, E the
+    /// global offset error -- signed, so a RISE in the error also settles. See the spec doc.
+    double settle_rel_thresh = 0.1;
     /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve of the loop may move its vertex at
     /// most damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
     /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
@@ -313,6 +316,10 @@ struct Parameters : public wmtk::OptimizerParameters
         repulsion_rounds = json_params["repulsion_rounds"];
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
+        settle_rel_thresh = json_params["settle_rel_thresh"];
+        if (!(settle_rel_thresh >= 0.)) {
+            log_and_throw_error("settle_rel_thresh must be >= 0, not {}", settle_rel_thresh);
+        }
         damping = json_params["EXPERIMENTAL_damping"];
         damping_factor = json_params["EXPERIMENTAL_damping_factor"];
         if (!(damping_factor > 0.)) {

@@ -813,5 +813,100 @@ double face_mean_sq_cos(
 
 /** @} */
 
+/**
+ * @brief A vertex's part of the offset error (TopoOffsetTetMesh::offset_error()), the vertex
+ * moving: the sum over its live offset faces f of the face's stencil term
+ *
+ *     (1/N) sum over the N stencil samples q of relative_residual(q)^2,
+ *
+ * relative_residual = (d(q) - target_distance) / target_distance for the euclidean field. The
+ * sample q = wv x + w1 q1 + w2 q2 moves affinely with the vertex x (q1, q2 the face's fixed
+ * corners, (wv, w1, w2) the barycentric stencil weights with the moving corner first), so per
+ * sample grad_x r = wv grad r(q) and hess_x r = wv^2 hess r(q), the potential's exact
+ * derivatives of d / target_distance. The stencil weights are the mesh's
+ * for_each_face_sample() weights, one shared list (every face is sampled the same way).
+ * A sample whose residual is not finite makes the value +inf (the line search refuses it).
+ */
+class FaceStencilError3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One offset face at the moving vertex: its two fixed corners.
+    struct Face
+    {
+        Eigen::Vector3d q1, q2;
+    };
+    /// weights: the stencil's barycentric triples (wv, w1, w2), the moving corner's weight first.
+    FaceStencilError3D(
+        std::shared_ptr<const OffsetPotential3D> pot,
+        std::vector<Face> faces,
+        std::vector<std::array<double, 3>> weights);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    /// need: 0 value, 1 + gradient, 2 + Hessian.
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::shared_ptr<const OffsetPotential3D> m_pot;
+    std::vector<Face> m_faces;
+    std::vector<std::array<double, 3>> m_weights;
+};
+
+/**
+ * @brief The IPC barrier that keeps a smoothing solve's vertex strictly inside its one-ring
+ * (TopoOffsetTetMesh::ring_barrier_energy()): per boundary face of the ring (the triangle
+ * opposite the vertex in each ring tet, a FIXED plane during the solve) the clamped log barrier
+ *
+ *     b(u) = -(u - 1)^2 ln u   for 0 < u < 1,   0 for u >= 1,   +inf for u <= 0,
+ *
+ * on u = s / dhat, s the vertex's signed distance to the face's plane (positive on the side the
+ * solve started on; s -> 0 is the ring tet degenerating) and dhat = 0.2 s0, s0 the distance at
+ * the solve's start. So the barrier is exactly 0 where the solve starts and on the inner 80% of
+ * each approach, and climbs to +inf at the ring's boundary. s is affine in the vertex, so
+ * max_step_size() takes the exact first boundary crossing along the step (times 0.9, IPC's
+ * backoff) and is_step_valid() refuses a crossing outright.
+ */
+class RingBarrier3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One boundary face's plane: unit normal n toward the solve's start, offset o (s = n.x - o)
+    /// and the activation distance dhat (0.2 x the start's s).
+    struct Wall
+    {
+        Eigen::Vector3d n;
+        double o = 0.;
+        double dhat = 0.;
+    };
+    explicit RingBarrier3D(std::vector<Wall> walls, double stiffness = 1.);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    double max_step_size(const TVector& x0, const TVector& x1) override;
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::vector<Wall> m_walls;
+    double m_stiffness = 1.;
+};
+
 
 } // namespace wmtk::components::topological_offset

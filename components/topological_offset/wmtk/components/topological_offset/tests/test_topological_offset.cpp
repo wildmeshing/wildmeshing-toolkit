@@ -1319,7 +1319,127 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
         INFO("stencil_order " << k);
         CHECK(by_hand > 10.); // the fixture really is off the level set
         CHECK(by_term == Catch::Approx(by_hand).epsilon(1e-12));
+        // The offset error of one face (face_offset_mean_sq()) is the same mean without the
+        // 1 / front_conv_frac()^2 scale: mean of ((d - delta) / delta)^2.
+        double by_err = 0.;
+        for (const auto& [q1, q2] : others) {
+            by_err += mesh.face_offset_mean_sq(*pot, x, q1, q2);
+        }
+        CHECK(by_err == Catch::Approx(by_hand * kEnergyFrac * kEnergyFrac).epsilon(1e-12));
     }
+}
+
+TEST_CASE("face-stencil-error-3d", "[offset][3d]")
+{
+    // FaceStencilError3D, the front smoother's offset error term: its value with the moving
+    // corner at x equals the sum over its faces of face_offset_mean_sq() at the same positions,
+    // and its gradient and Hessian match central differences, at several x above and astride the
+    // level set.
+    Parameters param;
+    param.target_distance = kEnergyDelta;
+    param.front_conv = kEnergyConv;
+    param.stencil_order = 1;
+    TopoOffsetTetMesh mesh(param, 0);
+    const auto pot = plane_field();
+    std::vector<std::array<double, 3>> weights;
+    mesh.for_each_face_sample(
+        Vector3d::Zero(),
+        Vector3d::UnitX(),
+        Vector3d::UnitY(),
+        [&](const Vector3d&, const double wa, const double wb, const double wc) {
+            weights.push_back({{wa, wb, wc}});
+        });
+    REQUIRE(int(weights.size()) == mesh.stencil_points_per_face());
+    const std::vector<FaceStencilError3D::Face> faces = {
+        {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
+        {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
+        {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
+    FaceStencilError3D energy(pot, faces, weights);
+    for (const Vector3d& x :
+         {Vector3d(0.1, -0.05, 0.53), Vector3d(-0.02, 0.12, 0.74), Vector3d(0.3, 0.2, 0.05)}) {
+        INFO("x " << x.transpose());
+        double want = 0.;
+        for (const auto& f : faces) want += mesh.face_offset_mean_sq(*pot, x, f.q1, f.q2);
+        Eigen::VectorXd xv = x;
+        CHECK(energy.value(xv) == Catch::Approx(want).epsilon(1e-12));
+        const double h = 1e-6;
+        Eigen::VectorXd g(3);
+        Eigen::MatrixXd H(3, 3);
+        energy.gradient(xv, g);
+        energy.hessian(xv, H);
+        for (int i = 0; i < 3; ++i) {
+            Eigen::VectorXd xp = xv, xm = xv;
+            xp[i] += h;
+            xm[i] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-7 * g.norm()));
+            Eigen::VectorXd gp(3), gm(3);
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
+            }
+        }
+    }
+}
+
+TEST_CASE("ring-barrier-3d", "[offset][3d]")
+{
+    // RingBarrier3D, the front smoother's IPC barrier on the one-ring's boundary: 0 at and beyond
+    // the activation distance, finite and positive inside it, +inf at and past a wall; gradient
+    // and Hessian against central differences inside the active band; max_step_size() is 0.9x the
+    // exact first crossing; is_step_valid() refuses a crossing.
+    // One wall: the plane z = 0, the start side z > 0, start distance 1 (dhat 0.2).
+    std::vector<RingBarrier3D::Wall> walls = {{Vector3d(0., 0., 1.), 0., 0.2}};
+    RingBarrier3D b(walls);
+    const auto value_at = [&](const double z) {
+        Eigen::VectorXd x(3);
+        x << 0.3, -0.2, z;
+        return b.value(x);
+    };
+    CHECK(value_at(1.) == 0.);
+    CHECK(value_at(0.2) == 0.); // exactly at the activation distance: u = 1, b = 0
+    CHECK(value_at(0.1) > 0.);
+    CHECK(value_at(0.01) > value_at(0.1)); // climbs toward the wall
+    CHECK(std::isinf(value_at(0.)));
+    CHECK(std::isinf(value_at(-0.5)));
+    // Derivatives inside the active band.
+    for (const double z : {0.15, 0.08, 0.02}) {
+        Eigen::VectorXd xv(3);
+        xv << 0.1, 0.4, z;
+        const double h = 1e-7;
+        Eigen::VectorXd g(3), xp = xv, xm = xv;
+        Eigen::MatrixXd H(3, 3);
+        b.gradient(xv, g);
+        b.hessian(xv, H);
+        INFO("z " << z);
+        for (int i = 0; i < 3; ++i) {
+            xp = xv;
+            xm = xv;
+            xp[i] += h;
+            xm[i] -= h;
+            const double fd = (b.value(xp) - b.value(xm)) / (2. * h);
+            CHECK(g[i] == Catch::Approx(fd).epsilon(1e-5).margin(1e-8 * (1. + g.norm())));
+            Eigen::VectorXd gp(3), gm(3);
+            b.gradient(xp, gp);
+            b.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-4).margin(1e-6 * (1. + H.norm())));
+            }
+        }
+    }
+    // The exact first crossing: from z = 1 toward z = -1 the wall is crossed at t = 0.5;
+    // max_step_size returns 0.9x that, and the full step is invalid.
+    Eigen::VectorXd x0(3), x1(3);
+    x0 << 0., 0., 1.;
+    x1 << 0., 0., -1.;
+    CHECK(b.max_step_size(x0, x1) == Catch::Approx(0.45).epsilon(1e-12));
+    CHECK_FALSE(b.is_step_valid(x0, x1));
+    x1 << 0.7, -0.3, 0.4; // stays on the start side: full step, valid
+    CHECK(b.max_step_size(x0, x1) == 1.);
+    CHECK(b.is_step_valid(x0, x1));
 }
 
 TEST_CASE("per-tet-energy", "[offset][3d]")
@@ -1374,20 +1494,18 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
     }
 }
 
-TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
+TEST_CASE("front-smoothing-objective", "[offset][3d]")
 {
-    // One energy for the smoother and the rules: at every vertex not held on the input, the
-    // objective the shared smoother minimises (smoothing_extra_energy(); every caller passes
-    // w_amips 0, so the smoother adds no AMIPS term of its own) is the sum of tet_energy() over
-    // the vertex's ring -- every term of which moves with the vertex. Two fixtures: the
-    // per-tet-energy one (front vertices a, b, c0, c1, c2; c3 on no front face and in no band
-    // cell), and a star of eight band cells around a vertex inside the band, which is on no front
-    // face but carries the band term of all eight. Each vertex is moved to three nearby positions;
-    // the objective's gradient and Hessian against central differences. The engine's ring hook
-    // (smoothing_ring_energy(), the projected step's test) is the same ring sum. use_rest_pose:
-    // on the first fixture again with the plastic medium on, background cell 2 against a stamped
-    // rest that its corner c2 has since left -- tet_energy() reads the rest, and the objective
-    // still is the ring sum.
+    // The smoothing objective since 2026-10-22: a front vertex the loop places gets the ring
+    // barrier plus the offset error over its live front faces (front_objective(); the barrier is
+    // exactly 0 at the position the objective is built at), NO AMIPS; every other vertex gets no
+    // extra energy (nullptr: the engine's raw AMIPS sum). Two fixtures: the per-tet-energy one
+    // (front vertices a, b, c0, c1, c2; c3 on no front face), and a star of eight band cells
+    // around an off-front vertex. The front objective's value at the build position against the
+    // sum of face_offset_error() over the vertex's live front faces, and its gradient and Hessian
+    // against central differences (small enough steps that the barrier stays 0 and flat).
+    // use_rest_pose: the plastic machinery still prices tet_energy() (checked below), although no
+    // operation rule reads it any more.
     Eigen::MatrixXd V1(6, 3);
     V1 << 0., 0., 0.37, // a
         0., 0., 1.13, // b
@@ -1479,49 +1597,42 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                     std::abs(rest_term - w / (s * s * s) * vol * a3) > 1e-3 * std::abs(rest_term));
             }
             for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
-                const std::vector<size_t> ring = mesh->get_one_ring_tids_for_vertex(v);
-                const auto ring_energy = [&]() {
-                    double e = 0.;
-                    for (const size_t tid : ring) e += mesh->tet_energy(tid);
-                    return e;
-                };
                 const bool front = mesh->m_vertex_extra[v].m_is_on_offset;
                 INFO(
                     "fixture " << fi << ", w " << w << ", s " << s << ", plastic " << plastic
                                << ", vertex " << v << (front ? " (front)" : ""));
                 REQUIRE(front == (v != fx.not_front));
                 REQUIRE(!mesh->vertex_is_held(v));
+                REQUIRE(mesh->vertex_front_placed(v) == front);
                 const auto energy = mesh->smoothing_extra_energy(v);
+                if (!front) {
+                    // Off the front: no extra energy, the engine's raw AMIPS sum smooths it.
+                    CHECK(energy == nullptr);
+                    continue;
+                }
+                REQUIRE(energy != nullptr);
+                // At the build position the barrier is 0, so the objective is the offset error
+                // over the vertex's live front faces.
+                double want = 0.;
+                size_t n_faces = 0;
+                for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
+                    const auto f = mesh->get_face_vids(ft);
+                    const double fe = mesh->face_offset_error(f[0], f[1], f[2]);
+                    REQUIRE(fe >= 0.);
+                    want += fe;
+                    ++n_faces;
+                }
+                REQUIRE(n_faces > 0);
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
-                const double e0 = energy->value(xv);
-                const double d0 = e0 - ring_energy();
-                CHECK(d0 == Catch::Approx(0.).margin(1e-12 * std::max(1., std::abs(e0))));
-                for (const Vector3d& dx :
-                     {Vector3d(0.01, 0., 0.),
-                      Vector3d(0., -0.008, 0.005),
-                      Vector3d(-0.004, 0.006, -0.007)}) {
-                    mesh->set_vertex_position(v, x0 + dx);
-                    for (const size_t tid : ring)
-                        REQUIRE(!mesh->is_inverted(mesh->tuple_from_tet(tid)));
-                    xv = x0 + dx;
-                    const double e = energy->value(xv);
-                    CHECK(
-                        e - ring_energy() ==
-                        Catch::Approx(d0).margin(1e-12 * std::max(1., std::abs(e))));
-                    // The projected step's test is the same ring sum, before and at a candidate.
-                    std::vector<TetMesh::Tuple> ring_t;
-                    for (const size_t tid : ring) ring_t.push_back(mesh->tuple_from_tet(tid));
-                    CHECK(mesh->smoothing_ring_energy(ring_t, false) == ring_energy());
-                    CHECK(mesh->smoothing_ring_energy(ring_t, true) == ring_energy());
-                }
-                mesh->set_vertex_position(v, x0);
+                CHECK(energy->value(xv) == Catch::Approx(want).epsilon(1e-12));
+                CHECK(want > 0.); // the fixture is off the level set
 
-                // The objective's derivatives against central differences.
+                // The objective's derivatives against central differences (h small enough that
+                // every sample stays inside the barrier's zero region).
                 const double h = 1e-6;
                 Eigen::VectorXd g(3);
                 Eigen::MatrixXd H(3, 3);
-                xv = x0;
                 energy->gradient(xv, g);
                 energy->hessian(xv, H);
                 for (int i = 0; i < 3; ++i) {
@@ -1832,181 +1943,6 @@ TEST_CASE("smoothing-objective-is-the-ring-energy-2d", "[offset][2d]")
                     CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-6 * H.norm()));
                 }
             }
-        }
-    }
-}
-
-TEST_CASE("swap-candidate-record", "[offset][3d]")
-{
-    // The swap's candidate cells (TopoOffsetTetMesh::candidate_energy()) against the swapped mesh
-    // itself: mesh A is the ring before the swap, mesh B the cells after it, built separately with
-    // the labels the swap gives them, and every cell of B scored on A must read what B reads from
-    // its own labels (tet_energy()) -- the label a candidate takes is the whole of what the swap's
-    // record supplies. A 4-4 surface flip, a 5-6 surface flip under both of its fans, a 3-2
-    // surface flip (both new cells take the side of the apex c2), each under four side labelings;
-    // an interior 4-4 swap of a band ring; a face swap of a band pair and of a background pair. For
-    // the 4-4s and 5-6s the case search's score is checked too: op_case 0 is the sum of
-    // tet_energy() over A's cells, a candidate the sum of candidate_energy() over B's cells.
-    const auto pot = plane_field();
-    const auto ring_V = [](int k) {
-        Eigen::MatrixXd V(2 + k, 3);
-        V.row(0) << 0.02, -0.01, 0.12;
-        V.row(1) << -0.01, 0.02, 0.88;
-        for (int i = 0; i < k; ++i) {
-            const double t = 2. * M_PI * i / k;
-            V.row(2 + i) << 0.4 * std::cos(t), 0.4 * std::sin(t), 0.5 + 0.03 * i;
-        }
-        return V;
-    };
-    const int a = 0, b = 1;
-    // search: 0 none (3-2, face swap), 4 swap_edge_44_energy(), 5 swap_edge_56_energy().
-    const auto check =
-        [&](const Eigen::MatrixXd& V,
-            const std::vector<std::array<int, 4>>& TA,
-            const std::vector<int>& labA,
-            const std::vector<std::array<int, 4>>& TB,
-            const std::vector<int>& labB,
-            const int search,
-            const std::function<void(TopoOffsetTetMesh&, const std::vector<size_t>&)>& before) {
-            Parameters pa, pb;
-            auto A = energy_mesh(pa, V, TA, labA, pot);
-            auto B = energy_mesh(pb, V, TB, labB, pot);
-            std::vector<size_t> tids(TA.size());
-            std::iota(tids.begin(), tids.end(), size_t(0));
-            before(*A, tids);
-            std::vector<std::array<size_t, 4>> cells_b;
-            double sum_b = 0.;
-            for (size_t tb = 0; tb < TB.size(); ++tb) {
-                const auto vs = B->oriented_tet_vids(tb);
-                const double truth = B->tet_energy(tb);
-                INFO("new cell " << tb);
-                CHECK(A->candidate_energy(vs) == Catch::Approx(truth).epsilon(1e-12));
-                cells_b.push_back(vs);
-                sum_b += truth;
-            }
-            if (search == 0) return;
-            std::vector<std::array<size_t, 4>> cells_a;
-            double sum_a = 0.;
-            for (const size_t t : tids) {
-                cells_a.push_back(A->oriented_tet_vids(t));
-                sum_a += A->tet_energy(t);
-            }
-            const auto score = [&](const std::vector<std::array<size_t, 4>>& cells, int op_case) {
-                return search == 4 ? A->swap_edge_44_energy(cells, op_case)
-                                   : A->swap_edge_56_energy(cells, op_case);
-            };
-            CHECK(score(cells_a, 0) == sum_a);
-            CHECK(score(cells_b, 1) == Catch::Approx(sum_b).epsilon(1e-12));
-        };
-    const std::vector<std::pair<int, int>> sides = {{2, 0}, {0, 2}, {2, 1}, {1, 2}};
-
-    // 4-4 flip of (a,b) onto (c0,c2): sides are the arcs {c1} and {c3}.
-    {
-        const auto V = ring_V(4);
-        const int c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-        const std::vector<std::array<int, 4>> TA = {
-            {{a, b, c0, c1}},
-            {{a, b, c1, c2}},
-            {{a, b, c2, c3}},
-            {{a, b, c3, c0}}};
-        const std::vector<std::array<int, 4>> TB = {
-            {{a, c0, c1, c2}},
-            {{b, c0, c1, c2}},
-            {{a, c0, c2, c3}},
-            {{b, c0, c2, c3}}};
-        for (const auto& [x1, x2] : sides) {
-            INFO("4-4 flip, sides " << x1 << " / " << x2);
-            check(V, TA, {x1, x1, x2, x2}, TB, {x1, x1, x2, x2}, 4, [&](auto& m, const auto& tids) {
-                REQUIRE(m.swap_before_surface(tids, size_t(a), size_t(b), size_t(c0), size_t(c2)));
-            });
-        }
-    }
-    // 5-6 flip of (a,b) onto (r0,r2): sides are the arcs {r1} and {r3, r4}. The case search
-    // offers two fans that make (r0,r2), with apex r0 and with apex r2; both are checked.
-    {
-        const auto V = ring_V(5);
-        const int r0 = 2, r1 = 3, r2 = 4, r3 = 5, r4 = 6;
-        const std::vector<std::array<int, 4>> TA = {
-            {{a, b, r0, r1}},
-            {{a, b, r1, r2}},
-            {{a, b, r2, r3}},
-            {{a, b, r3, r4}},
-            {{a, b, r4, r0}}};
-        const std::vector<std::array<int, 4>> fan_r0 = {
-            {{a, r0, r1, r2}},
-            {{b, r0, r1, r2}},
-            {{a, r0, r2, r3}},
-            {{b, r0, r2, r3}},
-            {{a, r0, r3, r4}},
-            {{b, r0, r3, r4}}};
-        const std::vector<std::array<int, 4>> fan_r2 = {
-            {{a, r2, r0, r1}},
-            {{b, r2, r0, r1}},
-            {{a, r2, r3, r4}},
-            {{b, r2, r3, r4}},
-            {{a, r2, r4, r0}},
-            {{b, r2, r4, r0}}};
-        for (const auto& [x1, x2] : sides) {
-            INFO("5-6 flip, sides " << x1 << " / " << x2);
-            const auto flip = [&](auto& m, const auto& tids) {
-                REQUIRE(m.swap_before_surface(tids, size_t(a), size_t(b), size_t(r0), size_t(r2)));
-            };
-            check(V, TA, {x1, x1, x2, x2, x2}, fan_r0, {x1, x1, x2, x2, x2, x2}, 5, flip);
-            check(V, TA, {x1, x1, x2, x2, x2}, fan_r2, {x1, x1, x2, x2, x2, x2}, 5, flip);
-        }
-    }
-    // 3-2 flip of (a,b) with surface faces (a,b,c0), (a,b,c1): the old cell (a,b,c0,c1) is one
-    // side, the cells holding c2 the other, and both new cells take c2's side.
-    {
-        const auto V = ring_V(3);
-        const int c0 = 2, c1 = 3, c2 = 4;
-        const std::vector<std::array<int, 4>> TA = {
-            {{a, b, c0, c1}},
-            {{a, b, c1, c2}},
-            {{a, b, c2, c0}}};
-        const std::vector<std::array<int, 4>> TB = {{{a, c0, c1, c2}}, {{b, c0, c1, c2}}};
-        for (const auto& [x1, x2] : sides) {
-            INFO("3-2 flip, sides " << x1 << " / " << x2);
-            check(V, TA, {x1, x2, x2}, TB, {x2, x2}, 0, [&](auto& m, const auto& tids) {
-                REQUIRE(m.swap_before_surface(tids, size_t(a), size_t(b), size_t(c0), size_t(c1)));
-            });
-        }
-    }
-    // Interior 4-4 swap of a band ring: every new cell takes the ring's one label.
-    {
-        const auto V = ring_V(4);
-        const int c0 = 2, c1 = 3, c2 = 4, c3 = 5;
-        const std::vector<std::array<int, 4>> TA = {
-            {{a, b, c0, c1}},
-            {{a, b, c1, c2}},
-            {{a, b, c2, c3}},
-            {{a, b, c3, c0}}};
-        const std::vector<std::array<int, 4>> TB = {
-            {{a, c1, c2, c3}},
-            {{b, c1, c2, c3}},
-            {{a, c3, c0, c1}},
-            {{b, c3, c0, c1}}};
-        INFO("interior 4-4");
-        check(V, TA, {2, 2, 2, 2}, TB, {2, 2, 2, 2}, 4, [&](auto& m, const auto& tids) {
-            REQUIRE(m.swap_before_interior(tids));
-        });
-    }
-    // Face swap (2-3) of (a,b,c) between apexes d and e.
-    {
-        Eigen::MatrixXd V(5, 3);
-        V << 0.3, 0., 0.5, //
-            -0.15, 0.26, 0.52, //
-            -0.15, -0.26, 0.48, //
-            0.02, 0.01, 0.85, //
-            -0.01, -0.02, 0.2;
-        const int c = 2, d = 3, e = 4;
-        const std::vector<std::array<int, 4>> TA = {{{a, b, c, d}}, {{a, b, c, e}}};
-        const std::vector<std::array<int, 4>> TB = {{{a, b, d, e}}, {{b, c, d, e}}, {{c, a, d, e}}};
-        for (const int x : {2, 0}) {
-            INFO("face swap, label " << x);
-            check(V, TA, {x, x}, TB, {x, x, x}, 0, [&](auto& m, const auto& tids) {
-                REQUIRE(m.swap_before_interior(tids));
-            });
         }
     }
 }
@@ -2627,6 +2563,40 @@ TEST_CASE("damping-factor-key", "[offset][3d]")
     CHECK_THROWS(Parameters{zero});
 }
 
+TEST_CASE("settle-rel-thresh-key", "[offset][3d]")
+{
+    // settle_rel_thresh through the spec, as the app reads it: the default 0.1, a value read
+    // through, 0 accepted, a negative value refused by the spec's min, and the removed band keys
+    // refused by the strict spec.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto verify = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        return spec_engine.verify_json(j, spec);
+    };
+    const auto injected = [&](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(j, spec));
+        return spec_engine.inject_defaults(j, spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK(by_default.settle_rel_thresh == 0.1);
+    CHECK(by_default.settle_refinement);
+    const Parameters set(injected({{"settle_rel_thresh", 0.02}}));
+    CHECK(set.settle_rel_thresh == 0.02);
+    const Parameters zero(injected({{"settle_rel_thresh", 0.}}));
+    CHECK(zero.settle_rel_thresh == 0.);
+    CHECK_FALSE(verify({{"settle_rel_thresh", -0.1}}));
+    // The volumetric band term's keys are gone: the strict spec refuses a config that sets them.
+    CHECK_FALSE(verify({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
+    CHECK_FALSE(verify({{"EXPERIMENTAL_gap_refinement", true}}));
+}
+
 TEST_CASE("growth-mode-keys", "[offset][3d]")
 {
     // growth_mode, linear_growth_steps, smart_growth_attempts and smart_growth_max_fails through
@@ -2933,10 +2903,11 @@ TEST_CASE("debug-remote-output-key", "[offset][3d]")
 
 TEST_CASE("op-rules-switch", "[offset][3d]")
 {
-    // m_op_rules: in the loop the engine's AMIPS^3 rules admit everything, the smoother gets the
-    // component's energy and the projected step the ring's sum of tet_energy(); under TetWild's
-    // rules (every TetWild pass) the base's own: q <= ring_max for a collapse, after < before for
-    // a swap, no extra energy (the raw AMIPS sum), the base's ring measure. One unit tet.
+    // m_op_rules: in the loop (since 2026-10-22) the base's max rules decide every collapse and
+    // swap off the offset surface, and an op on it is admitted by the quality hooks (the face
+    // error judges it in the after-hooks); off the front the smoother gets no extra energy.
+    // Under TetWild's rules (every TetWild pass) the base's own throughout. The projected step's
+    // ring measure is the base's everywhere. One unit tet.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     Eigen::MatrixXi T(1, 4);
@@ -2955,10 +2926,21 @@ TEST_CASE("op-rules-switch", "[offset][3d]")
     for (const auto& t : ring) mesh.set_cell_quality(t.tid(mesh), mesh.get_quality(t));
 
     REQUIRE(mesh.m_op_rules == TopoOffsetTetMesh::OpRules::Loop);
+    // Off the offset surface the base's max rules decide.
+    CHECK_FALSE(mesh.collapse_quality_allowed(0, 2., 1.));
+    CHECK(mesh.collapse_quality_allowed(0, 1., 2.));
+    CHECK_FALSE(mesh.swap_quality_allowed(2., 1., false));
+    CHECK(mesh.swap_quality_allowed(1., 2., false));
+    // On it the quality hooks admit everything: the face-error rule decides in the after-hooks.
+    mesh.m_collapse_front_error.local() = 0.5;
     CHECK(mesh.collapse_quality_allowed(0, 2., 1.));
-    CHECK(mesh.swap_quality_allowed(2., 1., false));
-    CHECK(mesh.smoothing_extra_energy(0) != nullptr);
-    CHECK(mesh.smoothing_ring_energy(ring, true) == mesh.tet_energy(ring[0].tid(mesh)));
+    mesh.m_collapse_front_error.local() = -1.;
+    // Off the front: no extra energy (the engine's raw AMIPS sum smooths it); the base's ring
+    // measure.
+    CHECK(mesh.smoothing_extra_energy(0) == nullptr);
+    CHECK(
+        mesh.smoothing_ring_energy(ring, true) ==
+        mesh.TetOptimizerMesh::smoothing_ring_energy(ring, true));
     CHECK_FALSE(mesh.optimization_bare_coarsen_passes());
 
     mesh.m_op_rules = TopoOffsetTetMesh::OpRules::TetWild;

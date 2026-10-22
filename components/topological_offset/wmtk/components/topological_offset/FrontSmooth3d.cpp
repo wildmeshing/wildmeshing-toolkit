@@ -25,11 +25,12 @@ namespace wmtk::components::topological_offset {
 bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The whole objective arrives
-    // through smoothing_extra_energy() -- the vertex's part of the energy, the AMIPS term over the
-    // ring -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own. The
+    // through smoothing_extra_energy() -- the ring barrier plus the offset error over the
+    // vertex's front faces, NO AMIPS (front_objective()) -- and w_amips 0 keeps the smoother from
+    // adding an AMIPS term of its own. The
     // smoother holds a front vertex to no envelope (see smoothing_containment_envelope()), so
     // neither the projected path nor the containment check applies -- solve, exact inversion
-    // test, then the veto on tet_energy() below.
+    // test, then the veto on the same objective below.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -46,10 +47,10 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     auto& solver =
         m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
     smoothing_solver();
-    // THE FRONT SMOOTHER'S VETO (see tet_energy()), on every 3-D solve: the sum of tet_energy()
-    // over the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto. Read
-    // before the solve and after it, on the mesh: a smoothing move changes no label and moves one
-    // vertex, so the one-ring holds every cell whose energy it can change. Refused,
+    // THE FRONT SMOOTHER'S VETO, on every 3-D solve: the objective itself -- the ring barrier
+    // (frozen at this solve's start, as the solver's own instance is) plus the offset error over
+    // the vertex's front faces -- may not rise. A tie passes, as in the engine's AMIPS veto. Read
+    // before the solve and after it, on the mesh. Refused,
     // TetMesh::smooth_vertex() rolls back the position and the ring's stored qualities.
     // smooth_vertex_3d() has counted the move accepted by then; it is recounted as a quality
     // refusal, so the counters still partition the attempts.
@@ -64,8 +65,11 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             moved ? std::abs(r_after - r_before) / m_offset_params.front_conv_frac() : 0.;
     };
     const auto solve_3d = [&]() {
-        const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
-        const double before = tet_energy_sum(ring);
+        // The veto's instance of the objective: frozen at the same start as the one the solver
+        // minimises (both are built from the mesh as it is now), so the two are the same function.
+        const auto objective = front_objective(vid);
+        const Eigen::VectorXd xv0 = x0;
+        const double before = objective->value(xv0);
         // growth_mode "individual_op_reject": the folded offset faces through vid before the
         // move, which may not raise them (every face it changes goes through vid).
         int folds_before = -1;
@@ -117,7 +121,8 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
         }
         ++m_front_veto_asked;
-        if (!(tet_energy_sum(ring) <= before)) { // a NaN refuses
+        const Eigen::VectorXd xv1 = std::as_const(m_vertex_attribute)[vid].m_posf;
+        if (!(objective->value(xv1) <= before)) { // a NaN refuses
             ++m_front_veto_fired;
             --m_smooth_rejects.accepted;
             ++m_smooth_rejects.quality;
@@ -278,10 +283,83 @@ Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objective(
     const size_t vid) const
 {
-    // smoothing_extra_energy() at a front vertex the loop places: the AMIPS term over the
-    // one-ring. (The volumetric band term this once added was removed 2026-10-22; its
-    // replacement, the surface error term, is not implemented yet.)
-    return amips3_energy(vid);
+    // smoothing_extra_energy() at a front vertex the loop places: the IPC barrier on the boundary
+    // of the one-ring plus the offset error over the vertex's front faces -- NO AMIPS. The
+    // barrier is 0 where the solve starts and climbs to +inf at the ring's boundary, so the
+    // vertex chases the level set freely inside its ring and can never leave or invert it.
+    auto sum = std::make_shared<optimization::EnergySum>();
+    if (const auto barrier = ring_barrier_energy(vid)) sum->add_energy(barrier);
+    if (const auto error = front_error_energy(vid)) sum->add_energy(error);
+    return sum;
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_error_energy(
+    const size_t vid) const
+{
+    // The vertex's part of the offset error (face_offset_error() per face, offset_error() over
+    // the front): its live offset faces' stencil terms with vid moving, on the union field. The
+    // stencil weights are gathered once, the moving corner's weight first; every face shares them
+    // (for_each_face_sample() samples every face the same way).
+    if (!m_offset_potential) return nullptr;
+    std::vector<FaceStencilError3D::Face> faces;
+    for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
+        const std::array<size_t, 3> f = get_face_vids(ft);
+        FaceStencilError3D::Face fe;
+        int k = 0;
+        for (const size_t u : f) {
+            if (u == vid) continue;
+            (k == 0 ? fe.q1 : fe.q2) = m_vertex_attribute[u].m_posf;
+            ++k;
+        }
+        if (k != 2) continue;
+        faces.push_back(fe);
+    }
+    if (faces.empty()) return nullptr;
+    std::vector<std::array<double, 3>> weights;
+    weights.reserve(size_t(stencil_points_per_face()));
+    for_each_face_sample(
+        Vector3d::Zero(),
+        Vector3d::UnitX(),
+        Vector3d::UnitY(),
+        [&](const Vector3d&, const double wa, const double wb, const double wc) {
+            weights.push_back({{wa, wb, wc}});
+        });
+    return std::make_shared<FaceStencilError3D>(
+        m_offset_potential,
+        std::move(faces),
+        std::move(weights));
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::ring_barrier_energy(
+    const size_t vid) const
+{
+    // See the declaration: per ring tet the plane of the face opposite vid, oriented toward vid's
+    // current position; the activation distance is 0.2x the distance now.
+    const Vector3d& x0 = m_vertex_attribute[vid].m_posf;
+    std::vector<RingBarrier3D::Wall> walls;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        std::array<Vector3d, 3> q;
+        int k = 0;
+        for (const size_t u : oriented_tet_vids(tid)) {
+            if (u == vid) continue;
+            if (k < 3) q[size_t(k)] = m_vertex_attribute[u].m_posf;
+            ++k;
+        }
+        if (k != 3) continue;
+        Vector3d n = (q[1] - q[0]).cross(q[2] - q[0]);
+        const double nn = n.norm();
+        if (!(nn > 0.) || !std::isfinite(nn)) continue;
+        n /= nn;
+        double s0 = n.dot(x0 - q[0]);
+        if (s0 < 0.) {
+            n = -n;
+            s0 = -s0;
+        }
+        if (!(s0 > 0.)) continue; // a degenerate start: no wall to hold
+        walls.push_back({n, n.dot(q[0]), 0.2 * s0});
+    }
+    if (walls.empty()) return nullptr;
+    return std::make_shared<RingBarrier3D>(std::move(walls));
 }
 
 } // namespace wmtk::components::topological_offset
