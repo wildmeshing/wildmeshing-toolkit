@@ -264,9 +264,13 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
     const auto& cache = position_cache.local();
     const Eigen::Vector3d p = (cache.v1p + cache.v2p) / 2.0;
     auto vid = t.switch_vertex(*this).vid(*this);
-    vertex_attrs[vid].pos = p;
-    vertex_attrs[vid].partition_id = cache.partition_id;
-    vertex_attrs[vid].input_boundary = cache.split_input_boundary;
+    // Write the whole record: the slot can be one consolidate_mesh() freed, which still holds
+    // the attributes of the vertex that used to live there -- a frozen one included.
+    VertexAttributes& va = vertex_attrs[vid];
+    va = VertexAttributes{};
+    va.pos = p;
+    va.partition_id = cache.partition_id;
+    va.input_boundary = cache.split_input_boundary;
     return true;
 }
 
