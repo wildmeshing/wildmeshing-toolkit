@@ -1,4 +1,4 @@
-set(COMPONENT_NAME surface_map)
+set(COMPONENT_NAME tracking)
 add_component(${COMPONENT_NAME})
 
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
@@ -8,6 +8,8 @@ endif()
 set(SRC_FILES
 	SurfaceMap.hpp
 	SurfaceMap.cpp
+	CurveMap.hpp
+	CurveMap.cpp
 
 	slim2d.hpp
 	slim2d.cpp
@@ -20,11 +22,10 @@ set(SRC_FILES
 	transfer.hpp
 	transfer.cpp
 
-	Tracking.hpp
-	Tracking.cpp
+	tracking.hpp
+	tracking.cpp
 
-	surface_map.hpp
-	surface_map.cpp
+	app.cpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

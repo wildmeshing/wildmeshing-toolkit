@@ -262,7 +262,7 @@ void isotropic_remeshing(nlohmann::json json_params)
         history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
         history->history().metadata = json_params.dump();
         for (const auto& e : m.feature_edges()) {
-            history->history().feature_edges.push_back({{e[0], e[1]}});
+            history->history().features.push_back({{e[0], e[1]}});
         }
     }
 

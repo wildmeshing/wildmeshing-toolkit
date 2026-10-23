@@ -5,7 +5,7 @@
 #include <array>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /**
  * @brief A triangle of a 2D layout and the shape it should keep.
@@ -57,4 +57,4 @@ double slim(
     const std::vector<SlimElement>& elements,
     int iterations);
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

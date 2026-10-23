@@ -8,7 +8,7 @@
 #include <cmath>
 #include <limits>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 namespace {
 
@@ -217,4 +217,4 @@ double slim(
     return E;
 }
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

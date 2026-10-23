@@ -1,6 +1,6 @@
 #include <wmtk/TriMesh.h>
+#include <wmtk/history/History.hpp>
 #include <wmtk/history/Replay.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 

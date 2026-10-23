@@ -3,7 +3,7 @@
 // point on the output is named by three vertices of the tet mesh and barycentric coordinates.
 
 #include <wmtk/components/simwild/simwild.hpp>
-#include <wmtk/components/surface_map/Tracking.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <igl/readOBJ.h>
@@ -16,10 +16,10 @@
 namespace fs = std::filesystem;
 using namespace wmtk;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 // A whole run, too slow for the Debug CI jobs: Release builds only.
 #ifdef NDEBUG

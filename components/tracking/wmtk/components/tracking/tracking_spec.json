@@ -29,14 +29,14 @@
     "pointer": "/application",
     "type": "string",
     "options": [
-      "surface_map"
+      "tracking"
     ],
-    "doc": "Application name must be surface_map."
+    "doc": "Application name must be tracking."
   },
   {
     "pointer": "/history",
     "type": "string",
-    "doc": "A surface history, as saved by an application's history_output: the map is rebuilt from it."
+    "doc": "A history, as saved by an application's history_output: the map is rebuilt from it. A surface's (isotropic_remeshing, qslim, shortest_edge_collapse, tetwild, simwild) or curves' (triwild); the file says which."
   },
   {
     "pointer": "/input",
@@ -80,10 +80,11 @@
     "options": [
       "info",
       "transfer",
-      "map"
+      "map",
+      "features"
     ],
     "default": "info",
-    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back. transfer: carry every per-face field of `input` onto the output surface and write it to `output`. map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`."
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids (segment midpoints, for curves) move when mapped to the input and back. transfer (surfaces): carry every per-face field of `input` onto the output surface and write it to `output`. map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`. features (curves): write the input's feature points -- curve ends, junctions, input points -- to `output_points`, one `input_vertex output_vertex` per line: a vertex of the input files (the curve files' vertices, in order, then the point files', from 0) and the output vertex it ended at, -1 for none."
   },
   {
     "pointer": "/log_file",
@@ -107,13 +108,13 @@
     "pointer": "/points",
     "type": "string",
     "default": "",
-    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild)."
+    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild). On curves (triwild): `segment b0 b1` on the input, a segment of the input curve files -- the segments of all of them, in order, a polyline's consecutive vertex pairs, from 0 -- with barycentric coordinates with respect to its ends in file order; `v0 v1 b0 b1` on the output, two vertices of the output mesh at the ends of a tracked edge, in either order, with barycentric coordinates in that order."
   },
   {
     "pointer": "/output_points",
     "type": "string",
     "default": "",
-    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order: on the output as described for `points` (to_output), on the input as `face b0 b1 b2` (to_input). A point with no image has the id -1."
+    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order: on the output as described for `points` (to_output), on the input as `face b0 b1 b2`, or `segment b0 b1` for curves (to_input). A point with no image has the id -1. features: where to write the feature points."
   },
   {
     "pointer": "/direction",
@@ -127,7 +128,7 @@
     "type": "string",
     "options": ["flatten", "barycentric"],
     "default": "flatten",
-    "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move. barycentric: points keep their face and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
+    "doc": "How the map follows a vertex smoothing step. flatten: the vertex's star before and after the move is flattened jointly, so points stay where they were on the surface, at one SLIM solve per move; on curves, points keep their place along the curve, by arc length. barycentric: points keep their face (segment) and barycentric coordinates, riding along with the vertex by at most its step, at no cost, as BijectiveRemesh does."
   },
   {
     "pointer": "/scaffold",

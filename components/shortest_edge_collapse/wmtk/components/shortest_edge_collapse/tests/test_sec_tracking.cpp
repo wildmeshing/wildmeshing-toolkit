@@ -1,10 +1,10 @@
 // How to use shortest_edge_collapse's tracking file: map your own points between its input and its
 // output. The output is the simplified surface itself, so a point on it is an output triangle and
-// barycentric coordinates, as for isotropic_remeshing (see surface_map's test_tracking.cpp).
+// barycentric coordinates, as for isotropic_remeshing (see the tracking component's
+// test_tracking.cpp).
 
 #include <wmtk/components/shortest_edge_collapse/shortest_edge_collapse.hpp>
-#include <wmtk/components/surface_map/Tracking.hpp>
-#include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/components/tracking/tracking.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
@@ -18,10 +18,10 @@
 
 namespace fs = std::filesystem;
 using namespace wmtk::components;
-using surface_map::InputPoint;
-using surface_map::kNoId;
-using surface_map::OutputPoint;
-using surface_map::Tracking;
+using tracking::InputPoint;
+using tracking::kNoId;
+using tracking::OutputPoint;
+using tracking::Tracking;
 
 namespace {
 
@@ -109,7 +109,7 @@ TEST_CASE("tracking-example-shortest-edge-collapse", "[shortest-edge-collapse][t
     CHECK(tracking.map().map_warnings().total() == 0);
 
     // 4. The same from the command line, as the wmtk binary runs it: a file of points, one
-    // `face b0 b1 b2` per line, mapped by the surface_map application.
+    // `face b0 b1 b2` per line, mapped by the tracking application.
     const fs::path points = dir / "points.txt";
     {
         std::ofstream o(points);
@@ -119,8 +119,8 @@ TEST_CASE("tracking-example-shortest-edge-collapse", "[shortest-edge-collapse][t
         }
     }
     const fs::path mapped = dir / "points_on_output.txt";
-    surface_map::surface_map({
-        {"application", "surface_map"},
+    tracking::tracking({
+        {"application", "tracking"},
         {"history", tracking_file.string()},
         {"operation", "map"},
         {"points", points.string()},

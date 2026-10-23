@@ -3,7 +3,8 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
-#include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/TrackedRecorder.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -806,6 +807,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // get the vids
     const size_t vid1 = t.vid(*this);
     const size_t vid2 = t.switch_vertex(*this).vid(*this);
+    if (m_curve_history) curve_history_before({vid1, vid2});
     std::vector<size_t> fids;
     fids.reserve(2);
     std::vector<size_t> vid3s;
@@ -978,6 +980,12 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
             e.faces.push_back(new_fids[i]);
         }
         commit_history(std::move(e));
+    }
+    if (m_curve_history) {
+        curve_history_commit(
+            history::EditKind::split_edge,
+            {vid1, vid2, new_vid},
+            {vid1, vid2, new_vid});
     }
     release_protect_attributes();
     return true;
@@ -1169,6 +1177,7 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     // collapse_edge_conn retires the tuple's own vertex and keeps the other.
     const size_t v_removed = loc0.vid(*this);
     const size_t v_kept = loc0.switch_vertex(*this).vid(*this);
+    if (m_curve_history) curve_history_before({v_removed, v_kept});
 
     Tuple return_t;
     size_t new_vid;
@@ -1250,6 +1259,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     }
     if (m_history) {
         commit_history({history::EditKind::collapse_edge, {v_removed, v_kept}, {}, {}});
+    }
+    if (m_curve_history) {
+        curve_history_commit(history::EditKind::collapse_edge, {v_removed, v_kept}, {v_kept});
     }
     release_protect_attributes();
     return true;
@@ -1551,6 +1563,7 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     auto tmp_tuple2 = t.switch_edge(*this);
     assert(tmp_tuple2.is_valid(*this));
     size_t vid4 = tmp_tuple2.switch_vertex(*this).vid(*this);
+    if (m_curve_history) curve_history_before({vid1, vid2, vid3, vid4});
     // record the vids that will be changed for roll backs on failure
     // namely the 4 vertices of the 2 triangles
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices(4);
@@ -1626,6 +1639,9 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         commit_history(
             {history::EditKind::swap_edge, {vid1, vid2, vid3, vid4}, {test_fid1, test_fid2}, {}});
     }
+    if (m_curve_history) {
+        curve_history_commit(history::EditKind::swap_edge, {}, {vid1, vid2, vid3, vid4});
+    }
     release_protect_attributes();
     return true;
 }
@@ -1653,6 +1669,7 @@ bool TriMesh::smooth_vertex(const Tuple& loc0)
         return false;
     }
     if (m_history) commit_history({history::EditKind::move_vertices, {}, {}, {}});
+    if (m_curve_history) curve_history_commit(history::EditKind::move_vertices, {}, {});
     release_protect_attributes();
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
@@ -1743,6 +1760,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     vid[0] = t.vid(*this);
     vid[1] = t.switch_vertex(*this).vid(*this);
     vid[2] = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    if (m_curve_history) curve_history_before({vid[0], vid[1], vid[2]});
 
     // record the vids that will be modified for roll backs on failure
     std::array<std::pair<size_t, VertexConnectivity>, 3> old_vertices;
@@ -1860,6 +1878,10 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
              {fid, new_fid1, new_fid2},
              {}});
     }
+    if (m_curve_history) {
+        // No tracked edge changes: a face split makes no edge of the old face's.
+        curve_history_commit(history::EditKind::split_face, {}, {vid[0], vid[1], vid[2], new_vid});
+    }
     release_protect_attributes();
     return true;
 }
@@ -1931,6 +1953,7 @@ void TriMesh::consolidate_mesh()
     // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());
 
+    if (m_curve_history) m_curve_history->renumber(map_v_ids);
     if (m_history) {
         m_history->append({history::EditKind::consolidate, {}, {}, {}});
         std::vector<Eigen::Vector3d> positions(v_cnt);
@@ -1970,6 +1993,120 @@ void TriMesh::stop_history()
 {
     m_history.reset();
     m_history_position = nullptr;
+}
+
+std::shared_ptr<history::TrackedCurveRecorder> TriMesh::start_curve_history(
+    std::function<Eigen::Vector3d(size_t)> position)
+{
+    std::vector<std::array<size_t, 1>> points;
+    for (const size_t v : tracked_feature_points()) points.push_back({{v}});
+    m_curve_history = std::make_shared<history::TrackedCurveRecorder>(
+        tracked_edges(),
+        std::move(position),
+        [](const std::array<size_t, 2>& e) { return e; },
+        points);
+    return m_curve_history;
+}
+
+void TriMesh::stop_curve_history()
+{
+    m_curve_history.reset();
+}
+
+size_t TriMesh::resync_curve_history(const std::vector<std::array<size_t, 2>>& edges)
+{
+    return m_curve_history ? m_curve_history->resync(edges) : 0;
+}
+
+std::vector<std::array<size_t, 2>> TriMesh::tracked_edges_around(
+    const std::vector<size_t>& vs) const
+{
+    std::vector<std::array<size_t, 2>> out;
+    for (const size_t v : vs) {
+        if (v >= vert_capacity() || m_vertex_connectivity[v].m_is_removed) continue;
+        for (const size_t f : m_vertex_connectivity[v].m_conn_tris) {
+            const auto& t = m_tri_connectivity[f];
+            const int j = t.find(v);
+            for (const int k : {1, 2}) {
+                // Local edge l is opposite corner l: the edge from v to corner (j + k) % 3 is
+                // opposite the third corner.
+                const int a = (j + k) % 3, l = 3 - j - a;
+                if (!is_tracked_edge(Tuple(v, size_t(l), f, *this))) continue;
+                out.push_back({{std::min(v, t[a]), std::max(v, t[a])}});
+            }
+        }
+    }
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+    return out;
+}
+
+std::vector<std::array<size_t, 2>> TriMesh::tracked_edges() const
+{
+    std::vector<size_t> vs;
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        if (!m_vertex_connectivity[v].m_is_removed) vs.push_back(v);
+    }
+    return tracked_edges_around(vs);
+}
+
+void TriMesh::curve_history_before(const std::vector<size_t>& vs)
+{
+    m_curve_history_before.local() = tracked_edges_around(vs);
+}
+
+void TriMesh::curve_history_commit(
+    const history::EditKind kind,
+    std::vector<size_t> v,
+    const std::vector<size_t>& vs_after)
+{
+    history::TrackedCurveRecorder::Change c;
+    c.kind = kind;
+    c.v = std::move(v);
+    if (kind != history::EditKind::move_vertices) {
+        c.before = std::move(m_curve_history_before.local());
+        c.after = tracked_edges_around(vs_after);
+    }
+    if (p_vertex_attrs) p_vertex_attrs->append_recorded(c.written);
+    m_curve_history->commit(std::move(c));
+}
+
+void TriMesh::remove_tris_by_ids(const std::vector<size_t>& fids)
+{
+    // An edge's attributes live with its lowest triangle (Tuple::eid), which only the operations
+    // maintain. Where that triangle goes and the other stays, the edge's attributes move to the
+    // other's slot first, or the edge would read whatever that slot last held -- as
+    // TetMesh::remove_tets_by_ids does for faces and edges.
+    if (p_edge_attrs != nullptr) {
+        std::vector<bool> removed(tri_capacity(), false);
+        for (const size_t fid : fids) removed[fid] = true;
+        for (const size_t fid : fids) {
+            const auto& t = m_tri_connectivity[fid];
+            for (int l = 0; l < 3; ++l) {
+                // Local edge l is opposite corner l.
+                const size_t a = t[(l + 1) % 3], b = t[(l + 2) % 3];
+                const auto fan = set_intersection(
+                    m_vertex_connectivity[a].m_conn_tris,
+                    m_vertex_connectivity[b].m_conn_tris);
+                if (fan.size() != 2 || fan.front() != fid || removed[fan.back()]) continue;
+                const size_t other = fan.back();
+                const size_t lo =
+                    3 - m_tri_connectivity[other].find(a) - m_tri_connectivity[other].find(b);
+                p_edge_attrs->move(3 * fid + l, 3 * other + lo);
+            }
+        }
+    }
+    for (const size_t fid : fids) {
+        m_tri_connectivity[fid].m_is_removed = true;
+        for (int j = 0; j < 3; j++) {
+            vector_erase(m_vertex_connectivity[m_tri_connectivity[fid][j]].m_conn_tris, fid);
+        }
+    }
+    for (auto& v : m_vertex_connectivity) {
+        if (v.m_is_removed) continue;
+        if (v.m_conn_tris.empty()) v.m_is_removed = true;
+    }
+    if (m_curve_history) m_curve_history->resync(tracked_edges());
 }
 
 void TriMesh::commit_history(history::Edit&& e)

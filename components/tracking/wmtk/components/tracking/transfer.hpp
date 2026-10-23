@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /**
  * @brief Whether `input` is the surface the map starts from: the same faces, in the same order,
@@ -25,4 +25,4 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
  */
 SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input);
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking

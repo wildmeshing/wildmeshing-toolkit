@@ -5,7 +5,7 @@
 #include <array>
 #include <vector>
 
-namespace wmtk::components::surface_map {
+namespace wmtk::components::tracking {
 
 /**
  * @brief The scaffold of a joint flattening (Jiang et al. 2017, as BijectiveRemesh uses it): the
@@ -34,4 +34,4 @@ bool box_scaffold(
     std::vector<Eigen::Vector2d>& corners,
     std::vector<std::array<int, 3>>& triangles);
 
-} // namespace wmtk::components::surface_map
+} // namespace wmtk::components::tracking
