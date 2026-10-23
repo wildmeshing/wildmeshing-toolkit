@@ -15,6 +15,7 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <string>
 
 namespace fs = std::filesystem;
 using namespace wmtk;
@@ -24,7 +25,14 @@ using surface_map::kNoId;
 using surface_map::OutputPoint;
 using surface_map::Tracking;
 
-TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]")
+// A whole run, too slow for the Debug CI jobs: Release builds only.
+#ifdef NDEBUG
+const std::string release_only = "";
+#else
+const std::string release_only = "[.]";
+#endif
+
+TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]" + release_only)
 {
     const fs::path dir = fs::current_path() / "tracking_example_tetwild";
     fs::create_directories(dir);
