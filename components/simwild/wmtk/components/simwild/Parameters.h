@@ -55,8 +55,8 @@ struct Parameters : public wmtk::OptimizerParameters
 
     bool skip_simplify = false;
     bool use_sample_envelope = false;
-    /// The input simplification alone uses the sampled envelope; see the spec.
-    bool simplify_use_sample_envelope = true;
+    /// Opt-in: the sampled envelope for the input simplification alone; see the spec.
+    bool simplify_use_sample_envelope = false;
     int NUM_THREADS = 0;
     bool write_vtu = false;
     bool write_envelope = true;
