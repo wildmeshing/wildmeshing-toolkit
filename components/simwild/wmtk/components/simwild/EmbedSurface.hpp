@@ -3,11 +3,17 @@
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 
 namespace wmtk::components::simwild {
 
 using ImageData = std::vector<std::vector<std::vector<size_t>>>;
+
+/// A face by its corners' positions, sorted (as TetOptimizerMesh::PositionKey).
+using PositionKey = std::array<std::array<double, 3>, 3>;
+/// Per surface facet of an embedding, by position key: the input triangles it lies on.
+using FacetSources = std::vector<std::pair<PositionKey, std::vector<uint32_t>>>;
 
 /**
  * @brief Generate the tet mesh that contains all input vertices.
@@ -57,7 +63,8 @@ void embed_surface(
     MatrixXi& F_on_surface,
     const bool perform_sanity_checks = false,
     const std::vector<size_t>& F_input = {},
-    std::vector<std::vector<size_t>>* F_on_surface_inputs = nullptr);
+    std::vector<std::vector<size_t>>* F_on_surface_inputs = nullptr,
+    FacetSources* facet_sources = nullptr);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -83,7 +90,17 @@ public:
         const std::vector<Matrix4d>& img_transform = {},
         const double tol_rel = -1,
         const double tol_abs = -1,
-        const bool split_connected_components = false);
+        const bool split_connected_components = false,
+        const bool record_history = false);
+
+    /**
+     * @brief With record_history: the files as read, concatenated, then what became of them on
+     * the way to the arrangement -- the weld, the transform, the split into components and the
+     * concatenation as one relabel, and the simplification's own edits.
+     */
+    const history::SurfaceHistory& input_history() const { return m_input_history; }
+    /// With record_history, once embedded: the input triangles each surface facet lies on.
+    FacetSources& facet_sources() { return m_facet_sources; }
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
@@ -129,6 +146,12 @@ public:
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
     const MatrixXi& F_surface() const { return m_F_surface; }
 
+private:
+    bool m_record_history = false;
+    history::SurfaceHistory m_input_history;
+    FacetSources m_facet_sources;
+
+public:
     /**
      * @brief Write surface as read from image.
      *

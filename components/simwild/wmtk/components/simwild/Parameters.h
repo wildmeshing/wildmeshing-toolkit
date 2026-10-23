@@ -93,6 +93,7 @@ struct Parameters : public wmtk::OptimizerParameters
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
         colored_smoothing = json_params["colored_smoothing"];
+        check_surface_folds = json_params["check_surface_folds"];
 
         // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
         // 2D mesh and is inert on its 3D one.

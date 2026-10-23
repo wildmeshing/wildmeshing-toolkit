@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <set>
@@ -374,6 +375,163 @@ OrientationRepair orient_facet_patches(
         if (rep.turn[k]) orientation[unit[k]] = -orientation[unit[k]];
     }
     return rep;
+}
+
+// The input triangles each facet on the input lies on, exactly: those of its coplanar group it
+// overlaps with positive area. A group is cut as one region, its triangles' shared edges
+// ignored, so a facet may lie across several of them -- the map then finds which one holds a
+// point. A grid over the triangles' boxes gathers the candidates; a floating-point test settles
+// the clear cases, an exact one the rest.
+std::vector<std::vector<uint32_t>> facet_triangles(
+    const std::vector<double>& tri_vrt_coord,
+    const std::vector<uint32_t>& triangle_indices,
+    const std::vector<Vector3r>& v_rational,
+    const std::vector<std::array<size_t, 3>>& polygon_faces,
+    const EmbedTrianglesProvenance& prov)
+{
+    const size_t nt = triangle_indices.size() / 3;
+    const auto corner = [&](size_t t, int k) {
+        const size_t v = triangle_indices[3 * t + k];
+        return Vector3d(tri_vrt_coord[3 * v], tri_vrt_coord[3 * v + 1], tri_vrt_coord[3 * v + 2]);
+    };
+    const auto box_of = [](const std::array<Vector3d, 3>& p) {
+        return std::pair{p[0].cwiseMin(p[1]).cwiseMin(p[2]), p[0].cwiseMax(p[1]).cwiseMax(p[2])};
+    };
+    // The grid: cells about twice the mean triangle extent.
+    Vector3d lo = Vector3d::Constant(std::numeric_limits<double>::max()), hi = -lo;
+    double extent = 0;
+    std::vector<std::array<Vector3d, 3>> tris(nt);
+    for (size_t t = 0; t < nt; ++t) {
+        tris[t] = {{corner(t, 0), corner(t, 1), corner(t, 2)}};
+        const auto [a, b] = box_of(tris[t]);
+        lo = lo.cwiseMin(a);
+        hi = hi.cwiseMax(b);
+        extent += (b - a).maxCoeff();
+    }
+    std::vector<std::vector<uint32_t>> out(polygon_faces.size());
+    if (nt == 0) return out;
+    const double diag = (hi - lo).norm();
+    const double cell = std::max(2 * extent / double(nt), 1e-6 * diag) + 1e-300;
+    const double margin = 1e-9 * diag; // boxes only gather candidates; the test decides
+    const auto index = [&](const Vector3d& p) {
+        std::array<int64_t, 3> c;
+        for (int k = 0; k < 3; ++k) c[k] = int64_t(std::floor((p[k] - lo[k]) / cell));
+        return c;
+    };
+    const auto cells_of = [&](const Vector3d& a, const Vector3d& b) {
+        return std::pair{
+            index(a - Vector3d::Constant(margin)),
+            index(b + Vector3d::Constant(margin))};
+    };
+    const auto count = [](const std::array<int64_t, 3>& ia, const std::array<int64_t, 3>& ib) {
+        return (ib[0] - ia[0] + 1) * (ib[1] - ia[1] + 1) * (ib[2] - ia[2] + 1);
+    };
+    constexpr int64_t kMaxCells = 64;
+    std::map<std::array<int64_t, 3>, std::vector<uint32_t>> grid;
+    std::vector<uint32_t> large; // spanning too many cells: a candidate everywhere
+    std::map<uint32_t, std::vector<uint32_t>> group_tris;
+    for (size_t t = 0; t < nt; ++t) {
+        if (prov.triangle_group[t] == UINT32_MAX) continue;
+        group_tris[prov.triangle_group[t]].push_back(uint32_t(t));
+        const auto [a, b] = box_of(tris[t]);
+        const auto [ia, ib] = cells_of(a, b);
+        if (count(ia, ib) > kMaxCells) {
+            large.push_back(uint32_t(t));
+            continue;
+        }
+        for (int64_t x = ia[0]; x <= ib[0]; ++x) {
+            for (int64_t y = ia[1]; y <= ib[1]; ++y) {
+                for (int64_t z = ia[2]; z <= ib[2]; ++z) grid[{{x, y, z}}].push_back(uint32_t(t));
+            }
+        }
+    }
+
+    // Whether input triangle t and a facet in its plane (exact corners q, rounded qd) overlap
+    // with positive area: no edge of either has all of the other on its outer side or on it.
+    const auto overlaps = [&](size_t t,
+                              const std::array<Vector3r, 3>& q,
+                              const std::array<Vector3d, 3>& qd) {
+        const auto& p = tris[t];
+        const Vector3d n = (p[1] - p[0]).cross(p[2] - p[0]);
+        int drop = 0;
+        for (int k = 1; k < 3; ++k) {
+            if (std::abs(n[k]) > std::abs(n[drop])) drop = k;
+        }
+        const int u = (drop + 1) % 3, w = (drop + 2) % 3;
+        // The signs of the corners of each against each edge of the other, in doubles where
+        // the margin says they are sure.
+        const auto separated = [&](const auto& a, const auto& b, const auto& orient) {
+            for (int e = 0; e < 3; ++e) {
+                const int side = orient(a[e], a[(e + 1) % 3], a[(e + 2) % 3]);
+                bool all_out = true;
+                for (int k = 0; k < 3 && all_out; ++k) {
+                    all_out = orient(a[e], a[(e + 1) % 3], b[k]) * side <= 0;
+                }
+                if (all_out) return true;
+            }
+            return false;
+        };
+        double scale = 0;
+        for (int k = 0; k < 3; ++k) {
+            scale = std::max({scale, (p[k] - p[0]).squaredNorm(), (qd[k] - p[0]).squaredNorm()});
+        }
+        const double bound = 1e-12 * scale;
+        bool sure = true;
+        const auto orient_d = [&](const Vector3d& a, const Vector3d& b, const Vector3d& c) {
+            const double x = (b[u] - a[u]) * (c[w] - a[w]) - (b[w] - a[w]) * (c[u] - a[u]);
+            if (std::abs(x) <= bound) sure = false;
+            return x > 0 ? 1 : (x < 0 ? -1 : 0);
+        };
+        const bool apart = separated(p, qd, orient_d) || separated(qd, p, orient_d);
+        if (sure) return !apart;
+        const std::array<Vector3r, 3> pr = {
+            {to_rational(p[0]), to_rational(p[1]), to_rational(p[2])}};
+        const auto orient_r = [&](const Vector3r& a, const Vector3r& b, const Vector3r& c) {
+            return ((b[u] - a[u]) * (c[w] - a[w]) - (b[w] - a[w]) * (c[u] - a[u])).get_sign();
+        };
+        return !(separated(pr, q, orient_r) || separated(q, pr, orient_r));
+    };
+
+    std::vector<uint32_t> candidates;
+    for (const auto& [f, g] : prov.face_groups) {
+        const std::array<Vector3r, 3> q = {
+            {v_rational[polygon_faces[f][0]],
+             v_rational[polygon_faces[f][1]],
+             v_rational[polygon_faces[f][2]]}};
+        const std::array<Vector3d, 3> qd = {{to_double(q[0]), to_double(q[1]), to_double(q[2])}};
+        const auto [a, b] = box_of(qd);
+        const auto [ia, ib] = cells_of(a, b);
+        candidates.clear();
+        if (count(ia, ib) > kMaxCells) {
+            const auto it = group_tris.find(g);
+            if (it != group_tris.end()) candidates = it->second;
+        } else {
+            for (int64_t x = ia[0]; x <= ib[0]; ++x) {
+                for (int64_t y = ia[1]; y <= ib[1]; ++y) {
+                    for (int64_t z = ia[2]; z <= ib[2]; ++z) {
+                        const auto it = grid.find({{x, y, z}});
+                        if (it != grid.end()) {
+                            candidates.insert(
+                                candidates.end(),
+                                it->second.begin(),
+                                it->second.end());
+                        }
+                    }
+                }
+            }
+            candidates.insert(candidates.end(), large.begin(), large.end());
+        }
+        std::sort(candidates.begin(), candidates.end());
+        candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
+        for (const uint32_t t : candidates) {
+            if (prov.triangle_group[t] == g && overlaps(t, q, qd)) out[f].push_back(t);
+        }
+    }
+    for (auto& ts : out) {
+        std::sort(ts.begin(), ts.end());
+        ts.erase(std::unique(ts.begin(), ts.end()), ts.end());
+    }
+    return out;
 }
 
 } // namespace
@@ -881,6 +1039,17 @@ void embed_triangles_in_tets(
             o[4 * i + 2] = opp[2];
             o[4 * i + 3] = opp[0];
         }
+    }
+
+    if (provenance != nullptr && provenance->want_face_triangles) {
+        logger().info("input triangles of the facets...");
+        provenance->face_triangles = facet_triangles(
+            tri_vrt_coord,
+            triangle_indices,
+            v_rational,
+            polygon_faces,
+            *provenance);
+        logger().info("done");
     }
 
     // final sanity check: every published tet must be positively

@@ -50,8 +50,8 @@ public:
     // nor 2 is a feature -- valence 1 is an open polyline's endpoint, valence >= 3 a
     // junction -- plus the input free points. Reading it off the arrangement rather than the
     // raw input is deliberate: it is the network the optimizer actually starts from, so a
-    // junction the simplification was allowed to merge (which it may, with
-    // simplify_use_link_condition off) is correctly absent, and no provenance or
+    // junction the simplification was allowed to merge (which it may, without
+    // preserve_topology) is correctly absent, and no provenance or
     // position-matching plumbing is needed.
 
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)

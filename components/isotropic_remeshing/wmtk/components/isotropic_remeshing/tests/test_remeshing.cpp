@@ -4,6 +4,7 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
@@ -75,6 +76,8 @@ TEST_CASE("test_swap", "[test_remeshing]")
     IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
+    // Swaps any edge, whether its quad is convex or not: this tests the connectivity.
+    m.set_check_inversions(false);
     int v_invariant = m.get_vertices().size();
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -258,4 +261,73 @@ TEST_CASE("operation orient", "[test_remeshing]")
     }
 
     m.write_triangle_mesh("old_orient.obj");
+}
+
+namespace {
+/// Triangles of a mesh in the plane z = 0 that are clockwise, or flat.
+size_t not_counter_clockwise(const IsotropicRemeshing& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        const auto p = [&](int k) { return Eigen::Vector2d(m.vertex_attrs[vs[k]].pos.head<2>()); };
+        if (wmtk::utils::predicates::orient2d(p(0), p(1), p(2)) !=
+            wmtk::utils::predicates::Orientation::POSITIVE) {
+            ++n;
+        }
+    }
+    return n;
+}
+} // namespace
+
+TEST_CASE("inversion-check-refuses-smoothing-that-folds", "[test_remeshing]")
+{
+    // A star with a long spike: the average of its link is out along the spike, past where the
+    // vertex can still see the two edges next to it, so tangential smoothing turns those over.
+    const std::vector<Eigen::Vector3d> v = {
+        {0, 0, 0},
+        {6, -0.1, 0},
+        {6, 0.1, 0},
+        {0.2, 0.2, 0},
+        {-1, 1, 0},
+        {-1, -1, 0},
+        {0.2, -0.2, 0}};
+    const std::vector<std::array<size_t, 3>> tris =
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 4}}, {{0, 4, 5}}, {{0, 5, 6}}, {{0, 6, 1}}};
+    for (const bool check : {false, true}) {
+        INFO("check " << check);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris, {}, true); // the link is the boundary, frozen
+        m.set_check_inversions(check);
+        REQUIRE(not_counter_clockwise(m) == 0);
+        m.smooth_all_vertices();
+        if (check) {
+            CHECK(m.vertex_attrs[0].pos == Eigen::Vector3d::Zero());
+            CHECK(m.refused_inversions() > 0);
+            CHECK(not_counter_clockwise(m) == 0);
+        } else {
+            CHECK(m.vertex_attrs[0].pos.x() > 1);
+            CHECK(not_counter_clockwise(m) > 0);
+        }
+    }
+}
+
+TEST_CASE("inversion-check-refuses-swap-that-folds", "[test_remeshing]")
+{
+    // Two triangles on the edge (0, 1) making a quad that is not convex at 1: the other diagonal
+    // (2, 3) runs outside it, and one of the two triangles it makes is turned over.
+    const std::vector<Eigen::Vector3d> v = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}, {3, -0.1, 0}};
+    const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}};
+    for (const bool check : {false, true}) {
+        INFO("check " << check);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris, {}, false);
+        m.set_check_inversions(check);
+        REQUIRE(not_counter_clockwise(m) == 0);
+        std::vector<TriMesh::Tuple> new_tris;
+        const bool swapped = m.swap_edge(m.tuple_from_edge(0, 1, 0), new_tris);
+        CHECK(swapped == !check);
+        CHECK(m.refused_inversions() == (check ? 1 : 0));
+        CHECK((not_counter_clockwise(m) > 0) == !check);
+    }
 }

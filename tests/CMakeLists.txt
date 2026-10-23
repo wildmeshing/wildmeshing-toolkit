@@ -30,6 +30,7 @@ set(TEST_SOURCES
     test_ring_lock.cpp
     test_slot_allocation.cpp
     test_screening.cpp
+    test_history.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})

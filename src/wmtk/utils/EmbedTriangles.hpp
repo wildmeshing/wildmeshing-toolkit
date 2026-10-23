@@ -48,6 +48,11 @@ struct EmbedTrianglesProvenance
     /// Per input triangle (same indexing as `triangle_indices`): its coplanar group, or
     /// UINT32_MAX if it was degenerate and dropped before the arrangement.
     std::vector<uint32_t> triangle_group;
+    /// Set to have face_triangles filled.
+    bool want_face_triangles = false;
+    /// Per facet (indexing `polygon_faces`): the input triangles it lies in, exactly -- every one,
+    /// where input triangles overlap; none for a facet off the input.
+    std::vector<std::vector<uint32_t>> face_triangles;
 };
 
 /**

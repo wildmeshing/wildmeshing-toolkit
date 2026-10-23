@@ -6,13 +6,101 @@
 
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
+
+#include <map>
 
 #include <isotropic_remeshing_spec.hpp>
 #include "IsotropicRemeshing.h"
 
 namespace wmtk::components::isotropic_remeshing {
+
+namespace {
+
+/// The edges between two faces that differ in any of `fields`, per-face or per-corner fields of
+/// the gmsh file `path`, whose triangles are `tris` in file order. A per-corner field differs
+/// across an edge where the two faces disagree on it at either end: a texture seam, say.
+std::vector<std::array<size_t, 2>> field_boundaries(
+    const std::string& path,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::vector<std::string>& fields)
+{
+    MshData msh;
+    msh.load(path);
+    if (!msh.is_single_surface_block()) {
+        log_and_throw_error(
+            "feature_fields: {} is not a single-block surface file, as wmtk writes one; its "
+            "fields cannot be matched to its triangles",
+            path);
+    }
+    if (msh.get_num_faces() != tris.size()) {
+        log_and_throw_error(
+            "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
+            "line up with the triangles",
+            path,
+            tris.size(),
+            msh.get_num_faces());
+    }
+    const mshio::ElementBlock* triangles = &msh.m_spec.elements.entity_blocks.front();
+    std::vector<std::vector<double>> value(tris.size());
+    std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
+    const auto names = msh.get_face_attribute_names();
+    for (const std::string& name : fields) {
+        if (std::find(names.begin(), names.end(), name) != names.end()) {
+            msh.extract_face_attribute(name, [&value](size_t i, const std::vector<double>& data) {
+                if (i < value.size()) value[i].insert(value[i].end(), data.begin(), data.end());
+            });
+            continue;
+        }
+        bool found = false;
+        for (const mshio::Data& data : msh.m_spec.element_node_data) {
+            if (data.header.string_tags.empty() || data.header.string_tags.front() != name)
+                continue;
+            found = true;
+            for (const mshio::DataEntry& entry : data.entries) {
+                const size_t f = entry.tag - triangles->data.front();
+                const size_t k = entry.data.size() / 3;
+                if (f >= tris.size()) continue;
+                for (int c = 0; c < 3; ++c) {
+                    auto& cv = corner_value[f][c];
+                    cv.insert(
+                        cv.end(),
+                        entry.data.begin() + c * k,
+                        entry.data.begin() + (c + 1) * k);
+                }
+            }
+        }
+        if (!found) log_and_throw_error("feature_fields: {} has no field {}", path, name);
+    }
+    const auto at = [&](size_t f, size_t v) -> const std::vector<double>& {
+        for (int c = 0; c < 3; ++c) {
+            if (tris[f][c] == v) return corner_value[f][c];
+        }
+        return corner_value[f][0];
+    };
+    std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
+    for (size_t f = 0; f < tris.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            size_t a = tris[f][k], b = tris[f][(k + 1) % 3];
+            if (a > b) std::swap(a, b);
+            edge_faces[{{a, b}}].push_back(f);
+        }
+    }
+    std::vector<std::array<size_t, 2>> edges;
+    for (const auto& [e, fs] : edge_faces) {
+        if (fs.size() != 2) continue;
+        const size_t f = fs[0], g = fs[1];
+        if (value[f] != value[g] || at(f, e[0]) != at(g, e[0]) || at(f, e[1]) != at(g, e[1])) {
+            edges.push_back(e);
+        }
+    }
+    return edges;
+}
+
+} // namespace
 
 double
 run_remeshing(std::string input, double len, std::string output, IsotropicRemeshing& m, int itrs)
@@ -77,7 +165,10 @@ void isotropic_remeshing(nlohmann::json json_params)
     const bool sample_envelope = json_params["use_sample_envelope"];
     const bool freeze_boundary = json_params["freeze_boundary"];
     const bool use_link_condition = json_params["use_link_condition"];
+    const bool check_inversions = json_params["check_inversions"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const std::string history_output = json_params["history_output"];
+    const std::vector<std::string> feature_fields = json_params["feature_fields"];
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -85,10 +176,20 @@ void isotropic_remeshing(nlohmann::json json_params)
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    wmtk::io::ReadProvenance read;
     {
         MatrixXd V;
         MatrixXi F;
-        wmtk::io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
+        wmtk::io::read_triangle_mesh(
+            std::vector<std::string>{input_path},
+            V,
+            F,
+            remove_duplicate_eps,
+            -1,
+            nullptr,
+            history_output.empty() ? nullptr : &read);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -107,6 +208,7 @@ void isotropic_remeshing(nlohmann::json json_params)
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
+    m.set_check_inversions(check_inversions);
     m.create_mesh(
         verts.size(),
         tris,
@@ -147,8 +249,36 @@ void isotropic_remeshing(nlohmann::json json_params)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    if (!feature_fields.empty()) {
+        m.set_feature_edges(field_boundaries(input_path, tris, feature_fields));
+        logger().info(
+            "{} feature edges: the boundaries of {}",
+            m.feature_edges().size(),
+            nlohmann::json(feature_fields).dump());
+    }
+
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        history->history().metadata = json_params.dump();
+        for (const auto& e : m.feature_edges()) {
+            history->history().feature_edges.push_back({{e[0], e[1]}});
+        }
+    }
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
+    if (check_inversions) {
+        logger().info("refused {} operations that would fold the surface", m.refused_inversions());
+    }
+
+    if (history) {
+        m.stop_history();
+        // The file as read, the weld to the mesh remeshed, then the remeshing: the history maps
+        // the input file to the output file.
+        const history::SurfaceHistory chain = history::from_input(read, verts, history->history());
+        chain.save(history_output);
+        logger().info("history: {} edits saved to {}", chain.edits.size(), history_output);
+    }
 
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid after remeshing!");
@@ -187,6 +317,8 @@ void isotropic_remeshing(nlohmann::json json_params)
         report["nonmanifold_edges"] = out_nm_e;
         report["nonmanifold_vertices"] = out_nm_v;
         report["use_link_condition"] = use_link_condition;
+        report["check_inversions"] = check_inversions;
+        report["refused_inversions"] = m.refused_inversions();
         fout << std::setw(4) << report;
         fout.close();
     }
