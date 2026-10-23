@@ -71,7 +71,8 @@ ExternalProject_Add(
     # At 89911f5 (2026-10-23, branch uday/crown-sample-simplify off 1a7cbf5) tetwild_crown sets
     # simplify_use_sample_envelope true. The input simplification now uses the exact envelope by
     # default in tetwild, triwild and simwild, and on crown (171k faces) the exact simplification
-    # alone takes more than 27 minutes at 16 threads; this case opts back into the sampled one.
+    # alone takes 54 minutes at 16 threads, against 8 s sampled; this case opts back into the
+    # sampled one.
     #
     GIT_TAG 89911f53375f21eb6e8463caaca5bf07ce9c22c7
 
