@@ -68,8 +68,12 @@ ExternalProject_Add(
     # max_expected_iterations goes from 20 to 25 as well: with the open-boundary erosion fixes
     # (#1096) this model, whose input has its own open boundary (7 open edges), takes 21
     # iterations on Windows Release; on macOS its output is byte-identical to main.
+    # At 89911f5 (2026-10-23, branch uday/crown-sample-simplify off 1a7cbf5) tetwild_crown sets
+    # simplify_use_sample_envelope true. The input simplification now uses the exact envelope by
+    # default in tetwild, triwild and simwild, and on crown (171k faces) the exact simplification
+    # alone takes more than 27 minutes at 16 threads; this case opts back into the sampled one.
     #
-    GIT_TAG 1a7cbf563e360bc6418fd79ab2e2b49788446d00
+    GIT_TAG 89911f53375f21eb6e8463caaca5bf07ce9c22c7
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

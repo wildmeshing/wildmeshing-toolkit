@@ -574,7 +574,10 @@ InputData read_curves(
         if (epsr_simplify > 0) {
             eps_simplify = diag * epsr_simplify;
         }
-        curves.simplify_curves(eps_simplify, !json_params["use_sample_envelope"], NUM_THREADS);
+        curves.simplify_curves(
+            eps_simplify,
+            !json_params["simplify_use_sample_envelope"],
+            NUM_THREADS);
 
         if (debug_output) {
             curves.write_curves_obj(output_filename + "_input_simplified.obj");
