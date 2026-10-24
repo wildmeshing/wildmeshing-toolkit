@@ -4327,6 +4327,197 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
     }
 }
 
+void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
+{
+    if (!m_offset_params.front_pocket_split) {
+        local_operations(ops);
+        return;
+    }
+    // EXPERIMENTAL_front_pocket_split: the same passes, one call for the operation passes and one
+    // per smoothing pass, as repulsion_rounds runs its groups. Besides the splits this moves the
+    // rounding sweep from after the k-th smoothing pass to after each, and adds each call's energy
+    // and time lines.
+    if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    for (int p = 0; p < ops[3]; ++p) {
+        front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        local_operations({{0, 0, 0, 1}});
+    }
+}
+
+void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
+{
+    // loop_group() calls this only with the key on; the key is tested here too so that the slot
+    // alone is a no-op with it off (the unit test drives the slot directly).
+    if (!m_offset_params.front_pocket_split || m_tetwild_pass) return;
+    const auto len2 = [this](const std::array<size_t, 2>& e) {
+        return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+    };
+    // A pinned cell: its corners sorted (it names the cell across the round's splits), the edges
+    // to split it on, longest first (ties by vertex ids), and whether all six of its edges are on
+    // the offset surface.
+    struct Pinned
+    {
+        std::array<size_t, 4> vids;
+        std::vector<std::array<size_t, 2>> edges;
+        bool six = false;
+    };
+    // One scan of the live cells. `no_face`: pinned cells with all four faces on the offset
+    // surface, which have no edge to split; `six` and `band`, when given: pinned cells with all
+    // six edges on it, and band cells with all four corners on the front.
+    const auto scan = [&](size_t& no_face, size_t* six, size_t* band) {
+        std::vector<Pinned> out;
+        no_face = 0;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (!std::all_of(vs.begin(), vs.end(), [this](const size_t v) {
+                    return m_vertex_extra[v].m_is_on_offset;
+                })) {
+                continue;
+            }
+            if (cell_is_input_complex(tid)) continue;
+            // A band cell with all four corners on the front is the mirror case: at the band
+            // term's optimum its corners lie on the level set too, so it is the hull of four
+            // points on it -- a sliver, flattened outright where the curvature puts that hull on
+            // the background's side. Split the same way (an edge on no offset face is inside the
+            // band, so its midpoint is off the front); counted apart in the log.
+            if (cell_is_offset_band(tid) && band) ++*band;
+            Pinned p;
+            p.vids = vs;
+            std::sort(p.vids.begin(), p.vids.end());
+            for (int i = 0; i < 4; ++i) {
+                for (int j = i + 1; j < 4; ++j) {
+                    const std::array<size_t, 2> e{{p.vids[i], p.vids[j]}};
+                    if (!edge_is_offset_surface_live(e[0], e[1])) p.edges.push_back(e);
+                }
+            }
+            if (p.edges.empty()) {
+                // All six edges on the offset surface, so every edge midpoint would be on the
+                // front. Then split the edges of the cell's faces that are not offset faces,
+                // longest first: such a face has its three edges on the offset surface, and
+                // splitting one, (a, b) of face (a, b, c), at m makes the edge (m, c), whose
+                // faces are the two halves of (a, b, c), between the same two labels as it, and
+                // one new face inside each cell that shared it, so it is off the offset surface.
+                // Both children of this cell have it, and the next round splits it as above: a
+                // vertex off the front at (a + b + 2c) / 4 on that face, a corner of all four of
+                // the cell's descendants. That is simplicial_embedding()'s face split, made of
+                // the loop's own edge splits; the component's face split hooks are the
+                // construction's (they write no m_is_on_offset, no rest, no exact fallback).
+                // A cell with all four faces on the offset surface is a one-cell component of
+                // its label; a split would leave its boundary, every corner of it on the front,
+                // as it is, so it is counted only. MEASURED before this (cube_in, target 0.3,
+                // 7 turns): 176 such cells over the passes (31 distinct; 102 band, 74 not), every
+                // one with exactly three faces on the offset surface, their shared corner on
+                // exactly three offset faces and in no other cell of the cell's label -- a cell
+                // alone under a front vertex of valence 3 -- and all 176 left unsplit.
+                p.six = true;
+                if (six) ++*six;
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(tid, j);
+                    if (face_is_offset_surface_live(f)) continue;
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    for (int i = 0; i < 3; ++i) {
+                        const size_t u = fv[i], w = fv[(i + 1) % 3];
+                        const std::array<size_t, 2> e{{std::min(u, w), std::max(u, w)}};
+                        if (std::find(p.edges.begin(), p.edges.end(), e) == p.edges.end()) {
+                            p.edges.push_back(e);
+                        }
+                    }
+                }
+                if (p.edges.empty()) {
+                    ++no_face;
+                    continue;
+                }
+            }
+            std::sort(p.edges.begin(), p.edges.end(), [&](const auto& a, const auto& b) {
+                const double la = len2(a), lb = len2(b);
+                return la != lb ? la > lb : a < b;
+            });
+            out.push_back(std::move(p));
+        }
+        return out;
+    };
+    // Whether the cell on these sorted corners is still live: an earlier split of the round may
+    // have split one of its edges, and so the cell, already.
+    const auto alive = [this](const std::array<size_t, 4>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            std::sort(vs.begin(), vs.end());
+            if (vs == s) return true;
+        }
+        return false;
+    };
+
+    size_t n_band = 0, n_six = 0, no_face = 0;
+    std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    const size_t found = pinned.size() + no_face, found_no_face = no_face;
+    size_t n_split = 0, n_refused = 0;
+    const long waits0 = m_split_order_waits.load();
+    int rounds = 0;
+    bool cap = false;
+    while (!pinned.empty()) {
+        if (rounds == kPocketMaxRounds) {
+            cap = true;
+            break;
+        }
+        ++rounds;
+        size_t split_now = 0;
+        for (const Pinned& p : pinned) {
+            if (!alive(p.vids)) continue;
+            for (const std::array<size_t, 2>& e : p.edges) {
+                const Tuple t = tuple_from_edge(e);
+                reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+                std::vector<Tuple> new_edges;
+                m_pocket_splitting = true; // no longest-edge wait (split_edge_before())
+                const bool ok = split_edge(t, new_edges);
+                m_pocket_splitting = false;
+                if (ok) {
+                    ++split_now;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        n_split += split_now;
+        // Every cell a split of an edge off the offset surface makes has the off-front midpoint
+        // as a corner; a split of an edge on it (a cell with all six edges there) leaves two
+        // children with one edge off it. So a rescan finds those children and the cells whose
+        // splits were all refused; with none committed it finds the same ones.
+        if (split_now == 0) break;
+        pinned = scan(no_face, nullptr, nullptr);
+    }
+    if (cap) {
+        logger().warn(
+            "\t[pocket split] {}: the cap of {} rounds stopped the rescans with {} pinned cells "
+            "left that have an edge to split",
+            where,
+            kPocketMaxRounds,
+            pinned.size());
+    }
+    const size_t left_six_split =
+        size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.six; }));
+    logger().info(
+        "\t[pocket split] {}: pinned cells (outside the input complex, all four corners on the "
+        "front) {}, of which {} with all six edges on the offset surface ({} with all four faces "
+        "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
+        "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
+        "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
+        "it (every split refused, or the cap) | of the pinned cells found, band cells {}",
+        where,
+        found,
+        n_six,
+        found_no_face,
+        n_split,
+        rounds,
+        n_refused,
+        m_split_order_waits.load() - waits0,
+        no_face + left_six_split,
+        no_face,
+        left_six_split,
+        pinned.size() - left_six_split,
+        n_band);
+}
+
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4405,7 +4596,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {} interleaved smoothing pass(es)",
             k);
-        local_operations({{0, 0, 0, k}});
+        loop_group({{0, 0, 0, k}}, "pre_smooth");
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
@@ -4441,7 +4632,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             m_energy_step_group = group_names[gi];
             m_energy_step_first = true;
             log_energy_step("start");
-            local_operations(groups[gi]);
+            loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             m_energy_step_turn = 0;
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.

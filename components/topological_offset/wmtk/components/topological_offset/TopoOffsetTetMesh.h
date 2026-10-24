@@ -444,6 +444,47 @@ public:
         bool final_stage = true,
         bool refine = true,
         const std::string& label = std::string());
+    /**
+     * @brief The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's
+     * operation passes in one call and then each of its ops[3] smoothing passes in a call of its
+     * own, front_pocket_split() right before each: the engine's group runs its operation pass
+     * straight into smooth_all_vertices(k), and smoothing_pass_done() runs before a pass's debug
+     * frame, so neither offers the point before a smoothing pass. Off: local_operations(ops).
+     * `where` names the group in the [pocket split] lines.
+     */
+    void loop_group(const std::array<int, 4>& ops, const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass
+     * of the loop starts. A pinned cell is a cell outside the input complex, band or not, whose
+     * four corners are all front vertices (on the offset surface, VertexExtra::m_is_on_offset).
+     *
+     * Why. (1) Only smoothing moves vertices, and no vertex joins or leaves the offset surface
+     * during a smoothing pass, so a cell can only be flattened during smoothing, and only from a
+     * cell that is pinned when the pass starts. (2) The band term depends only on the band as a
+     * region (under the exact rule, the one measured, it is the integral of
+     * (d - target_distance) / target_distance over the band), so moving a vertex that is not on
+     * the offset surface does not change it (a vertex on the input complex carries no band term,
+     * smoothing_extra_energy()): the AMIPS term alone moves such a vertex, and it keeps the
+     * vertex's cells shaped. A pinned cell has no such corner. The band term pulls its four
+     * corners onto the level set d = target_distance, so the level set fixes the cell's shape --
+     * a sliver -- and where the level set curves the wrong way the energy flattens the cell to
+     * zero volume, a fold of the offset surface. (3) Hence the invariant.
+     *
+     * How. Each pinned cell has its longest edge that is on no live offset-surface face split by
+     * the loop's own split (split_edge()), the next longest when that is refused. The midpoint is
+     * off the offset surface and a corner of every cell the split makes, so such a split makes no
+     * pinned cell and removes at least one. A pinned cell with all six edges on the offset surface
+     * has instead the longest edge of one of its faces that is not an offset face split: its two
+     * children are pinned, each with an edge off the offset surface, which the next round splits.
+     * A pinned cell with all four faces on the offset surface has no edge to split and is counted
+     * only. Rescanned until no pinned cell has an edge to split, at most kPocketMaxRounds rounds.
+     * One [pocket split] line, `where` naming the pass. A no-op with the key off and in a TetWild
+     * pass. The measurements: the spec doc.
+     */
+    void front_pocket_split(const std::string& where);
+    static constexpr int kPocketMaxRounds = 10;
+    /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
+    bool m_pocket_splitting = false;
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
