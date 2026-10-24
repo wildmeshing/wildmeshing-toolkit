@@ -526,6 +526,9 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         ++m_plastic_tie_swap;
         return false;
     }
+    // DEBUG_pinned_counts: counted, never refused (see m_pinned_counts). Before the TetWild
+    // return, so a TetWild pass is counted too.
+    if (m_offset_params.debug_pinned_counts) pinned_count_swap(tids);
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has label 2, the label every new cell takes.
     // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
@@ -833,6 +836,9 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
     // one as the base does: the current cells are real and read from the mesh, a candidate's do
     // not exist yet and are scored by candidate_energy(). TetWild's rules (m_op_rules): the
     // base's score, the max of AMIPS^3 over the cells.
+    // DEBUG_pinned_counts: each candidate case, before the TetWild delegation (see
+    // m_pinned_counts). Case 0 is the current cells.
+    if (m_offset_params.debug_pinned_counts && op_case >= 1) pinned_count_case(tets);
     if (tetwild_rules()) return TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
     double e = -1.;
     if (op_case == 0) {
@@ -1314,6 +1320,10 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         m_vertex_attribute[v2_id].m_order < 2) {
         return collapse_reject(CollapseReject::app_order2);
     }
+
+    // DEBUG_pinned_counts: counted, never refused (see m_pinned_counts). After every refusal of
+    // this hook, so a collapse refused above is not counted; in a TetWild pass too.
+    if (m_offset_params.debug_pinned_counts) pinned_count_collapse(v1_id, v2_id);
 
     return true;
 }
@@ -4518,6 +4528,205 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         n_band);
 }
 
+bool TopoOffsetTetMesh::pinned_cell(const std::array<size_t, 4>& vids, const int label) const
+{
+    // As front_pocket_split()'s scan: label 1 is the input complex (cell_is_input_complex()).
+    if (label == 1) return false;
+    return std::all_of(vids.begin(), vids.end(), [this](const size_t v) {
+        return m_vertex_extra[v].m_is_on_offset;
+    });
+}
+
+void TopoOffsetTetMesh::pinned_count_collapse(const size_t v1_id, const size_t v2_id)
+{
+    // See m_pinned_counts. Only v1 off the front onto v2 on it: with v1 on the front a cell it
+    // turns pinned was pinned already, and with v2 off it none is. The flags read are the ones
+    // before the collapse, which re-derives v2's and the edge link's (refresh_offset_membership()).
+    // MEASURED (2026-10-23, cube_in at target 0.3 with and without front_pocket_split, input1 at
+    // 0.7 turn 1): of 986 committed collapses tested, 330 flagged, the flags after the commit
+    // made a cell of the changed ones pinned for exactly the 330.
+    if (dry_run()) return;
+    if (m_vertex_extra[v1_id].m_is_on_offset || !m_vertex_extra[v2_id].m_is_on_offset) return;
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(OpKind::collapse)];
+    ++c.seen;
+    for (const size_t tid : get_one_ring_tids_for_vertex(v1_id)) {
+        std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        if (std::find(vs.begin(), vs.end(), v2_id) != vs.end()) continue; // the collapse deletes it
+        std::replace(vs.begin(), vs.end(), v1_id, v2_id);
+        if (pinned_cell(vs, m_tet_attribute[tid].label)) {
+            ++c.pinned;
+            pinned_op().pinned = true;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_swap(const std::vector<size_t>& tids)
+{
+    // See m_pinned_counts. Called once swap_capture_tag() has taken the ring's one label, which
+    // every new cell takes. A 4-4 / 5-6 only records it here; its cases are pinned_count_case()'s.
+    if (dry_run()) return;
+    PinnedOp& op = pinned_op();
+    op.interior = true;
+    op.label = m_swap_label.local();
+    const OpKind k = current_op_kind();
+    if (k != OpKind::swap_32 && k != OpKind::swap_face) return;
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(k)];
+    ++c.seen;
+    // The ring's corners in every cell of it -- the edge (a, b) of a 3-2, the face (v0, v1, v2)
+    // of a face swap -- and the rest: the link p, q, r of the 3-2, the apexes v3, v4.
+    std::vector<std::pair<size_t, size_t>> count; // (vertex, cells holding it)
+    for (const size_t tid : tids) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            auto it = std::find_if(count.begin(), count.end(), [v](const auto& p) {
+                return p.first == v;
+            });
+            if (it == count.end())
+                count.emplace_back(v, 1);
+            else
+                ++it->second;
+        }
+    }
+    std::vector<size_t> all, rest;
+    for (const auto& [v, n] : count) (n == tids.size() ? all : rest).push_back(v);
+    std::vector<std::array<size_t, 4>> cells;
+    if (k == OpKind::swap_32) {
+        assert(all.size() == 2 && rest.size() == 3);
+        for (const size_t a : all) cells.push_back({{a, rest[0], rest[1], rest[2]}});
+    } else {
+        assert(all.size() == 3 && rest.size() == 2);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = i + 1; j < 3; ++j) {
+                cells.push_back({{rest[0], rest[1], all[size_t(i)], all[size_t(j)]}});
+            }
+        }
+    }
+    for (const std::array<size_t, 4>& vs : cells) {
+        if (pinned_cell(vs, op.label)) {
+            ++c.pinned;
+            op.pinned = true;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_case(const std::vector<std::array<size_t, 4>>& tets)
+{
+    // See m_pinned_counts. One candidate case of an interior 4-4 / 5-6; the swap's totals are
+    // added at its outcome (pinned_count_outcome()).
+    PinnedOp& op = pinned_op();
+    if (dry_run() || !op.interior) return;
+    ++op.cases;
+    for (const std::array<size_t, 4>& vs : tets) {
+        if (pinned_cell(vs, op.label)) {
+            ++op.cases_pinned;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_outcome(const OpKind k, const OpEvent e) const
+{
+    // See m_pinned_counts. A real attempt has one outcome event after its `attempt`, so the swap's
+    // cases are added once; a dry run tested nothing (cases 0, pinned false).
+    PinnedOp& op = pinned_op();
+    if (e == OpEvent::attempt) {
+        op = PinnedOp{};
+        return;
+    }
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(k)];
+    const bool committed = e == OpEvent::committed;
+    if (k == OpKind::swap_44 || k == OpKind::swap_56) {
+        if (op.cases == 0) return;
+        ++c.seen;
+        c.cases += op.cases;
+        c.cases_pinned += op.cases_pinned;
+        if (op.cases_pinned > 0) {
+            ++c.pinned;
+            if (committed) ++c.pinned_committed;
+        }
+        if (op.cases_pinned == op.cases) {
+            ++c.all_pinned;
+            if (committed) ++c.all_pinned_committed;
+        }
+        op.cases = 0;
+    } else if (committed && op.pinned) {
+        ++c.pinned_committed;
+    }
+}
+
+void TopoOffsetTetMesh::pinned_counts_reset(const int pass)
+{
+    for (PinnedCounts& c : m_pinned_counts[size_t(pass)]) {
+        c.seen = 0;
+        c.pinned = 0;
+        c.pinned_committed = 0;
+        c.cases = 0;
+        c.cases_pinned = 0;
+        c.all_pinned = 0;
+        c.all_pinned_committed = 0;
+    }
+    for (size_t k = 0; k < size_t(OpKind::COUNT); ++k) {
+        m_pinned_ops0[k] = {
+            {op_event_count(OpKind(k), OpEvent::attempt),
+             op_event_count(OpKind(k), OpEvent::screened),
+             op_event_count(OpKind(k), OpEvent::committed)}};
+    }
+}
+
+std::string TopoOffsetTetMesh::pinned_counts_report(const int pass) const
+{
+    // The operations' own totals over the same window (the [ops accounting] events): attempts
+    // include a screened pass's dry runs, which `screened` counts when they passed.
+    const auto totals = [this](const OpKind k) {
+        const auto& t0 = m_pinned_ops0[size_t(k)];
+        return fmt::format(
+            "[attempts {}, screened {}, committed {}]",
+            op_event_count(k, OpEvent::attempt) - t0[0],
+            op_event_count(k, OpEvent::screened) - t0[1],
+            op_event_count(k, OpEvent::committed) - t0[2]);
+    };
+    const auto& P = m_pinned_counts[size_t(pass)];
+    std::string out;
+    {
+        const PinnedCounts& c = P[size_t(OpKind::collapse)];
+        out += fmt::format(
+            "collapse, v1 off the front onto v2 on it: {}, would make a pinned cell {} (committed "
+            "{}) {}",
+            c.seen.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            totals(OpKind::collapse));
+    }
+    for (const OpKind k : {OpKind::swap_32, OpKind::swap_face}) {
+        const PinnedCounts& c = P[size_t(k)];
+        out += fmt::format(
+            " | {} interior: {}, would make a pinned cell {} (committed {}) {}",
+            op_kind_name(k),
+            c.seen.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            totals(k));
+    }
+    for (const OpKind k : {OpKind::swap_44, OpKind::swap_56}) {
+        const PinnedCounts& c = P[size_t(k)];
+        out += fmt::format(
+            " | {} interior with a case scored: {}, cases {}, cases with a pinned cell (dropped) "
+            "{}, swaps with a case dropped {} (committed {}), with every case dropped {} "
+            "(committed {}) {}",
+            op_kind_name(k),
+            c.seen.load(),
+            c.cases.load(),
+            c.cases_pinned.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            c.all_pinned.load(),
+            c.all_pinned_committed.load(),
+            totals(k));
+    }
+    return out;
+}
+
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4624,6 +4833,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
+            if (m_offset_params.debug_pinned_counts) pinned_counts_reset(0);
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             // [energy step] lines: the group's baseline here, then one per smoothing pass from
@@ -4653,6 +4863,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     m_volume_reject_collapse.load() - vol_c0,
                     m_volume_reject_swap.load() - vol_s0,
                     m_volume_reject_split.load() - vol_p0);
+                if (m_offset_params.debug_pinned_counts) {
+                    logger().info(
+                        "\t[pinned would-refuse] turn {} {} group: {}",
+                        it + 1,
+                        group_names[gi],
+                        pinned_counts_report(0));
+                }
                 if (m_plastic_active) {
                     logger().info(
                         "\t[plastic tie] turn {} {} group: {} swaps refused outright, {} collapses "
@@ -5015,12 +5232,17 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
     if (remote_frames()) {
         write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
     }
+    if (m_offset_params.debug_pinned_counts) pinned_counts_reset(1);
     mesh_improvement(max_its);
     logger().info(
         "\t[split order] {}: waited {} | committed off the longest edge {}",
         what,
         m_split_order_waits.exchange(0),
         m_split_off_longest.exchange(0));
+    // DEBUG_pinned_counts: the whole pass, its iterations together (mesh_improvement() runs them).
+    if (m_offset_params.debug_pinned_counts) {
+        logger().info("\t[pinned would-refuse] {}: {}", what, pinned_counts_report(1));
+    }
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;

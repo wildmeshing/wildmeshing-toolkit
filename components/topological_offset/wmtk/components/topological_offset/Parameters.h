@@ -91,6 +91,9 @@ struct Parameters : public wmtk::OptimizerParameters
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
+    /// Log-only: per operation group, the collapses and swaps that would make a pinned cell
+    /// (TopoOffsetTetMesh::m_pinned_counts; see the spec).
+    bool debug_pinned_counts = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
     bool front_pocket_split = false;
@@ -430,6 +433,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
+        debug_pinned_counts = json_params["DEBUG_pinned_counts"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];

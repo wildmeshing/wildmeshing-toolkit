@@ -1269,6 +1269,61 @@ public:
         return off;
     }
     void op_event(OpKind k, OpEvent e) const override;
+
+    // ------- DEBUG_pinned_counts (count only: no operation is refused) -------
+    /**
+     * @brief DEBUG_pinned_counts. Counted: the operations that would make a pinned cell
+     * (front_pocket_split() defines it), i.e. what a rule refusing them would refuse. A new cell
+     * keeps its old cell's label in a collapse, and takes the ring's one label in an interior
+     * swap (swap_capture_tag()).
+     *   - collapse of v1 onto v2, v1 off the front and v2 on it: a cell (v1, p, q, r) of v1's
+     *     ring without v2, outside the input complex, with p, q, r on the front
+     *     (collapse_before_vertex(), after its own refusals);
+     *   - interior 3-2 of edge (a, b), ring link p, q, r: (a, p, q, r) or (b, p, q, r) pinned;
+     *     interior face swap of (v0, v1, v2), apexes v3, v4: some (v3, v4, vi, vj) pinned (both
+     *     in swap_before_interior(), after its own refusals);
+     *   - interior 4-4 / 5-6: per case the engine scores (swap_edge_44_energy()), whether it
+     *     has a pinned cell -- a case such a rule would drop -- and per swap whether it would
+     *     drop every case scored.
+     * Real attempts only, not a screened pass's dry runs. Surface flips are not counted.
+     * Index: [0 the loop, 1 a TetWild pass (m_tetwild_pass)][OpKind].
+     */
+    struct PinnedCounts
+    {
+        std::atomic<long> seen{0}; // tested (4-4 / 5-6: swaps with a case scored)
+        std::atomic<long> pinned{0}; // would make a pinned cell (4-4 / 5-6: in some case)
+        std::atomic<long> pinned_committed{0}; // of `pinned`, committed
+        std::atomic<long> cases{0}, cases_pinned{0}; // 4-4 / 5-6: scored, with a pinned cell
+        std::atomic<long> all_pinned{0}, all_pinned_committed{0}; // 4-4 / 5-6: every case
+    };
+    mutable std::array<std::array<PinnedCounts, size_t(OpKind::COUNT)>, 2> m_pinned_counts;
+    /// The operation in flight on this thread; cleared at its `attempt` (op_event()).
+    struct PinnedOp
+    {
+        bool pinned = false; // collapse, 3-2, face swap: it would make a pinned cell
+        bool interior = false; // swap_before_interior() accepted the ring, of label `label`
+        int label = -1;
+        int cases = 0, cases_pinned = 0; // 4-4 / 5-6
+    };
+    static PinnedOp& pinned_op()
+    {
+        static thread_local PinnedOp op;
+        return op;
+    }
+    /// Whether a cell on `vids` with construction label `label` is pinned.
+    bool pinned_cell(const std::array<size_t, 4>& vids, int label) const;
+    /// The three tests above. Each is called only under DEBUG_pinned_counts.
+    void pinned_count_collapse(size_t v1_id, size_t v2_id);
+    void pinned_count_swap(const std::vector<size_t>& tids);
+    void pinned_count_case(const std::vector<std::array<size_t, 4>>& tets);
+    /// op_event()'s part: the outcome of the operation in flight on this thread.
+    void pinned_count_outcome(OpKind k, OpEvent e) const;
+    /// Attempts, screened and committed per OpKind at the last pinned_counts_reset(), so a
+    /// [pinned would-refuse] line gives the totals of its own window.
+    std::array<std::array<long, 3>, size_t(OpKind::COUNT)> m_pinned_ops0{};
+    void pinned_counts_reset(int pass);
+    std::string pinned_counts_report(int pass) const;
+
     /// The shared split pass's gate: TetOptimizerMesh::split_all_edges's is_weight_up_to_date
     /// without its staleness test.
     bool split_edge_is_due(const Tuple& e) const;

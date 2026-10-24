@@ -93,6 +93,7 @@
       "project_line_search_nested_steps",
       "offset_amips_weight",
       "DEBUG_crossings",
+      "DEBUG_pinned_counts",
       "EXPERIMENTAL_front_pocket_split",
       "perform_sanity_checks",
       "use_rest_pose"
@@ -657,6 +658,12 @@
     "type": "bool",
     "default": false,
     "doc": "Log-only: after every operation pass and every smoothing pass, count the front vertices whose ring measure crossed the bar (from <= 1 to > 1, and back), plus new vertices already over it; inside the front smoother, classify each accepted move whose ring-measure crossing it caused as the moved vertex's own or a front neighbour's. Changes no result; costs an exit-measure evaluation per pass and a local one per front move. 2D and 3D."
+  },
+  {
+    "pointer": "/DEBUG_pinned_counts",
+    "type": "bool",
+    "default": false,
+    "doc": "Log-only, 3D: counts the collapses and swaps that would make a pinned cell (defined under EXPERIMENTAL_front_pocket_split, which splits them) and refuses none (TopoOffsetTetMesh::m_pinned_counts). A collapse of v1 off the front onto v2 on it makes one iff v1's ring has a cell (v1, p, q, r) without v2, outside the input complex, with p, q, r on the front; an interior 3-2 of edge (a, b) iff (a, R) or (b, R) is pinned, R the ring's link; an interior face swap of (v0, v1, v2) with apexes v3, v4 iff some (v3, v4, vi, vj) is; an interior 4-4 / 5-6 per candidate case the engine scores, and per swap whether every case scored has one. Tested after the hooks' own refusals, in the loop and in a TetWild pass alike (the construction pass included); real attempts only, not a screened pass's dry runs; surface flips not tested. One [pinned would-refuse] line per operation group of the loop and one per TetWild pass, with the attempts, screened and committed operations of the same window. Why: the conditions under which an operation makes a pinned cell, counted before a rule refusing them is written. Changes no result. false (the default): nothing is computed."
   },
   {
     "pointer": "/smoothing_mode",

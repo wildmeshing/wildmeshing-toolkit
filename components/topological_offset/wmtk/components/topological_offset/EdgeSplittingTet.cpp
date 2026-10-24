@@ -87,6 +87,7 @@ bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
 void TopoOffsetTetMesh::op_event(const OpKind k, const OpEvent e) const
 {
     TetOptimizerMesh::op_event(k, e);
+    if (m_offset_params.debug_pinned_counts) pinned_count_outcome(k, e);
     if (k != OpKind::split) return;
     // Counted here because `committed` is the one place a split is known to have survived both
     // hooks and invariants(); the flag is cleared at `attempt`, so a marching split never counts.
