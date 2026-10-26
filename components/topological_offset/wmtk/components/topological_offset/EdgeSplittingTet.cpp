@@ -47,7 +47,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             for (int j = 0; j < 6; ++j) {
                 const Tuple f = tuple_from_edge(tet.tid(*this), j);
                 if (!(get_length2(f) > l2)) continue;
-                if (!m_pocket_splitting && split_edge_is_due(f)) {
+                if (!m_pocket_splitting && !m_energy_splitting && split_edge_is_due(f)) {
                     ++m_split_order_waits;
                     return false;
                 }
@@ -262,11 +262,42 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
+        // EXPERIMENTAL_energy_split: the new vertex is moved by the smoother (the solve starts at
+        // the midpoint, and the smoother's own veto keeps any move that raises E from landing),
+        // then the children must sum below the parents by more than the bar of the new vertex's
+        // front faces -- front_conv^2 / (2 delta) times their area, the settle test's bar energy
+        // for that much front (0 for a vertex off the front: a strict decrease). Otherwise the
+        // engine rolls the split back. A midpoint split leaves the band term unchanged; the band
+        // term changes only through the move, the AMIPS term through both.
+        if (m_energy_splitting) {
+            const size_t vid = t.vid(*this);
+            round(t);
+            if (m_vertex_extra[vid].m_is_on_offset) {
+                smooth_front_vertex(t);
+            } else {
+                smooth_nonfront_vertex(t);
+            }
+            double area = 0.;
+            for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+                const auto fv = get_face_vids(f);
+                const Vector3d& a = m_vertex_attribute[fv[0]].m_posf;
+                area += 0.5 * (m_vertex_attribute[fv[1]].m_posf - a)
+                                  .cross(m_vertex_attribute[fv[2]].m_posf - a)
+                                  .norm();
+            }
+            const double eps = m_offset_params.front_conv, delta = m_offset_params.target_distance;
+            const double bar = eps * eps * area / (2. * delta);
+            if (!(tet_energy_sum(get_one_ring_tids_for_vertex(vid)) <
+                  m_split_energy_before.local() - bar)) {
+                ++m_energy_split_refused;
+                return false;
+            }
+        }
         // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
         // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
         // engine rolls a refused split back. The loop's gate: TetWild's rules (m_op_rules, every
         // TetWild pass) have no split rule.
-        if (m_offset_params.split_energy_gate && !tetwild_rules() &&
+        if (m_offset_params.split_energy_gate && !tetwild_rules() && !m_split_sizing_due.local() &&
             !(tet_energy_sum(get_one_ring_tids_for_vertex(t.vid(*this))) <
               m_split_energy_before.local())) {
             ++m_volume_reject_split;
@@ -795,12 +826,23 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
         face_extra_capture(tids, m_face_extra_split.local());
         edge_label_capture(tids, m_edge_label_split.local());
     }
-    // EXPERIMENTAL_split_energy_gate: the parents' sum of tet_energy(), which split_edge_after()
-    // compares the children's against.
-    if (m_offset_params.split_energy_gate) {
+    // EXPERIMENTAL_split_energy_gate and EXPERIMENTAL_energy_split: the parents' sum of
+    // tet_energy(), which split_edge_after() compares the children's against.
+    if (m_offset_params.split_energy_gate || m_energy_splitting) {
         std::vector<size_t> tids;
         for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
         m_split_energy_before.local() = tet_energy_sum(tids);
+        // EXPERIMENTAL_energy_only_sizing_split: an edge over the sizing gate (the gate the pass
+        // would use without energy_only_ops: length^2 >= splitting_l2 * s^2, s the mean of the
+        // ends' scalars) is split whatever the energy says, as without the key.
+        char due = 0;
+        if (m_offset_params.energy_only_sizing_split && m_sizing_split_l2 > 0.) {
+            const size_t a = edge.vid(*this), b = edge.switch_vertex(*this).vid(*this);
+            const double s =
+                (m_vertex_attribute[a].m_sizing_scalar + m_vertex_attribute[b].m_sizing_scalar) / 2;
+            due = !(get_length2(edge) < m_sizing_split_l2 * s * s);
+        }
+        m_split_sizing_due.local() = due;
     }
     return true;
 }

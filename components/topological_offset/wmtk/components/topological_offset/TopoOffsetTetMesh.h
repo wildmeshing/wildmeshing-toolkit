@@ -482,6 +482,39 @@ public:
      * pass. The measurements: the spec doc.
      */
     void front_pocket_split(const std::string& where);
+    /// EXPERIMENTAL_energy_collapse (see the spec): after each smoothing pass, every collapse of a
+    /// front vertex onto a front neighbour along an offset-surface edge is tried, at any length,
+    /// under the engine's checks and the energy rule; serial, to a fixed point.
+    void front_energy_collapse(const std::string& where);
+    /// EXPERIMENTAL_energy_split (see the spec): after each smoothing pass, every edge of a cell
+    /// with a front corner is split once, longest first; split_edge_after() moves the new vertex
+    /// by the smoother and keeps the split only if the ring's energy fell by more than the bar of
+    /// the new vertex's front faces. Serial, one sweep.
+    void front_energy_split(const std::string& where);
+    /// Set while front_energy_split() splits: no longest-edge wait, and split_edge_after() applies
+    /// the energy rule above.
+    bool m_energy_splitting = false;
+    size_t m_energy_split_refused = 0;
+    /**
+     * @brief DEBUG_trace_collapse (log-only): one [trace collapse] line per collapse attempt with
+     * an end in debug_trace_collapse -- removed vertex v1 and survivor v2, their front flags, the
+     * outcome, the refusal reasons (the engine's CollapseReject counters read before and after the
+     * attempt, so exact on one thread only), and for an attempt that reached the energy rule its
+     * two sums split into band and AMIPS parts. Changes no result.
+     */
+    struct TraceCollapse
+    {
+        bool open = false, energy = false;
+        size_t v1 = 0, v2 = 0;
+        double length = 0.;
+        std::array<long, size_t(CollapseReject::COUNT)> before{};
+        double e_before = 0., a_before = 0., e_after = 0., a_after = 0.;
+    };
+    TraceCollapse m_trace_collapse;
+    /// Opens an attempt when t's ends include a traced vertex; false when none is traced.
+    bool trace_collapse_begin(const Tuple& t);
+    /// Logs the open attempt with its outcome and closes it.
+    void trace_collapse_end(const char* outcome);
     static constexpr int kPocketMaxRounds = 10;
     /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
     bool m_pocket_splitting = false;
@@ -900,6 +933,11 @@ public:
     /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of tet_energy() (taken in
     /// split_before_cells()), and the splits refused for not lowering it, per operation group.
     mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
+    /// EXPERIMENTAL_energy_only_sizing_split: the sizing gate's splitting_l2 while energy_only_ops
+    /// has set the pass's to 0 (-1 otherwise), and whether the split in hand is one the sizing
+    /// field asks for, which skips the energy gate.
+    double m_sizing_split_l2 = -1.;
+    mutable wmtk::threading::enumerable_thread_specific<char> m_split_sizing_due;
     mutable std::atomic<int> m_volume_reject_split{0};
 
     /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'.
