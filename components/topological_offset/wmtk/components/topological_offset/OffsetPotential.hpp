@@ -750,8 +750,8 @@ private:
  * The distance d to the input is the min over its primitives P (the triangles of
  * TopoOffsetTetMesh::m_input_complex_envelope) of d_P, the distance to P alone,
  * Envelope::primitive_distance(). Each d_P is convex (the distance to a convex set). These are
- * the searches the settle loop's tests and the debug frames run over the P, on
- * Envelope's per-primitive queries.
+ * the searches the debug frames run over the P (and the settle loop's tests did, until
+ * 2026-10-26), on Envelope's per-primitive queries.
  *
  * Every search is exact, by one argument: a starting primitive gives a value m that the result
  * cannot exceed; every primitive that could reach m has a point within m (or a stated bound) of
@@ -797,7 +797,8 @@ double min_triangle_distance(
 /// box grown by m.
 double min_max_corner_distance(const Envelope& env, double pad, const Eigen::Vector3d* p, int n);
 
-/// EXPERIMENTAL_settle_mark "rms": the mean over triangle abc of (d - delta)^2 (n . grad d),
+/// The removed EXPERIMENTAL_settle_mark "rms" test's measure (read by its unit test alone since
+/// 2026-10-26): the mean over triangle abc of (d - delta)^2 (n . grad d),
 /// n the face's unit normal (pointing out of the band), by the 3-edge-midpoint rule (weights
 /// 1/3, exact for quadratic integrands): exact over a face whose points all have one input
 /// face's interior as nearest feature (d affine, grad d constant there). grad d is the nearest

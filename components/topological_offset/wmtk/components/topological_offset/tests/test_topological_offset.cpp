@@ -24,6 +24,7 @@
 #include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/components/topological_offset/topological_offset.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/io.hpp>
 
 using namespace wmtk;
@@ -2935,11 +2936,12 @@ TEST_CASE("plastic-amips-quality", "[offset][3d]")
     CHECK(mesh->plastic_quality(2) == eq);
 }
 
-TEST_CASE("settle-rel-thresh-key", "[offset][3d]")
+TEST_CASE("convergence-keys", "[offset][3d]")
 {
-    // settle_rel_thresh through the spec, as the app reads it: the default 0.1, a value read
-    // through, 0 accepted, a negative value refused by the spec's min, and the removed band keys
-    // refused by the strict spec.
+    // EXPERIMENTAL_settle_refinement through the spec, as the app reads it: on by default, false
+    // read through. Since 2026-10-26 its exit is the max-based one (convergence_turn()), and the
+    // old settle test's keys, settle_rel_thresh and EXPERIMENTAL_settle_mark, are gone: the strict
+    // spec refuses a config that sets either, as it does the removed band keys and AMIPS weight.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto verify = [&](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -2957,18 +2959,101 @@ TEST_CASE("settle-rel-thresh-key", "[offset][3d]")
         return spec_engine.inject_defaults(j, spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.settle_rel_thresh == 0.1);
     CHECK(by_default.settle_refinement);
-    const Parameters set(injected({{"settle_rel_thresh", 0.02}}));
-    CHECK(set.settle_rel_thresh == 0.02);
-    const Parameters zero(injected({{"settle_rel_thresh", 0.}}));
-    CHECK(zero.settle_rel_thresh == 0.);
-    CHECK_FALSE(verify({{"settle_rel_thresh", -0.1}}));
-    // The volumetric band term's keys and the AMIPS weight are gone: the strict spec refuses a
-    // config that sets any of them.
+    const Parameters off(injected({{"EXPERIMENTAL_settle_refinement", false}}));
+    CHECK_FALSE(off.settle_refinement);
+    CHECK_FALSE(verify({{"settle_rel_thresh", 0.1}}));
+    CHECK_FALSE(verify({{"EXPERIMENTAL_settle_mark", "vertex"}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_gap_refinement", true}}));
     CHECK_FALSE(verify({{"offset_amips_weight", 1.}}));
+}
+
+TEST_CASE("stuck-refine-stall", "[offset][3d]")
+{
+    // metric_stalled(), the stall test both of the loop's stuck-refines share with TetWild's
+    // mesh_improvement(): (prev - cur) <= eps (cur - target).
+    using M = TopoOffsetTetMesh;
+    CHECK(M::metric_stalled(20., 19.5, 10., 0.1)); // fell 0.5 <= 0.1 x 9.5
+    CHECK_FALSE(M::metric_stalled(20., 18., 10., 0.1)); // fell 2 > 0.95
+    CHECK(M::metric_stalled(20., 21., 10., 0.1)); // a rise is a stall
+    CHECK(M::metric_stalled(20., 20., 10., 0.)); // eps 0: only no fall at all
+    CHECK_FALSE(M::metric_stalled(20., 19.99, 10., 0.));
+    // The loop's state starts with both cooldowns at stuck_refine_cooldown.
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.m_params.stuck_refine_cooldown = 3;
+    const M::StuckState s = mesh.stuck_state_start();
+    CHECK(s.cooldown_amips == 3);
+    CHECK(s.cooldown_offset == 3);
+    CHECK(s.prev_amips < 0.);
+    CHECK(s.prev_offset < 0.);
+}
+
+TEST_CASE("offset-stuck-refine", "[offset][3d]")
+{
+    // convergence_turn() on the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2, its offset faces nowhere near a tiny front_conv: not converged, and with the
+    // offset error stalled (turn 2, no previous max) every face with a stencil point at or over
+    // front_conv_frac()^2 has its longest edge queued for a forced split and its corners' sizing
+    // halved (or at the floor). The AMIPS stuck-refine is kept out (its previous max far above,
+    // so not stalled). With both bounds wide open the same mesh converges and nothing is queued.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_stuck_refine";
+    auto mesh = grid_offset_mesh(g, param, out);
+    mesh->m_params.stuck_refine_force_split = true;
+
+    {
+        mesh->m_offset_params.front_conv = 1e-9;
+        mesh->m_params.stop_energy = 1e30;
+        const double o_bar = mesh->front_offset_bar();
+        std::vector<std::array<size_t, 3>> want;
+        for (const auto& f : mesh->offset_surface_faces()) {
+            if (!(mesh->face_offset_point_max(f[0], f[1], f[2]) < o_bar)) want.push_back(f);
+        }
+        REQUIRE(!want.empty());
+        std::vector<double> before(mesh->vert_capacity());
+        for (size_t v = 0; v < before.size(); ++v) {
+            before[v] = mesh->m_vertex_attribute[v].m_sizing_scalar;
+        }
+        TopoOffsetTetMesh::StuckState s;
+        s.prev_amips = 1e300;
+        mesh->m_force_split_edges.clear();
+        CHECK_FALSE(mesh->convergence_turn(2, s, /*refine_now=*/true));
+        const double l = std::max(mesh->m_params.l, 1e-300);
+        const double s_floor = std::max(
+            mesh->m_offset_params.min_sizing_scalar,
+            mesh->m_offset_params.min_edge_length / l);
+        for (const auto& f : want) {
+            const auto e = wmtk::utils::longest_edge(f, [&](size_t v) -> const Vector3d& {
+                return mesh->m_vertex_attribute[v].m_posf;
+            });
+            const auto ev = e.vertices();
+            CHECK(mesh->is_force_split_edge(ev[0], ev[1]));
+            for (const size_t v : f) {
+                CHECK(
+                    mesh->m_vertex_attribute[v].m_sizing_scalar <=
+                    std::max(0.5 * before[v], s_floor));
+            }
+        }
+        CHECK(mesh->m_force_split_edges.size() <= want.size());
+        CHECK(s.prev_offset > o_bar);
+        CHECK(s.cooldown_offset == std::max(0, mesh->m_params.stuck_refine_cooldown));
+    }
+    {
+        // Wide open: front_conv at the target distance itself (bound 1) and stop_energy far above
+        // every cell.
+        mesh->m_offset_params.front_conv = 10. * mesh->m_offset_params.target_distance;
+        mesh->m_params.stop_energy = 1e30;
+        mesh->m_force_split_edges.clear();
+        TopoOffsetTetMesh::StuckState s;
+        CHECK(mesh->convergence_turn(2, s, /*refine_now=*/true));
+        CHECK(mesh->m_force_split_edges.empty());
+    }
 }
 
 TEST_CASE("growth-mode-keys", "[offset][3d]")

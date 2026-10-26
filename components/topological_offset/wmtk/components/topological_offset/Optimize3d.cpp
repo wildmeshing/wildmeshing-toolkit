@@ -3180,156 +3180,155 @@ size_t TopoOffsetTetMesh::refine_front_by_halving(const std::vector<size_t>& ver
     return changed.size();
 }
 
-bool TopoOffsetTetMesh::settle_refinement_turn(
-    const int turn,
-    double& e_prev,
-    const bool refine_now)
+size_t TopoOffsetTetMesh::offset_stuck_refine(
+    const std::vector<std::array<size_t, 3>>& faces,
+    size_t* n_edges)
 {
-    // SETTLED (since 2026-10-22, on the surface offset error): the global offset error fell by
-    // less than settle_rel_thresh times |e_prev| -- the error's relative fall stalled, like
-    // TetWild's stuck_refine; signed, so a rise also settles. Only a settled turn tests and
-    // refines.
-    const double delta = m_offset_params.target_distance;
-    const double eps = m_offset_params.front_conv;
-    size_t n_unmeasured = 0;
-    const double e_now = offset_error(&n_unmeasured);
-    const double de = e_prev - e_now;
-    const double thresh = m_offset_params.settle_rel_thresh * std::abs(e_prev);
-    const bool settled = de < thresh;
-    e_prev = e_now;
+    // See the declaration: refine_sizing_around_worst()'s forced split and sizing refinement, on
+    // the faces out of convergence instead of the worst cells, the sizing through the front's own
+    // halving. The forced split obeys stuck_refine_force_split, as TetWild's does.
+    std::vector<size_t> corners;
+    corners.reserve(3 * faces.size());
+    size_t queued = 0;
+    for (const auto& f : faces) {
+        if (m_params.stuck_refine_force_split) {
+            queued += m_force_split_edges
+                          .insert(
+                              wmtk::utils::longest_edge(
+                                  f,
+                                  [this](size_t vid) -> const Vector3d& {
+                                      return m_vertex_attribute[vid].m_posf;
+                                  }))
+                          .second;
+        }
+        corners.insert(corners.end(), f.begin(), f.end());
+    }
+    if (n_edges) *n_edges = queued;
+    return refine_front_by_halving(corners);
+}
+
+bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bool refine_now)
+{
+    // See the declaration: mesh_improvement()'s exit and stall response, on the two bounded
+    // quantities -- the max AMIPS over the cells against stop_energy, and the max stencil-point
+    // offset error over the offset faces against front_conv_frac()^2. Each cell and face is
+    // evaluated on the mesh's threads and reduced on this one.
+    const TopoOffsetTetMesh& self = *this;
+    const double a_bar = m_params.stop_energy;
+    const double o_bar = front_offset_bar();
+
+    std::vector<double> q(tet_capacity(), 0.);
+    diagnostic_parallel_for(q.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+        for (size_t t = b; t < e; ++t) {
+            if (self.tuple_from_tet(t).is_valid(self)) q[t] = self.loop_cell_quality(t);
+        }
+    });
+    double a3 = 0.;
+    for (const double x : q) a3 = std::max(a3, x);
+    const double max_amips = std::cbrt(a3);
+
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
-    // The floor of refine_front_by_halving().
+    std::vector<double> pm(faces.size(), 0.);
+    diagnostic_parallel_for(faces.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+        for (size_t k = b; k < e; ++k) {
+            pm[k] = self.face_offset_point_max(faces[k][0], faces[k][1], faces[k][2]);
+        }
+    });
+    // The floor of refine_front_by_halving(), for the count of out-of-convergence corners at it.
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    size_t n_marked = 0, n_floor = 0, n_halved = 0, n_over_max = 0, n_over_rms = 0;
-    size_t n_over_vertex = 0, n_front_vertices = 0;
-    double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
-    double max_rms = 0., max_vertex = 0.;
-    const bool rms_mode = m_offset_params.settle_mark == "rms";
-    const bool vertex_mode = m_offset_params.settle_mark == "vertex";
-    if (settled) {
-        // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
-        // over f of d, exact (min over P of the triangle-triangle distance); outside_f = min over
-        // P of the max of d_P at f's corners (one triangle's convex d_P), minus delta -- an upper
-        // bound that overshoots by about s^2 / (2 delta) where f straddles a coplanar input edge
-        // by s. A face with either over eps has its corners halved (settle_mark "max");
-        // settle_mark "rms" and "vertex" only log it.
-        std::vector<size_t> corners;
-        for (const auto& f : faces) {
-            const std::array<Vector3d, 3> p = {
-                {m_vertex_attribute[f[0]].m_posf,
-                 m_vertex_attribute[f[1]].m_posf,
-                 m_vertex_attribute[f[2]].m_posf}};
-            const double inside = delta - min_triangle_distance(
-                                              *m_input_complex_envelope,
-                                              m_input_complex_pad,
-                                              p[0],
-                                              p[1],
-                                              p[2]);
-            const double outside = min_max_corner_distance(
-                                       *m_input_complex_envelope,
-                                       m_input_complex_pad,
-                                       p.data(),
-                                       3) -
-                                   delta;
-            max_inside = std::max(max_inside, inside / eps);
-            max_outside = std::max(max_outside, outside / eps);
-            const bool over_max = std::max(inside, outside) > eps;
-            // EXPERIMENTAL_settle_mark "rms": the mean over f of (d - delta)^2 cos(theta) by the
-            // 3-edge-midpoint rule, theta between f's normal out of the band and grad d (signed),
-            // against front_conv^2. The normal is oriented by the band cell carrying f (its
-            // fourth corner is in the band).
-            Vector3d n = (p[1] - p[0]).cross(p[2] - p[0]);
-            const int64_t bc = front_face_band_cell(f[0], f[1], f[2]);
-            if (bc >= 0) {
-                for (const size_t v : oriented_tet_vids(size_t(bc))) {
-                    if (v == f[0] || v == f[1] || v == f[2]) continue;
-                    if (n.dot(p[0] - m_vertex_attribute[v].m_posf) < 0.) n = -n;
-                }
-            }
-            const double q = face_mean_sq_cos(
-                *m_input_complex_envelope,
-                m_input_complex_pad,
-                p[0],
-                p[1],
-                p[2],
-                n.normalized(),
-                delta);
-            const bool over_rms = bc >= 0 && q > eps * eps;
-            max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
-            n_over_max += over_max;
-            n_over_rms += over_rms;
-            if (vertex_mode || !(rms_mode ? over_rms : over_max)) continue;
-            ++n_marked;
-            bool at_floor = true;
-            for (const size_t v : f) {
-                corners.push_back(v);
-                at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
-            }
-            if (at_floor) ++n_floor;
+    double max_o = 0.;
+    size_t n_unmeasurable = 0, n_floor = 0;
+    std::vector<std::array<size_t, 3>> out;
+    std::vector<char> seen(vert_capacity(), 0);
+    for (size_t k = 0; k < faces.size(); ++k) {
+        if (pm[k] < 0.) {
+            ++n_unmeasurable;
+            continue;
         }
-        // EXPERIMENTAL_settle_mark "vertex": a front vertex whose own distance from the level set,
-        // |d(v) - delta|, exceeds front_conv (d over all input triangles, exact at the vertex). It
-        // says nothing about the points of a face between its corners.
-        std::vector<size_t> front_vids;
-        for (const auto& f : faces) front_vids.insert(front_vids.end(), f.begin(), f.end());
-        wmtk::vector_unique(front_vids);
-        n_front_vertices = front_vids.size();
-        for (const size_t v : front_vids) {
-            const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const Envelope& env = *m_input_complex_envelope;
-            const double err = std::abs(
-                env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
-            max_vertex = std::max(max_vertex, err / eps);
-            if (!(err > eps)) continue;
-            ++n_over_vertex;
-            if (!vertex_mode) continue;
-            ++n_marked;
-            corners.push_back(v);
-            if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+        max_o = std::max(max_o, pm[k]);
+        if (pm[k] < o_bar) continue;
+        out.push_back(faces[k]);
+        for (const size_t v : faces[k]) {
+            if (seen[v]) continue;
+            seen[v] = 1;
+            n_floor += m_vertex_attribute[v].m_sizing_scalar <= s_floor;
         }
-        if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
     }
-    // A marked face with every corner at the floor is one nothing will refine: it blocks the exit
-    // for good, hence the warning, every turn such faces exist.
+    const bool converged = max_amips < a_bar && max_o < o_bar && n_unmeasurable == 0;
+
+    // The stall response, once per metric, in mesh_improvement()'s order: a cooldown turn only
+    // counts down; otherwise, from the second turn on, a metric at or over its bound whose fall
+    // stalled refines. AMIPS first: refine_sizing_around_worst() clears m_force_split_edges,
+    // offset_stuck_refine() appends to it.
+    const double eps = m_params.stuck_refine_stall_eps;
+    const auto stuck = [&](int& cooldown,
+                           const bool over,
+                           const double prev,
+                           const double cur,
+                           const double target,
+                           const auto& refine) -> std::string {
+        if (converged) return "converged";
+        if (!refine_now) return "off (this loop does not refine)";
+        if (cooldown > 0) {
+            --cooldown;
+            return "cooldown";
+        }
+        if (!over) return "within its bound";
+        if (turn <= 1) return "first turn";
+        const double fall = prev - cur, bar = eps * (cur - target);
+        if (!metric_stalled(prev, cur, target, eps)) {
+            return fmt::format("falling ({:.4g} > {:g} x {:.4g})", fall, eps, cur - target);
+        }
+        cooldown = std::max(0, m_params.stuck_refine_cooldown);
+        return fmt::format("STALLED (fell {:.4g} <= {:.4g}) -> {}", fall, bar, refine());
+    };
+    const std::string a_state =
+        stuck(s.cooldown_amips, !(max_amips < a_bar), s.prev_amips, max_amips, a_bar, [&]() {
+            const size_t n = refine_sizing_around_worst(max_amips);
+            return fmt::format(
+                "{} vertices lowered, {} edges queued for a forced split",
+                n,
+                m_force_split_edges.size());
+        });
+    const std::string o_state =
+        stuck(s.cooldown_offset, !out.empty(), s.prev_offset, max_o, o_bar, [&]() {
+            size_t n_edges = 0;
+            const size_t n = offset_stuck_refine(out, &n_edges);
+            return fmt::format(
+                "{} faces: {} longest edges queued for a forced split, {} vertices halved",
+                out.size(),
+                n_edges,
+                n);
+        });
+    s.prev_amips = max_amips;
+    s.prev_offset = max_o;
+
     logger().log(
-        n_floor > 0 ? spdlog::level::warn : spdlog::level::info,
-        "\t[settle] turn {}: offset error {:.10g}, its fall {:.4g} against settle_rel_thresh {:g} "
-        "x |prev| = {:.4g}{}, settled {}{}",
+        n_unmeasurable > 0 ? spdlog::level::warn : spdlog::level::info,
+        "\t[convergence] turn {}: converged {} | max AMIPS {:.6g} (stop {:g}) | max "
+        "stencil-point offset error {:.6g} (bound front_conv_frac^2 = {:.6g}; {:.4g}x the bar "
+        "in distance) over {} offset faces, {} out of convergence ({} of their corners at the "
+        "sizing floor {:.4g}), {} unmeasurable{} | global offset error {:.10g} (diagnostic) | "
+        "stuck-refine A: {} | stuck-refine O: {}",
         turn,
-        e_now,
-        de,
-        m_offset_params.settle_rel_thresh,
-        thresh,
-        n_unmeasured > 0 ? fmt::format(" ({} unmeasurable faces read 0)", n_unmeasured)
-                         : std::string(),
-        settled ? "yes" : "no",
-        settled ? fmt::format(
-                      " | marked {} {} of {} by the {} test (max test: {} faces over, max "
-                      "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
-                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars), {}, {} marked "
-                      "{} at the sizing floor {:.4g}{}",
-                      n_marked,
-                      vertex_mode ? "vertices" : "faces",
-                      vertex_mode ? fmt::format("{} front vertices", n_front_vertices)
-                                  : fmt::format("{}", faces.size()),
-                      m_offset_params.settle_mark,
-                      n_over_max,
-                      max_inside,
-                      max_outside,
-                      n_over_rms,
-                      max_rms,
-                      n_over_vertex,
-                      max_vertex,
-                      refine_now ? fmt::format("halved {} vertices", n_halved)
-                                 : std::string("no halving (this loop does not refine)"),
-                      n_floor,
-                      vertex_mode ? "vertices" : "faces with every corner",
-                      s_floor,
-                      n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
-                : std::string(" -- no front test, no refinement, no exit: the error still falls"));
-    return settled && n_marked == 0;
+        converged ? "yes" : "no",
+        max_amips,
+        a_bar,
+        max_o,
+        o_bar,
+        o_bar > 0. ? std::sqrt(max_o / o_bar) : std::numeric_limits<double>::infinity(),
+        faces.size(),
+        out.size(),
+        n_floor,
+        s_floor,
+        n_unmeasurable,
+        n_unmeasurable > 0 ? " (they block the exit)" : "",
+        offset_error(),
+        a_state,
+        o_state);
+    return converged;
 }
 
 void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
@@ -3553,16 +3552,18 @@ double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
 {
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
-    // same way, seeding the same force-split edges. TetWild passes only, by construction:
-    // mesh_improvement() is this function's one caller, and only tetwild_pass() runs that.
+    // same way, seeding the same force-split edges. Two callers: mesh_improvement() in a TetWild
+    // pass, and the loop's AMIPS stuck-refine (convergence_turn()).
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
 
-    // cell_quality is AMIPS^3, so the energy "max energy" refers to is its cube root.
+    // The quality is AMIPS^3, so the energy "max energy" refers to is its cube root. In a TetWild
+    // pass loop_cell_quality() is cell_quality(); in the loop, plastic AMIPS under use_rest_pose,
+    // what the loop's exit reads.
     const auto worst = wmtk::utils::select_worst_cells(
         tet_capacity(),
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
-        [this](size_t tid) { return std::cbrt(cell_quality(tid)); },
+        [this](size_t tid) { return std::cbrt(loop_cell_quality(tid)); },
         filter_energy,
         m_params.stuck_refine_num_worst);
     if (worst.empty()) {
@@ -4372,8 +4373,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
     const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
-    // What mesh_improvement() adds and is left out here on purpose is its stall response, which
-    // refines around the worst elements: a moving front stretches cells by design.
+    // Since 2026-10-26 its stall response is here too, once for AMIPS and once for the offset error
+    // (convergence_turn(), under EXPERIMENTAL_settle_refinement).
     // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
     // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
     // group -- split, collapse and swap back to back -- followed by one smoothing block of
@@ -4422,13 +4423,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
     m_split_off_longest = 0;
-    // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
-    // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
-    // settle_e_prev is the global offset error at the end of the previous turn, for turn 1 before
-    // its first group.
+    // EXPERIMENTAL_settle_refinement: the max-based exit and the two stuck-refines
+    // (convergence_turn()); the energy criterion's refinable sets, its sizing-floor warnings and
+    // its exit do not act. stuck carries the stall tests' previous maxima and cooldowns.
     const bool settle = m_offset_params.settle_refinement;
-    double settle_e_prev = 0.;
-    bool settle_e_prev_set = false;
+    StuckState stuck = stuck_state_start();
+    // Forced splits are vertex ids queued for the next split pass; ids left by an earlier pass or
+    // loop (a TetWild pass's last stall, a smart growth attempt restored from its snapshot) name
+    // other edges now.
+    m_force_split_edges.clear();
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
@@ -4437,10 +4440,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             // E before and after each group, the descent check (a collapse or swap group may not
             // raise it; a split group may).
             const double energy_before_group = global_energy();
-            if (settle && !settle_e_prev_set) {
-                settle_e_prev = offset_error();
-                settle_e_prev_set = true;
-            }
             const int vol_c0 = m_volume_reject_collapse.load(),
                       vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
             const int pl_c0 = m_plastic_reject_collapse.load(),
@@ -4684,11 +4683,12 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 ec.max_ring,
                 n);
         }
-        // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
-        // when the loop may exit, which then replaces EnergyCriterion::converged() below.
-        const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // EXPERIMENTAL_settle_refinement: the max-based exit and the two stuck-refines, after the
+        // consolidation (the forced splits are vertex ids); true when the loop may exit, which then
+        // replaces EnergyCriterion::converged() below.
+        const bool settle_exit = settle && convergence_turn(it + 1, stuck, refine);
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
-        // turn's final state, so what it carries is the sizing field the halving just lowered.
+        // turn's final state, so what it carries is the sizing field the refinement just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("end_{}S", it + 1));
@@ -4711,9 +4711,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // being a property of the mesh it is holding, where refinable is a request for work on
         // the next turn.
         //
-        // EXPERIMENTAL_settle_refinement: the settle exit (settled, no front face more than
-        // front_conv from the level set) in place of converged(); the criterion's measures are
-        // then diagnostics.
+        // EXPERIMENTAL_settle_refinement: convergence_turn()'s exit (max AMIPS below stop_energy,
+        // every offset face's stencil-point offset error below front_conv_frac()^2) in place of
+        // converged(); the criterion's measures are then diagnostics.
         const bool resolved = settle ? settle_exit : ec.converged();
         // fold_free (growth_mode "smart"): a converged loop with a folded offset face has failed,
         // judged here, before the verdict and the final TetWild pass, which it does not get.
@@ -4746,8 +4746,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 label,
                 m_offset_params.target_distance,
                 it + 1,
-                settle ? "settled, no front face over the bar (EXPERIMENTAL_settle_refinement); "
-                         "diagnostic: "
+                settle ? "max AMIPS and every stencil-point offset error within their bounds "
+                         "(EXPERIMENTAL_settle_refinement); diagnostic: "
                        : "",
                 ec.ring_exit ? std::string(ec.ring_name()) : std::string("faces"),
                 (ec.ring_exit ? ec.max_ring : ec.max_face) / ec.bar,
@@ -4764,8 +4764,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             m_quality_converged = amips < bar;
             if (settle) {
                 logger().info(
-                    "The front is resolved after {} iteration(s): the turn settled and no front "
-                    "face is more than front_conv from the level set "
+                    "The front is resolved after {} iteration(s): max AMIPS below stop_energy "
+                    "and every offset face's stencil-point offset error below front_conv_frac^2 "
                     "(EXPERIMENTAL_settle_refinement); offset faces max {:.4}x with {} over the "
                     "bar (diagnostic); front vertices max {:.4}x (diagnostic); max AMIPS {:.4} "
                     "against stop {:.4}",
@@ -4845,6 +4845,9 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
     // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no plastic medium
     // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
     build_final_envelopes();
+    // A loop's last stuck-refine may have queued forced splits by vertex ids the pass's mesh has
+    // renumbered since; the pass's own stall response queues its own.
+    m_force_split_edges.clear();
     m_tetwild_pass = true;
     // TetWild's own rules for the operations and the smoother (m_op_rules).
     const OpRules rules_was = m_op_rules;
@@ -5433,9 +5436,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
         // diagnostic and decide nothing.
         //
-        // EXPERIMENTAL_settle_refinement: the front half is the loop's settle exit, the one place
-        // that sets m_energy_verdict under the key; the criterion's measures and its sizing-floor
-        // fact (about refinable sets that do not act) are diagnostics.
+        // EXPERIMENTAL_settle_refinement: the front half is the loop's exit (convergence_turn()),
+        // the one place that sets m_energy_verdict under the key; the criterion's measures and its
+        // sizing-floor fact (about refinable sets that do not act) are diagnostics.
         const bool settle = m_offset_params.settle_refinement;
         front_ok = settle ? m_energy_verdict.has_value() : ec.converged();
         m_converged = front_ok && m_quality_converged;
@@ -5443,9 +5446,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         quality = quality_fact(front_ok);
         if (settle) {
             logger().info(
-                "[settle] verdict: front {} -- tested: the loop's settle exit (a settled turn with "
-                "no front face more than front_conv from the level set); the measures on the next "
-                "line are diagnostics",
+                "[convergence] verdict: front {} -- tested: the loop's exit (max AMIPS below "
+                "stop_energy, every offset face's stencil-point offset error below "
+                "front_conv_frac^2); the measures on the next line are diagnostics",
                 front_ok ? "resolved" : "NOT resolved");
         }
         if (ec.ring_exit) {

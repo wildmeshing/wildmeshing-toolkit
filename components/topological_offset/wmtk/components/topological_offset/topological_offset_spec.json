@@ -36,8 +36,6 @@
       "repulsion_rounds",
       "EXPERIMENTAL_split_energy_gate",
       "EXPERIMENTAL_settle_refinement",
-      "settle_rel_thresh",
-      "EXPERIMENTAL_settle_mark",
       "EXPERIMENTAL_damping",
       "EXPERIMENTAL_damping_factor",
       "optimize_construction",
@@ -294,24 +292,6 @@
     "doc": "2D and 3D. After the repulsion_smoothing_passes (if any) and before the march, at most this many rounds of the loop's operations: split, collapse and swap, each followed by its smoothing passes, shaped as interleaved_smoothing says. No refinement: the sizing field is never lowered, so every operation aims at the base edge length. No split of a marched edge (one end in the input complex): its midpoint would be a new outer end nearer the input. The collapses and swaps compare the per-tet energy of repulsion_smoothing_passes, repulsion terms included, as the loop's rules compare its energy. The input complex stays simplicially embedded, as the march needs it: a collapse or swap that would leave a cell off the complex whose complex vertices span an edge or face off the complex is refused. After every operation pass the construction labels are recomputed from the region tags, and the repulsion vertices follow the operations. Single-body offset_in or offset_out only (the embedding test reads the complex off the cells' labels); other selections, and in 2D a curve group, are refused with an error. The rounds stop as soon as every outer end is farther than target_distance + front_conv. Each round logs its operations' outcomes ([ops accounting], [swap reject], 3D only: the 2D engine has neither; the embedding refusals, which those counters have no name for, are counted on the round's own line), the maximum marchable distance and the max AMIPS; with debug_output a frame repulsion_round_<k> follows each round. The embedding test reads cells beyond an operation's lock, so run the rounds with num_threads 0. 0 (the default) = off."
   },
   {
-    "pointer": "/settle_rel_thresh",
-    "type": "float",
-    "default": 0.1,
-    "min": 0,
-    "doc": "3D (2026-10-22), read only under EXPERIMENTAL_settle_refinement: the settled gate's relative threshold, like TetWild's stuck_refine. A turn is settled when the global offset error fell by less than this fraction of its previous value, E_prev - E < settle_rel_thresh * |E_prev| (see EXPERIMENTAL_settle_refinement for E) -- signed, so a RISE in the error also settles (an oscillating front refines rather than iterating forever). 0 = only a turn whose error did not fall settles. Default 0.1."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_settle_mark",
-    "type": "string",
-    "options": [
-      "max",
-      "rms",
-      "vertex"
-    ],
-    "default": "vertex",
-    "doc": "EXPERIMENTAL (2026-10-09), with EXPERIMENTAL_settle_refinement: which test marks the front each turn (the halving and the exit are unchanged). \"max\": the face's largest distance from the level set, max(inside_f, outside_f), exceeds front_conv (inside_f = target_distance - min over f of d, exact; outside_f = the corner bound, min over input triangles P of the max of d_P at f's corners, minus target_distance, an upper bound). \"rms\": the face's share of the offset term's excess exceeds the bar energy of its area. The share, to first order in d - target_distance (divergence theorem on G = (1/2)(d - delta)^2 grad d; exact for any band shape, folds included, up to the curvature and medial-axis term), is X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA, theta the angle between the face's normal (pointing out of the band) and grad d, signed; the bar energy of the face is front_conv^2 area(f) / (2 delta). So f is marked when the mean over f of (d - delta)^2 cos(theta) exceeds front_conv^2. The mean is taken by the 3-edge-midpoint rule (weights 1/3), exact for quadratic integrands, so exact over a face whose points all have one input face's interior as nearest feature (d affine, grad d constant). Near an input edge or vertex (d curved) it is an approximation. Across a ridge of d (the medial axis, where two input faces are equally near: the inward offset of a convex edge, the outward offset of a concave one) it can miss the face's excess entirely: measured on the prism inward (2026-10-09), one face read 0.24 bar by this rule and 7.46 bars over a 91-point grid. A face along grad d (cos theta near 0) or turned back (cos theta < 0) has a share near 0 or negative and is not marked; the max test catches such a face. \"vertex\": a front vertex v is marked when |d(v) - target_distance| exceeds front_conv (d over all input triangles, exact at v), and its own sizing is halved; it says nothing about the points of a face between its corners. All three tests' numbers are logged every turn, whichever marks. Read only under EXPERIMENTAL_settle_refinement. \"vertex\" is the default."
-  },
-  {
     "pointer": "/EXPERIMENTAL_damping",
     "type": "bool",
     "default": false,
@@ -376,7 +356,7 @@
     "pointer": "/EXPERIMENTAL_settle_refinement",
     "type": "bool",
     "default": true,
-    "doc": "EXPERIMENTAL (2026-10-09), 3D. Each turn, after the energy criterion, the settle test decides whether the front has settled and, on a settled turn, judges it against the level set d = target_distance by distance and refines. SETTLED (since 2026-10-22, on the surface offset error): dE = E_prev - E, E the global offset error -- the sum over the offset faces of each face's AREA times the mean of ((d - target_distance) / target_distance)^2 over 3 interior points, barycentric (2/3, 1/6, 1/6) and its permutations (TopoOffsetTetMesh::offset_error(), face_offset_error_of(); since 2026-10-22 area weighted with no sample on a face's boundary, so E approximates (1/target_distance^2) times the integral of (d - target_distance)^2 over the offset surface, exactly where d is affine on a face; independent of stencil_order) -- at the end of the turn, E_prev at the end of the previous turn (turn 1: just before its first operation group). The turn is settled when dE < settle_rel_thresh * |E_prev| (see that key): the error's RELATIVE fall stalled, like TetWild's stuck_refine; signed, so a rise in the error also settles. An unsettled turn refines nothing and does not exit: the front is still moving. On a settled turn, under EXPERIMENTAL_settle_mark \"vertex\" (the default) a front vertex with |d(v) - target_distance| > front_conv is marked and its sizing scalar halved (down to the sizing floor); the face tests (\"max\", \"rms\") mark faces instead, see EXPERIMENTAL_settle_mark. A marked vertex (or face with every corner) at the floor cannot be refined, is counted and warned about, and blocks the exit like every marked one. Exit: settled and nothing marked. The run then ends as on the ordinary exit (the TetWild final pass when max AMIPS >= stop_energy), and this exit is the front half of the verdict. The energy criterion's own refinement (its refinable faces or vertices) and its exit test do not act; its turn line is still logged. One [settle] line per turn. true is the default; false = the energy criterion's refinement and exit."
+    "doc": "EXPERIMENTAL (2026-10-09), 3D. Since 2026-10-26 the loop's exit and refinement are TetWild's, on two bounded maxima (TopoOffsetTetMesh::convergence_turn(), once per turn after the consolidation): the max AMIPS over every cell against stop_energy (plastic AMIPS under use_rest_pose), and the max STENCIL-POINT OFFSET ERROR over every offset face -- ((d(q) - target_distance) / target_distance)^2 at each of a face's 3 interior points, barycentric (2/3, 1/6, 1/6) and its permutations (face_offset_point_max_of()) -- against front_conv_frac^2 = (front_conv / target_distance)^2, i.e. |d(q) - target_distance| < front_conv at every point. EXIT: max AMIPS < stop_energy and every offset face's points within their bound, no face unmeasurable. Otherwise the stall response of TetWild's mesh_improvement(), once per metric, each with its own cooldown (stuck_refine_cooldown) and only from the second turn: a max at or over its bound whose last fall stalled, (prev - cur) <= stuck_refine_stall_eps (cur - bound), refines. AMIPS: refine_sizing_around_worst(), TetWild's (the worst cells' longest edges force-split by the next split pass under stuck_refine_force_split, their vertices' sizing lowered by stuck_refine_factor, stuck_refine_rings / _num_worst / _min_scalar / _gradation). Offset error: every offset face with a point at or over the bound has its longest edge force-split by the next split pass (under stuck_refine_force_split) and its corners' sizing scalar halved, floored at max(min_sizing_scalar, min_edge_length / l) and graded by sizing_gradation (the front's own halving). One [convergence] line per turn. The run then ends as on the ordinary exit, and this exit is the front half of the verdict; since a converged loop has max AMIPS below stop_energy, the final TetWild pass (max AMIPS >= stop_energy, measured against the regular tet) runs only when use_rest_pose leaves the equilateral max over it. The energy criterion's own refinement (its refinable faces or vertices) and its exit test do not act; its turn line is still logged. Before 2026-10-26: a turn settled when the global offset error's relative fall was under settle_rel_thresh, then EXPERIMENTAL_settle_mark marked and halved the front; both keys are gone (a config that sets either is refused). true is the default; false = the energy criterion's refinement and exit."
   },
   {
     "pointer": "/EXPERIMENTAL_split_energy_gate",
@@ -533,13 +513,13 @@
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
     "default": 0.1,
-    "doc": "Fire the sizing refinement when an iteration's improvement is small next to the distance the metric still has to cover: (prev - cur) <= stall_eps * (cur - target). 0 means only when it does not improve at all."
+    "doc": "Fire the sizing refinement when an iteration's improvement is small next to the distance the metric still has to cover: (prev - cur) <= stall_eps * (cur - target). 0 means only when it does not improve at all. 3D, since 2026-10-26: also the loop's two stall tests under EXPERIMENTAL_settle_refinement, one on the max AMIPS (target stop_energy) and one on the max stencil-point offset error (target front_conv_frac^2)."
   },
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
     "default": 1,
-    "doc": "Iterations to skip after a sizing refinement before another may fire. Default 1, matching the tetwild component: the refined sizing needs one split/collapse round to act before the stall detector can fairly judge it. 0 allows one every iteration."
+    "doc": "Iterations to skip after a sizing refinement before another may fire. Default 1, matching the tetwild component: the refined sizing needs one split/collapse round to act before the stall detector can fairly judge it. 0 allows one every iteration. 3D, since 2026-10-26: the loop's two stall tests (EXPERIMENTAL_settle_refinement) each keep their own cooldown, counted in turns."
   },
   {
     "pointer": "/stuck_refine_num_worst",
@@ -575,7 +555,7 @@
     "pointer": "/stuck_refine_force_split",
     "type": "bool",
     "default": true,
-    "doc": "On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field."
+    "doc": "On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field. 3D, since 2026-10-26: also the loop's offset-error stuck-refine (EXPERIMENTAL_settle_refinement), which force-splits the longest edge of every offset face out of convergence."
   },
   {
     "pointer": "/sizing_collapse_min",

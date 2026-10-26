@@ -158,16 +158,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-09), 3D. A turn is settled when the global offset error
-    /// (TopoOffsetTetMesh::offset_error()) fell by less than settle_rel_thresh times its previous
-    /// value; a settled turn marks the front against the level set by distance -- settle_mark
-    /// below -- and halves the marked corners' sizing; exit = settled and nothing marked. The
-    /// energy criterion's own refinement and exit are off. See the spec doc.
+    /// EXPERIMENTAL (2026-10-09), 3D. Since 2026-10-26 the loop's exit and refinement are
+    /// TetWild's on two bounded maxima (TopoOffsetTetMesh::convergence_turn()): exit when the max
+    /// AMIPS is below stop_energy and every offset face's stencil-point offset error below
+    /// front_conv_frac()^2; else the stuck-refine (stuck_refine_* keys) for each max whose fall
+    /// stalled. The energy criterion's own refinement and exit are off. See the spec doc.
     bool settle_refinement = true;
-    /// 3D (2026-10-22), with settle_refinement: the settled gate's relative threshold, like
-    /// TetWild's stuck_refine. Settled when E_prev - E < settle_rel_thresh * |E_prev|, E the
-    /// global offset error -- signed, so a RISE in the error also settles. See the spec doc.
-    double settle_rel_thresh = 0.1;
     /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve of the loop may move its vertex at
     /// most damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
     /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
@@ -215,16 +211,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// TESTING (2026-10-16), 3D: an input complex of more than one connected piece is accepted;
     /// the settle tests then read the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
-    /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
-    /// each turn. "vertex" (the default): a front vertex's own |d - target_distance|
-    /// exceeds front_conv; its sizing is halved. "max": a face's max of
-    /// |d - target_distance| exceeds front_conv (the min of d exact, the max by the corner bound,
-    /// min over input triangles P of the max of d_P at the corners). "rms": a face's share of the
-    /// offset excess exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
-    /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
-    /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
-    /// 3-edge-midpoint rule. See the spec doc.
-    std::string settle_mark = "vertex";
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -316,10 +302,6 @@ struct Parameters : public wmtk::OptimizerParameters
         repulsion_rounds = json_params["repulsion_rounds"];
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
-        settle_rel_thresh = json_params["settle_rel_thresh"];
-        if (!(settle_rel_thresh >= 0.)) {
-            log_and_throw_error("settle_rel_thresh must be >= 0, not {}", settle_rel_thresh);
-        }
         damping = json_params["EXPERIMENTAL_damping"];
         damping_factor = json_params["EXPERIMENTAL_damping_factor"];
         if (!(damping_factor > 0.)) {
@@ -377,12 +359,6 @@ struct Parameters : public wmtk::OptimizerParameters
         }
         foldover_angle = json_params["foldover_angle"];
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
-        settle_mark = json_params["EXPERIMENTAL_settle_mark"];
-        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
-            log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
-                settle_mark);
-        }
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

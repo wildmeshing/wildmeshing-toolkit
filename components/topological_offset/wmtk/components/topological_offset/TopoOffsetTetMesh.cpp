@@ -2342,13 +2342,11 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
     //   distance_over_target  d / target_distance, the running loop's (a growth stage's own),
-    //                     every vertex: the settle loop's vertex test (EXPERIMENTAL_settle_mark
-    //                     "vertex") marks a front vertex where |this - 1| > front_conv /
-    //                     target_distance. NaN where input_distance is.
+    //                     every vertex: |this - 1| > front_conv / target_distance is a vertex
+    //                     more than front_conv from the level set. NaN where input_distance is.
     //   front_error_bars  (d - target_distance) / front_conv at a front vertex: signed, in
-    //                     bars, so |.| > 1 is what the settle loop's vertex test marks
-    //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
-    //                     inside (-) the level set.
+    //                     bars, so |.| > 1 is a vertex more than front_conv from the level set,
+    //                     and the sign says beyond (+) or inside (-) it.
     const double nan = std::numeric_limits<double>::quiet_NaN();
     fr.in_dist = VectorXd::Constant(vert_capacity(), nan);
     fr.dist_ratio = VectorXd::Constant(vert_capacity(), nan);
@@ -2507,12 +2505,12 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //                    vertex with an unmeasurable incident face has none. NaN where there
         //                    is no ring measure.
         //   settle_inside_bars   (target_distance - min over the face of d) / front_conv: how
-        //                        far the face reaches inside the level set, exact (the settle
-        //                        loop's inside_f, settle_refinement_turn()).
+        //                        far the face reaches inside the level set, exact (the old settle
+        //                        loop's inside_f; named for it).
         //   settle_outside_bars  (max over the face of d - target_distance) / front_conv: how far
         //                        it reaches beyond, by the corner bound min over P of max d_P at
-        //                        the corners (an upper bound). The settle loop's "max" test marks
-        //                        a face with either over 1.
+        //                        the corners (an upper bound). The old settle loop's "max" test
+        //                        marked a face with either over 1; diagnostics now.
         //   Both NaN before the input's triangles exist.
         //   field_normal_angle  front_face_field_angle(): the angle in degrees between the face's
         //                       normal, out of the band, and grad d at its centroid. NaN where it

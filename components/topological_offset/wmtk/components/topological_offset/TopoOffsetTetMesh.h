@@ -713,8 +713,8 @@ public:
      * int_B (d - delta) / delta dV, under EXPERIMENTAL_band_volume_rule as a corner bound, the
      * closed-form integral (ExactBandIntegral) or its front form -- was removed with that key and
      * all its code. The offset error is a SURFACE energy now: offset_error(), the sum over the
-     * offset faces of face_offset_error(), which the settle test, the front smoother and the
-     * front operations read; it is not part of E.
+     * offset faces of face_offset_error(), which the front smoother reads (the exit and the front
+     * operations read its per-point maxima, face_offset_point_max()); it is not part of E.
      *
      * WHERE E IS COMPARED (since 2026-10-22, see m_op_rules): the operations do not read it.
      * Collapses and swaps off the offset surface follow the base's max-of-AMIPS^3 rules; those on
@@ -1952,8 +1952,9 @@ public:
      * @brief THE GLOBAL OFFSET ERROR: face_offset_error() summed over offset_surface_faces(),
      * each face evaluated on the mesh's threads (diagnostic_parallel_for()) and the sum taken in
      * face order on the calling thread, so the result does not depend on the thread count.
-     * Unmeasurable faces contribute 0 and are counted in `n_unmeasurable` when asked. What the
-     * settle test's settled gate compares (settle_refinement_turn(), settle_rel_thresh).
+     * Unmeasurable faces contribute 0 and are counted in `n_unmeasurable` when asked. Since
+     * 2026-10-26 a diagnostic on the [convergence] line (convergence_turn()); the exit and the
+     * stuck-refines read the stencil-point maxima instead.
      */
     double offset_error(size_t* n_unmeasurable = nullptr) const;
     /// The STENCIL-POINT offset error of one offset face: the largest ((d(q) - target_distance) /
@@ -2378,14 +2379,58 @@ public:
     /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
     /// the bar.
     size_t refine_front_by_halving(const std::vector<size_t>& vertices);
-    /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when the
-    /// global offset error (offset_error()) fell by less than settle_rel_thresh times |e_prev|
-    /// since the previous turn (signed: a rise also settles). Only a settled turn tests the front
-    /// against the level set by distance (settle_mark; min_triangle_distance(),
-    /// min_max_corner_distance(), the per-vertex |d - target_distance|) and halves the marked
-    /// corners, when `refine_now`. Logs the turn's [settle] line. Returns settled and nothing
-    /// marked: the loop's exit. See the spec doc.
-    bool settle_refinement_turn(int turn, double& e_prev, bool refine_now);
+    /// TetWild's stall test (TetOptimizerMesh::optimization_stalled()) on any metric: the last
+    /// turn's fall is small against the distance still to cover, (prev - cur) <= eps (cur -
+    /// target). eps = stuck_refine_stall_eps.
+    static bool metric_stalled(double prev, double cur, double target, double eps)
+    {
+        return (prev - cur) <= eps * (cur - target);
+    }
+    /// One loop's state for convergence_turn(): the previous turn's max AMIPS and max
+    /// stencil-point offset error (-1 before the first turn), and each stuck-refine's cooldown
+    /// (starts at stuck_refine_cooldown, as mesh_improvement()'s does).
+    struct StuckState
+    {
+        double prev_amips = -1.;
+        double prev_offset = -1.;
+        int cooldown_amips = 0;
+        int cooldown_offset = 0;
+    };
+    StuckState stuck_state_start() const
+    {
+        StuckState s;
+        s.cooldown_amips = s.cooldown_offset = std::max(0, m_params.stuck_refine_cooldown);
+        return s;
+    }
+    /// A cell's AMIPS^3 as the loop's exit and its AMIPS stuck-refine read it: plastic_quality()
+    /// under the plastic medium (a plastic cell against its rest), else the stored engine quality
+    /// (cell_quality(), what TetWild's own exit reads).
+    double loop_cell_quality(const size_t tid) const
+    {
+        return m_plastic_active && !tetwild_rules() ? plastic_quality(tid) : cell_quality(tid);
+    }
+    /**
+     * @brief The offset stuck-refine, TetWild's stuck-refine on the offset error: every face in
+     * `faces` (a stencil point out of convergence) has its longest edge queued for one forced
+     * split by the next split pass (m_force_split_edges, split_edge_is_due()) and its corners'
+     * sizing halved (refine_front_by_halving(): floored, graded). Appends to
+     * m_force_split_edges. Returns the number of vertices lowered; `n_edges` the edges queued.
+     */
+    size_t offset_stuck_refine(
+        const std::vector<std::array<size_t, 3>>& faces,
+        size_t* n_edges = nullptr);
+    /**
+     * @brief EXPERIMENTAL_settle_refinement, one turn, after consolidation (since 2026-10-26):
+     * the loop's exit and its two stuck-refines. Converged = max AMIPS over every cell below
+     * stop_energy (loop_cell_quality()) AND every offset face's stencil-point offset error below
+     * front_conv_frac()^2 (face_offset_point_max()), no face unmeasurable. Otherwise, when
+     * `refine_now`, mesh_improvement()'s stall response once per metric, each with its own
+     * cooldown and only from the second turn: max AMIPS at or over stop_energy and stalled
+     * (optimization_stalled()) -> refine_sizing_around_worst(); max offset error at or over its
+     * bound and stalled (metric_stalled(), stuck_refine_stall_eps) -> offset_stuck_refine() on
+     * every face out of convergence. Logs the turn's [convergence] line. Returns converged.
+     */
+    bool convergence_turn(int turn, StuckState& s, bool refine_now);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -2413,7 +2458,9 @@ public:
         return !vertex_is_on_domain_boundary(vid);
     }
 
-    /// TetWild's stall-driven sizing refinement, verbatim; final pass only. See the 2D twin.
+    /// TetWild's stall-driven sizing refinement, verbatim: the TetWild passes (mesh_improvement())
+    /// and, since 2026-10-26, the loop's AMIPS stuck-refine (convergence_turn()), which ranks the
+    /// cells by loop_cell_quality(). See the 2D twin.
     size_t refine_sizing_around_worst(double max_metric) override;
 
     /// Why the final pass is stuck: a census of the tets stuck-refine is about to chase. The 3D
