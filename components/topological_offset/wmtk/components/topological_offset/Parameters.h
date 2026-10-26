@@ -91,6 +91,25 @@ struct Parameters : public wmtk::OptimizerParameters
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
+    /// Log-only: per operation group, the collapses and swaps that would make a pinned cell
+    /// (TopoOffsetTetMesh::m_pinned_counts; see the spec).
+    bool debug_pinned_counts = false;
+    /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
+    /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
+    bool front_pocket_split = false;
+    /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
+    /// and faces too, not only pinned cells.
+    bool front_spanned_split = false;
+    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains.
+    bool exit_no_folds = false;
+    /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
+    /// passes, cells on the wrong side of the level set flip between band and non-band where the
+    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default)
+    /// or "one_sided" (Uday's "energy" and "one_sided_tips" read the band term, which this branch
+    /// does not have).
+    std::string label_cleanup = "off";
+    /// DEBUG_trace_collapse (log-only, see the spec): vertex ids whose collapse attempts are logged.
+    std::vector<size_t> debug_trace_collapse;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -413,6 +432,31 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         debug_crossings = json_params["DEBUG_crossings"];
+        debug_pinned_counts = json_params["DEBUG_pinned_counts"];
+        front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
+        front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
+        exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
+        label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
+        if (label_cleanup != "off" && label_cleanup != "one_sided") {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup is \"off\" or \"one_sided\", not \"{}\" (\"energy\" "
+                "and \"one_sided_tips\" read the band term, which this branch does not have)",
+                label_cleanup);
+        }
+        // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
+        // operation passes and the condition-1 splits before the first smoothing pass; the other
+        // path has no such point.
+        if (label_cleanup != "off" && !front_pocket_split) {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"{}\" needs EXPERIMENTAL_front_pocket_split true: it "
+                "runs right before the condition-1 splits that precede the first smoothing pass of "
+                "each operation group",
+                label_cleanup);
+        }
+        debug_trace_collapse.clear();
+        for (const auto& v : json_params["DEBUG_trace_collapse"]) {
+            debug_trace_collapse.push_back(v.get<size_t>());
+        }
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];

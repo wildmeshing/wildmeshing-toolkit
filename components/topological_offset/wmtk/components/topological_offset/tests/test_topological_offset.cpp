@@ -3031,6 +3031,38 @@ TEST_CASE("convergence-keys", "[offset][3d]")
     CHECK_FALSE(verify({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_gap_refinement", true}}));
     CHECK_FALSE(verify({{"offset_amips_weight", 1.}}));
+    // PR #1119 merged 2026-10-26 without its band-energy / settle experiments: their keys are
+    // refused, and label_cleanup takes "off" or "one_sided" only (its other modes read the band
+    // term). Its kept keys go through.
+    for (const char* k :
+         {"EXPERIMENTAL_energy_collapse",
+          "EXPERIMENTAL_no_halving",
+          "EXPERIMENTAL_energy_split",
+          "EXPERIMENTAL_energy_only_ops",
+          "EXPERIMENTAL_energy_only_sizing_split",
+          "EXPERIMENTAL_energy_only_collapse_length_gate",
+          "EXPERIMENTAL_collapse_every_edge",
+          "EXPERIMENTAL_phase_loop",
+          "EXPERIMENTAL_phase_loop_connectivity_first",
+          "EXPERIMENTAL_smooth_to_rest"}) {
+        INFO(k);
+        CHECK_FALSE(verify({{k, true}}));
+    }
+    CHECK_FALSE(verify({{"EXPERIMENTAL_label_cleanup", "energy"}}));
+    CHECK_FALSE(verify({{"EXPERIMENTAL_label_cleanup", "one_sided_tips"}}));
+    const Parameters kept(injected(
+        {{"EXPERIMENTAL_front_pocket_split", true},
+         {"EXPERIMENTAL_front_spanned_split", true},
+         {"EXPERIMENTAL_exit_no_folds", true},
+         {"EXPERIMENTAL_label_cleanup", "one_sided"},
+         {"DEBUG_pinned_counts", true},
+         {"DEBUG_trace_collapse", {1, 2}}}));
+    CHECK(kept.front_pocket_split);
+    CHECK(kept.front_spanned_split);
+    CHECK(kept.exit_no_folds);
+    CHECK(kept.label_cleanup == "one_sided");
+    CHECK(kept.debug_pinned_counts);
+    CHECK(kept.debug_trace_collapse == std::vector<size_t>{1, 2});
 }
 
 TEST_CASE("stuck-refine-stall", "[offset][3d]")
@@ -3574,4 +3606,323 @@ TEST_CASE("construction-splits-carry-sizing", "[split_op][3d]")
         REQUIRE(mesh.split_tet(mesh.tuple_from_tet(0), garbage));
         CHECK(new_scalar() == (s[0] + s[1] + s[2] + s[3]) / 4);
     }
+}
+
+namespace {
+
+/// The pocket-split fixtures (TopoOffsetTetMesh::front_pocket_split()). The corner cell
+/// P = (o, x, y, z) -- o the origin, x, y, z the unit points on the axes -- is background
+/// (label 0) and tet 0. On the face of P in the plane where coordinate a is 0, for each axis a in
+/// `axes`, sits a band blob: the tet on that face with its apex u 0.5 beyond the face's centroid,
+/// coned from its own centroid e into four band cells (label 2). A blob lies where coordinate a
+/// is <= 0 and the other two are >= 0, so no two cells overlap, and every blob cell has e, which
+/// is on no offset face, as a corner. The offset surface (face_is_offset_surface_live()) is each
+/// blob's face against P and its three faces on the domain boundary. Vertex ids: o 0, x 1, y 2,
+/// z 3, then u and e of each blob in turn. The front flags are derived from the labels
+/// (refresh_offset_membership()), and every split is the loop's (EdgeSplitMode::Optimization).
+/// `cone`: P is instead coned from its centroid c (vertex 4, before the blobs) into four cells, so
+/// no cell of P is pinned while P's edges stay where they were.
+std::unique_ptr<TopoOffsetTetMesh>
+pocket_mesh(Parameters& param, const std::vector<int>& axes, const bool cone = false)
+{
+    std::vector<Vector3d> pos = {
+        Vector3d(0., 0., 0.),
+        Vector3d(1., 0., 0.),
+        Vector3d(0., 1., 0.),
+        Vector3d(0., 0., 1.)};
+    std::vector<std::array<int, 4>> T = {{{0, 1, 2, 3}}};
+    std::vector<int> labels = {0};
+    if (cone) {
+        pos.push_back(Vector3d(0.25, 0.25, 0.25));
+        T = {{{0, 1, 2, 4}}, {{0, 1, 4, 3}}, {{0, 4, 2, 3}}, {{4, 1, 2, 3}}};
+        labels = {0, 0, 0, 0};
+    }
+    for (const int a : axes) {
+        // The face of P in the plane coordinate a = 0: every corner but the one on axis a.
+        std::array<int, 3> f{};
+        int n = 0;
+        for (int i = 0; i < 4; ++i) {
+            if (i != a + 1) f[size_t(n++)] = i;
+        }
+        const Vector3d& p0 = pos[size_t(f[0])];
+        const Vector3d& p1 = pos[size_t(f[1])];
+        const Vector3d& p2 = pos[size_t(f[2])];
+        Vector3d u = (p0 + p1 + p2) / 3.;
+        u[a] = -0.5;
+        const Vector3d e = (p0 + p1 + p2 + u) / 4.;
+        const int iu = int(pos.size()), ie = iu + 1;
+        pos.push_back(u);
+        pos.push_back(e);
+        T.push_back({{f[0], f[1], f[2], ie}});
+        T.push_back({{f[0], f[1], iu, ie}});
+        T.push_back({{f[1], f[2], iu, ie}});
+        T.push_back({{f[2], f[0], iu, ie}});
+        labels.insert(labels.end(), 4, 2);
+    }
+    Eigen::MatrixXd V(int(pos.size()), 3);
+    for (size_t i = 0; i < pos.size(); ++i) V.row(int(i)) = pos[i].transpose();
+    auto mesh = energy_mesh(param, V, T, labels, plane_field());
+    for (const TetMesh::Tuple& v : mesh->get_vertices()) {
+        mesh->refresh_offset_membership(v.vid(*mesh));
+    }
+    mesh->m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Optimization;
+    return mesh;
+}
+
+/// The pinned cells, counted from the definition: outside the input complex, all four corners
+/// front vertices (m_is_on_offset).
+size_t count_pinned(const TopoOffsetTetMesh& m)
+{
+    size_t n = 0;
+    for (const TetMesh::Tuple& t : m.get_tets()) {
+        const size_t tid = t.tid(m);
+        if (m.cell_is_input_complex(tid)) continue;
+        const auto vs = m.oriented_tet_vids(tid);
+        if (std::all_of(vs.begin(), vs.end(), [&](const size_t v) {
+                return m.m_vertex_extra[v].m_is_on_offset;
+            })) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/// The spanned edges (front_pocket_split()'s EXPERIMENTAL_front_spanned_split): both ends front
+/// vertices, on no offset-surface face, no cell around them in the input complex.
+size_t count_spanned_edges(const TopoOffsetTetMesh& m)
+{
+    size_t n = 0;
+    for (const TetMesh::Tuple& e : m.get_edges()) {
+        const size_t a = e.vid(m), b = e.switch_vertex(m).vid(m);
+        if (!m.m_vertex_extra[a].m_is_on_offset || !m.m_vertex_extra[b].m_is_on_offset) continue;
+        if (m.edge_is_offset_surface_live(a, b)) continue;
+        const auto tids = m.get_incident_tids_for_edge(a, b);
+        if (std::any_of(tids.begin(), tids.end(), [&](const size_t t) {
+                return m.cell_is_input_complex(t);
+            })) {
+            continue;
+        }
+        ++n;
+    }
+    return n;
+}
+
+/// Whether every vertex's front flag is what the cell labels say (offset_membership_mismatches()).
+bool front_flags_live(const TopoOffsetTetMesh& m)
+{
+    const auto mismatches = m.offset_membership_mismatches();
+    return mismatches.first == 0 && mismatches.second == 0;
+}
+
+/// The live cells as sorted corner arrays, sorted: the connectivity, independent of tet ids.
+std::vector<std::array<size_t, 4>> sorted_cells(const TopoOffsetTetMesh& m)
+{
+    std::vector<std::array<size_t, 4>> cells;
+    for (const TetMesh::Tuple& t : m.get_tets()) {
+        auto vs = m.oriented_tet_vids(t.tid(m));
+        std::sort(vs.begin(), vs.end());
+        cells.push_back(vs);
+    }
+    std::sort(cells.begin(), cells.end());
+    return cells;
+}
+
+bool has_face(const std::vector<std::array<size_t, 3>>& faces, std::array<size_t, 3> f)
+{
+    std::sort(f.begin(), f.end());
+    return std::find(faces.begin(), faces.end(), f) != faces.end();
+}
+
+} // namespace
+
+TEST_CASE("pocket-split-pinned-cell", "[offset][3d][pocket_split]")
+{
+    // EXPERIMENTAL_front_pocket_split on one pinned cell with one edge off the offset surface: P
+    // with blobs on its faces z = 0 and x = 0, so o, x, y are on the one offset face of P and z
+    // on the other, and the edge (x, z) is on neither. The slot splits (x, z), whose only cell is
+    // P; both children have the midpoint, off the offset surface, as a corner, so no pinned cell
+    // is left, and the offset surface, none of whose faces has the split edge, is the same set of
+    // faces.
+    Parameters param;
+    auto mesh = pocket_mesh(param, {2, 0});
+    mesh->m_offset_params.front_pocket_split = true;
+    // The premises: P is the one pinned cell, and (x, z) is its one edge off the offset surface.
+    REQUIRE(count_pinned(*mesh) == 1);
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = i + 1; j < 4; ++j) {
+            INFO("edge " << i << " " << j);
+            REQUIRE(mesh->edge_is_offset_surface_live(i, j) == !(i == 1 && j == 3));
+        }
+    }
+    REQUIRE(front_flags_live(*mesh));
+    const auto faces0 = mesh->offset_surface_faces();
+    const size_t n_cells0 = mesh->get_tets().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live(*mesh));
+    CHECK(mesh->offset_surface_faces() == faces0);
+    // One split, of (x, z): one vertex and one cell more, and the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_tets().size() == n_cells0 + 1);
+    CHECK(mesh->get_incident_tids_for_edge(1, 3).empty());
+}
+
+TEST_CASE("pocket-split-six-edge-cell", "[offset][3d][pocket_split]")
+{
+    // A pinned cell with all six edges on the offset surface: P with blobs on its three faces
+    // through o, so (x, y, z) is its one face that is not an offset face. The slot splits an edge
+    // (p, q) of (x, y, z) at m, on the offset surface: P's two children are pinned, each with the
+    // edge (m, c) off it, c the face's third corner, and the next round splits (m, c) at
+    // (p + q + 2c) / 4, a corner of all four of P's descendants. Two splits, no pinned cell left;
+    // the offset surface is the same point set, its faces through (p, q) halved at m.
+    Parameters param;
+    auto mesh = pocket_mesh(param, {0, 1, 2});
+    mesh->m_offset_params.front_pocket_split = true;
+    // The premises: P is the one pinned cell, its six edges are on the offset surface, and so are
+    // its faces but (x, y, z).
+    REQUIRE(count_pinned(*mesh) == 1);
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = i + 1; j < 4; ++j) REQUIRE(mesh->edge_is_offset_surface_live(i, j));
+    }
+    REQUIRE(front_flags_live(*mesh));
+    const auto faces0 = mesh->offset_surface_faces();
+    REQUIRE_FALSE(has_face(faces0, {{1, 2, 3}}));
+    REQUIRE(has_face(faces0, {{0, 1, 2}}));
+    REQUIRE(has_face(faces0, {{0, 1, 3}}));
+    REQUIRE(has_face(faces0, {{0, 2, 3}}));
+    const size_t n_cells0 = mesh->get_tets().size(), n_verts0 = mesh->get_vertices().size();
+    std::vector<Vector3d> pos0;
+    for (size_t v = 0; v < n_verts0; ++v) pos0.push_back(mesh->m_vertex_attribute[v].m_posf);
+
+    mesh->front_pocket_split("test");
+
+    CHECK(count_pinned(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live(*mesh));
+    // Two splits: m on the offset surface, n off it. (p, q) is an edge of P and of two cells of
+    // the blob on (o, p, q); (m, c) of P's two children alone: five cells more.
+    std::vector<size_t> added;
+    for (const TetMesh::Tuple& v : mesh->get_vertices()) {
+        if (v.vid(*mesh) >= n_verts0) added.push_back(v.vid(*mesh));
+    }
+    REQUIRE(added.size() == 2);
+    CHECK(mesh->get_tets().size() == n_cells0 + 5);
+    size_t m = added[0], n = added[1];
+    if (!mesh->m_vertex_extra[m].m_is_on_offset) std::swap(m, n);
+    REQUIRE(mesh->m_vertex_extra[m].m_is_on_offset);
+    REQUIRE_FALSE(mesh->m_vertex_extra[n].m_is_on_offset);
+    // m is the midpoint of an edge (p, q) of (x, y, z), and n is (p + q + 2c) / 4: the corner
+    // coordinates are 0 and 1, so both are exact.
+    const Vector3d xm = mesh->m_vertex_attribute[m].m_posf;
+    const Vector3d xn = mesh->m_vertex_attribute[n].m_posf;
+    size_t p = 0, q = 0, c = 0;
+    for (size_t i = 1; i < 4; ++i) {
+        for (size_t j = i + 1; j < 4; ++j) {
+            if (xm == (pos0[i] + pos0[j]) / 2.) {
+                p = i;
+                q = j;
+                c = 6 - i - j;
+            }
+        }
+    }
+    REQUIRE(p != 0);
+    CHECK(xn == (pos0[p] + pos0[q] + 2. * pos0[c]) / 4.);
+    // The offset surface as a point set: a face before without both p and q is still a face, one
+    // with both is gone; a face now without m is a face before, and one with m is a half of a face
+    // before through (p, q).
+    const auto faces1 = mesh->offset_surface_faces();
+    const auto holds = [](const std::array<size_t, 3>& f, const size_t v) {
+        return std::find(f.begin(), f.end(), v) != f.end();
+    };
+    size_t through_pq = 0;
+    for (const auto& f : faces0) {
+        const bool pq = holds(f, p) && holds(f, q);
+        if (pq) ++through_pq;
+        CHECK(has_face(faces1, f) == !pq);
+    }
+    CHECK(through_pq == 2); // (o, p, q), and the blob's face on the domain boundary
+    size_t with_m = 0;
+    for (const auto& f : faces1) {
+        if (!holds(f, m)) {
+            CHECK(has_face(faces0, f));
+            continue;
+        }
+        ++with_m;
+        std::array<size_t, 3> to_p = f, to_q = f;
+        std::replace(to_p.begin(), to_p.end(), m, p);
+        std::replace(to_q.begin(), to_q.end(), m, q);
+        CHECK(
+            ((holds(to_p, q) && has_face(faces0, to_p)) ||
+             (holds(to_q, p) && has_face(faces0, to_q))));
+    }
+    CHECK(with_m == 2 * through_pq);
+}
+
+TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
+{
+    // With EXPERIMENTAL_front_pocket_split false (the default) the slot is a no-op, and so it is
+    // in a TetWild pass with the key on: the first fixture's pinned cell stays and the mesh is
+    // unchanged.
+    Parameters param;
+    auto mesh = pocket_mesh(param, {2, 0});
+    REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
+    REQUIRE(count_pinned(*mesh) == 1);
+    const auto cells0 = sorted_cells(*mesh);
+    const auto faces0 = mesh->offset_surface_faces();
+    const size_t n_verts0 = mesh->get_vertices().size();
+    const auto unchanged = [&]() {
+        CHECK(count_pinned(*mesh) == 1);
+        CHECK(mesh->get_vertices().size() == n_verts0);
+        CHECK(sorted_cells(*mesh) == cells0);
+        CHECK(mesh->offset_surface_faces() == faces0);
+    };
+
+    mesh->front_pocket_split("test");
+    unchanged();
+
+    mesh->m_offset_params.front_pocket_split = true;
+    mesh->m_tetwild_pass = true;
+    mesh->front_pocket_split("test");
+    unchanged();
+    mesh->m_tetwild_pass = false;
+}
+
+TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
+{
+    // EXPERIMENTAL_front_spanned_split on a spanned edge with no pinned cell: the first fixture
+    // with P coned from its centroid c, so (x, z) is still on no offset face while both its cells,
+    // (o, x, z, c) and (x, y, z, c), have c off the front. The pinned-cell split alone leaves it;
+    // with the key, the slot splits (x, z), and the offset surface is the same set of faces.
+    Parameters param;
+    auto mesh = pocket_mesh(param, {2, 0}, true);
+    mesh->m_offset_params.front_pocket_split = true;
+    REQUIRE(count_pinned(*mesh) == 0);
+    REQUIRE_FALSE(mesh->edge_is_offset_surface_live(1, 3));
+    REQUIRE(mesh->get_incident_tids_for_edge(1, 3).size() == 2);
+    REQUIRE(count_spanned_edges(*mesh) == 1);
+    REQUIRE(front_flags_live(*mesh));
+    const auto faces0 = mesh->offset_surface_faces();
+    const auto cells0 = sorted_cells(*mesh);
+    const size_t n_cells0 = mesh->get_tets().size(), n_verts0 = mesh->get_vertices().size();
+
+    mesh->front_pocket_split("test"); // key off: nothing pinned, nothing split
+    CHECK(sorted_cells(*mesh) == cells0);
+    CHECK(count_spanned_edges(*mesh) == 1);
+
+    mesh->m_offset_params.front_spanned_split = true;
+    mesh->front_pocket_split("test");
+
+    CHECK(count_spanned_edges(*mesh) == 0);
+    CHECK(count_pinned(*mesh) == 0);
+    CHECK(mesh->check_mesh_connectivity_validity());
+    CHECK(front_flags_live(*mesh));
+    CHECK(mesh->offset_surface_faces() == faces0);
+    // One split, of (x, z): one vertex, off the front, and two cells more; the edge is gone.
+    CHECK(mesh->get_vertices().size() == n_verts0 + 1);
+    CHECK(mesh->get_tets().size() == n_cells0 + 2);
+    CHECK(mesh->get_incident_tids_for_edge(1, 3).empty());
+    CHECK_FALSE(mesh->m_vertex_extra[n_verts0].m_is_on_offset);
 }

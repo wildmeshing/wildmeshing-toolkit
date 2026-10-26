@@ -35,13 +35,19 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         // A waiting split is not lost. When the longer edge is split, the renewal re-queues every
         // edge of the new tets, this one among them, and run_localized_to_convergence retries a
         // failure whose endpoints a success touched.
+        //
+        // A pocket split (front_pocket_split()) does not wait: it is one serial call outside the
+        // pass, nothing retries it, and a refused one leaves its pinned cell to the smoother.
+        // MEASURED with the wait (cube_in, target 0.3, 7 turns): 580 pocket splits refused by it
+        // against 248 committed, and 46 of 55 pinned cells left before turn 1's collapse group's
+        // first smoothing pass. It is still counted as off the longest edge.
         const double l2 = get_length2(t);
         bool off_longest = false;
         for (const Tuple& tet : get_incident_tets_for_edge(t)) {
             for (int j = 0; j < 6; ++j) {
                 const Tuple f = tuple_from_edge(tet.tid(*this), j);
                 if (!(get_length2(f) > l2)) continue;
-                if (split_edge_is_due(f)) {
+                if (!m_pocket_splitting && split_edge_is_due(f)) {
                     ++m_split_order_waits;
                     return false;
                 }
@@ -81,6 +87,7 @@ bool TopoOffsetTetMesh::split_edge_is_due(const Tuple& e) const
 void TopoOffsetTetMesh::op_event(const OpKind k, const OpEvent e) const
 {
     TetOptimizerMesh::op_event(k, e);
+    if (m_offset_params.debug_pinned_counts) pinned_count_outcome(k, e);
     if (k != OpKind::split) return;
     // Counted here because `committed` is the one place a split is known to have survived both
     // hooks and invariants(); the flag is cleared at `attempt`, so a marching split never counts.
