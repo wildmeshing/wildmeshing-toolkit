@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/io/ComponentIO.hpp>
+
 #include <nlohmann/json.hpp>
 #include <string>
 #include <wmtk/Types.hpp>
@@ -24,6 +26,7 @@ struct InputData
  * @brief Read a .msh file that contains tags.
  */
 InputData read_image_msh(const std::string& path);
+InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope = nullptr);
 
 /**
  * @brief Read one or multiple meshes and convert them into a tet mesh.
@@ -33,7 +36,8 @@ InputData read_image_msh(const std::string& path);
 InputData read_mesh(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
-    const nlohmann::json& json_params);
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io = nullptr);
 
 /**
  * @brief Read one or multiple 2D curve networks and convert them into a tagged triangle mesh.
@@ -44,7 +48,8 @@ InputData read_mesh(
 InputData read_curves(
     const std::vector<std::string>& input_paths,
     const std::string& output_filename,
-    const nlohmann::json& json_params);
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io = nullptr);
 
 /**
  * @brief Decide whether an input is 2D or 3D.
@@ -59,6 +64,7 @@ InputData read_curves(
  */
 int resolve_input_dimension(
     const std::vector<std::string>& input_paths,
-    const nlohmann::json& json_params);
+    const nlohmann::json& json_params,
+    const io::ComponentIO* component_io = nullptr);
 
 } // namespace wmtk::components::simwild

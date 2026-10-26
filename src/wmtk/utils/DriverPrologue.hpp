@@ -53,16 +53,4 @@ inline std::filesystem::path verify_and_setup_logger(
     return root;
 }
 
-/// Resolve every entry of json_params["input"] against `root`.
-inline std::vector<std::string> resolve_input_paths(
-    const nlohmann::json& json_params,
-    const std::filesystem::path& root)
-{
-    std::vector<std::string> input_paths = json_params["input"];
-    for (std::string& p : input_paths) {
-        p = resolve_path(root, p).string();
-    }
-    return input_paths;
-}
-
 } // namespace wmtk::utils

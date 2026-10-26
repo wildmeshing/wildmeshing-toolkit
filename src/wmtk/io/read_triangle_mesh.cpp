@@ -39,9 +39,9 @@ namespace wmtk::io {
 void clean_triangle_mesh(
     MatrixXd& V,
     MatrixXi& F,
-    double tol_rel = -1,
-    double tol_abs = -1,
-    std::vector<int>* face_tags = nullptr)
+    double tol_rel,
+    double tol_abs,
+    std::vector<int>* face_tags)
 {
     assert(face_tags == nullptr || face_tags->size() == size_t(F.rows()));
     if (tol_abs >= 0 && tol_rel >= 0) {

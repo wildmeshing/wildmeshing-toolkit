@@ -2,6 +2,10 @@
 
 #include <wmtk/Types.hpp>
 
+namespace wmtk::io {
+class ComponentIO;
+}
+
 namespace wmtk::utils {
 
 /**
@@ -80,6 +84,7 @@ void read_input_curves(
     MatrixXd& V_all,
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
-    std::vector<MatrixXi>& Es_out);
+    std::vector<MatrixXi>& Es_out,
+    const io::ComponentIO* component_io = nullptr);
 
 } // namespace wmtk::utils

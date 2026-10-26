@@ -9,6 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
+#include "mesh_conversion.hpp"
 
 // components
 #include "../components_include.hpp"
@@ -86,7 +87,49 @@ private:
 PYBIND11_MODULE(wildmeshing, m, py::mod_gil_not_used())
 {
     m.doc() = "Python bindings for the Wildmeshing-Toolkit"; // optional module docstring
-    m.def("wildmeshing", &wmtk_wrapper, "Wildmeshing-Toolkit application");
+    m.def("wildmeshing", &wmtk_wrapper, "options"_a, "Wildmeshing-Toolkit application");
+
+    std::map<std::string, std::function<void(nlohmann::json)>> components_map;
+#include "../components_map.hpp"
+    std::map<std::string, wmtk::python::MemoryComponent> memory_components;
+#include "../components_memory_map.hpp"
+    for (const auto& [name, component] : memory_components) {
+        m.def(
+            name.c_str(),
+            [component](const py::dict& options, const py::dict& meshes) {
+                return wmtk::python::call_component(component, options, meshes);
+            },
+            "options"_a,
+            "meshes"_a,
+            "Run on named NumPy mesh dictionaries and return (meshes, report) without file I/O. "
+            "Component calls run one at a time per process.");
+        m.def(
+            name.c_str(),
+            [name, component = components_map.at(name)](const py::dict& options) {
+                nlohmann::json params = options;
+                if (!params.contains("application")) params["application"] = name;
+                py::gil_scoped_release release;
+                component(std::move(params));
+            },
+            "options"_a,
+            "Run the existing file-based component interface.");
+    }
+    m.def(
+        "wildmeshing",
+        [memory_components](const py::dict& options, const py::dict& meshes) {
+            const nlohmann::json params = options;
+            if (!params.contains("application"))
+                throw std::runtime_error("JSON input must contain entry `application`.");
+            const auto name = params.at("application").get<std::string>();
+            const auto it = memory_components.find(name);
+            if (it == memory_components.end())
+                throw std::runtime_error("Application " + name + " unknown");
+            return wmtk::python::call_component(it->second, params, meshes);
+        },
+        "options"_a,
+        "meshes"_a,
+        "Dispatch an in-memory component using options['application'].");
+    wmtk::python::bind_mesh_io(m);
 
     py::class_<PyExpression>(m, "Expression")
         .def(
