@@ -1083,8 +1083,11 @@ public:
     bool offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const;
     /// The real folds now: offset-surface edges with exactly two offset faces whose normals out of
     /// the band are within 30 degrees of opposite (the edge of a zero-volume sheet, Lemma 5 of the
-    /// case table, 2026-10-24); `corners`, when given, marks the corners of every fold's two faces.
-    size_t count_real_folds(std::vector<char>* corners = nullptr) const;
+    /// case table, 2026-10-24); `corners`, when given, marks the corners of every fold's two faces,
+    /// and `faces`, when given, receives those faces as sorted vertex triples.
+    size_t count_real_folds(
+        std::vector<char>* corners = nullptr,
+        std::vector<std::array<size_t, 3>>* faces = nullptr) const;
     /// Whether edge (a, b) lies on the band's outer surface: some incident face does.
     bool edge_is_offset_surface_live(size_t a, size_t b) const;
     /// Every live offset-surface face as a sorted vertex triple.
@@ -2630,7 +2633,7 @@ public:
         VectorXd labels, order, vid, sizing;
         VectorXd in_dist, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.

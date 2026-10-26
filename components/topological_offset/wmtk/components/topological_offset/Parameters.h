@@ -221,8 +221,8 @@ struct Parameters : public wmtk::OptimizerParameters
     int incremental_growth_steps = 4;
     /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
     /// the field's normal (grad d at its centroid) exceeds this many degrees
-    /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face offset_foldover
-    /// and the end-of-run [foldover] count. See the spec doc.
+    /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face
+    /// field_angle_foldover and the end-of-run [foldover] count. See the spec doc.
     double foldover_angle = 30.;
     /// DEBUG (2026-10-20), 3D: debug frames for a remote machine short on space -- overrides
     /// DEBUG_output (sets it, so every debug computation runs) and writes only the constructed

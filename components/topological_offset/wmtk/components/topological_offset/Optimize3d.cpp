@@ -3902,7 +3902,9 @@ bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d&
     return true;
 }
 
-size_t TopoOffsetTetMesh::count_real_folds(std::vector<char>* corners) const
+size_t TopoOffsetTetMesh::count_real_folds(
+    std::vector<char>* corners,
+    std::vector<std::array<size_t, 3>>* faces) const
 {
     // Each live offset face once, its normal out of the band; then the edges with exactly two.
     // Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
@@ -3925,9 +3927,15 @@ size_t TopoOffsetTetMesh::count_real_folds(std::vector<char>* corners) const
     for (const auto& [e, fs] : by_edge) {
         if (fs.size() != 2 || fs[0].second.dot(fs[1].second) >= kCos150) continue;
         ++folds;
-        if (!corners) continue;
         for (const auto& [fv, n] : fs) {
-            for (const size_t v : fv) (*corners)[v] = 1;
+            if (corners) {
+                for (const size_t v : fv) (*corners)[v] = 1;
+            }
+            if (faces) {
+                std::array<size_t, 3> s = fv;
+                std::sort(s.begin(), s.end());
+                faces->push_back(s);
+            }
         }
     }
     return folds;
@@ -6099,8 +6107,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 worst_at[2],
                 n_unmeasured,
                 m_offset_params.debug_output
-                    ? "The per-face flag offset_foldover is on the debug frames' _off files."
-                    : "Set DEBUG_output to get the per-face offset_foldover field.");
+                    ? "The per-face flag field_angle_foldover is on the debug frames' _off files."
+                    : "Set DEBUG_output to get the per-face field_angle_foldover field.");
         }
     }
 
