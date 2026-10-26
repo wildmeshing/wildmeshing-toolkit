@@ -131,7 +131,6 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
         }
         record_change(true);
         count_damped_move(vid, x0, opts.max_step);
-        count_damped_front_move(vid, x0, opts.max_step);
         if (m_offset_params.debug_crossings) {
             for (size_t k = 0; k < nb.size(); ++k) {
                 const double after = ring_measure_at(nb[k]);

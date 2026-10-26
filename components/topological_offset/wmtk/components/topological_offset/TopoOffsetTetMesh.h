@@ -498,39 +498,6 @@ public:
      * after the operation passes; a no-op with the key "off".
      */
     void label_cleanup(const std::string& where);
-    /// EXPERIMENTAL_energy_collapse (see the spec): after each smoothing pass, every collapse of a
-    /// front vertex onto a front neighbour along an offset-surface edge is tried, at any length,
-    /// under the engine's checks and the energy rule; serial, to a fixed point.
-    void front_energy_collapse(const std::string& where);
-    /// EXPERIMENTAL_energy_split (see the spec): after each smoothing pass, every edge of a cell
-    /// with a front corner is split once, longest first; split_edge_after() moves the new vertex
-    /// by the smoother and keeps the split only if the ring's energy fell by more than the bar of
-    /// the new vertex's front faces. Serial, one sweep.
-    void front_energy_split(const std::string& where);
-    /// Set while front_energy_split() splits: no longest-edge wait, and split_edge_after() applies
-    /// the energy rule above.
-    bool m_energy_splitting = false;
-    size_t m_energy_split_refused = 0;
-    /**
-     * @brief DEBUG_trace_collapse (log-only): one [trace collapse] line per collapse attempt with
-     * an end in debug_trace_collapse -- removed vertex v1 and survivor v2, their front flags, the
-     * outcome, the refusal reasons (the engine's CollapseReject counters read before and after the
-     * attempt, so exact on one thread only), and for an attempt that reached the energy rule its
-     * two sums split into band and AMIPS parts. Changes no result.
-     */
-    struct TraceCollapse
-    {
-        bool open = false, energy = false;
-        size_t v1 = 0, v2 = 0;
-        double length = 0.;
-        std::array<long, size_t(CollapseReject::COUNT)> before{};
-        double e_before = 0., a_before = 0., e_after = 0., a_after = 0.;
-    };
-    TraceCollapse m_trace_collapse;
-    /// Opens an attempt when t's ends include a traced vertex; false when none is traced.
-    bool trace_collapse_begin(const Tuple& t);
-    /// Logs the open attempt with its outcome and closes it.
-    void trace_collapse_end(const char* outcome);
     static constexpr int kPocketMaxRounds = 10;
     /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
     bool m_pocket_splitting = false;
@@ -949,11 +916,6 @@ public:
     /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of tet_energy() (taken in
     /// split_before_cells()), and the splits refused for not lowering it, per operation group.
     mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
-    /// EXPERIMENTAL_energy_only_sizing_split: the sizing gate's splitting_l2 while energy_only_ops
-    /// has set the pass's to 0 (-1 otherwise), and whether the split in hand is one the sizing
-    /// field asks for, which skips the energy gate.
-    double m_sizing_split_l2 = -1.;
-    mutable wmtk::threading::enumerable_thread_specific<char> m_split_sizing_due;
     mutable std::atomic<int> m_volume_reject_split{0};
 
     /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'.
@@ -1333,61 +1295,6 @@ public:
         return off;
     }
     void op_event(OpKind k, OpEvent e) const override;
-
-    // ------- DEBUG_pinned_counts (count only: no operation is refused) -------
-    /**
-     * @brief DEBUG_pinned_counts. Counted: the operations that would make a pinned cell
-     * (front_pocket_split() defines it), i.e. what a rule refusing them would refuse. A new cell
-     * keeps its old cell's label in a collapse, and takes the ring's one label in an interior
-     * swap (swap_capture_tag()).
-     *   - collapse of v1 onto v2, v1 off the front and v2 on it: a cell (v1, p, q, r) of v1's
-     *     ring without v2, outside the input complex, with p, q, r on the front
-     *     (collapse_before_vertex(), after its own refusals);
-     *   - interior 3-2 of edge (a, b), ring link p, q, r: (a, p, q, r) or (b, p, q, r) pinned;
-     *     interior face swap of (v0, v1, v2), apexes v3, v4: some (v3, v4, vi, vj) pinned (both
-     *     in swap_before_interior(), after its own refusals);
-     *   - interior 4-4 / 5-6: per case the engine scores (swap_edge_44_energy()), whether it
-     *     has a pinned cell -- a case such a rule would drop -- and per swap whether it would
-     *     drop every case scored.
-     * Real attempts only, not a screened pass's dry runs. Surface flips are not counted.
-     * Index: [0 the loop, 1 a TetWild pass (m_tetwild_pass)][OpKind].
-     */
-    struct PinnedCounts
-    {
-        std::atomic<long> seen{0}; // tested (4-4 / 5-6: swaps with a case scored)
-        std::atomic<long> pinned{0}; // would make a pinned cell (4-4 / 5-6: in some case)
-        std::atomic<long> pinned_committed{0}; // of `pinned`, committed
-        std::atomic<long> cases{0}, cases_pinned{0}; // 4-4 / 5-6: scored, with a pinned cell
-        std::atomic<long> all_pinned{0}, all_pinned_committed{0}; // 4-4 / 5-6: every case
-    };
-    mutable std::array<std::array<PinnedCounts, size_t(OpKind::COUNT)>, 2> m_pinned_counts;
-    /// The operation in flight on this thread; cleared at its `attempt` (op_event()).
-    struct PinnedOp
-    {
-        bool pinned = false; // collapse, 3-2, face swap: it would make a pinned cell
-        bool interior = false; // swap_before_interior() accepted the ring, of label `label`
-        int label = -1;
-        int cases = 0, cases_pinned = 0; // 4-4 / 5-6
-    };
-    static PinnedOp& pinned_op()
-    {
-        static thread_local PinnedOp op;
-        return op;
-    }
-    /// Whether a cell on `vids` with construction label `label` is pinned.
-    bool pinned_cell(const std::array<size_t, 4>& vids, int label) const;
-    /// The three tests above. Each is called only under DEBUG_pinned_counts.
-    void pinned_count_collapse(size_t v1_id, size_t v2_id);
-    void pinned_count_swap(const std::vector<size_t>& tids);
-    void pinned_count_case(const std::vector<std::array<size_t, 4>>& tets);
-    /// op_event()'s part: the outcome of the operation in flight on this thread.
-    void pinned_count_outcome(OpKind k, OpEvent e) const;
-    /// Attempts, screened and committed per OpKind at the last pinned_counts_reset(), so a
-    /// [pinned would-refuse] line gives the totals of its own window.
-    std::array<std::array<long, 3>, size_t(OpKind::COUNT)> m_pinned_ops0{};
-    void pinned_counts_reset(int pass);
-    std::string pinned_counts_report(int pass) const;
-
     /// The shared split pass's gate: TetOptimizerMesh::split_all_edges's is_weight_up_to_date
     /// without its staleness test.
     bool split_edge_is_due(const Tuple& e) const;
@@ -1621,13 +1528,6 @@ public:
     /// EXPERIMENTAL_damping, per pass: smoothing moves accepted, and how many of them ended on the
     /// bound (count_damped_move()). Reported and reset beside the Newton counters.
     std::atomic<size_t> m_damping_moves{0}, m_damping_bounded{0};
-    /// EXPERIMENTAL_damping, per pass, the front smoother's accepted moves alone
-    /// (count_damped_front_move()): moves, on the bound, and of those on the bound: mostly along
-    /// grad d, with the along-gradient part toward the target, with the target farther than the
-    /// bound, and with no gradient to read.
-    std::atomic<size_t> m_damping_front_moves{0}, m_damping_front_bounded{0},
-        m_damping_front_along{0}, m_damping_front_toward{0}, m_damping_front_far{0},
-        m_damping_front_nograd{0};
     /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
     /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
     /// untouched.
@@ -2032,11 +1932,6 @@ public:
     /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
     /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
     void count_damped_move(size_t vid, const Vector3d& x0, double max_step);
-    /// EXPERIMENTAL_damping, diagnostic: the same count for a front vertex's accepted move, and for
-    /// a move on the bound its split by grad d at x0 (the nearest input primitive's): along
-    /// (|m . g| >= |m - (m . g) g|, m the move), toward the target (m . g has the sign of
-    /// delta - d(x0)), far (|d(x0) - delta| > max_step: the bound, not the target, ended it).
-    void count_damped_front_move(size_t vid, const Vector3d& x0, double max_step);
     /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum vol AMIPS^3 (band_amips_weight(),
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;

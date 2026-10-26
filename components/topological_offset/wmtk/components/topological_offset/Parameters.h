@@ -91,53 +91,19 @@ struct Parameters : public wmtk::OptimizerParameters
     double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
-    /// Log-only: per operation group, the collapses and swaps that would make a pinned cell
-    /// (TopoOffsetTetMesh::m_pinned_counts; see the spec).
-    bool debug_pinned_counts = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
     bool front_pocket_split = false;
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
     /// and faces too, not only pinned cells.
     bool front_spanned_split = false;
-    /// EXPERIMENTAL_energy_collapse (see the spec): collapses at the front tried at any length,
-    /// accepted by the energy rule (TopoOffsetTetMesh::front_energy_collapse()).
-    bool energy_collapse = false;
-    /// EXPERIMENTAL_no_halving (see the spec): the settle test lowers no sizing scalar.
-    bool no_halving = false;
-    /// EXPERIMENTAL_energy_split (see the spec): splits near the front tried wherever they may lower
-    /// E, kept only if they do (TopoOffsetTetMesh::front_energy_split()).
-    bool energy_split = false;
-    /// EXPERIMENTAL_energy_only_ops (see the spec): no length gate on the loop's split and collapse
-    /// passes; every split, collapse and swap is kept only if E does not rise (splits: falls).
-    bool energy_only_ops = false;
-    /// EXPERIMENTAL_energy_only_sizing_split (see the spec): with energy_only_ops, a split the
-    /// sizing field asks for is kept without the energy gate.
-    bool energy_only_sizing_split = false;
-    /// EXPERIMENTAL_energy_only_collapse_length_gate (see the spec): with energy_only_ops, the
-    /// collapse pass keeps its length gate.
-    bool energy_only_collapse_length_gate = false;
-    /// EXPERIMENTAL_collapse_every_edge (see the spec): the loop's collapse pass offers every edge,
-    /// kept only by the collapse's energy rule; the split pass keeps its length trigger.
-    bool collapse_every_edge = false;
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains.
     bool exit_no_folds = false;
-    /// EXPERIMENTAL_phase_loop (see the spec): each turn is a geometry phase (smoothing to rest)
-    /// then a connectivity phase (operation rounds to rest).
-    bool phase_loop = false;
-    /// EXPERIMENTAL_phase_loop_connectivity_first (see the spec): the connectivity phase runs
-    /// before the geometry phase.
-    bool phase_loop_connectivity_first = false;
-    /// EXPERIMENTAL_smooth_to_rest (see the spec): each group's smoothing passes repeat until a
-    /// pass lowers E by less than a bar, instead of a fixed count.
-    bool smooth_to_rest = false;
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default),
-    /// "one_sided", "energy" or "one_sided_tips".
+    /// "one_sided" or "one_sided_tips".
     std::string label_cleanup = "off";
-    /// DEBUG_trace_collapse (log-only, see the spec): vertex ids whose collapse attempts are logged.
-    std::vector<size_t> debug_trace_collapse;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -417,11 +383,9 @@ struct Parameters : public wmtk::OptimizerParameters
         foldover_angle = json_params["foldover_angle"];
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
-        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
-            settle_mark != "variance" && settle_mark != "remainder") {
+        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"variance\" or "
-                "\"remainder\", not \"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
                 settle_mark);
         }
         output_path = json_params["output"];
@@ -476,42 +440,26 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
         debug_crossings = json_params["DEBUG_crossings"];
-        debug_pinned_counts = json_params["DEBUG_pinned_counts"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
-        energy_collapse = json_params["EXPERIMENTAL_energy_collapse"];
-        no_halving = json_params["EXPERIMENTAL_no_halving"];
-        energy_split = json_params["EXPERIMENTAL_energy_split"];
-        energy_only_ops = json_params["EXPERIMENTAL_energy_only_ops"];
-        energy_only_sizing_split = json_params["EXPERIMENTAL_energy_only_sizing_split"];
-        energy_only_collapse_length_gate =
-            json_params["EXPERIMENTAL_energy_only_collapse_length_gate"];
-        collapse_every_edge = json_params["EXPERIMENTAL_collapse_every_edge"];
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
-        phase_loop = json_params["EXPERIMENTAL_phase_loop"];
-        phase_loop_connectivity_first = json_params["EXPERIMENTAL_phase_loop_connectivity_first"];
-        smooth_to_rest = json_params["EXPERIMENTAL_smooth_to_rest"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
-        if (label_cleanup != "off" && label_cleanup != "one_sided" && label_cleanup != "energy" &&
+        if (label_cleanup != "off" && label_cleanup != "one_sided" &&
             label_cleanup != "one_sided_tips") {
             log_and_throw_error(
-                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"energy\" or "
-                "\"one_sided_tips\", not \"{}\"",
+                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\" or \"one_sided_tips\", not "
+                "\"{}\"",
                 label_cleanup);
         }
         // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
         // operation passes and the condition-1 splits before the first smoothing pass; the other
-        // two paths have no such point.
-        if (label_cleanup != "off" && (!front_pocket_split || phase_loop)) {
+        // path has no such point.
+        if (label_cleanup != "off" && !front_pocket_split) {
             log_and_throw_error(
-                "EXPERIMENTAL_label_cleanup \"{}\" needs EXPERIMENTAL_front_pocket_split true and "
-                "EXPERIMENTAL_phase_loop false: it runs right before the condition-1 splits that "
-                "precede the first smoothing pass of each operation group",
+                "EXPERIMENTAL_label_cleanup \"{}\" needs EXPERIMENTAL_front_pocket_split true: it "
+                "runs right before the condition-1 splits that precede the first smoothing pass "
+                "of each operation group",
                 label_cleanup);
-        }
-        debug_trace_collapse.clear();
-        for (const auto& v : json_params["DEBUG_trace_collapse"]) {
-            debug_trace_collapse.push_back(v.get<size_t>());
         }
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
