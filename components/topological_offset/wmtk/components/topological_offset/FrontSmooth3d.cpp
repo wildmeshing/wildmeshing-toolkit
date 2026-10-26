@@ -363,25 +363,35 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_fold_bar
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_error_energy(
     const size_t vid) const
 {
-    // The vertex's part of the offset error (face_offset_error() per face, offset_error() over
-    // the front): its live offset faces' area-weighted 3-point terms with vid moving, on the
-    // union field (FaceOffsetError3D).
+    // See the declaration: the stencil points of vid's live offset faces whose name involves
+    // vid -- its vertex point, its edges' points, its faces' interior points -- each once, as
+    // q(x) = alpha x + c (StencilOffsetError3D). The rest of its faces' points do not move with
+    // vid.
     if (!m_offset_potential) return nullptr;
-    std::vector<FaceOffsetError3D::Face> faces;
+    std::vector<StencilPoint> pts;
     for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
         const std::array<size_t, 3> f = get_face_vids(ft);
-        FaceOffsetError3D::Face fe;
-        int k = 0;
-        for (const size_t u : f) {
-            if (u == vid) continue;
-            (k == 0 ? fe.q1 : fe.q2) = m_vertex_attribute[u].m_posf;
-            ++k;
-        }
-        if (k != 2) continue;
-        faces.push_back(fe);
+        face_stencil_points(f[0], f[1], f[2], pts);
     }
-    if (faces.empty()) return nullptr;
-    return std::make_shared<FaceOffsetError3D>(m_offset_potential, std::move(faces));
+    std::sort(pts.begin(), pts.end());
+    pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+    std::vector<StencilOffsetError3D::Point> moving;
+    for (const StencilPoint& s : pts) {
+        if (!s.involves(vid)) continue;
+        StencilOffsetError3D::Point pt;
+        for (int m = 0; m < s.n; ++m) {
+            const double w = double(s.w[size_t(m)]) / double(s.den);
+            const size_t u = s.ids[size_t(m)];
+            if (u == vid) {
+                pt.alpha = w;
+            } else {
+                pt.c += w * m_vertex_attribute[u].m_posf;
+            }
+        }
+        moving.push_back(pt);
+    }
+    if (moving.empty()) return nullptr;
+    return std::make_shared<StencilOffsetError3D>(m_offset_potential, std::move(moving));
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::ring_barrier_energy(

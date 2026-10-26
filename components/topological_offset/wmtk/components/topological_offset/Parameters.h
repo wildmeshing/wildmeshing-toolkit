@@ -103,8 +103,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// guard.
     int max_rounds = 40;
     // Sampling density of THE measure -- both the criterion's and the energy's, in 2D and 3D --
-    // and of the residual diagnostics that share the lattice. Order k puts these points on a
-    // face (3D):
+    // and of the residual diagnostics that share the lattice. Order k put these points on a
+    // face (3D, until 2026-10-26; the 3D stencil now is the one below the list):
     //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
     //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
     //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
@@ -118,7 +118,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // energy_criterion() and the frames, and in 2D also in the operations' energy rules
     // (TopoOffsetTriMesh::tri_energy()) and every front solve; the 3D energy has no face term.
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
-    int stencil_order;
+    // 3D since 2026-10-26: the offset surface's global stencil instead (the centroid at 0, the
+    // lattice (i, j, l) / k above it, a corner or edge point shared and counted once), read by
+    // the whole 3D offset error; see the spec doc. 1 = the spec's default.
+    int stencil_order = 1;
     /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
     /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D

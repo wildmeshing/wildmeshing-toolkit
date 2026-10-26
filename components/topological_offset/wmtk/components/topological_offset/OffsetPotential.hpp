@@ -852,61 +852,32 @@ private:
 };
 
 /**
- * @name The offset error of one face (2026-10-22, area weighted)
+ * @brief A front vertex's part of the offset error (TopoOffsetTetMesh::offset_error(),
+ * stencil_order's global stencil, 2026-10-26), the vertex x moving: the sum over the stencil
+ * points of its offset faces that move with it -- its own vertex point, the points on its edges,
+ * the interior points of its faces, each ONCE -- of relative_residual(q)^2, weight 1 each. The
+ * points that do not move with x (on the edges and corners opposite it) are constants and left
+ * out.
  *
- *     E_f = A_f * (1/3) sum over the 3 interior points q_k of relative_residual(q_k)^2,
- *
- * relative_residual = (d - target_distance) / target_distance for the euclidean field, A_f the
- * face's area, q_k the barycentric points (2/3, 1/6, 1/6) and its two permutations: the symmetric
- * 3-point interior rule, equally weighted, exact for quadratic integrands. So E_f approximates
- * (1/target_distance^2) int_f (d - target_distance)^2 dA, exactly where d is affine on f, and the
- * sum over the front converges to that integral over the offset surface. No sample on a face's
- * boundary: no point is shared between faces.
- * @{
+ * Each point is q(x) = alpha x + c, alpha its barycentric weight on x and c the rest of its
+ * combination, so with r = relative_residual and the potential's exact derivatives
+ * (gradient() is grad r, hessian() hess r): grad = sum 2 alpha r grad r(q), hess = sum
+ * 2 alpha^2 (grad r grad r^T + r hess r(q)). A point whose residual is not finite makes the value
+ * +inf.
  */
-/// The 3 interior points' barycentric weights, row k = (w_a, w_b, w_c) of point q_k.
-constexpr std::array<std::array<double, 3>, 3> kFaceErrorPoints = {
-    {{{2. / 3., 1. / 6., 1. / 6.}}, {{1. / 6., 2. / 3., 1. / 6.}}, {{1. / 6., 1. / 6., 2. / 3.}}}};
-/// E_f of the triangle (a, b, c) on `pot`; -1 when a sample's residual is not finite.
-double face_offset_error_of(
-    const OffsetPotential3D& pot,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c);
-/// The largest per-point error over the same 3 interior points, max_k relative_residual(q_k)^2
-/// (no area): the stencil-point offset error O(q) the front's max rules bound by
-/// front_conv_frac()^2, as TetWild bounds AMIPS per tet by stop_energy. -1 when a sample's
-/// residual is not finite.
-double face_offset_point_max_of(
-    const OffsetPotential3D& pot,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c);
-/** @} */
-
-/**
- * @brief A vertex's part of the offset error (TopoOffsetTetMesh::offset_error()), the vertex x
- * moving: the sum over its live offset faces (x, q1, q2) of E_f (face_offset_error_of()).
- *
- * Per face E_f = A(x) m(x): A = |N| / 2 with N = (q1 - x) x (q2 - x) = q1 x q2 + (q2 - q1) x x
- * affine in x (dN/dx = [q2 - q1]_x), so grad A and hess A are exact; m = (1/3) sum_k r(q_k)^2
- * with q_k = w_k x + ... affine in x, grad r = w_k grad r(q_k), hess r = w_k^2 hess r(q_k) (the
- * potential's exact derivatives). grad E_f = A grad m + m grad A, hess E_f = A hess m +
- * grad A grad m^T + grad m grad A^T + m hess A. A face of zero area contributes its value 0 and
- * no area derivative. A sample whose residual is not finite makes the value +inf.
- */
-class FaceOffsetError3D : public polysolve::nonlinear::Problem
+class StencilOffsetError3D : public polysolve::nonlinear::Problem
 {
 public:
     using typename polysolve::nonlinear::Problem::Scalar;
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
-    /// One offset face at the moving vertex: its two fixed corners.
-    struct Face
+    /// One stencil point moving with x: q(x) = alpha x + c.
+    struct Point
     {
-        Eigen::Vector3d q1, q2;
+        double alpha = 0.;
+        Eigen::Vector3d c = Eigen::Vector3d::Zero();
     };
-    FaceOffsetError3D(std::shared_ptr<const OffsetPotential3D> pot, std::vector<Face> faces);
+    StencilOffsetError3D(std::shared_ptr<const OffsetPotential3D> pot, std::vector<Point> points);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -921,7 +892,7 @@ private:
     /// need: 0 value, 1 + gradient, 2 + Hessian.
     double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
     std::shared_ptr<const OffsetPotential3D> m_pot;
-    std::vector<Face> m_faces;
+    std::vector<Point> m_points;
 };
 
 /**

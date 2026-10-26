@@ -1092,9 +1092,9 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
 
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {
-    // The stencil the whole 3D criterion and energy sample, checked against the counts the
-    // design states: 3 at order 0 (the corners alone), then the vertices of the triangle
-    // subdivided k-1 times plus one centroid per sub-triangle -- 4, 10, 31, 109, 409.
+    // The 3D stencil (stencil_order, since 2026-10-26 the global stencil's points of one face):
+    // the centroid alone at order 0, the barycentric lattice (i, j, l) / k above it -- the
+    // triangular numbers 1, 3, 6, 10, 15, 21.
     //
     // This also pins stencil_points_per_face() to for_each_face_sample(), which are two separate
     // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
@@ -1103,7 +1103,7 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
     TopoOffsetTetMesh mesh(param, 0);
 
     const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
-    const std::array<int, 6> expected = {{3, 4, 10, 31, 109, 409}};
+    const std::array<int, 6> expected = {{1, 3, 6, 10, 15, 21}};
 
     for (int k = 0; k < int(expected.size()); ++k) {
         mesh.m_offset_params.stencil_order = k;
@@ -1131,9 +1131,7 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
             CHECK(b[2] >= -1e-15);
         }
 
-        // No duplicated sample: a repeated point would silently weight part of the face twice.
-        // Quantised into a set rather than compared pairwise, so the check stays one assertion
-        // instead of ~83000 at order 5.
+        // No duplicated sample within the face.
         std::set<std::array<long long, 3>> seen;
         for (const auto& b : w) {
             seen.insert({{llround(b[0] * 1e9), llround(b[1] * 1e9), llround(b[2] * 1e9)}});
@@ -1141,10 +1139,16 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
         CHECK(seen.size() == w.size());
     }
 
-    // Order 0 is exactly the three corners, which is what lets one stencil carry the vertex
-    // placement test as well as the face resolution test.
+    // Order 0 is the centroid; order 1 the three corners.
     mesh.m_offset_params.stencil_order = 0;
     std::vector<Vector3d> pts;
+    mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
+        pts.push_back(q);
+    });
+    REQUIRE(pts.size() == 1);
+    CHECK((pts[0] - (p0 + p1 + p2) / 3.).norm() <= 1e-15);
+    mesh.m_offset_params.stencil_order = 1;
+    pts.clear();
     mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
         pts.push_back(q);
     });
@@ -1365,38 +1369,34 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     }
 }
 
-TEST_CASE("face-offset-error-3d", "[offset][3d]")
+TEST_CASE("stencil-offset-error-3d", "[offset][3d]")
 {
-    // The offset error since 2026-10-22: per face its area times the mean of
-    // ((d - delta) / delta)^2 over the 3 interior points (2/3, 1/6, 1/6) and permutations
-    // (face_offset_error_of()). Above the input triangle's interior d = z is affine, so the
-    // integrand is quadratic and the rule is EXACT: E_f = (1/delta^2) int_f (z - delta)^2 dA
-    // = A/6 (L1^2 + L2^2 + L3^2 + L1 L2 + L2 L3 + L3 L1), L_i = (z_i - delta) / delta. And
-    // FaceOffsetError3D, the smoother's term, sums face_offset_error_of() over the faces at the
-    // moving corner x, with gradient and Hessian matching central differences, at several x above
-    // and astride the level set.
+    // StencilOffsetError3D, the front smoother's offset term since 2026-10-26: the sum over the
+    // stencil points that move with x of relative_residual(q)^2, q = alpha x + c, weight 1 each.
+    // Above the input triangle's interior d = z, so each term is ((z(q) - delta) / delta)^2 by
+    // hand; gradient and Hessian against central differences, at x above and astride the level
+    // set. The points: the vertex point (alpha 1), an order-3 edge point next to x (alpha 2/3)
+    // and one further out (1/3), and the centroid of a face at x (1/3).
     const auto pot = plane_field();
-    const std::vector<FaceOffsetError3D::Face> faces = {
-        {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
-        {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
-        {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
-    FaceOffsetError3D energy(pot, faces);
-    const auto exact = [](const Vector3d& a, const Vector3d& b, const Vector3d& c) {
-        const double A = 0.5 * (b - a).cross(c - a).norm();
-        const double l1 = (a.z() - kEnergyDelta) / kEnergyDelta,
-                     l2 = (b.z() - kEnergyDelta) / kEnergyDelta,
-                     l3 = (c.z() - kEnergyDelta) / kEnergyDelta;
-        return A / 6. * (l1 * l1 + l2 * l2 + l3 * l3 + l1 * l2 + l2 * l3 + l3 * l1);
-    };
+    const Vector3d q1(0.4, 0.1, 0.61), q2(0.2, 0.35, 0.44);
+    std::vector<StencilOffsetError3D::Point> pts(4);
+    pts[0].alpha = 1.;
+    pts[1].alpha = 2. / 3.;
+    pts[1].c = q1 / 3.;
+    pts[2].alpha = 1. / 3.;
+    pts[2].c = 2. * q1 / 3.;
+    pts[3].alpha = 1. / 3.;
+    pts[3].c = (q1 + q2) / 3.;
+    StencilOffsetError3D energy(pot, pts);
     for (const Vector3d& x :
          {Vector3d(0.1, -0.05, 0.53), Vector3d(-0.02, 0.12, 0.74), Vector3d(0.3, 0.2, 0.05)}) {
         INFO("x " << x.transpose());
-        double want = 0., want_exact = 0.;
-        for (const auto& f : faces) {
-            want += face_offset_error_of(*pot, x, f.q1, f.q2);
-            want_exact += exact(x, f.q1, f.q2);
+        double want = 0.;
+        for (const auto& pt : pts) {
+            const double z = (pt.alpha * x + pt.c).z();
+            const double r = (z - kEnergyDelta) / kEnergyDelta;
+            want += r * r;
         }
-        CHECK(want == Catch::Approx(want_exact).epsilon(1e-12)); // the rule is exact here
         CHECK(want > 0.);
         Eigen::VectorXd xv = x;
         CHECK(energy.value(xv) == Catch::Approx(want).epsilon(1e-12));
@@ -1422,30 +1422,61 @@ TEST_CASE("face-offset-error-3d", "[offset][3d]")
     }
 }
 
-TEST_CASE("face-offset-point-max", "[offset][3d]")
+TEST_CASE("global-stencil-points", "[offset][3d]")
 {
-    // The stencil-point offset error the front max rule bounds: the largest
-    // ((d - delta) / delta)^2 over the same 3 interior points (2/3, 1/6, 1/6) and permutations
-    // (face_offset_point_max_of()), no area. Above the input triangle's interior d = z, so each
-    // point's value is ((z(q) - delta) / delta)^2 with z(q) the barycentric mean of the corners'.
-    const auto pot = plane_field();
-    const std::vector<std::array<Vector3d, 3>> faces = {
-        {{{0.1, -0.05, 0.53}, {0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}}},
-        {{{-0.02, 0.12, 0.74}, {0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}}},
-        {{{0.3, 0.2, 0.05}, {-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}}};
-    for (const auto& f : faces) {
-        double want = 0.;
-        for (const auto& w : kFaceErrorPoints) {
-            const double z = w[0] * f[0].z() + w[1] * f[1].z() + w[2] * f[2].z();
-            const double r = (z - kEnergyDelta) / kEnergyDelta;
-            want = std::max(want, r * r);
+    // The global stencil (StencilPoint, stencil_order): per face the triangular numbers of
+    // points, a corner or edge point named the same from every face (so two faces sharing an
+    // edge list its points once), positions from the name, and the points a flip changes. One tet
+    // (0,0,0), (1,0,0), (0,1,0), (0,0,1); faces (0,1,2) and (0,1,3) share the edge (0, 1).
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    Eigen::MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi Tags(1, 1);
+    Tags.coeffRef(0, 0) = 1;
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, {"a"});
+    using SP = TopoOffsetTetMesh::StencilPoint;
+    const auto unique = [](std::vector<SP> v) {
+        std::sort(v.begin(), v.end());
+        v.erase(std::unique(v.begin(), v.end()), v.end());
+        return v;
+    };
+    for (int k = 0; k <= 5; ++k) {
+        INFO("stencil_order " << k);
+        mesh.m_offset_params.stencil_order = k;
+        const size_t per_face = k == 0 ? 1 : size_t((k + 1) * (k + 2) / 2);
+        const size_t on_edge = k == 0 ? 0 : size_t(k + 1); // the edge's two corners and k - 1
+        const size_t interior = k == 0 ? 1 : size_t((k - 1) * (k - 2) / 2);
+        std::vector<SP> f012, f210, both;
+        mesh.face_stencil_points(0, 1, 2, f012);
+        mesh.face_stencil_points(2, 1, 0, f210);
+        CHECK(f012.size() == per_face);
+        CHECK(unique(f012) == unique(f210)); // the corner order does not matter
+        mesh.face_stencil_points(0, 1, 2, both);
+        mesh.face_stencil_points(3, 1, 0, both);
+        CHECK(unique(both).size() == 2 * per_face - on_edge); // the shared edge's points once
+        for (const SP& sp : unique(both)) {
+            Vector3d want = Vector3d::Zero();
+            for (int m = 0; m < sp.n; ++m) {
+                want += double(sp.w[size_t(m)]) / double(sp.den) *
+                        mesh.m_vertex_attribute[sp.ids[size_t(m)]].m_posf;
+            }
+            CHECK((mesh.stencil_point_position(sp) - want).norm() == 0.);
+            if (sp.n == 1) {
+                CHECK(mesh.stencil_point_position(sp) == mesh.m_vertex_attribute[sp.ids[0]].m_posf);
+            }
         }
-        CHECK(want > 0.);
-        CHECK(
-            face_offset_point_max_of(*pot, f[0], f[1], f[2]) == Catch::Approx(want).epsilon(1e-12));
-        // The corner order does not matter: the 3 points are a symmetric set.
-        CHECK(
-            face_offset_point_max_of(*pot, f[2], f[0], f[1]) == Catch::Approx(want).epsilon(1e-12));
+        // The flip of (0, 1) between faces (0,1,2) and (0,1,3): the diagonal's k - 1 points and
+        // the two faces' interior points; none at order 1.
+        const auto diag = unique(mesh.stencil_points_of_diagonal(0, 1, 2, 3));
+        CHECK(diag.size() == (k == 0 ? 2 : size_t(k - 1)) + (k == 0 ? 0 : 2 * interior));
+        for (const SP& sp : diag) {
+            CHECK((sp.n == 3 || (sp.n == 2 && sp.ids[0] == 0 && sp.ids[1] == 1)));
+        }
     }
 }
 
@@ -1498,6 +1529,14 @@ TEST_CASE("front-op-rule", "[offset][3d]")
     CHECK_FALSE(collapse(0.5, 0.4, 5., nan));
     CHECK_FALSE(collapse(2., 1.5, 5., nan));
     CHECK_FALSE(collapse(0.5, nan, 20., 15.));
+    // An op that changes no stencil point (a flip at order 1): the AMIPS half alone.
+    const auto flip_no_points = [&](double a0, double a1) {
+        return TopoOffsetTetMesh::front_op_allowed(0., 0., a0, a1, ob, ab, true, false);
+    };
+    CHECK(flip_no_points(5., 4.));
+    CHECK_FALSE(flip_no_points(5., 5.));
+    CHECK(flip_no_points(20., 15.));
+    CHECK_FALSE(flip_no_points(20., 25.));
 }
 
 TEST_CASE("fold-barrier-3d", "[offset][3d]")
@@ -1750,7 +1789,7 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
     // (front vertices a, b, c0, c1, c2; c3 on no front face), a star of eight band cells around
     // an off-front vertex -- both with front faces past 90 degrees from the field gradient, where
     // the fold barrier is large -- and the fan (fan_fixture()), whose front is unfolded. The front
-    // objective's value at the build position against the sum of face_offset_error() over the
+    // objective's value at the build position against the sum of stencil_point_error() over the
     // vertex's live front faces plus the fold barrier, and its gradient and Hessian against central
     // differences (small enough steps that the ring barrier stays 0 and flat). use_rest_pose: the
     // plastic machinery still prices tet_energy() (checked below), although no operation rule reads
@@ -1808,6 +1847,9 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
             param.stop_energy = s;
             const auto pot = plane_field();
             auto mesh = energy_mesh(param, fx.V, fx.T, fx.labels, pot);
+            // energy_mesh() sets order 1; order 3 (corners, two points per edge, the centroid)
+            // puts edge and interior points in the objective too.
+            mesh->m_offset_params.stencil_order = 3;
             // What label_offset_boundary() sets in a run: a corner of a live front face.
             for (size_t v = 0; v < size_t(fx.V.rows()); ++v) {
                 mesh->m_vertex_extra[v].m_is_on_offset =
@@ -1909,17 +1951,23 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                 REQUIRE(energy != nullptr);
                 ++n_front_valued;
                 // At the build position the ring barrier is 0, so the objective is the offset
-                // error over the vertex's live front faces plus the fold barrier.
+                // error at the stencil points of the vertex's live front faces that move with it
+                // (each once, weight 1) plus the fold barrier.
                 double want = 0.;
-                size_t n_faces = 0;
+                std::vector<TopoOffsetTetMesh::StencilPoint> sp;
                 for (const TetMesh::Tuple& ft : mesh->offset_surface_faces_live_at(v)) {
                     const auto f = mesh->get_face_vids(ft);
-                    const double fe = mesh->face_offset_error(f[0], f[1], f[2]);
-                    REQUIRE(fe >= 0.);
-                    want += fe;
-                    ++n_faces;
+                    mesh->face_stencil_points(f[0], f[1], f[2], sp);
                 }
-                REQUIRE(n_faces > 0);
+                REQUIRE(!sp.empty());
+                std::sort(sp.begin(), sp.end());
+                sp.erase(std::unique(sp.begin(), sp.end()), sp.end());
+                for (const auto& q : sp) {
+                    if (!q.involves(v)) continue;
+                    const double e = mesh->stencil_point_error(q);
+                    REQUIRE(e >= 0.);
+                    want += e;
+                }
                 const Vector3d x0 = mesh->m_vertex_attribute[v].m_posf;
                 Eigen::VectorXd xv = x0;
                 CHECK(want > 0.); // the fixture is off the level set
@@ -3029,7 +3077,11 @@ TEST_CASE("offset-stuck-refine", "[offset][3d]")
         const double o_bar = mesh->front_offset_bar();
         std::vector<std::array<size_t, 3>> want;
         for (const auto& f : mesh->offset_surface_faces()) {
-            if (!(mesh->face_offset_point_max(f[0], f[1], f[2]) < o_bar)) want.push_back(f);
+            std::vector<TopoOffsetTetMesh::StencilPoint> sp;
+            mesh->face_stencil_points(f[0], f[1], f[2], sp);
+            bool out_f = false;
+            for (const auto& q : sp) out_f = out_f || !(mesh->stencil_point_error(q) < o_bar);
+            if (out_f) want.push_back(f);
         }
         REQUIRE(!want.empty());
         std::vector<double> before(mesh->vert_capacity());

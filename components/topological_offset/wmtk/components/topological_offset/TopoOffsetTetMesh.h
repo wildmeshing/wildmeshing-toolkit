@@ -434,8 +434,8 @@ public:
      * engine's inversion, envelope and link conditions. The smoother: a front vertex the loop
      * places (vertex_front_placed()) minimises the ring barrier plus the offset error over its
      * front faces, NO AMIPS (smoothing_extra_energy(): RingBarrier3D + FoldBarrier3D +
-     * FaceOffsetError3D), vetoed on that objective; every other vertex is TetWild's smoother -- the
-     * raw sum of AMIPS over the one-ring with the quality veto (smooth_nonfront_vertex()). The
+     * StencilOffsetError3D), vetoed on that objective; every other vertex is TetWild's smoother --
+     * the raw sum of AMIPS over the one-ring with the quality veto (smooth_nonfront_vertex()). The
      * split gate (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums. use_rest_pose:
      * the same rules on PLASTIC AMIPS -- a plastic cell's quality is measured against its stamped
      * rest wherever these rules read it (plastic_quality(), plastic_amips_energy(),
@@ -732,8 +732,9 @@ public:
      * int_B (d - delta) / delta dV, under EXPERIMENTAL_band_volume_rule as a corner bound, the
      * closed-form integral (ExactBandIntegral) or its front form -- was removed with that key and
      * all its code. The offset error is a SURFACE energy now: offset_error(), the sum over the
-     * offset faces of face_offset_error(), which the front smoother reads (the exit and the front
-     * operations read its per-point maxima, face_offset_point_max()); it is not part of E.
+     * unique stencil points of the offset surface (stencil_order, StencilPoint), which the front
+     * smoother reads (the exit and the front operations read its per-point maxima,
+     * stencil_point_error()); it is not part of E.
      *
      * WHERE E IS COMPARED (since 2026-10-22, see m_op_rules): the operations do not read it.
      * Collapses and swaps off the offset surface follow the base's max-of-AMIPS^3 rules; those on
@@ -1733,15 +1734,17 @@ public:
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
     /// The front collapse rule's before half (collapse_edge_before()), for front_op_allowed():
-    /// o_before = offset_point_max_at() the collapse's two ends, a_before = the max of
+    /// o_before = the max stencil_point_error() over stencil_points_changed_at() the collapse's
+    /// two ends, a_before = the max of
     /// plastic_quality() over v1's one-ring (the base's ring), and v1's ring tids sorted (the
     /// cells the collapse reshapes keep their slots; collapse_after_connectivity() takes the
-    /// after-max over them alone, against offset_point_max_at() the survivor). o_before < 0: the
+    /// after-max over them alone, against the survivor's changed points). o_before < 0: the
     /// collapse touches no offset face (no rule; the base's max rule decides,
     /// collapse_quality_allowed()).
     struct CollapseFront
     {
         double o_before = -1.;
+        size_t o_points = 0; ///< changed stencil points before
         double a_before = -1.;
         std::vector<size_t> tids;
     };
@@ -1956,49 +1959,97 @@ public:
         const Vector3d& pb,
         const Vector3d& pc) const;
     /**
-     * @brief THE OFFSET ERROR of one offset face f (since 2026-10-22, area weighted): its area
-     * times the mean of ((d(q) - target_distance) / target_distance)^2 over 3 interior points,
-     * barycentric (2/3, 1/6, 1/6) and permutations (face_offset_error_of(), OffsetPotential.hpp),
-     * on the union field m_offset_potential -- one distance to the whole input, never the
-     * per-region fields, so it is safe between region-map rebuilds. Approximates
-     * (1/target_distance^2) int_f (d - target_distance)^2 dA (exact where d is affine on f), so
-     * offset_error() converges to the integral over the offset surface. -1 when unmeasurable.
-     * Independent of stencil_order, which sets only the criterion's face measure
-     * (face_offset_term()).
+     * @brief ONE POINT OF THE OFFSET SURFACE'S GLOBAL STENCIL (stencil_order in 3D, Spencer
+     * 2026-10-26). On an offset face the stencil of order k >= 1 is the barycentric lattice
+     * (i, j, l) / k with i + j + l = k, (k+1)(k+2)/2 points: order 1 the three corners, order 2
+     * the corners and the edge midpoints, order 3 the corners, two points per edge and the
+     * centroid, and so on; order 0 is the centroid alone. A point on a corner or an edge is the
+     * SAME point for every face around it: it is named by the vertices of its combination,
+     * ascending, with their integer weights over `den` (one vertex: a vertex point; two: an edge
+     * point; three: a face's interior point), so any set of faces lists each of its points once
+     * after a sort and unique, and its position is computed from the name alone
+     * (stencil_point_position()), bit for bit the same whichever face named it. 2D reads
+     * stencil_order its own way (its chord stencil) and is unaffected.
      */
-    double face_offset_error(size_t a, size_t b, size_t c) const;
+    struct StencilPoint
+    {
+        std::array<size_t, 3> ids{{size_t(-1), size_t(-1), size_t(-1)}};
+        std::array<int, 3> w{{0, 0, 0}};
+        int n = 0; ///< vertices in the combination: 1, 2 or 3
+        int den = 1;
+        bool operator<(const StencilPoint& o) const
+        {
+            return std::tie(n, ids, w, den) < std::tie(o.n, o.ids, o.w, o.den);
+        }
+        bool operator==(const StencilPoint& o) const
+        {
+            return n == o.n && ids == o.ids && w == o.w && den == o.den;
+        }
+        bool involves(const size_t v) const
+        {
+            for (int m = 0; m < n; ++m) {
+                if (ids[size_t(m)] == v) return true;
+            }
+            return false;
+        }
+    };
+    /// Face (a, b, c)'s stencil points, appended to `out` -- its corners' and edges' points too,
+    /// which its neighbours name the same way; a caller over several faces sorts and dedupes.
+    void face_stencil_points(size_t a, size_t b, size_t c, std::vector<StencilPoint>& out) const;
+    /// The point's position, from its name: sum of (w / den) x over its vertices, ascending.
+    Vector3d stencil_point_position(const StencilPoint& s) const;
+    /// THE STENCIL-POINT OFFSET ERROR O(q) = ((d(q) - target_distance) / target_distance)^2 at
+    /// the point, on the union field m_offset_potential (one distance to the whole input, never
+    /// the per-region fields, so it is safe between region-map rebuilds). Bounded by
+    /// front_conv_frac()^2, as TetWild bounds AMIPS per tet by stop_energy. -1 when unmeasurable.
+    double stencil_point_error(const StencilPoint& s) const;
+    /// The max of stencil_point_error() over the unique points of `pts` (an unmeasurable point
+    /// reads 0 and is counted), and how many unique points there were.
+    struct StencilMax
+    {
+        double max = 0.;
+        size_t n = 0;
+        size_t n_unmeasurable = 0;
+    };
+    StencilMax stencil_max(std::vector<StencilPoint> pts) const;
+    /// THE POINTS A COLLAPSE CHANGES, before (v1 and v2) or after (the survivor alone): the
+    /// stencil points of the live offset faces at the given vertices whose name involves one of
+    /// them -- the vertex points, the points on the edges at them, the interior points of the
+    /// faces at them. The points on the region's boundary (the link's corners and edges) are the
+    /// same before and after and are left out (the front max rule compares what changes, as
+    /// TetWild compares the changed cells).
+    std::vector<StencilPoint> stencil_points_changed_at(
+        size_t v1,
+        size_t v2 = static_cast<size_t>(-1)) const;
+    /// THE POINTS A FLIP CHANGES: of faces (p, q, r1) and (p, q, r2), the points on their shared
+    /// edge (p, q) and in their interiors -- before the flip of (a, b) its (a, b, c), (a, b, d);
+    /// after it (c, d)'s (a, c, d), (b, c, d). Empty at order 1, which has no such point.
+    std::vector<StencilPoint> stencil_points_of_diagonal(size_t p, size_t q, size_t r1, size_t r2)
+        const;
     /**
-     * @brief THE GLOBAL OFFSET ERROR: face_offset_error() summed over offset_surface_faces(),
-     * each face evaluated on the mesh's threads (diagnostic_parallel_for()) and the sum taken in
-     * face order on the calling thread, so the result does not depend on the thread count.
-     * Unmeasurable faces contribute 0 and are counted in `n_unmeasurable` when asked. Since
-     * 2026-10-26 a diagnostic on the [convergence] line (convergence_turn()); the exit and the
-     * stuck-refines read the stencil-point maxima instead.
+     * @brief THE GLOBAL OFFSET ERROR: stencil_point_error() summed over the unique stencil points
+     * of every offset face, weight 1 each (the front smoother's energy summed over the front),
+     * each point evaluated on the mesh's threads and the sum taken in point order on the calling
+     * thread. Unmeasurable points contribute 0 and are counted in `n_unmeasurable` when asked. A
+     * diagnostic on the [convergence] line; the exit and the stuck-refines read the maxima.
      */
     double offset_error(size_t* n_unmeasurable = nullptr) const;
-    /// The STENCIL-POINT offset error of one offset face: the largest ((d(q) - target_distance) /
-    /// target_distance)^2 over the same 3 interior points face_offset_error() samples
-    /// (face_offset_point_max_of()), on the union field. Bounded by front_conv_frac()^2 the way
-    /// TetWild bounds AMIPS per tet by stop_energy. -1 when unmeasurable.
-    double face_offset_point_max(size_t a, size_t b, size_t c) const;
-    /// face_offset_point_max() maximised over the offset faces at v1 (and at v2 when given; an
-    /// unmeasurable face reads 0): the front collapse rule's offset halves (collapse_edge_before()
-    /// / collapse_after_connectivity()).
-    double offset_point_max_at(size_t v1, size_t v2 = static_cast<size_t>(-1)) const;
     /**
      * @brief THE FRONT MAX RULE (Spencer's table, 2026-10-26) for a collapse that touches the
-     * offset surface and a flip of it: o = the max stencil-point offset error over the changed
-     * offset faces (face_offset_point_max()), bound o_bar = front_conv_frac()^2; a = the max
-     * AMIPS^3 over the changed cells (plastic_quality()), bound a_bar = stop_energy^3. "Lower"
-     * is after <= before for a collapse (strict false) and after < before for a flip (strict
-     * true). By where the op starts:
+     * offset surface and a flip of it: o = the max stencil-point offset error over the stencil
+     * points the op changes (stencil_points_changed_at(), stencil_points_of_diagonal()), bound
+     * o_bar = front_conv_frac()^2; a = the max AMIPS^3 over the changed cells
+     * (plastic_quality()), bound a_bar = stop_energy^3. "Lower" is after <= before for a
+     * collapse (strict false) and after < before for a flip (strict true). By where the op
+     * starts:
      *
      *     o < o_bar, a < a_bar:   both lower
      *     o >= o_bar, a < a_bar:  o lower, and a stays below a_bar
      *     o < o_bar, a >= a_bar:  a lower, and o stays below o_bar
      *     both over:              both lower
      *
-     * A NaN anywhere refuses.
+     * offset_changes false (the op changes no stencil point, a flip at order 1): the AMIPS half
+     * alone, a lower. A NaN anywhere refuses.
      */
     static bool front_op_allowed(
         double o_before,
@@ -2007,11 +2058,13 @@ public:
         double a_after,
         double o_bar,
         double a_bar,
-        bool strict)
+        bool strict,
+        bool offset_changes = true)
     {
         const auto lower = [strict](const double after, const double before) {
             return strict ? after < before : after <= before;
         };
+        if (!offset_changes) return lower(a_after, a_before);
         const bool o_in = o_before < o_bar, a_in = a_before < a_bar;
         if (!o_in && a_in) return lower(o_after, o_before) && a_after < a_bar;
         if (o_in && !a_in) return lower(a_after, a_before) && o_after < o_bar;
@@ -2035,8 +2088,9 @@ public:
     /// plus front_error_energy(), NO AMIPS. What front_vertex_normal_gradient() differentiates
     /// and smooth_front_vertex() vetoes on. Throws where front_fold_barrier_energy() does.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
-    /// The offset error over vid's live offset faces, vid moving (FaceOffsetError3D on the union
-    /// field); null when it has none. Defined in FrontSmooth3d.cpp.
+    /// vid's part of the offset error, vid moving: stencil_point_error() at every stencil point
+    /// of its live offset faces that moves with it, each once, weight 1 (StencilOffsetError3D on
+    /// the union field); null when it has none. Defined in FrontSmooth3d.cpp.
     std::shared_ptr<polysolve::nonlinear::Problem> front_error_energy(size_t vid) const;
     /// The IPC barrier on the boundary of vid's one-ring (RingBarrier3D): per ring tet the face
     /// opposite vid, each wall's activation distance 0.2x vid's distance to it now, so the
@@ -2095,16 +2149,16 @@ public:
 
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
-    /// How many points for_each_face_sample() visits at the configured order: 3 at order 0, and
-    /// (n+1)(n+2)/2 + n^2 with n = 2^(k-1) above it, i.e. 4, 10, 31, 109, ... Kept in step with
-    /// for_each_face_sample() by the unit test `stencil-order-point-counts`.
+    /// How many points for_each_face_sample() visits at the configured order: the centroid alone
+    /// at order 0, the (k+1)(k+2)/2 lattice points above it, i.e. 1, 3, 6, 10, 15, ... (the global
+    /// stencil's points per face, StencilPoint). Kept in step with for_each_face_sample() by the
+    /// unit test `stencil-order-point-counts`.
     int stencil_points_per_face() const
     {
         const int k = m_offset_params.stencil_order;
         if (k < 0) return 0;
-        if (k == 0) return 3;
-        const int n = 1 << (k - 1);
-        return (n + 1) * (n + 2) / 2 + n * n;
+        if (k == 0) return 1;
+        return (k + 1) * (k + 2) / 2;
     }
 
     /// Stop the run if any reachable band vertex has left the potential's support. Called once
@@ -2150,15 +2204,14 @@ public:
 
     /**
      * @brief The stencil_order stencil a triangle is sampled on, handed to `visit` one point at
-     * a time as (point, wa, wb, wc) with the barycentric weights that built it. Order 0 is the
-     * three corners alone; order k >= 1 is the vertices of the triangle subdivided k-1 times by
-     * 4-way midpoint refinement plus the centroid of each of its 4^(k-1) sub-triangles, so the
-     * counts are 3, 4, 10, 31, 109 for k = 0..4 (stencil_points_per_face()). The corners are in
-     * it on purpose: the quantity sampled is a distance to the level set, which at a corner is
-     * that vertex's own placement error (see face_offset_term()).
+     * a time as (point, wa, wb, wc) with the barycentric weights that built it: the global
+     * stencil's points of one face (StencilPoint, since 2026-10-26), the centroid alone at order
+     * 0 and the lattice (i, j, l) / k, i + j + l = k, at order k >= 1 -- 1, 3, 6, 10, 15 points
+     * for k = 0..4 (stencil_points_per_face()). Its corners and edges' points are shared with the
+     * neighbouring faces; a per-face measure (face_offset_term()) reads them on each face.
      *
      * Takes positions rather than a Tuple, so a face can be read at any positions. The 2D twin is
-     * for_each_offset_edge_sample().
+     * for_each_offset_edge_sample(), which keeps 2D's own stencil.
      */
     template <typename Visit>
     void for_each_face_sample(
@@ -2169,46 +2222,18 @@ public:
     {
         const int k = m_offset_params.stencil_order;
         if (k < 0) return;
-
         const auto emit = [&](const double wa, const double wb, const double wc) {
             const Vector3d q(wa * p0 + wb * p1 + wc * p2);
             visit(q, wa, wb, wc);
         };
-        // Order 0 is the three CORNERS alone. That is the whole point of including them: the
-        // measure sampled here is a distance to the level set, which at a corner is exactly that
-        // vertex's own placement error, so one stencil covers what used to be two criteria.
         if (k == 0) {
-            emit(1., 0., 0.);
-            emit(0., 1., 0.);
-            emit(0., 0., 1.);
+            emit(1. / 3., 1. / 3., 1. / 3.);
             return;
         }
-        // Order k >= 1: the vertices of the triangle subdivided k-1 times by 4-way midpoint
-        // refinement, plus the centroid of each of its 4^(k-1) sub-triangles. With n = 2^(k-1)
-        // segments per side that is (n+1)(n+2)/2 + n^2 points: 4, 10, 31, 109, ...
-        const int n = 1 << (k - 1);
-        const double dn = double(n);
-        for (int i = n; i >= 0; --i) {
-            for (int j = n - i; j >= 0; --j) {
-                const int l = n - i - j;
-                emit(double(i) / dn, double(j) / dn, double(l) / dn);
-            }
-        }
-        // The sub-triangles, in integer barycentric coordinates over 3n. "Up" triangles have
-        // corners (i+1,j,l), (i,j+1,l), (i,j,l+1) for i+j+l = n-1, so centroid (3i+1, 3j+1,
-        // 3l+1); "down" triangles (i+1,j+1,l), (i,j+1,l+1), (i+1,j,l+1) for i+j+l = n-2, so
-        // centroid (3i+2, 3j+2, 3l+2). n(n+1)/2 + n(n-1)/2 = n^2 of them.
-        const double d3n = 3. * dn;
-        for (int i = n - 1; i >= 0; --i) {
-            for (int j = n - 1 - i; j >= 0; --j) {
-                const int l = n - 1 - i - j;
-                emit((3. * i + 1.) / d3n, (3. * j + 1.) / d3n, (3. * l + 1.) / d3n);
-            }
-        }
-        for (int i = n - 2; i >= 0; --i) {
-            for (int j = n - 2 - i; j >= 0; --j) {
-                const int l = n - 2 - i - j;
-                emit((3. * i + 2.) / d3n, (3. * j + 2.) / d3n, (3. * l + 2.) / d3n);
+        const double dk = double(k);
+        for (int i = k; i >= 0; --i) {
+            for (int j = k - i; j >= 0; --j) {
+                emit(double(i) / dk, double(j) / dk, double(k - i - j) / dk);
             }
         }
     }
@@ -2442,7 +2467,8 @@ public:
      * @brief EXPERIMENTAL_settle_refinement, one turn, after consolidation (since 2026-10-26):
      * the loop's exit and its two stuck-refines. Converged = max AMIPS over every cell below
      * stop_energy (loop_cell_quality()) AND every offset face's stencil-point offset error below
-     * front_conv_frac()^2 (face_offset_point_max()), no face unmeasurable. Otherwise, when
+     * front_conv_frac()^2 -- every unique stencil point of the offset surface (StencilPoint) --
+     * and none unmeasurable. Otherwise, when
      * `refine_now`, mesh_improvement()'s stall response once per metric, each with its own
      * cooldown and only from the second turn: max AMIPS at or over stop_energy and stalled
      * (optimization_stalled()) -> refine_sizing_around_worst(); max offset error at or over its
@@ -2852,13 +2878,15 @@ private:
         size_t d);
     mutable wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
     /// The front flip rule's before half, per thread, for front_op_allowed(): o_before = the
-    /// larger face_offset_point_max() of the two offset faces the flip replaces, a_before = the
+    /// max stencil_point_error() over the points the flip changes (stencil_points_of_diagonal()
+    /// of the two faces it replaces; offset_changes false when there are none), a_before = the
     /// max of plastic_quality() over the cells it replaces; taken in swap_before_surface() and
     /// compared by swap_after_cells() against the two faces and the cells it makes. o_before < 0:
     /// not a flip of the offset surface (no front rule; the base's max rule decides).
     struct SwapFront
     {
         double o_before = -1.;
+        size_t o_points = 0; ///< changed stencil points before
         double a_before = -1.;
     };
     mutable wmtk::threading::enumerable_thread_specific<SwapFront> m_swap_front;

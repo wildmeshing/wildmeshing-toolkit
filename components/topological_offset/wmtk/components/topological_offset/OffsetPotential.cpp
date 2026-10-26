@@ -1292,104 +1292,48 @@ bool PlasticAMIPSEnergy3D::is_step_valid(const TVector& /*x0v*/, const TVector& 
 }
 
 // ---------------------------------------------------------------------------------------------
-// The offset error of one face; FaceOffsetError3D
+// The offset error at a front vertex's moving stencil points; StencilOffsetError3D
 // ---------------------------------------------------------------------------------------------
 
-double face_offset_error_of(
-    const OffsetPotential3D& pot,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
-{
-    // See the declaration: area times the mean of r^2 at the 3 interior points.
-    double m = 0.;
-    for (const auto& w : kFaceErrorPoints) {
-        const double r = pot.relative_residual(w[0] * a + w[1] * b + w[2] * c);
-        if (!std::isfinite(r)) return -1.;
-        m += r * r / 3.;
-    }
-    return 0.5 * (b - a).cross(c - a).norm() * m;
-}
-
-double face_offset_point_max_of(
-    const OffsetPotential3D& pot,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
-{
-    // See the declaration: the largest r^2 at the 3 interior points.
-    double mx = 0.;
-    for (const auto& w : kFaceErrorPoints) {
-        const double r = pot.relative_residual(w[0] * a + w[1] * b + w[2] * c);
-        if (!std::isfinite(r)) return -1.;
-        mx = std::max(mx, r * r);
-    }
-    return mx;
-}
-
-FaceOffsetError3D::FaceOffsetError3D(
+StencilOffsetError3D::StencilOffsetError3D(
     std::shared_ptr<const OffsetPotential3D> pot,
-    std::vector<Face> faces)
+    std::vector<Point> points)
     : m_pot(std::move(pot))
-    , m_faces(std::move(faces))
+    , m_points(std::move(points))
 {}
 
-double FaceOffsetError3D::eval(
+double StencilOffsetError3D::eval(
     const Eigen::Vector3d& x,
     const int need,
     Eigen::Vector3d& g,
     Eigen::Matrix3d& H) const
 {
-    // See the class doc. The moving vertex is the face's first corner, so q_k's weight on x is
-    // kFaceErrorPoints[k][0].
+    // See the class doc: each point once, weight 1.
     g.setZero();
     H.setZero();
     double e = 0.;
-    for (const Face& f : m_faces) {
-        double m = 0.;
-        Eigen::Vector3d gm = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d Hm = Eigen::Matrix3d::Zero();
-        for (const auto& w : kFaceErrorPoints) {
-            const Eigen::Vector3d q = w[0] * x + w[1] * f.q1 + w[2] * f.q2;
-            const double r = m_pot->relative_residual(q);
-            if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-            m += r * r / 3.;
-            if (need < 1) continue;
-            const Eigen::Vector3d gr = w[0] * m_pot->gradient(q);
-            gm += (2. / 3.) * r * gr;
-            if (need < 2) continue;
-            Hm += (2. / 3.) * (gr * gr.transpose() + (r * w[0] * w[0]) * m_pot->hessian(q));
-        }
-        const Eigen::Vector3d N = (f.q1 - x).cross(f.q2 - x);
-        const double nn = N.norm();
-        const double A = 0.5 * nn;
-        e += A * m;
+    for (const Point& pt : m_points) {
+        const Eigen::Vector3d q = pt.alpha * x + pt.c;
+        const double r = m_pot->relative_residual(q);
+        if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
+        e += r * r;
         if (need < 1) continue;
-        Eigen::Vector3d gA = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d HA = Eigen::Matrix3d::Zero();
-        if (nn > 0.) {
-            const Eigen::Vector3d ev = f.q2 - f.q1;
-            Eigen::Matrix3d E;
-            E << 0., -ev.z(), ev.y(), ev.z(), 0., -ev.x(), -ev.y(), ev.x(), 0.;
-            const Eigen::Vector3d gn = E.transpose() * N / nn;
-            gA = 0.5 * gn;
-            HA = 0.5 * (E.transpose() * E - gn * gn.transpose()) / nn;
-        }
-        g += A * gm + m * gA;
+        const Eigen::Vector3d gr = pt.alpha * m_pot->gradient(q);
+        g += 2. * r * gr;
         if (need < 2) continue;
-        H += A * Hm + gA * gm.transpose() + gm * gA.transpose() + m * HA;
+        H += 2. * (gr * gr.transpose() + (r * pt.alpha * pt.alpha) * m_pot->hessian(q));
     }
     return e;
 }
 
-double FaceOffsetError3D::value(const TVector& xv)
+double StencilOffsetError3D::value(const TVector& xv)
 {
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     return eval(xv.head(3), 0, g, H);
 }
 
-void FaceOffsetError3D::gradient(const TVector& xv, TVector& gradv)
+void StencilOffsetError3D::gradient(const TVector& xv, TVector& gradv)
 {
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
@@ -1397,7 +1341,7 @@ void FaceOffsetError3D::gradient(const TVector& xv, TVector& gradv)
     gradv = g;
 }
 
-void FaceOffsetError3D::hessian(const TVector& xv, MatrixXd& hess)
+void StencilOffsetError3D::hessian(const TVector& xv, MatrixXd& hess)
 {
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
