@@ -1856,6 +1856,22 @@ TEST_CASE("front-smoothing-objective", "[offset][3d]")
                     (std::find(fx.not_front.begin(), fx.not_front.end(), v) == fx.not_front.end()));
                 REQUIRE(!mesh->vertex_is_held(v));
                 REQUIRE(mesh->vertex_front_placed(v) == front);
+                // The loop's two blocks (m_smooth_set): the front block smooths exactly the
+                // front-placed vertices, the background block every other one; outside the
+                // blocks every vertex. smooth_before() refuses (and counts) the others.
+                {
+                    using S = TopoOffsetTetMesh::SmoothSet;
+                    CHECK(mesh->smooth_set_admits(v));
+                    mesh->m_smooth_set = S::Front;
+                    CHECK(mesh->smooth_set_admits(v) == front);
+                    mesh->m_smooth_set = S::Background;
+                    CHECK(mesh->smooth_set_admits(v) == !front);
+                    mesh->m_smooth_set = front ? S::Background : S::Front;
+                    const size_t skipped = mesh->m_smooth_set_skipped.load();
+                    CHECK_FALSE(mesh->smooth_before(mesh->tuple_from_vertex(v)));
+                    CHECK(mesh->m_smooth_set_skipped.load() == skipped + 1);
+                    mesh->m_smooth_set = S::All;
+                }
                 if (!front) {
                     const auto energy = mesh->smoothing_extra_energy(v);
                     if (mesh->ring_has_plastic_rest(v)) {

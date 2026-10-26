@@ -1454,8 +1454,14 @@ bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vect
 
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
-    ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
+    // The loop's front / background blocks (m_smooth_set): a vertex the block does not smooth is
+    // left where it is, before any diagnostic or rounding.
+    if (!smooth_set_admits(vid)) {
+        ++m_smooth_set_skipped;
+        return false;
+    }
+    ++m_smooth_trace.attempted;
 
     // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
     // counted, and smooth_after() reads this back.
@@ -4397,7 +4403,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         interleaved ? std::vector<const char*>{"split", "collapse", "swap"}
                     : std::vector<const char*>{"ops"};
     logger().info(
-        "\tTurn shape: {}",
+        "\tTurn shape: {}, run twice per turn -- a FRONT block whose smoothing moves only the "
+        "front vertices the loop places (the offset error objective), then a BACKGROUND block "
+        "whose smoothing moves every other vertex (TetWild's smoother)",
         interleaved
             ? fmt::format(
                   "INTERLEAVED -- split, collapse, swap, each followed by {} smoothing "
@@ -4432,71 +4440,99 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // loop (a TetWild pass's last stall, a smart growth attempt restored from its snapshot) name
     // other edges now.
     m_force_split_edges.clear();
+    // THE TWO BLOCKS OF A TURN (Spencer, 2026-10-26): the operation groups run twice, first with
+    // smoothing on the front vertices the loop places alone -- the offset surface is placed, which
+    // may make bad cells -- then with smoothing on every other vertex alone, which cleans the
+    // mesh up around it (m_smooth_set, smooth_before()). Back to every vertex on any way out.
+    struct SmoothSetReset
+    {
+        SmoothSet& s;
+        ~SmoothSetReset() { s = SmoothSet::All; }
+    } smooth_set_reset{m_smooth_set};
+    const std::array<std::pair<SmoothSet, const char*>, 2> blocks = {
+        {{SmoothSet::Front, "front"}, {SmoothSet::Background, "background"}}};
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
-        for (size_t gi = 0; gi < groups.size(); ++gi) {
-            ++m_smooth_group; // see VertexExtra::m_front_change
-            // E before and after each group, the descent check (a collapse or swap group may not
-            // raise it; a split group may).
-            const double energy_before_group = global_energy();
-            const int vol_c0 = m_volume_reject_collapse.load(),
-                      vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
-            const int pl_c0 = m_plastic_reject_collapse.load(),
-                      pl_s0 = m_plastic_reject_swap.load();
-            const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
-                      fold_m0 = m_fold_reject_smooth.load();
-            if (gi == 1) needle_scan("collapse pass");
-            if (!interleaved) needle_scan("combined ops pass");
-            // [energy step] lines: the group's baseline here, then one per smoothing pass from
-            // smoothing_pass_done() (see log_energy_step()).
-            m_energy_step_turn = it + 1;
-            m_energy_step_group = group_names[gi];
-            m_energy_step_first = true;
-            log_energy_step("start");
-            local_operations(groups[gi]);
-            m_energy_step_turn = 0;
-            // Per group, so a containment violation is attributed to the pass that made it
-            // rather than found at the end of the run. Same gate as the shared sanity check.
-            if (m_params.perform_sanity_checks) {
-                audit_surface_containment(fmt::format("turn {} after {}", it + 1, group_names[gi]));
-            }
-            {
-                const double energy_after_group = global_energy();
-                logger().info(
-                    "\t[energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | "
-                    "refused by the front max rule (stencil-point offset error / AMIPS): {} "
-                    "collapses, {} flips; {} splits refused by the split gate",
-                    it + 1,
-                    group_names[gi],
-                    energy_before_group,
-                    energy_after_group,
-                    energy_after_group - energy_before_group,
-                    m_volume_reject_collapse.load() - vol_c0,
-                    m_volume_reject_swap.load() - vol_s0,
-                    m_volume_reject_split.load() - vol_p0);
-                if (fold_reject_active()) {
+        for (const auto& [block_set, block_name] : blocks) {
+            m_smooth_set = block_set;
+            const size_t skipped0 = m_smooth_set_skipped.load();
+            for (size_t gi = 0; gi < groups.size(); ++gi) {
+                ++m_smooth_group; // see VertexExtra::m_front_change
+                // E before and after each group, the descent check (a collapse or swap group may
+                // not raise it; a split group may).
+                const double energy_before_group = global_energy();
+                const int vol_c0 = m_volume_reject_collapse.load(),
+                          vol_s0 = m_volume_reject_swap.load(),
+                          vol_p0 = m_volume_reject_split.load();
+                const int pl_c0 = m_plastic_reject_collapse.load(),
+                          pl_s0 = m_plastic_reject_swap.load();
+                const int fold_c0 = m_fold_reject_collapse.load(),
+                          fold_s0 = m_fold_reject_swap.load(),
+                          fold_m0 = m_fold_reject_smooth.load();
+                if (gi == 1) needle_scan("collapse pass");
+                if (!interleaved) needle_scan("combined ops pass");
+                // [energy step] lines: the group's baseline here, then one per smoothing pass from
+                // smoothing_pass_done() (see log_energy_step()).
+                m_energy_step_turn = it + 1;
+                m_energy_step_group = group_names[gi];
+                m_energy_step_first = true;
+                log_energy_step("start");
+                local_operations(groups[gi]);
+                m_energy_step_turn = 0;
+                // Per group, so a containment violation is attributed to the pass that made it
+                // rather than found at the end of the run. Same gate as the shared sanity check.
+                if (m_params.perform_sanity_checks) {
+                    audit_surface_containment(
+                        fmt::format("turn {} after {}", it + 1, group_names[gi]));
+                }
+                {
+                    const double energy_after_group = global_energy();
                     logger().info(
-                        "\t[op reject] turn {} {} group: refused for raising the folded offset "
-                        "faces (growth_mode individual_op_reject): {} collapses, {} offset-surface "
-                        "flips, {} smoothing moves",
+                        "\t[energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | {} block | "
+                        "refused by the front max rule (stencil-point offset error / AMIPS): {} "
+                        "collapses, {} flips; {} splits refused by the split gate",
                         it + 1,
                         group_names[gi],
-                        m_fold_reject_collapse.load() - fold_c0,
-                        m_fold_reject_swap.load() - fold_s0,
-                        m_fold_reject_smooth.load() - fold_m0);
-                }
-                if (m_plastic_active) {
-                    logger().info(
-                        "\t[plastic] turn {} {} group: refused by the plastic max rule "
-                        "(use_rest_pose, plastic AMIPS): {} collapses, {} swaps",
-                        it + 1,
-                        group_names[gi],
-                        m_plastic_reject_collapse.load() - pl_c0,
-                        m_plastic_reject_swap.load() - pl_s0);
+                        energy_before_group,
+                        energy_after_group,
+                        energy_after_group - energy_before_group,
+                        block_name,
+                        m_volume_reject_collapse.load() - vol_c0,
+                        m_volume_reject_swap.load() - vol_s0,
+                        m_volume_reject_split.load() - vol_p0);
+                    if (fold_reject_active()) {
+                        logger().info(
+                            "\t[op reject] turn {} {} group: refused for raising the folded offset "
+                            "faces (growth_mode individual_op_reject): {} collapses, {} "
+                            "offset-surface "
+                            "flips, {} smoothing moves",
+                            it + 1,
+                            group_names[gi],
+                            m_fold_reject_collapse.load() - fold_c0,
+                            m_fold_reject_swap.load() - fold_s0,
+                            m_fold_reject_smooth.load() - fold_m0);
+                    }
+                    if (m_plastic_active) {
+                        logger().info(
+                            "\t[plastic] turn {} {} group: refused by the plastic max rule "
+                            "(use_rest_pose, plastic AMIPS): {} collapses, {} swaps",
+                            it + 1,
+                            group_names[gi],
+                            m_plastic_reject_collapse.load() - pl_c0,
+                            m_plastic_reject_swap.load() - pl_s0);
+                    }
                 }
             }
+            logger().info(
+                "\t[block] turn {} {} block done: its smoothing passes left {} vertex visits to "
+                "the "
+                "other block",
+                it + 1,
+                block_name,
+                m_smooth_set_skipped.load() - skipped0);
         }
+        m_smooth_set = SmoothSet::All;
         consolidate_mesh();
         m_cross_valid = false; // DEBUG_crossings: consolidation renumbered the vertices
         assign_band_regions();

@@ -456,6 +456,25 @@ public:
     bool tetwild_rules() const { return m_op_rules == OpRules::TetWild; }
 
     /**
+     * @brief Which vertices a smoothing pass moves (Spencer, 2026-10-26: each turn of the loop
+     * runs its operation groups twice -- a FRONT block that places the offset surface, then a
+     * BACKGROUND block that cleans up the mesh around it; optimize_offset_loop()). All: every
+     * vertex (pre_smooth, the TetWild passes, the repulsion passes, anything outside the loop's
+     * blocks). Front: only the vertices the loop places against the offset error
+     * (vertex_front_placed()). Background: every other vertex, held front vertices among them,
+     * with TetWild's smoother. smooth_before() refuses a vertex outside the set before anything
+     * else (counted in m_smooth_set_skipped, not in the smoothing counters).
+     */
+    enum class SmoothSet { All, Front, Background };
+    SmoothSet m_smooth_set = SmoothSet::All;
+    mutable std::atomic<size_t> m_smooth_set_skipped{0};
+    bool smooth_set_admits(const size_t vid) const
+    {
+        if (m_smooth_set == SmoothSet::All) return true;
+        return vertex_front_placed(vid) == (m_smooth_set == SmoothSet::Front);
+    }
+
+    /**
      * @brief The envelope the offset surface may not leave during a TetWild pass (tetwild_pass()),
      * of eps envelope_size (optimize_construction's pass: half the traced distance),
      * built by build_offset_envelope() from the surface as it is just
