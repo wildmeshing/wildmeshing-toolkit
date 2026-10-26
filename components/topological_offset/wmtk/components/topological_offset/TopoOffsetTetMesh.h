@@ -1097,6 +1097,16 @@ public:
      * The 2D twin is edge_is_offset_surface_live().
      */
     bool face_is_offset_surface_live(const Tuple& f) const;
+    /// cos 150 degrees: a real fold's two offset faces have normals out of the band closer to
+    /// opposite than this (the [foldover] dihedral reading, analyze.py's).
+    static constexpr double kCos150 = -0.86602540378443864676;
+    /// The normal of live offset face f, unit, pointing out of the band; false when f has no band
+    /// cell or no area.
+    bool offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const;
+    /// The real folds now: offset-surface edges with exactly two offset faces whose normals out of
+    /// the band are within 30 degrees of opposite (the edge of a zero-volume sheet, Lemma 5 of the
+    /// case table, 2026-10-24); `corners`, when given, marks the corners of every fold's two faces.
+    size_t count_real_folds(std::vector<char>* corners = nullptr) const;
     /// Whether edge (a, b) lies on the band's outer surface: some incident face does.
     bool edge_is_offset_surface_live(size_t a, size_t b) const;
     /// Every live offset-surface face as a sorted vertex triple.
@@ -1595,6 +1605,13 @@ public:
     /// EXPERIMENTAL_damping, per pass: smoothing moves accepted, and how many of them ended on the
     /// bound (count_damped_move()). Reported and reset beside the Newton counters.
     std::atomic<size_t> m_damping_moves{0}, m_damping_bounded{0};
+    /// EXPERIMENTAL_damping, per pass, the front smoother's accepted moves alone
+    /// (count_damped_front_move()): moves, on the bound, and of those on the bound: mostly along
+    /// grad d, with the along-gradient part toward the target, with the target farther than the
+    /// bound, and with no gradient to read.
+    std::atomic<size_t> m_damping_front_moves{0}, m_damping_front_bounded{0},
+        m_damping_front_along{0}, m_damping_front_toward{0}, m_damping_front_far{0},
+        m_damping_front_nograd{0};
     /// The repulsion passes and rounds (repulsion_smoothing()), set only while they run: the
     /// Euclidean field at level 2 x target_distance. Null otherwise, so every other path is
     /// untouched.
@@ -1999,6 +2016,11 @@ public:
     /// EXPERIMENTAL_damping: counts an accepted move from x0 in m_damping_moves, and in
     /// m_damping_bounded when it ended on the bound (within a relative 1e-9 of max_step).
     void count_damped_move(size_t vid, const Vector3d& x0, double max_step);
+    /// EXPERIMENTAL_damping, diagnostic: the same count for a front vertex's accepted move, and for
+    /// a move on the bound its split by grad d at x0 (the nearest input primitive's): along
+    /// (|m . g| >= |m - (m . g) g|, m the move), toward the target (m . g has the sign of
+    /// delta - d(x0)), far (|d(x0) - delta| > max_step: the bound, not the target, ended it).
+    void count_damped_front_move(size_t vid, const Vector3d& x0, double max_step);
     /// The energy's AMIPS term over vid's one-ring, (w / s^3) sum vol AMIPS^3 (band_amips_weight(),
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;

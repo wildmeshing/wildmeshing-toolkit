@@ -828,6 +828,33 @@ void TopoOffsetTetMesh::count_damped_move(
     if (moved >= max_step * (1. - 1e-9)) ++m_damping_bounded;
 }
 
+void TopoOffsetTetMesh::count_damped_front_move(
+    const size_t vid,
+    const Vector3d& x0,
+    const double max_step)
+{
+    // See the declaration. Log-only: reads the mesh and the input, changes nothing.
+    if (!damping_active()) return;
+    ++m_damping_front_moves;
+    const Vector3d m = std::as_const(m_vertex_attribute)[vid].m_posf - x0;
+    if (!(m.norm() >= max_step * (1. - 1e-9))) return;
+    ++m_damping_front_bounded;
+    const Envelope& env = *m_input_complex_envelope;
+    const int64_t prim = nearest_primitive(env, m_input_complex_pad, x0);
+    Vector3d g = Vector3d::Zero();
+    const double d0 = prim < 0 ? 0. : env.primitive_distance(prim, x0, &g);
+    if (prim < 0 || !(g.norm() > 0.)) {
+        ++m_damping_front_nograd;
+        return;
+    }
+    g.normalize();
+    const double along = m.dot(g);
+    if (std::abs(along) >= (m - along * g).norm()) ++m_damping_front_along;
+    const double delta = m_offset_params.target_distance;
+    if (along * (delta - d0) > 0.) ++m_damping_front_toward;
+    if (std::abs(d0 - delta) > max_step) ++m_damping_front_far;
+}
+
 double TopoOffsetTetMesh::swap_edge_44_energy(
     const std::vector<std::array<size_t, 4>>& tets,
     const int op_case)
@@ -1862,6 +1889,16 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
             bounded,
             moves,
             m_offset_params.damping_factor);
+        logger().info(
+            "\t[damping front] {} of {} accepted front moves ended on the bound; of those: {} "
+            "mostly along grad d, {} with the along-gradient part toward the target, {} with the "
+            "target farther than the bound, {} with no gradient",
+            m_damping_front_bounded.exchange(0),
+            m_damping_front_moves.exchange(0),
+            m_damping_front_along.exchange(0),
+            m_damping_front_toward.exchange(0),
+            m_damping_front_far.exchange(0),
+            m_damping_front_nograd.exchange(0));
     }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
@@ -3293,7 +3330,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     const bool rms_mode = m_offset_params.settle_mark == "rms";
     const bool vertex_mode = m_offset_params.settle_mark == "vertex";
     const bool variance_mode = m_offset_params.settle_mark == "variance";
-    const bool vertex_marks = vertex_mode || variance_mode; // marks vertices, not faces
+    const bool remainder_mode = m_offset_params.settle_mark == "remainder";
+    const bool vertex_marks =
+        vertex_mode || variance_mode || remainder_mode; // the face loop below marks nothing
     size_t n_var_refine = 0, n_var_move = 0;
     if (settled) {
         // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
@@ -3433,6 +3472,49 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
             }
         }
+        // EXPERIMENTAL_settle_mark "remainder": per front face f, b = e(centroid) - mean
+        // e(corners),
+        // e = (d - delta) / front_conv -- the part of f's error that a flat face with these corners
+        // cannot follow wherever they move, 0 exactly where d is affine on f. |b| > 1: f's corners
+        // are halved (refine_front_by_halving() halves each vertex once). The exit is the vertex
+        // test's. MEASURED (cube_in at 0.45, frames, 2026-10-26): the single-tet front that
+        // "variance" never refines reads b = 9.7 to 9.9 on all four faces; a front patch 1.0 to 1.5
+        // bars short at an edge of the target, which "vertex" kept refining, reads b = 0.000.
+        size_t n_rem_faces = 0;
+        double max_rem = 0.;
+        if (remainder_mode) {
+            const Envelope& env = *m_input_complex_envelope;
+            const auto err = [&](const Vector3d& x) {
+                return (env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) -
+                        delta) /
+                       eps;
+            };
+            std::vector<size_t> marked;
+            for (const auto& f : faces) {
+                const Vector3d& a = m_vertex_attribute[f[0]].m_posf;
+                const Vector3d& b = m_vertex_attribute[f[1]].m_posf;
+                const Vector3d& c = m_vertex_attribute[f[2]].m_posf;
+                const double rem = err((a + b + c) / 3.) - (err(a) + err(b) + err(c)) / 3.;
+                max_rem = std::max(max_rem, std::abs(rem));
+                if (!(std::abs(rem) > 1.)) continue;
+                ++n_rem_faces;
+                for (const size_t v : f) marked.push_back(v);
+            }
+            wmtk::vector_unique(marked);
+            for (const size_t v : marked) {
+                ++n_marked;
+                corners.push_back(v);
+                if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+            }
+            logger().info(
+                "\t[settle remainder] turn {}: {} of {} front faces with |b| > 1 (max |b| {:.4g}), "
+                "{} corners marked",
+                turn,
+                n_rem_faces,
+                faces.size(),
+                max_rem,
+                marked.size());
+        }
         // EXPERIMENTAL_gap_refinement: a band cell with a front corner whose corner bound may lie
         // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
         // mean of the bounding triangle's distance. Where d is convex on the cell the true mean of
@@ -3531,7 +3613,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                   n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
             : std::string(" -- no face test, no refinement, no exit: the front still moves"));
     // "variance" leaves the stuck vertices unmarked, so its exit is the vertex test's.
-    if (variance_mode) return settled && n_over_vertex == 0 && n_gap_over == 0;
+    if (variance_mode || remainder_mode) return settled && n_over_vertex == 0 && n_gap_over == 0;
     return settled && n_marked == 0 && n_gap_over == 0;
 }
 
@@ -3973,6 +4055,58 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
     // construction and would drag the reported error to target_distance everywhere.
     return !cell_is_input_complex(a ? tb : ta);
+}
+
+bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const
+{
+    // See the declaration. Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
+    const auto o = f.switch_tetrahedron(*this);
+    if (!o) return false;
+    const size_t t0 = f.tid(*this), t1 = o->tid(*this);
+    const size_t tb = cell_is_offset_band(t0) ? t0 : cell_is_offset_band(t1) ? t1 : size_t(-1);
+    if (tb == size_t(-1)) return false;
+    const std::array<size_t, 3> fv = get_face_vids(f);
+    size_t opp = 0;
+    for (const size_t v : oriented_tet_vids(tb)) {
+        if (v != fv[0] && v != fv[1] && v != fv[2]) opp = v;
+    }
+    const Vector3d& p0 = m_vertex_attribute[fv[0]].m_posf;
+    n = (m_vertex_attribute[fv[1]].m_posf - p0).cross(m_vertex_attribute[fv[2]].m_posf - p0);
+    if (!(n.norm() > 0)) return false;
+    n.normalize();
+    if (n.dot(p0 - m_vertex_attribute[opp].m_posf) < 0) n = -n;
+    return true;
+}
+
+size_t TopoOffsetTetMesh::count_real_folds(std::vector<char>* corners) const
+{
+    // Each live offset face once, its normal out of the band; then the edges with exactly two.
+    // Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
+    std::map<std::array<size_t, 2>, std::vector<std::pair<std::array<size_t, 3>, Vector3d>>>
+        by_edge;
+    size_t vmax = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        Vector3d n;
+        if (!offset_face_normal_out_of_band(f, n)) continue;
+        const std::array<size_t, 3> fv = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            const size_t a = fv[i], b = fv[(i + 1) % 3];
+            by_edge[{{std::min(a, b), std::max(a, b)}}].push_back({fv, n});
+            vmax = std::max(vmax, std::max(a, b));
+        }
+    }
+    if (corners) corners->assign(vmax + 1, 0);
+    size_t folds = 0;
+    for (const auto& [e, fs] : by_edge) {
+        if (fs.size() != 2 || fs[0].second.dot(fs[1].second) >= kCos150) continue;
+        ++folds;
+        if (!corners) continue;
+        for (const auto& [fv, n] : fs) {
+            for (const size_t v : fv) (*corners)[v] = 1;
+        }
+    }
+    return folds;
 }
 
 bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t b) const
@@ -4445,7 +4579,7 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
         }
     } gate_restore{
         *this,
-        m_offset_params.energy_only_ops,
+        m_offset_params.energy_only_ops || m_offset_params.collapse_every_edge,
         m_params.splitting_l2,
         m_params.collapsing_l2,
         m_offset_params.split_energy_gate};
@@ -4525,6 +4659,12 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
             m_params.collapsing_l2 = std::numeric_limits<double>::infinity();
         }
         m_offset_params.split_energy_gate = true;
+    }
+    // EXPERIMENTAL_collapse_every_edge: the collapse half of the above alone -- every edge offered
+    // to the collapse pass, each kept only by the collapse's energy rule; the split pass keeps its
+    // length trigger. Restored on return by gate_restore.
+    if (m_offset_params.collapse_every_edge && !m_offset_params.energy_only_ops) {
+        m_params.collapsing_l2 = std::numeric_limits<double>::infinity();
     }
     if (m_offset_params.phase_loop) {
         phase_body();
@@ -5591,7 +5731,22 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle exit (settled, no front face more than
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
-        const bool resolved = settle ? settle_exit : ec.converged();
+        bool resolved = settle ? settle_exit : ec.converged();
+        // EXPERIMENTAL_exit_no_folds: no exit while a real fold remains (count_real_folds()). The
+        // vertex exit tests the front's vertices only; a flat sheet of inner cells within
+        // front_conv of the level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30
+        // runs, 8 threads): one run exited with an inner region of 0.5% of the target's volume,
+        // every front point within 0.76 front_conv, 5 real folds; 5-7 of each batch's 28-30
+        // exits had 1-5 real folds.
+        if (m_offset_params.exit_no_folds) {
+            const size_t folds = count_real_folds();
+            logger().info(
+                "\t[exit folds] turn {}: real folds {}{}",
+                it + 1,
+                folds,
+                resolved && folds > 0 ? " -- the exit test passes; held for the folds" : "");
+            if (folds > 0) resolved = false;
+        }
         if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.

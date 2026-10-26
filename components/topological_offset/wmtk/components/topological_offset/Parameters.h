@@ -117,6 +117,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_energy_only_collapse_length_gate (see the spec): with energy_only_ops, the
     /// collapse pass keeps its length gate.
     bool energy_only_collapse_length_gate = false;
+    /// EXPERIMENTAL_collapse_every_edge (see the spec): the loop's collapse pass offers every edge,
+    /// kept only by the collapse's energy rule; the split pass keeps its length trigger.
+    bool collapse_every_edge = false;
+    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains.
+    bool exit_no_folds = false;
     /// EXPERIMENTAL_phase_loop (see the spec): each turn is a geometry phase (smoothing to rest)
     /// then a connectivity phase (operation rounds to rest).
     bool phase_loop = false;
@@ -408,10 +413,10 @@ struct Parameters : public wmtk::OptimizerParameters
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
-            settle_mark != "variance") {
+            settle_mark != "variance" && settle_mark != "remainder") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\" or \"variance\", not "
-                "\"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"variance\" or "
+                "\"remainder\", not \"{}\"",
                 settle_mark);
         }
         output_path = json_params["output"];
@@ -476,6 +481,8 @@ struct Parameters : public wmtk::OptimizerParameters
         energy_only_sizing_split = json_params["EXPERIMENTAL_energy_only_sizing_split"];
         energy_only_collapse_length_gate =
             json_params["EXPERIMENTAL_energy_only_collapse_length_gate"];
+        collapse_every_edge = json_params["EXPERIMENTAL_collapse_every_edge"];
+        exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
         phase_loop = json_params["EXPERIMENTAL_phase_loop"];
         phase_loop_connectivity_first = json_params["EXPERIMENTAL_phase_loop_connectivity_first"];
         smooth_to_rest = json_params["EXPERIMENTAL_smooth_to_rest"];
