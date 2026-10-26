@@ -872,6 +872,15 @@ double face_offset_error_of(
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
     const Eigen::Vector3d& c);
+/// The largest per-point error over the same 3 interior points, max_k relative_residual(q_k)^2
+/// (no area): the stencil-point offset error O(q) the front's max rules bound by
+/// front_conv_frac()^2, as TetWild bounds AMIPS per tet by stop_energy. -1 when a sample's
+/// residual is not finite.
+double face_offset_point_max_of(
+    const OffsetPotential3D& pot,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c);
 /** @} */
 
 /**

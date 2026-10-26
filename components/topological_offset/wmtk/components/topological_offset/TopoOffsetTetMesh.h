@@ -422,22 +422,23 @@ public:
      * @brief Which rules the operations and the smoother follow -- the one switch for them.
      *
      * Loop (the default; the loop and the repulsion passes), since 2026-10-22: TetWild's max
-     * rules for everything that does not touch the offset surface, the offset error for what
+     * rules for everything that does not touch the offset surface, the front max rule for what
      * does. A collapse or swap that changes no offset-surface face is judged by the base's max of
      * AMIPS^3 over the cells it changes (collapse_quality_allowed(), swap_quality_allowed(), the
      * base's 4-4 / 5-6 case scores and face swap gate). A collapse that touches the offset
-     * surface, and a flip OF the offset surface, is judged ONLY by the offset error over the
-     * offset faces it changes, before against after (collapse_edge_before() /
-     * collapse_after_connectivity(); swap_before_surface() / swap_after_cells();
-     * face_offset_error()) -- no tet-quality guard at all beyond the engine's inversion, envelope
-     * and link conditions. The smoother: a front vertex the loop places (vertex_front_placed())
-     * minimises the ring barrier plus the offset error over its front faces, NO AMIPS
-     * (smoothing_extra_energy(): RingBarrier3D + FoldBarrier3D + FaceOffsetError3D), vetoed on that
-     * objective; every other vertex is TetWild's smoother -- the raw sum of AMIPS over the one-ring
-     * with the quality veto (smooth_nonfront_vertex()). The split gate
-     * (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums. use_rest_pose: the same
-     * rules on PLASTIC AMIPS -- a plastic cell's quality is measured against its stamped rest
-     * wherever these rules read it (plastic_quality(), plastic_amips_energy(),
+     * surface, and a flip OF the offset surface, is judged (since 2026-10-26) by the max
+     * stencil-point offset error over the offset faces it changes AND the max AMIPS^3 over the
+     * cells it changes, before against after, each against its bound (front_op_allowed():
+     * front_conv_frac()^2 and stop_energy^3; collapse_edge_before() /
+     * collapse_after_connectivity(); swap_before_surface() / swap_after_cells()) -- beside the
+     * engine's inversion, envelope and link conditions. The smoother: a front vertex the loop
+     * places (vertex_front_placed()) minimises the ring barrier plus the offset error over its
+     * front faces, NO AMIPS (smoothing_extra_energy(): RingBarrier3D + FoldBarrier3D +
+     * FaceOffsetError3D), vetoed on that objective; every other vertex is TetWild's smoother -- the
+     * raw sum of AMIPS over the one-ring with the quality veto (smooth_nonfront_vertex()). The
+     * split gate (EXPERIMENTAL_split_energy_gate) still compares tet_energy() sums. use_rest_pose:
+     * the same rules on PLASTIC AMIPS -- a plastic cell's quality is measured against its stamped
+     * rest wherever these rules read it (plastic_quality(), plastic_amips_energy(),
      * smoothing_cell_energy()); stamping as before.
      *
      * TetWild (every TetWild pass, tetwild_pass(): optimize_construction's and the final pass):
@@ -1338,8 +1339,8 @@ public:
     /**
      * @brief Which tag the tets a swap creates should carry, and the topology half of the
      * surface-flip refusal (class match, same boundary). The geometric half is the shared swap's
-     * containment check. The surface hook also takes the flip rule's before-half
-     * (m_swap_error_before) for a flip of the offset surface. See Optimize3d.cpp.
+     * containment check. The surface hook also takes the front max rule's before half
+     * (m_swap_front) for a flip of the offset surface. See Optimize3d.cpp.
      */
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -1712,12 +1713,20 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// The front collapse rule's before half (collapse_edge_before()): the offset error summed
-    /// over the offset faces at the collapse's two ends (face_offset_error() per face), compared
-    /// by collapse_after_connectivity() against the same sum over the survivor's faces. -1: the
+    /// The front collapse rule's before half (collapse_edge_before()), for front_op_allowed():
+    /// o_before = offset_point_max_at() the collapse's two ends, a_before = the max of
+    /// plastic_quality() over v1's one-ring (the base's ring), and v1's ring tids sorted (the
+    /// cells the collapse reshapes keep their slots; collapse_after_connectivity() takes the
+    /// after-max over them alone, against offset_point_max_at() the survivor). o_before < 0: the
     /// collapse touches no offset face (no rule; the base's max rule decides,
     /// collapse_quality_allowed()).
-    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_front_error{-1.};
+    struct CollapseFront
+    {
+        double o_before = -1.;
+        double a_before = -1.;
+        std::vector<size_t> tids;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<CollapseFront> m_collapse_front;
     /// The plastic collapse rule's before half (use_rest_pose, collapse_edge_before()): the max
     /// of plastic_quality() over v1's one-ring, whether v1 was rounded (an unrounded v1 passes,
     /// as the base's rule does), and v1's ring tids (the cells the collapse reshapes keep their
@@ -1785,8 +1794,8 @@ public:
     /**
      * @brief The base's max rule (after < before), with one exception: a flip of the offset
      * surface (SwapSurfaceSides::worthwhile, set by swap_before_surface()) is admitted here
-     * whatever its cells' quality -- the ONLY thing that judges it is the offset error over the
-     * two faces it replaces against the two it makes (swap_after_cells()).
+     * whatever its cells' quality -- the front max rule judges it once its new cells are labelled
+     * and stamped (front_op_allowed(), in swap_after_cells()).
      */
     bool swap_quality_allowed(double after, double before, bool is_surface_flip) const override
     {
@@ -1800,8 +1809,8 @@ public:
      * @brief The 4-4 / 5-6 case search's score: the base's (the max of AMIPS^3 over the cells),
      * except that for a flip of the offset surface op_case 0 (the current cells) scores
      * std::numeric_limits<double>::max(), so the search never keeps the current cells on quality
-     * grounds -- it picks the best-shaped retetrahedralization and the offset error over the
-     * flip's faces decides in swap_after_cells().
+     * grounds -- it picks the best-shaped retetrahedralization and the front max rule decides in
+     * swap_after_cells().
      */
     double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
@@ -1947,10 +1956,58 @@ public:
      * settle test's settled gate compares (settle_refinement_turn(), settle_rel_thresh).
      */
     double offset_error(size_t* n_unmeasurable = nullptr) const;
-    /// The offset error summed over the offset faces at v1 (and at v2 when given), each face once
-    /// (sorted-corner set; an unmeasurable face reads 0): the front collapse rule's two halves
-    /// (collapse_edge_before() / collapse_after_connectivity()).
-    double offset_error_at(size_t v1, size_t v2 = static_cast<size_t>(-1)) const;
+    /// The STENCIL-POINT offset error of one offset face: the largest ((d(q) - target_distance) /
+    /// target_distance)^2 over the same 3 interior points face_offset_error() samples
+    /// (face_offset_point_max_of()), on the union field. Bounded by front_conv_frac()^2 the way
+    /// TetWild bounds AMIPS per tet by stop_energy. -1 when unmeasurable.
+    double face_offset_point_max(size_t a, size_t b, size_t c) const;
+    /// face_offset_point_max() maximised over the offset faces at v1 (and at v2 when given; an
+    /// unmeasurable face reads 0): the front collapse rule's offset halves (collapse_edge_before()
+    /// / collapse_after_connectivity()).
+    double offset_point_max_at(size_t v1, size_t v2 = static_cast<size_t>(-1)) const;
+    /**
+     * @brief THE FRONT MAX RULE (Spencer's table, 2026-10-26) for a collapse that touches the
+     * offset surface and a flip of it: o = the max stencil-point offset error over the changed
+     * offset faces (face_offset_point_max()), bound o_bar = front_conv_frac()^2; a = the max
+     * AMIPS^3 over the changed cells (plastic_quality()), bound a_bar = stop_energy^3. "Lower"
+     * is after <= before for a collapse (strict false) and after < before for a flip (strict
+     * true). By where the op starts:
+     *
+     *     o < o_bar, a < a_bar:   both lower
+     *     o >= o_bar, a < a_bar:  o lower, and a stays below a_bar
+     *     o < o_bar, a >= a_bar:  a lower, and o stays below o_bar
+     *     both over:              both lower
+     *
+     * A NaN anywhere refuses.
+     */
+    static bool front_op_allowed(
+        double o_before,
+        double o_after,
+        double a_before,
+        double a_after,
+        double o_bar,
+        double a_bar,
+        bool strict)
+    {
+        const auto lower = [strict](const double after, const double before) {
+            return strict ? after < before : after <= before;
+        };
+        const bool o_in = o_before < o_bar, a_in = a_before < a_bar;
+        if (!o_in && a_in) return lower(o_after, o_before) && a_after < a_bar;
+        if (o_in && !a_in) return lower(a_after, a_before) && o_after < o_bar;
+        return lower(o_after, o_before) && lower(a_after, a_before);
+    }
+    /// front_op_allowed()'s two bounds for this mesh: front_conv_frac()^2 and stop_energy^3.
+    double front_offset_bar() const
+    {
+        const double f = m_offset_params.front_conv_frac();
+        return f * f;
+    }
+    double front_amips_bar() const
+    {
+        const double s = m_params.stop_energy;
+        return s * s * s;
+    }
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector3d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a vertex the loop
@@ -2369,16 +2426,16 @@ public:
 
     /**
      * @brief The base's max rule (q <= ring_max for a rounded v1), with two exceptions: a
-     * collapse that touches the offset surface (m_collapse_front_error >= 0, set by
-     * collapse_edge_before()) is admitted here whatever its cells' quality -- the ONLY thing that
-     * judges it is the offset error over the faces at its two ends against the survivor's
-     * (collapse_after_connectivity()) -- and coarsening keeps its own absolute bar, as before.
+     * collapse that touches the offset surface (m_collapse_front.o_before >= 0, set by
+     * collapse_edge_before()) is admitted here whatever its cells' quality -- the front max rule
+     * judges it after the connectivity is final (front_op_allowed(), in
+     * collapse_after_connectivity()) -- and coarsening keeps its own absolute bar, as before.
      */
     bool collapse_quality_allowed(size_t v1, double q, double ring_max) const override
     {
         if (tetwild_rules()) return TetOptimizerMesh::collapse_quality_allowed(v1, q, ring_max);
         if (m_coarsen_mode) return true; // coarsening's absolute bar decides, as before
-        if (m_collapse_front_error.local() >= 0.) return true; // the face rule decides
+        if (m_collapse_front.local().o_before >= 0.) return true; // the front max rule decides
         if (m_collapse_plastic.local().before >= 0.) return true; // the plastic max rule decides
         return TetOptimizerMesh::collapse_quality_allowed(v1, q, ring_max);
     }
@@ -2728,14 +2785,20 @@ private:
         size_t c,
         size_t d);
     mutable wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
-    /// The front flip rule's before half, per thread: the offset error summed over the two offset
-    /// faces the flip replaces (face_offset_error()), taken in swap_before_surface() and compared
-    /// by swap_after_cells() against the two faces it makes. -1: not a flip of the offset surface
-    /// (no face rule; the base's max rule decides).
-    mutable wmtk::threading::enumerable_thread_specific<double> m_swap_error_before{-1.};
+    /// The front flip rule's before half, per thread, for front_op_allowed(): o_before = the
+    /// larger face_offset_point_max() of the two offset faces the flip replaces, a_before = the
+    /// max of plastic_quality() over the cells it replaces; taken in swap_before_surface() and
+    /// compared by swap_after_cells() against the two faces and the cells it makes. o_before < 0:
+    /// not a flip of the offset surface (no front rule; the base's max rule decides).
+    struct SwapFront
+    {
+        double o_before = -1.;
+        double a_before = -1.;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<SwapFront> m_swap_front;
     /// The plastic swap rule's before half (use_rest_pose): the max of plastic_quality() over the
     /// cells the swap replaces, taken in swap_before_interior() / swap_before_surface() (never
-    /// for a flip of the offset surface, whose face rule stands alone) and compared by
+    /// for a flip of the offset surface, which the front max rule judges) and compared by
     /// swap_after_cells() against the max over the cells it makes (strictly lower, the base's
     /// strictness). The 4-4 / 5-6 case scores read it for op_case 0 and score candidates with
     /// candidate_plastic_quality(). -1: no plastic rule.

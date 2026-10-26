@@ -1421,6 +1421,84 @@ TEST_CASE("face-offset-error-3d", "[offset][3d]")
     }
 }
 
+TEST_CASE("face-offset-point-max", "[offset][3d]")
+{
+    // The stencil-point offset error the front max rule bounds: the largest
+    // ((d - delta) / delta)^2 over the same 3 interior points (2/3, 1/6, 1/6) and permutations
+    // (face_offset_point_max_of()), no area. Above the input triangle's interior d = z, so each
+    // point's value is ((z(q) - delta) / delta)^2 with z(q) the barycentric mean of the corners'.
+    const auto pot = plane_field();
+    const std::vector<std::array<Vector3d, 3>> faces = {
+        {{{0.1, -0.05, 0.53}, {0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}}},
+        {{{-0.02, 0.12, 0.74}, {0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}}},
+        {{{0.3, 0.2, 0.05}, {-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}}};
+    for (const auto& f : faces) {
+        double want = 0.;
+        for (const auto& w : kFaceErrorPoints) {
+            const double z = w[0] * f[0].z() + w[1] * f[1].z() + w[2] * f[2].z();
+            const double r = (z - kEnergyDelta) / kEnergyDelta;
+            want = std::max(want, r * r);
+        }
+        CHECK(want > 0.);
+        CHECK(
+            face_offset_point_max_of(*pot, f[0], f[1], f[2]) == Catch::Approx(want).epsilon(1e-12));
+        // The corner order does not matter: the 3 points are a symmetric set.
+        CHECK(
+            face_offset_point_max_of(*pot, f[2], f[0], f[1]) == Catch::Approx(want).epsilon(1e-12));
+    }
+}
+
+TEST_CASE("front-op-rule", "[offset][3d]")
+{
+    // front_op_allowed(), the front max rule (Spencer's table, 2026-10-26), with bounds
+    // o_bar = 1 and a_bar = 10: per starting cell, a collapse (strict false, after <= before)
+    // and a swap (strict true, after < before).
+    const double ob = 1., ab = 10.;
+    const auto collapse = [&](double o0, double o1, double a0, double a1) {
+        return TopoOffsetTetMesh::front_op_allowed(o0, o1, a0, a1, ob, ab, false);
+    };
+    const auto swap = [&](double o0, double o1, double a0, double a1) {
+        return TopoOffsetTetMesh::front_op_allowed(o0, o1, a0, a1, ob, ab, true);
+    };
+    // Both in bound: both lower.
+    CHECK(collapse(0.5, 0.4, 5., 4.));
+    CHECK(collapse(0.5, 0.5, 5., 5.)); // a tie passes a collapse
+    CHECK_FALSE(swap(0.5, 0.5, 5., 4.)); // and refuses a swap
+    CHECK(swap(0.5, 0.4, 5., 4.));
+    CHECK_FALSE(collapse(0.5, 0.6, 5., 4.));
+    CHECK_FALSE(collapse(0.5, 0.4, 5., 6.)); // a rise below the bound still refuses
+    // Offset over, AMIPS in: the offset max lower, the AMIPS max below its bound (may rise).
+    CHECK(collapse(2., 1.5, 5., 9.));
+    CHECK(swap(2., 1.5, 5., 9.));
+    CHECK_FALSE(collapse(2., 1.5, 5., 10.)); // the bound itself is over
+    CHECK_FALSE(collapse(2., 2.5, 5., 4.));
+    CHECK(collapse(2., 2., 5., 9.));
+    CHECK_FALSE(swap(2., 2., 5., 9.));
+    // Offset in, AMIPS over: the AMIPS max lower, the offset max below its bound (may rise).
+    CHECK(collapse(0.5, 0.9, 20., 15.));
+    CHECK(swap(0.5, 0.9, 20., 15.));
+    CHECK_FALSE(collapse(0.5, 1., 20., 15.));
+    CHECK_FALSE(collapse(0.5, 0.9, 20., 25.));
+    CHECK_FALSE(swap(0.5, 0.9, 20., 20.));
+    // Both over: both lower.
+    CHECK(collapse(2., 1.5, 20., 15.));
+    CHECK(collapse(2., 2., 20., 20.));
+    CHECK_FALSE(swap(2., 2., 20., 15.));
+    CHECK_FALSE(collapse(2., 2.5, 20., 15.));
+    CHECK_FALSE(collapse(2., 1.5, 20., 25.));
+    // A value AT its bound counts as over: o = 1 starts in the offset-over cell.
+    CHECK(collapse(1., 0.9, 5., 9.));
+    CHECK_FALSE(collapse(1., 0.9, 5., 10.));
+    // A NaN anywhere refuses.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    CHECK_FALSE(collapse(nan, 0.4, 5., 4.));
+    CHECK_FALSE(collapse(0.5, nan, 5., 4.));
+    CHECK_FALSE(collapse(0.5, 0.4, nan, 4.));
+    CHECK_FALSE(collapse(0.5, 0.4, 5., nan));
+    CHECK_FALSE(collapse(2., 1.5, 5., nan));
+    CHECK_FALSE(collapse(0.5, nan, 20., 15.));
+}
+
 TEST_CASE("fold-barrier-3d", "[offset][3d]")
 {
     // FoldBarrier3D, the front smoother's per-face fold barrier: 0 while the angle between the
@@ -3227,10 +3305,10 @@ TEST_CASE("op-rules-switch", "[offset][3d]")
     CHECK(mesh.collapse_quality_allowed(0, 1., 2.));
     CHECK_FALSE(mesh.swap_quality_allowed(2., 1., false));
     CHECK(mesh.swap_quality_allowed(1., 2., false));
-    // On it the quality hooks admit everything: the face-error rule decides in the after-hooks.
-    mesh.m_collapse_front_error.local() = 0.5;
+    // On it the quality hooks admit everything: the front max rule decides in the after-hooks.
+    mesh.m_collapse_front.local().o_before = 0.5;
     CHECK(mesh.collapse_quality_allowed(0, 2., 1.));
-    mesh.m_collapse_front_error.local() = -1.;
+    mesh.m_collapse_front.local().o_before = -1.;
     // Off the front: no extra energy (the engine's raw AMIPS sum smooths it); the base's ring
     // measure.
     CHECK(mesh.smoothing_extra_energy(0) == nullptr);

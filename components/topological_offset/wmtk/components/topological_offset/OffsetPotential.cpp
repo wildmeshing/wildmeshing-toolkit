@@ -1311,6 +1311,22 @@ double face_offset_error_of(
     return 0.5 * (b - a).cross(c - a).norm() * m;
 }
 
+double face_offset_point_max_of(
+    const OffsetPotential3D& pot,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+    // See the declaration: the largest r^2 at the 3 interior points.
+    double mx = 0.;
+    for (const auto& w : kFaceErrorPoints) {
+        const double r = pot.relative_residual(w[0] * a + w[1] * b + w[2] * c);
+        if (!std::isfinite(r)) return -1.;
+        mx = std::max(mx, r * r);
+    }
+    return mx;
+}
+
 FaceOffsetError3D::FaceOffsetError3D(
     std::shared_ptr<const OffsetPotential3D> pot,
     std::vector<Face> faces)

@@ -293,21 +293,31 @@ double TopoOffsetTetMesh::offset_error(size_t* n_unmeasurable) const
     return s;
 }
 
-double TopoOffsetTetMesh::offset_error_at(const size_t v1, const size_t v2) const
+double TopoOffsetTetMesh::face_offset_point_max(const size_t a, const size_t b, const size_t c)
+    const
 {
-    // See the declaration: the offset faces at v1 (and v2), each once, an unmeasurable face 0.
-    std::set<std::array<size_t, 3>> faces;
+    // The union field, as face_offset_error().
+    if (!m_offset_potential) return -1.;
+    return face_offset_point_max_of(
+        *m_offset_potential,
+        m_vertex_attribute[a].m_posf,
+        m_vertex_attribute[b].m_posf,
+        m_vertex_attribute[c].m_posf);
+}
+
+double TopoOffsetTetMesh::offset_point_max_at(const size_t v1, const size_t v2) const
+{
+    // See the declaration: the offset faces at v1 (and v2), an unmeasurable face 0. A face at
+    // both ends is visited twice; the max does not care.
+    double mx = 0.;
     for (const size_t v : {v1, v2}) {
         if (v == static_cast<size_t>(-1)) continue;
         for (const Tuple& ft : offset_surface_faces_live_at(v)) {
-            std::array<size_t, 3> f = get_face_vids(ft);
-            std::sort(f.begin(), f.end());
-            faces.insert(f);
+            const std::array<size_t, 3> f = get_face_vids(ft);
+            mx = std::max(mx, face_offset_point_max(f[0], f[1], f[2]));
         }
     }
-    double s = 0.;
-    for (const auto& f : faces) s += std::max(face_offset_error(f[0], f[1], f[2]), 0.);
-    return s;
+    return mx;
 }
 
 double TopoOffsetTetMesh::tet_energy(const size_t tid) const
@@ -508,7 +518,7 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         sides.saw_case = false;
     }
     m_swap_folds_before.local() = -1; // an interior swap changes no offset face
-    m_swap_error_before.local() = -1.; // likewise: no face rule
+    m_swap_front.local() = SwapFront{}; // likewise: no front rule
     m_swap_plastic_before.local() = -1.;
     if (!swap_capture_tag(tids)) return false;
     // An interior swap changes no offset-surface face: the base's max rule decides
@@ -541,7 +551,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
         sides.saw_case = false;
     }
     m_swap_folds_before.local() = -1; // set below for a flip of the offset surface
-    m_swap_error_before.local() = -1.; // likewise: the flip rule's before half
+    m_swap_front.local() = SwapFront{}; // likewise: the front max rule's before half
     m_swap_plastic_before.local() = -1.; // set at the end, never for an offset flip
 
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
@@ -585,8 +595,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // A flip OF THE OFFSET SURFACE -- both faces it replaces on the front, band on one side and
     // background on the other, asked live of the labels rather than read from the cached
     // m_surface_class, since these operations run between one labelling pass and the next -- is
-    // followed through the rest of the swap by [flip funnel]. It is judged by the energy rule like
-    // every other swap (swap_after_cells()); no rule of its own.
+    // followed through the rest of the swap by [flip funnel], and judged by the front max rule
+    // (swap_after_cells()).
     if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
         // growth_mode "individual_op_reject": the folded faces among the two the flip replaces
         // (their band cells are in the ring), for swap_after_cells().
@@ -594,11 +604,19 @@ bool TopoOffsetTetMesh::swap_before_surface(
             m_swap_folds_before.local() =
                 int(face_folded_in(a, b, c, tids)) + int(face_folded_in(a, b, d, tids));
         }
-        // THE FLIP RULE's before half: the offset error over the two faces the flip replaces
-        // (face_offset_error()); swap_after_cells() compares the two it makes against it. An
-        // unmeasurable face reads 0, on both sides alike.
-        m_swap_error_before.local() =
-            std::max(face_offset_error(a, b, c), 0.) + std::max(face_offset_error(a, b, d), 0.);
+        // THE FRONT MAX RULE's before half (front_op_allowed()): the max stencil-point offset
+        // error over the two faces the flip replaces (an unmeasurable face reads 0, on both sides
+        // alike) and the max AMIPS^3 over the cells it replaces; swap_after_cells() compares the
+        // two faces and the cells it makes against them. Not in a TetWild pass (its own rules).
+        if (!tetwild_rules()) {
+            SwapFront& sf = m_swap_front.local();
+            sf.o_before =
+                std::max({face_offset_point_max(a, b, c), face_offset_point_max(a, b, d), 0.});
+            sf.a_before = 0.;
+            for (const size_t tid : tids) {
+                sf.a_before = std::max(sf.a_before, plastic_quality(tid));
+            }
+        }
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = true;
         sides.kind = static_cast<int>(tids.size());
@@ -614,9 +632,9 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // triangles with surface_triangle_is_outside(), which holds a held face to m_envelope, and
     // that envelope is the geometric constraint. The class-match and same-boundary refusals above
     // are the topology half; the base's max rule (swap_quality_allowed()) is the quality half --
-    // on PLASTIC AMIPS under use_rest_pose (never for a flip of the offset surface, whose face
-    // rule stands alone).
-    if (m_plastic_active && !tetwild_rules() && m_swap_error_before.local() < 0.) {
+    // on PLASTIC AMIPS under use_rest_pose (never for a flip of the offset surface, which the
+    // front max rule judges).
+    if (m_plastic_active && !tetwild_rules() && m_swap_front.local().o_before < 0.) {
         double mx = 0.;
         for (const size_t tid : tids) mx = std::max(mx, plastic_quality(tid));
         m_swap_plastic_before.local() = mx;
@@ -949,23 +967,38 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // the new cells' labels are written below (close_labels()).
     face_extra_assign(tids, m_face_extra_swap.local());
     edge_label_assign(tids, m_edge_label_swap.local());
-    // THE FLIP RULE (since 2026-10-22): a flip OF THE OFFSET SURFACE is judged ONLY by the offset
-    // error over the two faces it replaces against the two it makes (face_offset_error(); the
-    // before half taken by swap_before_surface(), m_swap_error_before). STRICTLY lower, because a
-    // swap pass has to terminate: a tie could flip back and forth forever. Every other swap was
-    // judged by the base's max rule before this hook (swap_quality_allowed(), the base case
-    // scores and face gate) and passes here.
+    // THE FRONT MAX RULE for a flip OF THE OFFSET SURFACE (since 2026-10-26, front_op_allowed()):
+    // the max stencil-point offset error over the two faces it makes against the two it replaces,
+    // and the max AMIPS^3 over the cells it makes (labelled and stamped by the time this runs)
+    // against the cells it replaces, each against its bound (the before halves taken by
+    // swap_before_surface(), m_swap_front). STRICTLY lower, because a swap pass has to terminate:
+    // a tie could flip back and forth forever. Every other swap was judged by the base's max rule
+    // before this hook (swap_quality_allowed(), the base case scores and face gate) and passes
+    // here.
     //
     // A refusal is rolled back by the engine. It is counted as app_sag_raised, the engine's name
     // for this after-hook refusal (SwapReject lives in the engine, which this does not change).
     const auto energy_lowered = [&]() {
         if (tetwild_rules()) return true;
-        const double before = m_swap_error_before.local();
-        if (before >= 0.) {
+        const SwapFront& sf = m_swap_front.local();
+        if (sf.o_before >= 0.) {
             const auto& q = m_swap_sides.local().abcd;
-            const double after = std::max(face_offset_error(q[0], q[2], q[3]), 0.) +
-                                 std::max(face_offset_error(q[1], q[2], q[3]), 0.);
-            if (after < before) return true;
+            const double o_after = std::max(
+                {face_offset_point_max(q[0], q[2], q[3]),
+                 face_offset_point_max(q[1], q[2], q[3]),
+                 0.});
+            double a_after = 0.;
+            for (const size_t t : tids) a_after = std::max(a_after, plastic_quality(t));
+            if (front_op_allowed(
+                    sf.o_before,
+                    o_after,
+                    sf.a_before,
+                    a_after,
+                    front_offset_bar(),
+                    front_amips_bar(),
+                    /*strict=*/true)) {
+                return true;
+            }
             ++m_volume_reject_swap;
             return swap_reject(SwapReject::app_sag_raised);
         }
@@ -1114,14 +1147,21 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
             folded_front_faces_at(cc.v2_id, f);
             folds = int(f.size());
         }
-        // THE FRONT COLLAPSE RULE's before half (see m_collapse_front_error): the offset error
-        // over the offset faces at the two ends. Setting it also makes
-        // collapse_quality_allowed() admit the collapse: the face rule alone judges it.
-        double& err = m_collapse_front_error.local();
-        err = -1.;
+        // THE FRONT MAX RULE's before half (see m_collapse_front): the max stencil-point offset
+        // error over the offset faces at the two ends, the max AMIPS^3 over v1's one-ring and its
+        // tids. Setting o_before also makes collapse_quality_allowed() admit the collapse: the
+        // front max rule judges it (collapse_after_connectivity()).
+        CollapseFront& cf = m_collapse_front.local();
+        cf.o_before = -1.;
         if (front && !tetwild_rules() && !m_coarsen_mode && m_offset_potential) {
-            err = offset_error_at(cc.v1_id, cc.v2_id);
+            cf.o_before = offset_point_max_at(cc.v1_id, cc.v2_id);
+            cf.tids = get_one_ring_tids_for_vertex(cc.v1_id);
+            cf.a_before = 0.;
+            for (const size_t tid : cf.tids)
+                cf.a_before = std::max(cf.a_before, plastic_quality(tid));
+            std::sort(cf.tids.begin(), cf.tids.end());
         }
+        const double err = cf.o_before;
         // THE PLASTIC COLLAPSE RULE's before half (use_rest_pose, see m_collapse_plastic): the
         // base's max rule on PLASTIC AMIPS -- the max of plastic_quality() over v1's one-ring,
         // judged against the reshaped cells in collapse_after_connectivity(). Never beside the
@@ -1256,24 +1296,37 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             return false;
         }
     }
-    // THE FRONT COLLAPSE RULE (since 2026-10-22): a collapse that touches the offset surface is
-    // judged ONLY by the offset error over the offset faces at its two ends before
-    // (collapse_edge_before(), m_collapse_front_error) against the same error over the survivor's
-    // faces now -- the connectivity is final, the collapse moves no vertex. after <= before
-    // passes (a tie passes: the collapse still removes a vertex, so a pass terminates); a NaN
-    // refuses. Every other collapse was judged by the base's max rule
-    // (collapse_quality_allowed()). Refused HERE, so the base counts after_connectivity and
-    // rolls back. Not in coarsening, which keeps its absolute bar below.
+    // THE FRONT MAX RULE for a collapse that touches the offset surface (since 2026-10-26,
+    // front_op_allowed()): the max stencil-point offset error over the offset faces at its two
+    // ends before (collapse_edge_before(), m_collapse_front) against the survivor's faces now, and
+    // the max AMIPS^3 over v1's one-ring before against the cells the collapse reshaped -- the
+    // connectivity is final, the collapse moves no vertex. after <= before is "lower" (a tie
+    // passes: the collapse still removes a vertex, so a pass terminates); a NaN refuses. Every
+    // other collapse was judged by the base's max rule (collapse_quality_allowed()). Refused
+    // HERE, so the base counts after_connectivity and rolls back. Not in coarsening, which keeps
+    // its absolute bar below.
     //
     // use_rest_pose: every changed cell is stamped at the change, before anything reads it, as
     // split and swap stamp the cells they make (re-stamping an unchanged cell rewrites the same
     // rest).
     if (!m_coarsen_mode && !tetwild_rules()) {
         for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) stamp_rest_cell(tid);
-        const double before = m_collapse_front_error.local();
-        if (before >= 0.) {
-            const double after = offset_error_at(v2_id);
-            if (!(after <= before)) {
+        const CollapseFront& cf = m_collapse_front.local();
+        if (cf.o_before >= 0.) {
+            const double o_after = offset_point_max_at(v2_id);
+            double a_after = 0.;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+                if (!std::binary_search(cf.tids.begin(), cf.tids.end(), tid)) continue;
+                a_after = std::max(a_after, plastic_quality(tid));
+            }
+            if (!front_op_allowed(
+                    cf.o_before,
+                    o_after,
+                    cf.a_before,
+                    a_after,
+                    front_offset_bar(),
+                    front_amips_bar(),
+                    /*strict=*/false)) {
                 ++m_volume_reject_collapse;
                 return false;
             }
@@ -4413,7 +4466,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 const double energy_after_group = global_energy();
                 logger().info(
                     "\t[energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | "
-                    "refused for raising the offset error over the changed offset faces: {} "
+                    "refused by the front max rule (stencil-point offset error / AMIPS): {} "
                     "collapses, {} flips; {} splits refused by the split gate",
                     it + 1,
                     group_names[gi],
