@@ -527,6 +527,9 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         ++m_plastic_tie_swap;
         return false;
     }
+    // DEBUG_pinned_counts: counted, never refused (see m_pinned_counts). Before the TetWild
+    // return, so a TetWild pass is counted too.
+    if (m_offset_params.debug_pinned_counts) pinned_count_swap(tids);
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has label 2, the label every new cell takes.
     // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
@@ -860,6 +863,9 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
     // one as the base does: the current cells are real and read from the mesh, a candidate's do
     // not exist yet and are scored by candidate_energy(). TetWild's rules (m_op_rules): the
     // base's score, the max of AMIPS^3 over the cells.
+    // DEBUG_pinned_counts: each candidate case, before the TetWild delegation (see
+    // m_pinned_counts). Case 0 is the current cells.
+    if (m_offset_params.debug_pinned_counts && op_case >= 1) pinned_count_case(tets);
     if (tetwild_rules()) return TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
     double e = -1.;
     if (op_case == 0) {
@@ -1189,6 +1195,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
 bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
 {
     if (!TetOptimizerMesh::collapse_edge_after(t)) {
+        if (m_trace_collapse.open) trace_collapse_end("refused after");
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
@@ -1196,8 +1203,10 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
     // every cell the collapse made is in the survivor's ring.
     if (m_repulsion_potential && !repulsion_embedding_kept(get_one_ring_tids_for_vertex(v2_id))) {
         ++m_repulsion_embed_refused;
+        if (m_trace_collapse.open) trace_collapse_end("refused after (repulsion embedding)");
         return false;
     }
+    if (m_trace_collapse.open) trace_collapse_end("committed");
     // The energy rule has run by now, inside the base's call above (collapse_after_connectivity(),
     // which says why there); a collapse that reaches this line has passed it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
@@ -1210,7 +1219,9 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 {
     // The collapse length gate lives in the shared pass, which filters the candidate list against
     // collapsing_l2 scaled by the endpoints' sizing scalars.
+    const bool traced = trace_collapse_begin(t); // DEBUG_trace_collapse, log-only
     if (!TetOptimizerMesh::collapse_edge_before(t)) {
+        if (traced) trace_collapse_end("refused before");
         return false;
     }
     // The survivor's own sizing scalar, for sizing_collapse_min = false: the base collapse
@@ -1222,7 +1233,9 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // tracked simplex: the offset region is a thin shell, so a collapse with one endpoint in the
     // interior can still pinch its two sides together while every tracked surface survives.
     if (!substructure_link_condition(t)) {
-        return collapse_reject(CollapseReject::app_substructure_link);
+        const bool r = collapse_reject(CollapseReject::app_substructure_link);
+        if (traced) trace_collapse_end("refused before");
+        return r;
     }
     // growth_mode "individual_op_reject": the folded faces through the two ends, for
     // collapse_after_connectivity(); -1 (no rule) when neither end is on the front.
@@ -1284,6 +1297,10 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         // cells are ring1's cells without v2, in their own slots with their own labels.
         cv.band_cancels = band_term_cancels(ring1);
         cv.before = tet_energy_sum(ring1, !cv.band_cancels);
+        if (m_trace_collapse.open) { // DEBUG_trace_collapse: the before-sum's AMIPS part
+            m_trace_collapse.e_before = cv.before;
+            m_trace_collapse.a_before = tet_energy_sum(ring1, false);
+        }
         // use_rest_pose: the cells the collapse changes are v1's cells without v2, each keeping
         // its label; when they and the whole ring are plastic, the collapse is an exact tie
         // (plastic_tie()).
@@ -1368,6 +1385,10 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         return collapse_reject(CollapseReject::app_order2);
     }
 
+    // DEBUG_pinned_counts: counted, never refused (see m_pinned_counts). After every refusal of
+    // this hook, so a collapse refused above is not counted; in a TetWild pass too.
+    if (m_offset_params.debug_pinned_counts) pinned_count_collapse(v1_id, v2_id);
+
     return true;
 }
 
@@ -1420,6 +1441,17 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             } else {
                 after += tet_energy(tid, !cv.band_cancels);
             }
+        }
+        if (m_trace_collapse.open && !cv.tie) { // DEBUG_trace_collapse: the after-sum's parts
+            double a = 0.;
+            for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+                if (!std::binary_search(cv.v2_only.begin(), cv.v2_only.end(), tid)) {
+                    a += tet_energy(tid, false);
+                }
+            }
+            m_trace_collapse.energy = true;
+            m_trace_collapse.e_after = after;
+            m_trace_collapse.a_after = a;
         }
         if (cv.tie ? !scoreable : !(after <= cv.before)) { // a NaN refuses
             ++m_volume_reject_collapse;
@@ -3324,6 +3356,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     double max_rms = 0., max_vertex = 0., max_gap = 0.;
     const bool rms_mode = m_offset_params.settle_mark == "rms";
     const bool vertex_mode = m_offset_params.settle_mark == "vertex";
+    const bool variance_mode = m_offset_params.settle_mark == "variance";
+    const bool vertex_marks = vertex_mode || variance_mode; // marks vertices, not faces
+    size_t n_var_refine = 0, n_var_move = 0;
     if (settled) {
         // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
         // over f of d, exact (min over P of the triangle-triangle distance); outside_f = max over f
@@ -3384,7 +3419,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
             n_over_max += over_max;
             n_over_rms += over_rms;
-            if (vertex_mode || !(rms_mode ? over_rms : over_max)) continue;
+            if (vertex_marks || !(rms_mode ? over_rms : over_max)) continue;
             ++n_marked;
             bool at_floor = true;
             for (const size_t v : f) {
@@ -3412,6 +3447,55 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             ++n_marked;
             corners.push_back(v);
             if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+        }
+        // EXPERIMENTAL_settle_mark "variance": the ring split (Uday, 2026-10-07). At a front
+        // vertex v, e = (d - delta) / front_conv at the order-1 stencil of every front face at v
+        // (its three corners and its centroid; every face weighted equally), R^2 = mean e^2 =
+        // mean(e)^2 + V exactly, V the variance. R <= 1: v is within the bar. R > 1 and
+        // |mean(e)| <= 1 (Uday, 2026-10-25): the ring sits on the level set on average and fails
+        // the bar only by how its error varies (V > R^2 - 1 > 0), which more vertices can follow
+        // -- v's sizing is halved. R > 1 and |mean(e)| > 1: the ring is not at the level set yet
+        // and has to move; refinement would only add vertices that stay where they are -- v is not
+        // refined. The exit is the vertex test's, unchanged. MEASURED (cube_in at target 0.45, 1
+        // thread): under "vertex" the stuck vertices of a wrong-side region were halved every
+        // settled turn (12 -> 33 marked, the front 22 -> 102 vertices); under the first version of
+        // this rule (refine iff V > 1) marking stopped by turn 11, but vertices off by about the
+        // same amount on a ring with V > 1 were still refined in turns 5-10.
+        if (variance_mode) {
+            const Envelope& env = *m_input_complex_envelope;
+            const auto err = [&](const Vector3d& x) {
+                return (env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) -
+                        delta) /
+                       eps;
+            };
+            std::map<size_t, std::pair<double, double>> sums; // v -> (sum e, sum e^2)
+            std::map<size_t, size_t> counts;
+            for (const auto& f : faces) {
+                const Vector3d& a = m_vertex_attribute[f[0]].m_posf;
+                const Vector3d& b = m_vertex_attribute[f[1]].m_posf;
+                const Vector3d& c = m_vertex_attribute[f[2]].m_posf;
+                const std::array<double, 4> e = {{err(a), err(b), err(c), err((a + b + c) / 3.)}};
+                for (const size_t v : f) {
+                    for (const double x : e) {
+                        sums[v].first += x;
+                        sums[v].second += x * x;
+                    }
+                    counts[v] += e.size();
+                }
+            }
+            for (const auto& [v, s] : sums) {
+                const double n = double(counts[v]);
+                const double mean = s.first / n, r2 = s.second / n;
+                if (!(r2 > 1.)) continue;
+                if (!(std::abs(mean) <= 1.)) { // not at the level set on average: it has to move
+                    ++n_var_move;
+                    continue;
+                }
+                ++n_var_refine;
+                ++n_marked;
+                corners.push_back(v);
+                if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+            }
         }
         // EXPERIMENTAL_gap_refinement: a band cell with a front corner whose corner bound may lie
         // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
@@ -3470,38 +3554,48 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         bar_energy,
         area,
         settled ? "yes" : "no",
-        settled ? fmt::format(
-                      " | marked {} {} of {} by the {} test (max test: {} faces over, max "
-                      "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
-                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}), {}, {} marked "
-                      "{} at the sizing floor {:.4g}{}",
-                      n_marked,
-                      vertex_mode ? "vertices" : "faces",
-                      vertex_mode ? fmt::format("{} front vertices", n_front_vertices)
-                                  : fmt::format("{}", faces.size()),
-                      m_offset_params.settle_mark,
-                      n_over_max,
-                      max_inside,
-                      max_outside,
-                      n_over_rms,
-                      max_rms,
-                      n_over_vertex,
-                      max_vertex,
-                      m_offset_params.gap_refinement
-                          ? fmt::format(
-                                "; gap test: {} of {} band cells at the front over, max {:.4} bars "
-                                "(refined)",
-                                n_gap_over,
-                                n_gap_cells,
-                                max_gap)
-                          : std::string(),
-                      refine_now ? fmt::format("halved {} vertices", n_halved)
-                                 : std::string("no halving (this loop does not refine)"),
-                      n_floor,
-                      vertex_mode ? "vertices" : "faces with every corner",
-                      s_floor,
-                      n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
-                : std::string(" -- no face test, no refinement, no exit: the front still moves"));
+        settled
+            ? fmt::format(
+                  " | marked {} {} of {} by the {} test (max test: {} faces over, max "
+                  "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
+                  "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}), {}, {} marked "
+                  "{} at the sizing floor {:.4g}{}",
+                  n_marked,
+                  vertex_marks ? "vertices" : "faces",
+                  vertex_marks ? fmt::format("{} front vertices", n_front_vertices)
+                               : fmt::format("{}", faces.size()),
+                  m_offset_params.settle_mark,
+                  n_over_max,
+                  max_inside,
+                  max_outside,
+                  n_over_rms,
+                  max_rms,
+                  n_over_vertex,
+                  max_vertex,
+                  (m_offset_params.gap_refinement
+                       ? fmt::format(
+                             "; gap test: {} of {} band cells at the front over, max {:.4} bars "
+                             "(refined)",
+                             n_gap_over,
+                             n_gap_cells,
+                             max_gap)
+                       : std::string()) +
+                      (variance_mode
+                           ? fmt::format(
+                                 "; variance test: {} vertices over with |mean| <= 1 (refined), "
+                                 "{} over with |mean| > 1 (not refined)",
+                                 n_var_refine,
+                                 n_var_move)
+                           : std::string()),
+                  refine_now ? fmt::format("halved {} vertices", n_halved)
+                             : std::string("no halving (this loop does not refine)"),
+                  n_floor,
+                  vertex_marks ? "vertices" : "faces with every corner",
+                  s_floor,
+                  n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
+            : std::string(" -- no face test, no refinement, no exit: the front still moves"));
+    // "variance" leaves the stuck vertices unmarked, so its exit is the vertex test's.
+    if (variance_mode) return settled && n_over_vertex == 0 && n_gap_over == 0;
     return settled && n_marked == 0 && n_gap_over == 0;
 }
 
@@ -4509,6 +4603,787 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
     }
 }
 
+void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
+{
+    // EXPERIMENTAL_energy_only_ops: for this group, the split pass offers every edge (splitting_l2
+    // 0) and keeps a split only if the children's energy is below the parents'
+    // (EXPERIMENTAL_split_energy_gate's rule), and the collapse pass offers every edge
+    // (collapsing_l2 infinite) under its energy rule; the swaps offer every edge and face already.
+    // So no operation is triggered by length; each is kept only by the energy. Restored on return,
+    // so the TetWild passes and everything outside the loop keep the sizing gates.
+    struct GateRestore
+    {
+        TopoOffsetTetMesh& m;
+        const bool on;
+        const double split_l2, collapse_l2;
+        const bool gate;
+        ~GateRestore()
+        {
+            if (!on) return;
+            m.m_sizing_split_l2 = -1.;
+            m.m_params.splitting_l2 = split_l2;
+            m.m_params.collapsing_l2 = collapse_l2;
+            m.m_offset_params.split_energy_gate = gate;
+        }
+    } gate_restore{
+        *this,
+        m_offset_params.energy_only_ops,
+        m_params.splitting_l2,
+        m_params.collapsing_l2,
+        m_offset_params.split_energy_gate};
+    // EXPERIMENTAL_phase_loop: the turn's one group (interleaved_smoothing false) is run as two
+    // phases of descent on the one energy, each to rest: smoothing passes with the connectivity
+    // fixed, then rounds of operations with the positions fixed. A phase is at rest when its last
+    // pass (round) lowered E by less than the bar energy front_conv^2 A / (2 target_distance), A the
+    // front's area -- the settle test's bar. Only operations make a simplex with all corners on the
+    // front, so the condition-1 splits close each round of the connectivity phase; the geometry
+    // phase starts without one. Both phases end: E is bounded below and every pass (round) that
+    // does not end its phase lowers E by at least a bar.
+    const auto bar = [this]() {
+        double area = 0.;
+        for (const auto& f : offset_surface_faces()) {
+            const Vector3d& a = m_vertex_attribute[f[0]].m_posf;
+            area += 0.5 * (m_vertex_attribute[f[1]].m_posf - a)
+                              .cross(m_vertex_attribute[f[2]].m_posf - a)
+                              .norm();
+        }
+        const double eps = m_offset_params.front_conv;
+        return eps * eps * area / (2. * m_offset_params.target_distance);
+    };
+    const auto phase_body = [&]() {
+        int g = 0, c = 0;
+        const double e_start = global_energy();
+        double e = e_start;
+        const auto geometry = [&]() {
+            for (;;) {
+                local_operations({{0, 0, 0, 1}});
+                ++g;
+                const double e1 = global_energy();
+                const bool rest = !(e - e1 >= bar());
+                e = e1;
+                if (rest) break;
+            }
+        };
+        const auto connectivity = [&]() {
+            for (;;) {
+                local_operations({{ops[0] > 0 ? 1 : 0, ops[1] > 0 ? 1 : 0, ops[2] > 0 ? 1 : 0, 0}});
+                front_pocket_split(fmt::format("{}, connectivity round {}", where, c + 1));
+                ++c;
+                const double e1 = global_energy();
+                const bool rest = !(e - e1 >= bar());
+                e = e1;
+                if (rest) break;
+            }
+        };
+        // EXPERIMENTAL_phase_loop_connectivity_first: the same two phases, connectivity first.
+        double e_mid = 0.;
+        if (m_offset_params.phase_loop_connectivity_first) {
+            connectivity();
+            e_mid = e;
+            geometry();
+        } else {
+            geometry();
+            e_mid = e;
+            connectivity();
+        }
+        logger().info(
+            "\t[phase loop] {}: {} first | geometry {} smoothing pass(es), connectivity {} "
+            "round(s) | "
+            "E {:.9g} -> {:.9g} (after the first phase) -> {:.9g} | bar {:.3g}",
+            where,
+            m_offset_params.phase_loop_connectivity_first ? "connectivity" : "geometry",
+            g,
+            c,
+            e_start,
+            e_mid,
+            e,
+            bar());
+    };
+    if (m_offset_params.energy_only_ops) {
+        m_sizing_split_l2 = m_params.splitting_l2; // EXPERIMENTAL_energy_only_sizing_split
+        m_params.splitting_l2 = 0.;
+        // EXPERIMENTAL_energy_only_collapse_length_gate: the collapse pass keeps its gate.
+        if (!m_offset_params.energy_only_collapse_length_gate) {
+            m_params.collapsing_l2 = std::numeric_limits<double>::infinity();
+        }
+        m_offset_params.split_energy_gate = true;
+    }
+    if (m_offset_params.phase_loop) {
+        phase_body();
+        return;
+    }
+    if (!m_offset_params.front_pocket_split) {
+        local_operations(ops);
+        front_energy_collapse(where);
+        front_energy_split(where);
+        return;
+    }
+    // EXPERIMENTAL_front_pocket_split: the same passes, one call for the operation passes and one
+    // per smoothing pass, as repulsion_rounds runs its groups. Besides the splits this moves the
+    // rounding sweep from after the k-th smoothing pass to after each, and adds each call's energy
+    // and time lines.
+    if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    // EXPERIMENTAL_smooth_to_rest: the group's smoothing passes repeat until one lowers E by less
+    // than the bar (the settle test's), instead of ops[3] of them. It ends: E is bounded below and
+    // every pass that does not end the block lowers it by at least a bar.
+    double e_prev = m_offset_params.smooth_to_rest ? global_energy() : 0.;
+    for (int p = 0; m_offset_params.smooth_to_rest || p < ops[3]; ++p) {
+        front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        local_operations({{0, 0, 0, 1}});
+        front_energy_collapse(fmt::format("{}, smoothing pass {}", where, p + 1));
+        front_energy_split(fmt::format("{}, smoothing pass {}", where, p + 1));
+        if (m_offset_params.smooth_to_rest) {
+            const double e = global_energy();
+            const bool rest = !(e_prev - e >= bar());
+            e_prev = e;
+            if (rest) {
+                logger().info("\t[smooth to rest] {}: {} smoothing pass(es)", where, p + 1);
+                break;
+            }
+        }
+    }
+}
+
+void TopoOffsetTetMesh::front_energy_split(const std::string& where)
+{
+    // EXPERIMENTAL_energy_split (see the spec): the split's counterpart of front_energy_collapse().
+    // The split pass offers only edges over the sizing gate; here every edge of a cell with a
+    // front corner is offered once, longest first, through the engine's split with every check it
+    // makes, and split_edge_after() keeps it only if moving the new vertex lowered the energy by
+    // more than a bar. Serial: the list is a copy and each edge is looked up again before its
+    // attempt. One sweep: each commit adds a vertex, so the sweep ends.
+    if (!m_offset_params.energy_split || m_tetwild_pass) return;
+    const double e0 = global_energy();
+    std::vector<std::pair<double, std::array<size_t, 2>>> cands;
+    {
+        std::vector<std::array<size_t, 2>> edges;
+        for (const Tuple& tt : get_tets()) {
+            const auto vs = oriented_tet_vids(tt.tid(*this));
+            if (std::none_of(vs.begin(), vs.end(), [this](const size_t v) {
+                    return m_vertex_extra[v].m_is_on_offset;
+                })) {
+                continue;
+            }
+            for (int i = 0; i < 4; ++i) {
+                for (int j = i + 1; j < 4; ++j) {
+                    edges.push_back({{std::min(vs[i], vs[j]), std::max(vs[i], vs[j])}});
+                }
+            }
+        }
+        wmtk::vector_unique(edges);
+        for (const auto& e : edges) {
+            const double l2 =
+                (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+            cands.push_back({-l2, e}); // longest first
+        }
+        std::sort(cands.begin(), cands.end());
+    }
+    const size_t refused0 = m_energy_split_refused;
+    size_t tried = 0, done = 0;
+    for (const auto& c : cands) {
+        const Tuple t = tuple_from_edge(c.second);
+        if (!t.is_valid(*this)) continue; // split already
+        ++tried;
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_edges;
+        m_energy_splitting = true;
+        if (split_edge(t, new_edges)) ++done;
+        m_energy_splitting = false;
+    }
+    logger().info(
+        "\t[energy split] {}: splits tried {}, committed {}, refused by the energy rule {} | E "
+        "{:.9g} -> {:.9g}",
+        where,
+        tried,
+        done,
+        m_energy_split_refused - refused0,
+        e0,
+        global_energy());
+}
+
+void TopoOffsetTetMesh::front_energy_collapse(const std::string& where)
+{
+    // EXPERIMENTAL_energy_collapse (see the spec). Only a collapse that removes a front vertex can
+    // change the band term (Fact 0: the band term reads the band as a region), and the collapse
+    // pass offers only edges under the length gate, so a front that has travelled farther than an
+    // edge since the last collapse pass keeps the front it should have deleted. Here every
+    // offset-surface edge is offered in both directions, whatever its length, through the engine's
+    // own collapse: every check it makes and the energy rule, unchanged. Serial: the mesh changes
+    // under the loop, so the list is a copy and each edge is looked up again before its attempt.
+    // Terminates: every commit removes a vertex.
+    if (!m_offset_params.energy_collapse || m_tetwild_pass) return;
+    std::array<long, size_t(CollapseReject::COUNT)> rej0{};
+    for (size_t r = 0; r < rej0.size(); ++r) rej0[r] = m_collapse_reject[r].load();
+    const double e0 = global_energy();
+    size_t tried = 0, done = 0;
+    int rounds = 0;
+    for (;; ++rounds) {
+        // Shortest first, the collapse pass's order; each edge as (removed, survivor) both ways.
+        std::vector<std::pair<double, std::array<size_t, 2>>> cands;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!edge_is_offset_surface_live(a, b)) continue;
+            const double l2 =
+                (m_vertex_attribute[a].m_posf - m_vertex_attribute[b].m_posf).squaredNorm();
+            cands.push_back({l2, {{a, b}}});
+            cands.push_back({l2, {{b, a}}});
+        }
+        std::sort(cands.begin(), cands.end());
+        size_t done_round = 0;
+        for (const auto& c : cands) {
+            const size_t p = c.second[0], q = c.second[1];
+            Tuple t = tuple_from_edge({{p, q}});
+            if (!t.is_valid(*this) || !edge_is_offset_surface_live(p, q)) continue; // gone
+            if (t.vid(*this) != p) t = t.switch_vertex(*this); // p is removed, q survives
+            ++tried;
+            reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+            std::vector<Tuple> new_tets;
+            if (collapse_edge(t, new_tets)) {
+                ++done;
+                ++done_round;
+            }
+        }
+        if (done_round == 0) break;
+    }
+    std::string reasons;
+    for (size_t r = 0; r < rej0.size(); ++r) {
+        const long n = m_collapse_reject[r].load() - rej0[r];
+        if (n > 0) reasons += fmt::format(" {} {}", collapse_reject_name(CollapseReject(r)), n);
+    }
+    logger().info(
+        "\t[energy collapse] {}: collapses tried {}, committed {}, rounds {} | E {:.9g} -> {:.9g} "
+        "| "
+        "refused:{}",
+        where,
+        tried,
+        done,
+        rounds + 1,
+        e0,
+        global_energy(),
+        reasons.empty() ? std::string(" none") : reasons);
+}
+
+bool TopoOffsetTetMesh::trace_collapse_begin(const Tuple& t)
+{
+    const auto& ids = m_offset_params.debug_trace_collapse;
+    if (ids.empty()) return false;
+    if (m_trace_collapse.open) trace_collapse_end("left open (refused before)");
+    const size_t v1 = t.vid(*this), v2 = t.switch_vertex(*this).vid(*this);
+    if (std::find(ids.begin(), ids.end(), v1) == ids.end() &&
+        std::find(ids.begin(), ids.end(), v2) == ids.end()) {
+        return false;
+    }
+    TraceCollapse& a = m_trace_collapse;
+    a = TraceCollapse();
+    a.open = true;
+    a.v1 = v1;
+    a.v2 = v2;
+    a.length = (m_vertex_attribute[v1].m_posf - m_vertex_attribute[v2].m_posf).norm();
+    for (size_t r = 0; r < a.before.size(); ++r) a.before[r] = m_collapse_reject[r].load();
+    return true;
+}
+
+void TopoOffsetTetMesh::trace_collapse_end(const char* outcome)
+{
+    TraceCollapse& a = m_trace_collapse;
+    if (!a.open) return;
+    a.open = false;
+    std::string reasons;
+    for (size_t r = 0; r < a.before.size(); ++r) {
+        const long n = m_collapse_reject[r].load() - a.before[r];
+        if (n > 0) reasons += fmt::format(" {} {}", collapse_reject_name(CollapseReject(r)), n);
+    }
+    logger().info(
+        "\t[trace collapse] turn {}{}: {} -> {} ({} -> {}) length {:.6g} | {} |{}{}",
+        m_round,
+        dry_run() ? " (dry run)" : "",
+        a.v1,
+        a.v2,
+        m_vertex_extra[a.v1].m_is_on_offset ? "front" : "off front",
+        m_vertex_extra[a.v2].m_is_on_offset ? "front" : "off front",
+        a.length,
+        outcome,
+        reasons.empty() ? std::string(" no counter raised") : reasons,
+        a.energy ? fmt::format(
+                       " | E {:.9g} -> {:.9g} (band {:.9g} -> {:.9g}, AMIPS {:.9g} -> {:.9g})",
+                       a.e_before,
+                       a.e_after,
+                       a.e_before - a.a_before,
+                       a.e_after - a.a_after,
+                       a.a_before,
+                       a.a_after)
+                 : std::string());
+}
+
+void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
+{
+    // loop_group() calls this only with the key on; the key is tested here too so that the slot
+    // alone is a no-op with it off (the unit test drives the slot directly).
+    if (!m_offset_params.front_pocket_split || m_tetwild_pass) return;
+    const auto len2 = [this](const std::array<size_t, 2>& e) {
+        return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+    };
+    // A pinned cell: its corners sorted (it names the cell across the round's splits), the edges
+    // to split it on, longest first (ties by vertex ids), and whether all six of its edges are on
+    // the offset surface.
+    struct Pinned
+    {
+        std::array<size_t, 4> vids;
+        std::vector<std::array<size_t, 2>> edges;
+        bool six = false;
+    };
+    // One scan of the live cells. `no_face`: pinned cells with all four faces on the offset
+    // surface, which have no edge to split; `six` and `band`, when given: pinned cells with all
+    // six edges on it, and band cells with all four corners on the front.
+    const auto scan = [&](size_t& no_face, size_t* six, size_t* band) {
+        std::vector<Pinned> out;
+        no_face = 0;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (!std::all_of(vs.begin(), vs.end(), [this](const size_t v) {
+                    return m_vertex_extra[v].m_is_on_offset;
+                })) {
+                continue;
+            }
+            if (cell_is_input_complex(tid)) continue;
+            // A band cell with all four corners on the front is the mirror case: at the band
+            // term's optimum its corners lie on the level set too, so it is the hull of four
+            // points on it -- a sliver, flattened outright where the curvature puts that hull on
+            // the background's side. Split the same way (an edge on no offset face is inside the
+            // band, so its midpoint is off the front); counted apart in the log.
+            if (cell_is_offset_band(tid) && band) ++*band;
+            Pinned p;
+            p.vids = vs;
+            std::sort(p.vids.begin(), p.vids.end());
+            for (int i = 0; i < 4; ++i) {
+                for (int j = i + 1; j < 4; ++j) {
+                    const std::array<size_t, 2> e{{p.vids[i], p.vids[j]}};
+                    if (!edge_is_offset_surface_live(e[0], e[1])) p.edges.push_back(e);
+                }
+            }
+            if (p.edges.empty()) {
+                // All six edges on the offset surface, so every edge midpoint would be on the
+                // front. Then split the edges of the cell's faces that are not offset faces,
+                // longest first: such a face has its three edges on the offset surface, and
+                // splitting one, (a, b) of face (a, b, c), at m makes the edge (m, c), whose
+                // faces are the two halves of (a, b, c), between the same two labels as it, and
+                // one new face inside each cell that shared it, so it is off the offset surface.
+                // Both children of this cell have it, and the next round splits it as above: a
+                // vertex off the front at (a + b + 2c) / 4 on that face, a corner of all four of
+                // the cell's descendants. That is simplicial_embedding()'s face split, made of
+                // the loop's own edge splits; the component's face split hooks are the
+                // construction's (they write no m_is_on_offset, no rest, no exact fallback).
+                // A cell with all four faces on the offset surface is a one-cell component of
+                // its label; a split would leave its boundary, every corner of it on the front,
+                // as it is, so it is counted only. MEASURED before this (cube_in, target 0.3,
+                // 7 turns): 176 such cells over the passes (31 distinct; 102 band, 74 not), every
+                // one with exactly three faces on the offset surface, their shared corner on
+                // exactly three offset faces and in no other cell of the cell's label -- a cell
+                // alone under a front vertex of valence 3 -- and all 176 left unsplit.
+                p.six = true;
+                if (six) ++*six;
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(tid, j);
+                    if (face_is_offset_surface_live(f)) continue;
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    for (int i = 0; i < 3; ++i) {
+                        const size_t u = fv[i], w = fv[(i + 1) % 3];
+                        const std::array<size_t, 2> e{{std::min(u, w), std::max(u, w)}};
+                        if (std::find(p.edges.begin(), p.edges.end(), e) == p.edges.end()) {
+                            p.edges.push_back(e);
+                        }
+                    }
+                }
+                if (p.edges.empty()) {
+                    ++no_face;
+                    continue;
+                }
+            }
+            std::sort(p.edges.begin(), p.edges.end(), [&](const auto& a, const auto& b) {
+                const double la = len2(a), lb = len2(b);
+                return la != lb ? la > lb : a < b;
+            });
+            out.push_back(std::move(p));
+        }
+        return out;
+    };
+    // Whether the cell on these sorted corners is still live: an earlier split of the round may
+    // have split one of its edges, and so the cell, already.
+    const auto alive = [this](const std::array<size_t, 4>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            std::sort(vs.begin(), vs.end());
+            if (vs == s) return true;
+        }
+        return false;
+    };
+
+    // EXPERIMENTAL_front_spanned_split: the spanned edges and faces (see the spec), split each
+    // round before the pinned cells, lowest dimension first. A face is listed only when its three
+    // edges are on the offset surface; one with an edge off it is split by that edge's split.
+    const auto on_front = [this](const size_t v) { return m_vertex_extra[v].m_is_on_offset; };
+    const auto off_input = [this](const std::vector<size_t>& tids) {
+        return !tids.empty() && std::none_of(tids.begin(), tids.end(), [this](const size_t t) {
+            return cell_is_input_complex(t);
+        });
+    };
+    struct SpannedFace
+    {
+        std::array<size_t, 3> vids; // sorted
+        std::vector<std::array<size_t, 2>> edges; // longest first
+    };
+    const auto scan_spanned = [&](std::vector<std::array<size_t, 2>>& edges,
+                                  std::vector<SpannedFace>& faces) {
+        edges.clear();
+        faces.clear();
+        if (!m_offset_params.front_spanned_split) return;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!on_front(a) || !on_front(b) || edge_is_offset_surface_live(a, b)) continue;
+            if (!off_input(get_incident_tids_for_edge(a, b))) continue;
+            edges.push_back({{std::min(a, b), std::max(a, b)}});
+        }
+        for (const Tuple& f : get_faces()) {
+            std::array<size_t, 3> fv = get_face_vids(f);
+            if (!std::all_of(fv.begin(), fv.end(), on_front) || face_is_offset_surface_live(f)) {
+                continue;
+            }
+            if (!edge_is_offset_surface_live(fv[0], fv[1]) ||
+                !edge_is_offset_surface_live(fv[1], fv[2]) ||
+                !edge_is_offset_surface_live(fv[0], fv[2])) {
+                continue;
+            }
+            std::vector<size_t> tids{f.tid(*this)};
+            if (const auto o = f.switch_tetrahedron(*this)) tids.push_back(o->tid(*this));
+            if (!off_input(tids)) continue;
+            SpannedFace s;
+            std::sort(fv.begin(), fv.end());
+            s.vids = fv;
+            s.edges = {{{fv[0], fv[1]}}, {{fv[1], fv[2]}}, {{fv[0], fv[2]}}};
+            std::sort(s.edges.begin(), s.edges.end(), [&](const auto& x, const auto& y) {
+                const double lx = len2(x), ly = len2(y);
+                return lx != ly ? lx > ly : x < y;
+            });
+            faces.push_back(std::move(s));
+        }
+    };
+    const auto face_alive = [this](const std::array<size_t, 3>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), s[2]) != vs.end()) return true;
+        }
+        return false;
+    };
+    const auto split_one = [this](const std::array<size_t, 2>& e) {
+        const Tuple t = tuple_from_edge(e);
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_edges;
+        m_pocket_splitting = true; // no longest-edge wait (split_edge_before())
+        const bool ok = split_edge(t, new_edges);
+        m_pocket_splitting = false;
+        return ok;
+    };
+
+    size_t n_band = 0, n_six = 0, no_face = 0;
+    std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    std::vector<std::array<size_t, 2>> sp_edges;
+    std::vector<SpannedFace> sp_faces;
+    scan_spanned(sp_edges, sp_faces);
+    const size_t found = pinned.size() + no_face, found_no_face = no_face;
+    const size_t found_edges = sp_edges.size(), found_faces = sp_faces.size();
+    size_t n_split = 0, n_refused = 0, n_split_edges = 0, n_split_faces = 0;
+    const long waits0 = m_split_order_waits.load();
+    int rounds = 0;
+    bool cap = false;
+    while (!pinned.empty() || !sp_edges.empty() || !sp_faces.empty()) {
+        if (rounds == kPocketMaxRounds) {
+            cap = true;
+            break;
+        }
+        ++rounds;
+        size_t split_now = 0;
+        for (const std::array<size_t, 2>& e : sp_edges) {
+            if (get_incident_tids_for_edge(e[0], e[1]).empty()) continue; // split already
+            if (split_one(e)) {
+                ++split_now;
+                ++n_split_edges;
+            } else {
+                ++n_refused;
+            }
+        }
+        for (const SpannedFace& s : sp_faces) {
+            if (!face_alive(s.vids)) continue;
+            for (const std::array<size_t, 2>& e : s.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    ++n_split_faces;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        for (const Pinned& p : pinned) {
+            if (!alive(p.vids)) continue;
+            for (const std::array<size_t, 2>& e : p.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        n_split += split_now;
+        // Every cell a split of an edge off the offset surface makes has the off-front midpoint
+        // as a corner; a split of an edge on it (a cell with all six edges there) leaves two
+        // children with one edge off it. So a rescan finds those children and the cells whose
+        // splits were all refused; with none committed it finds the same ones.
+        if (split_now == 0) break;
+        pinned = scan(no_face, nullptr, nullptr);
+        scan_spanned(sp_edges, sp_faces);
+    }
+    if (cap) {
+        logger().warn(
+            "\t[pocket split] {}: the cap of {} rounds stopped the rescans with {} pinned cells "
+            "left that have an edge to split",
+            where,
+            kPocketMaxRounds,
+            pinned.size());
+    }
+    const size_t left_six_split =
+        size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.six; }));
+    logger().info(
+        "\t[pocket split] {}: pinned cells (outside the input complex, all four corners on the "
+        "front) {}, of which {} with all six edges on the offset surface ({} with all four faces "
+        "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
+        "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
+        "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
+        "it (every split refused, or the cap) | of the pinned cells found, band cells {}{}",
+        where,
+        found,
+        n_six,
+        found_no_face,
+        n_split,
+        rounds,
+        n_refused,
+        m_split_order_waits.load() - waits0,
+        no_face + left_six_split,
+        no_face,
+        left_six_split,
+        pinned.size() - left_six_split,
+        n_band,
+        m_offset_params.front_spanned_split
+            ? fmt::format(
+                  " | spanned edges found {}, split {}; spanned faces (three edges on the offset "
+                  "surface) found {}, edges split for them {}; left {} edges, {} faces",
+                  found_edges,
+                  n_split_edges,
+                  found_faces,
+                  n_split_faces,
+                  sp_edges.size(),
+                  sp_faces.size())
+            : std::string());
+}
+
+bool TopoOffsetTetMesh::pinned_cell(const std::array<size_t, 4>& vids, const int label) const
+{
+    // As front_pocket_split()'s scan: label 1 is the input complex (cell_is_input_complex()).
+    if (label == 1) return false;
+    return std::all_of(vids.begin(), vids.end(), [this](const size_t v) {
+        return m_vertex_extra[v].m_is_on_offset;
+    });
+}
+
+void TopoOffsetTetMesh::pinned_count_collapse(const size_t v1_id, const size_t v2_id)
+{
+    // See m_pinned_counts. Only v1 off the front onto v2 on it: with v1 on the front a cell it
+    // turns pinned was pinned already, and with v2 off it none is. The flags read are the ones
+    // before the collapse, which re-derives v2's and the edge link's (refresh_offset_membership()).
+    // MEASURED (2026-10-23, cube_in at target 0.3 with and without front_pocket_split, input1 at
+    // 0.7 turn 1): of 986 committed collapses tested, 330 flagged, the flags after the commit
+    // made a cell of the changed ones pinned for exactly the 330.
+    if (dry_run()) return;
+    if (m_vertex_extra[v1_id].m_is_on_offset || !m_vertex_extra[v2_id].m_is_on_offset) return;
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(OpKind::collapse)];
+    ++c.seen;
+    for (const size_t tid : get_one_ring_tids_for_vertex(v1_id)) {
+        std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        if (std::find(vs.begin(), vs.end(), v2_id) != vs.end()) continue; // the collapse deletes it
+        std::replace(vs.begin(), vs.end(), v1_id, v2_id);
+        if (pinned_cell(vs, m_tet_attribute[tid].label)) {
+            ++c.pinned;
+            pinned_op().pinned = true;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_swap(const std::vector<size_t>& tids)
+{
+    // See m_pinned_counts. Called once swap_capture_tag() has taken the ring's one label, which
+    // every new cell takes. A 4-4 / 5-6 only records it here; its cases are pinned_count_case()'s.
+    if (dry_run()) return;
+    PinnedOp& op = pinned_op();
+    op.interior = true;
+    op.label = m_swap_label.local();
+    const OpKind k = current_op_kind();
+    if (k != OpKind::swap_32 && k != OpKind::swap_face) return;
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(k)];
+    ++c.seen;
+    // The ring's corners in every cell of it -- the edge (a, b) of a 3-2, the face (v0, v1, v2)
+    // of a face swap -- and the rest: the link p, q, r of the 3-2, the apexes v3, v4.
+    std::vector<std::pair<size_t, size_t>> count; // (vertex, cells holding it)
+    for (const size_t tid : tids) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            auto it = std::find_if(count.begin(), count.end(), [v](const auto& p) {
+                return p.first == v;
+            });
+            if (it == count.end())
+                count.emplace_back(v, 1);
+            else
+                ++it->second;
+        }
+    }
+    std::vector<size_t> all, rest;
+    for (const auto& [v, n] : count) (n == tids.size() ? all : rest).push_back(v);
+    std::vector<std::array<size_t, 4>> cells;
+    if (k == OpKind::swap_32) {
+        assert(all.size() == 2 && rest.size() == 3);
+        for (const size_t a : all) cells.push_back({{a, rest[0], rest[1], rest[2]}});
+    } else {
+        assert(all.size() == 3 && rest.size() == 2);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = i + 1; j < 3; ++j) {
+                cells.push_back({{rest[0], rest[1], all[size_t(i)], all[size_t(j)]}});
+            }
+        }
+    }
+    for (const std::array<size_t, 4>& vs : cells) {
+        if (pinned_cell(vs, op.label)) {
+            ++c.pinned;
+            op.pinned = true;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_case(const std::vector<std::array<size_t, 4>>& tets)
+{
+    // See m_pinned_counts. One candidate case of an interior 4-4 / 5-6; the swap's totals are
+    // added at its outcome (pinned_count_outcome()).
+    PinnedOp& op = pinned_op();
+    if (dry_run() || !op.interior) return;
+    ++op.cases;
+    for (const std::array<size_t, 4>& vs : tets) {
+        if (pinned_cell(vs, op.label)) {
+            ++op.cases_pinned;
+            return;
+        }
+    }
+}
+
+void TopoOffsetTetMesh::pinned_count_outcome(const OpKind k, const OpEvent e) const
+{
+    // See m_pinned_counts. A real attempt has one outcome event after its `attempt`, so the swap's
+    // cases are added once; a dry run tested nothing (cases 0, pinned false).
+    PinnedOp& op = pinned_op();
+    if (e == OpEvent::attempt) {
+        op = PinnedOp{};
+        return;
+    }
+    PinnedCounts& c = m_pinned_counts[m_tetwild_pass ? 1 : 0][size_t(k)];
+    const bool committed = e == OpEvent::committed;
+    if (k == OpKind::swap_44 || k == OpKind::swap_56) {
+        if (op.cases == 0) return;
+        ++c.seen;
+        c.cases += op.cases;
+        c.cases_pinned += op.cases_pinned;
+        if (op.cases_pinned > 0) {
+            ++c.pinned;
+            if (committed) ++c.pinned_committed;
+        }
+        if (op.cases_pinned == op.cases) {
+            ++c.all_pinned;
+            if (committed) ++c.all_pinned_committed;
+        }
+        op.cases = 0;
+    } else if (committed && op.pinned) {
+        ++c.pinned_committed;
+    }
+}
+
+void TopoOffsetTetMesh::pinned_counts_reset(const int pass)
+{
+    for (PinnedCounts& c : m_pinned_counts[size_t(pass)]) {
+        c.seen = 0;
+        c.pinned = 0;
+        c.pinned_committed = 0;
+        c.cases = 0;
+        c.cases_pinned = 0;
+        c.all_pinned = 0;
+        c.all_pinned_committed = 0;
+    }
+    for (size_t k = 0; k < size_t(OpKind::COUNT); ++k) {
+        m_pinned_ops0[k] = {
+            {op_event_count(OpKind(k), OpEvent::attempt),
+             op_event_count(OpKind(k), OpEvent::screened),
+             op_event_count(OpKind(k), OpEvent::committed)}};
+    }
+}
+
+std::string TopoOffsetTetMesh::pinned_counts_report(const int pass) const
+{
+    // The operations' own totals over the same window (the [ops accounting] events): attempts
+    // include a screened pass's dry runs, which `screened` counts when they passed.
+    const auto totals = [this](const OpKind k) {
+        const auto& t0 = m_pinned_ops0[size_t(k)];
+        return fmt::format(
+            "[attempts {}, screened {}, committed {}]",
+            op_event_count(k, OpEvent::attempt) - t0[0],
+            op_event_count(k, OpEvent::screened) - t0[1],
+            op_event_count(k, OpEvent::committed) - t0[2]);
+    };
+    const auto& P = m_pinned_counts[size_t(pass)];
+    std::string out;
+    {
+        const PinnedCounts& c = P[size_t(OpKind::collapse)];
+        out += fmt::format(
+            "collapse, v1 off the front onto v2 on it: {}, would make a pinned cell {} (committed "
+            "{}) {}",
+            c.seen.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            totals(OpKind::collapse));
+    }
+    for (const OpKind k : {OpKind::swap_32, OpKind::swap_face}) {
+        const PinnedCounts& c = P[size_t(k)];
+        out += fmt::format(
+            " | {} interior: {}, would make a pinned cell {} (committed {}) {}",
+            op_kind_name(k),
+            c.seen.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            totals(k));
+    }
+    for (const OpKind k : {OpKind::swap_44, OpKind::swap_56}) {
+        const PinnedCounts& c = P[size_t(k)];
+        out += fmt::format(
+            " | {} interior with a case scored: {}, cases {}, cases with a pinned cell (dropped) "
+            "{}, swaps with a case dropped {} (committed {}), with every case dropped {} "
+            "(committed {}) {}",
+            op_kind_name(k),
+            c.seen.load(),
+            c.cases.load(),
+            c.cases_pinned.load(),
+            c.pinned.load(),
+            c.pinned_committed.load(),
+            c.all_pinned.load(),
+            c.all_pinned_committed.load(),
+            totals(k));
+    }
+    return out;
+}
+
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4591,7 +5466,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {} interleaved smoothing pass(es)",
             k);
-        local_operations({{0, 0, 0, k}});
+        loop_group({{0, 0, 0, k}}, "pre_smooth");
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
@@ -4621,6 +5496,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
             const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
                       fold_m0 = m_fold_reject_smooth.load();
+            if (m_offset_params.debug_pinned_counts) pinned_counts_reset(0);
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             // [energy step] lines: the group's baseline here, then one per smoothing pass from
@@ -4629,7 +5505,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             m_energy_step_group = group_names[gi];
             m_energy_step_first = true;
             log_energy_step("start");
-            local_operations(groups[gi]);
+            loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             m_energy_step_turn = 0;
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
@@ -4660,6 +5536,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                         m_fold_reject_collapse.load() - fold_c0,
                         m_fold_reject_swap.load() - fold_s0,
                         m_fold_reject_smooth.load() - fold_m0);
+                }
+                if (m_offset_params.debug_pinned_counts) {
+                    logger().info(
+                        "\t[pinned would-refuse] turn {} {} group: {}",
+                        it + 1,
+                        group_names[gi],
+                        pinned_counts_report(0));
                 }
                 if (m_plastic_active) {
                     logger().info(
@@ -4875,7 +5758,11 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         }
         // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
         // when the loop may exit, which then replaces EnergyCriterion::converged() below.
-        const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // EXPERIMENTAL_no_halving: the settle test still marks and decides the exit; nothing
+        // halves.
+        const bool settle_exit =
+            settle &&
+            settle_refinement_turn(it + 1, settle_e_prev, refine && !m_offset_params.no_halving);
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
@@ -5046,12 +5933,17 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
     if (remote_frames()) {
         write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
     }
+    if (m_offset_params.debug_pinned_counts) pinned_counts_reset(1);
     mesh_improvement(max_its);
     logger().info(
         "\t[split order] {}: waited {} | committed off the longest edge {}",
         what,
         m_split_order_waits.exchange(0),
         m_split_off_longest.exchange(0));
+    // DEBUG_pinned_counts: the whole pass, its iterations together (mesh_improvement() runs them).
+    if (m_offset_params.debug_pinned_counts) {
+        logger().info("\t[pinned would-refuse] {}: {}", what, pinned_counts_report(1));
+    }
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;
