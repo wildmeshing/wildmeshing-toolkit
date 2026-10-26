@@ -90,8 +90,8 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a48cca02ad9199ec194b0422cfafc3d6a" id="r_a48cca02ad9199ec194b0422cfafc3d6a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a48cca02ad9199ec194b0422cfafc3d6a">EmbedCurves</a> (const std::vector&lt; std::string &gt; &amp;input_paths, const std::vector&lt; Matrix3d &gt; &amp;input_transform={}, const double tol_rel=-1, const double tol_abs=-1)</td></tr>
-<tr class="separator:a48cca02ad9199ec194b0422cfafc3d6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23eacd322bc23efffef910d5e7771ccd" id="r_a23eacd322bc23efffef910d5e7771ccd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a23eacd322bc23efffef910d5e7771ccd">EmbedCurves</a> (const std::vector&lt; std::string &gt; &amp;input_paths, const std::vector&lt; Matrix3d &gt; &amp;input_transform={}, const double tol_rel=-1, const double tol_abs=-1, const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *component_io=nullptr)</td></tr>
+<tr class="separator:a23eacd322bc23efffef910d5e7771ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b7ca704d5defeaa3d326dbdd98bc342" id="r_a8b7ca704d5defeaa3d326dbdd98bc342"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a8b7ca704d5defeaa3d326dbdd98bc342">simplify_curves</a> (const double eps, const bool use_exact_envelope, const int num_threads=0)</td></tr>
 <tr class="memdesc:a8b7ca704d5defeaa3d326dbdd98bc342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input curves while staying within the eps envelope.  <br /></td></tr>
 <tr class="separator:a8b7ca704d5defeaa3d326dbdd98bc342"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,8 +193,8 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
 <p>The tagging contract is identical and is what makes this a <em>simwild</em> input rather than a triwild one: tag i is set on a cell when input i's winding number at the cell's barycenter exceeds 0.5, so a cell inside two inputs carries both tags and the material interfaces fall out of where adjacent cells disagree.</p>
 <p>Unlike the 3D path there is no separate background mesh to build: the 2D arrangement triangulates every point it is handed, so the background grid is just extra points appended to the same array (wmtk::utils::embed_segments does that). </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a48cca02ad9199ec194b0422cfafc3d6a" name="a48cca02ad9199ec194b0422cfafc3d6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a48cca02ad9199ec194b0422cfafc3d6a">&#9670;&#160;</a></span>EmbedCurves()</h2>
+<a id="a23eacd322bc23efffef910d5e7771ccd" name="a23eacd322bc23efffef910d5e7771ccd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23eacd322bc23efffef910d5e7771ccd">&#9670;&#160;</a></span>EmbedCurves()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -221,7 +221,13 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>tol_abs</em> = <code>-1</code>&#160;</td>
+          <td class="paramname"><em>tol_abs</em> = <code>-1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *&#160;</td>
+          <td class="paramname"><em>component_io</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

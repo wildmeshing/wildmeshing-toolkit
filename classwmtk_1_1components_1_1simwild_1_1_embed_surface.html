@@ -87,9 +87,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af2c09f5517a8f2a85b0da2fccc60ead7" id="r_af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#af2c09f5517a8f2a85b0da2fccc60ead7">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false)</td></tr>
-<tr class="memdesc:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
-<tr class="separator:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adee9e2f2642d76728fe01b3dfd515640" id="r_adee9e2f2642d76728fe01b3dfd515640"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#adee9e2f2642d76728fe01b3dfd515640">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false, const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *component_io=nullptr)</td></tr>
+<tr class="memdesc:adee9e2f2642d76728fe01b3dfd515640"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
+<tr class="separator:adee9e2f2642d76728fe01b3dfd515640"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad090a61f3c05cd3c919321962e1f52e" id="r_aad090a61f3c05cd3c919321962e1f52e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aad090a61f3c05cd3c919321962e1f52e">simplify_surface</a> (const double eps, const bool use_exact, const int num_threads=0, const double boundary_eps=0)</td></tr>
 <tr class="memdesc:aad090a61f3c05cd3c919321962e1f52e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
 <tr class="separator:aad090a61f3c05cd3c919321962e1f52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -232,8 +232,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A class for reading an image and converting it into a tet mesh. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af2c09f5517a8f2a85b0da2fccc60ead7" name="af2c09f5517a8f2a85b0da2fccc60ead7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2c09f5517a8f2a85b0da2fccc60ead7">&#9670;&#160;</a></span>EmbedSurface()</h2>
+<a id="adee9e2f2642d76728fe01b3dfd515640" name="adee9e2f2642d76728fe01b3dfd515640"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adee9e2f2642d76728fe01b3dfd515640">&#9670;&#160;</a></span>EmbedSurface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -266,7 +266,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>split_connected_components</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>split_connected_components</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *&#160;</td>
+          <td class="paramname"><em>component_io</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
