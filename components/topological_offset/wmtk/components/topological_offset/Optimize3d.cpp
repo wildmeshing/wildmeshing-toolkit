@@ -5474,15 +5474,20 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv of the level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30
         // runs, 8 threads): one run exited with an inner region of 0.5% of the target's volume,
         // every front point within 0.76 front_conv, 5 real folds; 5-7 of each batch's 28-30
-        // exits had 1-5 real folds.
-        if (m_offset_params.exit_no_folds) {
+        // exits had 1-5 real folds. The count is logged every turn, the key on or off, so a run
+        // without it shows what it exited with.
+        {
             const size_t folds = count_real_folds();
             logger().info(
                 "\t[exit folds] turn {}: real folds {}{}",
                 it + 1,
                 folds,
-                resolved && folds > 0 ? " -- the exit test passes; held for the folds" : "");
-            if (folds > 0) resolved = false;
+                resolved && folds > 0
+                    ? (m_offset_params.exit_no_folds
+                           ? " -- the exit test passes; held for the folds"
+                           : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
+                    : "");
+            if (m_offset_params.exit_no_folds && folds > 0) resolved = false;
         }
         if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
