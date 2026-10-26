@@ -4458,30 +4458,114 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         return false;
     };
 
+    // EXPERIMENTAL_front_spanned_split: the spanned edges and faces (see the spec), split each
+    // round before the pinned cells, lowest dimension first. A face is listed only when its three
+    // edges are on the offset surface; one with an edge off it is split by that edge's split.
+    const auto on_front = [this](const size_t v) { return m_vertex_extra[v].m_is_on_offset; };
+    const auto off_input = [this](const std::vector<size_t>& tids) {
+        return !tids.empty() && std::none_of(tids.begin(), tids.end(), [this](const size_t t) {
+            return cell_is_input_complex(t);
+        });
+    };
+    struct SpannedFace
+    {
+        std::array<size_t, 3> vids; // sorted
+        std::vector<std::array<size_t, 2>> edges; // longest first
+    };
+    const auto scan_spanned = [&](std::vector<std::array<size_t, 2>>& edges,
+                                  std::vector<SpannedFace>& faces) {
+        edges.clear();
+        faces.clear();
+        if (!m_offset_params.front_spanned_split) return;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!on_front(a) || !on_front(b) || edge_is_offset_surface_live(a, b)) continue;
+            if (!off_input(get_incident_tids_for_edge(a, b))) continue;
+            edges.push_back({{std::min(a, b), std::max(a, b)}});
+        }
+        for (const Tuple& f : get_faces()) {
+            std::array<size_t, 3> fv = get_face_vids(f);
+            if (!std::all_of(fv.begin(), fv.end(), on_front) || face_is_offset_surface_live(f)) {
+                continue;
+            }
+            if (!edge_is_offset_surface_live(fv[0], fv[1]) ||
+                !edge_is_offset_surface_live(fv[1], fv[2]) ||
+                !edge_is_offset_surface_live(fv[0], fv[2])) {
+                continue;
+            }
+            std::vector<size_t> tids{f.tid(*this)};
+            if (const auto o = f.switch_tetrahedron(*this)) tids.push_back(o->tid(*this));
+            if (!off_input(tids)) continue;
+            SpannedFace s;
+            std::sort(fv.begin(), fv.end());
+            s.vids = fv;
+            s.edges = {{{fv[0], fv[1]}}, {{fv[1], fv[2]}}, {{fv[0], fv[2]}}};
+            std::sort(s.edges.begin(), s.edges.end(), [&](const auto& x, const auto& y) {
+                const double lx = len2(x), ly = len2(y);
+                return lx != ly ? lx > ly : x < y;
+            });
+            faces.push_back(std::move(s));
+        }
+    };
+    const auto face_alive = [this](const std::array<size_t, 3>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), s[2]) != vs.end()) return true;
+        }
+        return false;
+    };
+    const auto split_one = [this](const std::array<size_t, 2>& e) {
+        const Tuple t = tuple_from_edge(e);
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_edges;
+        m_pocket_splitting = true; // no longest-edge wait (split_edge_before())
+        const bool ok = split_edge(t, new_edges);
+        m_pocket_splitting = false;
+        return ok;
+    };
+
     size_t n_band = 0, n_six = 0, no_face = 0;
     std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    std::vector<std::array<size_t, 2>> sp_edges;
+    std::vector<SpannedFace> sp_faces;
+    scan_spanned(sp_edges, sp_faces);
     const size_t found = pinned.size() + no_face, found_no_face = no_face;
-    size_t n_split = 0, n_refused = 0;
+    const size_t found_edges = sp_edges.size(), found_faces = sp_faces.size();
+    size_t n_split = 0, n_refused = 0, n_split_edges = 0, n_split_faces = 0;
     const long waits0 = m_split_order_waits.load();
     int rounds = 0;
     bool cap = false;
-    while (!pinned.empty()) {
+    while (!pinned.empty() || !sp_edges.empty() || !sp_faces.empty()) {
         if (rounds == kPocketMaxRounds) {
             cap = true;
             break;
         }
         ++rounds;
         size_t split_now = 0;
+        for (const std::array<size_t, 2>& e : sp_edges) {
+            if (get_incident_tids_for_edge(e[0], e[1]).empty()) continue; // split already
+            if (split_one(e)) {
+                ++split_now;
+                ++n_split_edges;
+            } else {
+                ++n_refused;
+            }
+        }
+        for (const SpannedFace& s : sp_faces) {
+            if (!face_alive(s.vids)) continue;
+            for (const std::array<size_t, 2>& e : s.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    ++n_split_faces;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
         for (const Pinned& p : pinned) {
             if (!alive(p.vids)) continue;
             for (const std::array<size_t, 2>& e : p.edges) {
-                const Tuple t = tuple_from_edge(e);
-                reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
-                std::vector<Tuple> new_edges;
-                m_pocket_splitting = true; // no longest-edge wait (split_edge_before())
-                const bool ok = split_edge(t, new_edges);
-                m_pocket_splitting = false;
-                if (ok) {
+                if (split_one(e)) {
                     ++split_now;
                     break;
                 }
@@ -4495,6 +4579,7 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         // splits were all refused; with none committed it finds the same ones.
         if (split_now == 0) break;
         pinned = scan(no_face, nullptr, nullptr);
+        scan_spanned(sp_edges, sp_faces);
     }
     if (cap) {
         logger().warn(
@@ -4512,7 +4597,7 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
         "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
         "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
-        "it (every split refused, or the cap) | of the pinned cells found, band cells {}",
+        "it (every split refused, or the cap) | of the pinned cells found, band cells {}{}",
         where,
         found,
         n_six,
@@ -4525,7 +4610,18 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         no_face,
         left_six_split,
         pinned.size() - left_six_split,
-        n_band);
+        n_band,
+        m_offset_params.front_spanned_split
+            ? fmt::format(
+                  " | spanned edges found {}, split {}; spanned faces (three edges on the offset "
+                  "surface) found {}, edges split for them {}; left {} edges, {} faces",
+                  found_edges,
+                  n_split_edges,
+                  found_faces,
+                  n_split_faces,
+                  sp_edges.size(),
+                  sp_faces.size())
+            : std::string());
 }
 
 bool TopoOffsetTetMesh::pinned_cell(const std::array<size_t, 4>& vids, const int label) const

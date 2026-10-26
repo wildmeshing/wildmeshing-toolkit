@@ -97,6 +97,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
     bool front_pocket_split = false;
+    /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
+    /// and faces too, not only pinned cells.
+    bool front_spanned_split = false;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -435,6 +438,7 @@ struct Parameters : public wmtk::OptimizerParameters
         debug_crossings = json_params["DEBUG_crossings"];
         debug_pinned_counts = json_params["DEBUG_pinned_counts"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
+        front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
         max_rounds = json_params["max_rounds"];
