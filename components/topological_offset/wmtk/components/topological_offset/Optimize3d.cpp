@@ -4681,6 +4681,23 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
     // rounding sweep from after the k-th smoothing pass to after each, and adds each call's energy
     // and time lines.
     if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    // EXPERIMENTAL_label_cleanup: after the operation passes (none in pre_smooth), before the
+    // condition-1 splits of the first smoothing pass. A flip with f = 1 or 2 faces on the other
+    // label leaves the cell with all four corners on the front -- a pinned cell, which those
+    // splits handle -- and one with f = 3 removes a pinned cell (the flipped cell had all four
+    // corners on the front; afterwards three); the smoothing pass then moves the new front in the
+    // same turn. Under interleaved_smoothing this is once per group, else once per turn.
+    if (m_offset_params.label_cleanup != "off" && (ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+        label_cleanup(where);
+        // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the condition-1
+        // splits and the smoothing pass that follow it.
+        if (m_offset_params.debug_output) {
+            const std::string name = m_debug_pass_name;
+            m_debug_pass_name = "label_cleanup";
+            write_optimization_debug_output("debug_label_cleanup");
+            m_debug_pass_name = name;
+        }
+    }
     // EXPERIMENTAL_smooth_to_rest: the group's smoothing passes repeat until one lowers E by less
     // than the bar (the settle test's), instead of ops[3] of them. It ends: E is bounded below and
     // every pass that does not end the block lowers it by at least a bar.
@@ -5141,6 +5158,412 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
                   sp_edges.size(),
                   sp_faces.size())
             : std::string());
+}
+
+void TopoOffsetTetMesh::label_cleanup(const std::string& where)
+{
+    // EXPERIMENTAL_label_cleanup (see the spec and the declaration). MEASURED before it (cube_in,
+    // target 0.45, 5% tolerance, 30-run batches): some runs end with thin non-band cells left
+    // beyond the level set -- one with 117 such cells reaching 5.6 tolerances out -- where E is
+    // 1.2e-7 above its optimum against a settle bar of 3.5e-5, so nothing removes them.
+    const std::string& mode = m_offset_params.label_cleanup;
+    if (mode == "off" || m_tetwild_pass) return;
+    const bool tips = mode == "one_sided_tips";
+    const bool one_sided = mode == "one_sided" || tips;
+    // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
+    if (one_sided && !m_band_exact) {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
+            "exact band integral, which this run did not build: it needs "
+            "EXPERIMENTAL_band_volume_rule \"exact\" or \"front_flux\", EXPERIMENTAL_settle_mark "
+            "\"max\", or DEBUG_output");
+    }
+    const double delta = m_offset_params.target_distance;
+    const auto label_of = [this](const size_t tid) { return m_tet_attribute[tid].label; };
+
+    // A cell with a front face: one shared with a cell of the other of the two labels, band (2)
+    // and non-band (0), neither of them the input complex (1).
+    const auto has_front_face = [&](const size_t tid) {
+        const int l = label_of(tid);
+        if (l == 1) return false;
+        for (int j = 0; j < 4; ++j) {
+            const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+            if (o && label_of(o->tid(*this)) != 1 && label_of(o->tid(*this)) != l) return true;
+        }
+        return false;
+    };
+
+    // THE SIDE TEST: whether t's own corners put it on the other label's side. It reads nothing
+    // the clean-up changes (no vertex moves), so a cell's answer is the same in every pass and a
+    // flipped cell is never asked to flip back: a cell flips at most once, and the passes end.
+    //   one_sided: non-band -> band iff U(t) < delta, U = ExactBandIntegral::distance_bound(), the
+    //     min over input triangles P of the max of d_P over t's corners, an upper bound of d on t
+    //     (d <= d_P, d_P convex), so d < delta on all of t. band -> non-band iff L(t) > delta,
+    //     L = d(c) - max_k |v_k - c|, c the centroid: a lower bound of d on t (d is 1-Lipschitz,
+    //     and the point of t farthest from c is a corner). L <= d <= U: the two exclude each other.
+    //   energy: the flip strictly lowers E. A cell that is not plastic (no eligible cell is, see
+    //     below) has tet_energy() = cell_energy(): the AMIPS term (w / s^3) vol A^3, from its
+    //     corners and quality alone, plus band_cell_term() when it is band (the repulsion term is
+    //     0 in the loop: no m_repulsion_potential). Every other cell's energy reads its own corners
+    //     and label. So the flip changes E by exactly +b(t) (to band) or -b(t) (to non-band):
+    //     non-band -> band iff b(t) < 0, band -> non-band iff b(t) > 0. A cell at MAX_ENERGY is
+    //     MAX_ENERGY under either label, and no flip lowers E there.
+    //   one_sided_tips: one_sided, and also a TIP -- a cell with three faces on the other label
+    //     whose four corners are all within front_conv of the level set -- flips iff that lowers
+    //     E (energy's sign of b(t)). MEASURED (cube_in 0.45, 5%, 30 runs, 8 threads, damping off):
+    //     one_sided left 9 runs exiting with a real fold, each a blade of flat non-band cells
+    //     reaching up to 0.07 front_conv INTO the target, so not wholly outside; and the stuck
+    //     blade of t8_cap60_r18 (damping 1.0) is, when the operation passes end, one non-band
+    //     cell with three front faces, corners at -0.06, -0.01, -0.84, -0.001 front_conv, b(t) =
+    //     -0.22 front_conv x its volume. A cell with a corner beyond front_conv -- every coarse
+    //     cell while the front travels -- is never a tip, so this cannot empty a region the way
+    //     "energy" did (7 of 30 runs left with one flat non-band cell). It reads the neighbours'
+    //     labels, so the passes still end: a tip flip agrees with the sign of b(t), and so does
+    //     every one_sided flip (d < delta on all of t gives b < 0; d > delta gives b > 0), so no
+    //     flip of either kind can undo one.
+    const auto wants_flip = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const bool band = cell_is_offset_band(tid);
+        if (one_sided) {
+            std::array<Vector3d, 4> p;
+            for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+            if (!band && m_band_exact->distance_bound(p) < delta) return true;
+            if (band) {
+                const Vector3d c = (p[0] + p[1] + p[2] + p[3]) / 4.;
+                double r = 0.;
+                for (const Vector3d& q : p) r = std::max(r, (q - c).norm());
+                if (m_band_exact->distance(c) - r > delta) return true;
+            }
+            if (!tips) return false;
+            const int other = band ? 0 : 2;
+            int faces = 0;
+            for (int j = 0; j < 4; ++j) {
+                const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+                if (o && label_of(o->tid(*this)) == other) ++faces;
+            }
+            if (faces != 3) return false;
+            for (const Vector3d& q : p) {
+                if (!(std::abs(m_band_exact->distance(q) - delta) <= m_offset_params.front_conv))
+                    return false;
+            }
+            if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
+            const double b = band_cell_term(vs);
+            return band ? b > 0. : b < 0.;
+        }
+        if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
+        const double b = band_cell_term(vs);
+        return band ? b > 0. : b < 0.;
+    };
+
+    // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
+    // cell sharing a vertex with t is band or non-band (no input-complex cell), not plastic (its
+    // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
+    // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
+    // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
+    // tracked surface (vertex_is_on_region(): a tag boundary or the box), or the mesh boundary (a
+    // face through it with no cell beyond) -- which implies that no face of t is on the mesh
+    // boundary. The corner conditions are there because the test below reads cells only: at a
+    // corner on the wall, a flip the test allows can still join the front to the wall at that one
+    // vertex.
+    const auto eligible = [&](const size_t tid, CellTag& tag) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        std::array<const CellTag*, 3> tag_of{{nullptr, nullptr, nullptr}}; // by label
+        for (const size_t v : vs) {
+            if (m_vertex_extra[v].label == 1 || vertex_is_on_region(v)) return false;
+            for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                const int l = label_of(s);
+                if ((l != 0 && l != 2) || cell_is_plastic(s)) return false;
+                const CellTag& tg = m_tet_attribute[s].tag;
+                if (!tag_of[size_t(l)]) {
+                    tag_of[size_t(l)] = &tg;
+                } else if (*tag_of[size_t(l)] != tg) {
+                    return false;
+                }
+                for (int k = 0; k < 4; ++k) {
+                    const Tuple f = tuple_from_face(s, k);
+                    if (f.switch_tetrahedron(*this)) continue;
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    if (std::find(fv.begin(), fv.end(), v) != fv.end()) return false;
+                }
+            }
+        }
+        const int other = label_of(tid) == 2 ? 0 : 2;
+        tag = tag_of[size_t(other)] ? *tag_of[size_t(other)] : CellTag{};
+        return true;
+    };
+
+    // THE TOPOLOGY TEST. f = the faces of t shared with a cell of the other label, the one t
+    // would take:
+    //   f = 0: refused (t would start a new piece, or the front would pinch at an edge or vertex);
+    //   f = 1: refused if the corner opposite that face is in a cell of the other label;
+    //   f = 2: the two faces share an edge; refused if the edge on neither face (the two corners
+    //          opposite them) is in a cell of the other label;
+    //   f = 3: allowed (the fourth face becomes front);
+    //   f = 4: refused (t is a whole piece by itself; the flip deletes it).
+    // An allowed flip has the other label meet t in exactly its f faces, a disk, so taking t in
+    // keeps that label's topology. t's own label, which loses t, meets t in its 4 - f faces and
+    // also, for f = 2, in the edge the two other-label faces share, for f = 3 in their common
+    // corner, when that is in another cell of t's label. Not tested: on a manifold front it
+    // cannot happen (it is a front edge on more than two front faces, or a front vertex where t's
+    // label meets twice); such flips are counted (`odd`), and the component check below catches a
+    // split. Returns f.
+    const auto topology = [&](const size_t tid, bool& allow, bool& odd) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int self = label_of(tid), other = self == 2 ? 0 : 2;
+        std::vector<size_t> opp_other, opp_self; // the corner opposite each face, by its far side
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            size_t opp = vs[0];
+            for (const size_t v : vs) {
+                if (std::find(fv.begin(), fv.end(), v) == fv.end()) opp = v;
+            }
+            const std::optional<Tuple> o = f.switch_tetrahedron(*this); // eligibility: present
+            (o && label_of(o->tid(*this)) == other ? opp_other : opp_self).push_back(opp);
+        }
+        const auto at_vertex = [&](const size_t v, const int l) {
+            for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                if (s != tid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const auto at_edge = [&](const size_t a, const size_t b, const int l) {
+            for (const size_t s : get_incident_tids_for_edge(a, b)) {
+                if (s != tid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const int f = int(opp_other.size());
+        allow = false;
+        odd = false;
+        if (f == 1) allow = !at_vertex(opp_other[0], other);
+        if (f == 2) {
+            allow = !at_edge(opp_other[0], opp_other[1], other);
+            odd = at_edge(opp_self[0], opp_self[1], self);
+        }
+        if (f == 3) {
+            allow = true;
+            odd = at_vertex(opp_self[0], self);
+        }
+        return f;
+    };
+
+    // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
+    // of its faces, edges and corners (2 where some cell holding it is band, else 0: eligibility
+    // keeps 1 out of the closure), the cached class of its four faces -- the only faces whose two
+    // sides change -- and the front flags of its four corners, the only vertices on those faces.
+    // The base's union flag m_is_on_surface is raised for a corner that joins the front, as the
+    // split and the collapse raise it; it is never cleared (vertex_is_held()).
+    const auto any_band = [this](const std::vector<size_t>& tids) {
+        return std::any_of(tids.begin(), tids.end(), [this](const size_t s) {
+            return cell_is_offset_band(s);
+        });
+    };
+    const auto flip = [&](const size_t tid, const CellTag& tag) {
+        m_tet_attribute[tid].label = label_of(tid) == 2 ? 0 : 2;
+        m_tet_attribute[tid].tag = tag;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const size_t fid = f.fid(*this);
+            std::vector<size_t> sides{tid};
+            if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
+                sides.push_back(o->tid(*this));
+            }
+            int& lf = m_face_extra[fid].label;
+            if (lf != 1) lf = any_band(sides) ? 2 : 0;
+            if (face_is_offset_surface_live(f)) {
+                m_face_attribute[fid].m_is_surface_fs = true;
+                m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
+            } else if (m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS) {
+                m_face_attribute[fid].m_is_surface_fs = false;
+                m_face_attribute[fid].m_surface_class = 0; // left at 0 off the surface
+            }
+        }
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            int& le = m_edge_attribute[e.eid(*this)].label;
+            if (le != 1) {
+                const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+                le = any_band(get_incident_tids_for_edge(a, b)) ? 2 : 0;
+            }
+        }
+        for (const size_t v : oriented_tet_vids(tid)) {
+            int& lv = m_vertex_extra[v].label;
+            if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
+            refresh_offset_membership(v);
+            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+        }
+    };
+
+    // THE INVARIANT'S MEASURES: connected components of one label's cells under face adjacency,
+    // and front edges on more than two front faces (where the label changes more than twice
+    // around the edge).
+    const auto label_components = [this](const int l) {
+        std::vector<size_t> parent(tet_capacity());
+        std::iota(parent.begin(), parent.end(), size_t(0));
+        const auto root = [&parent](size_t x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];
+                x = parent[x];
+            }
+            return x;
+        };
+        size_t n = 0;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (m_tet_attribute[tid].label != l) continue;
+            ++n;
+            for (int j = 0; j < 4; ++j) {
+                const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+                if (!o || m_tet_attribute[o->tid(*this)].label != l) continue;
+                const size_t a = root(tid), b = root(o->tid(*this));
+                if (a != b) {
+                    parent[a] = b;
+                    --n;
+                }
+            }
+        }
+        return n;
+    };
+    const auto nonmanifold_front_edges = [this]() {
+        std::map<std::array<size_t, 2>, int> n;
+        for (const std::array<size_t, 3>& f : offset_surface_faces()) { // sorted triples
+            ++n[std::array<size_t, 2>{{f[0], f[1]}}];
+            ++n[std::array<size_t, 2>{{f[1], f[2]}}];
+            ++n[std::array<size_t, 2>{{f[0], f[2]}}];
+        }
+        size_t c = 0;
+        for (const auto& ek : n) c += ek.second > 2 ? 1 : 0;
+        return c;
+    };
+
+    const double e0 = global_energy();
+    const size_t band0 = label_components(2), non0 = label_components(0);
+    const size_t nm0 = nonmanifold_front_edges();
+    std::vector<char> flipped(tet_capacity(), 0);
+    std::vector<size_t> corners; // of the flipped cells
+    size_t to_band = 0, to_non = 0, n_odd = 0;
+    int passes = 0;
+    // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
+    size_t n_cand = 0, n_want = 0, n_skip = 0;
+    std::array<size_t, 5> n_refused{}; // by f
+    for (;;) {
+        ++passes;
+        std::vector<size_t> cands;
+        for (const Tuple& t : get_tets()) {
+            if (has_front_face(t.tid(*this))) cands.push_back(t.tid(*this));
+        }
+        std::sort(cands.begin(), cands.end());
+        n_cand = cands.size();
+        n_want = 0;
+        n_skip = 0;
+        n_refused.fill(0);
+        size_t n_now = 0;
+        // The three tests are pure reads, so the order they are asked in decides only what is
+        // counted: the side test first, so that the counts are of cells on the other side.
+        for (const size_t tid : cands) {
+            if (!wants_flip(tid)) continue;
+            ++n_want;
+            CellTag tag;
+            if (!eligible(tid, tag)) {
+                ++n_skip;
+                continue;
+            }
+            bool allow = false, odd = false;
+            const int f = topology(tid, allow, odd);
+            if (!allow) {
+                ++n_refused[size_t(f)];
+                continue;
+            }
+            if (flipped[tid]) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} flips a second time; its side test reads its own "
+                    "corners alone, which the clean-up does not move",
+                    where,
+                    tid);
+            }
+            // The topology test reads the label the cell joins only; on a manifold front the old
+            // label cannot meet the cell again (Uday 2026-10-26: throw rather than count it).
+            // MEASURED before the throw: 0 such flips in every run (cube_in 0.45, both modes).
+            if (odd) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} (f = {}) passes the topology test, but its old "
+                    "label meets it again at a front edge on more than two front faces or a front "
+                    "vertex, which the test does not read",
+                    where,
+                    tid,
+                    f);
+            }
+            flipped[tid] = 1;
+            ++(cell_is_offset_band(tid) ? to_non : to_band);
+            n_odd += odd ? 1 : 0;
+            flip(tid, tag);
+            for (const size_t v : oriented_tet_vids(tid)) corners.push_back(v);
+            ++n_now;
+        }
+        if (n_now == 0) break;
+    }
+    double e1 = e0;
+    size_t band1 = band0, non1 = non0, nm1 = nm0;
+    if (to_band + to_non > 0) {
+        // What reads the front beyond the flipped cells' closure: the stored vertex order (the
+        // collapse's link condition), from the tracked faces at the vertex, which changed only at
+        // the flipped cells' corners; the band-region map, rebuilt as each turn rebuilds it;
+        // DEBUG_crossings' snapshot, taken here so that the smoothing pass is compared with the
+        // front it starts from.
+        wmtk::vector_unique(corners);
+        for (const size_t v : corners) m_vertex_attribute[v].m_order = compute_vertex_order(v);
+        assign_band_regions(/*log=*/false);
+        if (m_offset_params.debug_crossings && m_round > 0) {
+            crossing_snapshot("label cleanup", true, true);
+        }
+        check_offset_membership("label cleanup"); // perform_sanity_checks only
+        e1 = global_energy();
+        band1 = label_components(2);
+        non1 = label_components(0);
+        nm1 = nonmanifold_front_edges();
+    }
+    logger().info(
+        "\t[label cleanup] {}: {} | {} pass(es), flipped non-band -> band {}, band -> non-band {} "
+        "({} of them with f = 2 or 3 where the old label meets the cell again, at a front edge on "
+        "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
+        "cells with a front face, {} on the other side by the side test, of which {} skipped for "
+        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {} | E {:.9g} -> {:.9g} | "
+        "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
+        "(on more than two front faces) {} -> {}",
+        where,
+        mode,
+        passes,
+        to_band,
+        to_non,
+        n_odd,
+        n_cand,
+        n_want,
+        n_skip,
+        n_refused[0],
+        n_refused[1],
+        n_refused[2],
+        n_refused[4],
+        e0,
+        e1,
+        band0,
+        band1,
+        non0,
+        non1,
+        nm0,
+        nm1);
+    if (band1 != band0 || non1 != non0) {
+        log_and_throw_error(
+            "[label cleanup] {}: the flips changed the topology -- band components {} -> {}, "
+            "non-band components {} -> {} -- which the topology test forbids, a bug ({} flips had "
+            "the old label meeting the cell again, which the test does not read)",
+            where,
+            band0,
+            band1,
+            non0,
+            non1,
+            n_odd);
+    }
 }
 
 bool TopoOffsetTetMesh::pinned_cell(const std::array<size_t, 4>& vids, const int label) const

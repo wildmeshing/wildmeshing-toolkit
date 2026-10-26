@@ -482,6 +482,22 @@ public:
      * pass. The measurements: the spec doc.
      */
     void front_pocket_split(const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed
+     * after construction: a cell on the band / non-band interface whose own geometry puts it on
+     * the other side of the level set takes the other label, where the flip keeps the topology of
+     * both. Invariant: the number of connected components (face adjacency) of the band and of the
+     * non-band region is the same before and after; a change throws.
+     *
+     * Serial passes in tid order over the cells with a front face, reading the current labels,
+     * until a pass flips nothing; positions do not move, and a cell's side test reads its own
+     * corners alone, so a cell flips at most once and the passes end. After each flip every
+     * value derived from labels at the cell's closure is re-derived (the closed labels, the
+     * front's cached face class, the front flags of its corners); after the passes the corners'
+     * vertex order and the band-region map. One [label cleanup] line. Called by loop_group()
+     * after the operation passes; a no-op with the key "off".
+     */
+    void label_cleanup(const std::string& where);
     /// EXPERIMENTAL_energy_collapse (see the spec): after each smoothing pass, every collapse of a
     /// front vertex onto a front neighbour along an offset-surface edge is tried, at any length,
     /// under the engine's checks and the energy rule; serial, to a fixed point.

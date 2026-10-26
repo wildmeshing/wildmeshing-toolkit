@@ -131,6 +131,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_smooth_to_rest (see the spec): each group's smoothing passes repeat until a
     /// pass lowers E by less than a bar, instead of a fixed count.
     bool smooth_to_rest = false;
+    /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
+    /// passes, cells on the wrong side of the level set flip between band and non-band where the
+    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default),
+    /// "one_sided", "energy" or "one_sided_tips".
+    std::string label_cleanup = "off";
     /// DEBUG_trace_collapse (log-only, see the spec): vertex ids whose collapse attempts are logged.
     std::vector<size_t> debug_trace_collapse;
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
@@ -486,6 +491,24 @@ struct Parameters : public wmtk::OptimizerParameters
         phase_loop = json_params["EXPERIMENTAL_phase_loop"];
         phase_loop_connectivity_first = json_params["EXPERIMENTAL_phase_loop_connectivity_first"];
         smooth_to_rest = json_params["EXPERIMENTAL_smooth_to_rest"];
+        label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
+        if (label_cleanup != "off" && label_cleanup != "one_sided" && label_cleanup != "energy" &&
+            label_cleanup != "one_sided_tips") {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"energy\" or "
+                "\"one_sided_tips\", not \"{}\"",
+                label_cleanup);
+        }
+        // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
+        // operation passes and the condition-1 splits before the first smoothing pass; the other
+        // two paths have no such point.
+        if (label_cleanup != "off" && (!front_pocket_split || phase_loop)) {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"{}\" needs EXPERIMENTAL_front_pocket_split true and "
+                "EXPERIMENTAL_phase_loop false: it runs right before the condition-1 splits that "
+                "precede the first smoothing pass of each operation group",
+                label_cleanup);
+        }
         debug_trace_collapse.clear();
         for (const auto& v : json_params["DEBUG_trace_collapse"]) {
             debug_trace_collapse.push_back(v.get<size_t>());
