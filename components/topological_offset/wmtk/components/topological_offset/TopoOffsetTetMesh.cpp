@@ -1,8 +1,9 @@
+#include <wmtk/io/DataWriter.hpp>
 
-#include "TopoOffsetTetMesh.h"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
+#include "TopoOffsetTetMesh.h"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -2218,6 +2219,7 @@ bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 
 void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.vtu", path);
 
     std::vector<int> vid_map(vertex_size(), -1); // vid_map[i] gives new vertex id for old id 'i'
@@ -2290,9 +2292,10 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
     writer.write_mesh(path + ".vtu", V, cells);
 }
 
-void TopoOffsetTetMesh::write_vtu(const std::string& path)
+void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output)
 {
-    write_vtu_frame(gather_vtu_frame(path));
+    if (!m_params.output_enabled && !output) return;
+    write_vtu_frame(gather_vtu_frame(path), output);
 }
 
 TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::string& path)
@@ -2655,7 +2658,18 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //   field_normal_angle  front_face_field_angle(): the angle in degrees between the face's
         //                       normal, out of the band, and grad d at its centroid. NaN where it
         //                       cannot be measured.
-        //   offset_foldover     1 where field_normal_angle > foldover_angle (a foldover), else 0.
+        //   offset_foldover     1 on the two faces of every real fold, the folds count_real_folds()
+        //                       counts and EXPERIMENTAL_exit_no_folds holds the exit for: an edge
+        //                       with exactly two offset faces whose normals out of the band are
+        //                       within 30 degrees of opposite. Else 0.
+        //   field_angle_foldover 1 where field_normal_angle > foldover_angle, else 0 (the
+        //                       end-of-run [foldover] count's test; offset_foldover until
+        //                       2026-10-26). MEASURED: it reads a face against grad d at its
+        //                       centroid, so the faces of a sharp crease of the target, each on
+        //                       its own sheet, read 0 degrees (input1 inward at 0.5 delta_1: 8 real
+        //                       folds, both faces of each within 0.4 front_conv of the target),
+        //                       while a face across a crease line can read up to 64 (cube_in at
+        //                       0.45, 2026-10-25) with no fold.
         //   dihedral_angle      the band-side dihedral angle (band_side_dihedral(); 180 flat,
         //                       toward 0 or 360 as two faces fold onto each other) across the
         //                       face's most folded edge, the one closest to 0 or 360; edges with
@@ -2666,6 +2680,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //                       neighbouring faces, whatever the field does.
         fr.f_err.resize(faces_off.size());
         fr.f_fold = VectorXd::Zero(faces_off.size());
+        fr.f_field_fold = VectorXd::Zero(faces_off.size());
         fr.f_field_angle = VectorXd::Constant(faces_off.size(), nan);
         fr.f_dihedral = VectorXd::Constant(faces_off.size(), nan);
         fr.f_fold_dihedral = VectorXd::Zero(faces_off.size());
@@ -2700,7 +2715,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 const Vector3d pa = VA[a].m_posf, pb = VA[b].m_posf, pc = VA[c].m_posf;
                 fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
                 fr.f_field_angle[i] = front_face_field_angle(a, b, c);
-                fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
+                fr.f_field_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
                 Vector3d n;
                 if (front_face_out_normal(a, b, c, n)) {
                     face_n[i] = n.normalized();
@@ -2729,6 +2744,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 }
             }
         });
+        {
+            std::vector<std::array<size_t, 3>> fold_faces;
+            count_real_folds(nullptr, &fold_faces);
+            std::sort(fold_faces.begin(), fold_faces.end());
+            for (size_t i = 0; i < n_off; ++i) {
+                std::array<size_t, 3> f = faces_off[i];
+                std::sort(f.begin(), f.end());
+                if (std::binary_search(fold_faces.begin(), fold_faces.end(), f)) fr.f_fold[i] = 1.;
+            }
+        }
         // The ring sums on this thread, in face order: faces share corners, and the order of the
         // additions is the serial loop's.
         for (size_t i = 0; i < n_off; ++i) {
@@ -2818,12 +2843,12 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     return fr;
 }
 
-void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
+void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
 {
     // What each field is: gather_vtu_frame().
     const std::string& path = fr.path;
     {
-        paraviewo::VTUWriter writer;
+        io::DataWriter writer(output);
         writer.add_cell_field("amips", fr.amips);
         writer.add_cell_field("tet_energy", fr.tet_e);
         writer.add_cell_field("amips_term", fr.amips_term);
@@ -2848,7 +2873,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // surface
     {
-        paraviewo::VTUWriter surf_writer;
+        io::DataWriter surf_writer(output);
         surf_writer.add_field("order", fr.order);
         surf_writer.add_field("vid", fr.vid);
         surf_writer.add_field("sizing_scalar", fr.sizing);
@@ -2857,13 +2882,14 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // offset faces
     {
-        paraviewo::VTUWriter off_writer;
+        io::DataWriter off_writer(output);
         off_writer.add_cell_field("front_err_ratio", fr.f_err);
         off_writer.add_cell_field("settle_inside_bars", fr.f_inside);
         off_writer.add_cell_field("settle_outside_bars", fr.f_outside);
         off_writer.add_cell_field("chord_length", fr.f_len);
         off_writer.add_cell_field("field_normal_angle", fr.f_field_angle);
         off_writer.add_cell_field("offset_foldover", fr.f_fold);
+        off_writer.add_cell_field("field_angle_foldover", fr.f_field_fold);
         off_writer.add_cell_field("dihedral_angle", fr.f_dihedral);
         off_writer.add_cell_field("offset_foldover_dihedral", fr.f_fold_dihedral);
         off_writer.add_field("vid", fr.vid);
@@ -2880,7 +2906,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
     // edges
     {
-        paraviewo::VTUWriter edge_writer;
+        io::DataWriter edge_writer(output);
         edge_writer.add_field("order", fr.order);
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
@@ -2890,6 +2916,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
 
 void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) const
 {
+    if (!m_params.output_enabled) return;
     // A plane slice of the offset potential, carrying Phi per grid vertex. A dense volume is
     // unaffordable in 3D, so the slice is the plane through the box centre with the shortest
     // extent removed.
@@ -2951,6 +2978,7 @@ void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) con
 
 void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.msh, {} tags", file, m_tags_count);
     consolidate_mesh();
 

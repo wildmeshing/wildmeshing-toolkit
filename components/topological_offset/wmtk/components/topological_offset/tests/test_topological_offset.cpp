@@ -2679,6 +2679,7 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"settle_inside_bars", &fs.f_inside, &ft.f_inside},
         {"settle_outside_bars", &fs.f_outside, &ft.f_outside},
         {"offset_foldover", &fs.f_fold, &ft.f_fold},
+        {"field_angle_foldover", &fs.f_field_fold, &ft.f_field_fold},
         {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
         {"dihedral_angle", &fs.f_dihedral, &ft.f_dihedral},
         {"offset_foldover_dihedral", &fs.f_fold_dihedral, &ft.f_fold_dihedral},

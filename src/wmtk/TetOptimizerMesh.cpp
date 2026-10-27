@@ -504,6 +504,7 @@ void TetOptimizerMesh::output_faces(
     std::string file,
     std::function<bool(const FaceAttributes&)> cond)
 {
+    if (!m_params.output_enabled) return;
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (const auto& v : get_vertices()) {

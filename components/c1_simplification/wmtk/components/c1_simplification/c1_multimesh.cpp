@@ -835,14 +835,17 @@ bool MMSurfaceMesh::collapse_edge_after(const Tuple& t)
 
         tracked_v_chart_pos = R_inv * (tracked_pos - ref_uv_pos) + s_cache.v1_uv_pos;
 
-        std::ofstream point_file("point.obj");
+        std::ofstream point_file;
+        if (output_enabled) point_file.open("point.obj");
 
         point_file << "v " << tracked_v_chart_pos[0] << " " << tracked_v_chart_pos[1] << " 0"
                    << std::endl;
         point_file.close();
 
-        std::ofstream vchart_file("v_chart.obj");
-        std::ofstream v_tri_file("v_tris.obj");
+        std::ofstream vchart_file;
+        if (output_enabled) vchart_file.open("v_chart.obj");
+        std::ofstream v_tri_file;
+        if (output_enabled) v_tri_file.open("v_tris.obj");
         int tri_cnt = 0;
 
         bool found_flag = false;
