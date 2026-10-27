@@ -4,7 +4,7 @@ This component provides multiple tools (called operations in the JSON) to genera
 
 ## Python Wrapper
 
-For convenience, we provide a [Python wrapper](../../python/pywmtk/simwild/simwild.py) for the SimWild component. The wrapper can be used to call the operations from Python scripts. The wrapper is located in `python/pywmtk/simwild/simwild.py`.
+For convenience, we provide a [Python wrapper](../../python/pywmtk/pywmtk/simwild.py) for the SimWild component. The wrapper can be used to call the operations from Python scripts. The wrapper is located in `python/pywmtk/pywmtk/simwild.py`.
 
 The main function demonstrates how to use the wrapper functions. The input data can be found in the [data repository](https://github.com/wildmeshing/data2/tree/main/models).
 
@@ -44,7 +44,7 @@ The entry point is the tet/tri mesh generation from surface/line meshes.
 <summary>Python Example</summary>
 
 ```python
-from simwild import simwild
+from pywmtk import simwild
 
 meshes = ["circle.obj","ellipse.obj","rectangle.obj"]
 tags = ["circle", "ellipse", "rectangle"]
@@ -232,7 +232,7 @@ simwild.laplacian_smoothing(mesh=mesh, interfaces=["L"], output="m7")
 
 Run a full PolyFEM simulation on an extracted simulation mesh (materials
 and boundary conditions selected by tag name); see
-`simwild.polyfem_ops.polyfem_sim` and its `msh_boundary_extractor`.
+`pywmtk.polyfem_ops.polyfem_sim` and its `msh_boundary_extractor`.
 
 ## Tests
 

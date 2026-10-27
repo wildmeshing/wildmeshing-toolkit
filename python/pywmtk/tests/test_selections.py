@@ -1,9 +1,9 @@
 """Tier 1 — expression grammar, region/filter selection plumbing, spec validation."""
 import pytest
 
-from simwild.polyfem_ops import minimum_separation as ms
-from simwild.polyfem_ops import spec
-from simwild.polyfem_ops.mesh_core import (assign_selection_ids, normalize_selection,
+from pywmtk.polyfem_ops import minimum_separation as ms
+from pywmtk.polyfem_ops import spec
+from pywmtk.polyfem_ops.mesh_core import (assign_selection_ids, normalize_selection,
                                parse_expression)
 
 

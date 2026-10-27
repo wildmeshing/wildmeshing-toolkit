@@ -7,9 +7,9 @@ dhat at sep*(1+rtol) and raises the barrier stiffness until the separation
 clears sep.
 
 cfg reference: see spec.json here and the simwild.minimum_separation op.
-Selections use the region/filter format from simwild.polyfem_ops.mesh_core.
+Selections use the region/filter format from pywmtk.polyfem_ops.mesh_core.
 
-Usage: python -m simwild.polyfem_ops.minimum_separation config.json
+Usage: python -m pywmtk.polyfem_ops.minimum_separation config.json
 """
 
 import argparse

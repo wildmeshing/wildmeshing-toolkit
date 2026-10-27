@@ -2,7 +2,7 @@
 solve (AMIPS + fitting + Laplacian; no contact, no iteration).
 
 cfg reference: see spec.json here and the simwild.laplacian_smoothing op.
-Selections use the region/filter format from simwild.polyfem_ops.mesh_core.
+Selections use the region/filter format from pywmtk.polyfem_ops.mesh_core.
 """
 
 from pathlib import Path

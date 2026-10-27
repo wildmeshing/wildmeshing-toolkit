@@ -1,4 +1,4 @@
-"""simwild.polyfem_ops — the polyfem-backed pipeline stages.
+"""pywmtk.polyfem_ops — the polyfem-backed pipeline stages.
 
 Shared:
     mesh_core       : TaggedMesh, tag expressions (via the wildmeshing

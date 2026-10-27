@@ -2,7 +2,7 @@
 2D interface roughness/length, and element-inversion checks."""
 import numpy as np
 
-from simwild.polyfem_ops.constraints import load_mesh
+from pywmtk.polyfem_ops.constraints import load_mesh
 
 
 def _split_surfaces(msh_path, sel_a, sel_b):

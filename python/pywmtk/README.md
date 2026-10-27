@@ -1,4 +1,4 @@
-# simwild
+# pywmtk
 
 Python package for the image-to-simulation pipeline: WMTK mesh operations
 (surf_to_tet, lines_to_tri, remeshing, resolve_overlaps, tight_seal,

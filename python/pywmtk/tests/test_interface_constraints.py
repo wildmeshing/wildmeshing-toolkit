@@ -4,7 +4,7 @@ import numpy as np
 import h5py
 import pytest
 
-from simwild.polyfem_ops import constraints as mic
+from pywmtk.polyfem_ops import constraints as mic
 
 from geo import min_separation_3d
 

@@ -32,7 +32,7 @@ Linear map HDF5 format (polyfem CollisionProxy.cpp):
   weight_triplets/cols     : (n,)  int32   — input mesh vertex IDs (polyfem remaps internally)
   weight_triplets/values   : (n,)  float64
 
-Usage: python -m simwild.polyfem_ops.constraints sim_input_2.msh
+Usage: python -m pywmtk.polyfem_ops.constraints sim_input_2.msh
 The CLI prints the JSON snippet to add under contact.collision_mesh and
 constraints.soft.
 """

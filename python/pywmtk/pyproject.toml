@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "simwild"
+name = "pywmtk"
 version = "0.1.0"
 readme = "README.md"
 dependencies = ["numpy>=2.0", "gmsh", "scipy", "h5py"]
@@ -12,13 +12,13 @@ dependencies = ["numpy>=2.0", "gmsh", "scipy", "h5py"]
 # pip install <wildmeshing-toolkit root>.
 [tool.setuptools]
 packages = [
-    "simwild",
-    "simwild.polyfem_ops",
-    "simwild.polyfem_ops.minimum_separation",
-    "simwild.polyfem_ops.laplacian_smoothing",
-    "simwild.polyfem_ops.polyfem_sim",
+    "pywmtk",
+    "pywmtk.polyfem_ops",
+    "pywmtk.polyfem_ops.minimum_separation",
+    "pywmtk.polyfem_ops.laplacian_smoothing",
+    "pywmtk.polyfem_ops.polyfem_sim",
 ]
 
 [tool.setuptools.package-data]
-"simwild.polyfem_ops.minimum_separation" = ["spec.json"]
-"simwild.polyfem_ops.laplacian_smoothing" = ["spec.json"]
+"pywmtk.polyfem_ops.minimum_separation" = ["spec.json"]
+"pywmtk.polyfem_ops.laplacian_smoothing" = ["spec.json"]

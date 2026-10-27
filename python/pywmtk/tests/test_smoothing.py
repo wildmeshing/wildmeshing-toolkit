@@ -4,8 +4,8 @@ Needs PolyFEM. Also exercises the 2D pipeline path of minimum_separation."""
 import numpy as np
 import pytest
 
-from simwild.polyfem_ops import minimum_separation as ms
-from simwild.polyfem_ops.laplacian_smoothing import run as ls_run
+from pywmtk.polyfem_ops import minimum_separation as ms
+from pywmtk.polyfem_ops.laplacian_smoothing import run as ls_run
 
 from conftest import needs_polyfem
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
