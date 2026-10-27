@@ -189,8 +189,8 @@
   {
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
-    "default": true,
-    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
+    "default": false,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
   },
   {
     "pointer": "/simplify_envelope_ratio",
