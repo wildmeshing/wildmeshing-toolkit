@@ -74,6 +74,8 @@ public:
     /// freezing the boundary when that gets a positive boundary_eps. See there.
     /// initialized() is false otherwise, and for a closed input.
     wmtk::BoundaryEnvelope m_boundary_envelope;
+    /// Around the feature edges set_feature_envelope() saw; initialized() is false without one.
+    wmtk::Envelope m_feature_envelope;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
@@ -151,6 +153,21 @@ public:
     void set_face_fields(const std::vector<std::vector<double>>& values);
     bool has_face_fields() const { return m_has_face_fields; }
 
+    /**
+     * @brief Keep the curves near the feature edges as they are now -- the input's, called
+     * before remeshing: every feature edge an operation leaves must lie within `eps` of them.
+     *
+     * The surface envelope does not hold a curve. Where its two sides meet at an angle, a curve
+     * vertex smoothed across a bend of the curve, or a chord a collapse leaves across one, cuts
+     * the corner along one of the sides and stays inside the surface envelope; where they meet
+     * smoothly, a curve can wander across the surface. This tube judges the curves as
+     * BoundaryEnvelope judges the boundary, with the surface envelope's predicate (exact or
+     * sampled, as create_mesh() was given); a split, which moves nothing, is not judged. With
+     * the tube, a collapse along a curve puts the survivor at the midpoint, as any other
+     * collapse, unless it stays put (see stays_put): the tube refuses it where that leaves the
+     * curve. Off until called; eps <= 0 turns it off.
+     */
+    void set_feature_envelope(double eps);
     /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
     void consolidate_mesh();
     /**
@@ -242,6 +259,8 @@ public:
         bool keep_v2_position = false;
         // Collapse and swap, checking inversions: what the operation replaces.
         ReplacedSurface replaced;
+        // A split is under way: its invariants skip the feature envelope.
+        bool splitting = false;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -316,6 +335,7 @@ private:
     /// Some feature edge has an id other than -1.
     bool m_has_edge_ids = false;
     bool m_has_face_fields = false;
+    bool m_has_feature_envelope = false;
     /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
     bool m_removing_ears = false;
     bool m_check_inversions = true;

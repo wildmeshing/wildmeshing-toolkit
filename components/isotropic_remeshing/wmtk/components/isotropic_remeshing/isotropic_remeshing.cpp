@@ -492,6 +492,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
         m.set_feature_edges(features.edges, features.edge_ids);
         m.set_fixed_vertices(features.vertices);
+        // The surface envelope does not hold the curves; this keeps them within its eps.
+        m.set_feature_envelope(envelope_size);
         logger().info(
             "{} feature edges, {} of them from {}{}; {} fixed vertices",
             m.feature_edges().size(),

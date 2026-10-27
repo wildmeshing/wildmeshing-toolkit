@@ -102,6 +102,7 @@ void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
     cache.feature_edge = is_feature_edge(cache.v1, cache.v2);
     cache.feature_id = cache.feature_edge ? feature_edge_id(cache.v1, cache.v2) : -1;
     cache.keep_v2_position = false;
+    cache.splitting = false;
 }
 
 namespace {
@@ -334,6 +335,31 @@ bool IsotropicRemeshing::invariants(const std::vector<Tuple>& new_tris)
     if (!m_boundary_envelope.boundary_edges_inside(*this, vertex_attrs, new_tris)) {
         return false;
     }
+    // A split leaves the curves where they were; and the sampled test, sampling its halves
+    // elsewhere along the edge, could refuse it, leaving a long edge for the pass to work around.
+    if (m_has_feature_envelope && !position_cache.local().splitting) {
+        // Cheaper than the surface test too: segments, on the curves only. Each once, though
+        // both its triangles are new.
+        std::vector<std::array<size_t, 2>> checked;
+        for (const Tuple& t : new_tris) {
+            const auto vs = oriented_tri_vids(t);
+            for (int k = 0; k < 3; ++k) {
+                const size_t a = std::min(vs[k], vs[(k + 1) % 3]);
+                const size_t b = std::max(vs[k], vs[(k + 1) % 3]);
+                if (!is_feature_edge(a, b)) continue;
+                if (std::find(checked.begin(), checked.end(), std::array<size_t, 2>{{a, b}}) !=
+                    checked.end()) {
+                    continue;
+                }
+                checked.push_back({{a, b}});
+                if (m_feature_envelope.is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {vertex_attrs[a].pos, vertex_attrs[b].pos}})) {
+                    return false;
+                }
+            }
+        }
+    }
     if (m_has_envelope) {
         for (auto& t : new_tris) {
             std::array<Eigen::Vector3d, 3> tris;
@@ -345,6 +371,21 @@ bool IsotropicRemeshing::invariants(const std::vector<Tuple>& new_tris)
         }
     }
     return true;
+}
+
+void IsotropicRemeshing::set_feature_envelope(const double eps)
+{
+    const auto edges = feature_edges();
+    m_has_feature_envelope = eps > 0 && !edges.empty();
+    if (!m_has_feature_envelope) return;
+    std::vector<Eigen::Vector3d> V(vert_capacity());
+    for (size_t i = 0; i < V.size(); ++i) V[i] = vertex_attrs[i].pos;
+    std::vector<Eigen::Vector2i> E;
+    E.reserve(edges.size());
+    for (const auto& e : edges) E.emplace_back(int(e[0]), int(e[1]));
+    // Set before init(): an edge envelope builds its exact structure only when it is.
+    m_feature_envelope.use_exact = m_envelope.use_exact;
+    m_feature_envelope.init(V, E, eps);
 }
 
 // TODO: this should not be here
@@ -392,6 +433,7 @@ std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after(
 bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
 {
     if (!TriMesh::swap_edge_before(t)) return false;
+    position_cache.local().splitting = false;
     if (vertex_attrs[t.vid(*this)].freeze && vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
         return false;
     const size_t v1 = t.vid(*this), v2 = t.switch_vertex(*this).vid(*this);
@@ -474,6 +516,11 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
         // all. A survivor on a curve, or fixed, stays where it is.
         if (!may_collapse_away(t)) return false;
         cache.keep_v2_position = feature_degree(cache.v2) > 0 || is_fixed(cache.v2);
+        // With a tube around the curves, a collapse along one goes to the midpoint, as any other,
+        // unless the survivor stays put: the tube refuses it where that is off the curve.
+        if (m_has_feature_envelope && cache.feature_edge && !stays_put(cache.v2)) {
+            cache.keep_v2_position = false;
+        }
     }
     if (m_has_features) {
         // No triangle the collapse renames may come out holding two curve edges: the survivor
@@ -581,6 +628,7 @@ bool IsotropicRemeshing::split_edge_before(const Tuple& t)
 {
     if (!TriMesh::split_edge_before(t)) return false;
     cache_edge_positions(t);
+    position_cache.local().splitting = true;
     // The new vertex continues a boundary edge the tube judges, so it carries the lineage on:
     // otherwise the half between it and an unflagged endpoint would escape the tube. A split
     // of an interior edge puts it inside the surface, where it has nothing to carry.
@@ -641,6 +689,7 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
 
 bool IsotropicRemeshing::smooth_before(const Tuple& t)
 {
+    position_cache.local().splitting = false;
     if (vertex_attrs[t.vid(*this)].freeze) return false;
     if (stays_put(t.vid(*this))) return false; // see there
     const size_t d = feature_degree(t.vid(*this));
