@@ -3949,6 +3949,7 @@ void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& 
 
 void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
 {
+    if (!m_params.output_enabled) return;
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
     const std::string base = m_offset_params.output_path + fmt::format("_{:05d}", idx);
@@ -3974,6 +3975,7 @@ void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
 
 void TopoOffsetTriMesh::write_debug_pvd() const
 {
+    if (!m_params.output_enabled) return;
     // DEBUG_output only. ParaView detects a file series only when the frame index sits
     // IMMEDIATELY before the extension. The main frames are <output>_NNNNN.vtu and group fine,
     // but every companion is <output>_NNNNN_off.vtu -- index in the middle, suffix after it --

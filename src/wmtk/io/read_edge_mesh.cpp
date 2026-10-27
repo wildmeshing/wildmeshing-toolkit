@@ -147,6 +147,11 @@ void read_edge_mesh(
         E.row(i) = e_list[i];
     }
 
+    clean_edge_mesh(V, E, tol_rel, tol_abs);
+}
+
+void clean_edge_mesh(MatrixXd& V, MatrixXi& E, double tol_rel, double tol_abs)
+{
     double tol = tol_abs;
     if (tol < 0 && tol_rel >= 0 && V.rows() > 0) {
         const double diag = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
