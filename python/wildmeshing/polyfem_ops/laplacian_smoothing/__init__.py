@@ -2,7 +2,7 @@
 solve (AMIPS + fitting + Laplacian; no contact, no iteration).
 
 cfg reference: see spec.json here and the simwild.laplacian_smoothing op.
-Selections use the region/filter format from pywmtk.polyfem_ops.mesh_core.
+Selections use the region/filter format from wildmeshing.polyfem_ops.mesh_core.
 """
 
 from pathlib import Path
@@ -36,6 +36,11 @@ def run(cfg: dict, out_dir=None) -> None:
     output_msh (default <stem>_smoothed.msh); out_dir defaults to the mesh's
     folder.
     """
+    # Its options are documented in spec.json, but run() reads engine keys; the translation
+    # lived in the removed pywmtk wrapper. Planned: laplacian_smoothing(options), validated
+    # against spec.json like a component.
+    raise NotImplementedError(
+        "polyfem_ops.laplacian_smoothing is not available yet: its spec.json options are not wired to run()")
     cfg = dict(cfg)
     ignored_present = [k for k in _SMOOTHING_IGNORED_KEYS if k in cfg]
     if ignored_present:

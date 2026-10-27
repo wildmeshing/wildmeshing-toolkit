@@ -16,8 +16,8 @@ _TYPES = {
 
 
 def load_spec(op_name: str) -> list:
-    """Load the spec.json packaged with pywmtk.polyfem_ops.<op_name>."""
-    with resources.files(f"pywmtk.polyfem_ops.{op_name}").joinpath(
+    """Load the spec.json packaged with wildmeshing.polyfem_ops.<op_name>."""
+    with resources.files(f"wildmeshing.polyfem_ops.{op_name}").joinpath(
             "spec.json").open() as f:
         return json.load(f)
 

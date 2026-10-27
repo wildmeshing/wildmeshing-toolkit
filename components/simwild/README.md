@@ -4,7 +4,7 @@ This component provides multiple tools (called operations in the JSON) to genera
 
 ## Python
 
-Python wrappers for these operations, with an example for each, are in the [pywmtk](../../python/pywmtk/README.md) package. It also wraps topological offsets, manifold extraction and the PolyFEM-backed operations.
+Every operation is a call `wildmeshing.simwild(options[, meshes])` with the JSON options below, on files or in memory. See [python/README.md](../../python/README.md) for both routes, checkpoints, and the other tagged components.
 
 ## Operations
 

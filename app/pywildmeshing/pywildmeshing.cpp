@@ -84,7 +84,7 @@ private:
     wmtk::components::simwild::expression_parser::ExpressionPtr m_expr;
 };
 
-PYBIND11_MODULE(wildmeshing, m, py::mod_gil_not_used())
+PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
 {
     m.doc() = "Python bindings for the Wildmeshing-Toolkit"; // optional module docstring
     m.def("wildmeshing", &wmtk_wrapper, "options"_a, "Wildmeshing-Toolkit application");
