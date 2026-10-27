@@ -23,9 +23,13 @@ option(EIGEN_MPL2_ONLY "Enable Eigen MPL2 license only" OFF)
 message(STATUS "Third-party: creating target 'Eigen3::Eigen'")
 
 include(CPM)
+# From Google's mirror of the Eigen repository, not gitlab.com: GitLab refuses anonymous clones of
+# libeigen/eigen when it is under load ("GitLab is currently unable to handle this request due to
+# load"), which failed CI's configure step on every platform in October 2026. The mirror's 3.4.0 tag
+# is the same commit, 3147391d946bb4b6c68edd901f2add6ac1f31f8c.
 CPMAddPackage(
     NAME eigen
-    GITLAB_REPOSITORY libeigen/eigen
+    GIT_REPOSITORY https://eigen.googlesource.com/mirror
     GIT_TAG 3.4.0
     DOWNLOAD_ONLY TRUE
 )
