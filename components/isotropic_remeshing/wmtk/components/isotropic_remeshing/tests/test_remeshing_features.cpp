@@ -219,11 +219,11 @@ TEST_CASE("features-fixed-vertices-survive-collapses", "[test_remeshing][feature
     REQUIRE(m.vertex_attrs[centre].pos == Eigen::Vector3d(4, 4, 0));
     CHECK(m.is_fixed(centre));
     CHECK(m.feature_attrs.at(centre).vertex_id == 42);
-    size_t near = 0;
+    size_t nearby = 0;
     for (const auto& v : m.get_vertices()) {
-        if ((m.vertex_attrs[v.vid(m)].pos - V[centre]).norm() < 0.5) ++near;
+        if ((m.vertex_attrs[v.vid(m)].pos - V[centre]).norm() < 0.5) ++nearby;
     }
-    CHECK(near == 1);
+    CHECK(nearby == 1);
 
     // Smoothing leaves it.
     m.smooth_all_vertices();

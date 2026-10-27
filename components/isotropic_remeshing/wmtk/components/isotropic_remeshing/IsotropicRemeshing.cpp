@@ -362,10 +362,11 @@ size_t IsotropicRemeshing::cleanup_triangles(const double degrees)
                     }
                 }
             }
-            std::vector<size_t> near;
+            std::vector<size_t> nearby;
             for (const Tuple& g : around) {
                 for (const size_t w : oriented_tri_vids(g)) {
-                    if (std::find(near.begin(), near.end(), w) == near.end()) near.push_back(w);
+                    if (std::find(nearby.begin(), nearby.end(), w) == nearby.end())
+                        nearby.push_back(w);
                 }
             }
             m_cleanup_floor = min_angle(around);
@@ -394,7 +395,7 @@ size_t IsotropicRemeshing::cleanup_triangles(const double degrees)
                 if (done) break;
                 done = cleanup_move(v, m_cleanup_floor);
             }
-            for (const size_t w : near) {
+            for (const size_t w : nearby) {
                 if (done) break;
                 if (std::find(vs.begin(), vs.end(), w) != vs.end()) continue;
                 done = cleanup_move(w, m_cleanup_floor);
