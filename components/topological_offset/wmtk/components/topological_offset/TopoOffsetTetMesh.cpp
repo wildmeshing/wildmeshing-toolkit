@@ -2629,9 +2629,21 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         //   field_normal_angle  front_face_field_angle(): the angle in degrees between the face's
         //                       normal, out of the band, and grad d at its centroid. NaN where it
         //                       cannot be measured.
-        //   offset_foldover     1 where field_normal_angle > foldover_angle (a foldover), else 0.
+        //   offset_foldover     1 on the two faces of every real fold, the folds count_real_folds()
+        //                       counts and EXPERIMENTAL_exit_no_folds holds the exit for: an edge
+        //                       with exactly two offset faces whose normals out of the band are
+        //                       within 30 degrees of opposite. Else 0.
+        //   field_angle_foldover 1 where field_normal_angle > foldover_angle, else 0 (the
+        //                       end-of-run [foldover] count's test; offset_foldover until
+        //                       2026-10-26). MEASURED: it reads a face against grad d at its
+        //                       centroid, so the faces of a sharp crease of the target, each on
+        //                       its own sheet, read 0 degrees (input1 inward at 0.5 delta_1: 8 real
+        //                       folds, both faces of each within 0.4 front_conv of the target),
+        //                       while a face across a crease line can read up to 64 (cube_in at
+        //                       0.45, 2026-10-25) with no fold.
         fr.f_err.resize(faces_off.size());
         fr.f_fold = VectorXd::Zero(faces_off.size());
+        fr.f_field_fold = VectorXd::Zero(faces_off.size());
         fr.f_field_angle = VectorXd::Constant(faces_off.size(), nan);
         fr.f_len.resize(faces_off.size());
         fr.f_inside = VectorXd::Constant(faces_off.size(), nan);
@@ -2660,7 +2672,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 const Vector3d pa = VA[a].m_posf, pb = VA[b].m_posf, pc = VA[c].m_posf;
                 fr.f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
                 fr.f_field_angle[i] = front_face_field_angle(a, b, c);
-                fr.f_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
+                fr.f_field_fold[i] = fr.f_field_angle[i] > m_offset_params.foldover_angle ? 1. : 0.;
                 if (!band_env) continue;
                 const std::array<Vector3d, 3> p = {{pa, pb, pc}};
                 fr.f_inside[i] =
@@ -2683,6 +2695,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 }
             }
         });
+        {
+            std::vector<std::array<size_t, 3>> fold_faces;
+            count_real_folds(nullptr, &fold_faces);
+            std::sort(fold_faces.begin(), fold_faces.end());
+            for (size_t i = 0; i < n_off; ++i) {
+                std::array<size_t, 3> f = faces_off[i];
+                std::sort(f.begin(), f.end());
+                if (std::binary_search(fold_faces.begin(), fold_faces.end(), f)) fr.f_fold[i] = 1.;
+            }
+        }
         // The ring sums on this thread, in face order: faces share corners, and the order of the
         // additions is the serial loop's.
         for (size_t i = 0; i < n_off; ++i) {
@@ -2767,6 +2789,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         off_writer.add_cell_field("chord_length", fr.f_len);
         off_writer.add_cell_field("field_normal_angle", fr.f_field_angle);
         off_writer.add_cell_field("offset_foldover", fr.f_fold);
+        off_writer.add_cell_field("field_angle_foldover", fr.f_field_fold);
         off_writer.add_field("vid", fr.vid);
         off_writer.add_field("sizing_scalar", fr.sizing);
         off_writer.add_field("input_distance", fr.in_dist);

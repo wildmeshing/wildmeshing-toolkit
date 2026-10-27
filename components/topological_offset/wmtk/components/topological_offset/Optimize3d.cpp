@@ -3259,7 +3259,13 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
     double max_rms = 0., max_vertex = 0., max_gap = 0.;
     const bool rms_mode = m_offset_params.settle_mark == "rms";
-    const bool vertex_mode = m_offset_params.settle_mark == "vertex";
+    const bool edge_mode = m_offset_params.settle_mark == "vertex_edge";
+    const bool split_mode = m_offset_params.settle_mark == "vertex_split";
+    const bool vertex_mode = m_offset_params.settle_mark == "vertex" || edge_mode || split_mode;
+    size_t n_front_edges = 0, n_edge_over = 0, n_edge_floor = 0;
+    size_t n_off_faces = 0, n_off_centroid = 0;
+    double max_edge = 0., max_face = 0.;
+    std::vector<std::array<size_t, 2>> to_split;
     if (settled) {
         // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
         // over f of d, exact (min over P of the triangle-triangle distance); outside_f = max over f
@@ -3336,18 +3342,107 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         for (const auto& f : faces) front_vids.insert(front_vids.end(), f.begin(), f.end());
         wmtk::vector_unique(front_vids);
         n_front_vertices = front_vids.size();
-        for (const size_t v : front_vids) {
-            const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const Envelope& env = *m_input_complex_envelope;
-            const double err = std::abs(
+        const Envelope& env = *m_input_complex_envelope;
+        const auto level_set_error = [&](const Vector3d& x) {
+            return std::abs(
                 env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
+        };
+        std::vector<char> vertex_over(edge_mode || split_mode ? vert_capacity() : 0, 0);
+        for (const size_t v : front_vids) {
+            const double err = level_set_error(m_vertex_attribute[v].m_posf);
             max_vertex = std::max(max_vertex, err / eps);
             if (!(err > eps)) continue;
             ++n_over_vertex;
             if (!vertex_mode) continue;
             ++n_marked;
             corners.push_back(v);
+            if (edge_mode || split_mode) vertex_over[v] = 1;
             if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+        }
+        // EXPERIMENTAL_settle_mark "vertex_edge": "vertex", and also both ends of a front edge
+        // whose two ends are within front_conv of the level set and whose midpoint is not. Such an
+        // edge spans a stretch of the level set its corners do not see, which the vertex test
+        // passes for good. These marks refine only: they do not count as marked and do not hold
+        // the exit, which stays the vertex test. MEASURED (t100033 inward at 0.5 delta_1, 10%):
+        // at 1 thread resolved at turn 8 where "vertex" was held by a real fold to the 30-turn cap;
+        // at 8 threads resolved at turn 8 in 70 s with 1934 front vertices, against turn 19, 168 s
+        // and 1425 front vertices under "vertex_split" (one run each).
+        if (edge_mode) {
+            std::vector<std::array<size_t, 2>> edges;
+            edges.reserve(3 * faces.size());
+            for (const auto& f : faces) {
+                for (int j = 0; j < 3; ++j) {
+                    const size_t a = f[size_t(j)], b = f[size_t((j + 1) % 3)];
+                    edges.push_back({{std::min(a, b), std::max(a, b)}});
+                }
+            }
+            wmtk::vector_unique(edges);
+            n_front_edges = edges.size();
+            for (const auto& e : edges) {
+                if (vertex_over[e[0]] || vertex_over[e[1]]) continue;
+                const double err = level_set_error(
+                    0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf));
+                max_edge = std::max(max_edge, err / eps);
+                if (!(err > eps)) continue;
+                ++n_edge_over;
+                bool at_floor = true;
+                for (const size_t v : e) {
+                    corners.push_back(v);
+                    at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+                }
+                if (at_floor) ++n_edge_floor;
+            }
+        }
+        // EXPERIMENTAL_settle_mark "vertex_split": "vertex", and also a front face whose three
+        // corners are within front_conv of the level set but one of its three edge midpoints or its
+        // centroid is not has the edge with the midpoint farthest from the level set split (listed
+        // here; front_pocket_split() splits them before the next turn's first smoothing pass, see
+        // there). Such a face spans a stretch of the level set its corners do not see,
+        // which the vertex test passes for good. The split is the remedy, not a sizing halving:
+        // MEASURED (t100033 inward at 0.5 delta_1, 10%, 1 thread): halving the ends of such edges
+        // resolved it at turn 8 where "vertex" was held by a real fold to the 30-turn cap, with
+        // 1979 front vertices at turn 8 against 549, the halving spreading through the gradation.
+        // Not gated by its energy gain: MEASURED offline on that run's final mesh, a split of any
+        // of its 40 such edges, the new vertex placed anywhere that keeps the cells valid, lowers
+        // the offset energy by at most 0.61 of the settle bar of the edge's two front faces, the
+        // real fold's edge by 0.27 (its cells invert 0.9 front_conv out). In the 5% run that
+        // resolved, the fold went at the collapse the turn after the split.
+        if (split_mode) {
+            std::map<std::array<size_t, 2>, double> mid_err;
+            for (const auto& f : faces) {
+                if (vertex_over[f[0]] || vertex_over[f[1]] || vertex_over[f[2]]) continue;
+                std::array<size_t, 2> worst{{0, 0}};
+                double worst_err = -1.;
+                for (int j = 0; j < 3; ++j) {
+                    const size_t a = f[size_t(j)], b = f[size_t((j + 1) % 3)];
+                    const std::array<size_t, 2> e{{std::min(a, b), std::max(a, b)}};
+                    auto it = mid_err.find(e);
+                    if (it == mid_err.end()) {
+                        it = mid_err
+                                 .emplace(
+                                     e,
+                                     level_set_error(
+                                         0.5 * (m_vertex_attribute[a].m_posf +
+                                                m_vertex_attribute[b].m_posf)))
+                                 .first;
+                    }
+                    if (it->second > worst_err) {
+                        worst_err = it->second;
+                        worst = e;
+                    }
+                }
+                const double c_err = level_set_error(
+                    (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
+                     m_vertex_attribute[f[2]].m_posf) /
+                    3.);
+                const double face_err = std::max(worst_err, c_err);
+                max_face = std::max(max_face, face_err / eps);
+                if (!(face_err > eps)) continue;
+                ++n_off_faces;
+                if (!(worst_err > eps)) ++n_off_centroid;
+                to_split.push_back(worst);
+            }
+            wmtk::vector_unique(to_split);
         }
         // EXPERIMENTAL_gap_refinement: a band cell with a front corner whose corner bound may lie
         // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
@@ -3392,6 +3487,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             }
         }
         if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
+        if (refine_now) m_settle_split_edges = to_split;
     }
     // A marked face with every corner at the floor is one nothing will refine: it blocks the exit
     // for good, hence the warning, every turn such faces exist.
@@ -3438,6 +3534,31 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                       s_floor,
                       n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
                 : std::string(" -- no face test, no refinement, no exit: the front still moves"));
+    if (edge_mode && settled) {
+        logger().info(
+            "\t[settle edge] turn {}: {} of {} front edges with both ends within front_conv and "
+            "the midpoint over (max {:.4} bars), their ends refined, {} with both ends at the "
+            "sizing floor; they do not hold the exit",
+            turn,
+            n_edge_over,
+            n_front_edges,
+            max_edge,
+            n_edge_floor);
+    }
+    // The listed edges do not hold the exit, which stays the vertex test: they are split only if
+    // the run goes on (the next turn), and a run that exits leaves them unsplit.
+    if (split_mode && settled) {
+        logger().info(
+            "\t[settle split] turn {}: {} front faces with every corner within front_conv and an "
+            "edge midpoint or the centroid over (max {:.4} bars), {} of them by the centroid "
+            "alone | {} edges to split (the midpoint farthest from the level set per face) before "
+            "the next turn's first smoothing pass; they do not hold the exit",
+            turn,
+            n_off_faces,
+            max_face,
+            n_off_centroid,
+            to_split.size());
+    }
     return settled && n_marked == 0 && n_gap_over == 0;
 }
 
@@ -3879,6 +4000,66 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
     // construction and would drag the reported error to target_distance everywhere.
     return !cell_is_input_complex(a ? tb : ta);
+}
+
+bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const
+{
+    // See the declaration. Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
+    const auto o = f.switch_tetrahedron(*this);
+    if (!o) return false;
+    const size_t t0 = f.tid(*this), t1 = o->tid(*this);
+    const size_t tb = cell_is_offset_band(t0) ? t0 : cell_is_offset_band(t1) ? t1 : size_t(-1);
+    if (tb == size_t(-1)) return false;
+    const std::array<size_t, 3> fv = get_face_vids(f);
+    size_t opp = 0;
+    for (const size_t v : oriented_tet_vids(tb)) {
+        if (v != fv[0] && v != fv[1] && v != fv[2]) opp = v;
+    }
+    const Vector3d& p0 = m_vertex_attribute[fv[0]].m_posf;
+    n = (m_vertex_attribute[fv[1]].m_posf - p0).cross(m_vertex_attribute[fv[2]].m_posf - p0);
+    if (!(n.norm() > 0)) return false;
+    n.normalize();
+    if (n.dot(p0 - m_vertex_attribute[opp].m_posf) < 0) n = -n;
+    return true;
+}
+
+size_t TopoOffsetTetMesh::count_real_folds(
+    std::vector<char>* corners,
+    std::vector<std::array<size_t, 3>>* faces) const
+{
+    // Each live offset face once, its normal out of the band; then the edges with exactly two.
+    // Ported unchanged from the fold work (wmtk-pinned-split, 2026-10-24).
+    std::map<std::array<size_t, 2>, std::vector<std::pair<std::array<size_t, 3>, Vector3d>>>
+        by_edge;
+    size_t vmax = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        Vector3d n;
+        if (!offset_face_normal_out_of_band(f, n)) continue;
+        const std::array<size_t, 3> fv = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            const size_t a = fv[i], b = fv[(i + 1) % 3];
+            by_edge[{{std::min(a, b), std::max(a, b)}}].push_back({fv, n});
+            vmax = std::max(vmax, std::max(a, b));
+        }
+    }
+    if (corners) corners->assign(vmax + 1, 0);
+    size_t folds = 0;
+    for (const auto& [e, fs] : by_edge) {
+        if (fs.size() != 2 || fs[0].second.dot(fs[1].second) >= kCos150) continue;
+        ++folds;
+        for (const auto& [fv, n] : fs) {
+            if (corners) {
+                for (const size_t v : fv) (*corners)[v] = 1;
+            }
+            if (faces) {
+                std::array<size_t, 3> s = fv;
+                std::sort(s.begin(), s.end());
+                faces->push_back(s);
+            }
+        }
+    }
+    return folds;
 }
 
 bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t b) const
@@ -4328,6 +4509,749 @@ void TopoOffsetTetMesh::write_debug_pvd(const std::string& out, const DebugTimel
     }
 }
 
+void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
+{
+    if (!m_offset_params.front_pocket_split) {
+        local_operations(ops);
+        return;
+    }
+    // EXPERIMENTAL_front_pocket_split: the same passes, one call for the operation passes and one
+    // per smoothing pass, as repulsion_rounds runs its groups. Besides the splits this moves the
+    // rounding sweep from after the k-th smoothing pass to after each, and adds each call's energy
+    // and time lines.
+    if (ops[0] > 0 || ops[1] > 0 || ops[2] > 0) local_operations({{ops[0], ops[1], ops[2], 0}});
+    // EXPERIMENTAL_label_cleanup: after the operation passes (none in pre_smooth), before the
+    // condition-1 splits of the first smoothing pass. A flip with f = 1 or 2 faces on the other
+    // label leaves the cell with all four corners on the front -- a pinned cell, which those
+    // splits handle -- and one with f = 3 removes a pinned cell (the flipped cell had all four
+    // corners on the front; afterwards three); the smoothing pass then moves the new front in the
+    // same turn. Under interleaved_smoothing this is once per group, else once per turn.
+    if (m_offset_params.label_cleanup != "off" && (ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
+        label_cleanup(where);
+        // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the condition-1
+        // splits and the smoothing pass that follow it.
+        if (m_offset_params.debug_output) {
+            const std::string name = m_debug_pass_name;
+            m_debug_pass_name = "label_cleanup";
+            write_optimization_debug_output("debug_label_cleanup");
+            m_debug_pass_name = name;
+        }
+    }
+    for (int p = 0; p < ops[3]; ++p) {
+        front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        local_operations({{0, 0, 0, 1}});
+    }
+}
+
+void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
+{
+    // loop_group() calls this only with the key on; the key is tested here too so that the slot
+    // alone is a no-op with it off (the unit test drives the slot directly).
+    if (!m_offset_params.front_pocket_split || m_tetwild_pass) return;
+    const auto len2 = [this](const std::array<size_t, 2>& e) {
+        return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
+    };
+    // A pinned cell: its corners sorted (it names the cell across the round's splits), the edges
+    // to split it on, longest first (ties by vertex ids), and whether all six of its edges are on
+    // the offset surface.
+    struct Pinned
+    {
+        std::array<size_t, 4> vids;
+        std::vector<std::array<size_t, 2>> edges;
+        bool six = false;
+    };
+    // One scan of the live cells. `no_face`: pinned cells with all four faces on the offset
+    // surface, which have no edge to split; `six` and `band`, when given: pinned cells with all
+    // six edges on it, and band cells with all four corners on the front.
+    const auto scan = [&](size_t& no_face, size_t* six, size_t* band) {
+        std::vector<Pinned> out;
+        no_face = 0;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (!std::all_of(vs.begin(), vs.end(), [this](const size_t v) {
+                    return m_vertex_extra[v].m_is_on_offset;
+                })) {
+                continue;
+            }
+            if (cell_is_input_complex(tid)) continue;
+            // A band cell with all four corners on the front is the mirror case: at the band
+            // term's optimum its corners lie on the level set too, so it is the hull of four
+            // points on it -- a sliver, flattened outright where the curvature puts that hull on
+            // the background's side. Split the same way (an edge on no offset face is inside the
+            // band, so its midpoint is off the front); counted apart in the log.
+            if (cell_is_offset_band(tid) && band) ++*band;
+            Pinned p;
+            p.vids = vs;
+            std::sort(p.vids.begin(), p.vids.end());
+            for (int i = 0; i < 4; ++i) {
+                for (int j = i + 1; j < 4; ++j) {
+                    const std::array<size_t, 2> e{{p.vids[i], p.vids[j]}};
+                    if (!edge_is_offset_surface_live(e[0], e[1])) p.edges.push_back(e);
+                }
+            }
+            if (p.edges.empty()) {
+                // All six edges on the offset surface, so every edge midpoint would be on the
+                // front. Then split the edges of the cell's faces that are not offset faces,
+                // longest first: such a face has its three edges on the offset surface, and
+                // splitting one, (a, b) of face (a, b, c), at m makes the edge (m, c), whose
+                // faces are the two halves of (a, b, c), between the same two labels as it, and
+                // one new face inside each cell that shared it, so it is off the offset surface.
+                // Both children of this cell have it, and the next round splits it as above: a
+                // vertex off the front at (a + b + 2c) / 4 on that face, a corner of all four of
+                // the cell's descendants. That is simplicial_embedding()'s face split, made of
+                // the loop's own edge splits; the component's face split hooks are the
+                // construction's (they write no m_is_on_offset, no rest, no exact fallback).
+                // A cell with all four faces on the offset surface is a one-cell component of
+                // its label; a split would leave its boundary, every corner of it on the front,
+                // as it is, so it is counted only. MEASURED before this (cube_in, target 0.3,
+                // 7 turns): 176 such cells over the passes (31 distinct; 102 band, 74 not), every
+                // one with exactly three faces on the offset surface, their shared corner on
+                // exactly three offset faces and in no other cell of the cell's label -- a cell
+                // alone under a front vertex of valence 3 -- and all 176 left unsplit.
+                p.six = true;
+                if (six) ++*six;
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(tid, j);
+                    if (face_is_offset_surface_live(f)) continue;
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    for (int i = 0; i < 3; ++i) {
+                        const size_t u = fv[i], w = fv[(i + 1) % 3];
+                        const std::array<size_t, 2> e{{std::min(u, w), std::max(u, w)}};
+                        if (std::find(p.edges.begin(), p.edges.end(), e) == p.edges.end()) {
+                            p.edges.push_back(e);
+                        }
+                    }
+                }
+                if (p.edges.empty()) {
+                    ++no_face;
+                    continue;
+                }
+            }
+            std::sort(p.edges.begin(), p.edges.end(), [&](const auto& a, const auto& b) {
+                const double la = len2(a), lb = len2(b);
+                return la != lb ? la > lb : a < b;
+            });
+            out.push_back(std::move(p));
+        }
+        return out;
+    };
+    // Whether the cell on these sorted corners is still live: an earlier split of the round may
+    // have split one of its edges, and so the cell, already.
+    const auto alive = [this](const std::array<size_t, 4>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            std::sort(vs.begin(), vs.end());
+            if (vs == s) return true;
+        }
+        return false;
+    };
+
+    // EXPERIMENTAL_front_spanned_split: the spanned edges and faces (see the spec), split each
+    // round before the pinned cells, lowest dimension first. A face is listed only when its three
+    // edges are on the offset surface; one with an edge off it is split by that edge's split.
+    const auto on_front = [this](const size_t v) { return m_vertex_extra[v].m_is_on_offset; };
+    const auto off_input = [this](const std::vector<size_t>& tids) {
+        return !tids.empty() && std::none_of(tids.begin(), tids.end(), [this](const size_t t) {
+            return cell_is_input_complex(t);
+        });
+    };
+    struct SpannedFace
+    {
+        std::array<size_t, 3> vids; // sorted
+        std::vector<std::array<size_t, 2>> edges; // longest first
+    };
+    const auto scan_spanned = [&](std::vector<std::array<size_t, 2>>& edges,
+                                  std::vector<SpannedFace>& faces) {
+        edges.clear();
+        faces.clear();
+        if (!m_offset_params.front_spanned_split) return;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            if (!on_front(a) || !on_front(b) || edge_is_offset_surface_live(a, b)) continue;
+            if (!off_input(get_incident_tids_for_edge(a, b))) continue;
+            edges.push_back({{std::min(a, b), std::max(a, b)}});
+        }
+        for (const Tuple& f : get_faces()) {
+            std::array<size_t, 3> fv = get_face_vids(f);
+            if (!std::all_of(fv.begin(), fv.end(), on_front) || face_is_offset_surface_live(f)) {
+                continue;
+            }
+            if (!edge_is_offset_surface_live(fv[0], fv[1]) ||
+                !edge_is_offset_surface_live(fv[1], fv[2]) ||
+                !edge_is_offset_surface_live(fv[0], fv[2])) {
+                continue;
+            }
+            std::vector<size_t> tids{f.tid(*this)};
+            if (const auto o = f.switch_tetrahedron(*this)) tids.push_back(o->tid(*this));
+            if (!off_input(tids)) continue;
+            SpannedFace s;
+            std::sort(fv.begin(), fv.end());
+            s.vids = fv;
+            s.edges = {{{fv[0], fv[1]}}, {{fv[1], fv[2]}}, {{fv[0], fv[2]}}};
+            std::sort(s.edges.begin(), s.edges.end(), [&](const auto& x, const auto& y) {
+                const double lx = len2(x), ly = len2(y);
+                return lx != ly ? lx > ly : x < y;
+            });
+            faces.push_back(std::move(s));
+        }
+    };
+    const auto face_alive = [this](const std::array<size_t, 3>& s) {
+        for (const size_t tid : get_incident_tids_for_edge(s[0], s[1])) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), s[2]) != vs.end()) return true;
+        }
+        return false;
+    };
+    const auto split_one = [this](const std::array<size_t, 2>& e) {
+        const Tuple t = tuple_from_edge(e);
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        std::vector<Tuple> new_edges;
+        m_pocket_splitting = true; // no longest-edge wait (split_edge_before())
+        const bool ok = split_edge(t, new_edges);
+        m_pocket_splitting = false;
+        return ok;
+    };
+
+    // EXPERIMENTAL_settle_mark "vertex_split": the edges the last settled turn listed
+    // (settle_refinement_turn()), split here, before the pinned cells, so that the smoothing pass
+    // that follows moves the new front vertices in the same turn. Split at the end of the settled
+    // turn instead, the next turn's collapse pass undid them before any smoothing had moved them,
+    // restoring the geometry at no energy cost: MEASURED (t100033 inward at 0.5 delta_1, 10%, 1
+    // thread), 12 of turn 2's 64 split vertices and 1 of turn 3's 44 were where the split put them
+    // after the next collapse pass, and the real folds went 0 at turn 5 to 12 at turn 9. An edge
+    // this turn's operation passes removed (split, or collapsed with an end, whose tet list the
+    // collapse clears) is skipped; the next settled turn tests its faces again. The ids hold: the
+    // mesh is consolidated before the settle test, and no vertex is made between it and here.
+    if (!m_settle_split_edges.empty()) {
+        size_t n_listed = m_settle_split_edges.size(), n_done = 0, n_gone = 0, n_no = 0;
+        for (const std::array<size_t, 2>& e : m_settle_split_edges) {
+            if (get_incident_tids_for_edge(e[0], e[1]).empty()) {
+                ++n_gone;
+                continue;
+            }
+            split_one(e) ? ++n_done : ++n_no;
+        }
+        m_settle_split_edges.clear();
+        logger().info(
+            "\t[settle split] {}: of the {} edges the last settled turn listed, split {}, gone "
+            "(removed by this turn's operation passes) {}, refused {}",
+            where,
+            n_listed,
+            n_done,
+            n_gone,
+            n_no);
+    }
+    size_t n_band = 0, n_six = 0, no_face = 0;
+    std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    std::vector<std::array<size_t, 2>> sp_edges;
+    std::vector<SpannedFace> sp_faces;
+    scan_spanned(sp_edges, sp_faces);
+    const size_t found = pinned.size() + no_face, found_no_face = no_face;
+    const size_t found_edges = sp_edges.size(), found_faces = sp_faces.size();
+    size_t n_split = 0, n_refused = 0, n_split_edges = 0, n_split_faces = 0;
+    const long waits0 = m_split_order_waits.load();
+    int rounds = 0;
+    bool cap = false;
+    while (!pinned.empty() || !sp_edges.empty() || !sp_faces.empty()) {
+        if (rounds == kPocketMaxRounds) {
+            cap = true;
+            break;
+        }
+        ++rounds;
+        size_t split_now = 0;
+        for (const std::array<size_t, 2>& e : sp_edges) {
+            if (get_incident_tids_for_edge(e[0], e[1]).empty()) continue; // split already
+            if (split_one(e)) {
+                ++split_now;
+                ++n_split_edges;
+            } else {
+                ++n_refused;
+            }
+        }
+        for (const SpannedFace& s : sp_faces) {
+            if (!face_alive(s.vids)) continue;
+            for (const std::array<size_t, 2>& e : s.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    ++n_split_faces;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        for (const Pinned& p : pinned) {
+            if (!alive(p.vids)) continue;
+            for (const std::array<size_t, 2>& e : p.edges) {
+                if (split_one(e)) {
+                    ++split_now;
+                    break;
+                }
+                ++n_refused;
+            }
+        }
+        n_split += split_now;
+        // Every cell a split of an edge off the offset surface makes has the off-front midpoint
+        // as a corner; a split of an edge on it (a cell with all six edges there) leaves two
+        // children with one edge off it. So a rescan finds those children and the cells whose
+        // splits were all refused; with none committed it finds the same ones.
+        if (split_now == 0) break;
+        pinned = scan(no_face, nullptr, nullptr);
+        scan_spanned(sp_edges, sp_faces);
+    }
+    if (cap) {
+        logger().warn(
+            "\t[pocket split] {}: the cap of {} rounds stopped the rescans with {} pinned cells "
+            "left that have an edge to split",
+            where,
+            kPocketMaxRounds,
+            pinned.size());
+    }
+    const size_t left_six_split =
+        size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.six; }));
+    logger().info(
+        "\t[pocket split] {}: pinned cells (outside the input complex, all four corners on the "
+        "front) {}, of which {} with all six edges on the offset surface ({} with all four faces "
+        "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
+        "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
+        "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
+        "it (every split refused, or the cap) | of the pinned cells found, band cells {}{}",
+        where,
+        found,
+        n_six,
+        found_no_face,
+        n_split,
+        rounds,
+        n_refused,
+        m_split_order_waits.load() - waits0,
+        no_face + left_six_split,
+        no_face,
+        left_six_split,
+        pinned.size() - left_six_split,
+        n_band,
+        m_offset_params.front_spanned_split
+            ? fmt::format(
+                  " | spanned edges found {}, split {}; spanned faces (three edges on the offset "
+                  "surface) found {}, edges split for them {}; left {} edges, {} faces",
+                  found_edges,
+                  n_split_edges,
+                  found_faces,
+                  n_split_faces,
+                  sp_edges.size(),
+                  sp_faces.size())
+            : std::string());
+}
+
+void TopoOffsetTetMesh::label_cleanup(const std::string& where)
+{
+    // EXPERIMENTAL_label_cleanup (see the spec and the declaration). MEASURED before it (cube_in,
+    // target 0.45, 5% tolerance, 30-run batches): some runs end with thin non-band cells left
+    // beyond the level set -- one with 117 such cells reaching 5.6 tolerances out -- where E is
+    // 1.2e-7 above its optimum against a settle bar of 3.5e-5, so nothing removes them.
+    const std::string& mode = m_offset_params.label_cleanup;
+    if (mode == "off" || m_tetwild_pass) return;
+    const bool tips = mode == "one_sided_tips";
+    const bool at_target = mode == "one_sided_at_target";
+    // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
+    if (!m_band_exact) {
+        log_and_throw_error(
+            "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
+            "exact band integral, which this run did not build: it needs "
+            "EXPERIMENTAL_band_volume_rule \"exact\" or \"front_flux\", EXPERIMENTAL_settle_mark "
+            "\"max\", or DEBUG_output");
+    }
+    const double delta = m_offset_params.target_distance;
+    const auto label_of = [this](const size_t tid) { return m_tet_attribute[tid].label; };
+
+    // A cell with a front face: one shared with a cell of the other of the two labels, band (2)
+    // and non-band (0), neither of them the input complex (1).
+    const auto has_front_face = [&](const size_t tid) {
+        const int l = label_of(tid);
+        if (l == 1) return false;
+        for (int j = 0; j < 4; ++j) {
+            const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+            if (o && label_of(o->tid(*this)) != 1 && label_of(o->tid(*this)) != l) return true;
+        }
+        return false;
+    };
+
+    // THE SIDE TEST: whether t's own corners put it on the other label's side. It reads nothing
+    // the clean-up changes (no vertex moves), so a cell's answer is the same in every pass and a
+    // flipped cell is never asked to flip back: a cell flips at most once, and the passes end.
+    //   one_sided: non-band -> band iff U(t) < delta, U = ExactBandIntegral::distance_bound(), the
+    //     min over input triangles P of the max of d_P over t's corners, an upper bound of d on t
+    //     (d <= d_P, d_P convex), so d < delta on all of t. band -> non-band iff L(t) > delta,
+    //     L = d(c) - max_k |v_k - c|, c the centroid: a lower bound of d on t (d is 1-Lipschitz,
+    //     and the point of t farthest from c is a corner). L <= d <= U: the two exclude each other.
+    //   one_sided_tips: one_sided, and also a TIP -- a cell with three faces on the other label
+    //     whose four corners are all within front_conv of the level set -- flips iff that strictly
+    //     lowers E. A cell that is not plastic (no eligible cell is, see below) has tet_energy() =
+    //     cell_energy(): the AMIPS term (w / s^3) vol A^3, from its corners and quality alone, plus
+    //     band_cell_term() when it is band (the repulsion term is 0 in the loop: no
+    //     m_repulsion_potential). Every other cell's energy reads its own corners and label. So the
+    //     flip changes E by exactly +b(t) (to band) or -b(t) (to non-band): non-band -> band iff
+    //     b(t) < 0, band -> non-band iff b(t) > 0. A cell at MAX_ENERGY is MAX_ENERGY under either
+    //     label, and no flip lowers E there. MEASURED (cube_in 0.45, 5%, 30 runs, 8 threads,
+    //     damping off): one_sided left 9 runs exiting with a real fold, each a blade of flat
+    //     non-band cells reaching up to 0.07 front_conv INTO the target, so not wholly outside; and
+    //     the stuck blade of t8_cap60_r18 (damping 1.0) is, when the operation passes end, one
+    //     non-band cell with three front faces, corners at -0.06, -0.01, -0.84, -0.001 front_conv,
+    //     b(t) = -0.22 front_conv x its volume. A cell with a corner beyond front_conv -- every
+    //     coarse cell while the front travels -- is never a tip, so this cannot empty a region the
+    //     way flipping every candidate by the sign of b(t) did ("energy", removed 2026-10-26: 7 of
+    //     30 runs left with one flat non-band cell). It reads the neighbours' labels, so the passes
+    //     still end: a tip flip agrees with the sign of b(t), and so does every one_sided flip (d <
+    //     delta on all of t gives b < 0; d > delta gives b > 0), so no flip of either kind can undo
+    //     one.
+    //   one_sided_at_target: one_sided, and also any cell with a front face (1, 2 or 3 faces on
+    //     the other label) whose four corners are all within front_conv of the level set, by the
+    //     tip rule's sign of b(t): the tip rule without its three-face condition. MEASURED
+    //     (t126196 inward at 0.5 delta_1, 10%, 8 threads, one_sided_tips): the run hit the
+    //     30-turn cap held by 3 real folds; from turn 4 on, the band cells carrying the folds'
+    //     faces after the clean-up had all four corners within front_conv and b(t) > 0, all with
+    //     two faces on the other label (one with one, at turn 25). At turn 30 the one-sided test
+    //     read L 14 to 16 front_conv short of delta, the topology test allowed both cells, and the
+    //     tip rule refused them for having two faces, not three.
+    const auto wants_flip = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const bool band = cell_is_offset_band(tid);
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        if (!band && m_band_exact->distance_bound(p) < delta) return true;
+        if (band) {
+            const Vector3d c = (p[0] + p[1] + p[2] + p[3]) / 4.;
+            double r = 0.;
+            for (const Vector3d& q : p) r = std::max(r, (q - c).norm());
+            if (m_band_exact->distance(c) - r > delta) return true;
+        }
+        if (!tips && !at_target) return false;
+        const int other = band ? 0 : 2;
+        int faces = 0;
+        for (int j = 0; j < 4; ++j) {
+            const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+            if (o && label_of(o->tid(*this)) == other) ++faces;
+        }
+        if (tips ? faces != 3 : (faces < 1 || faces > 3)) return false;
+        for (const Vector3d& q : p) {
+            if (!(std::abs(m_band_exact->distance(q) - delta) <= m_offset_params.front_conv))
+                return false;
+        }
+        if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
+        const double b = band_cell_term(vs);
+        return band ? b > 0. : b < 0.;
+    };
+
+    // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
+    // cell sharing a vertex with t is band or non-band (no input-complex cell), not plastic (its
+    // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
+    // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
+    // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
+    // tracked surface (vertex_is_on_region(): a tag boundary or the box), or the mesh boundary (a
+    // face through it with no cell beyond) -- which implies that no face of t is on the mesh
+    // boundary. The corner conditions are there because the test below reads cells only: at a
+    // corner on the wall, a flip the test allows can still join the front to the wall at that one
+    // vertex.
+    const auto eligible = [&](const size_t tid, CellTag& tag) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        std::array<const CellTag*, 3> tag_of{{nullptr, nullptr, nullptr}}; // by label
+        for (const size_t v : vs) {
+            if (m_vertex_extra[v].label == 1 || vertex_is_on_region(v)) return false;
+            for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                const int l = label_of(s);
+                if ((l != 0 && l != 2) || cell_is_plastic(s)) return false;
+                const CellTag& tg = m_tet_attribute[s].tag;
+                if (!tag_of[size_t(l)]) {
+                    tag_of[size_t(l)] = &tg;
+                } else if (*tag_of[size_t(l)] != tg) {
+                    return false;
+                }
+                for (int k = 0; k < 4; ++k) {
+                    const Tuple f = tuple_from_face(s, k);
+                    if (f.switch_tetrahedron(*this)) continue;
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    if (std::find(fv.begin(), fv.end(), v) != fv.end()) return false;
+                }
+            }
+        }
+        const int other = label_of(tid) == 2 ? 0 : 2;
+        tag = tag_of[size_t(other)] ? *tag_of[size_t(other)] : CellTag{};
+        return true;
+    };
+
+    // THE TOPOLOGY TEST. f = the faces of t shared with a cell of the other label, the one t
+    // would take:
+    //   f = 0: refused (t would start a new piece, or the front would pinch at an edge or vertex);
+    //   f = 1: refused if the corner opposite that face is in a cell of the other label;
+    //   f = 2: the two faces share an edge; refused if the edge on neither face (the two corners
+    //          opposite them) is in a cell of the other label;
+    //   f = 3: allowed (the fourth face becomes front);
+    //   f = 4: refused (t is a whole piece by itself; the flip deletes it).
+    // An allowed flip has the other label meet t in exactly its f faces, a disk, so taking t in
+    // keeps that label's topology. t's own label, which loses t, meets t in its 4 - f faces and
+    // also, for f = 2, in the edge the two other-label faces share, for f = 3 in their common
+    // corner, when that is in another cell of t's label. Not tested: on a manifold front it
+    // cannot happen (it is a front edge on more than two front faces, or a front vertex where t's
+    // label meets twice); such flips are counted (`odd`), and the component check below catches a
+    // split. Returns f.
+    const auto topology = [&](const size_t tid, bool& allow, bool& odd) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int self = label_of(tid), other = self == 2 ? 0 : 2;
+        std::vector<size_t> opp_other, opp_self; // the corner opposite each face, by its far side
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            size_t opp = vs[0];
+            for (const size_t v : vs) {
+                if (std::find(fv.begin(), fv.end(), v) == fv.end()) opp = v;
+            }
+            const std::optional<Tuple> o = f.switch_tetrahedron(*this); // eligibility: present
+            (o && label_of(o->tid(*this)) == other ? opp_other : opp_self).push_back(opp);
+        }
+        const auto at_vertex = [&](const size_t v, const int l) {
+            for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                if (s != tid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const auto at_edge = [&](const size_t a, const size_t b, const int l) {
+            for (const size_t s : get_incident_tids_for_edge(a, b)) {
+                if (s != tid && label_of(s) == l) return true;
+            }
+            return false;
+        };
+        const int f = int(opp_other.size());
+        allow = false;
+        odd = false;
+        if (f == 1) allow = !at_vertex(opp_other[0], other);
+        if (f == 2) {
+            allow = !at_edge(opp_other[0], opp_other[1], other);
+            odd = at_edge(opp_self[0], opp_self[1], self);
+        }
+        if (f == 3) {
+            allow = true;
+            odd = at_vertex(opp_self[0], self);
+        }
+        return f;
+    };
+
+    // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
+    // of its faces, edges and corners (2 where some cell holding it is band, else 0: eligibility
+    // keeps 1 out of the closure), the cached class of its four faces -- the only faces whose two
+    // sides change -- and the front flags of its four corners, the only vertices on those faces.
+    // The base's union flag m_is_on_surface is raised for a corner that joins the front, as the
+    // split and the collapse raise it; it is never cleared (vertex_is_held()).
+    const auto any_band = [this](const std::vector<size_t>& tids) {
+        return std::any_of(tids.begin(), tids.end(), [this](const size_t s) {
+            return cell_is_offset_band(s);
+        });
+    };
+    const auto flip = [&](const size_t tid, const CellTag& tag) {
+        m_tet_attribute[tid].label = label_of(tid) == 2 ? 0 : 2;
+        m_tet_attribute[tid].tag = tag;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const size_t fid = f.fid(*this);
+            std::vector<size_t> sides{tid};
+            if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
+                sides.push_back(o->tid(*this));
+            }
+            int& lf = m_face_extra[fid].label;
+            if (lf != 1) lf = any_band(sides) ? 2 : 0;
+            if (face_is_offset_surface_live(f)) {
+                m_face_attribute[fid].m_is_surface_fs = true;
+                m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
+            } else if (m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS) {
+                m_face_attribute[fid].m_is_surface_fs = false;
+                m_face_attribute[fid].m_surface_class = 0; // left at 0 off the surface
+            }
+        }
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            int& le = m_edge_attribute[e.eid(*this)].label;
+            if (le != 1) {
+                const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+                le = any_band(get_incident_tids_for_edge(a, b)) ? 2 : 0;
+            }
+        }
+        for (const size_t v : oriented_tet_vids(tid)) {
+            int& lv = m_vertex_extra[v].label;
+            if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
+            refresh_offset_membership(v);
+            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+        }
+    };
+
+    // THE INVARIANT'S MEASURES: connected components of one label's cells under face adjacency,
+    // and front edges on more than two front faces (where the label changes more than twice
+    // around the edge).
+    const auto label_components = [this](const int l) {
+        std::vector<size_t> parent(tet_capacity());
+        std::iota(parent.begin(), parent.end(), size_t(0));
+        const auto root = [&parent](size_t x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];
+                x = parent[x];
+            }
+            return x;
+        };
+        size_t n = 0;
+        for (const Tuple& t : get_tets()) {
+            const size_t tid = t.tid(*this);
+            if (m_tet_attribute[tid].label != l) continue;
+            ++n;
+            for (int j = 0; j < 4; ++j) {
+                const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
+                if (!o || m_tet_attribute[o->tid(*this)].label != l) continue;
+                const size_t a = root(tid), b = root(o->tid(*this));
+                if (a != b) {
+                    parent[a] = b;
+                    --n;
+                }
+            }
+        }
+        return n;
+    };
+    const auto nonmanifold_front_edges = [this]() {
+        std::map<std::array<size_t, 2>, int> n;
+        for (const std::array<size_t, 3>& f : offset_surface_faces()) { // sorted triples
+            ++n[std::array<size_t, 2>{{f[0], f[1]}}];
+            ++n[std::array<size_t, 2>{{f[1], f[2]}}];
+            ++n[std::array<size_t, 2>{{f[0], f[2]}}];
+        }
+        size_t c = 0;
+        for (const auto& ek : n) c += ek.second > 2 ? 1 : 0;
+        return c;
+    };
+
+    const double e0 = global_energy();
+    const size_t band0 = label_components(2), non0 = label_components(0);
+    const size_t nm0 = nonmanifold_front_edges();
+    std::vector<char> flipped(tet_capacity(), 0);
+    std::vector<size_t> corners; // of the flipped cells
+    size_t to_band = 0, to_non = 0, n_odd = 0;
+    int passes = 0;
+    // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
+    size_t n_cand = 0, n_want = 0, n_skip = 0;
+    std::array<size_t, 5> n_refused{}; // by f
+    for (;;) {
+        ++passes;
+        std::vector<size_t> cands;
+        for (const Tuple& t : get_tets()) {
+            if (has_front_face(t.tid(*this))) cands.push_back(t.tid(*this));
+        }
+        std::sort(cands.begin(), cands.end());
+        n_cand = cands.size();
+        n_want = 0;
+        n_skip = 0;
+        n_refused.fill(0);
+        size_t n_now = 0;
+        // The three tests are pure reads, so the order they are asked in decides only what is
+        // counted: the side test first, so that the counts are of cells on the other side.
+        for (const size_t tid : cands) {
+            if (!wants_flip(tid)) continue;
+            ++n_want;
+            CellTag tag;
+            if (!eligible(tid, tag)) {
+                ++n_skip;
+                continue;
+            }
+            bool allow = false, odd = false;
+            const int f = topology(tid, allow, odd);
+            if (!allow) {
+                ++n_refused[size_t(f)];
+                continue;
+            }
+            if (flipped[tid]) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} flips a second time; its side test reads its own "
+                    "corners alone, which the clean-up does not move",
+                    where,
+                    tid);
+            }
+            // The topology test reads the label the cell joins only; on a manifold front the old
+            // label cannot meet the cell again (Uday 2026-10-26: throw rather than count it).
+            // MEASURED before the throw: 0 such flips in every run (cube_in 0.45, both modes).
+            if (odd) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} (f = {}) passes the topology test, but its old "
+                    "label meets it again at a front edge on more than two front faces or a front "
+                    "vertex, which the test does not read",
+                    where,
+                    tid,
+                    f);
+            }
+            flipped[tid] = 1;
+            ++(cell_is_offset_band(tid) ? to_non : to_band);
+            n_odd += odd ? 1 : 0;
+            flip(tid, tag);
+            for (const size_t v : oriented_tet_vids(tid)) corners.push_back(v);
+            ++n_now;
+        }
+        if (n_now == 0) break;
+    }
+    double e1 = e0;
+    size_t band1 = band0, non1 = non0, nm1 = nm0;
+    if (to_band + to_non > 0) {
+        // What reads the front beyond the flipped cells' closure: the stored vertex order (the
+        // collapse's link condition), from the tracked faces at the vertex, which changed only at
+        // the flipped cells' corners; the band-region map, rebuilt as each turn rebuilds it;
+        // DEBUG_crossings' snapshot, taken here so that the smoothing pass is compared with the
+        // front it starts from.
+        wmtk::vector_unique(corners);
+        for (const size_t v : corners) m_vertex_attribute[v].m_order = compute_vertex_order(v);
+        assign_band_regions(/*log=*/false);
+        if (m_offset_params.debug_crossings && m_round > 0) {
+            crossing_snapshot("label cleanup", true, true);
+        }
+        check_offset_membership("label cleanup"); // perform_sanity_checks only
+        e1 = global_energy();
+        band1 = label_components(2);
+        non1 = label_components(0);
+        nm1 = nonmanifold_front_edges();
+    }
+    logger().info(
+        "\t[label cleanup] {}: {} | {} pass(es), flipped non-band -> band {}, band -> non-band {} "
+        "({} of them with f = 2 or 3 where the old label meets the cell again, at a front edge on "
+        "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
+        "cells with a front face, {} on the other side by the side test, of which {} skipped for "
+        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {} | E {:.9g} -> {:.9g} | "
+        "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
+        "(on more than two front faces) {} -> {}",
+        where,
+        mode,
+        passes,
+        to_band,
+        to_non,
+        n_odd,
+        n_cand,
+        n_want,
+        n_skip,
+        n_refused[0],
+        n_refused[1],
+        n_refused[2],
+        n_refused[4],
+        e0,
+        e1,
+        band0,
+        band1,
+        non0,
+        non1,
+        nm0,
+        nm1);
+    if (band1 != band0 || non1 != non0) {
+        log_and_throw_error(
+            "[label cleanup] {}: the flips changed the topology -- band components {} -> {}, "
+            "non-band components {} -> {} -- which the topology test forbids, a bug ({} flips had "
+            "the old label meeting the cell again, which the test does not read)",
+            where,
+            band0,
+            band1,
+            non0,
+            non1,
+            n_odd);
+    }
+}
+
 bool TopoOffsetTetMesh::optimize_offset_loop(
     const bool final_stage,
     const bool refine,
@@ -4406,7 +5330,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         logger().info(
             "\t[pre_smooth] one smoothing block before turn 1: {} interleaved smoothing pass(es)",
             k);
-        local_operations({{0, 0, 0, k}});
+        loop_group({{0, 0, 0, k}}, "pre_smooth");
     }
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
@@ -4442,7 +5366,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             m_energy_step_group = group_names[gi];
             m_energy_step_first = true;
             log_energy_step("start");
-            local_operations(groups[gi]);
+            loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             m_energy_step_turn = 0;
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
@@ -4705,7 +5629,27 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle exit (settled, no front face more than
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
-        const bool resolved = settle ? settle_exit : ec.converged();
+        bool resolved = settle ? settle_exit : ec.converged();
+        // EXPERIMENTAL_exit_no_folds: no exit while a real fold remains (count_real_folds()). The
+        // vertex exit tests the front's vertices only; a flat sheet of inner cells within
+        // front_conv of the level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30
+        // runs, 8 threads): one run exited with an inner region of 0.5% of the target's volume,
+        // every front point within 0.76 front_conv, 5 real folds; 5-7 of each batch's 28-30
+        // exits had 1-5 real folds. The count is logged every turn, the key on or off, so a run
+        // without it shows what it exited with.
+        {
+            const size_t folds = count_real_folds();
+            logger().info(
+                "\t[exit folds] turn {}: real folds {}{}",
+                it + 1,
+                folds,
+                resolved && folds > 0
+                    ? (m_offset_params.exit_no_folds
+                           ? " -- the exit test passes; held for the folds"
+                           : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
+                    : "");
+            if (m_offset_params.exit_no_folds && folds > 0) resolved = false;
+        }
         if (resolved && !final_stage) {
             // The init_optimize loop ends here; the final pass and the verdict belong to the
             // ordinary loop that follows it.
@@ -5329,8 +6273,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 worst_at[2],
                 n_unmeasured,
                 m_offset_params.debug_output
-                    ? "The per-face flag offset_foldover is on the debug frames' _off files."
-                    : "Set DEBUG_output to get the per-face offset_foldover field.");
+                    ? "The per-face flag field_angle_foldover is on the debug frames' _off files."
+                    : "Set DEBUG_output to get the per-face field_angle_foldover field.");
         }
     }
 

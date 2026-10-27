@@ -446,6 +446,66 @@ public:
         bool final_stage = true,
         bool refine = true,
         const std::string& label = std::string());
+    /**
+     * @brief The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's
+     * operation passes in one call and then each of its ops[3] smoothing passes in a call of its
+     * own, front_pocket_split() right before each: the engine's group runs its operation pass
+     * straight into smooth_all_vertices(k), and smoothing_pass_done() runs before a pass's debug
+     * frame, so neither offers the point before a smoothing pass. Off: local_operations(ops).
+     * `where` names the group in the [pocket split] lines.
+     */
+    void loop_group(const std::array<int, 4>& ops, const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass
+     * of the loop starts. A pinned cell is a cell outside the input complex, band or not, whose
+     * four corners are all front vertices (on the offset surface, VertexExtra::m_is_on_offset).
+     *
+     * Why. (1) Only smoothing moves vertices, and no vertex joins or leaves the offset surface
+     * during a smoothing pass, so a cell can only be flattened during smoothing, and only from a
+     * cell that is pinned when the pass starts. (2) The band term depends only on the band as a
+     * region (under the exact rule, the one measured, it is the integral of
+     * (d - target_distance) / target_distance over the band), so moving a vertex that is not on
+     * the offset surface does not change it (a vertex on the input complex carries no band term,
+     * smoothing_extra_energy()): the AMIPS term alone moves such a vertex, and it keeps the
+     * vertex's cells shaped. A pinned cell has no such corner. The band term pulls its four
+     * corners onto the level set d = target_distance, so the level set fixes the cell's shape --
+     * a sliver -- and where the level set curves the wrong way the energy flattens the cell to
+     * zero volume, a fold of the offset surface. (3) Hence the invariant.
+     *
+     * How. Each pinned cell has its longest edge that is on no live offset-surface face split by
+     * the loop's own split (split_edge()), the next longest when that is refused. The midpoint is
+     * off the offset surface and a corner of every cell the split makes, so such a split makes no
+     * pinned cell and removes at least one. A pinned cell with all six edges on the offset surface
+     * has instead the longest edge of one of its faces that is not an offset face split: its two
+     * children are pinned, each with an edge off the offset surface, which the next round splits.
+     * A pinned cell with all four faces on the offset surface has no edge to split and is counted
+     * only. Rescanned until no pinned cell has an edge to split, at most kPocketMaxRounds rounds.
+     * One [pocket split] line, `where` naming the pass. A no-op with the key off and in a TetWild
+     * pass. The measurements: the spec doc.
+     */
+    void front_pocket_split(const std::string& where);
+    /**
+     * @brief EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed
+     * after construction: a cell on the band / non-band interface whose own geometry puts it on
+     * the other side of the level set takes the other label, where the flip keeps the topology of
+     * both. Invariant: the number of connected components (face adjacency) of the band and of the
+     * non-band region is the same before and after; a change throws.
+     *
+     * Serial passes in tid order over the cells with a front face, reading the current labels,
+     * until a pass flips nothing; positions do not move, and a cell's side test reads its own
+     * corners alone, so a cell flips at most once and the passes end. After each flip every
+     * value derived from labels at the cell's closure is re-derived (the closed labels, the
+     * front's cached face class, the front flags of its corners); after the passes the corners'
+     * vertex order and the band-region map. One [label cleanup] line. Called by loop_group()
+     * after the operation passes; a no-op with the key "off".
+     */
+    void label_cleanup(const std::string& where);
+    static constexpr int kPocketMaxRounds = 10;
+    /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
+    bool m_pocket_splitting = false;
+    /// EXPERIMENTAL_settle_mark "vertex_split": the front edges the last settled turn chose to
+    /// split (settle_refinement_turn()); front_pocket_split() splits them and clears the list.
+    std::vector<std::array<size_t, 2>> m_settle_split_edges;
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
@@ -1020,6 +1080,19 @@ public:
      * The 2D twin is edge_is_offset_surface_live().
      */
     bool face_is_offset_surface_live(const Tuple& f) const;
+    /// cos 150 degrees: a real fold's two offset faces have normals out of the band closer to
+    /// opposite than this (the [foldover] dihedral reading, analyze.py's).
+    static constexpr double kCos150 = -0.86602540378443864676;
+    /// The normal of live offset face f, unit, pointing out of the band; false when f has no band
+    /// cell or no area.
+    bool offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const;
+    /// The real folds now: offset-surface edges with exactly two offset faces whose normals out of
+    /// the band are within 30 degrees of opposite (the edge of a zero-volume sheet, Lemma 5 of the
+    /// case table, 2026-10-24); `corners`, when given, marks the corners of every fold's two faces,
+    /// and `faces`, when given, receives those faces as sorted vertex triples.
+    size_t count_real_folds(
+        std::vector<char>* corners = nullptr,
+        std::vector<std::array<size_t, 3>>* faces = nullptr) const;
     /// Whether edge (a, b) lies on the band's outer surface: some incident face does.
     bool edge_is_offset_surface_live(size_t a, size_t b) const;
     /// Every live offset-surface face as a sorted vertex triple.
@@ -2565,7 +2638,7 @@ public:
         VectorXd labels, order, vid, sizing;
         VectorXd in_dist, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_angle, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
