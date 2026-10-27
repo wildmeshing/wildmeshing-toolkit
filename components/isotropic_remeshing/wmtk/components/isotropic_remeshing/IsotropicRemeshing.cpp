@@ -1035,8 +1035,17 @@ bool IsotropicRemeshing::split_remeshing(double L)
             if (val < 0) return false;
             return true;
         };
-        // Execute!!
+        // Execute!! Each round splits the halves of the last one's. Where the envelope refuses
+        // a split of an edge over twice the threshold, the triangle on it always keeps a side
+        // over the threshold, and splitting that one makes the next: the rounds would never run
+        // out. The cap is far over the rounds any refinement needs -- each one halves the edges
+        // it splits.
+        int rounds = 0;
         do {
+            if (++rounds > 64) {
+                logger().warn("split: stopped after 64 rounds, an edge whose split is refused");
+                break;
+            }
             count_success.store(0, std::memory_order_release);
             executor(*this, collect_all_ops);
             collect_all_ops.clear();
