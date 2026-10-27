@@ -18,6 +18,7 @@
 #include <Eigen/Geometry>
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <queue>
 
 namespace wmtk::components::isotropic_remeshing {
@@ -218,6 +219,35 @@ public:
      * that no split comes after to cut.
      */
     void set_limit_collapse_length(bool limit) { m_limit_collapse_length = limit; }
+    /**
+     * @brief Repair, at the end of every iteration, the triangles whose smallest angle is under
+     * `degrees`; 0, the default, repairs none. Call before create_mesh(), which then keeps the
+     * input's area vectors for the fold test below.
+     *
+     * See cleanup_triangles(). The passes leave such triangles where their criteria do not see
+     * them: next to a curve, where a vertex may not leave it and no swap or collapse may make an
+     * ear, a triangle between a curve vertex and one off the curves can stay thin; and in a fold
+     * the input brings, which the splits copy into the remeshing and the fold check then holds,
+     * every operation on it can count as folding.
+     */
+    void set_cleanup_angle(double degrees) { m_cleanup_angle = degrees; }
+    /**
+     * @brief Repairs the triangles whose smallest angle is under `degrees`, worst first.
+     *
+     * Each gets the first of these that is allowed: a collapse of its shortest edge, either way;
+     * a swap of one of its edges, longest first; a move of one of its vertices, or else of one of
+     * the triangles around it -- one off the curves within its tangent plane, one inside a curve
+     * along it -- to where the smallest angle of its star is largest. Allowed means the curve rules, the envelopes and the fixed
+     * vertices hold, as everywhere, and the operation raises the smallest angle of the triangles
+     * it leaves over that of the triangles around the one repaired (of its star, for a move).
+     * In place of the fold check, which judges against the operation's own triangles and which a
+     * fold already there confuses, it may not leave more triangles facing against the input next
+     * to them -- the input triangles within half their size plus the envelope, of the same face
+     * fields where set_face_fields() gave some -- than there were; one that leaves fewer is
+     * allowed even if no angle improves. Rounds until one repairs nothing, 10 at most. Serial;
+     * returns the number of repairs.
+     */
+    size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
     size_t refused_inversions() const { return m_refused_inversions; }
 
@@ -278,6 +308,9 @@ public:
         ReplacedSurface replaced;
         // A split is under way: its invariants skip the feature envelope.
         bool splitting = false;
+        // Collapse and swap, in cleanup_triangles(): the triangles of what the operation
+        // replaces that face against the input.
+        size_t input_folds = 0;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 
@@ -362,6 +395,17 @@ private:
     bool m_check_inversions = true;
     bool m_swap_quality = false;
     bool m_limit_collapse_length = false;
+    double m_cleanup_angle = 0;
+    /// While cleanup_triangles() runs: the smallest angle around the triangle it repairs, which
+    /// a collapse or swap has to beat. 0 otherwise.
+    double m_cleanup_floor = 0;
+    bool m_cleaning = false;
+    /// Where cleanup_triangles() moves a vertex, in place of the smoothing's position.
+    std::optional<Eigen::Vector3d> m_smooth_target;
+    /// With a cleanup angle: the envelope's eps, and the input's area vectors and face fields.
+    double m_envelope_eps = 0;
+    std::vector<Eigen::Vector3d> m_input_area;
+    std::vector<std::vector<double>> m_input_values;
     /// The target length of the last collapse_remeshing(), for the limit above.
     double m_collapse_target = 0;
     std::atomic<size_t> m_refused_inversions = 0;
@@ -379,6 +423,18 @@ private:
     /// Whether the triangles an operation left fold the surface over more than the `before` they
     /// replaced. Counts a refusal.
     bool folds(const std::vector<Tuple>& tris, const ReplacedSurface& before);
+
+    /// The smallest angle of the triangles, in degrees.
+    double min_angle(const std::vector<Tuple>& tris) const;
+    /// The area vectors of the input triangles next to `f`, summed: see cleanup_triangles().
+    Eigen::Vector3d input_normal(const Tuple& f) const;
+    /// How many of the triangles do not face along input_normal().
+    size_t input_folds(const std::vector<Tuple>& tris) const;
+    /// Whether the triangles a repair left beat `floor` and face against the input no more often
+    /// than the `folds_before` of what they replaced; or face against it less often.
+    bool cleanup_allows(const std::vector<Tuple>& tris, size_t folds_before, double floor) const;
+    /// Moves `v` to where the smallest angle of its star is largest, above `floor`.
+    bool cleanup_move(size_t v, double floor);
 };
 
 } // namespace wmtk::components::isotropic_remeshing

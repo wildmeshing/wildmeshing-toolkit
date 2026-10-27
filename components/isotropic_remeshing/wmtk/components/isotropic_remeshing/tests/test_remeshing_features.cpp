@@ -437,3 +437,63 @@ TEST_CASE("features-file", "[test_remeshing][features]")
         CHECK_THROWS(isotropic_remeshing(config));
     }
 }
+
+namespace {
+double smallest_angle(const IsotropicRemeshing& m)
+{
+    double a = 180;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            const Eigen::Vector3d u =
+                m.vertex_attrs[vs[(k + 1) % 3]].pos - m.vertex_attrs[vs[k]].pos;
+            const Eigen::Vector3d w =
+                m.vertex_attrs[vs[(k + 2) % 3]].pos - m.vertex_attrs[vs[k]].pos;
+            a = std::min(a, std::atan2(u.cross(w).norm(), u.dot(w)) * 180 / M_PI);
+        }
+    }
+    return a;
+}
+
+size_t facing_down(const IsotropicRemeshing& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        const auto& p = m.vertex_attrs;
+        if ((p[vs[1]].pos - p[vs[0]].pos).cross(p[vs[2]].pos - p[vs[0]].pos).z() <= 0) ++n;
+    }
+    return n;
+}
+} // namespace
+
+TEST_CASE("cleanup-repairs-thin-and-folded-triangles", "[test_remeshing][features]")
+{
+    // The curve of CurveOnGrid, with a vertex next to it pulled almost onto it -- thin
+    // triangles between a curve and a vertex off it, which no swap may mend and the curve
+    // vertices may not leave -- and another pushed past its neighbour, folding its star over.
+    CurveOnGrid c;
+    c.V[3 * 9 + 5] = Eigen::Vector3d(3.1, 4.05, 0);
+    c.V[6 * 9 + 6] = Eigen::Vector3d(7.3, 6.2, 0);
+    for (const bool cleanup : {false, true}) {
+        INFO("cleanup " << cleanup);
+        IsotropicRemeshing m(c.V, 0);
+        if (cleanup) m.set_cleanup_angle(30);
+        m.create_mesh(c.V.size(), c.F, {}, true, 0.1);
+        m.set_feature_edges(c.edges, c.ids);
+        m.set_fixed_vertices(c.fixed);
+        m.set_feature_envelope(0.1);
+        const double before = smallest_angle(m);
+        REQUIRE(before < 3);
+        REQUIRE(facing_down(m) > 0);
+        if (cleanup) {
+            CHECK(m.cleanup_triangles(30) > 0);
+            CHECK(smallest_angle(m) > 20);
+            CHECK(facing_down(m) == 0);
+        }
+        REQUIRE(m.check_mesh_connectivity_validity());
+        // The curve, its ids and the fixed vertices hold, and it stays on y = 4.
+        check_curve_on_grid(m);
+        for (const auto& e : m.feature_edges()) CHECK(m.vertex_attrs[e[0]].pos.y() == 4);
+    }
+}

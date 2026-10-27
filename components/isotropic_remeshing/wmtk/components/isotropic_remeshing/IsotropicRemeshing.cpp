@@ -69,6 +69,15 @@ void IsotropicRemeshing::create_mesh(
         m_has_envelope = true;
     } else
         m_envelope.init(V, F, 0.0);
+    if (m_cleanup_angle > 0) {
+        // For the fold test of cleanup_triangles(): the envelope's BVH finds the input triangles
+        // near a triangle, by their index here.
+        m_envelope_eps = std::max(eps, 0.);
+        m_input_area.resize(F.size());
+        for (size_t i = 0; i < F.size(); ++i) {
+            m_input_area[i] = (V[F[i][1]] - V[F[i][0]]).cross(V[F[i][2]] - V[F[i][0]]);
+        }
+    }
 
     // TODO: this should not be here
     partition_mesh_morton();
@@ -197,6 +206,209 @@ bool IsotropicRemeshing::folds(const std::vector<Tuple>& tris, const ReplacedSur
     return true;
 }
 
+double IsotropicRemeshing::min_angle(const std::vector<Tuple>& tris) const
+{
+    const auto angle = [](const Eigen::Vector3d& u, const Eigen::Vector3d& v) {
+        return std::atan2(u.cross(v).norm(), u.dot(v));
+    };
+    double a = M_PI;
+    for (const Tuple& f : tris) {
+        const auto vs = oriented_tri_vids(f);
+        for (int k = 0; k < 3; ++k) {
+            const Eigen::Vector3d& p = vertex_attrs.at(vs[k]).pos;
+            a = std::min(
+                a,
+                angle(
+                    vertex_attrs.at(vs[(k + 1) % 3]).pos - p,
+                    vertex_attrs.at(vs[(k + 2) % 3]).pos - p));
+        }
+    }
+    return a * 180 / M_PI;
+}
+
+Eigen::Vector3d IsotropicRemeshing::input_normal(const Tuple& f) const
+{
+    // The input triangles within half the triangle's size, plus the envelope, of its centroid:
+    // their summed area vectors are the input's orientation there, which a sliver of it turned
+    // over does not change. Of the same face fields only, so that a triangle next to a sharp
+    // feature takes the orientation of its own side.
+    const auto vs = oriented_tri_vids(f);
+    Eigen::Vector3d lo = vertex_attrs.at(vs[0]).pos, hi = lo;
+    Eigen::Vector3d c = Eigen::Vector3d::Zero();
+    double size = 0;
+    for (int k = 0; k < 3; ++k) {
+        const Eigen::Vector3d& p = vertex_attrs.at(vs[k]).pos;
+        lo = lo.cwiseMin(p);
+        hi = hi.cwiseMax(p);
+        c += p / 3;
+        size = std::max(size, (p - vertex_attrs.at(vs[(k + 1) % 3]).pos).norm());
+    }
+    const double reach = size / 2 + m_envelope_eps;
+    std::vector<int64_t> ids;
+    const Eigen::Vector3d grow = Eigen::Vector3d::Constant(reach);
+    m_envelope.primitives_in_box(Eigen::Vector3d(lo - grow), Eigen::Vector3d(hi + grow), ids);
+    const bool fields = m_has_face_fields && !m_input_values.empty();
+    Eigen::Vector3d n = Eigen::Vector3d::Zero();
+    for (const int64_t i : ids) {
+        if (fields && m_input_values[i] != face_field_attrs.at(f.fid(*this)).values) continue;
+        if (m_envelope.primitive_distance(i, c) > reach) continue;
+        n += m_input_area[i];
+    }
+    return n;
+}
+
+size_t IsotropicRemeshing::input_folds(const std::vector<Tuple>& tris) const
+{
+    size_t count = 0;
+    for (const Tuple& f : tris) {
+        const auto vs = oriented_tri_vids(f);
+        const auto& p = vertex_attrs;
+        const Eigen::Vector3d a =
+            (p.at(vs[1]).pos - p.at(vs[0]).pos).cross(p.at(vs[2]).pos - p.at(vs[0]).pos);
+        if (a.dot(input_normal(f)) <= 0) ++count;
+    }
+    return count;
+}
+
+bool IsotropicRemeshing::cleanup_allows(
+    const std::vector<Tuple>& tris,
+    const size_t folds_before,
+    const double floor) const
+{
+    const size_t folds_after = input_folds(tris);
+    return folds_after < folds_before || (folds_after == folds_before && min_angle(tris) > floor);
+}
+
+bool IsotropicRemeshing::cleanup_move(const size_t v, const double floor)
+{
+    if (stays_put(v) || vertex_attrs[v].freeze) return false;
+    const Tuple tv = tuple_from_vertex(v);
+    const auto star = get_one_ring_tris_for_vertex(tv);
+    if (star.size() < 2) return false;
+    const Eigen::Vector3d p0 = vertex_attrs[v].pos;
+    std::vector<Eigen::Vector3d> places;
+    const size_t d = feature_degree(v);
+    if (d == 2) {
+        // Along the curve, toward either neighbour on it.
+        for (const size_t n : feature_attrs.at(v).nbrs) {
+            for (const double s : {0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5}) {
+                places.push_back(p0 + s * (vertex_attrs[n].pos - p0));
+            }
+        }
+    } else if (d == 0 && !is_boundary_vertex(tv)) {
+        // Within the tangent plane: 24 directions, 6 steps of the star's mean edge length, and
+        // the smoothing's own position.
+        const Eigen::Vector3d n = area_normal(star);
+        if (n.norm() == 0) return false;
+        const Eigen::Vector3d u = n.normalized().unitOrthogonal();
+        const Eigen::Vector3d w = n.normalized().cross(u);
+        const auto ring = get_one_ring_edges_for_vertex(tv);
+        double h = 0;
+        for (const Tuple& e : ring) h += (vertex_attrs[e.vid(*this)].pos - p0).norm() / ring.size();
+        for (int k = 0; k < 24; ++k) {
+            const double a = 2 * M_PI * k / 24;
+            for (const double s : {0.02, 0.05, 0.1, 0.2, 0.35, 0.5}) {
+                places.push_back(p0 + s * h * (std::cos(a) * u + std::sin(a) * w));
+            }
+        }
+        places.push_back(tangential_smooth(tv));
+    } else {
+        return false;
+    }
+    // The best places first, by the star's smallest angle; the move itself checks the rest.
+    // The trial positions are written outside any operation and put back before one runs.
+    std::vector<std::pair<double, size_t>> best;
+    for (size_t i = 0; i < places.size(); ++i) {
+        vertex_attrs.m_attributes[v].pos = places[i];
+        best.emplace_back(-min_angle(star), i);
+    }
+    vertex_attrs.m_attributes[v].pos = p0;
+    std::sort(best.begin(), best.end());
+    for (size_t k = 0; k < std::min<size_t>(best.size(), 12); ++k) {
+        if (-best[k].first <= floor) break;
+        m_smooth_target = places[best[k].second];
+        const bool moved = smooth_vertex(tv);
+        m_smooth_target.reset();
+        if (moved) return true;
+    }
+    return false;
+}
+
+size_t IsotropicRemeshing::cleanup_triangles(const double degrees)
+{
+    m_cleaning = true;
+    size_t repaired = 0;
+    std::vector<Tuple> new_tris;
+    for (int round = 0; round < 10; ++round) {
+        std::vector<std::pair<double, size_t>> bad;
+        for (const Tuple& f : get_faces()) {
+            const double a = min_angle({f});
+            if (a < degrees) bad.emplace_back(a, f.fid(*this));
+        }
+        std::sort(bad.begin(), bad.end());
+        size_t n = 0;
+        for (const auto& [_, fid] : bad) {
+            const Tuple f = tuple_from_tri(fid);
+            // An earlier repair may have removed it, or mended it.
+            if (!f.is_valid(*this) || min_angle({f}) >= degrees) continue;
+            const auto vs = oriented_tri_vids(f);
+            std::vector<Tuple> around;
+            for (const size_t v : vs) {
+                for (const Tuple& g : get_one_ring_tris_for_vertex(tuple_from_vertex(v))) {
+                    if (std::none_of(around.begin(), around.end(), [&](const Tuple& h) {
+                            return h.fid(*this) == g.fid(*this);
+                        })) {
+                        around.push_back(g);
+                    }
+                }
+            }
+            std::vector<size_t> near;
+            for (const Tuple& g : around) {
+                for (const size_t w : oriented_tri_vids(g)) {
+                    if (std::find(near.begin(), near.end(), w) == near.end()) near.push_back(w);
+                }
+            }
+            m_cleanup_floor = min_angle(around);
+            // Its edges, shortest first; edge k runs from vs[k] to vs[k + 1].
+            std::array<std::pair<double, int>, 3> edges;
+            for (int k = 0; k < 3; ++k) {
+                edges[k] = {
+                    (vertex_attrs[vs[k]].pos - vertex_attrs[vs[(k + 1) % 3]].pos).norm(),
+                    k};
+            }
+            std::sort(edges.begin(), edges.end());
+            bool done = false;
+            {
+                const int k = edges[0].second;
+                const size_t a = vs[k], b = vs[(k + 1) % 3];
+                done = collapse_edge(tuple_from_edge(a, b, fid), new_tris) ||
+                       collapse_edge(tuple_from_edge(b, a, fid), new_tris);
+            }
+            for (int i = 2; i >= 0 && !done; --i) {
+                const int k = edges[i].second;
+                if (is_feature_edge(vs[k], vs[(k + 1) % 3])) continue;
+                done = swap_edge(tuple_from_edge(vs[k], vs[(k + 1) % 3], fid), new_tris);
+            }
+            // A move of one of its vertices, or else of one around it.
+            for (const size_t v : vs) {
+                if (done) break;
+                done = cleanup_move(v, m_cleanup_floor);
+            }
+            for (const size_t w : near) {
+                if (done) break;
+                if (std::find(vs.begin(), vs.end(), w) != vs.end()) continue;
+                done = cleanup_move(w, m_cleanup_floor);
+            }
+            if (done) ++n;
+        }
+        repaired += n;
+        if (n == 0) break;
+    }
+    m_cleanup_floor = 0;
+    m_cleaning = false;
+    return repaired;
+}
+
 void IsotropicRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& edges)
 {
     set_feature_edges(edges, std::vector<int64_t>(edges.size(), -1));
@@ -254,6 +466,7 @@ void IsotropicRemeshing::set_face_fields(const std::vector<std::vector<double>>&
     }
     face_field_attrs.resize(tri_storage_capacity());
     for (size_t f = 0; f < values.size(); ++f) face_field_attrs.m_attributes[f].values = values[f];
+    if (m_cleanup_angle > 0) m_input_values = values;
     // From here on the mesh rolls them back, consolidates them and grows them with its faces.
     p_face_attrs = &face_field_attrs;
     m_has_face_fields = true;
@@ -453,12 +666,22 @@ bool IsotropicRemeshing::swap_edge_before(const Tuple& t)
         auto& cache = position_cache.local();
         cache.replaced = replaced({t, t.switch_face(*this).value()});
     }
+    if (m_cleaning) {
+        position_cache.local().input_folds = input_folds({t, t.switch_face(*this).value()});
+    }
     return true;
 }
 
 
 bool IsotropicRemeshing::swap_edge_after(const TriMesh::Tuple& t)
 {
+    if (m_cleaning) {
+        // See cleanup_triangles(): the input's orientation in place of the fold check.
+        return cleanup_allows(
+            {t, t.switch_face(*this).value()},
+            position_cache.local().input_folds,
+            m_cleanup_floor);
+    }
     if (!m_check_inversions) return true;
     const auto& cache = position_cache.local();
     return !folds({t, t.switch_face(*this).value()}, cache.replaced);
@@ -568,14 +791,15 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
             return false;
         }
     }
-    if (m_check_inversions) {
+    if (m_check_inversions || m_cleaning) {
         // Both stars: the triangles the collapse removes, and the ones it renames or moves.
         auto tris = get_one_ring_tris_for_vertex(t);
         for (const Tuple& f : get_one_ring_tris_for_vertex(t2)) {
             const auto vs = oriented_tri_vids(f);
             if (!std::count(vs.begin(), vs.end(), cache.v1)) tris.push_back(f);
         }
-        cache.replaced = replaced(tris);
+        if (m_check_inversions) cache.replaced = replaced(tris);
+        if (m_cleaning) cache.input_folds = input_folds(tris);
     }
     return true;
 }
@@ -618,6 +842,10 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     vertex_attrs[vid].partition_id = cache.partition_id;
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
+    if (m_cleaning) {
+        // See cleanup_triangles(): the input's orientation in place of the fold check.
+        return cleanup_allows(get_one_ring_tris_for_vertex(t), cache.input_folds, m_cleanup_floor);
+    }
     if (m_check_inversions && folds(get_one_ring_tris_for_vertex(t), cache.replaced)) {
         return false;
     }
@@ -712,8 +940,16 @@ bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
     if (one_ring_tris.size() < 2) {
         return false;
     }
-    Eigen::Vector3d after_smooth = tangential_smooth(t);
+    Eigen::Vector3d after_smooth = m_smooth_target ? *m_smooth_target : tangential_smooth(t);
     if (after_smooth.hasNaN()) return false;
+    if (m_cleaning) {
+        // See cleanup_triangles(): the star's own angle to beat, and the input's orientation in
+        // place of the fold check.
+        const size_t folds_before = input_folds(one_ring_tris);
+        const double floor = min_angle(one_ring_tris);
+        vertex_attrs[t.vid(*this)].pos = after_smooth;
+        return cleanup_allows(one_ring_tris, folds_before, floor);
+    }
     const ReplacedSurface before = m_check_inversions ? replaced(one_ring_tris) : ReplacedSurface();
     vertex_attrs[t.vid(*this)].pos = after_smooth;
     if (m_check_inversions && folds(one_ring_tris, before)) return false;
@@ -1258,6 +1494,15 @@ bool IsotropicRemeshing::uniform_remeshing(double L, int iterations)
         timer.start();
         smooth_all_vertices();
         wmtk::logger().info("--------smooth time-------: {} ms", timer.getElapsedTimeInMilliSec());
+        if (m_cleanup_angle > 0) {
+            timer.start();
+            const size_t n = cleanup_triangles(m_cleanup_angle);
+            wmtk::logger().info(
+                "repaired {} triangles under {} degrees in {} ms",
+                n,
+                m_cleanup_angle,
+                timer.getElapsedTimeInMilliSec());
+        }
 
         partition_mesh_morton();
 
@@ -1265,6 +1510,13 @@ bool IsotropicRemeshing::uniform_remeshing(double L, int iterations)
         // are not freed until consolidation). With the preallocated storage this is
         // required so long runs do not exhaust the reserved capacity; it is
         // transparent to the mesh content.
+        consolidate_mesh();
+    }
+    if (m_cleanup_angle > 0) {
+        // Once more on the consolidated mesh: a round ends at 10, and where the input is folded
+        // the repairs of the last iteration are not done by then.
+        const size_t n = cleanup_triangles(m_cleanup_angle);
+        wmtk::logger().info("repaired {} triangles under {} degrees", n, m_cleanup_angle);
         consolidate_mesh();
     }
     wmtk::logger().info("finished {} remeshing iterations", iterations);
