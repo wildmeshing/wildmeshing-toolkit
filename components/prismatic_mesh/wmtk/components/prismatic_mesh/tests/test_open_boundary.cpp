@@ -133,6 +133,33 @@ TEST_CASE("tau32 mapping to an interior input edge is preserved near an open bou
     REQUIRE(data.offset_tet_tags == std::vector<int>{1, 1, 1});
 }
 
+TEST_CASE("tau21 on an interior input edge preserves its offset collapse face")
+{
+    // P=0 and Q=2 share two input triangles, so PQ is interior even though P
+    // lies on the open boundary. A=3, B=5 and X=9 all have identifier P.
+    // The tau21 PQAB must survive; the boundary cap tau31 PABX is removed.
+    auto data = fixture({{0, 1, 2, 3}, {0, 2, 6, 5}, {0, 2, 3, 5}, {0, 3, 5, 9}});
+    const auto vertices = data.vertices;
+    const auto tets = data.tetrahedra;
+    const auto stats = handle_open_boundaries(data);
+    REQUIRE(stats.open_boundary_edges == 4);
+    REQUIRE(stats.candidate_tets == 4);
+    REQUIRE(stats.unmarked_tets == 1);
+    REQUIRE(data.offset_tet_tags == std::vector<int>{1, 1, 1, -1});
+    REQUIRE(data.vertices == vertices);
+    REQUIRE(data.tetrahedra == tets);
+
+    keep_offset_band(data);
+    bool has_PAB = false;
+    for (const auto& face : data.mesh->get_faces()) {
+        auto fv = data.mesh->get_face_vids(face);
+        std::sort(fv.begin(), fv.end());
+        has_PAB = has_PAB || fv == std::array<size_t, 3>{0, 3, 5};
+    }
+    REQUIRE(has_PAB);
+    REQUIRE(data.mesh->link_condition(data.mesh->tuple_from_edge({3, 5})));
+}
+
 TEST_CASE("open boundary excludes volume edges using full mesh cell membership")
 {
     auto data = fixture({{0, 1, 2, 3}, {0, 1, 3, 4}, {0, 2, 1, 8}});

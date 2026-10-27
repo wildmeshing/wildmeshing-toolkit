@@ -57,6 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
+option(WMTK_BUILD_MIXED_QUALITY "Build the experimental mixed-cell quality improvement driver" OFF)
 
 # Cross-checks every TriMesh split and collapse against a brute-force reference built from
 # the whole mesh, so it is O(#F) per operation. Tests only -- off by default, and gated at
@@ -184,6 +185,9 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 
     # components (automatically added to the app and integration tests)
     add_subdirectory(components)
+    if(WMTK_BUILD_MIXED_QUALITY)
+        add_subdirectory(experiments/mixed_quality)
+    endif()
 endif()
 
 if(WMTK_BUILD_DOCS)
