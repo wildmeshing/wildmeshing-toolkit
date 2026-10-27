@@ -3259,7 +3259,13 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     double max_inside = -std::numeric_limits<double>::infinity(), max_outside = max_inside;
     double max_rms = 0., max_vertex = 0., max_gap = 0.;
     const bool rms_mode = m_offset_params.settle_mark == "rms";
-    const bool vertex_mode = m_offset_params.settle_mark == "vertex";
+    const bool edge_mode = m_offset_params.settle_mark == "vertex_edge";
+    const bool split_mode = m_offset_params.settle_mark == "vertex_split";
+    const bool vertex_mode = m_offset_params.settle_mark == "vertex" || edge_mode || split_mode;
+    size_t n_front_edges = 0, n_edge_over = 0, n_edge_floor = 0;
+    size_t n_off_faces = 0, n_off_centroid = 0;
+    double max_edge = 0., max_face = 0.;
+    std::vector<std::array<size_t, 2>> to_split;
     if (settled) {
         // Per front face f, how far a point of f lies from the level set: inside_f = delta - min
         // over f of d, exact (min over P of the triangle-triangle distance); outside_f = max over f
@@ -3336,18 +3342,107 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         for (const auto& f : faces) front_vids.insert(front_vids.end(), f.begin(), f.end());
         wmtk::vector_unique(front_vids);
         n_front_vertices = front_vids.size();
-        for (const size_t v : front_vids) {
-            const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const Envelope& env = *m_input_complex_envelope;
-            const double err = std::abs(
+        const Envelope& env = *m_input_complex_envelope;
+        const auto level_set_error = [&](const Vector3d& x) {
+            return std::abs(
                 env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
+        };
+        std::vector<char> vertex_over(edge_mode || split_mode ? vert_capacity() : 0, 0);
+        for (const size_t v : front_vids) {
+            const double err = level_set_error(m_vertex_attribute[v].m_posf);
             max_vertex = std::max(max_vertex, err / eps);
             if (!(err > eps)) continue;
             ++n_over_vertex;
             if (!vertex_mode) continue;
             ++n_marked;
             corners.push_back(v);
+            if (edge_mode || split_mode) vertex_over[v] = 1;
             if (m_vertex_attribute[v].m_sizing_scalar <= s_floor) ++n_floor;
+        }
+        // EXPERIMENTAL_settle_mark "vertex_edge": "vertex", and also both ends of a front edge
+        // whose two ends are within front_conv of the level set and whose midpoint is not. Such an
+        // edge spans a stretch of the level set its corners do not see, which the vertex test
+        // passes for good. These marks refine only: they do not count as marked and do not hold
+        // the exit, which stays the vertex test. MEASURED (t100033 inward at 0.5 delta_1, 10%):
+        // at 1 thread resolved at turn 8 where "vertex" was held by a real fold to the 30-turn cap;
+        // at 8 threads resolved at turn 8 in 70 s with 1934 front vertices, against turn 19, 168 s
+        // and 1425 front vertices under "vertex_split" (one run each).
+        if (edge_mode) {
+            std::vector<std::array<size_t, 2>> edges;
+            edges.reserve(3 * faces.size());
+            for (const auto& f : faces) {
+                for (int j = 0; j < 3; ++j) {
+                    const size_t a = f[size_t(j)], b = f[size_t((j + 1) % 3)];
+                    edges.push_back({{std::min(a, b), std::max(a, b)}});
+                }
+            }
+            wmtk::vector_unique(edges);
+            n_front_edges = edges.size();
+            for (const auto& e : edges) {
+                if (vertex_over[e[0]] || vertex_over[e[1]]) continue;
+                const double err = level_set_error(
+                    0.5 * (m_vertex_attribute[e[0]].m_posf + m_vertex_attribute[e[1]].m_posf));
+                max_edge = std::max(max_edge, err / eps);
+                if (!(err > eps)) continue;
+                ++n_edge_over;
+                bool at_floor = true;
+                for (const size_t v : e) {
+                    corners.push_back(v);
+                    at_floor = at_floor && m_vertex_attribute[v].m_sizing_scalar <= s_floor;
+                }
+                if (at_floor) ++n_edge_floor;
+            }
+        }
+        // EXPERIMENTAL_settle_mark "vertex_split": "vertex", and also a front face whose three
+        // corners are within front_conv of the level set but one of its three edge midpoints or its
+        // centroid is not has the edge with the midpoint farthest from the level set split (listed
+        // here; front_pocket_split() splits them before the next turn's first smoothing pass, see
+        // there). Such a face spans a stretch of the level set its corners do not see,
+        // which the vertex test passes for good. The split is the remedy, not a sizing halving:
+        // MEASURED (t100033 inward at 0.5 delta_1, 10%, 1 thread): halving the ends of such edges
+        // resolved it at turn 8 where "vertex" was held by a real fold to the 30-turn cap, with
+        // 1979 front vertices at turn 8 against 549, the halving spreading through the gradation.
+        // Not gated by its energy gain: MEASURED offline on that run's final mesh, a split of any
+        // of its 40 such edges, the new vertex placed anywhere that keeps the cells valid, lowers
+        // the offset energy by at most 0.61 of the settle bar of the edge's two front faces, the
+        // real fold's edge by 0.27 (its cells invert 0.9 front_conv out). In the 5% run that
+        // resolved, the fold went at the collapse the turn after the split.
+        if (split_mode) {
+            std::map<std::array<size_t, 2>, double> mid_err;
+            for (const auto& f : faces) {
+                if (vertex_over[f[0]] || vertex_over[f[1]] || vertex_over[f[2]]) continue;
+                std::array<size_t, 2> worst{{0, 0}};
+                double worst_err = -1.;
+                for (int j = 0; j < 3; ++j) {
+                    const size_t a = f[size_t(j)], b = f[size_t((j + 1) % 3)];
+                    const std::array<size_t, 2> e{{std::min(a, b), std::max(a, b)}};
+                    auto it = mid_err.find(e);
+                    if (it == mid_err.end()) {
+                        it = mid_err
+                                 .emplace(
+                                     e,
+                                     level_set_error(
+                                         0.5 * (m_vertex_attribute[a].m_posf +
+                                                m_vertex_attribute[b].m_posf)))
+                                 .first;
+                    }
+                    if (it->second > worst_err) {
+                        worst_err = it->second;
+                        worst = e;
+                    }
+                }
+                const double c_err = level_set_error(
+                    (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
+                     m_vertex_attribute[f[2]].m_posf) /
+                    3.);
+                const double face_err = std::max(worst_err, c_err);
+                max_face = std::max(max_face, face_err / eps);
+                if (!(face_err > eps)) continue;
+                ++n_off_faces;
+                if (!(worst_err > eps)) ++n_off_centroid;
+                to_split.push_back(worst);
+            }
+            wmtk::vector_unique(to_split);
         }
         // EXPERIMENTAL_gap_refinement: a band cell with a front corner whose corner bound may lie
         // more than a bar above its true integral: md - d(centroid) > front_conv, md the corner
@@ -3392,6 +3487,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             }
         }
         if (refine_now && !corners.empty()) n_halved = refine_front_by_halving(corners);
+        if (refine_now) m_settle_split_edges = to_split;
     }
     // A marked face with every corner at the floor is one nothing will refine: it blocks the exit
     // for good, hence the warning, every turn such faces exist.
@@ -3438,6 +3534,31 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                       s_floor,
                       n_floor > 0 ? " (they cannot be refined and block the exit)" : "")
                 : std::string(" -- no face test, no refinement, no exit: the front still moves"));
+    if (edge_mode && settled) {
+        logger().info(
+            "\t[settle edge] turn {}: {} of {} front edges with both ends within front_conv and "
+            "the midpoint over (max {:.4} bars), their ends refined, {} with both ends at the "
+            "sizing floor; they do not hold the exit",
+            turn,
+            n_edge_over,
+            n_front_edges,
+            max_edge,
+            n_edge_floor);
+    }
+    // The listed edges do not hold the exit, which stays the vertex test: they are split only if
+    // the run goes on (the next turn), and a run that exits leaves them unsplit.
+    if (split_mode && settled) {
+        logger().info(
+            "\t[settle split] turn {}: {} front faces with every corner within front_conv and an "
+            "edge midpoint or the centroid over (max {:.4} bars), {} of them by the centroid "
+            "alone | {} edges to split (the midpoint farthest from the level set per face) before "
+            "the next turn's first smoothing pass; they do not hold the exit",
+            turn,
+            n_off_faces,
+            max_face,
+            n_off_centroid,
+            to_split.size());
+    }
     return settled && n_marked == 0 && n_gap_over == 0;
 }
 
@@ -4591,6 +4712,35 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         return ok;
     };
 
+    // EXPERIMENTAL_settle_mark "vertex_split": the edges the last settled turn listed
+    // (settle_refinement_turn()), split here, before the pinned cells, so that the smoothing pass
+    // that follows moves the new front vertices in the same turn. Split at the end of the settled
+    // turn instead, the next turn's collapse pass undid them before any smoothing had moved them,
+    // restoring the geometry at no energy cost: MEASURED (t100033 inward at 0.5 delta_1, 10%, 1
+    // thread), 12 of turn 2's 64 split vertices and 1 of turn 3's 44 were where the split put them
+    // after the next collapse pass, and the real folds went 0 at turn 5 to 12 at turn 9. An edge
+    // this turn's operation passes removed (split, or collapsed with an end, whose tet list the
+    // collapse clears) is skipped; the next settled turn tests its faces again. The ids hold: the
+    // mesh is consolidated before the settle test, and no vertex is made between it and here.
+    if (!m_settle_split_edges.empty()) {
+        size_t n_listed = m_settle_split_edges.size(), n_done = 0, n_gone = 0, n_no = 0;
+        for (const std::array<size_t, 2>& e : m_settle_split_edges) {
+            if (get_incident_tids_for_edge(e[0], e[1]).empty()) {
+                ++n_gone;
+                continue;
+            }
+            split_one(e) ? ++n_done : ++n_no;
+        }
+        m_settle_split_edges.clear();
+        logger().info(
+            "\t[settle split] {}: of the {} edges the last settled turn listed, split {}, gone "
+            "(removed by this turn's operation passes) {}, refused {}",
+            where,
+            n_listed,
+            n_done,
+            n_gone,
+            n_no);
+    }
     size_t n_band = 0, n_six = 0, no_face = 0;
     std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
     std::vector<std::array<size_t, 2>> sp_edges;

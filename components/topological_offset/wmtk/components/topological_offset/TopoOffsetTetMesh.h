@@ -501,6 +501,9 @@ public:
     static constexpr int kPocketMaxRounds = 10;
     /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
     bool m_pocket_splitting = false;
+    /// EXPERIMENTAL_settle_mark "vertex_split": the front edges the last settled turn chose to
+    /// split (settle_refinement_turn()); front_pocket_split() splits them and clears the list.
+    std::vector<std::array<size_t, 2>> m_settle_split_edges;
 
     /// init_optimize: optimize_offset() opens with a stencil_order loop
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum

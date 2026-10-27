@@ -233,15 +233,20 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the energy's band term then reads the distance to all pieces at once. See the spec doc.
     bool allow_mult_comp = false;
     /// EXPERIMENTAL (2026-10-09), read only under settle_refinement: the test that marks the front
-    /// on a settled turn. "vertex" (the default): a front vertex's own |d - target_distance|
-    /// exceeds front_conv; its sizing is halved. "max": a face's max of
+    /// on a settled turn. "vertex": a front vertex's own |d - target_distance| exceeds
+    /// front_conv; its sizing is halved. "vertex_edge" (the default): "vertex", and also both ends
+    /// of a front edge whose ends are within front_conv and whose midpoint is not have their sizing
+    /// halved (they do not hold the exit). "vertex_split": "vertex", and also a front face whose
+    /// corners are within front_conv but an edge midpoint or its centroid is not has its worst edge
+    /// split before the next turn's first smoothing pass (needs EXPERIMENTAL_front_pocket_split).
+    /// "max": a face's max of
     /// |d - target_distance| exceeds front_conv (exact up to rounding; an upper bound on rule-(a)
     /// pieces, see ExactBandIntegral::max_distance()). "rms": a face's share of the offset excess
     /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
     /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
     /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
     /// 3-edge-midpoint rule. See the spec doc.
-    std::string settle_mark = "vertex";
+    std::string settle_mark = "vertex_edge";
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -383,9 +388,11 @@ struct Parameters : public wmtk::OptimizerParameters
         foldover_angle = json_params["foldover_angle"];
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
-        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex") {
+        if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
+            settle_mark != "vertex_edge" && settle_mark != "vertex_split") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\" or \"vertex\", not \"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"vertex_edge\" or "
+                "\"vertex_split\", not \"{}\"",
                 settle_mark);
         }
         output_path = json_params["output"];
@@ -460,6 +467,13 @@ struct Parameters : public wmtk::OptimizerParameters
                 "runs right before the condition-1 splits that precede the first smoothing pass "
                 "of each operation group",
                 label_cleanup);
+        }
+        // "vertex_split" splits its edges in loop_group()'s EXPERIMENTAL_front_pocket_split path,
+        // before the first smoothing pass of the next turn; the other path has no such point.
+        if (settle_mark == "vertex_split" && !front_pocket_split) {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_mark \"vertex_split\" needs EXPERIMENTAL_front_pocket_split "
+                "true: its splits are made right before the first smoothing pass of the next turn");
         }
         sizing_collapse_min = json_params["sizing_collapse_min"];
         use_rest_pose = json_params["use_rest_pose"];
