@@ -1537,7 +1537,9 @@ double BandVolumeEnergy3D::eval(
                 const Cell& c = m_cells[k];
                 Eigen::Vector3d gc;
                 Eigen::Matrix3d hc;
-                m_eb->value_grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc, m_eb_parts[k]);
+                // grad_hess(): value_grad_hess() without its J (unread here, and value() above
+                // captured the elementary pieces in m_eb_parts[k] at this x)
+                m_eb->grad_hess({{x, c.q1, c.q2, c.q3}}, 0, m_delta, gc, hc, m_eb_parts[k]);
                 m_eb_g += gc / m_delta;
                 m_eb_H += hc / m_delta;
             }

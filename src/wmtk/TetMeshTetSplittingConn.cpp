@@ -49,7 +49,7 @@ bool TetMesh::split_tet(const Tuple& t, std::vector<Tuple>& new_tets)
     old_vertices[0] = {vid[0], m_vertex_connectivity[vid[0]]};
     old_vertices[1] = {vid[1], m_vertex_connectivity[vid[1]]};
     old_vertices[2] = {vid[2], m_vertex_connectivity[vid[2]]};
-    old_vertices[3] = {vid[2], m_vertex_connectivity[vid[3]]};
+    old_vertices[3] = {vid[3], m_vertex_connectivity[vid[3]]};
     std::pair<size_t, TetrahedronConnectivity> old_tet;
     old_tet = std::make_pair(tid, m_tet_connectivity[tid]);
 

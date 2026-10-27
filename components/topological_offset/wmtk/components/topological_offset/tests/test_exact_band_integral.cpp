@@ -5,6 +5,7 @@
 
 #include "exact_band_integral_data.hpp"
 #include "exact_band_max_data.hpp"
+#include "exact_band_parallel_data.hpp"
 #include "exact_band_side_data.hpp"
 
 #include <algorithm>
@@ -1041,6 +1042,92 @@ TEST_CASE("exact-band-integral-side", "[offset][exact_band]")
 }
 
 /**
+ * The elementary-piece cache (Work::elems): a value() call with a Partition captures the
+ * elementary decomposition while it integrates, and the derivative call at the same t and delta
+ * reads it instead of rebuilding it (grad_hess(), value_grad_hess_impl()). The capture replicates
+ * the build's clips in the build's order with the build's arguments, so the derivatives are the
+ * fresh build's bit for bit -- that equality is the whole contract, and this case pins it on
+ * every stored cell: the one-triangle cells, the real cells, and the offset-side cells (clipped
+ * and unclipped, rule-(a) and D parts included). Checked per cell, every quantity by ==:
+ *  - value with a Partition == value without one (the capture never touches the sum);
+ *  - grad_hess() after that value() (the cached elems) == value_grad_hess() fresh;
+ *  - value_grad_hess() with the same Partition (cached, with J) == fresh, J included;
+ *  - grad_hess() cold (no value() first: it builds and stores) == fresh, twice over.
+ */
+TEST_CASE("exact-band-grad-hess-cache", "[offset][exact_band]")
+{
+    int n_cells = 0;
+    const auto bits3 = [](const Vec3& a, const Vec3& b) {
+        return std::memcmp(a.data(), b.data(), 3 * sizeof(double)) == 0;
+    };
+    const auto bits9 = [](const Eigen::Matrix3d& a, const Eigen::Matrix3d& b) {
+        return std::memcmp(a.data(), b.data(), 9 * sizeof(double)) == 0;
+    };
+    const auto check = [&](const ExactBandIntegral& eb, const Tet& T, int kv, double delta) {
+        ++n_cells;
+        INFO("cell #" << n_cells << " kv " << kv << " delta " << delta);
+        Vec3 G0;
+        Eigen::Matrix3d H0;
+        const double J0 = eb.value_grad_hess(T, kv, delta, G0, H0); // fresh build, no Partition
+        const double v0 = eb.value(T, delta);
+        {
+            ExactBandIntegral::Partition keep;
+            CHECK(eb.value(T, delta, keep) == v0); // the capture does not touch the value
+            Vec3 G1;
+            Eigen::Matrix3d H1;
+            eb.grad_hess(T, kv, delta, G1, H1, keep); // the captured elems
+            CHECK(bits3(G1, G0));
+            CHECK(bits9(H1, H0));
+            Vec3 G2;
+            Eigen::Matrix3d H2;
+            const double J2 = eb.value_grad_hess(T, kv, delta, G2, H2, keep); // cached, with J
+            CHECK(J2 == J0);
+            CHECK(bits3(G2, G0));
+            CHECK(bits9(H2, H0));
+        }
+        {
+            ExactBandIntegral::Partition keep;
+            Vec3 G1, G2;
+            Eigen::Matrix3d H1, H2;
+            eb.grad_hess(T, kv, delta, G1, H1, keep); // cold: builds and stores
+            eb.grad_hess(T, kv, delta, G2, H2, keep); // reads the store
+            CHECK(bits3(G1, G0));
+            CHECK(bits9(H1, H0));
+            CHECK(bits3(G2, G0));
+            CHECK(bits9(H2, H0));
+        }
+    };
+    for (const auto& c : exact_band_data::tri_cells) {
+        const ExactBandIntegral eb = one_triangle(c.P);
+        for (int kv = 0; kv < 4; ++kv) check(eb, tet_of(c.T), kv, exact_band_data::tri_delta);
+    }
+    for (const auto& c : exact_band_data::real_cases) {
+        const ExactBandIntegral eb = of_case(c);
+        for (int i = 0; i < c.ncells; ++i) check(eb, tet_of(c.cells[i].T), i % 4, c.delta);
+    }
+    {
+        using namespace exact_band_side_data;
+        for (const SCase& c : side_cases) {
+            Eigen::MatrixXd V(c.nV, 3);
+            for (int i = 0; i < c.nV; ++i) {
+                V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+            }
+            Eigen::MatrixXi F(c.nF, 3);
+            for (int i = 0; i < c.nF; ++i) {
+                F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+            }
+            const ExactBandIntegral eb(V, F, std::vector<int8_t>(size_t(c.nF), 1), c.sigma);
+            for (int k = 0; k < c.ncells; ++k) {
+                check(eb, tet_of(c.cells[k].T), c.cells[k].kv, c.cells[k].delta);
+            }
+        }
+    }
+    std::printf(
+        "exact-band-grad-hess-cache: %d cells, cached == fresh bit for bit (G, H, J, value)\n",
+        n_cells);
+}
+
+/**
  * Two configurations where value() was not the integral, found on 100033 (plates 2.9 thick, delta
  * 2.49; 2026-10-14), each against its exact value: next to a slab's face, inside its footprint and
  * away from its walls, that face is nearest everywhere, so J = vol (its mean distance - delta).
@@ -1314,6 +1401,70 @@ TEST_CASE("exact-band-max-distance", "[offset][exact_band]")
             w_at,
             w_ub,
             w_eq);
+    }
+}
+
+/**
+ * ExactBandIntegral::max_distance on front faces nearly parallel to a side plane of an input
+ * triangle's region (exact_band_parallel_data.hpp: the faces 70565's debug1 and debug2 aborted
+ * on, 0.08 and 0.35 degrees off it, with the input around them). The cut by that plane snapped
+ * two neighbouring ring vertices onto it and both parts kept the edge between them, so the pieces
+ * counted a sliver twice; it is tol / sin(theta) wide across the face, and the former tiling
+ * bound (2 sqrt(3) tol D) ignored the angle: max_distance() threw. Units as
+ * exact-band-max-distance.
+ *  - no throw;
+ *  - upper bound: d on a 24-per-side barycentric grid never exceeds the max;
+ *  - exact: d at the returned point equals the max, where it does not come from a rule-(a) piece.
+ */
+TEST_CASE("exact-band-max-distance-parallel", "[offset][exact_band]")
+{
+    using namespace exact_band_parallel_data;
+    constexpr double EPS = std::numeric_limits<double>::epsilon();
+    const double delta = 0x1.08e27cb760a9fp-8; // 70565's target_distance, 0.004041820000000001
+    std::printf(
+        "exact-band-max-distance-parallel: faces nearly parallel to a side plane of a region\n");
+    for (const ParallelCase& c : parallel_cases) {
+        Eigen::MatrixXd V(c.nV, 3);
+        for (int i = 0; i < c.nV; ++i) V.row(i) << c.V[3 * i], c.V[3 * i + 1], c.V[3 * i + 2];
+        Eigen::MatrixXi F(c.nF, 3);
+        for (int i = 0; i < c.nF; ++i) F.row(i) << c.F[3 * i], c.F[3 * i + 1], c.F[3 * i + 2];
+        const ExactBandIntegral eb(V, F);
+        const std::array<Vec3, 3> P = {
+            {Vec3(c.P[0], c.P[1], c.P[2]),
+             Vec3(c.P[3], c.P[4], c.P[5]),
+             Vec3(c.P[6], c.P[7], c.P[8])}};
+        INFO(c.name);
+        ExactBandIntegral::MaxInfo info;
+        double m = 0.;
+        REQUIRE_NOTHROW(m = eb.max_distance(P, &info));
+        double xs = 0.;
+        for (const Vec3& p : P) xs = std::max(xs, p.cwiseAbs().maxCoeff());
+        const double unit = EPS * (xs + delta);
+        constexpr int N = 24;
+        double smax = 0.;
+        for (int i = 0; i <= N; ++i) {
+            for (int j = 0; i + j <= N; ++j) {
+                const Vec3 x =
+                    P[0] + (double(i) / N) * (P[1] - P[0]) + (double(j) / N) * (P[2] - P[0]);
+                smax = std::max(smax, ref_distance(x, V, F));
+            }
+        }
+        CHECK(smax - m <= 64. * unit);
+        const double e = ref_distance(info.at, V, F) - m;
+        if (info.rule_a) {
+            CHECK(e <= 64. * unit);
+        } else {
+            CHECK(std::abs(e) <= 64. * unit);
+        }
+        std::printf(
+            "  %-17s max %.6f delta, %d candidates, %d pieces; grid - max %+.2f, d(at) - max "
+            "%+.2f (eps units)\n",
+            c.name,
+            m / delta,
+            info.candidates,
+            info.pieces,
+            (smax - m) / unit,
+            e / unit);
     }
 }
 

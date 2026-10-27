@@ -1,3 +1,5 @@
+#include "shortest_edge_collapse.hpp"
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>
@@ -37,13 +39,14 @@ void run_shortest_collapse(
     auto stop = std::chrono::high_resolution_clock::now();
     logger().info("runtime {:.4}s", timer.getElapsedTimeInSec());
     m.consolidate_mesh();
-    m.write_triangle_mesh(output);
+    if (!output.empty()) m.write_triangle_mesh(output);
     // m.write_vtu(std::filesystem::path(output).stem().string());
     logger().info("After collapse: #V = {}, #F = {}", m.vert_capacity(), m.tri_capacity());
 }
 
-void shortest_edge_collapse(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "shortest_edge_collapse");
     using wmtk::utils::resolve_path;
     using Tuple = TriMesh::Tuple;
 
@@ -60,7 +63,7 @@ void shortest_edge_collapse(nlohmann::json json_params)
     }
     const std::filesystem::path root = json_params["input_dir"];
 
-    const std::string path = resolve_path(root, json_params["input"]).string();
+    const std::string path = component_io.path(root, json_params["input"]);
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
     const double boundary_env_rel = json_params["boundary_eps_rel"];
@@ -72,7 +75,7 @@ void shortest_edge_collapse(nlohmann::json json_params)
 
     MatrixXd V;
     MatrixXi F;
-    io::read_triangle_mesh(path, V, F, remove_duplicate_eps, -1);
+    component_io.triangles(path, V, F, remove_duplicate_eps, -1);
     logger().info("Input: #V = {}, #F = {}", V.rows(), F.rows());
 
 
@@ -155,6 +158,24 @@ void shortest_edge_collapse(nlohmann::json json_params)
     }
 
     logger().info("===== finished =====");
+    if (component_io.memory())
+        component_io.result.first["mesh"] =
+            io::triangle_data(m, [&](size_t v) { return m.vertex_attrs[v].pos; });
+    component_io.result.second = {
+        {"vertices", m.get_vertices().size()},
+        {"triangles", m.get_faces().size()}};
+}
+
+void shortest_edge_collapse(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult shortest_edge_collapse(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
 }
 
 } // namespace wmtk::components::shortest_edge_collapse

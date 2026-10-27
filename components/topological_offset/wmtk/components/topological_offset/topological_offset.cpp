@@ -7,6 +7,9 @@
 #include <vector>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
+#include <wmtk/components/topological_offset/output_conversion.hpp>
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -37,10 +40,13 @@ void check_envelope_leash(const Parameters& params)
 }
 } // namespace
 
-void topological_offset(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "topological_offset");
     using wmtk::utils::resolve_path;
 
+    const auto envelope_selector = json_params.value("envelope", nlohmann::json());
+    if (component_io.memory()) json_params.erase("envelope");
     // verify input and inject defaults
     {
         const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
@@ -66,10 +72,11 @@ void topological_offset(nlohmann::json json_params)
     }
 
     // load input file path
-    std::string input_path = resolve_path(root, json_params["input"]).string();
+    std::string input_path = component_io.path(root, json_params["input"]);
 
     // load params
     Parameters params(json_params);
+    params.output_enabled = !component_io.memory();
     // Both dimensions: the correspondence is recorded by the march and indexes vertices the
     // optimization would split, collapse and renumber.
     if (params.save_offset_correspondence && params.optimize_offset) {
@@ -92,26 +99,27 @@ void topological_offset(nlohmann::json json_params)
     int NUM_THREADS = params.num_threads;
 
     // input must be .msh
-    if (std::filesystem::path(input_path).extension() != ".msh") {
+    if (!component_io.memory() && std::filesystem::path(input_path).extension() != ".msh") {
         log_and_throw_error("Input must be a .msh file.");
     }
 
     // read input data, init params from bounding box
-    InputData input_data = read_image_msh(input_path);
+    InputData input_data =
+        component_io.memory()
+            ? read_mesh_data(
+                  component_io.mesh(input_path),
+                  !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr)
+            : read_image_msh(input_path);
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
     if (params.debug_output) {
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
         logger().info(
-            "front_conv: {} ({} x the bbox diagonal)",
+            "front_conv: {} ({} x target_distance)",
             params.front_conv,
             params.front_conv_rel);
         logger().info("stencil_order: {}", params.stencil_order);
-        logger().info(
-            "offset_envelope: {} ({} x the bbox diagonal)",
-            params.offset_envelope,
-            params.offset_envelope_rel);
         logger().info("===============================");
     }
 
@@ -151,7 +159,10 @@ void topological_offset(nlohmann::json json_params)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            mesh.write_msh_groups(output_filename.string());
+            if (component_io.memory())
+                topological_offset::collect_memory_output(mesh, component_io);
+            else
+                mesh.write_msh_groups(output_filename.string());
             return;
         }
 
@@ -293,8 +304,7 @@ void topological_offset(nlohmann::json json_params)
 
         // report
         const std::string report_file = json_params["report"];
-        if (!report_file.empty()) {
-            std::ofstream f_out(report_file);
+        if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
             report["before #v"] = mesh.m_init_counts[0];
             report["before #e"] = mesh.m_init_counts[1];
@@ -339,11 +349,17 @@ void topological_offset(nlohmann::json json_params)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
-            f_out << std::setw(4) << report;
-            f_out.close();
+            component_io.result.second = report;
+            if (!component_io.memory()) {
+                std::ofstream f_out(report_file);
+                f_out << std::setw(4) << report;
+            }
         }
 
-        mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        if (component_io.memory())
+            topological_offset::collect_memory_output(mesh, component_io);
+        else
+            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
@@ -359,9 +375,6 @@ void topological_offset(nlohmann::json json_params)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
-        check_envelope_leash(params);
-
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
         wmtk::set_preallocation_factor_from_json(mesh, json_params);
@@ -382,7 +395,10 @@ void topological_offset(nlohmann::json json_params)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            mesh.write_msh_groups(output_filename.string());
+            if (component_io.memory())
+                topological_offset::collect_memory_output(mesh, component_io);
+            else
+                mesh.write_msh_groups(output_filename.string());
             return;
         }
 
@@ -406,7 +422,8 @@ void topological_offset(nlohmann::json json_params)
 
         // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
-        // vertices at plain edge midpoints. So the potential is built after the offset exists.
+        // vertices at plain edge midpoints. So the potential is built after the offset exists,
+        // and only when the optimization runs.
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -416,9 +433,9 @@ void topological_offset(nlohmann::json json_params)
         mesh.m_init_counts[2] = mesh.get_faces().size();
         mesh.m_init_counts[3] = mesh.tet_size();
 
-        // output input complex and entire mesh as vtu
+        // output input complex and entire mesh as vtu (DEBUG_remote_output: the complex alone)
         if (mesh.m_offset_params.debug_output) {
-            mesh.write_debug_frame("input");
+            if (mesh.stage_frames()) mesh.write_debug_frame("input");
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
@@ -428,10 +445,6 @@ void topological_offset(nlohmann::json json_params)
         mesh.construct_offset(output_filename);
         // A rod or point complex's tags, tube and anchors, after the construction's splits.
         mesh.init_input_features();
-
-        // Now that the offset exists, the potential can be built against it.
-        mesh.init_offset_potential();
-        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
         // checks
         {
@@ -486,6 +499,11 @@ void topological_offset(nlohmann::json json_params)
         // coarser offset but one whose defining property is unmet at an error set by the input
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
+            // The potential, against the constructed offset. Only the optimization reads it, so
+            // a construction-only run builds none.
+            mesh.init_offset_potential();
+            mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+
             mesh.optimize_offset(output_filename);
             mesh.audit_input_features();
 
@@ -504,6 +522,12 @@ void topological_offset(nlohmann::json json_params)
             logger().info(
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
+            if (mesh.m_offset_params.phi_grid_resolution >= 2) {
+                logger().warn(
+                    "phi_grid_resolution {} ignored: the offset potential is built only for the "
+                    "optimization",
+                    mesh.m_offset_params.phi_grid_resolution);
+            }
         }
         // The last debug frame is written in the background (write_debug_frame()); no frame
         // follows, so the run waits for it here.
@@ -532,8 +556,7 @@ void topological_offset(nlohmann::json json_params)
 
         // report
         const std::string report_file = json_params["report"];
-        if (!report_file.empty()) {
-            std::ofstream f_out(report_file);
+        if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
             report["before #v"] = mesh.m_init_counts[0];
             report["before #e"] = mesh.m_init_counts[1];
@@ -577,12 +600,18 @@ void topological_offset(nlohmann::json json_params)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
-            f_out << std::setw(4) << report;
-            f_out.close();
+            component_io.result.second = report;
+            if (!component_io.memory()) {
+                std::ofstream f_out(report_file);
+                f_out << std::setw(4) << report;
+            }
         }
 
         // mesh.write_msh(output_filename.string()); // write .msh
-        mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        if (component_io.memory())
+            topological_offset::collect_memory_output(mesh, component_io);
+        else
+            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
@@ -591,5 +620,17 @@ void topological_offset(nlohmann::json json_params)
     }
 }
 
+
+void topological_offset(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult topological_offset(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
+}
 
 } // namespace wmtk::components::topological_offset

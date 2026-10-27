@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -359,7 +360,8 @@ void read_input_curves(
     MatrixXd& V_all,
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
-    std::vector<MatrixXi>& Es_out)
+    std::vector<MatrixXi>& Es_out,
+    const io::ComponentIO* component_io)
 {
     Vs_out.clear();
     Es_out.clear();
@@ -368,7 +370,10 @@ void read_input_curves(
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
-        io::read_edge_mesh(path, V, E, remove_duplicate_eps);
+        if (component_io)
+            component_io->edges(path, V, E, remove_duplicate_eps);
+        else
+            io::read_edge_mesh(path, V, E, remove_duplicate_eps);
         logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
         V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
         Vs_out.push_back(V);

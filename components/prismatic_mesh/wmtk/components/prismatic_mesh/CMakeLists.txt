@@ -10,6 +10,7 @@ set(SRC_FILES
     prismatic_mesh.cpp
     read_mesh.hpp
     read_mesh.cpp
+    input_conversion.cpp
     read_msh.cpp
     read_vtu.cpp
     write_vtu.cpp

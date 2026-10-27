@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/fmt/bundled/ranges.h>
@@ -9,6 +11,24 @@
 // clang-format on
 
 namespace wmtk {
+
+namespace detail {
+// Component entry points share legacy process-wide loggers. Serialize their setup and
+// temporarily use console sinks for a memory call, including messages from worker threads.
+// The lock is held for the whole component call, file calls included: component calls in one
+// process never run concurrently (see docs/in-memory-io.md).
+class ComponentLoggerScope
+{
+public:
+    explicit ComponentLoggerScope(bool memory);
+    ~ComponentLoggerScope();
+
+private:
+    std::unique_lock<std::recursive_mutex> m_lock;
+    std::shared_ptr<spdlog::logger> m_previous, m_previous_opt;
+    bool m_memory;
+};
+} // namespace detail
 
 bool has_user_overloaded_logger_level();
 ///
