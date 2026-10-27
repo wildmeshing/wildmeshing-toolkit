@@ -27,7 +27,6 @@ CPMAddPackage(
     NAME eigen
     GITLAB_REPOSITORY libeigen/eigen
     GIT_TAG 3.4.0
-    GIT_SHALLOW TRUE
     DOWNLOAD_ONLY TRUE
 )
 
