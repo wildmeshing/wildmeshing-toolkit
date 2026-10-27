@@ -201,6 +201,16 @@ public:
      * faces_along in the .cpp). A split moves no vertex and is not checked. On by default.
      */
     void set_check_inversions(bool check) { m_check_inversions = check; }
+    /**
+     * @brief Swap an edge to raise the worse shape quality of its two triangles (see
+     * compute_swap_quality), instead of to bring the valences of its four vertices to 6 (4 on
+     * the boundary). Off by default.
+     *
+     * Valence leaves a triangle as it is when the swap would not change the valences much: a
+     * flat one between two long edges, or a needle a curve leaves, which only the quality
+     * notices. The remeshing app of the topology-first B-rep pipeline swaps by quality.
+     */
+    void set_swap_quality(bool quality) { m_swap_quality = quality; }
     /// The operations set_check_inversions() refused, since the mesh was made.
     size_t refused_inversions() const { return m_refused_inversions; }
 
@@ -310,6 +320,10 @@ public:
     double compute_edge_cost_collapse(const TriMesh::Tuple& t, double L) const;
     double compute_edge_cost_split(const TriMesh::Tuple& t, double L) const;
     double compute_vertex_valence(const TriMesh::Tuple& t) const;
+    /// 1 / the worse shape quality (4 sqrt(3) area / sum of squared edge lengths) of the two
+    /// triangles at `t`, less the same after swapping it: positive where the swap helps the
+    /// worse one. -1 where `t` has not two faces.
+    double compute_swap_quality(const TriMesh::Tuple& t) const;
     /**
      * @brief Report statistics.
      *
@@ -339,6 +353,7 @@ private:
     /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
     bool m_removing_ears = false;
     bool m_check_inversions = true;
+    bool m_swap_quality = false;
     std::atomic<size_t> m_refused_inversions = 0;
 
     /// The area vectors of the triangles, summed (twice over).

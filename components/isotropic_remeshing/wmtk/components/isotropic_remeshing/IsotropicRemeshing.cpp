@@ -813,6 +813,33 @@ double IsotropicRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, doub
     return -1;
 }
 
+namespace {
+/// 4 sqrt(3) area / the sum of the squared edge lengths: 1 for an equilateral triangle, 0 for a
+/// flat one.
+double shape_quality(const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c)
+{
+    const double s = (b - a).squaredNorm() + (c - b).squaredNorm() + (a - c).squaredNorm();
+    return s > 0 ? 2 * std::sqrt(3.) * (b - a).cross(c - a).norm() / s : 0;
+}
+} // namespace
+
+double IsotropicRemeshing::compute_swap_quality(const TriMesh::Tuple& t) const
+{
+    // A swap needs exactly two faces at the edge; see compute_vertex_valence.
+    if (!is_manifold_edge(t)) return -1;
+    const size_t v0 = t.vid(*this), v1 = t.switch_vertex(*this).vid(*this);
+    const size_t v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    const size_t v3 =
+        t.switch_face(*this).value().switch_edge(*this).switch_vertex(*this).vid(*this);
+    const auto q = [this](size_t a, size_t b, size_t c) {
+        return std::max(
+            shape_quality(vertex_attrs.at(a).pos, vertex_attrs.at(b).pos, vertex_attrs.at(c).pos),
+            1e-30);
+    };
+    // Unsigned: a triangle the swap turns over counts as good, but the fold check refuses it.
+    return 1 / std::min(q(v0, v1, v2), q(v0, v1, v3)) - 1 / std::min(q(v0, v2, v3), q(v1, v2, v3));
+}
+
 double IsotropicRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
 {
     std::vector<std::pair<TriMesh::Tuple, size_t>> valences(3);
@@ -1079,12 +1106,13 @@ bool IsotropicRemeshing::swap_remeshing()
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
         executor.priority = [](auto& m, auto op, const Tuple& e) {
-            return m.compute_vertex_valence(e);
+            return m.m_swap_quality ? m.compute_swap_quality(e) : m.compute_vertex_valence(e);
         };
         executor.should_renew = [](auto val) { return (val > 0); };
         executor.is_weight_up_to_date = [](auto& m, auto& ele) {
             auto& [val, _, e] = ele;
-            auto val_energy = (m.compute_vertex_valence(e));
+            auto val_energy =
+                m.m_swap_quality ? m.compute_swap_quality(e) : m.compute_vertex_valence(e);
             return (val_energy > 1e-5) && ((val_energy - val) * (val_energy - val) < 1e-8);
         };
         executor(*this, collect_all_ops);

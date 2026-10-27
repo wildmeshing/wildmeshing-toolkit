@@ -359,6 +359,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool freeze_boundary = json_params["freeze_boundary"];
     const bool use_link_condition = json_params["use_link_condition"];
     const bool check_inversions = json_params["check_inversions"];
+    const bool swap_quality = json_params["swap_quality"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
@@ -430,6 +431,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
     m.set_check_inversions(check_inversions);
+    m.set_swap_quality(swap_quality);
     m.create_mesh(
         verts.size(),
         tris,
@@ -570,6 +572,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["nonmanifold_vertices"] = out_nm_v;
         report["use_link_condition"] = use_link_condition;
         report["check_inversions"] = check_inversions;
+        report["swap_quality"] = swap_quality;
         report["refused_inversions"] = m.refused_inversions();
         component_io.result.second = report;
         if (!component_io.memory()) {
