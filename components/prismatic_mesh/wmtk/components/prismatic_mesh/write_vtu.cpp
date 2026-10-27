@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 #include "prismatic_mesh.hpp"
 #include "write_msh.hpp"
 
@@ -34,7 +35,9 @@ void write_prismatic_mesh(
     const PrismaticMeshInput& input,
     const std::filesystem::path& path,
     const PrismDominantMesh* hybrid,
-    bool include_background)
+    bool include_background,
+    MeshMap* output,
+    nlohmann::json* hybrid_report)
 {
     if (path.extension() != ".vtu" && path.extension() != ".msh")
         log_and_throw_error("Prismatic mesh output must be a .vtu or .msh file.");
@@ -165,19 +168,27 @@ void write_prismatic_mesh(
         cell_fields.emplace("background_transition", std::move(background_transition));
     }
     add_targets(point_fields, input, vertex_rows);
-    if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
-    if (path.extension() == ".msh") {
+    if (!output && !path.parent_path().empty())
+        std::filesystem::create_directories(path.parent_path());
+    if (!output && path.extension() == ".msh") {
         detail::write_msh(path, vertices, mixed_cells, point_fields, cell_fields);
     } else {
-        paraviewo::VTUWriter writer;
+        io::DataWriter writer(output);
         for (const auto& [name, values] : point_fields) writer.add_field(name, values);
         for (const auto& [name, values] : cell_fields) writer.add_cell_field(name, values);
+        if (output) {
+            DataMatrix<int64_t> ids(vertex_rows.size(), 1), corr(vertex_rows.size(), 1);
+            for (size_t i = 0; i < vertex_rows.size(); ++i) {
+                ids(i, 0) = input.source_vertex_ids[vertex_rows[i]];
+                corr(i, 0) = input.corr_input_vid[vertex_rows[i]];
+            }
+            writer.add_integer_field("vid", ids);
+            writer.add_integer_field("corr_input_vid", corr);
+        }
         if (!writer.write_mesh(path.string(), vertices, mixed_cells))
             log_and_throw_error("Could not write result mesh: {}", path.string());
     }
     if (hybrid) {
-        const auto report_path = path.parent_path() / (path.stem().string() + "_hybrid.json");
-        std::ofstream report(report_path);
         auto export_report = hybrid->report;
         if (!include_background) {
             size_t reference_tets = 0;
@@ -195,10 +206,17 @@ void write_prismatic_mesh(
             export_report["full_reference_tetrahedra"] = input.tetrahedra.rows();
             export_report["source_tet_id_space"] = "full_reconstructed_mesh";
         }
-        report << export_report.dump(2) << '\n';
-        if (!report) log_and_throw_error("Could not write hybrid report: {}", report_path.string());
+        if (output) {
+            if (hybrid_report) *hybrid_report = std::move(export_report);
+        } else {
+            const auto report_path = path.parent_path() / (path.stem().string() + "_hybrid.json");
+            std::ofstream report(report_path);
+            report << export_report.dump(2) << '\n';
+            if (!report)
+                log_and_throw_error("Could not write hybrid report: {}", report_path.string());
+        }
     }
-    if (!input.background_remeshing_report.is_null()) {
+    if (!output && !input.background_remeshing_report.is_null()) {
         const auto report_path =
             path.parent_path() / (path.stem().string() + "_background_remeshing.json");
         std::ofstream report(report_path);
@@ -256,10 +274,19 @@ void write_prismatic_mesh(
             non_surjective[i] = collapsed_image ? 1 : 0;
             if (collapsed_image) ++non_surjective_count;
         }
-        paraviewo::VTUWriter surface_writer;
+        io::DataWriter surface_writer(output);
         surface_writer.add_field("labels", surface_labels);
         surface_writer.add_field("vid", surface_ids);
         surface_writer.add_field("corr_input_vid", surface_corr);
+        if (output) {
+            DataMatrix<int64_t> ids(surface_vertices.size(), 1), corr(surface_vertices.size(), 1);
+            for (size_t i = 0; i < surface_vertices.size(); ++i) {
+                ids(i, 0) = input.source_vertex_ids[surface_vertices[i]];
+                corr(i, 0) = input.corr_input_vid[surface_vertices[i]];
+            }
+            surface_writer.add_integer_field("vid", ids);
+            surface_writer.add_integer_field("corr_input_vid", corr);
+        }
         surface_writer.add_cell_field("offset_face_tag", classification);
         surface_writer.add_cell_field("non_surjective", non_surjective);
         detail::MeshFields surface_targets;
