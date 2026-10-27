@@ -243,6 +243,21 @@ void IsotropicRemeshing::set_fixed_vertices(const std::vector<std::pair<size_t, 
     m_has_fixed = !vertices.empty();
 }
 
+void IsotropicRemeshing::set_face_fields(const std::vector<std::vector<double>>& values)
+{
+    if (values.size() != tri_capacity()) {
+        log_and_throw_error(
+            "set_face_fields: values for {} faces, the mesh has {}",
+            values.size(),
+            tri_capacity());
+    }
+    face_field_attrs.resize(tri_storage_capacity());
+    for (size_t f = 0; f < values.size(); ++f) face_field_attrs.m_attributes[f].values = values[f];
+    // From here on the mesh rolls them back, consolidates them and grows them with its faces.
+    p_face_attrs = &face_field_attrs;
+    m_has_face_fields = true;
+}
+
 std::vector<std::array<size_t, 2>> IsotropicRemeshing::feature_edges() const
 {
     std::vector<std::array<size_t, 2>> out;
@@ -600,6 +615,25 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
             f.ids = {cache.feature_id, cache.feature_id};
             replace_nbr(feature_attrs[cache.v1], cache.v2, vid);
             replace_nbr(feature_attrs[cache.v2], cache.v1, vid);
+        }
+    }
+    if (m_has_face_fields) {
+        // Each face at the edge is now two: the half at v1 is the face itself, the half at v2 a
+        // new one, which takes its values.
+        const auto ring = get_one_ring_tris_for_vertex(t.switch_vertex(*this));
+        for (const Tuple& f : ring) {
+            const auto vs = oriented_tri_vids(f);
+            if (!std::count(vs.begin(), vs.end(), cache.v2)) continue;
+            const size_t x = vs[0] != vid && vs[0] != cache.v2   ? vs[0]
+                             : vs[1] != vid && vs[1] != cache.v2 ? vs[1]
+                                                                 : vs[2];
+            for (const Tuple& g : ring) {
+                const auto ws = oriented_tri_vids(g);
+                if (std::count(ws.begin(), ws.end(), cache.v1) &&
+                    std::count(ws.begin(), ws.end(), x)) {
+                    face_field_attrs[f.fid(*this)] = face_field_attrs.at(g.fid(*this));
+                }
+            }
         }
     }
     return true;

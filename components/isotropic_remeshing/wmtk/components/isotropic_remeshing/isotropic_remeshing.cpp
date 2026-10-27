@@ -13,8 +13,11 @@
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <paraviewo/VTUWriter.hpp>
+
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <map>
 #include <set>
 
@@ -25,11 +28,22 @@ namespace wmtk::components::isotropic_remeshing {
 
 namespace {
 
+/// What field_boundaries reads from a mesh file.
+struct FieldData
+{
+    /// The edges between two faces that differ in any of the fields.
+    std::vector<std::array<size_t, 2>> boundaries;
+    /// The per-face fields among them, in the order given, with their number of components.
+    std::vector<std::pair<std::string, size_t>> face_fields;
+    /// Each face's values of face_fields, one after the other.
+    std::vector<std::vector<double>> face_values;
+};
+
 /// The edges between two faces that differ in any of `fields`, triangle fields of the mesh file
 /// `path` as io::read_mesh reads it, whose triangles are `tris` in row order. A per-corner field
 /// (io::read_mesh's uv and normal: three values per corner, corner after corner) differs across
 /// an edge where the two faces disagree on it at either end: a texture seam, say.
-std::vector<std::array<size_t, 2>> field_boundaries(
+FieldData field_boundaries(
     const std::string& path,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<std::string>& fields)
@@ -50,7 +64,9 @@ std::vector<std::array<size_t, 2>> field_boundaries(
             tris.size(),
             n_faces);
     }
-    std::vector<std::vector<double>> value(tris.size());
+    FieldData out;
+    std::vector<std::vector<double>>& value = out.face_values;
+    value.resize(tris.size());
     std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
     for (const std::string& name : fields) {
         const auto a = it->second.attributes.find(name);
@@ -66,6 +82,7 @@ std::vector<std::array<size_t, 2>> field_boundaries(
                 path,
                 values.cols());
         }
+        if (!corner) out.face_fields.emplace_back(name, size_t(values.cols()));
         const Eigen::Index k = values.cols() / 3;
         for (size_t f = 0; f < tris.size(); ++f) {
             const double* row = values.row(f).data();
@@ -92,15 +109,14 @@ std::vector<std::array<size_t, 2>> field_boundaries(
             edge_faces[{{a, b}}].push_back(f);
         }
     }
-    std::vector<std::array<size_t, 2>> edges;
     for (const auto& [e, fs] : edge_faces) {
         if (fs.size() != 2) continue;
         const size_t f = fs[0], g = fs[1];
         if (value[f] != value[g] || at(f, e[0]) != at(g, e[0]) || at(f, e[1]) != at(g, e[1])) {
-            edges.push_back(e);
+            out.boundaries.push_back(e);
         }
     }
-    return edges;
+    return out;
 }
 
 /// The contents of a "features" file (see the spec), checked against the input mesh.
@@ -202,10 +218,80 @@ FeatureFile read_features(
     return out;
 }
 
+/// Writes the consolidated mesh to `path` (.vtu): its triangles with a cell field per per-face
+/// field and the point field vertex_id, the id of a fixed vertex and -1 elsewhere; and its
+/// feature edges to <stem>_edges.vtu, on the same points, a line cell each with the cell field
+/// edge_id (-1 for none) and the same vertex_id.
+void write_vtu(
+    const IsotropicRemeshing& m,
+    const std::filesystem::path& path,
+    const std::vector<std::pair<std::string, size_t>>& face_fields)
+{
+    const auto verts = m.get_vertices();
+    std::vector<int> index(m.vert_capacity(), -1);
+    Eigen::MatrixXd V(verts.size(), 3), vertex_id(verts.size(), 1);
+    for (size_t i = 0; i < verts.size(); ++i) {
+        const size_t v = verts[i].vid(m);
+        index[v] = int(i);
+        V.row(i) = m.vertex_attrs.at(v).pos;
+        vertex_id(i, 0) = m.is_fixed(v) ? double(m.feature_attrs.at(v).vertex_id) : -1.;
+    }
+
+    const auto faces = m.get_faces();
+    Eigen::MatrixXi F(faces.size(), 3);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const auto vs = m.oriented_tri_vids(faces[i]);
+        for (int k = 0; k < 3; ++k) F(i, k) = index[vs[k]];
+    }
+    paraviewo::VTUWriter triangles;
+    triangles.add_field("vertex_id", vertex_id);
+    size_t offset = 0;
+    for (const auto& [name, components] : face_fields) {
+        Eigen::MatrixXd values(faces.size(), components);
+        for (size_t i = 0; i < faces.size(); ++i) {
+            const auto& f = m.face_field_attrs.at(faces[i].fid(m)).values;
+            for (size_t c = 0; c < components; ++c) values(i, c) = f.at(offset + c);
+        }
+        triangles.add_cell_field(name, values);
+        offset += components;
+    }
+    if (!triangles.write_mesh(path.string(), V, F, paraviewo::CellType::Triangle)) {
+        log_and_throw_error("Could not write {}", path.string());
+    }
+
+    const auto features = m.feature_edges();
+    Eigen::MatrixXi E(features.size(), 2);
+    Eigen::MatrixXd edge_id(features.size(), 1);
+    for (size_t i = 0; i < features.size(); ++i) {
+        E(i, 0) = index[features[i][0]];
+        E(i, 1) = index[features[i][1]];
+        edge_id(i, 0) = double(m.feature_edge_id(features[i][0], features[i][1]));
+    }
+    std::filesystem::path edges_path = path;
+    edges_path.replace_filename(path.stem().string() + "_edges.vtu");
+    paraviewo::VTUWriter lines;
+    lines.add_field("vertex_id", vertex_id);
+    lines.add_cell_field("edge_id", edge_id);
+    if (!lines.write_mesh(edges_path.string(), V, E, paraviewo::CellType::Line)) {
+        log_and_throw_error("Could not write {}", edges_path.string());
+    }
+    logger().info(
+        "wrote {} and {}: {} triangles, {} feature edges",
+        path.string(),
+        edges_path.string(),
+        faces.size(),
+        features.size());
+}
+
 } // namespace
 
-double
-run_remeshing(std::string input, double len, std::string output, IsotropicRemeshing& m, int itrs)
+double run_remeshing(
+    std::string input,
+    double len,
+    std::string output,
+    IsotropicRemeshing& m,
+    int itrs,
+    const std::function<void()>& write_output = {})
 {
     igl::Timer timer;
     wmtk::logger().info("target len: {}", len);
@@ -214,7 +300,11 @@ run_remeshing(std::string input, double len, std::string output, IsotropicRemesh
     timer.stop();
 
     m.consolidate_mesh();
-    if (!output.empty()) m.write_triangle_mesh(output);
+    if (write_output) {
+        write_output();
+    } else if (!output.empty()) {
+        m.write_triangle_mesh(output);
+    }
     auto properties = m.average_len_valen();
     wmtk::logger().info("runtime {:.4}s", timer.getElapsedTimeInSec());
     wmtk::logger().info("current_memory {}", getCurrentRSS() / (1024. * 1024));
@@ -280,6 +370,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             "which the memory route does not have");
     }
     double length_abs = json_params["length_abs"];
+    // With feature curves, a .vtu output holds them, the fields and the fixed vertices.
+    const bool vtu_output = (!feature_fields.empty() || !features_file.empty()) &&
+                            std::filesystem::path(output).extension() == ".vtu";
 
     wmtk::logger().info("remeshing on {}", input_path);
     std::vector<Eigen::Vector3d> verts;
@@ -377,11 +470,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     logger().info("absolute target length: {}", length_abs);
 
-    std::vector<std::array<size_t, 2>> boundaries;
+    FieldData fields;
     if (!feature_fields.empty()) {
-        boundaries = field_boundaries(input_path, tris, feature_fields);
+        fields = field_boundaries(input_path, tris, feature_fields);
         if (features_file.empty()) {
-            m.set_feature_edges(boundaries);
+            m.set_feature_edges(fields.boundaries);
             logger().info(
                 "{} feature edges: the boundaries of {}",
                 m.feature_edges().size(),
@@ -393,7 +486,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         FeatureFile features = read_features(path, verts.size(), tris);
         const size_t listed = features.edges.size();
         // The field boundaries join them, without an id.
-        for (const auto& e : boundaries) {
+        for (const auto& e : fields.boundaries) {
             features.edges.push_back(e);
             features.edge_ids.push_back(-1);
         }
@@ -409,6 +502,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 : ", with the boundaries of " + nlohmann::json(feature_fields).dump(),
             features.vertices.size());
     }
+    if (vtu_output && !fields.face_fields.empty()) m.set_face_fields(fields.face_values);
 
     std::shared_ptr<history::Recorder> history;
     if (!history_output.empty()) {
@@ -419,7 +513,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
-    const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
+    std::function<void()> write_output;
+    if (vtu_output) {
+        write_output = [&]() { write_vtu(m, output, fields.face_fields); };
+    }
+    const double runtime = run_remeshing(input_path, length_abs, output, m, itrs, write_output);
     if (check_inversions) {
         logger().info("refused {} operations that would fold the surface", m.refused_inversions());
     }

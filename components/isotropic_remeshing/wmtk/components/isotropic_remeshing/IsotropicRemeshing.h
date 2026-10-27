@@ -47,6 +47,11 @@ struct FeatureAttributes
     int64_t vertex_id = -1;
 };
 
+/// A face's values of the per-face fields (see IsotropicRemeshing::set_face_fields).
+struct FaceFieldAttributes
+{
+    std::vector<double> values;
+};
 
 /// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them.
 struct ReplacedSurface
@@ -74,6 +79,8 @@ public:
     VertAttCol vertex_attrs;
     /// Read and written only while the mesh has feature edges or fixed vertices.
     wmtk::AttributeCollection<FeatureAttributes> feature_attrs;
+    /// The mesh's face attributes once set_face_fields() is called; untouched before.
+    wmtk::AttributeCollection<FaceFieldAttributes> face_field_attrs;
 
     /**
      * @brief Curves the remeshing keeps: label boundaries, say.
@@ -132,6 +139,17 @@ public:
      * only, and a fixed vertex is mostly the end that has to stay.
      */
     bool may_collapse_away(const Tuple& t) const;
+
+    /**
+     * @brief Per-face values the remeshing carries: per-face labels, say, whose boundaries are
+     * feature edges. A split gives both halves of a face its values; a collapse or swap keeps
+     * the values of the faces it changes, which is right where no swapped or collapsed edge
+     * separates faces of different values -- where the boundaries are feature edges, as
+     * set_feature_edges keeps them. `values` has one entry per face of the mesh given to
+     * create_mesh(), in that order; call after create_mesh().
+     */
+    void set_face_fields(const std::vector<std::vector<double>>& values);
+    bool has_face_fields() const { return m_has_face_fields; }
 
     /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
     void consolidate_mesh();
@@ -297,6 +315,7 @@ private:
     bool m_has_fixed = false;
     /// Some feature edge has an id other than -1.
     bool m_has_edge_ids = false;
+    bool m_has_face_fields = false;
     /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
     bool m_removing_ears = false;
     bool m_check_inversions = true;
