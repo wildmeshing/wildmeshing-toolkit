@@ -7,6 +7,14 @@ from wildmeshing import *
 """
 This module provides wrapper functions for SimWild operations.
 
+Every WMTK op runs on files (output=<path stem>, as before) or in memory
+(output=None). In memory, `mesh` may also be the outputs of an earlier
+memory call, nothing is written, and the op returns (outputs, report):
+
+    m1, _ = surf_to_tet(meshes=objs, tags=tags, output=None)
+    m2, _ = resolve_overlaps(mesh=m1, tags=[["a", "b"]], output=None)
+    save(m2, "out/m2")            # checkpoint; load("out/m2") resumes
+
 This module requires the wildmeshing package to be installed.
 To install wildmeshing, clone the WMTK repository, then execute:
 python -m pip install .
@@ -23,18 +31,84 @@ def _ensure_output_dir(output: str) -> None:
         os.makedirs(parent, exist_ok=True)
 
 
-def _run_wmtk(j: dict, output: str) -> None:
-    """Final common step for every op: default the path-resolution root and
-    invoke wmtk. wmtk resolves relative paths against j["input_dir"];
-    libstdc++ throws on the empty default, so fall back to the CWD (same
-    fix the old pywmtk_wrapper._wmtk_call applied via json_input_file)."""
+def _run_wmtk(j: dict, output):
+    """Final common step for every op.
+
+    output=None runs the memory route (_run_memory) and returns
+    (outputs, report). Otherwise the file route: default the path-resolution
+    root and invoke wmtk. wmtk resolves relative paths against
+    j["input_dir"]; libstdc++ throws on the empty default, so fall back to
+    the CWD (same fix the old pywmtk_wrapper._wmtk_call applied via
+    json_input_file)."""
+    if output is None:
+        return _run_memory(j)
+    inputs = j["input"] if isinstance(j["input"], list) else [j["input"]]
+    if any(isinstance(x, dict) for x in inputs):
+        raise ValueError(
+            "A memory result needs output=None: memory calls write no files. "
+            "Write it with save(result, stem).")
     j.setdefault("input_dir", os.getcwd())
     _ensure_output_dir(output)
     wildmeshing(j)
 
 
+def _run_memory(j: dict):
+    """Memory route: no file is written. An input is a memory result (the
+    outputs of an earlier memory call; its "mesh" and, if present, its
+    "envelope" are passed on) or a file, read with read_mesh. The returned
+    outputs hold an "envelope" only where the file route would write one."""
+    meshes = {}
+
+    def add(x):
+        name = f"input_{len(meshes)}"
+        if isinstance(x, dict):
+            meshes[name] = x["mesh"]
+            if "envelope" in x:
+                meshes["envelope"] = x["envelope"]
+                j["envelope"] = "envelope"
+        else:
+            meshes[name] = read_mesh(x)
+        return name
+
+    j["input"] = [add(x) for x in j["input"]] if isinstance(
+        j["input"], list) else add(j["input"])
+    del j["output"]
+    outputs, report = wildmeshing(j, meshes)
+    # simwild writes its envelope only with write_envelope (true by default
+    # in simwild_spec.json); the other components write it whenever they
+    # have one, and return it on the same condition.
+    if j["application"] == "simwild" and not j.get("write_envelope", True):
+        outputs.pop("envelope", None)
+    return outputs, report
+
+
+def save(result, stem):
+    """Write a memory result as a checkpoint: <stem>.msh, plus
+    <stem>_envelope.msh when it has an envelope. load(stem) reads it back
+    exactly (same arrays, same order)."""
+    _ensure_output_dir(stem)
+    write_mesh(f"{stem}.msh", result["mesh"])
+    envelope = f"{stem}_envelope.msh"
+    if "envelope" in result:
+        write_mesh(envelope, result["envelope"])
+    elif os.path.exists(envelope):
+        os.remove(envelope)  # else load() would return an older save's envelope
+
+
+def load(stem):
+    """Read a checkpoint written by save() back into a memory result."""
+    result = {"mesh": read_mesh(f"{stem}.msh")}
+    envelope = f"{stem}_envelope.msh"
+    if os.path.exists(envelope):
+        result["envelope"] = read_mesh(envelope)
+    return result
+
+
 def _ensure_msh_extension(path: str) -> str:
-    """Ensure the path ends with .msh. If it has a different extension, raise ValueError."""
+    """Ensure the path ends with .msh. If it has a different extension, raise ValueError.
+    A memory result (dict) is returned unchanged."""
+    if isinstance(path, dict):
+        return path
     p = Path(path)
     if p.suffix != ".msh":
         if p.suffix != "":
@@ -140,7 +214,7 @@ def surf_to_tet(meshes=[], tags=[], output="out", stop_energy=100, eps_rel=2e-3,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def lines_to_tri(meshes=[], tags=[], output="out", stop_energy=10, eps_rel=2e-3, preserve_topology=False, num_threads=0, others={}):
@@ -180,7 +254,7 @@ def lines_to_tri(meshes=[], tags=[], output="out", stop_energy=10, eps_rel=2e-3,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2, sizing_field=[], preserve_topology=True, keep_envelope=False, num_threads=0, others={}):
@@ -221,7 +295,7 @@ def remeshing(mesh, output="out", stop_energy=10, eps_rel=2e-3, length_rel=5e-2,
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def resolve_overlaps(mesh, tags, output="out", others={}):
@@ -251,7 +325,7 @@ def resolve_overlaps(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def replace_tags(mesh, tags_in, tags_out, output="out", others={}):
@@ -283,7 +357,7 @@ def replace_tags(mesh, tags_in, tags_out, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def tag_priority(mesh, tags, output="out", others={}):
@@ -313,7 +387,7 @@ def tag_priority(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def tight_seal_topo(mesh, tags, output="out", others={}):
@@ -344,7 +418,7 @@ def tight_seal_topo(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def keep_lcc(mesh, tags, lcc_num=1, output="out", others={}):
@@ -376,7 +450,7 @@ def keep_lcc(mesh, tags, lcc_num=1, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def fill_holes_topo(mesh, tags, output="out", others={}):
@@ -406,7 +480,7 @@ def fill_holes_topo(mesh, tags, output="out", others={}):
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out", others={}):
@@ -439,7 +513,7 @@ def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out",
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 def topological_offset(mesh, offset_selection, target_distance, offset_output_tags,
@@ -485,7 +559,7 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
 
-    _run_wmtk(j, output)
+    return _run_wmtk(j, output)
 
 
 # ---------------------------------------------------------------------------

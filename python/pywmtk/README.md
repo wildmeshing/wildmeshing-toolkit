@@ -8,7 +8,22 @@ PolyFEM-backed ops (minimum separation, Laplacian interface smoothing, full
 simulation).
 
 The wrappers are in [`pywmtk/simwild.py`](pywmtk/simwild.py). They are lightweight and work exactly as the command line interface. The only difference is that instead of providing a JSON file, one can call the wrapper functions directly with the required parameters.
-The input and output is still stored on the disk.
+
+Every WMTK op runs on files or in memory:
+
+- `output="<path stem>"` (the default `"out"`): the file route. Inputs and outputs are `.msh` files, as with the command line.
+- `output=None`: the memory route. `mesh` may also be the outputs of an earlier memory call, nothing is written, and the op returns `(outputs, report)`. `outputs["mesh"]` is the result and `outputs["envelope"]` its envelope, present exactly when the file route would write one.
+
+```python
+from pywmtk import simwild
+
+m1, _ = simwild.surf_to_tet(meshes=["a.obj", "b.obj"], tags=["a", "b"], output=None)
+m2, _ = simwild.resolve_overlaps(mesh=m1, tags=[["a", "b"]], output=None)
+simwild.save(m2, "out/m2")            # checkpoint: out/m2.msh (+ out/m2_envelope.msh)
+m2 = simwild.load("out/m2")           # resume: the same arrays, in the same order
+```
+
+On the same input, the memory route gives the file route's result. Only the cell order can differ, because the file writers group cells by physical group.
 
 The main function of `pywmtk/simwild.py` demonstrates how to use the wrapper functions. The input data can be found in the [data repository](https://github.com/wildmeshing/data2/tree/main/models).
 
