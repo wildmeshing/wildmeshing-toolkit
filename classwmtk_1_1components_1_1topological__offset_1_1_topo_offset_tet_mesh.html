@@ -313,6 +313,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>build_offset_envelope
 <tr class="separator:aff3069aa0b3605ea1fc8497181856040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad87c269a21cce23a95acfed3f7a99c6d" id="r_ad87c269a21cce23a95acfed3f7a99c6d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad87c269a21cce23a95acfed3f7a99c6d">optimize_offset_loop</a> (bool final_stage=true, bool refine=true, const std::string &amp;label=std::string())</td></tr>
 <tr class="separator:ad87c269a21cce23a95acfed3f7a99c6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af148cd03c1af02e9c3033a3de4a2bd38" id="r_af148cd03c1af02e9c3033a3de4a2bd38"><td class="memItemLeft" align="right" valign="top"><a id="af148cd03c1af02e9c3033a3de4a2bd38" name="af148cd03c1af02e9c3033a3de4a2bd38"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>loop_group</b> (const std::array&lt; int, 4 &gt; &amp;ops, const std::string &amp;where)</td></tr>
+<tr class="memdesc:af148cd03c1af02e9c3033a3de4a2bd38"><td class="mdescLeft">&#160;</td><td class="mdescRight">The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's operation passes in one call and then each of its ops[3] smoothing passes in a call of its own, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb" title="EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop start...">front_pocket_split()</a> right before each: the engine's group runs its operation pass straight into smooth_all_vertices(k), and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1e0bc42537f6630895da69bd0718d575" title="The engine&#39;s end-of-pass hook (TetOptimizerMesh::smooth_all_vertices() calls it after EVERY smoothing...">smoothing_pass_done()</a> runs before a pass's debug frame, so neither offers the point before a smoothing pass. Off: local_operations(ops). <code>where</code> names the group in the [pocket split] lines. <br /></td></tr>
+<tr class="separator:af148cd03c1af02e9c3033a3de4a2bd38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6de332ab81aa04803b0e5b33e3cb3aeb" id="r_a6de332ab81aa04803b0e5b33e3cb3aeb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb">front_pocket_split</a> (const std::string &amp;where)</td></tr>
+<tr class="memdesc:a6de332ab81aa04803b0e5b33e3cb3aeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop starts. A pinned cell is a cell outside the input complex, band or not, whose four corners are all front vertices (on the offset surface, VertexExtra::m_is_on_offset).  <br /></td></tr>
+<tr class="separator:a6de332ab81aa04803b0e5b33e3cb3aeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa44c3073e240b9e46d0c6719dc90fff9" id="r_aa44c3073e240b9e46d0c6719dc90fff9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa44c3073e240b9e46d0c6719dc90fff9">label_cleanup</a> (const std::string &amp;where)</td></tr>
+<tr class="memdesc:aa44c3073e240b9e46d0c6719dc90fff9"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed after construction: a cell on the band / non-band interface whose own geometry puts it on the other side of the level set takes the other label, where the flip keeps the topology of both. Invariant: the number of connected components (face adjacency) of the band and of the non-band region is the same before and after; a change throws.  <br /></td></tr>
+<tr class="separator:aa44c3073e240b9e46d0c6719dc90fff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a693ea2846653a10cde4195612b1313a8" id="r_a693ea2846653a10cde4195612b1313a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a693ea2846653a10cde4195612b1313a8">incremental_growth</a> ()</td></tr>
 <tr class="separator:a693ea2846653a10cde4195612b1313a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4d703ca47cfdf9cea91965162ffd39d" id="r_af4d703ca47cfdf9cea91965162ffd39d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af4d703ca47cfdf9cea91965162ffd39d">front_gradient_linf</a> ()</td></tr>
@@ -417,6 +427,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_worst_dist_vertex
 <tr class="memitem:af171e890974afc46711edb41af0029f8" id="r_af171e890974afc46711edb41af0029f8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af171e890974afc46711edb41af0029f8">face_is_offset_surface_live</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
 <tr class="memdesc:af171e890974afc46711edb41af0029f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The band's outer surface, recomputed live rather than read from the cached class.  <br /></td></tr>
 <tr class="separator:af171e890974afc46711edb41af0029f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b04e3168501a3285d807485a4d21e1a" id="r_a3b04e3168501a3285d807485a4d21e1a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3b04e3168501a3285d807485a4d21e1a">offset_face_normal_out_of_band</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f, Vector3d &amp;n) const</td></tr>
+<tr class="separator:a3b04e3168501a3285d807485a4d21e1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a889d49785618047d3440d0cb039b32fe" id="r_a889d49785618047d3440d0cb039b32fe"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a889d49785618047d3440d0cb039b32fe">count_real_folds</a> (std::vector&lt; char &gt; *corners=nullptr, std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; *faces=nullptr) const</td></tr>
+<tr class="separator:a889d49785618047d3440d0cb039b32fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d724e0267b20d90c530fd8ef81d84d" id="r_ab9d724e0267b20d90c530fd8ef81d84d"><td class="memItemLeft" align="right" valign="top"><a id="ab9d724e0267b20d90c530fd8ef81d84d" name="ab9d724e0267b20d90c530fd8ef81d84d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>edge_is_offset_surface_live</b> (size_t a, size_t b) const</td></tr>
 <tr class="memdesc:ab9d724e0267b20d90c530fd8ef81d84d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether edge (a, b) lies on the band's outer surface: some incident face does. <br /></td></tr>
@@ -1558,6 +1572,12 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
 <tr class="memdesc:a182ee16f1201bff6ff0d9e1bb1db04ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope the offset surface may not leave during a TetWild pass (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9be7cd698270bb94d9c7dc78835e2527">tetwild_pass()</a>), of eps envelope_size (optimize_construction's pass: half the traced distance), built by build_offset_envelope() from the surface as it is just before that pass. Null until then: the loop holds the offset surface to no envelope. The surface is a closed manifold by then (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d9859872eee73b99d0f762cc4acdd5d" title="verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.">offset_is_manifold()</a> is the driver's check), so it is one triangle set with no junctions: a face is either on it or not, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911" title="The containment of a tracked face an operation has just made (the base asks only after the fact)....">surface_envelope_for_face()</a> answers an offset face with this envelope alone. <br /></td></tr>
 <tr class="separator:a182ee16f1201bff6ff0d9e1bb1db04ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2428d86fff96f04fecce66b23d8cb2e7" id="r_a2428d86fff96f04fecce66b23d8cb2e7"><td class="memItemLeft" align="right" valign="top"><a id="a2428d86fff96f04fecce66b23d8cb2e7" name="a2428d86fff96f04fecce66b23d8cb2e7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_pocket_splitting</b> = false</td></tr>
+<tr class="memdesc:a2428d86fff96f04fecce66b23d8cb2e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set while <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb" title="EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop start...">front_pocket_split()</a> splits: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4a5c571718072187a20d3f1897000cb2" title="User specified preparations and desideratas for an edge split before changing the connectivity.">split_edge_before()</a> skips the longest-edge order. <br /></td></tr>
+<tr class="separator:a2428d86fff96f04fecce66b23d8cb2e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae99f047ba29052cd1f03c28b7f088bf7" id="r_ae99f047ba29052cd1f03c28b7f088bf7"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae99f047ba29052cd1f03c28b7f088bf7">m_settle_split_edges</a></td></tr>
+<tr class="separator:ae99f047ba29052cd1f03c28b7f088bf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b1044a96b21a68ef6a640c0f83f7fee" id="r_a0b1044a96b21a68ef6a640c0f83f7fee"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0b1044a96b21a68ef6a640c0f83f7fee">m_init_optimize</a> = false</td></tr>
 <tr class="separator:a0b1044a96b21a68ef6a640c0f83f7fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0afbabe05b343fedfe00de75764269fc" id="r_a0afbabe05b343fedfe00de75764269fc"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0afbabe05b343fedfe00de75764269fc">m_frame_prefix</a></td></tr>
@@ -2047,12 +2067,17 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr class="memitem:a62425e862ffe936f84c8bba83604e5d6" id="r_a62425e862ffe936f84c8bba83604e5d6"><td class="memItemLeft" align="right" valign="top"><a id="a62425e862ffe936f84c8bba83604e5d6" name="a62425e862ffe936f84c8bba83604e5d6"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>kPocketMaxRounds</b> = 10</td></tr>
+<tr class="separator:a62425e862ffe936f84c8bba83604e5d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b318a9b6fccf416801d1f23fa370147" id="r_a5b318a9b6fccf416801d1f23fa370147"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5b318a9b6fccf416801d1f23fa370147">INPUT_SURFACE_CLASS</a> = 0</td></tr>
 <tr class="memdesc:a5b318a9b6fccf416801d1f23fa370147"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>: which of the two tracked surfaces a face belongs to. Same scheme as 2D.  <br /></td></tr>
 <tr class="separator:a5b318a9b6fccf416801d1f23fa370147"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92c9452be0c76f59e64c8a543dff86ad" id="r_a92c9452be0c76f59e64c8a543dff86ad"><td class="memItemLeft" align="right" valign="top"><a id="a92c9452be0c76f59e64c8a543dff86ad" name="a92c9452be0c76f59e64c8a543dff86ad"></a>
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>OFFSET_SURFACE_CLASS</b> = 1</td></tr>
 <tr class="separator:a92c9452be0c76f59e64c8a543dff86ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb7c15061fc3f86eafd41b0c3a7fcbf0" id="r_acb7c15061fc3f86eafd41b0c3a7fcbf0"><td class="memItemLeft" align="right" valign="top">static constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acb7c15061fc3f86eafd41b0c3a7fcbf0">kCos150</a> = -0.86602540378443864676</td></tr>
+<tr class="separator:acb7c15061fc3f86eafd41b0c3a7fcbf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab43fcc06e21178f5ef9fe72913b3b6e7" id="r_ab43fcc06e21178f5ef9fe72913b3b6e7"><td class="memItemLeft" align="right" valign="top">static constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab43fcc06e21178f5ef9fe72913b3b6e7">kSmoothRelGradNormTol</a> = 1e-6</td></tr>
 <tr class="memdesc:ab43fcc06e21178f5ef9fe72913b3b6e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The Newton stopping rule every smoother of this component runs with, set on the thread's shared solver (the engine's m_solver slot) by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b97a2d23bdfbd4c3cc290cf96fccb07">smoothing_solver()</a> at the start of every visit &ndash; front and interior alike, so the settings do not depend on which path first ran on a thread.  <br /></td></tr>
 <tr class="separator:ab43fcc06e21178f5ef9fe72913b3b6e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3289,6 +3314,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a889d49785618047d3440d0cb039b32fe" name="a889d49785618047d3440d0cb039b32fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a889d49785618047d3440d0cb039b32fe">&#9670;&#160;</a></span>count_real_folds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::count_real_folds </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; char &gt; *&#160;</td>
+          <td class="paramname"><em>corners</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; *&#160;</td>
+          <td class="paramname"><em>faces</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The real folds now: offset-surface edges with exactly two offset faces whose normals out of the band are within 30 degrees of opposite (the edge of a zero-volume sheet, Lemma 5 of the case table, 2026-10-24); <code>corners</code>, when given, marks the corners of every fold's two faces, and <code>faces</code>, when given, receives those faces as sorted vertex triples. </p>
+
+</div>
+</div>
 <a id="ad65e3ff0d689a1cffa1fb53fcd1ca9ea" name="ad65e3ff0d689a1cffa1fb53fcd1ca9ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad65e3ff0d689a1cffa1fb53fcd1ca9ea">&#9670;&#160;</a></span>crossing_snapshot()</h2>
 
@@ -3834,6 +3888,28 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
+<a id="a6de332ab81aa04803b0e5b33e3cb3aeb" name="a6de332ab81aa04803b0e5b33e3cb3aeb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6de332ab81aa04803b0e5b33e3cb3aeb">&#9670;&#160;</a></span>front_pocket_split()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::front_pocket_split </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>where</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop starts. A pinned cell is a cell outside the input complex, band or not, whose four corners are all front vertices (on the offset surface, VertexExtra::m_is_on_offset). </p>
+<p>Why. (1) Only smoothing moves vertices, and no vertex joins or leaves the offset surface during a smoothing pass, so a cell can only be flattened during smoothing, and only from a cell that is pinned when the pass starts. (2) The band term depends only on the band as a region (under the exact rule, the one measured, it is the integral of (d - target_distance) / target_distance over the band), so moving a vertex that is not on the offset surface does not change it (a vertex on the input complex carries no band term, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8b1e4f65e525e666dcb52d1101097355">smoothing_extra_energy()</a>): the AMIPS term alone moves such a vertex, and it keeps the vertex's cells shaped. A pinned cell has no such corner. The band term pulls its four corners onto the level set d = target_distance, so the level set fixes the cell's shape &ndash; a sliver &ndash; and where the level set curves the wrong way the energy flattens the cell to zero volume, a fold of the offset surface. (3) Hence the invariant.</p>
+<p>How. Each pinned cell has its longest edge that is on no live offset-surface face split by the loop's own split (<a class="el" href="classwmtk_1_1_tet_mesh.html#a3370e6ce62801f96e8876661f498c890">split_edge()</a>), the next longest when that is refused. The midpoint is off the offset surface and a corner of every cell the split makes, so such a split makes no pinned cell and removes at least one. A pinned cell with all six edges on the offset surface has instead the longest edge of one of its faces that is not an offset face split: its two children are pinned, each with an edge off the offset surface, which the next round splits. A pinned cell with all four faces on the offset surface has no edge to split and is counted only. Rescanned until no pinned cell has an edge to split, at most kPocketMaxRounds rounds. One [pocket split] line, <code>where</code> naming the pass. A no-op with the key off and in a TetWild pass. The measurements: the spec doc. </p>
+
+</div>
+</div>
 <a id="a6e39d32a9f5791310750cf8da3af4bb2" name="a6e39d32a9f5791310750cf8da3af4bb2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6e39d32a9f5791310750cf8da3af4bb2">&#9670;&#160;</a></span>front_vertex_conv_ratio()</h2>
 
@@ -4300,6 +4376,27 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
+<a id="aa44c3073e240b9e46d0c6719dc90fff9" name="aa44c3073e240b9e46d0c6719dc90fff9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa44c3073e240b9e46d0c6719dc90fff9">&#9670;&#160;</a></span>label_cleanup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::label_cleanup </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>where</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed after construction: a cell on the band / non-band interface whose own geometry puts it on the other side of the level set takes the other label, where the flip keeps the topology of both. Invariant: the number of connected components (face adjacency) of the band and of the non-band region is the same before and after; a change throws. </p>
+<p>Serial passes in tid order over the cells with a front face, reading the current labels, until a pass flips nothing; positions do not move, and a cell's side test reads its own corners alone, so a cell flips at most once and the passes end. After each flip every value derived from labels at the cell's closure is re-derived (the closed labels, the front's cached face class, the front flags of its corners); after the passes the corners' vertex order and the band-region map. One [label cleanup] line. Called by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af148cd03c1af02e9c3033a3de4a2bd38" title="The loop&#39;s local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group&#39;s operation passes...">loop_group()</a> after the operation passes; a no-op with the key "off". </p>
+
+</div>
+</div>
 <a id="a471bd494ce6922396d691062e5a08606" name="a471bd494ce6922396d691062e5a08606"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a471bd494ce6922396d691062e5a08606">&#9670;&#160;</a></span>label_offset_boundary()</h2>
 
@@ -4515,6 +4612,35 @@ template&lt;typename Visit &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>The offset energy: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a734829ed5e88856707d81f4eb629f926" title="b(t), one band cell&#39;s part of int_B (d - delta) / delta dV, as an upper bound:">band_cell_term()</a> summed over the band cells, E without its AMIPS term. What the settle test compares (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2e0df7851739ebad24d59af60a980b8">settle_refinement_turn()</a>). </p>
+
+</div>
+</div>
+<a id="a3b04e3168501a3285d807485a4d21e1a" name="a3b04e3168501a3285d807485a4d21e1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b04e3168501a3285d807485a4d21e1a">&#9670;&#160;</a></span>offset_face_normal_out_of_band()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::offset_face_normal_out_of_band </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The normal of live offset face f, unit, pointing out of the band; false when f has no band cell or no area. </p>
 
 </div>
 </div>
@@ -6971,6 +7097,29 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="acb7c15061fc3f86eafd41b0c3a7fcbf0" name="acb7c15061fc3f86eafd41b0c3a7fcbf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb7c15061fc3f86eafd41b0c3a7fcbf0">&#9670;&#160;</a></span>kCos150</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr double wmtk::components::topological_offset::TopoOffsetTetMesh::kCos150 = -0.86602540378443864676</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>cos 150 degrees: a real fold's two offset faces have normals out of the band closer to opposite than this (the [foldover] dihedral reading, analyze.py's). </p>
+
+</div>
+</div>
 <a id="a772927bbeeaecc8fcf6c2603fe4743f5" name="a772927bbeeaecc8fcf6c2603fe4743f5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a772927bbeeaecc8fcf6c2603fe4743f5">&#9670;&#160;</a></span>kDiagnosticChunk</h2>
 
@@ -7656,6 +7805,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 <p>The turn the run is in, 1-based; 0 before the loop starts. Read only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a72183e1bc3b9260e22ea6e5ef15ef3cd" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_optimization_debug_output()</a>, to tag each frame with the turn it belongs to. </p>
+
+</div>
+</div>
+<a id="ae99f047ba29052cd1f03c28b7f088bf7" name="ae99f047ba29052cd1f03c28b7f088bf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae99f047ba29052cd1f03c28b7f088bf7">&#9670;&#160;</a></span>m_settle_split_edges</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;size_t, 2&gt; &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_settle_split_edges</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL_settle_mark "vertex_split": the front edges the last settled turn chose to split (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2e0df7851739ebad24d59af60a980b8">settle_refinement_turn()</a>); <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb" title="EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop start...">front_pocket_split()</a> splits them and clears the list. </p>
 
 </div>
 </div>

@@ -12,5 +12,6 @@ var searchData=
   ['eps2_5fedge_9',['eps2_edge',['../classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d',1,'wmtk::Envelope']]],
   ['exact_5fenvelope_10',['exact_envelope',['../classwmtk_1_1_envelope.html#a3b819a394e4be36ecf52a900d8a79a9b',1,'wmtk::Envelope']]],
   ['exact_5fenvelope_5f2d_11',['exact_envelope_2d',['../classwmtk_1_1_envelope.html#a424353c86fb2be23fea23f15d02c5aa3',1,'wmtk::Envelope']]],
-  ['exact_5fvol_12',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]]
+  ['exact_5fvol_12',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
+  ['exit_5fno_5ffolds_13',['exit_no_folds',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c',1,'wmtk::components::topological_offset::Parameters']]]
 ];
