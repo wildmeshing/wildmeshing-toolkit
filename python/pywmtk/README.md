@@ -166,7 +166,7 @@ offset_output_tags = ["gap"]  # create a region called "gap"
 target_distance = 0.1
 simwild.topological_offset(
     mesh=mesh, offset_selection=offset_selection,
-    offset_output_tags=offset_output_tags,overwrite_tags=False,
+    offset_output_tags=offset_output_tags,
     target_distance=target_distance, output="m4"
     )
 ```

@@ -442,8 +442,8 @@ def manifold_extraction(mesh, tag_selection, radius, fill_tags=[], output="out",
     _run_wmtk(j, output)
 
 
-def topological_offset(mesh, offset_selection, target_distance, offset_output_tags, overwrite_tags=False,
-                       offset_in=False, offset_out=True, protected_tags=[], rel_ball_threshold=0.01,
+def topological_offset(mesh, offset_selection, target_distance, offset_output_tags,
+                       offset_in=False, offset_out=True, protected_tags=[],
                        output="out", others={}):
     """
     Create topological offset. NOTE: ambient is represented as 'ambient', not '_'.
@@ -458,10 +458,9 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     - offset_out: Bool, only relevant if single body mode. If True, create offset outwards (at least
         one of offset_in and offset_out must be true in single body mode)
     - offset_output_tags: List[Str], tag set for the newly createad offset volume (e.g. ["newtag", "newtag2"]).
-    - protected_tags: List[Str], only relevant if overwrite_tags=True. Set of tags that will never be overwritten.
+    - protected_tags: List[Str], tags that cells inside the offset keep; their other tags are replaced by
+        offset_output_tags (no protected tags and no output tags: the offset becomes ambient).
     - target_distance: Float, the target distance for the offset. If <= 0, midpoint splitting is used to create the offset.
-    - rel_ball_threshold: Float, circle/sphere radius relative to target_distance to terminate conservative inside checks.
-        (NOTE: for 3D, anything above 0.01 is not very effective. <0.01 is recommended)
     - output: Output file path for the modified mesh, without extension (e.g. "out" will generate "out.msh")
     - others: Additional parameters (optional).
     """
@@ -477,7 +476,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
     j["offset_output_tags"] = offset_output_tags
     j["protected_tags"] = protected_tags
     j["target_distance"] = target_distance
-    j["relative_ball_threshold"] = rel_ball_threshold
     j["output"] = output
 
     # copy any additional parameters from others into j
@@ -486,7 +484,6 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
             raise ValueError(
                 f"Key '{key}' already exists in the main parameters. Cannot set this key in others.")
         j[key] = value
-    j.setdefault("edge_search_termination_len", min(1e-6, target_distance * 1e-3))
 
     _run_wmtk(j, output)
 
@@ -659,7 +656,7 @@ if __name__ == "__main__":
         topological_offset(mesh=mesh,
                            offset_selection="(tag_1 & tag_2) | (tag_1 & tag_3) | (tag_1 & tag_4)",
                            offset_output_tags=["tag_5"],
-                           target_distance=0.1, rel_ball_threshold=0.001, output="m7_2d")
+                           target_distance=0.1, output="m7_2d")
 
         # # minimum separation — spec-validated op (engine: polyfem)
         # minimum_separation(
@@ -711,7 +708,7 @@ if __name__ == "__main__":
         mesh = "m1.msh"
         topological_offset(mesh=mesh, offset_selection="tag_0 & tag_1",
                            offset_output_tags=["tag_2"],
-                           target_distance=0.1, rel_ball_threshold=0.001, output="m6")
+                           target_distance=0.1, output="m6")
 
         # manifold extraction
         mesh = "m3.msh"
