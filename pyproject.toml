@@ -83,3 +83,9 @@ cmake.args = [
 install.components = ["python_bindings"]
 # The pure-Python part of the package; the compiled module is installed into it as _core.
 wheel.packages = ["python/wildmeshing"]
+
+# Build the module the wheel installs (and what it links), not the default `all`: that also builds
+# wmtk_app and topological_offset's developer-only wmtk_offset_field module, neither of which is
+# installed, and wmtk_offset_field does not link with GCC 15 (Ubuntu 26.04), which failed the
+# whole `pip install`.
+build.targets = ["wildmeshing"]
