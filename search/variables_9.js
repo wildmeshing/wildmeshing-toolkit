@@ -1,12 +1,4 @@
 var searchData=
 [
-  ['kcos150_0',['kCos150',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acb7c15061fc3f86eafd41b0c3a7fcbf0',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['kdiagnosticchunk_1',['kDiagnosticChunk',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a772927bbeeaecc8fcf6c2603fe4743f5',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['kgradbins_2',['kgradbins',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b14a550b2a97398b7ccf074a6d2ba36',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kGradBins'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8afd9d1b2efe87103dda51889a0e3dc3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kGradBins']]],
-  ['kind_3',['kind',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html#a4e530055f97b0dbd975a9249edc004c0',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SwapSurfaceSides']]],
-  ['kiterbuckets_4',['kIterBuckets',['../structwmtk_1_1optimization_1_1_newton_counters.html#aea302ab01af5c05947ffa0b7f71a7591',1,'wmtk::optimization::NewtonCounters']]],
-  ['kminfaces_5',['kMinFaces',['../classwmtk_1_1utils_1_1_winding_number_hierarchy.html#a7ba935636fe4af1a41be800f19904404',1,'wmtk::utils::WindingNumberHierarchy']]],
-  ['kneedlequality_6',['kneedlequality',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab6816d36a30d9748d6bc89d2e2e33bfb',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kNeedleQuality'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab6de2a6422c3cf28ea24a0f722c4cd3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kNeedleQuality']]],
-  ['ksmoothrelgradnormtol_7',['ksmoothrelgradnormtol',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab43fcc06e21178f5ef9fe72913b3b6e7',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kSmoothRelGradNormTol'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5208c905a73b4261bb0512428e2506f8',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kSmoothRelGradNormTol']]],
-  ['kstatuses_8',['kStatuses',['../structwmtk_1_1optimization_1_1_newton_counters.html#ae83d36b283fa545131f8326dd6e689d8',1,'wmtk::optimization::NewtonCounters']]]
+  ['j_0',['j',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html#a5ac37c59dfc7723f81b3305b5c362ec7',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmartGrowthSchedule']]]
 ];

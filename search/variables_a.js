@@ -1,11 +1,12 @@
 var searchData=
 [
-  ['label_0',['label',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html#a77cc44bade30416455dd378f5869d068',1,'wmtk::components::simwild::QualityGroup']]],
-  ['label_5fcleanup_1',['label_cleanup',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a133c419af9dbb9a03376482a10e7e505',1,'wmtk::components::topological_offset::Parameters']]],
-  ['line_5ffaces_5fparallel_2',['line_faces_parallel',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ae863d3d4b1f53dbe93c60a21dd1b310a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['line_5ffaces_5fradial_3',['line_faces_radial',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#acbe57b47f5105f3ee5e2631baa1a53ab',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['line_5ffaces_5fseries_4',['line_faces_series',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a62b5a2dd3e8e47d0a3ba36cb1fc1bc5c',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['loc_5',['loc',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#abed8785135b7a07864c72f5f3b27b279',1,'wmtk::components::topological_offset::ExactBandIntegral::Local']]],
-  ['lock_5ffailures_6',['lock_failures',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b',1,'wmtk::ExecutePass::PassStats']]],
-  ['lock_5fvertices_7',['lock_vertices',['../structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95',1,'wmtk::ExecutePass']]]
+  ['kcos150_0',['kCos150',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acb7c15061fc3f86eafd41b0c3a7fcbf0',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['kdiagnosticchunk_1',['kDiagnosticChunk',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a772927bbeeaecc8fcf6c2603fe4743f5',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['kgradbins_2',['kgradbins',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b14a550b2a97398b7ccf074a6d2ba36',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kGradBins'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8afd9d1b2efe87103dda51889a0e3dc3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kGradBins']]],
+  ['kind_3',['kind',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html#a4e530055f97b0dbd975a9249edc004c0',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SwapSurfaceSides']]],
+  ['kiterbuckets_4',['kIterBuckets',['../structwmtk_1_1optimization_1_1_newton_counters.html#aea302ab01af5c05947ffa0b7f71a7591',1,'wmtk::optimization::NewtonCounters']]],
+  ['kminfaces_5',['kMinFaces',['../classwmtk_1_1utils_1_1_winding_number_hierarchy.html#a7ba935636fe4af1a41be800f19904404',1,'wmtk::utils::WindingNumberHierarchy']]],
+  ['kneedlequality_6',['kneedlequality',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab6816d36a30d9748d6bc89d2e2e33bfb',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kNeedleQuality'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab6de2a6422c3cf28ea24a0f722c4cd3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kNeedleQuality']]],
+  ['ksmoothrelgradnormtol_7',['ksmoothrelgradnormtol',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab43fcc06e21178f5ef9fe72913b3b6e7',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kSmoothRelGradNormTol'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5208c905a73b4261bb0512428e2506f8',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kSmoothRelGradNormTol']]],
+  ['kstatuses_8',['kStatuses',['../structwmtk_1_1optimization_1_1_newton_counters.html#ae83d36b283fa545131f8326dd6e689d8',1,'wmtk::optimization::NewtonCounters']]]
 ];

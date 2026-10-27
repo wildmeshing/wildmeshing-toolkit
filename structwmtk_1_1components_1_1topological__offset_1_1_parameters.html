@@ -228,10 +228,16 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>init_optimize_stencil_
 <tr class="separator:ac2fc25fc974d65292cd77a7124eca05e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5016a6d0c3084e2e370d823cbb10dad6" id="r_a5016a6d0c3084e2e370d823cbb10dad6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5016a6d0c3084e2e370d823cbb10dad6">optimize_construction</a> = true</td></tr>
 <tr class="separator:a5016a6d0c3084e2e370d823cbb10dad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a133f16e4f0e0379fcb61a90e2f054a2e" id="r_a133f16e4f0e0379fcb61a90e2f054a2e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a133f16e4f0e0379fcb61a90e2f054a2e">incremental_growth</a> = false</td></tr>
-<tr class="separator:a133f16e4f0e0379fcb61a90e2f054a2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a548f4a494c6adb7b1d85383b4f8a8eed" id="r_a548f4a494c6adb7b1d85383b4f8a8eed"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a548f4a494c6adb7b1d85383b4f8a8eed">incremental_growth_steps</a> = 4</td></tr>
-<tr class="separator:a548f4a494c6adb7b1d85383b4f8a8eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8faf658a55f9fc1cfd5b630e159fc5d1" id="r_a8faf658a55f9fc1cfd5b630e159fc5d1"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8faf658a55f9fc1cfd5b630e159fc5d1">growth_mode</a> = &quot;none&quot;</td></tr>
+<tr class="separator:a8faf658a55f9fc1cfd5b630e159fc5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1047594d4296d877622524357a9e95d" id="r_ac1047594d4296d877622524357a9e95d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac1047594d4296d877622524357a9e95d">linear_growth_steps</a> = 4</td></tr>
+<tr class="separator:ac1047594d4296d877622524357a9e95d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50b80c2d810dfd79043fd83cce526333" id="r_a50b80c2d810dfd79043fd83cce526333"><td class="memItemLeft" align="right" valign="top"><a id="a50b80c2d810dfd79043fd83cce526333" name="a50b80c2d810dfd79043fd83cce526333"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>smart_growth_attempts</b> = 2</td></tr>
+<tr class="memdesc:a50b80c2d810dfd79043fd83cce526333"><td class="mdescLeft">&#160;</td><td class="mdescRight">growth_mode "smart": the turns an attempt gets to converge. At least 1 (the spec's min). <br /></td></tr>
+<tr class="separator:a50b80c2d810dfd79043fd83cce526333"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c867327dd0e9b6765ee47509a890f25" id="r_a8c867327dd0e9b6765ee47509a890f25"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8c867327dd0e9b6765ee47509a890f25">smart_growth_max_fails</a> = 10</td></tr>
+<tr class="separator:a8c867327dd0e9b6765ee47509a890f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46773b650a7a252469d6a278cf8fde09" id="r_a46773b650a7a252469d6a278cf8fde09"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a46773b650a7a252469d6a278cf8fde09">foldover_angle</a> = 30.</td></tr>
 <tr class="separator:a46773b650a7a252469d6a278cf8fde09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad227d2292ee4aba06c3a6c912c7fea44" id="r_ad227d2292ee4aba06c3a6c912c7fea44"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad227d2292ee4aba06c3a6c912c7fea44">debug_remote_output</a> = false</td></tr>
@@ -601,33 +607,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="a133f16e4f0e0379fcb61a90e2f054a2e" name="a133f16e4f0e0379fcb61a90e2f054a2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a133f16e4f0e0379fcb61a90e2f054a2e">&#9670;&#160;</a></span>incremental_growth</h2>
+<a id="a8faf658a55f9fc1cfd5b630e159fc5d1" name="a8faf658a55f9fc1cfd5b630e159fc5d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8faf658a55f9fc1cfd5b630e159fc5d1">&#9670;&#160;</a></span>growth_mode</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::incremental_growth = false</td>
+          <td class="memname">std::string wmtk::components::topological_offset::Parameters::growth_mode = &quot;none&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL (2026-10-19), 3D: when the march traces the front below target_distance (construction_mode "max_marchable_fallback", the target not below the maximum marchable distance), the loop runs at the traced distance d_0 first, then at d_0 + k (target_distance - d_0) / N for k = 1..N, each to convergence, the last the ordinary loop (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a693ea2846653a10cde4195612b1313a8">TopoOffsetTetMesh::incremental_growth()</a>). See the spec doc. </p>
-
-</div>
-</div>
-<a id="a548f4a494c6adb7b1d85383b4f8a8eed" name="a548f4a494c6adb7b1d85383b4f8a8eed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a548f4a494c6adb7b1d85383b4f8a8eed">&#9670;&#160;</a></span>incremental_growth_steps</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int wmtk::components::topological_offset::Parameters::incremental_growth_steps = 4</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL (2026-10-19), 3D, with incremental_growth: N, the steps from d_0 to target_distance, so N + 1 loops. At least 1 (the spec's min). </p>
+<p>3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the offset when the march traces the front below target_distance (construction_mode "max_marchable_fallback", the target not below the maximum marchable distance), from the traced distance d_0. "none": the ordinary loop at target_distance. "linear": loops at d_0 and at d_0 + k (target_distance - d_0) / linear_growth_steps, each to convergence, the last the ordinary loop (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3b59978c08fcb14fa0185fe1d126c785">TopoOffsetTetMesh::linear_growth()</a>). "smart": a loop at d_0, then attempts toward target_distance, reverted and halved when they fail (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e063a55735b56f5586de9aefad248f8">TopoOffsetTetMesh::smart_growth()</a>). "individual_op_reject": loops at d_0 and at target_distance (linear with one step), every collapse, offset-surface flip and smoothing move that raises the folded offset faces refused (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8092931adbc52fc376b06a52630c9c3e">TopoOffsetTetMesh::fold_reject_active()</a>). See the spec doc. </p>
 
 </div>
 </div>
@@ -658,6 +649,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation passes, cells on the wrong side of the level set flip between band and non-band where the flip keeps both labels' topology (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa44c3073e240b9e46d0c6719dc90fff9" title="EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed after construction...">TopoOffsetTetMesh::label_cleanup()</a>). "off" (the default), "one_sided", "one_sided_tips" or "one_sided_at_target". </p>
+
+</div>
+</div>
+<a id="ac1047594d4296d877622524357a9e95d" name="ac1047594d4296d877622524357a9e95d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1047594d4296d877622524357a9e95d">&#9670;&#160;</a></span>linear_growth_steps</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::Parameters::linear_growth_steps = 4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>growth_mode "linear": N, the steps from d_0 to target_distance, so N + 1 loops. At least 1 (the spec's min). </p>
 
 </div>
 </div>
@@ -853,6 +859,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>See the spec: how a lowered sizing scalar spreads to the vertices around it. "ring" = the base gradation_smooth_sizing, ring by ring at sizing_gradation x per ring; "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly to 1 at distance 1.8 l, applied within that ball only. </p>
+
+</div>
+</div>
+<a id="a8c867327dd0e9b6765ee47509a890f25" name="a8c867327dd0e9b6765ee47509a890f25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c867327dd0e9b6765ee47509a890f25">&#9670;&#160;</a></span>smart_growth_max_fails</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::Parameters::smart_growth_max_fails = 10</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>growth_mode "smart": the failed attempts allowed from one converged distance before the run gives up (throws). At least 1 (the spec's min). </p>
 
 </div>
 </div>

@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['w_0',['w',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_work.html#a345ac60d5bdd544b719ced19ce8f385c',1,'wmtk::components::topological_offset::ExactBandIntegral::FaceWork']]],
-  ['w_5famips_1',['w_amips',['../structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b',1,'wmtk::OptimizerParameters']]],
-  ['worst_5fat_5ffloor_5fscalar_2',['worst_at_floor_scalar',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#a9cd8cf366b5bdb3dad3f013b5d22f0d6',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::EnergyCriterion::worst_at_floor_scalar'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a5d17ee6d79fe4a742db3893f3f166e33',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::EnergyCriterion::worst_at_floor_scalar']]],
-  ['worthwhile_3',['worthwhile',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html#a45e2b3e703752fb1856fbef1c616ad8a',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SwapSurfaceSides']]]
+  ['v_0',['V',['../structwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential_1_1_impl.html#add1e21d91de6ce15bfd52b4a20a4d018',1,'wmtk::components::topological_offset::SmoothOffsetPotential::Impl']]],
+  ['v0_1',['V0',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_tri_work.html#a9660999121f9b7360a6f1d603cdba39c',1,'wmtk::components::topological_offset::ExactBandIntegral::TriWork']]],
+  ['verbose_5fquality_5fstats_2',['verbose_quality_stats',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html#ab4e07d636f18f85be3bd7f0f238bfc96',1,'wmtk::components::simwild::Parameters']]],
+  ['vol_3',['vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a275b8b745c414139d057e9bcd72960d7',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]]
 ];

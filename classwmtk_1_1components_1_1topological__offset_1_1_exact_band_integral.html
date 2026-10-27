@@ -141,6 +141,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> (const st
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value_grad_hess</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, int kv, double delta, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> &amp;keep) const</td></tr>
 <tr class="memdesc:adf788c772719dca0a894221eef61e7aa"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a>, t's partition read from or written to <code>keep</code> (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html" title="One cell&#39;s partition, kept by the caller between value() and value_grad_hess() of that cell: each par...">Partition</a>). <br /></td></tr>
 <tr class="separator:adf788c772719dca0a894221eef61e7aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab798f2aa170c5bebf2d8182dd9b05627" id="r_ab798f2aa170c5bebf2d8182dd9b05627"><td class="memItemLeft" align="right" valign="top"><a id="ab798f2aa170c5bebf2d8182dd9b05627" name="ab798f2aa170c5bebf2d8182dd9b05627"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>grad_hess</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, int kv, double delta, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> &amp;keep) const</td></tr>
+<tr class="memdesc:ab798f2aa170c5bebf2d8182dd9b05627"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a>'s gradient and Hessian alone, t's partition read from or written to <code>keep</code>: J's own integration over the elementary pieces is skipped (the smoother reads the value from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> and only the derivatives from here &ndash; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html#a328cb908a6bca622f98f605b5263f448" title="need: 0 value, 1 + gradient, 2 + Hessian.">BandVolumeEnergy3D::eval()</a>). The elementary pieces themselves are read from <code>keep</code> when a <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a> call with <code>keep</code> captured them for this t (bit for bit) and delta, else built as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a> builds them; grad and hess equal <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a>'s bit for bit either way (exact-band-grad-hess-cache). <br /></td></tr>
+<tr class="separator:ab798f2aa170c5bebf2d8182dd9b05627"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91cb66444b13a130bf1bba226a9147d4" id="r_a91cb66444b13a130bf1bba226a9147d4"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a91cb66444b13a130bf1bba226a9147d4">max_distance</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html">MaxInfo</a> *info=nullptr) const</td></tr>
 <tr class="memdesc:a91cb66444b13a130bf1bba226a9147d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">max over the triangle f of d (exact_mesh.max_on_triangle), the settle loop's max test. f is cut by the candidates' local regions as a cell is (the same search, region tests, splits, tolerances and scale rule; f a planar convex ring in place of a polytope), and d is convex wherever one member's distance is d, so on each piece the max is at a vertex of the piece:  <br /></td></tr>
 <tr class="separator:a91cb66444b13a130bf1bba226a9147d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -201,10 +205,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (const
 double&#160;</td><td class="memItemRight" valign="bottom"><b>value_tabled</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, double delta, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> *keep) const</td></tr>
 <tr class="memdesc:a08be7c4f6d6f3e9bf600c937a4b3afc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">value(t, delta, stats, keep) through the value table (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#abf4981186538458f90cd7818e0c766ea" title="J(t) = int_t (d - delta) dV for the cell with corners t (either orientation), restricted to the offse...">value()</a>). <br /></td></tr>
 <tr class="separator:a08be7c4f6d6f3e9bf600c937a4b3afc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57432f35976fe830e3d09c56d2cb9951" id="r_a57432f35976fe830e3d09c56d2cb9951"><td class="memItemLeft" align="right" valign="top"><a id="a57432f35976fe830e3d09c56d2cb9951" name="a57432f35976fe830e3d09c56d2cb9951"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>value_grad_hess_impl</b> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, int kv, double delta, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> *keep) const</td></tr>
-<tr class="memdesc:a57432f35976fe830e3d09c56d2cb9951"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a> with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#ae076c7a7c76df17b226b25229f3034b7">cell_partition()</a>'s <code>keep</code>. <br /></td></tr>
-<tr class="separator:a57432f35976fe830e3d09c56d2cb9951"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b4a4f1568f140c3434c044c115f4ef3" id="r_a6b4a4f1568f140c3434c044c115f4ef3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a6b4a4f1568f140c3434c044c115f4ef3">value_grad_hess_impl</a> (const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t, int kv, double delta, Eigen::Vector3d &amp;grad, Eigen::Matrix3d &amp;hess, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *stats, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> *keep, bool want_value) const</td></tr>
+<tr class="separator:a6b4a4f1568f140c3434c044c115f4ef3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b07385c91e8589e939638845e9bdefc" id="r_a8b07385c91e8589e939638845e9bdefc"><td class="memItemLeft" align="right" valign="top"><a id="a8b07385c91e8589e939638845e9bdefc" name="a8b07385c91e8589e939638845e9bdefc"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>tri_partition</b> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;f, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_tri_work.html">TriWork</a> &amp;w) const</td></tr>
 <tr class="memdesc:a8b07385c91e8589e939638845e9bdefc"><td class="mdescLeft">&#160;</td><td class="mdescRight">_tri_partition: the same for the face f, its pieces planar rings. <br /></td></tr>
@@ -885,6 +887,79 @@ static constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><b>kV
 <li>rule-(a) pieces: it is the derivative of the BOUND (the chosen member's integral over the piece). The bound is not smooth where the chosen member switches; the gradient there is one member's.</li>
 <li>a kink of d lying on a face of t through x (a cell face on an input plane, or on a bisector): J is one-sided C^2; the Hessian is the limit for x moving INTO t (the trace of grad d from inside t). With the offset side: each kept piece integrates d - delta, the side planes being fixed faces of the pieces whose cut edges keep their terms (the integrand jumps to 0 across them); a disagreeing rule-(a) part D takes the side of the member nearest at its centroid (class doc): dropped, or a rule-(a) part over the members that put it on the offset side. The side can switch where that member does, so J is not smooth there. Flat cells give J = 0 and zero derivatives. </li>
 </ul>
+
+</div>
+</div>
+<a id="a6b4a4f1568f140c3434c044c115f4ef3" name="a6b4a4f1568f140c3434c044c115f4ef3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b4a4f1568f140c3434c044c115f4ef3">&#9670;&#160;</a></span>value_grad_hess_impl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::ExactBandIntegral::value_grad_hess_impl </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>t</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>kv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>grad</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Matrix3d &amp;&#160;</td>
+          <td class="paramname"><em>hess</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html">Stats</a> *&#160;</td>
+          <td class="paramname"><em>stats</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_partition.html">Partition</a> *&#160;</td>
+          <td class="paramname"><em>keep</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>want_value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#acdee7bc79534d307bca77bd75427988b" title="J and its exact gradient and Hessian with respect to corner kv of t, the other three fixed (exact_mes...">value_grad_hess()</a> with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#ae076c7a7c76df17b226b25229f3034b7">cell_partition()</a>'s <code>keep</code>; <code>want_value</code> false (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#ab798f2aa170c5bebf2d8182dd9b05627" title="value_grad_hess()&#39;s gradient and Hessian alone, t&#39;s partition read from or written to keep: J&#39;s own i...">grad_hess()</a>) skips J's integration over the elementary pieces and returns NaN. </p>
 
 </div>
 </div>

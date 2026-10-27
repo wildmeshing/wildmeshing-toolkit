@@ -124,13 +124,21 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_face_split_cache.html">FaceSplitCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_fold_census.html">FoldCensus</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_front_solve_record.html">FrontSolveRecord</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">DEBUG_output only: every front solve since the last debug frame, so the frames show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and front_newton_status, see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8a159665d16fd299141aac873626e5b3" title="&lt;path&gt;{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)).">write_vtu()</a>).  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_front_solve_record.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html">GradientSplit</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html">MeshSnapshot</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An in-memory image of the mesh, to put it back as it was (for growth_mode "smart": the revert after a failed attempt). Taken on a consolidated mesh: the tets in tid order, each as <a class="el" href="classwmtk_1_1_tet_mesh.html#a448bea95db3c98b8bae56c9c2edc0589">oriented_tet_vids()</a> gives it &ndash; the order the face and edge slots (4 tid + j, 6 tid + j) are keyed on &ndash; and copies of every per-element collection over the live slots: the vertex group (m_vertex_attribute, m_vertex_extra), the face group (m_face_attribute, m_face_extra), the edge group (m_edge_attribute) and m_tet_attribute.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_opt_split_cache.html">OptSplitCache</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html">SmartGrowthSchedule</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">growth_mode "smart": which target to try next from the last converged distance, and what an attempt's result means. Pure, so it is unit-tested apart from the mesh.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html">SmoothTrace</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">What smoothing did with each class of vertex, per pass. Same fields as 2D.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#details">More...</a><br /></td></tr>
@@ -303,6 +311,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>release_final_envelop
 <tr class="memitem:a79a6fa9c595ff7d08a2c5c0e8a9cfca5" id="r_a79a6fa9c595ff7d08a2c5c0e8a9cfca5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a79a6fa9c595ff7d08a2c5c0e8a9cfca5">optimize_construction_pass</a> ()</td></tr>
 <tr class="memdesc:a79a6fa9c595ff7d08a2c5c0e8a9cfca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">optimize_construction: TetWild on the mesh as constructed, before the loop (and before an init_optimize loop). Called by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> after the "construction" frame.  <br /></td></tr>
 <tr class="separator:a79a6fa9c595ff7d08a2c5c0e8a9cfca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbc3210b0e58566a290326f813934f98" id="r_adbc3210b0e58566a290326f813934f98"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html">MeshSnapshot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adbc3210b0e58566a290326f813934f98">take_snapshot</a> ()</td></tr>
+<tr class="separator:adbc3210b0e58566a290326f813934f98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e5b13291495d504ab4abed0b6e2f910" id="r_a2e5b13291495d504ab4abed0b6e2f910"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2e5b13291495d504ab4abed0b6e2f910">restore_snapshot</a> (const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html">MeshSnapshot</a> &amp;s)</td></tr>
+<tr class="separator:a2e5b13291495d504ab4abed0b6e2f910"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24ba67817e76990b7852d08900c4781f" id="r_a24ba67817e76990b7852d08900c4781f"><td class="memItemLeft" align="right" valign="top"><a id="a24ba67817e76990b7852d08900c4781f" name="a24ba67817e76990b7852d08900c4781f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>tetwild_rules</b> () const</td></tr>
 <tr class="separator:a24ba67817e76990b7852d08900c4781f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -311,8 +323,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>build_offset_envelope
 <tr class="separator:a75e80cdadda4b08c84c1dbec23d87f89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff3069aa0b3605ea1fc8497181856040" id="r_aff3069aa0b3605ea1fc8497181856040"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aff3069aa0b3605ea1fc8497181856040">check_no_vertex_on_both_surfaces</a> (const char *when) const</td></tr>
 <tr class="separator:aff3069aa0b3605ea1fc8497181856040"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad87c269a21cce23a95acfed3f7a99c6d" id="r_ad87c269a21cce23a95acfed3f7a99c6d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad87c269a21cce23a95acfed3f7a99c6d">optimize_offset_loop</a> (bool final_stage=true, bool refine=true, const std::string &amp;label=std::string())</td></tr>
-<tr class="separator:ad87c269a21cce23a95acfed3f7a99c6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa07a07d09c41de21059ff59482bbd195" id="r_aa07a07d09c41de21059ff59482bbd195"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa07a07d09c41de21059ff59482bbd195">optimize_offset_loop</a> (bool final_stage=true, bool refine=true, const std::string &amp;label=std::string(), int max_turns=0, bool fold_free=false)</td></tr>
+<tr class="separator:aa07a07d09c41de21059ff59482bbd195"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af148cd03c1af02e9c3033a3de4a2bd38" id="r_af148cd03c1af02e9c3033a3de4a2bd38"><td class="memItemLeft" align="right" valign="top"><a id="af148cd03c1af02e9c3033a3de4a2bd38" name="af148cd03c1af02e9c3033a3de4a2bd38"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>loop_group</b> (const std::array&lt; int, 4 &gt; &amp;ops, const std::string &amp;where)</td></tr>
 <tr class="memdesc:af148cd03c1af02e9c3033a3de4a2bd38"><td class="mdescLeft">&#160;</td><td class="mdescRight">The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's operation passes in one call and then each of its ops[3] smoothing passes in a call of its own, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb" title="EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop start...">front_pocket_split()</a> right before each: the engine's group runs its operation pass straight into smooth_all_vertices(k), and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1e0bc42537f6630895da69bd0718d575" title="The engine&#39;s end-of-pass hook (TetOptimizerMesh::smooth_all_vertices() calls it after EVERY smoothing...">smoothing_pass_done()</a> runs before a pass's debug frame, so neither offers the point before a smoothing pass. Off: local_operations(ops). <code>where</code> names the group in the [pocket split] lines. <br /></td></tr>
@@ -323,8 +335,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>loop_group</b> (const
 <tr class="memitem:aa44c3073e240b9e46d0c6719dc90fff9" id="r_aa44c3073e240b9e46d0c6719dc90fff9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa44c3073e240b9e46d0c6719dc90fff9">label_cleanup</a> (const std::string &amp;where)</td></tr>
 <tr class="memdesc:aa44c3073e240b9e46d0c6719dc90fff9"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_label_cleanup (see the spec). The one exception to labels being fixed after construction: a cell on the band / non-band interface whose own geometry puts it on the other side of the level set takes the other label, where the flip keeps the topology of both. Invariant: the number of connected components (face adjacency) of the band and of the non-band region is the same before and after; a change throws.  <br /></td></tr>
 <tr class="separator:aa44c3073e240b9e46d0c6719dc90fff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a693ea2846653a10cde4195612b1313a8" id="r_a693ea2846653a10cde4195612b1313a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a693ea2846653a10cde4195612b1313a8">incremental_growth</a> ()</td></tr>
-<tr class="separator:a693ea2846653a10cde4195612b1313a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b59978c08fcb14fa0185fe1d126c785" id="r_a3b59978c08fcb14fa0185fe1d126c785"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3b59978c08fcb14fa0185fe1d126c785">linear_growth</a> ()</td></tr>
+<tr class="separator:a3b59978c08fcb14fa0185fe1d126c785"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e063a55735b56f5586de9aefad248f8" id="r_a6e063a55735b56f5586de9aefad248f8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e063a55735b56f5586de9aefad248f8">smart_growth</a> ()</td></tr>
+<tr class="separator:a6e063a55735b56f5586de9aefad248f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4d703ca47cfdf9cea91965162ffd39d" id="r_af4d703ca47cfdf9cea91965162ffd39d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af4d703ca47cfdf9cea91965162ffd39d">front_gradient_linf</a> ()</td></tr>
 <tr class="separator:af4d703ca47cfdf9cea91965162ffd39d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee2a4afab49ab3856b0f26d3d91121c2" id="r_aee2a4afab49ab3856b0f26d3d91121c2"><td class="memItemLeft" align="right" valign="top"><a id="aee2a4afab49ab3856b0f26d3d91121c2" name="aee2a4afab49ab3856b0f26d3d91121c2"></a>
@@ -445,6 +459,9 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple
 <tr class="separator:a530ac37963ebd7ac130a9523e225dcf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62c546db5656ffb2f8d2970d36821572" id="r_a62c546db5656ffb2f8d2970d36821572"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a62c546db5656ffb2f8d2970d36821572">vertex_has_live_offset_face</a> (size_t vid) const</td></tr>
 <tr class="separator:a62c546db5656ffb2f8d2970d36821572"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90633035f35aa0cdf33d5a0d555db5fc" id="r_a90633035f35aa0cdf33d5a0d555db5fc"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a90633035f35aa0cdf33d5a0d555db5fc"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90633035f35aa0cdf33d5a0d555db5fc">for_each_live_offset_face_at</a> (size_t vid, F &amp;&amp;fn) const</td></tr>
+<tr class="separator:a90633035f35aa0cdf33d5a0d555db5fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fa5b535a034324dd2e4c2d751ed7f1f" id="r_a9fa5b535a034324dd2e4c2d751ed7f1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9fa5b535a034324dd2e4c2d751ed7f1f">refresh_offset_membership</a> (size_t vid)</td></tr>
 <tr class="memdesc:a9fa5b535a034324dd2e4c2d751ed7f1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Re-derive m_is_on_offset for one vertex from the cell labels, exactly.  <br /></td></tr>
 <tr class="separator:a9fa5b535a034324dd2e4c2d751ed7f1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -458,10 +475,29 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple
 double&#160;</td><td class="memItemRight" valign="bottom"><b>front_face_field_angle</b> (size_t a, size_t b, size_t c) const</td></tr>
 <tr class="memdesc:a6b88a5bd6272a6dcd46a3d2f360c4342"><td class="mdescLeft">&#160;</td><td class="mdescRight">The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal, oriented out of its band cell (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a56df44b0411a6a6ceb947294aa7ee9c3" title="The band cell of front face (a, b, c), -1 if neither side is band.">front_face_band_cell()</a>; away from the cell's fourth corner), and the field's unit normal at its centroid, the gradient of the distance d to the input complex (m_input_complex_envelope's nearest primitive). 0 where the face faces along the field, 180 where it faces back toward the input. NaN where it cannot be measured: no band cell, a degenerate face, no input envelope yet, or a zero gradient. The face is a foldover when the angle exceeds foldover_angle (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1b4e2e7b2b10757af5c6e6ac5aa80d42" title="front_face_field_angle() &gt; foldover_angle; an unmeasurable face is not a foldover.">front_face_is_foldover()</a>). Debug frames write both per face on the _off file; the end of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> counts the folded faces. The 2D code still labels vertices (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html" title="The offset&#39;s 2D mesh, on the shared 2D optimizer.">TopoOffsetTriMesh</a>). <br /></td></tr>
 <tr class="separator:a6b88a5bd6272a6dcd46a3d2f360c4342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa13ff3e40c66f4eb09bca78706034e4a" id="r_aa13ff3e40c66f4eb09bca78706034e4a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa13ff3e40c66f4eb09bca78706034e4a">front_face_out_normal</a> (size_t a, size_t b, size_t c, Vector3d &amp;n) const</td></tr>
+<tr class="separator:aa13ff3e40c66f4eb09bca78706034e4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3a5ebd86853d7ea235508023d4f470b" id="r_aa3a5ebd86853d7ea235508023d4f470b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa3a5ebd86853d7ea235508023d4f470b">front_face_out_normal_in</a> (size_t a, size_t b, size_t c, size_t band_tid, Vector3d &amp;n) const</td></tr>
+<tr class="separator:aa3a5ebd86853d7ea235508023d4f470b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4a3729f62a066460389efba597675c4" id="r_ad4a3729f62a066460389efba597675c4"><td class="memItemLeft" align="right" valign="top"><a id="ad4a3729f62a066460389efba597675c4" name="ad4a3729f62a066460389efba597675c4"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>front_face_field_angle_in</b> (size_t a, size_t b, size_t c, size_t band_tid) const</td></tr>
+<tr class="memdesc:ad4a3729f62a066460389efba597675c4"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">front_face_field_angle()</a> with the face's band cell given (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa3a5ebd86853d7ea235508023d4f470b">front_face_out_normal_in()</a>). <br /></td></tr>
+<tr class="separator:ad4a3729f62a066460389efba597675c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5243709e5e848e5a386fbecde73c10fe" id="r_a5243709e5e848e5a386fbecde73c10fe"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5243709e5e848e5a386fbecde73c10fe">front_face_angle_to_field</a> (size_t a, size_t b, size_t c, const Vector3d &amp;n) const</td></tr>
+<tr class="separator:a5243709e5e848e5a386fbecde73c10fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b4e2e7b2b10757af5c6e6ac5aa80d42" id="r_a1b4e2e7b2b10757af5c6e6ac5aa80d42"><td class="memItemLeft" align="right" valign="top"><a id="a1b4e2e7b2b10757af5c6e6ac5aa80d42" name="a1b4e2e7b2b10757af5c6e6ac5aa80d42"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_face_is_foldover</b> (size_t a, size_t b, size_t c) const</td></tr>
 <tr class="memdesc:a1b4e2e7b2b10757af5c6e6ac5aa80d42"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">front_face_field_angle()</a> &gt; foldover_angle; an unmeasurable face is not a foldover. <br /></td></tr>
 <tr class="separator:a1b4e2e7b2b10757af5c6e6ac5aa80d42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b7977331b10702a96dae0cdbf6d3751" id="r_a9b7977331b10702a96dae0cdbf6d3751"><td class="memItemLeft" align="right" valign="top"><a id="a9b7977331b10702a96dae0cdbf6d3751" name="a9b7977331b10702a96dae0cdbf6d3751"></a>
+<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_fold_census.html">FoldCensus</a>&#160;</td><td class="memItemRight" valign="bottom"><b>fold_census</b> () const</td></tr>
+<tr class="separator:a9b7977331b10702a96dae0cdbf6d3751"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8092931adbc52fc376b06a52630c9c3e" id="r_a8092931adbc52fc376b06a52630c9c3e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8092931adbc52fc376b06a52630c9c3e">fold_reject_active</a> () const</td></tr>
+<tr class="separator:a8092931adbc52fc376b06a52630c9c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a623723e73e0904c8bd374e203336e4bc" id="r_a623723e73e0904c8bd374e203336e4bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a623723e73e0904c8bd374e203336e4bc">folded_front_faces_at</a> (size_t vid, std::set&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;out) const</td></tr>
+<tr class="separator:a623723e73e0904c8bd374e203336e4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe87920d9aadf9335b7265f7f1359677" id="r_afe87920d9aadf9335b7265f7f1359677"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afe87920d9aadf9335b7265f7f1359677">face_folded_in</a> (size_t a, size_t b, size_t c, const std::vector&lt; size_t &gt; &amp;cells) const</td></tr>
+<tr class="separator:afe87920d9aadf9335b7265f7f1359677"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad072ca2d141855d862532fe59c850c7f" id="r_ad072ca2d141855d862532fe59c850c7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad072ca2d141855d862532fe59c850c7f">wait_debug_frame_write</a> ()</td></tr>
 <tr class="separator:ad072ca2d141855d862532fe59c850c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91ebfdfa71c00979cbb6f9b92bf0aca9" id="r_a91ebfdfa71c00979cbb6f9b92bf0aca9"><td class="memItemLeft" align="right" valign="top"><a id="a91ebfdfa71c00979cbb6f9b92bf0aca9" name="a91ebfdfa71c00979cbb6f9b92bf0aca9"></a>
@@ -1475,6 +1511,10 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capaci
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a28506df15775ebd0882007295a5cf3f3" id="r_a28506df15775ebd0882007295a5cf3f3"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a28506df15775ebd0882007295a5cf3f3">growth_stage_target</a> (double d0, double delta, int k, int n)</td></tr>
 <tr class="separator:a28506df15775ebd0882007295a5cf3f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad65dba69fd2a45b26241d1933f605cd" id="r_aad65dba69fd2a45b26241d1933f605cd"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aad65dba69fd2a45b26241d1933f605cd">band_side_dihedral</a> (const Vector3d &amp;n1, const Vector3d &amp;n2, const Vector3d &amp;t)</td></tr>
+<tr class="separator:aad65dba69fd2a45b26241d1933f605cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d74feb5f9cf8514364a60ee6334a12d" id="r_a8d74feb5f9cf8514364a60ee6334a12d"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8d74feb5f9cf8514364a60ee6334a12d">dihedral_is_foldover</a> (const double dihedral, const double angle)</td></tr>
+<tr class="separator:a8d74feb5f9cf8514364a60ee6334a12d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae423d5b6274facd94f2d21ababf4bd3a" id="r_ae423d5b6274facd94f2d21ababf4bd3a"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae423d5b6274facd94f2d21ababf4bd3a">write_debug_pvd</a> (const std::string &amp;out, const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_debug_timeline.html">DebugTimeline</a> &amp;timeline)</td></tr>
 <tr class="separator:ae423d5b6274facd94f2d21ababf4bd3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4889554a6f2c572a8c6e585ab05de02f" id="r_a4889554a6f2c572a8c6e585ab05de02f"><td class="memItemLeft" align="right" valign="top">static bool &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4889554a6f2c572a8c6e585ab05de02f">split_off_longest</a> ()</td></tr>
@@ -1653,6 +1693,19 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <tr class="separator:adbe772260a42d885f79d3287df4597b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb730043c384f9a4d49c0ac1907b39dc" id="r_afb730043c384f9a4d49c0ac1907b39dc"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afb730043c384f9a4d49c0ac1907b39dc">m_offset_face_invalid_tuple</a> {0}</td></tr>
 <tr class="separator:afb730043c384f9a4d49c0ac1907b39dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad85c5bd4cdc35c38a3a2acaf20a95b11" id="r_ad85c5bd4cdc35c38a3a2acaf20a95b11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad85c5bd4cdc35c38a3a2acaf20a95b11">m_collapse_folds_before</a> {-1}</td></tr>
+<tr class="separator:ad85c5bd4cdc35c38a3a2acaf20a95b11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a534505c781a089934a411274490e3d35" id="r_a534505c781a089934a411274490e3d35"><td class="memItemLeft" align="right" valign="top"><a id="a534505c781a089934a411274490e3d35" name="a534505c781a089934a411274490e3d35"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_folds_before</b> {-1}</td></tr>
+<tr class="separator:a534505c781a089934a411274490e3d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81f24ee83e6babe256e5d6580f0bd69f" id="r_a81f24ee83e6babe256e5d6580f0bd69f"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a81f24ee83e6babe256e5d6580f0bd69f">m_fold_reject_collapse</a> {0}</td></tr>
+<tr class="separator:a81f24ee83e6babe256e5d6580f0bd69f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a120f2970d37e9fd19f3faad0c4cbe3e3" id="r_a120f2970d37e9fd19f3faad0c4cbe3e3"><td class="memItemLeft" align="right" valign="top"><a id="a120f2970d37e9fd19f3faad0c4cbe3e3" name="a120f2970d37e9fd19f3faad0c4cbe3e3"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_fold_reject_swap</b> {0}</td></tr>
+<tr class="separator:a120f2970d37e9fd19f3faad0c4cbe3e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad722d5e5097c8f489221f67d1a085da5" id="r_ad722d5e5097c8f489221f67d1a085da5"><td class="memItemLeft" align="right" valign="top"><a id="ad722d5e5097c8f489221f67d1a085da5" name="ad722d5e5097c8f489221f67d1a085da5"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_fold_reject_smooth</b> {0}</td></tr>
+<tr class="separator:ad722d5e5097c8f489221f67d1a085da5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6d1818dc1ed818b8f4d1f3d3b44e080" id="r_ae6d1818dc1ed818b8f4d1f3d3b44e080"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; double, 8 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6d1818dc1ed818b8f4d1f3d3b44e080">optimization_metrics</a></td></tr>
 <tr class="separator:ae6d1818dc1ed818b8f4d1f3d3b44e080"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5b402b0b0e824dde7496431edb018c4" id="r_af5b402b0b0e824dde7496431edb018c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af5b402b0b0e824dde7496431edb018c4">m_round</a> = 0</td></tr>
@@ -2641,6 +2694,49 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="aad65dba69fd2a45b26241d1933f605cd" name="aad65dba69fd2a45b26241d1933f605cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad65dba69fd2a45b26241d1933f605cd">&#9670;&#160;</a></span>band_side_dihedral()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static double wmtk::components::topological_offset::TopoOffsetTetMesh::band_side_dihedral </td>
+          <td>(</td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>t</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The dihedral angle in degrees, in [0, 360), across an offset-surface edge between two faces with unit normals n1, n2 out of the band, measured on the band side: 180 flat, below 180 where the front bends away from the band (convex seen from the offset side), toward 0 or toward 360 as the two faces fold flat onto each other one way or the other. <code>t</code> is the edge's unit direction as the first face runs it, its corners counterclockwise seen from the side n1 points to. </p>
+
+</div>
+</div>
 <a id="a5268efd474e7348e2ee975ea1d1a4504" name="a5268efd474e7348e2ee975ea1d1a4504"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5268efd474e7348e2ee975ea1d1a4504">&#9670;&#160;</a></span>band_term_cancels()</h2>
 
@@ -3468,6 +3564,43 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="a8d74feb5f9cf8514364a60ee6334a12d" name="a8d74feb5f9cf8514364a60ee6334a12d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d74feb5f9cf8514364a60ee6334a12d">&#9670;&#160;</a></span>dihedral_is_foldover()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool wmtk::components::topological_offset::TopoOffsetTetMesh::dihedral_is_foldover </td>
+          <td>(</td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>dihedral</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>angle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>foldover_angle's dihedral test: the two faces close to within <code>angle</code> degrees of each other, either way &ndash; a band-side dihedral (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aad65dba69fd2a45b26241d1933f605cd">band_side_dihedral()</a>) below <code>angle</code> or above 360 - <code>angle</code>. The debug frames' offset_foldover_dihedral. </p>
+
+</div>
+</div>
 <a id="abfa0b2785706f00f3b2364ec4221e75c" name="abfa0b2785706f00f3b2364ec4221e75c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abfa0b2785706f00f3b2364ec4221e75c">&#9670;&#160;</a></span>edge_label_capture()</h2>
 
@@ -3543,6 +3676,47 @@ template&lt;typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it separates, and on a live offset face the root of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7e210293196d434ab4017518c7e8be71" title="THE ONE FACE FUNCTION: the mean over the face&#39;s stencil of r^2, r = relative_residual(q) / front_conv...">face_offset_term()</a> (the face's RMS relative error over its stencil in units of the bar; +inf if unmeasurable). &gt; 1 means it fails at least one. The coarsen-mode collapse accept reads it. </p>
+
+</div>
+</div>
+<a id="afe87920d9aadf9335b7265f7f1359677" name="afe87920d9aadf9335b7265f7f1359677"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe87920d9aadf9335b7265f7f1359677">&#9670;&#160;</a></span>face_folded_in()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::face_folded_in </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>cells</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether face (a, b, c) is folded, its band cell looked for among <code>cells</code> (a band cell holding it); false when none is. </p>
 
 </div>
 </div>
@@ -3712,6 +3886,61 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="a8092931adbc52fc376b06a52630c9c3e" name="a8092931adbc52fc376b06a52630c9c3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8092931adbc52fc376b06a52630c9c3e">&#9670;&#160;</a></span>fold_reject_active()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::fold_reject_active </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>growth_mode "individual_op_reject": a collapse, a flip of the offset surface or a smoothing move that raises the number of folded offset faces (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1b4e2e7b2b10757af5c6e6ac5aa80d42" title="front_face_field_angle() &gt; foldover_angle; an unmeasurable face is not a foldover.">front_face_is_foldover()</a>'s test) among the faces it changes is refused. In the loops only: not in a TetWild pass (the optimize_construction pass, the final pass), nor before the march. </p>
+
+</div>
+</div>
+<a id="a623723e73e0904c8bd374e203336e4bc" name="a623723e73e0904c8bd374e203336e4bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a623723e73e0904c8bd374e203336e4bc">&#9670;&#160;</a></span>folded_front_faces_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::folded_front_faces_at </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::set&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The folded live offset faces through vid (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">front_face_field_angle()</a> &gt; foldover_angle), as sorted vertex triples, added to <code>out</code>. Reads vid's own tet list and its cells only, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a62c546db5656ffb2f8d2970d36821572">vertex_has_live_offset_face()</a> does (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90633035f35aa0cdf33d5a0d555db5fc">for_each_live_offset_face_at()</a>), so the operation hooks may ask it: the passes' locks always claim vid's list. </p>
+
+</div>
+</div>
 <a id="ab29d66172c84dcca60e7ab8bc001338a" name="ab29d66172c84dcca60e7ab8bc001338a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab29d66172c84dcca60e7ab8bc001338a">&#9670;&#160;</a></span>for_each_face_sample()</h2>
 
@@ -3762,6 +3991,37 @@ template&lt;typename Visit &gt; </div>
 
 <p>The stencil_order stencil a triangle is sampled on, handed to <code>visit</code> one point at a time as (point, wa, wb, wc) with the barycentric weights that built it. Order 0 is the three corners alone; order k &gt;= 1 is the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement plus the centroid of each of its 4^(k-1) sub-triangles, so the counts are 3, 4, 10, 31, 109 for k = 0..4 (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a08b2c8a249c333c25eb5382f9ac07666">stencil_points_per_face()</a>). The corners are in it on purpose: the quantity sampled is a distance to the level set, which at a corner is that vertex's own placement error (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7e210293196d434ab4017518c7e8be71" title="THE ONE FACE FUNCTION: the mean over the face&#39;s stencil of r^2, r = relative_residual(q) / front_conv...">face_offset_term()</a>). </p>
 <p>Takes positions rather than a Tuple, so a face can be read at any positions. The 2D twin is for_each_offset_edge_sample(). </p>
+
+</div>
+</div>
+<a id="a90633035f35aa0cdf33d5a0d555db5fc" name="a90633035f35aa0cdf33d5a0d555db5fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90633035f35aa0cdf33d5a0d555db5fc">&#9670;&#160;</a></span>for_each_live_offset_face_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::for_each_live_offset_face_at </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&amp;&#160;</td>
+          <td class="paramname"><em>fn</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Every live offset face through vid, from vid's own tet list alone (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a62c546db5656ffb2f8d2970d36821572">vertex_has_live_offset_face()</a>): fn(sorted vertex triple, its band cell) for each, until fn returns true; returns whether one did. A band face on the domain boundary counts. </p>
 
 </div>
 </div>
@@ -3829,6 +4089,135 @@ template&lt;typename Visit &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>The offset term for a front vertex: the band term of its band cells (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6658bc7d749bb40ddddfdc4fc4348886">band_volume_energy_at()</a>), in an EnergySum, empty when it has none. Defined in FrontSmooth3d.cpp. </p>
+
+</div>
+</div>
+<a id="a5243709e5e848e5a386fbecde73c10fe" name="a5243709e5e848e5a386fbecde73c10fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5243709e5e848e5a386fbecde73c10fe">&#9670;&#160;</a></span>front_face_angle_to_field()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::front_face_angle_to_field </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The angle <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">front_face_field_angle()</a> reports, for face (a, b, c) with normal <code>n</code> out of the band: against grad d at the centroid; NaN without an input envelope or a gradient. </p>
+
+</div>
+</div>
+<a id="aa13ff3e40c66f4eb09bca78706034e4a" name="aa13ff3e40c66f4eb09bca78706034e4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa13ff3e40c66f4eb09bca78706034e4a">&#9670;&#160;</a></span>front_face_out_normal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::front_face_out_normal </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Front face (a, b, c)'s area normal (b - a) x (c - a) in <code>n</code>, turned out of its band cell (away from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a56df44b0411a6a6ceb947294aa7ee9c3" title="The band cell of front face (a, b, c), -1 if neither side is band.">front_face_band_cell()</a>'s fourth corner). False, <code>n</code> unusable, where it cannot be measured: a degenerate face, or no band cell. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">front_face_field_angle()</a>'s normal. </p>
+
+</div>
+</div>
+<a id="aa3a5ebd86853d7ea235508023d4f470b" name="aa3a5ebd86853d7ea235508023d4f470b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3a5ebd86853d7ea235508023d4f470b">&#9670;&#160;</a></span>front_face_out_normal_in()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::front_face_out_normal_in </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>band_tid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa13ff3e40c66f4eb09bca78706034e4a">front_face_out_normal()</a> with the face's band cell given: <code>band_tid</code>, a band cell holding the face (no lookup, so it reads that cell alone). </p>
 
 </div>
 </div>
@@ -4164,24 +4553,6 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="a693ea2846653a10cde4195612b1313a8" name="a693ea2846653a10cde4195612b1313a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a693ea2846653a10cde4195612b1313a8">&#9670;&#160;</a></span>incremental_growth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::incremental_growth </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL_incremental_growth: stages k = 0..N (N = incremental_growth_steps), stage k at growth_stage_target(m_growth_start, target_distance, k, N). Before each stage target_distance is set to its target and the field rebuilt on it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b09d70be55f32e4dd935084dbefafa3" title="Build the smooth offset potential from the extraction init_input_complex_bvh() kept.">init_offset_potential()</a>); stages before the last are optimize_offset_loop(false, true) to convergence, their frames led by g&lt;k&gt;; stage N is the ordinary loop. A stage before the last that does not converge stops the run there, target_distance and the field set back for the verdict. </p>
-
-</div>
-</div>
 <a id="a6b756946c3ded6d6e5c36dfe356ef97b" name="a6b756946c3ded6d6e5c36dfe356ef97b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6b756946c3ded6d6e5c36dfe356ef97b">&#9670;&#160;</a></span>init_from_image()</h2>
 
@@ -4414,6 +4785,24 @@ template&lt;typename Visit &gt; </div>
 
 <p>Tag the two tracked surfaces for the optimization phase. </p>
 <p>The offset surface is the faces across which the incident tet labels differ, so it falls out of the labelling and is recomputed here once. The 2D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab7a739e54ba112508dcdd6a00fee1ef8" title="Tag the two tracked surfaces for the optimization phase.">TopoOffsetTriMesh::label_offset_boundary()</a>. </p>
+
+</div>
+</div>
+<a id="a3b59978c08fcb14fa0185fe1d126c785" name="a3b59978c08fcb14fa0185fe1d126c785"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b59978c08fcb14fa0185fe1d126c785">&#9670;&#160;</a></span>linear_growth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::linear_growth </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>growth_mode "linear": stages k = 0..N (N = linear_growth_steps), stage k at growth_stage_target(m_growth_start, target_distance, k, N). Before each stage target_distance is set to its target and the field rebuilt on it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b09d70be55f32e4dd935084dbefafa3" title="Build the smooth offset potential from the extraction init_input_complex_bvh() kept.">init_offset_potential()</a>); stages before the last are optimize_offset_loop(false, true) to convergence, their frames led by g&lt;k&gt;; stage N is the ordinary loop. A stage before the last that does not converge stops the run there, target_distance and the field set back for the verdict. </p>
 
 </div>
 </div>
@@ -4818,12 +5207,12 @@ template&lt;typename Visit &gt; </div>
 </div><div class="memdoc">
 
 <p>optimize_construction: TetWild on the mesh as constructed, before the loop (and before an init_optimize loop). Called by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> after the "construction" frame. </p>
-<p>Every vertex's sizing scalar is set to 1 first, so the pass starts from the field at 1 everywhere. Then <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9be7cd698270bb94d9c7dc78835e2527">tetwild_pass()</a> with the offset surface held in an envelope of eps m_construction_distance / 2 &ndash; half the distance the march traced it to, d_0 under EXPERIMENTAL_incremental_growth (m_construction_envelope_eps, this pass only; the final pass keeps envelope_size) &ndash; and every other tracked surface in m_envelope, under TetWild's own rules (m_op_rules: no band term); then the loop's setup redone on its result (vertex order, plastic rests). The loop starts from the sizing field the pass leaves. </p>
+<p>Every vertex's sizing scalar is set to 1 first, so the pass starts from the field at 1 everywhere. Then <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9be7cd698270bb94d9c7dc78835e2527">tetwild_pass()</a> with the offset surface held in an envelope of eps m_construction_distance / 2 &ndash; half the distance the march traced it to, d_0 when growth_mode applies (m_construction_envelope_eps, this pass only; the final pass keeps envelope_size) &ndash; and every other tracked surface in m_envelope, under TetWild's own rules (m_op_rules: no band term); then the loop's setup redone on its result (vertex order, plastic rests). The loop starts from the sizing field the pass leaves. </p>
 
 </div>
 </div>
-<a id="ad87c269a21cce23a95acfed3f7a99c6d" name="ad87c269a21cce23a95acfed3f7a99c6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad87c269a21cce23a95acfed3f7a99c6d">&#9670;&#160;</a></span>optimize_offset_loop()</h2>
+<a id="aa07a07d09c41de21059ff59482bbd195" name="aa07a07d09c41de21059ff59482bbd195"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa07a07d09c41de21059ff59482bbd195">&#9670;&#160;</a></span>optimize_offset_loop()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4844,7 +5233,19 @@ template&lt;typename Visit &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>label</em> = <code>std::string()</code>&#160;</td>
+          <td class="paramname"><em>label</em> = <code>std::string()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>max_turns</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>fold_free</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -4853,7 +5254,7 @@ template&lt;typename Visit &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>TetWild's loop, the front placed inside its smoothing passes. <code>final_stage</code> false is the init_optimize loop: it returns on convergence without the final TetWild pass and without deciding the verdict. <code>refine</code> false skips the halving. <code>label</code> names the loop in its log. Returns whether the loop converged within max_rounds. </p>
+<p>TetWild's loop, the front placed inside its smoothing passes. <code>final_stage</code> false is the init_optimize loop: it returns on convergence without the final TetWild pass and without deciding the verdict. <code>refine</code> false skips the halving. <code>label</code> names the loop in its log. <code>max_turns</code> &gt; 0 caps the turns in place of max_rounds (growth_mode "smart"'s attempts). <code>fold_free</code>: a converged turn with any folded offset face (fold_census()) ends the loop as not converged, before the verdict and the final TetWild pass. Returns whether the loop converged (fold-free when asked) within its turns. </p>
 
 </div>
 </div>
@@ -5163,6 +5564,25 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
+<a id="a2e5b13291495d504ab4abed0b6e2f910" name="a2e5b13291495d504ab4abed0b6e2f910"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e5b13291495d504ab4abed0b6e2f910">&#9670;&#160;</a></span>restore_snapshot()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::restore_snapshot </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html">MeshSnapshot</a> &amp;&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Put the mesh back as <code>s</code> holds it: the connectivity rebuilt (init_with_isolated_vertices(), which clears the old one and resizes every collection), the collections' live slots copied back, the band regions re-derived. Not restored: run counters, the debug-frame sequence. Between passes only. </p>
+
+</div>
+</div>
 <a id="add669da44095fb55b602043228aae787" name="add669da44095fb55b602043228aae787"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#add669da44095fb55b602043228aae787">&#9670;&#160;</a></span>ring_max_quality()</h2>
 
@@ -5310,6 +5730,24 @@ template&lt;typename Visit &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>Whether the simplex on the vertices <code>c</code> (2 or 3 of them) is in the input complex, from the cells' labels: in a cell of the complex, or, for offset_in, on a domain-boundary face of a body cell. Single-body offset_in or offset_out only, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abcf0c2ec47227d1405f268a641ceb9a3">repulsion_smoothing()</a> checks. </p>
+
+</div>
+</div>
+<a id="a6e063a55735b56f5586de9aefad248f8" name="a6e063a55735b56f5586de9aefad248f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e063a55735b56f5586de9aefad248f8">&#9670;&#160;</a></span>smart_growth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::smart_growth </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>growth_mode "smart" (see the spec doc): the loop at d_0 up to max_rounds turns (throws when it does not converge), then attempts of smart_growth_attempts turns each, as <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smart_growth_schedule.html" title="growth_mode &quot;smart&quot;: which target to try next from the last converged distance, and what an attempt&#39;s...">SmartGrowthSchedule</a> picks their targets, each judged converged and fold-free (optimize_offset_loop(..., fold_free true)). The mesh is stored (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adbc3210b0e58566a290326f813934f98">take_snapshot()</a>) after level 0 and after every success, and put back (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2e5b13291495d504ab4abed0b6e2f910">restore_snapshot()</a>) after every failure; SmartGrowthSchedule::Next::GiveUp throws. The attempt at target_distance is the final stage: on success it runs the final TetWild pass and decides the verdict. </p>
 
 </div>
 </div>
@@ -6531,6 +6969,24 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
+<a id="adbc3210b0e58566a290326f813934f98" name="adbc3210b0e58566a290326f813934f98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbc3210b0e58566a290326f813934f98">&#9670;&#160;</a></span>take_snapshot()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html">TopoOffsetTetMesh::MeshSnapshot</a> wmtk::components::topological_offset::TopoOffsetTetMesh::take_snapshot </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Consolidate, record the image, and rebuild the mesh from it at once (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2e5b13291495d504ab4abed0b6e2f910">restore_snapshot()</a>): the mesh then IS what a restore gives, so every attempt from the image &ndash; the first, and each one after a revert &ndash; starts from identical storage (the rebuild orders each vertex's tet fan by tid; consolidation keeps the old order). Refused with feature-edge or feature-point tracking on: their collections are not in the image. Between passes only. </p>
+
+</div>
+</div>
 <a id="a7cf44fe4ab8f1ac651b98ec63b8b961d" name="a7cf44fe4ab8f1ac651b98ec63b8b961d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7cf44fe4ab8f1ac651b98ec63b8b961d">&#9670;&#160;</a></span>tet_energy()</h2>
 
@@ -7232,6 +7688,29 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="ad85c5bd4cdc35c38a3a2acaf20a95b11" name="ad85c5bd4cdc35c38a3a2acaf20a95b11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad85c5bd4cdc35c38a3a2acaf20a95b11">&#9670;&#160;</a></span>m_collapse_folds_before</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_collapse_folds_before {-1}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>growth_mode "individual_op_reject": the folded faces the collapse / offset-surface flip in flight saw before it (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a623723e73e0904c8bd374e203336e4bc">folded_front_faces_at()</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afe87920d9aadf9335b7265f7f1359677">face_folded_in()</a>), per thread; -1 for no rule. </p>
+
+</div>
+</div>
 <a id="a2c62473ffa041f9feb72c414b380f01b" name="a2c62473ffa041f9feb72c414b380f01b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2c62473ffa041f9feb72c414b380f01b">&#9670;&#160;</a></span>m_collapse_survivor_sizing</h2>
 
@@ -7413,6 +7892,29 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="a81f24ee83e6babe256e5d6580f0bd69f" name="a81f24ee83e6babe256e5d6580f0bd69f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81f24ee83e6babe256e5d6580f0bd69f">&#9670;&#160;</a></span>m_fold_reject_collapse</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_fold_reject_collapse {0}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Operations refused for raising the folded faces (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8092931adbc52fc376b06a52630c9c3e">fold_reject_active()</a>), per operation group; logged as [op reject]. </p>
+
+</div>
+</div>
 <a id="a0afbabe05b343fedfe00de75764269fc" name="a0afbabe05b343fedfe00de75764269fc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0afbabe05b343fedfe00de75764269fc">&#9670;&#160;</a></span>m_frame_prefix</h2>
 
@@ -7424,7 +7926,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Leads every debug frame label: i during the init_optimize loop, g&lt;k&gt; during EXPERIMENTAL_incremental_growth's stage k &lt; N, empty otherwise. </p>
+<p>Leads every debug frame label: i during the init_optimize loop, g&lt;k&gt; during growth_mode "linear"'s stage k &lt; N, s0 / s&lt;L&gt;a during growth_mode "smart"'s level 0 / level L's attempt A, empty otherwise. </p>
 
 </div>
 </div>
@@ -7454,7 +7956,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_incremental_growth: d_0, the distance the march traced the front to when that is below target_distance (m_construction_distance, half the maximum marchable distance). Set by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a> with the key on and optimize_offset true; 0 otherwise, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> then runs the loop once, at target_distance. </p>
+<p>growth_mode "linear" / "smart": d_0, the distance the march traced the front to when that is below target_distance (m_construction_distance, half the maximum marchable distance). Set by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a> with growth on and optimize_offset true; 0 otherwise, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> then runs the loop once, at target_distance. </p>
 
 </div>
 </div>
