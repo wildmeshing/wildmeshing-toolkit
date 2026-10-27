@@ -4410,6 +4410,7 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
 
 void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 {
+    if (!m_params.output_enabled) return;
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
     if (m_offset_potential) {

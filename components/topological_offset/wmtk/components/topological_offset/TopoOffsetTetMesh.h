@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <array>
 #include <atomic>
 #include <cmath>
@@ -2615,7 +2617,7 @@ public:
 
     void write_input_complex(const std::string& path);
     /// <path>{,_surf,_off,_edge}.vtu, now: write_vtu_frame(gather_vtu_frame(path)).
-    void write_vtu(const std::string& path);
+    void write_vtu(const std::string& path, MeshMap* output = nullptr);
     /**
      * @brief Everything write_vtu() writes, as arrays: the mesh is read once, by
      * gather_vtu_frame(), and write_vtu_frame() reads this and nothing else -- so a debug frame's
@@ -2643,7 +2645,7 @@ public:
     /// Does not change the mesh (the band-region map it re-derives is put back).
     VtuFrame gather_vtu_frame(const std::string& path);
     /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
-    static void write_vtu_frame(const VtuFrame& frame);
+    static void write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr);
     void write_msh_groups(const std::string& file);
     //// output stuff
 
