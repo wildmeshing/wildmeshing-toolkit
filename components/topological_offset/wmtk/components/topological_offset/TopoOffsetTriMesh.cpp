@@ -5,7 +5,6 @@
 #include <queue>
 #include <utility>
 #include <wmtk/io/DataWriter.hpp>
-#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 
@@ -2083,89 +2082,6 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
     writer->add_field("phi_residual_length", residual);
     writer->add_field("euclidean_distance", euclid);
     writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
-}
-
-
-void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
-{
-    if (!m_params.output_enabled) return;
-    logger().info("Write {}.msh", file);
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& faces = get_faces();
-
-    // set vertices
-    const auto& verts = get_vertices();
-    msh.add_face_vertices(verts.size(), [&](size_t k) {
-        auto i = verts[k].vid(*this);
-        Vector2d p2 = m_vertex_attribute[i].m_posf;
-        return Vector3d(p2(0), p2(1), 0);
-    });
-    // save_offset_correspondence: attached to the block just added, as MshData requires. Valid as
-    // written because the run stopped at the construction, which removes no vertex, so
-    // consolidate_mesh() above kept every id the field holds. As in 3D.
-    if (m_offset_params.save_offset_correspondence) {
-        msh.add_face_vertex_attribute<1>("corr_input_vid", [&](size_t k) {
-            return double(m_vertex_extra[verts[k].vid(*this)].m_corr_input_vid);
-        });
-    }
-
-    std::vector<Tuple> faces_with_tag;
-    faces_with_tag.reserve(faces.size());
-
-    auto msh_add_faces = [&]() {
-        msh.add_faces(faces_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tri_vids(faces_with_tag[k]);
-            std::array<size_t, 3> data;
-            for (int j = 0; j < 3; j++) {
-                data[j] = vs[j];
-            }
-            return data;
-        });
-    };
-
-    // add ambient (tag id=0). assumed that ambient does not overlap with anything
-    for (const Tuple& f : faces) {
-        size_t f_id = f.fid(*this);
-        if (m_face_attribute[f_id].tags.count(0) != 0) {
-            faces_with_tag.push_back(f);
-        }
-    }
-    msh_add_faces();
-    msh.add_physical_group("ambient");
-
-    // group for each tag
-    for (int64_t tag_img = 1; tag_img < m_tags_count; tag_img++) {
-        faces_with_tag.clear();
-        for (const Tuple& f : faces) {
-            size_t f_id = f.fid(*this);
-            if (m_face_attribute[f_id].tags.count(tag_img) != 0) {
-                faces_with_tag.push_back(f);
-            }
-        }
-
-        if (faces_with_tag.empty()) {
-            continue;
-        }
-
-        msh.add_empty_vertices(2);
-        msh_add_faces();
-
-        const std::string group_name = m_tag_id_to_name[tag_img];
-        msh.add_physical_group(group_name);
-    }
-
-    if (m_has_envelope) {
-        msh.add_edge_vertices(m_V_envelope.rows(), [this](size_t k) {
-            return Vector3d(m_V_envelope(k, 0), m_V_envelope(k, 1), 0);
-        });
-        msh.add_edges(m_F_envelope.rows(), [this](size_t k) { return m_F_envelope.row(k); });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    msh.save(file + ".msh", true);
 }
 
 

@@ -9,6 +9,7 @@
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Preallocation.hpp>
@@ -159,10 +160,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            if (component_io.memory())
-                topological_offset::collect_memory_output(mesh, component_io);
-            else
-                mesh.write_msh_groups(output_filename.string());
+            topological_offset::collect_memory_output(mesh, component_io);
+            if (!component_io.memory())
+                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
             return;
         }
 
@@ -356,10 +356,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        if (component_io.memory())
-            topological_offset::collect_memory_output(mesh, component_io);
-        else
-            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
@@ -395,10 +394,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            if (component_io.memory())
-                topological_offset::collect_memory_output(mesh, component_io);
-            else
-                mesh.write_msh_groups(output_filename.string());
+            topological_offset::collect_memory_output(mesh, component_io);
+            if (!component_io.memory())
+                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
             return;
         }
 
@@ -605,10 +603,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // mesh.write_msh(output_filename.string()); // write .msh
-        if (component_io.memory())
-            topological_offset::collect_memory_output(mesh, component_io);
-        else
-            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }

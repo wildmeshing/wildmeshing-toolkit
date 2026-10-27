@@ -2,7 +2,6 @@
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
-#include <wmtk/utils/io.hpp>
 #include "TopoOffsetTetMesh.h"
 
 // clang-format off
@@ -2871,93 +2870,6 @@ void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) con
     writer->add_field("phi_residual_length", residual);
     writer->add_field("euclidean_distance", euclid);
     writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
-}
-
-void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
-{
-    if (!m_params.output_enabled) return;
-    logger().info("Write {}.msh, {} tags", file, m_tags_count);
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& tets = get_tets();
-
-    std::vector<Tuple> tets_with_tag;
-    tets_with_tag.reserve(tets.size());
-
-    // add vertices
-    const auto& verts = get_vertices();
-    msh.add_tet_vertices(verts.size(), [&](size_t k) {
-        auto i = verts[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-    // save_offset_correspondence: attached to the block just added, as MshData requires. Valid as
-    // written because the run stopped at the construction, which removes no vertex, so
-    // consolidate_mesh() above kept every id the field holds. As in 2D.
-    if (m_offset_params.save_offset_correspondence) {
-        msh.add_tet_vertex_attribute<1>("corr_input_vid", [&](size_t k) {
-            return double(m_vertex_extra[verts[k].vid(*this)].m_corr_input_vid);
-        });
-    }
-
-    auto msh_add_tets = [&]() {
-        msh.add_tets(tets_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tet_vids(tets_with_tag[k]);
-            std::array<size_t, 4> data;
-            for (int j = 0; j < 4; j++) {
-                data[j] = vs[j];
-            }
-            return data;
-        });
-    };
-
-    // add ambient
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
-        if (m_tet_attribute[t_id].tag.count(0) != 0) {
-            tets_with_tag.push_back(t);
-        }
-    }
-    msh_add_tets();
-    msh.add_physical_group("ambient");
-
-    // group for each tag
-    for (int64_t tag_img = 1; tag_img < m_tags_count; tag_img++) {
-        tets_with_tag.clear();
-        for (const Tuple& t : tets) {
-            size_t t_id = t.tid(*this);
-            if (m_tet_attribute[t_id].tag.count(tag_img) != 0) {
-                tets_with_tag.push_back(t);
-            }
-        }
-
-        if (tets_with_tag.empty()) {
-            continue;
-        }
-
-        msh.add_empty_vertices(3);
-        msh_add_tets();
-
-        const std::string group_name = m_tag_id_to_name[tag_img];
-        msh.add_physical_group(group_name);
-    }
-
-    if (m_has_envelope) {
-        msh.add_face_vertices(m_V_envelope.rows(), [this](size_t k) {
-            return Vector3d(m_V_envelope.row(k));
-        });
-        msh.add_faces(m_F_envelope.rows(), [this](size_t k) {
-            const auto r = m_F_envelope.row(k);
-            return std::array<size_t, 3>{{size_t(r(0)), size_t(r(1)), size_t(r(2))}};
-        });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    // No node data unless save_offset_correspondence: the file has the same shape as simwild's
-    // output (node and element blocks per physical group, plus the retained envelope) and nothing
-    // else.
-    msh.save(file + ".msh", true);
 }
 
 } // namespace wmtk::components::topological_offset

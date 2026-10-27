@@ -2646,7 +2646,6 @@ public:
     VtuFrame gather_vtu_frame(const std::string& path);
     /// The files' part: paraviewo encodes and writes `frame`, nothing else is read.
     static void write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr);
-    void write_msh_groups(const std::string& file);
     //// output stuff
 
 private:

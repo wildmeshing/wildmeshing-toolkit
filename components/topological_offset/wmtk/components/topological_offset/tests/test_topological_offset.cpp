@@ -22,7 +22,9 @@
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
+#include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/components/topological_offset/topological_offset.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -2488,7 +2490,9 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
         std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_3d";
     mesh.construct_offset(out);
     REQUIRE(mesh.m_marching_midpoint_splits == 0);
-    mesh.write_msh_groups(out.string());
+    io::ComponentIO context;
+    collect_memory_output(mesh, context);
+    io::write_mesh(out.string() + ".msh", context.result.first.at("mesh"));
     check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 3, [&](const Vector3d& p) {
         return mesh.input_complex_distance(p);
     });
@@ -2684,7 +2688,9 @@ TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
         std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_2d";
     mesh.construct_offset(out);
     REQUIRE(mesh.m_marching_midpoint_splits == 0);
-    mesh.write_msh_groups(out.string());
+    io::ComponentIO context;
+    collect_memory_output(mesh, context);
+    io::write_mesh(out.string() + ".msh", context.result.first.at("mesh"));
     check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 2, [&](const Vector3d& p) {
         REQUIRE(p.z() == 0.);
         return mesh.m_input_complex_bvh->dist(Vector2d(p.x(), p.y()));
