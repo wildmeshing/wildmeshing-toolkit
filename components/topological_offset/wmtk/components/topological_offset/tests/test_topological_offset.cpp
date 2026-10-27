@@ -3276,6 +3276,60 @@ TEST_CASE("loop-block-gates", "[offset][3d]")
     }
 }
 
+TEST_CASE("collapse-rule-reads-its-own-collapse", "[offset][3d]")
+{
+    // The quality pre-check inside the engine's collapse_edge_before() asks
+    // collapse_quality_allowed(), which admits a collapse whenever the thread's front or plastic
+    // record says "set". That record must describe THIS collapse: every edge's verdict is the
+    // same whether the thread's previous collapse_edge_before() was on a front edge (record set)
+    // or on an interior edge (record clear). The grid of save-offset-correspondence-3d, serial,
+    // target 0.2, as the loop sees it.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    auto mesh = grid_offset_mesh(
+        g,
+        param,
+        std::filesystem::temp_directory_path() / "wmtk_offset_collapse_record");
+    mesh->m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Optimization;
+    mesh->init_vertex_order();
+    const auto on_front = [&](const wmtk::TetMesh::Tuple& e) {
+        return mesh->m_vertex_extra[e.vid(*mesh)].m_is_on_offset ||
+               mesh->m_vertex_extra[e.switch_vertex(*mesh).vid(*mesh)].m_is_on_offset;
+    };
+    const auto edges = mesh->get_edges();
+    // A front edge whose before-hook sets the front record, and an interior one that leaves it
+    // clear.
+    std::optional<wmtk::TetMesh::Tuple> front_primer, interior_primer;
+    for (const wmtk::TetMesh::Tuple& e : edges) {
+        if (!front_primer && on_front(e) && mesh->collapse_edge_before(e) &&
+            mesh->m_collapse_front.local().o_before >= 0.) {
+            front_primer = e;
+        }
+        if (!interior_primer && !on_front(e)) {
+            mesh->collapse_edge_before(e);
+            if (mesh->m_collapse_front.local().o_before < 0.) interior_primer = e;
+        }
+    }
+    REQUIRE(front_primer.has_value());
+    REQUIRE(interior_primer.has_value());
+    size_t n_interior = 0, n_refused = 0, n_differ = 0;
+    for (const wmtk::TetMesh::Tuple& e : edges) {
+        if (on_front(e)) continue;
+        ++n_interior;
+        mesh->collapse_edge_before(*interior_primer);
+        const bool after_interior = mesh->collapse_edge_before(e);
+        mesh->collapse_edge_before(*front_primer);
+        const bool after_front = mesh->collapse_edge_before(e);
+        n_refused += after_interior ? 0 : 1;
+        n_differ += after_interior != after_front ? 1 : 0;
+    }
+    INFO(n_interior << " interior edges, " << n_refused << " refused");
+    REQUIRE(n_refused > 0);
+    CHECK(n_differ == 0);
+}
+
 TEST_CASE("growth-mode-keys", "[offset][3d]")
 {
     // growth_mode, linear_growth_steps, smart_growth_attempts and smart_growth_max_fails through

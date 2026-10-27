@@ -1231,6 +1231,23 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // The collapse length gate lives in the shared pass, which filters the candidate list against
     // collapsing_l2 scaled by the endpoints' sizing scalars.
     const bool traced = trace_collapse_begin(t); // DEBUG_trace_collapse, log-only
+    // WHICH RULE JUDGES THIS COLLAPSE, before the base's call below: the base's quality pre-check
+    // runs inside it and asks collapse_quality_allowed(), which admits a collapse whenever the
+    // thread's front or plastic record is set. Both records are thread-local and outlive one
+    // collapse, so they are decided for THIS collapse first (the same conditions as their full
+    // values below, which overwrite these marks). Before 2026-10-26 they were written only after
+    // the base's call, so the pre-check read the previous collapse's: an interior collapse after
+    // a front one was admitted with no AMIPS rule at all (piece08: a cell 3.1 -> 1.35e10 from a
+    // ring at most 6.5; test collapse-rule-reads-its-own-collapse).
+    {
+        const size_t v1 = t.vid(*this), v2 = t.switch_vertex(*this).vid(*this);
+        const bool front_rule =
+            (m_vertex_extra[v1].m_is_on_offset || m_vertex_extra[v2].m_is_on_offset) &&
+            !tetwild_rules() && !m_coarsen_mode && m_offset_potential;
+        m_collapse_front.local().o_before = front_rule ? 0. : -1.;
+        m_collapse_plastic.local().before =
+            (m_plastic_active && !tetwild_rules() && !m_coarsen_mode && !front_rule) ? 0. : -1.;
+    }
     if (!TetOptimizerMesh::collapse_edge_before(t)) {
         if (traced) trace_collapse_end("refused before");
         return false;
