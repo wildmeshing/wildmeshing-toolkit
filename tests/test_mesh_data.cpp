@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <filesystem>
@@ -331,6 +332,62 @@ TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
     const auto& tags = loaded.cell(CellType::Tetrahedron).attributes.at("tags");
     REQUIRE(tags.labels == labels);
     REQUIRE(tags.integers() == DataMatrix<int64_t>::Ones(1, 3));
+}
+TEST_CASE("MSH field metadata stays out of the interpolation-scheme tag", "[mesh_data][io]")
+{
+    // gmsh reads a data header's second string tag as an interpolation scheme name and refuses
+    // the file when no such scheme exists.
+    const auto m = example();
+    auto spec = io::to_msh(m);
+    REQUIRE(!(spec.node_data.empty() && spec.element_data.empty()));
+    for (auto* data : {&spec.node_data, &spec.element_data})
+        for (const auto& d : *data) {
+            REQUIRE(d.header.string_tags.size() == 3);
+            REQUIRE(d.header.string_tags[1].empty());
+            REQUIRE(d.header.string_tags[2].rfind("wmtk:", 0) == 0);
+        }
+    equal(m, io::from_msh(spec));
+    // Files written before the move carry the metadata as the second tag.
+    for (auto* data : {&spec.node_data, &spec.element_data})
+        for (auto& d : *data)
+            d.header.string_tags = {d.header.string_tags[0], d.header.string_tags[2]};
+    equal(m, io::from_msh(spec));
+}
+TEST_CASE("MSH gives untagged cells an ambient physical group", "[mesh_data][io]")
+{
+    MeshData mesh;
+    mesh.V.resize(5, 3);
+    mesh.V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
+    auto& tets = mesh.cells[CellType::Tetrahedron];
+    tets.connectivity.resize(2, 4);
+    tets.connectivity << 0, 1, 2, 3, 1, 2, 3, 4;
+    DataMatrix<uint8_t> member(2, 1);
+    member << 1, 0;
+    tets.attributes["tags"] = {member, {"body"}};
+    auto spec = io::to_msh(mesh);
+    auto ambient_groups = [](const mshio::MshSpec& s) {
+        return std::count_if(s.physical_groups.begin(), s.physical_groups.end(), [](const auto& g) {
+            return g.name == "ambient";
+        });
+    };
+    REQUIRE(ambient_groups(spec) == 1);
+    // read_mesh restores the tags from the tags field: no ambient column appears.
+    equal(mesh, io::from_msh(spec));
+    // A reader that only sees the physical groups finds the untagged cell in "ambient".
+    auto groups_only = spec;
+    groups_only.element_data.clear();
+    const auto loaded = io::from_msh(groups_only);
+    const auto& tags = loaded.cell(CellType::Tetrahedron).attributes.at("tags");
+    REQUIRE(tags.labels == std::vector<std::string>{"body", "ambient"});
+    DataMatrix<int64_t> expected(2, 2);
+    expected << 1, 0, 0, 1;
+    REQUIRE(tags.integers() == expected);
+    // An explicit ambient label is not duplicated.
+    tets.attributes["tags"] = {DataMatrix<uint8_t>::Identity(2, 2).eval(), {"body", "ambient"}};
+    REQUIRE(ambient_groups(io::to_msh(mesh)) == 1);
+    // A mesh without tags gets no groups at all.
+    tets.attributes.erase("tags");
+    REQUIRE(io::to_msh(mesh).physical_groups.empty());
 }
 TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
 {

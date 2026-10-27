@@ -206,6 +206,27 @@ def test_memory_result_with_output_path_raises(m1, work):
         wm.remeshing(mesh=r, output=str(work / "never"))
 
 
+def test_checkpoint_is_read_by_the_polyfem_reader(overlapping_boxes, work):
+    """The PolyFEM ops read .msh through gmsh (mesh_core.TaggedMesh): a saved
+    result must open there with every tet, ambient ones in an "ambient" group."""
+    from pywmtk.polyfem_ops.mesh_core import TaggedMesh
+    r, _ = wm.surf_to_tet(meshes=overlapping_boxes, tags=["a", "b"], output=None, **S2T)
+    stem = str(work / "ckpt" / "for_polyfem")
+    wm.save(r, stem)
+    tm = TaggedMesh(f"{stem}.msh")
+    tags = r["mesh"]["cells"]["tetrahedron"]["attributes"]["tags"]
+    assert len(tm.prim_nodes) == len(tags["values"])
+    expected = {}
+    for member in tags["values"]:
+        names = frozenset(l for l, b in zip(tags["labels"], member) if b) or frozenset(["ambient"])
+        expected[names] = expected.get(names, 0) + 1
+    found = {}
+    for names in tm.prim_tags.values():
+        found[names] = found.get(names, 0) + 1
+    assert found == expected
+    assert frozenset(["ambient"]) in found
+
+
 @pytest.mark.parametrize("removed", [{"rel_ball_threshold": 0.01}, {"overwrite_tags": True}])
 def test_topological_offset_rejects_removed_options(m1, removed):
     """Options C++ no longer has fail loudly instead of being dropped."""

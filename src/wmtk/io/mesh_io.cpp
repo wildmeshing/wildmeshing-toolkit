@@ -289,9 +289,12 @@ MeshData from_msh(const mshio::MshSpec& s)
             require(
                 !d.header.string_tags.empty() && d.header.int_tags.size() >= 3,
                 "malformed data header");
+            // The metadata is the third string tag; files written before it moved there have it
+            // as the second.
             nlohmann::json meta = nlohmann::json::object();
-            if (d.header.string_tags.size() > 1 && d.header.string_tags[1].rfind("wmtk:", 0) == 0)
-                meta = nlohmann::json::parse(d.header.string_tags[1].substr(5));
+            for (size_t k = 1; k < d.header.string_tags.size() && k < 3; ++k)
+                if (d.header.string_tags[k].rfind("wmtk:", 0) == 0)
+                    meta = nlohmann::json::parse(d.header.string_tags[k].substr(5));
             const auto name = meta.value("name", d.header.string_tags[0]);
             const int width = meta.value("width", d.header.int_tags[1]),
                       col = meta.value("column", 0);
@@ -385,8 +388,11 @@ mshio::MshSpec to_msh(const MeshData& mesh)
                                                                        ? "nan"
                                                                    : values(r, col) > 0 ? "inf"
                                                                                         : "-inf";
+                // gmsh reads the second string tag as an interpolation scheme name and refuses
+                // the file if no such scheme exists, so it stays empty and the metadata is third.
                 d.header.string_tags = {
                     values.cols() == 1 ? name : name + "_" + std::to_string(col),
+                    "",
                     "wmtk:" + meta.dump()};
                 d.header.real_tags = {0};
                 d.header.int_tags = {0, 1, int(tags.size())};
@@ -422,10 +428,22 @@ mshio::MshSpec to_msh(const MeshData& mesh)
                 s.physical_groups.push_back({cell_dimension(type), id, name});
             }
         }
+        // Untagged cells are the ambient region. They get a physical group of that name, as the
+        // component writers give them, so readers that collect cells by group (gmsh, polyfem)
+        // see them. read_mesh restores the tags from the tags field, which has no such column.
+        int ambient_id = 0;
+        if (ta != c.attributes.end() &&
+            std::find(ta->second.labels.begin(), ta->second.labels.end(), "ambient") ==
+                ta->second.labels.end() &&
+            (membership.rowwise().sum().array() == 0).any()) {
+            ambient_id = int(s.physical_groups.size()) + 1;
+            s.physical_groups.push_back({cell_dimension(type), ambient_id, "ambient"});
+        }
         for (Eigen::Index r = 0; r < c.connectivity.rows(); ++r) {
             std::vector<int> groups;
             for (size_t j = 0; j < group_ids.size(); ++j)
                 if (membership(r, j)) groups.push_back(group_ids[j]);
+            if (groups.empty() && ambient_id) groups.push_back(ambient_id);
             auto& b = blocks[groups];
             b.entity_dim = cell_dimension(type);
             b.element_type = gmsh_type(type);
