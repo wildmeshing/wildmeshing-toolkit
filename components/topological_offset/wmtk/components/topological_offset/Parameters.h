@@ -102,7 +102,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default),
-    /// "one_sided" or "one_sided_tips".
+    /// "one_sided", "one_sided_tips" or "one_sided_at_target".
     std::string label_cleanup = "off";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
@@ -445,10 +445,10 @@ struct Parameters : public wmtk::OptimizerParameters
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
         if (label_cleanup != "off" && label_cleanup != "one_sided" &&
-            label_cleanup != "one_sided_tips") {
+            label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target") {
             log_and_throw_error(
-                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\" or \"one_sided_tips\", not "
-                "\"{}\"",
+                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\" or "
+                "\"one_sided_at_target\", not \"{}\"",
                 label_cleanup);
         }
         // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the

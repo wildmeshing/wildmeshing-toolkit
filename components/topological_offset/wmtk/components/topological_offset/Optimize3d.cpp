@@ -4700,6 +4700,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     const std::string& mode = m_offset_params.label_cleanup;
     if (mode == "off" || m_tetwild_pass) return;
     const bool tips = mode == "one_sided_tips";
+    const bool at_target = mode == "one_sided_at_target";
     // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
     if (!m_band_exact) {
         log_and_throw_error(
@@ -4751,6 +4752,15 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     //     still end: a tip flip agrees with the sign of b(t), and so does every one_sided flip (d <
     //     delta on all of t gives b < 0; d > delta gives b > 0), so no flip of either kind can undo
     //     one.
+    //   one_sided_at_target: one_sided, and also any cell with a front face (1, 2 or 3 faces on
+    //     the other label) whose four corners are all within front_conv of the level set, by the
+    //     tip rule's sign of b(t): the tip rule without its three-face condition. MEASURED
+    //     (t126196 inward at 0.5 delta_1, 10%, 8 threads, one_sided_tips): the run hit the
+    //     30-turn cap held by 3 real folds; from turn 4 on, the band cells carrying the folds'
+    //     faces after the clean-up had all four corners within front_conv and b(t) > 0, all with
+    //     two faces on the other label (one with one, at turn 25). At turn 30 the one-sided test
+    //     read L 14 to 16 front_conv short of delta, the topology test allowed both cells, and the
+    //     tip rule refused them for having two faces, not three.
     const auto wants_flip = [&](const size_t tid) {
         const std::array<size_t, 4> vs = oriented_tet_vids(tid);
         const bool band = cell_is_offset_band(tid);
@@ -4763,14 +4773,14 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             for (const Vector3d& q : p) r = std::max(r, (q - c).norm());
             if (m_band_exact->distance(c) - r > delta) return true;
         }
-        if (!tips) return false;
+        if (!tips && !at_target) return false;
         const int other = band ? 0 : 2;
         int faces = 0;
         for (int j = 0; j < 4; ++j) {
             const std::optional<Tuple> o = tuple_from_face(tid, j).switch_tetrahedron(*this);
             if (o && label_of(o->tid(*this)) == other) ++faces;
         }
-        if (faces != 3) return false;
+        if (tips ? faces != 3 : (faces < 1 || faces > 3)) return false;
         for (const Vector3d& q : p) {
             if (!(std::abs(m_band_exact->distance(q) - delta) <= m_offset_params.front_conv))
                 return false;
