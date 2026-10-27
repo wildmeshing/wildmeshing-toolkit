@@ -2417,7 +2417,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     fr.vid = VectorXd::Zero(vert_capacity());
     // The sizing field, as point data: it drives every split and collapse gate.
     fr.sizing = VectorXd::Zero(vert_capacity());
-    // Per vertex, the front's placement and what pushes it. NaN where a field does not apply.
+    // Per vertex, the front's placement. NaN where a field does not apply.
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
     //   distance_over_target  d / target_distance, the running loop's (a growth stage's own),
@@ -2428,19 +2428,10 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //                     bars, so |.| > 1 is what the settle loop's vertex test marks
     //                     (EXPERIMENTAL_settle_mark "vertex") and the sign says beyond (+) or
     //                     inside (-) the level set.
-    //   band_force_n      at a front vertex that carries the offset term
-    //                     (vertex_carries_offset_term()), minus the gradient of its band term
-    //                     (front_energy(), what the smoother descends) along the unit gradient of
-    //                     d: > 0 pushes the vertex away from the input, < 0 toward it.
-    //   amips_force_n     the same for the AMIPS term over its ring (amips3_energy()). The two
-    //                     sum to the smoother's whole force along the normal; at a stationary
-    //                     vertex they cancel.
     const double nan = std::numeric_limits<double>::quiet_NaN();
     fr.in_dist = VectorXd::Constant(vert_capacity(), nan);
     fr.dist_ratio = VectorXd::Constant(vert_capacity(), nan);
     fr.front_err = VectorXd::Constant(vert_capacity(), nan);
-    fr.band_force = VectorXd::Constant(vert_capacity(), nan);
-    fr.amips_force = VectorXd::Constant(vert_capacity(), nan);
 
     //   front_last_change    VertexExtra::m_front_change when recorded in the latest operation
     //                        group, else -1.
@@ -2571,34 +2562,16 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         saved_vertex_region = m_vertex_region;
         assign_band_regions(/*log=*/false);
     }
-    // The front fields (see above). The forces are the smoother's own energies at the vertex's
-    // current position, so they need what they read: the input's triangles and one region. Per
-    // vertex, on the mesh's threads, after the region map above (they read it).
+    // front_error_bars (see above), per vertex, on the mesh's threads.
     diagnostic_parallel_for(vs.size(), kDiagnosticChunk, [&](const size_t ib, const size_t ie) {
         for (size_t i = ib; i < ie; ++i) {
             const size_t vid = vs[i].vid(*this);
             if (!band_env || !VX[vid].m_is_on_offset || !VA[vid].m_is_rounded) continue;
             const Vector3d& x = VA[vid].m_posf;
-            Vector3d g_d;
             const double d = band_env->primitive_distance(
                 nearest_primitive(*band_env, m_input_complex_pad, x),
-                x,
-                &g_d);
+                x);
             fr.front_err[vid] = (d - delta) / front_conv;
-            if (!energy_fields || !vertex_carries_offset_term(vid)) continue;
-            const double gn = g_d.norm();
-            if (!(gn > 0.)) continue;
-            const Vector3d n = g_d / gn;
-            const VectorXd xv = x;
-            VectorXd g;
-            if (const auto band = band_volume_energy_at(vid)) {
-                band->gradient(xv, g);
-                fr.band_force[vid] = -g.dot(n);
-            }
-            if (const auto am = amips3_energy(vid)) {
-                am->gradient(xv, g);
-                fr.amips_force[vid] = -g.dot(n);
-            }
         }
     });
 
@@ -2865,8 +2838,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         writer.add_field("input_distance", fr.in_dist);
         writer.add_field("distance_over_target", fr.dist_ratio);
         writer.add_field("front_error_bars", fr.front_err);
-        writer.add_field("band_force_n", fr.band_force);
-        writer.add_field("amips_force_n", fr.amips_force);
         writer.add_field("front_last_change", fr.front_change);
         writer.write_mesh(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
     }
@@ -2898,8 +2869,6 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         off_writer.add_field("distance_over_target", fr.dist_ratio);
         off_writer.add_field("front_error_bars", fr.front_err);
         off_writer.add_field("front_ring_ratio", fr.ring);
-        off_writer.add_field("band_force_n", fr.band_force);
-        off_writer.add_field("amips_force_n", fr.amips_force);
         off_writer.add_field("front_last_change", fr.front_change);
         off_writer.write_mesh(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
     }

@@ -2588,18 +2588,17 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
               same(a.E, b.E) && a.tag_names == b.tag_names && a.tags.size() == b.tags.size();
     for (size_t i = 0; ok && i < a.tags.size(); ++i) ok = same(a.tags[i], b.tags[i]);
     for (const auto m :
-         {&TopoOffsetTetMesh::VtuFrame::amips,       &TopoOffsetTetMesh::VtuFrame::tet_e,
-          &TopoOffsetTetMesh::VtuFrame::amips_term,  &TopoOffsetTetMesh::VtuFrame::band_term,
-          &TopoOffsetTetMesh::VtuFrame::band_gap,    &TopoOffsetTetMesh::VtuFrame::plastic,
-          &TopoOffsetTetMesh::VtuFrame::labels,      &TopoOffsetTetMesh::VtuFrame::order,
-          &TopoOffsetTetMesh::VtuFrame::vid,         &TopoOffsetTetMesh::VtuFrame::sizing,
-          &TopoOffsetTetMesh::VtuFrame::in_dist,     &TopoOffsetTetMesh::VtuFrame::dist_ratio,
-          &TopoOffsetTetMesh::VtuFrame::front_err,   &TopoOffsetTetMesh::VtuFrame::band_force,
-          &TopoOffsetTetMesh::VtuFrame::amips_force, &TopoOffsetTetMesh::VtuFrame::front_change,
-          &TopoOffsetTetMesh::VtuFrame::f_err,       &TopoOffsetTetMesh::VtuFrame::f_len,
-          &TopoOffsetTetMesh::VtuFrame::f_inside,    &TopoOffsetTetMesh::VtuFrame::f_outside,
-          &TopoOffsetTetMesh::VtuFrame::f_fold,      &TopoOffsetTetMesh::VtuFrame::f_field_angle,
-          &TopoOffsetTetMesh::VtuFrame::f_dihedral,  &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral,
+         {&TopoOffsetTetMesh::VtuFrame::amips,      &TopoOffsetTetMesh::VtuFrame::tet_e,
+          &TopoOffsetTetMesh::VtuFrame::amips_term, &TopoOffsetTetMesh::VtuFrame::band_term,
+          &TopoOffsetTetMesh::VtuFrame::band_gap,   &TopoOffsetTetMesh::VtuFrame::plastic,
+          &TopoOffsetTetMesh::VtuFrame::labels,     &TopoOffsetTetMesh::VtuFrame::order,
+          &TopoOffsetTetMesh::VtuFrame::vid,        &TopoOffsetTetMesh::VtuFrame::sizing,
+          &TopoOffsetTetMesh::VtuFrame::in_dist,    &TopoOffsetTetMesh::VtuFrame::dist_ratio,
+          &TopoOffsetTetMesh::VtuFrame::front_err,  &TopoOffsetTetMesh::VtuFrame::front_change,
+          &TopoOffsetTetMesh::VtuFrame::f_err,      &TopoOffsetTetMesh::VtuFrame::f_len,
+          &TopoOffsetTetMesh::VtuFrame::f_inside,   &TopoOffsetTetMesh::VtuFrame::f_outside,
+          &TopoOffsetTetMesh::VtuFrame::f_fold,     &TopoOffsetTetMesh::VtuFrame::f_field_angle,
+          &TopoOffsetTetMesh::VtuFrame::f_dihedral, &TopoOffsetTetMesh::VtuFrame::f_fold_dihedral,
           &TopoOffsetTetMesh::VtuFrame::ring}) {
         ok = ok && same(a.*m, b.*m);
     }
@@ -2671,8 +2670,6 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"input_distance", &fs.in_dist, &ft.in_dist},
         {"distance_over_target", &fs.dist_ratio, &ft.dist_ratio},
         {"front_error_bars", &fs.front_err, &ft.front_err},
-        {"band_force_n", &fs.band_force, &ft.band_force},
-        {"amips_force_n", &fs.amips_force, &ft.amips_force},
         {"front_last_change", &fs.front_change, &ft.front_change},
         {"front_err_ratio", &fs.f_err, &ft.f_err},
         {"chord_length", &fs.f_len, &ft.f_len},
