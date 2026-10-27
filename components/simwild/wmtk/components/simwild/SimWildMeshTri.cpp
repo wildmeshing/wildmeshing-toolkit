@@ -1,4 +1,5 @@
 #include "SimWildMeshTri.hpp"
+#include <wmtk/io/DataWriter.hpp>
 
 #include "QualityStats.hpp"
 
@@ -242,7 +243,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_E_envelope = tempE;
-        m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+        m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
         logger().info(
             "Envelope: {} (eps {:.6})",
@@ -334,7 +335,7 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         m_E_envelope[i] = E.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+    m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
     logger().info(
         "Envelope: {} (eps {:.6})",
@@ -618,6 +619,7 @@ size_t SimWildMeshTri::refine_sizing_around_worst(double)
 
 void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -723,8 +725,9 @@ void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)
     msh.save(file, true);
 }
 
-void SimWildMeshTri::write_vtu(const std::string& path) const
+void SimWildMeshTri::write_vtu(const std::string& path, MeshMap* output) const
 {
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -779,8 +782,9 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         v_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1.0 : 0.0;
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
-    writer = std::make_shared<paraviewo::VTUWriter>();
+    if (output) F.conservativeResize(faces.size(), 3);
+    std::shared_ptr<io::DataWriter> writer;
+    writer = std::make_shared<io::DataWriter>(output);
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
@@ -795,8 +799,8 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
     // surface
     {
         const auto surf_out_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        std::shared_ptr<io::DataWriter> surf_writer;
+        surf_writer = std::make_shared<io::DataWriter>(output);
         surf_writer->add_field("sizing_field", v_sizing_field);
         surf_writer->add_field("is_rounded", v_rounded);
 
@@ -807,6 +811,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
 
 void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
 {
+    if (!m_params.output_enabled) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
     logger().info("Write with energies {}", out_path);

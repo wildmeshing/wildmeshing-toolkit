@@ -31,7 +31,7 @@
 namespace wmtk::components::simwild {
 
 void delaunay_box_mesh(
-    const wmtk::SampleEnvelope& envelope,
+    const wmtk::Envelope& envelope,
     const MatrixXd& vertices,
     std::vector<wmtk::delaunay::Point3D>& points,
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
@@ -286,7 +286,8 @@ EmbedSurface::EmbedSurface(
     const std::vector<Matrix4d>& img_transform,
     const double tol_rel,
     const double tol_abs,
-    const bool split_connected_components)
+    const bool split_connected_components,
+    const io::ComponentIO* component_io)
     : m_img_filenames(img_filenames)
 {
     assert(img_filenames.size() == img_transform.size());
@@ -301,12 +302,15 @@ EmbedSurface::EmbedSurface(
     Fs.reserve(m_img_filenames.size());
 
     for (size_t i = 0; i < m_img_filenames.size(); ++i) {
-        if (!std::filesystem::exists(m_img_filenames[i])) {
+        if (!component_io && !std::filesystem::exists(m_img_filenames[i])) {
             log_and_throw_error("Input file {} does not exist", m_img_filenames[i]);
         }
         MatrixXd V_file;
         MatrixXi F_file;
-        io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
+        if (component_io)
+            component_io->triangles(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
+        else
+            io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
 
         assert(V_file.cols() == 3);
         assert(F_file.cols() == 3);
@@ -381,6 +385,7 @@ EmbedSurface::EmbedSurface(
 
 void EmbedSurface::simplify_surface(
     const double eps,
+    const bool use_exact,
     const int num_threads,
     const double boundary_eps)
 {
@@ -388,7 +393,7 @@ void EmbedSurface::simplify_surface(
     std::vector<Eigen::Vector3d> verts = V_surf_to_vector();
     std::vector<std::array<size_t, 3>> tris = F_surf_to_vector();
 
-    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, false);
+    shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(verts, num_threads, use_exact);
 
     // must be a small envelope to ensure correct tet tags later on
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps, boundary_eps);
@@ -470,7 +475,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         eps = 1e-2 * diag;
     }
 
-    std::shared_ptr<SampleEnvelope> ptr_env;
+    std::shared_ptr<Envelope> ptr_env;
     {
         const auto v_simplified = V_surf_to_vector();
 
@@ -478,7 +483,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         for (size_t i = 0; i < tempF.size(); ++i) {
             tempF[i] = m_F_surface.row(i);
         }
-        ptr_env = std::make_shared<SampleEnvelope>();
+        ptr_env = std::make_shared<Envelope>();
         ptr_env->use_exact = true;
         ptr_env->init(v_simplified, tempF, eps);
     }

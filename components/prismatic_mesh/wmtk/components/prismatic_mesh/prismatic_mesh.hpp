@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <wmtk/TetMesh.h>
 #include <filesystem>
 #include <memory>
@@ -173,7 +175,9 @@ void write_prismatic_mesh(
     const PrismaticMeshInput& input,
     const std::filesystem::path& path,
     const PrismDominantMesh* hybrid = nullptr,
-    bool include_background = true);
+    bool include_background = true,
+    MeshMap* output = nullptr,
+    nlohmann::json* hybrid_report = nullptr);
 // Keep band tetrahedra in their original order and filter cell attributes with them.
 // Vertex arrays/IDs stay unchanged; unused vertices are inactive in the rebuilt TetMesh.
 void keep_offset_band(PrismaticMeshInput& input);
@@ -220,5 +224,7 @@ void prism_main(
     double thicknessratio = 0.1,
     const OptimizationOptions& optimization = {});
 void prismatic_mesh(nlohmann::json json_params);
+ComponentResult prismatic_mesh(nlohmann::json json_params, const MeshMap& meshes);
+PrismaticMeshInput load_prismatic_data(const MeshData& data);
 
 } // namespace wmtk::components::prismatic_mesh

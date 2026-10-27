@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/io/ComponentIO.hpp>
+
 #include <wmtk/Types.hpp>
 
 #include <string>
@@ -42,7 +44,8 @@ public:
         const std::vector<std::string>& input_paths,
         const std::vector<Matrix3d>& input_transform = {},
         const double tol_rel = -1,
-        const double tol_abs = -1);
+        const double tol_abs = -1,
+        const io::ComponentIO* component_io = nullptr);
 
     /**
      * @brief Simplify the input curves while staying within the eps envelope.

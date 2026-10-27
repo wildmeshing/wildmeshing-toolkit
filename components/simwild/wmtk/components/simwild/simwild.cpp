@@ -1,4 +1,6 @@
 #include "simwild.hpp"
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
 
@@ -206,9 +208,13 @@ double optimization_envelope_eps(const Parameters& params, bool is_3d)
 
 } // namespace
 
-void run_3D(const nlohmann::json& json_params, const InputData& input_data)
+void run_3D(
+    const nlohmann::json& json_params,
+    const InputData& input_data,
+    io::ComponentIO& component_io)
 {
     Parameters params(json_params);
+    params.output_enabled = !component_io.memory();
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
     igl::Timer timer;
@@ -282,8 +288,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
+    if (component_io.memory() || !report_file.empty()) {
         nlohmann::json report;
         report["#t"] = mesh.get_tets().size();
         report["#v"] = mesh.get_vertices().size();
@@ -293,21 +298,43 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
-        fout << std::setw(4) << report;
-        fout.close();
+        component_io.result.second = report;
+        if (!component_io.memory()) {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
+    if (component_io.memory()) {
+        MeshMap raw;
+        mesh.write_vtu("mesh", &raw);
+        io::compact_slot_outputs(mesh, raw);
+        component_io.result.first = io::named_outputs(std::move(raw));
+        io::collect_tags(
+            mesh,
+            component_io.result.first,
+            CellType::Tetrahedron,
+            mesh.get_tets(),
+            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
+        if (!mesh.m_V_envelope.empty())
+            component_io.result.first["envelope"] =
+                io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+    }
     if (params.write_vtu) {
         mesh.write_surface(params.output_path + "_surface.obj");
     }
 }
 
-void run_2D(const nlohmann::json& json_params, const InputData& input_data)
+void run_2D(
+    const nlohmann::json& json_params,
+    const InputData& input_data,
+    io::ComponentIO& component_io)
 {
     Parameters params(json_params);
+    params.output_enabled = !component_io.memory();
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
 
     igl::Timer timer;
@@ -371,8 +398,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
+    if (component_io.memory() || !report_file.empty()) {
         nlohmann::json report;
         report["#t"] = mesh.get_faces().size();
         report["#v"] = mesh.get_vertices().size();
@@ -382,24 +408,45 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
-        fout << std::setw(4) << report;
-        fout.close();
+        component_io.result.second = report;
+        if (!component_io.memory()) {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
 
+    if (component_io.memory()) {
+        MeshMap raw;
+        mesh.write_vtu("mesh", &raw);
+        io::compact_slot_outputs(mesh, raw);
+        component_io.result.first = io::named_outputs(std::move(raw));
+        io::collect_tags(
+            mesh,
+            component_io.result.first,
+            CellType::Triangle,
+            mesh.get_faces(),
+            [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        if (!mesh.m_V_envelope.empty())
+            component_io.result.first["envelope"] =
+                io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+    }
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
 
-void simwild(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "simwild");
+    const auto envelope_selector = json_params.value("envelope", nlohmann::json());
+    if (component_io.memory()) json_params.erase("envelope");
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
         true);
-    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
+    const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
     std::filesystem::path output_filename = json_params["output"];
@@ -427,23 +474,54 @@ void simwild(nlohmann::json json_params)
     //   curve OBJ     -> EmbedCurves,  the 2D VolumeRemesher arrangement
     InputData input_data;
     const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
-    const int dimension = resolve_input_dimension(input_paths, json_params);
-    if (extension == ".msh") {
+    const int dimension = resolve_input_dimension(
+        input_paths,
+        json_params,
+        component_io.memory() ? &component_io : nullptr);
+    // Surface and curve inputs build their envelope from the input itself.
+    if (dimension != 0 && !envelope_selector.is_null()) {
+        log_and_throw_error("`envelope` applies to tagged mesh inputs only");
+    }
+    if (component_io.memory() && dimension == 0) {
+        input_data = read_mesh_data(
+            component_io.mesh(input_paths.at(0)),
+            !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr);
+    } else if (!component_io.memory() && extension == ".msh") {
         input_data = read_image_msh(input_paths[0]);
     } else if (dimension == 2) {
-        input_data = read_curves(input_paths, output_filename.string(), json_params);
+        input_data = read_curves(
+            input_paths,
+            output_filename.string(),
+            json_params,
+            component_io.memory() ? &component_io : nullptr);
     } else {
-        input_data = read_mesh(input_paths, output_filename.string(), json_params);
+        input_data = read_mesh(
+            input_paths,
+            output_filename.string(),
+            json_params,
+            component_io.memory() ? &component_io : nullptr);
     }
 
     if (input_data.T_input.cols() == 4) {
-        run_3D(json_params, input_data);
+        run_3D(json_params, input_data, component_io);
     } else {
-        run_2D(json_params, input_data);
+        run_2D(json_params, input_data, component_io);
     }
     double time = timer.getElapsedTime();
     logger().info("total runtime {}s", time);
     logger().info("======= finish =========");
+}
+
+void simwild(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult simwild(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
 }
 
 } // namespace wmtk::components::simwild

@@ -212,6 +212,30 @@ TEST_CASE("rollback_operation", "[tuple_operation]")
     }
 }
 
+TEST_CASE("rollback_tet_split_restores_vertex_connectivity", "[tuple_operation]")
+{
+    // A refused tet split restores the tet lists of the split tet's four corners. Two tets share
+    // the face (0, 1, 2) so the corners' lists differ: restoring corner 3's list into corner 2's
+    // slot (TetMeshTetSplittingConn.cpp recorded vid[2] twice) leaves both lists wrong.
+    class NoTetSplitMesh : public TetMesh
+    {
+    public:
+        bool split_tet_after(const TetMesh::Tuple&) override { return false; }
+    };
+    NoTetSplitMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}});
+    std::vector<std::vector<size_t>> before;
+    for (size_t v = 0; v < 5; ++v) before.push_back(mesh.get_one_ring_tids_for_vertex(v));
+    const auto t = mesh.tuple_from_tet(0);
+    std::vector<TetMesh::Tuple> dummy;
+    REQUIRE_FALSE(mesh.split_tet(t, dummy));
+    for (size_t v = 0; v < 5; ++v) {
+        CAPTURE(v);
+        CHECK(mesh.get_one_ring_tids_for_vertex(v) == before[v]);
+    }
+    CHECK(mesh.check_mesh_connectivity_validity());
+}
+
 TEST_CASE("forbidden-face-swap", "[tuple_operation]")
 {
     /// https://i.imgur.com/aVCsOvf.png and 0,2,3 should not be swapped.

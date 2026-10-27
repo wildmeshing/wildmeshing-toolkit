@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "TriWildMesh.h"
 
@@ -7,7 +8,6 @@
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/AMIPS2D.h>
-#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -224,7 +224,7 @@ void TriWildMesh::init_mesh(
                     continue;
                 }
             }
-            m_vertex_extra[v].m_feature_id = m_feature_points.size();
+            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
             m_feature_points.push_back(m_vertex_attribute[v].m_posf);
         }
         if (n_endpoints + n_junctions > 0) {
@@ -248,10 +248,10 @@ void TriWildMesh::init_mesh(
             if (v >= vert_capacity()) {
                 log_and_throw_error("Free-point vertex id {} out of range", v);
             }
-            if (m_vertex_extra[v].m_feature_id != NO_FEATURE) {
+            if (m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
                 continue;
             }
-            m_vertex_extra[v].m_feature_id = m_feature_points.size();
+            m_feature_point_attribute[v].m_feature_point_id = m_feature_points.size();
             m_feature_points.push_back(m_vertex_attribute[v].m_posf);
             ++n_free;
         }
@@ -283,7 +283,7 @@ void TriWildMesh::init_mesh(
         m_E_envelope[i] = E_env.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>(!m_tri_params.use_sample_envelope);
+    m_envelope = std::make_shared<Envelope>(!m_tri_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
     logger().info(
         "Envelope: {} (eps {:.6})",
@@ -450,6 +450,7 @@ size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
 
 void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -806,93 +807,9 @@ int TriWildMesh::flood_fill()
 }
 
 
-std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) const
+void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
 {
-    if (worst_ratio) {
-        *worst_ratio = 0;
-    }
-    if (m_feature_points.empty()) {
-        return {0, 0};
-    }
-
-    // One nearest-neighbour query per feature against a kd-tree of the live vertices.
-    //
-    // The first version of this walked every vertex for every feature, and called
-    // get_vertices() -- which BUILDS AND RETURNS A FRESH VECTOR each time -- from inside that
-    // loop. On 2D model 177574 (573k triangles, thousands of features) it was 100% of the
-    // process's samples and burned the entire 1800 s sweep timeout on a mesh that had already
-    // converged to 19.91 and finished rounding. It turned four converged models into
-    // "failures". Diagnostics do not get to cost more than the thing they measure.
-    std::vector<Vector3d> pts;
-    pts.reserve(vert_capacity());
-    for (const Tuple& v : get_vertices()) {
-        const Vector2d& p = m_vertex_attribute[v.vid(*this)].m_posf;
-        pts.emplace_back(p[0], p[1], 0);
-    }
-    if (pts.empty()) {
-        return {0, m_feature_points.size()};
-    }
-    const KNN knn(pts);
-
-    size_t kept = 0;
-    for (const Vector2d& anchor : m_feature_points) {
-        uint32_t idx = 0;
-        double sq = 0;
-        knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
-        // Retention is geometric on purpose: the invariant is "some vertex is still within
-        // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
-        // per-collapse policy because they are local and cheap; counting them here would
-        // under-report the legitimate merge the policy allows.
-        if (sq <= m_feature_eps * m_feature_eps) {
-            ++kept;
-        } else if (worst_ratio) {
-            // How far the nearest vertex actually is, in units of eps -- what separates an
-            // anchor that drifted just past the ball from a curve that was deleted.
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
-        }
-    }
-    return {kept, m_feature_points.size()};
-}
-
-bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
-{
-    const size_t f = m_vertex_extra[vid].m_feature_id;
-    if (f == NO_FEATURE || !m_tri_params.preserve_feature_points) {
-        return true;
-    }
-    // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
-    // for, which is exactly the guarantee the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
-}
-
-bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const
-{
-    if (!m_tri_params.preserve_feature_points) {
-        return false;
-    }
-    // v1 disappears into v2, and v2 does not move. So the question is only whether the
-    // feature v1 stood for is still represented afterwards, by v2.
-    const size_t f1 = m_vertex_extra[v1_id].m_feature_id;
-    if (f1 == NO_FEATURE) {
-        return false;
-    }
-    // Distance is the whole test. An earlier version also refused outright when v2 already
-    // stood for a DIFFERENT feature, on the theory that one of the two would be lost. That
-    // is wrong, and expensively so: when two anchors sit within eps of each other the
-    // survivor covers both, and forbidding the merge deadlocks the mesh. On the puzzle
-    // integration model it left a degenerate triangle that the collapse pass exists to
-    // remove, and the max energy sat at 1e50 -- MAX_ENERGY -- for all 82 iterations instead
-    // of converging to 4.99 in 3.
-    //
-    // Two anchors further apart than eps are still protected, because then v2 -- sitting on
-    // one of them -- is more than eps from the other and fails this same test.
-    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_feature_eps * m_feature_eps;
-}
-
-
-void TriWildMesh::write_vtu(const std::string& path) const
-{
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -947,7 +864,8 @@ void TriWildMesh::write_vtu(const std::string& path) const
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
-    paraviewo::VTUWriter writer;
+    if (output) F.conservativeResize(faces.size(), 3);
+    io::DataWriter writer(output);
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         writer.add_cell_field(fmt::format("tag_{}", j), tags[j]);
@@ -960,7 +878,7 @@ void TriWildMesh::write_vtu(const std::string& path) const
     // surface
     {
         const auto surf_out_path = path + "_surf.vtu";
-        paraviewo::VTUWriter surf_writer;
+        io::DataWriter surf_writer(output);
         surf_writer.add_field("sizing_field", v_sizing_field);
 
         logger().info("Write {}", surf_out_path);

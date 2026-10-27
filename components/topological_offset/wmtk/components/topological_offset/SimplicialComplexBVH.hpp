@@ -232,7 +232,7 @@ public:
     /**
      * @brief 2D: the nearest point of the complex together with which feature it is.
      *
-     * The same algorithm SampleEnvelope::nearest_point_feature runs (Envelope.cpp). nearest_facet
+     * The same algorithm Envelope::nearest_point_feature runs (Envelope.cpp). nearest_facet
      * seeds the search, and the foot is then re-derived on every box candidate from the input
      * arrays, so classification and the returned point come from the same arithmetic -- the BVH's
      * own foot can differ in the last ulp. A hit at t <= 0 or t >= 1 is the endpoint itself:

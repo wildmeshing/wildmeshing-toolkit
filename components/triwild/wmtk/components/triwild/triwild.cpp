@@ -1,4 +1,6 @@
 #include "triwild.hpp"
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 
@@ -114,7 +116,7 @@ struct Deviation
 };
 
 Deviation
-deviation_stats(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target, int n_samples)
+deviation_stats(const MatrixXd& V, const MatrixXi& E, const Envelope& target, int n_samples)
 {
     double total_length = 0;
     for (int i = 0; i < E.rows(); ++i) {
@@ -160,7 +162,7 @@ deviation_stats(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& targ
  * Reported alongside the edge figure so a saturating edge deviation can be attributed to one
  * or the other rather than guessed at.
  */
-Deviation vertex_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target)
+Deviation vertex_deviation(const MatrixXd& V, const MatrixXi& E, const Envelope& target)
 {
     std::vector<bool> used(V.rows(), false);
     for (int i = 0; i < E.rows(); ++i) {
@@ -209,7 +211,7 @@ void tracked_edges(const TriWildMesh& mesh, MatrixXd& V, MatrixXi& E)
  * @brief Build a 2D envelope over the segments (V, E). eps is irrelevant here: only
  * nearest_point() is used, and that ignores the thickness.
  */
-std::shared_ptr<SampleEnvelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
+std::shared_ptr<Envelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
 {
     std::vector<Vector2d> v(V.rows());
     for (int i = 0; i < V.rows(); ++i) {
@@ -219,24 +221,26 @@ std::shared_ptr<SampleEnvelope> envelope_over(const MatrixXd& V, const MatrixXi&
     for (int i = 0; i < E.rows(); ++i) {
         e[i] = E.row(i);
     }
-    auto env = std::make_shared<SampleEnvelope>();
+    auto env = std::make_shared<Envelope>();
     env->init(v, e, 0);
     return env;
 }
 
 } // namespace
 
-void triwild(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "triwild");
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_triwild_spec::triwild_spec::spec(),
         false);
-    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
+    const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     triwild::Parameters params(json_params);
+    params.output_enabled = !component_io.memory();
 
     std::string output_path = json_params["output"];
     int NUM_THREADS = json_params["num_threads"];
@@ -257,7 +261,14 @@ void triwild(nlohmann::json json_params)
     // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
     const double remove_duplicate_eps =
         params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
-    wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
+    wmtk::utils::read_input_curves(
+        input_paths,
+        remove_duplicate_eps,
+        V_in,
+        E_in,
+        Vs,
+        Es,
+        component_io.memory() ? &component_io : nullptr);
 
     // Input point files: every vertex is a feature point, appended to V_in as an isolated
     // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
@@ -266,12 +277,12 @@ void triwild(nlohmann::json json_params)
     {
         std::vector<std::string> point_paths = json_params["input_points"];
         for (std::string& p : point_paths) {
-            p = resolve_path(root, p).string();
+            p = component_io.path(root, p);
         }
         for (const std::string& path : point_paths) {
             MatrixXd Vp;
             MatrixXi Ep;
-            io::read_edge_mesh(path, Vp, Ep, remove_duplicate_eps);
+            component_io.edges(path, Vp, Ep, remove_duplicate_eps);
             if (Ep.rows() > 0) {
                 logger().warn(
                     "input_points file {} has {} edges; only its {} vertices are used",
@@ -367,7 +378,7 @@ void triwild(nlohmann::json json_params)
     if (skip_simplify) {
         logger().info("skip simplification");
     } else {
-        SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
+        Envelope simplify_envelope(!simplify_use_sample_envelope);
         simplify_envelope.init(V_in, E_in, simplify_eps);
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,
@@ -467,7 +478,7 @@ void triwild(nlohmann::json json_params)
             E.rows());
     }
 
-    if (params.debug_output) {
+    if (params.output_enabled && params.debug_output) {
         MatrixXd V3(V.rows(), 3);
         V3.setZero();
         V3.block(0, 0, V.rows(), 2) = V;
@@ -633,7 +644,8 @@ void triwild(nlohmann::json json_params)
         }
         for (const auto& v : mesh.get_vertices()) {
             const size_t vid = v.vid(mesh);
-            if (mesh.m_vertex_extra[vid].m_feature_id != NO_FEATURE) {
+            if (mesh.m_feature_point_attribute[vid].m_feature_point_id !=
+                TriWildMesh::NO_FEATURE_POINT) {
                 collected_anchor_pts.push_back(mesh.m_vertex_attribute[vid].m_posf);
             }
         }
@@ -785,8 +797,7 @@ void triwild(nlohmann::json json_params)
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
 
     const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
+    if (component_io.memory() || !report_file.empty()) {
         nlohmann::json report;
         report["#t"] = mesh.tri_capacity();
         report["#v"] = mesh.vert_capacity();
@@ -818,8 +829,11 @@ void triwild(nlohmann::json json_params)
         }
         report["all_rounded"] = all_rounded;
         // report["insertion_and_preprocessing"] = insertion_time;
-        fout << std::setw(4) << report;
-        fout.close();
+        component_io.result.second = report;
+        if (!component_io.memory()) {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
 
     // check metrics
@@ -873,7 +887,7 @@ void triwild(nlohmann::json json_params)
     // counterpart of tetwild's _features.obj, from the same pre-filter collections. Only
     // written when the input supplied free points, mirroring 3D's features-present gate --
     // and keeping featureless runs byte-identical, output file set included.
-    if (!free_points.empty()) {
+    if (!component_io.memory() && !free_points.empty()) {
         std::ofstream fout(output_path + "_features.obj");
         std::map<std::array<double, 2>, size_t> vid_of;
         const auto obj_vertex = [&](const Vector2d& p) {
@@ -900,7 +914,36 @@ void triwild(nlohmann::json json_params)
         }
     }
 
+    if (component_io.memory()) {
+        MeshMap raw;
+        mesh.write_vtu("mesh", &raw);
+        io::compact_slot_outputs(mesh, raw);
+        component_io.result.first = io::named_outputs(std::move(raw));
+        if (!free_points.empty())
+            component_io.result.first["features"] =
+                io::feature_data(collected_curve_segs, collected_anchor_pts);
+        io::collect_tags(
+            mesh,
+            component_io.result.first,
+            CellType::Triangle,
+            mesh.get_faces(),
+            [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
+        component_io.result.first["envelope"] =
+            io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+    }
     logger().info("======= finish =========");
+}
+
+void triwild(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult triwild(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
 }
 
 } // namespace wmtk::components::triwild

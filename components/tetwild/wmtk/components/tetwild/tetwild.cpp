@@ -1,4 +1,6 @@
 #include "tetwild.hpp"
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 
@@ -133,17 +135,19 @@ std::vector<int> curve_euler_characteristics(const std::vector<std::array<size_t
     return ecs;
 }
 
-TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
+static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "tetwild");
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
         jse::embed::wmtk_tetwild_spec::tetwild_spec::spec(),
         false);
-    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
+    const std::vector<std::string> input_paths = component_io.paths(root, json_params["input"]);
 
     tetwild::Parameters params;
+    params.output_enabled = !component_io.memory();
 
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
@@ -223,7 +227,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
-        io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
+        component_io.triangles(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -239,16 +243,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         std::vector<std::string> edge_paths = json_params["input_edges"];
         std::vector<std::string> point_paths = json_params["input_points"];
         for (std::string& p : edge_paths) {
-            p = resolve_path(root, p).string();
+            p = component_io.path(root, p);
         }
         for (std::string& p : point_paths) {
-            p = resolve_path(root, p).string();
+            p = component_io.path(root, p);
         }
         for (size_t file = 0; file < edge_paths.size(); ++file) {
             const std::string& path = edge_paths[file];
             MatrixXd Ve;
             MatrixXi Ee;
-            io::read_edge_mesh(path, Ve, Ee);
+            component_io.edges(path, Ve, Ee);
             logger()
                 .info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
             const size_t base = feature_edge_vertices.size();
@@ -274,7 +278,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         for (const std::string& path : point_paths) {
             MatrixXd Vp;
             MatrixXi Ep;
-            io::read_edge_mesh(path, Vp, Ep);
+            component_io.edges(path, Vp, Ep);
             if (Ep.rows() > 0) {
                 logger().warn(
                     "input_points file {} has {} edges; only its {} vertices are used",
@@ -453,7 +457,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
                 nm_v,
                 simplify_use_link_condition ? "on" : "off");
         }
-        // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
+        // Envelope::init builds both the exact structure and the sampled BVH, and
         // is_outside picks between them per query, so switching predicates for the
         // simplification alone is a flag flip with nothing to rebuild. Restoring it
         // afterwards no longer matters to the tet phase -- that now gets its own
@@ -490,7 +494,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     } else {
         logger().info("skip simplification");
     }
-    surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
+    if (!component_io.memory())
+        surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
 
 
     //// get the simplified input
@@ -563,7 +568,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         env_around_simplified,
         /*simplification_ran=*/!skip_simplify);
 
-    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
+    MeshData memory_envelope;
+    auto tet_envelope = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
     {
         std::vector<Eigen::Vector3d> env_V;
         std::vector<Eigen::Vector3i> env_F;
@@ -583,6 +589,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             }
         }
         tet_envelope->init(env_V, env_F, opt_eps);
+        if (component_io.memory())
+            memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
     }
 
     // params.eps is deliberately NOT narrowed to match.
@@ -718,7 +726,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         for (size_t i = 0; i < feature_edges.size(); ++i) {
             fe_env[i] = Eigen::Vector2i(int(feature_edges[i][0]), int(feature_edges[i][1]));
         }
-        mesh_new.m_feature_envelope = std::make_shared<SampleEnvelope>(!use_sample_envelope);
+        mesh_new.m_feature_envelope = std::make_shared<Envelope>(!use_sample_envelope);
         mesh_new.m_feature_envelope->init(
             feature_edge_vertices,
             fe_env,
@@ -851,7 +859,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         for (const auto& v : mesh_new.get_vertices()) {
             const size_t vid = v.vid(mesh_new);
-            if (mesh_new.m_vertex_extra[vid].m_feature_point_id != TetWildMesh::NO_FEATURE) {
+            if (mesh_new.m_feature_point_attribute[vid].m_feature_point_id !=
+                TetWildMesh::NO_FEATURE_POINT) {
                 hybrid_anchor_pts.push_back(mesh_new.m_vertex_attribute[vid].m_posf);
             }
         }
@@ -1047,29 +1056,28 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             // an apparent pass. This is opt-in diagnostic code, so pay for a stable answer.
             const int n_samples = 100000;
 
-            SampleEnvelope env_in(true);
+            Envelope env_in(true);
             env_in.init(V, F, params.eps);
 
-            SampleEnvelope env_out(true);
+            Envelope env_out(true);
             env_out.init(matV, matF, params.eps);
 
             // Max distance from points sampled on (Vs,Fs) to the surface behind `target`.
-            const auto max_deviation = [&](const Eigen::MatrixXd& Vs,
-                                           const Eigen::MatrixXi& Fs,
-                                           const SampleEnvelope& target) {
-                Eigen::MatrixXd B;
-                Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
-                Eigen::MatrixXd X;
-                igl::random_points_on_mesh(n_samples, Vs, Fs, B, FI, X);
+            const auto max_deviation =
+                [&](const Eigen::MatrixXd& Vs, const Eigen::MatrixXi& Fs, const Envelope& target) {
+                    Eigen::MatrixXd B;
+                    Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
+                    Eigen::MatrixXd X;
+                    igl::random_points_on_mesh(n_samples, Vs, Fs, B, FI, X);
 
-                double worst = -1;
-                for (int i = 0; i < X.rows(); ++i) {
-                    const Eigen::Vector3d p = X.row(i);
-                    Eigen::Vector3d r;
-                    worst = std::max(worst, target.nearest_point(p, r));
-                }
-                return worst < 0 ? worst : std::sqrt(worst);
-            };
+                    double worst = -1;
+                    for (int i = 0; i < X.rows(); ++i) {
+                        const Eigen::Vector3d p = X.row(i);
+                        Eigen::Vector3d r;
+                        worst = std::max(worst, target.nearest_point(p, r));
+                    }
+                    return worst < 0 ? worst : std::sqrt(worst);
+                };
 
             hausdorff_distance = max_deviation(matV, matF, env_in);
             coverage_distance = max_deviation(V, F, env_out);
@@ -1215,8 +1223,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
 
     const std::string report_file = json_params["report"];
-    if (!report_file.empty()) {
-        std::ofstream fout(report_file);
+    if (component_io.memory() || !report_file.empty()) {
         nlohmann::json report;
         report["#t"] = mesh_new.tet_size();
         report["#v"] = mesh_new.vertex_size();
@@ -1241,8 +1248,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         report["input_euler_characteristic"] = ecs_input;
         report["output_euler_characteristic"] = ecs_output;
         report["insertion_and_preprocessing"] = insertion_time;
-        fout << std::setw(4) << report;
-        fout.close();
+        component_io.result.second = report;
+        if (!component_io.memory()) {
+            std::ofstream fout(report_file);
+            fout << std::setw(4) << report;
+        }
     }
 
     // check metrics
@@ -1287,11 +1297,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     mesh_new.output_mesh(output_path + "_final.msh");
 
-    igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+    if (!component_io.memory()) igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
 
     // The tracked feature curves, as an edge mesh -- the 1D counterpart of _surface.obj.
     // Only written when features exist, so featureless runs are byte-identical.
-    if (features_present) {
+    if (!component_io.memory() && features_present) {
         // From the pre-filter collections: a filter must not erase user-supplied features
         // from the feature outputs (they do leave the tet mesh with their region).
         std::ofstream fout(output_path + "_features.obj");
@@ -1322,16 +1332,38 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     wmtk::logger().info("======= finish =========");
 
+    if (component_io.memory()) {
+        MeshMap raw;
+        mesh_new.save_paraview("mesh", false, &raw);
+        io::compact_slot_outputs(mesh_new, raw);
+        component_io.result.first = io::named_outputs(std::move(raw));
+        if (features_present)
+            component_io.result.first["features"] =
+                io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
+        component_io.result.first["envelope"] = std::move(memory_envelope);
+        return {}; // the memory overload returns component_io.result instead
+    }
     return mesh_new.export_mesh_data();
 }
 
 
 void tetwild(nlohmann::json json_params)
 {
-    auto e = tetwild_with_export(json_params);
+    io::ComponentIO context;
+    auto e = run(std::move(json_params), context);
     logger().info("V ({},{})", e.V.rows(), e.V.cols());
     logger().info("T ({},{})", e.T.rows(), e.T.cols());
     logger().info("F ({},{})", e.F.rows(), e.F.cols());
 }
-
+TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    return run(std::move(json_params), context);
+}
+ComponentResult tetwild(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
+}
 } // namespace wmtk::components::tetwild

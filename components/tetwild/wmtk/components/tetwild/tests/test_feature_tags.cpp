@@ -61,7 +61,7 @@ FeatureScene build_scene()
         sc.surf->create_mesh(vertices.size(), faces, frozen_verts, 0.1);
     }
     auto* env_ptr = &sc.surf->m_envelope;
-    const std::shared_ptr<SampleEnvelope> env(env_ptr, [](SampleEnvelope*) {});
+    const std::shared_ptr<Envelope> env(env_ptr, [](Envelope*) {});
 
     sc.fe_verts = {{0.5, 0.5, 0.5}, {1.0, 1.0, 1.0}, {1.5, 1.0, 1.5}};
     sc.fe = {{{0, 1}}, {{1, 2}}};
@@ -94,7 +94,7 @@ FeatureScene build_scene()
         for (size_t i = 0; i < sc.fe.size(); ++i) {
             fe_env[i] = Eigen::Vector2i(int(sc.fe[i][0]), int(sc.fe[i][1]));
         }
-        sc.mesh->m_feature_envelope = std::make_shared<SampleEnvelope>();
+        sc.mesh->m_feature_envelope = std::make_shared<Envelope>();
         sc.mesh->m_feature_envelope->init(sc.fe_verts, fe_env, 0.05);
         sc.mesh->m_feature_eps = 0.05;
     }

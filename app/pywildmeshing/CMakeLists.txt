@@ -1,4 +1,4 @@
-pybind11_add_module(wildmeshing pywildmeshing.cpp)
+pybind11_add_module(wildmeshing pywildmeshing.cpp mesh_conversion.cpp)
 
 target_link_libraries(wildmeshing PUBLIC
     pybind11::module

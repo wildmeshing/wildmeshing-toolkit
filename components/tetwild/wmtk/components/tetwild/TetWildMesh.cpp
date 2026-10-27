@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "TetWildMesh.h"
 
@@ -6,7 +7,6 @@
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
-#include <wmtk/envelope/KNN.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SizingField.hpp>
@@ -65,42 +65,7 @@ void TetWildMesh::optimization_sanity_checks_extra()
     }
 }
 
-std::pair<size_t, size_t> TetWildMesh::feature_retention(double* worst_ratio) const
-{
-    if (worst_ratio) {
-        *worst_ratio = 0;
-    }
-    if (m_feature_points.empty()) {
-        return {0, 0};
-    }
-
-    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
-    // 2D version learned the hard way not to scan every vertex per feature.
-    std::vector<Vector3d> pts;
-    pts.reserve(vert_capacity());
-    for (const Tuple& v : get_vertices()) {
-        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
-    }
-    if (pts.empty()) {
-        return {0, m_feature_points.size()};
-    }
-    const KNN knn(pts);
-
-    size_t kept = 0;
-    for (const Vector3d& anchor : m_feature_points) {
-        uint32_t idx = 0;
-        double sq = 0;
-        knn.nearest_neighbor(anchor, idx, sq);
-        if (sq <= m_feature_eps * m_feature_eps) {
-            ++kept;
-        } else if (worst_ratio) {
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
-        }
-    }
-    return {kept, m_feature_points.size()};
-}
-
-std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
+std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
     // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
     // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
@@ -122,10 +87,10 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
-    // a no-op left over from when it was held as the Envelope base.
-    SampleEnvelope* env = m_envelope.get();
-    SampleEnvelope* env_b = m_envelope.get();
+    // m_envelope is an Envelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the abstract envelope base, since removed.
+    Envelope* env = m_envelope.get();
+    Envelope* env_b = m_envelope.get();
     if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }
@@ -733,6 +698,7 @@ void TetWildMesh::filter_with_flood_fill()
 
 void TetWildMesh::output_mesh(std::string file)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -970,8 +936,9 @@ int TetWildMesh::flood_fill()
     return current_id;
 }
 
-void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
+void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output)
 {
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
 
     // flood fill
@@ -1051,12 +1018,13 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
+    if (output) T.conservativeResize(tets.size(), 4);
+    std::shared_ptr<io::DataWriter> writer;
     if (use_hdf5) {
         log_and_throw_error("Cannot write HDF5");
         // writer = std::make_shared<paraviewo::HDF5VTUWriter>();
     } else {
-        writer = std::make_shared<paraviewo::VTUWriter>();
+        writer = std::make_shared<io::DataWriter>(output);
     }
 
     const auto out_path = path + (use_hdf5 ? ".hdf" : ".vtu");
@@ -1087,8 +1055,8 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     // surface
     {
         const auto surf_out_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        std::shared_ptr<io::DataWriter> surf_writer;
+        surf_writer = std::make_shared<io::DataWriter>(output);
         surf_writer->add_field("sizing_field", v_sizing_field);
         surf_writer->add_field("is_rounded", v_is_rounded);
         surf_writer->add_field("on_surface", v_is_on_surface);

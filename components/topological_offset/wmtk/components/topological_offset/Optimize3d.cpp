@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +23,7 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace wmtk {
@@ -261,7 +263,9 @@ double TopoOffsetTetMesh::tet_energy(const size_t tid, const bool band_term) con
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    return cell_energy(vids, a3, band_term && cell_is_offset_band(tid));
+    // In a TetWild pass a cell's energy is its AMIPS term alone (m_tetwild_pass); there only the
+    // logs and frames read it, the rules being TetWild's own (m_op_rules).
+    return cell_energy(vids, a3, band_term && !m_tetwild_pass && cell_is_offset_band(tid));
 }
 
 bool TopoOffsetTetMesh::plastic_rest(const size_t tid, Eigen::Matrix3d& R) const
@@ -336,28 +340,46 @@ double TopoOffsetTetMesh::offset_energy() const
     return s;
 }
 
-void TopoOffsetTetMesh::log_energy_step(const char* step) const
+std::pair<double, double> TopoOffsetTetMesh::energy_parts() const
 {
     // See the declaration. A band cell is never plastic (cell_is_plastic()), so its tet_energy()
     // is cell_energy(vids, A^3, true): the AMIPS part (plus the repulsion term, 0 in the loop)
-    // and band_cell_term(), summed here apart rather than calling both tet_energy() and
-    // band_cell_term(), which would evaluate the band term twice.
+    // and band_cell_term(), evaluated here apart rather than calling both tet_energy() and
+    // band_cell_term(), which would evaluate the band term twice. Per cell k (get_tets() order):
+    // its AMIPS part, and its band term where it has one (has_band[k]).
+    const std::vector<Tuple> tets = get_tets();
+    std::vector<double> amips_k(tets.size(), 0.), band_k(tets.size(), 0.);
+    std::vector<char> has_band(tets.size(), 0);
+    diagnostic_parallel_for(tets.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+        for (size_t k = b; k < e; ++k) {
+            const size_t tid = tets[k].tid(*this);
+            if (!cell_is_offset_band(tid)) {
+                amips_k[k] = tet_energy(tid);
+                continue;
+            }
+            const std::array<size_t, 4> vids = oriented_tet_vids(tid);
+            const double a3 = get_quality(tets[k]);
+            if (a3 >= MAX_ENERGY) {
+                amips_k[k] = MAX_ENERGY;
+                continue;
+            }
+            amips_k[k] = cell_energy(vids, a3, false);
+            band_k[k] = band_cell_term(vids);
+            has_band[k] = 1;
+        }
+    });
+    // Summed serially in cell order, as the loop that evaluated them in place did.
     double amips = 0., band = 0.;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (!cell_is_offset_band(tid)) {
-            amips += tet_energy(tid);
-            continue;
-        }
-        const std::array<size_t, 4> vids = oriented_tet_vids(tid);
-        const double a3 = get_quality(t);
-        if (a3 >= MAX_ENERGY) {
-            amips += MAX_ENERGY;
-            continue;
-        }
-        amips += cell_energy(vids, a3, false);
-        band += band_cell_term(vids);
+    for (size_t k = 0; k < tets.size(); ++k) {
+        amips += amips_k[k];
+        if (has_band[k]) band += band_k[k];
     }
+    return {amips, band};
+}
+
+void TopoOffsetTetMesh::log_energy_step(const char* step) const
+{
+    const auto [amips, band] = energy_parts();
     logger().info(
         "\t[energy step] turn {} {}: E {:.12g} | AMIPS term {:.12g} | band term {:.12g}",
         m_energy_step_turn,
@@ -408,8 +430,9 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
         if (m_repulsion_potential) e += repulsion_cell_term(vids);
         return e;
     }
-    // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS).
-    return cell_energy(vids, a3, label == 2 && !rec.band_cancels);
+    // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS), as a
+    // TetWild pass leaves it out of every cell.
+    return cell_energy(vids, a3, label == 2 && !rec.band_cancels && !m_tetwild_pass);
 }
 
 void TopoOffsetTetMesh::swap_record_fill(const bool flip)
@@ -505,6 +528,8 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     }
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has label 2, the label every new cell takes.
+    // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
+    if (tetwild_rules()) return true;
     const bool band_cancels = band_term_cancels(tids);
     m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search and the face swap's gate read candidate cells' labels from;
@@ -609,6 +634,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     }
     // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): a ring of
     // band cells has only band sides, and every new cell takes one or the flip is refused.
+    // TetWild's rules (m_op_rules): no sum rule, so no before-half and no record.
+    if (tetwild_rules()) return true;
     const bool band_cancels = band_term_cancels(tids);
     m_swap_energy_before.local() = tet_energy_sum(tids, !band_cancels);
     // What the 4-4 / 5-6 case search reads candidate cells' labels from; see SwapRecord. After
@@ -726,6 +753,8 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
     opts.quality_veto = false;
+    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
+    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
     // The rule is E itself: the sum of tet_energy() over the ring may not rise. A vertex held on a
     // surface takes the engine's projected step, whose acceptance is that rule already
     // (smoothing_ring_energy(): strictly below), so it needs no veto here. Every other vertex is
@@ -755,7 +784,10 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
             &m_newton)) {
         return false;
     }
-    if (projected) return true;
+    if (projected) {
+        count_damped_move(vid, x0, opts.max_step);
+        return true;
+    }
     const bool cancels = cancels_before && band_term_cancels(ring);
     const double after = tet_energy_sum(ring, !cancels);
     if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
@@ -763,7 +795,34 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
         ++m_smooth_rejects.quality;
         return false;
     }
+    count_damped_move(vid, x0, opts.max_step);
     return true;
+}
+
+double TopoOffsetTetMesh::damping_step(const size_t vid) const
+{
+    // See the declaration. Every edge at vid lies in a cell of its one-ring, so the ring's corners
+    // other than vid are exactly its neighbours.
+    if (!damping_active()) return std::numeric_limits<double>::infinity();
+    const Vector3d& x = m_vertex_attribute[vid].m_posf;
+    double shortest = std::numeric_limits<double>::infinity();
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (const size_t u : oriented_tet_vids(tid)) {
+            if (u != vid) shortest = std::min(shortest, (m_vertex_attribute[u].m_posf - x).norm());
+        }
+    }
+    return m_offset_params.damping_factor * shortest;
+}
+
+void TopoOffsetTetMesh::count_damped_move(
+    const size_t vid,
+    const Vector3d& x0,
+    const double max_step)
+{
+    if (!damping_active()) return;
+    ++m_damping_moves;
+    const double moved = (std::as_const(m_vertex_attribute)[vid].m_posf - x0).norm();
+    if (moved >= max_step * (1. - 1e-9)) ++m_damping_bounded;
 }
 
 double TopoOffsetTetMesh::swap_edge_44_energy(
@@ -772,7 +831,9 @@ double TopoOffsetTetMesh::swap_edge_44_energy(
 {
     // See the declaration. The sum of the energy over the cells, double::max() for an inverted
     // one as the base does: the current cells are real and read from the mesh, a candidate's do
-    // not exist yet and are scored by candidate_energy().
+    // not exist yet and are scored by candidate_energy(). TetWild's rules (m_op_rules): the
+    // base's score, the max of AMIPS^3 over the cells.
+    if (tetwild_rules()) return TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
     double e = -1.;
     if (op_case == 0) {
         // The old cells are the ring the before-half already measured (swap_before_interior() /
@@ -845,6 +906,8 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     //
     // Every refusal below is counted in the per-kind table alone (swap_reject_kind_only()), so
     // the edge-swap line swap_reject_report() prints is untouched by face swaps.
+    // TetWild's rules (m_op_rules): the base itself, its gate on the max of AMIPS^3.
+    if (tetwild_rules()) return TetOptimizerMesh::swap_face_before(t);
     if (!TetMesh::swap_face_before(t)) {
         return swap_reject_kind_only(SwapReject::base_before);
     }
@@ -1007,6 +1070,9 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // for this after-hook refusal (SwapReject lives in the engine, which this does not change);
     // a face swap counts in the per-kind table alone, as the engine counts its own refusals.
     const auto energy_lowered = [&]() {
+        // TetWild's rules (m_op_rules): the engine's max rule decided before this hook (3-2 and
+        // 4-4: swap_quality_allowed(); 5-6: the case scores; face swap: the gate); no sum rule.
+        if (tetwild_rules()) return true;
         // without the band term when the before-sum left it out (BAND TERM THAT CANCELS)
         const double after_sum = tet_energy_sum(tids, !m_swap_record.local().band_cancels);
         if (m_params.perform_sanity_checks) swap_scoring_check(tids, after_sum);
@@ -1032,10 +1098,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         close_labels(tids);
         if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
             ++m_repulsion_embed_refused;
-            return false;
-        }
-        if (!repulsion_outer_ends_kept(tids)) {
-            ++m_repulsion_close_refused;
             return false;
         }
         if (!energy_lowered()) return false;
@@ -1070,10 +1132,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     if (sides.worthwhile) ++funnel_energy;
     if (m_repulsion_potential && !repulsion_embedding_kept(tids)) {
         ++m_repulsion_embed_refused;
-        return false;
-    }
-    if (!repulsion_outer_ends_kept(tids)) {
-        ++m_repulsion_close_refused;
         return false;
     }
     if (!energy_lowered()) return false;
@@ -1164,8 +1222,9 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     }
     // The energy rule's before-half (see CollapseVolume): the sum of tet_energy() over v1's ring,
     // the cells the collapse changes, and v2's other cells, which it does not. Not in coarsening,
-    // where the engine skips its own collapse rule as well.
-    if (!m_coarsen_mode) {
+    // where the engine skips its own collapse rule as well, and not under TetWild's rules
+    // (m_op_rules), where the engine's collapse_quality_allowed() decides.
+    if (!m_coarsen_mode && !tetwild_rules()) {
         std::vector<size_t> ring1 = get_one_ring_tids_for_vertex(v1_id);
         CollapseVolume& cv = m_collapse_volume.local();
         // Without the band term when it cancels (tet_energy(), BAND TERM THAT CANCELS): the new
@@ -1285,7 +1344,7 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // (plastic_tie(), decided in collapse_before_vertex()) is not gated by the energy; it is
     // still refused for a cell the engine cannot score. Coarsening runs in the final pass, where
     // the plastic medium is off.
-    if (!m_coarsen_mode) {
+    if (!m_coarsen_mode && !tetwild_rules()) {
         const CollapseVolume& cv = m_collapse_volume.local();
         double after = 0.;
         bool scoreable = true;
@@ -1411,10 +1470,6 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
-    // The final pass does not move the front: it is converged by then, its smoothing there
-    // would be AMIPS alone with the front free anywhere inside the offset tube, and nothing
-    // follows to put it back.
-    if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
 
     // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
     // counted, and smooth_after() reads this back.
@@ -1450,7 +1505,9 @@ polysolve::nonlinear::Solver& TopoOffsetTetMesh::smoothing_solver()
             1,
             opt_logger());
     }
-    solver->stop_criteria().relGradNorm = kSmoothRelGradNormTol;
+    // TetWild's rules (m_op_rules): the engine's own criterion, basic_nonlinear_solver_params'
+    // rel_grad_norm_tol 0.
+    solver->stop_criteria().relGradNorm = tetwild_rules() ? 0. : kSmoothRelGradNormTol;
     return *solver;
 }
 
@@ -1502,15 +1559,19 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // The repulsion passes before the march (repulsion_smoothing()); false at every other time.
     if (is_repulsion_vertex(vid)) return smooth_repulsion_vertex(t);
 
+    // TetWild's rules (m_op_rules): TetWild's own smoother, every vertex -- the raw sum of AMIPS
+    // over the ring (smoothing_extra_energy() gives none), its quality veto on the ring's max, a
+    // held vertex's projected step on the max (smoothing_ring_energy()); the front held in its
+    // envelope by smoothing_energy_envelope() like any held vertex.
+    if (tetwild_rules()) return TetOptimizerMesh::smooth_after(t);
+
     // A front vertex goes through the shared smoother -- same solver, line search and accept
     // tests as every other vertex -- with the offset's options: its objective carries the offset
     // terms (smoothing_extra_energy), and the veto is on the ring's sum of tet_energy() instead
     // of AMIPS, since a front vertex must be able to worsen its ring's shape on the way to the
-    // level set but not the energy, which charges both (see smooth_front_vertex()). A front
-    // vertex reaches here only outside the final pass: smooth_before() refuses it while
-    // m_freeze_front is set. Every other vertex minimises the same energy
-    // (smooth_nonfront_vertex()).
-    if (ve.m_is_on_offset) {
+    // level set but not the energy, which charges both (see smooth_front_vertex()). Every other
+    // vertex minimises the same energy (smooth_nonfront_vertex()). A TetWild pass returned above.
+    if (ve.m_is_on_offset && !m_tetwild_pass) {
         const bool ok = smooth_front_vertex(t);
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
@@ -1536,8 +1597,8 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     // Every tracked face against the envelope surface_envelope_for_face() holds it to -- the
     // dispatch the operations and the sanity check use, so this cannot disagree with them --
     // and, for the faces inside, how much room is left as a fraction of eps: `is_outside` is a
-    // yes/no, and a face resting on the skin of its tube is the one the next operation pushes
-    // out. Both envelopes are real SampleEnvelopes, so squared_distance() is safe on them.
+    // yes/no, and a face resting on the skin of its envelope is the one the next operation pushes
+    // out. Both envelopes are real Envelopes, so squared_distance() is safe on them.
     struct Face
     {
         std::array<size_t, 3> v{{0, 0, 0}};
@@ -1549,7 +1610,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
     double worst_frac = 0.;
     std::array<size_t, 5> band{{0, 0, 0, 0, 0}}; // <0.5, <0.9, <0.99, <1, >=1 of eps
     // The farthest a lattice of (k+1)(k+2)/2 points on the triangle is from the envelope.
-    const auto farthest = [](const SampleEnvelope& env, const std::array<Vector3d, 3>& p, int k) {
+    const auto farthest = [](const Envelope& env, const std::array<Vector3d, 3>& p, int k) {
         double d = 0.;
         for (int i = 0; i <= k; ++i) {
             for (int j = 0; j <= k - i; ++j) {
@@ -1564,7 +1625,7 @@ void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 3> vids = get_face_vids(f);
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face(vids);
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face(vids);
         if (!env) continue;
         ++n_held;
         const std::array<Vector3d, 3> p{
@@ -1760,6 +1821,16 @@ void TopoOffsetTetMesh::log_smoothing_pass_accounting()
         "\tfront veto: fired {} of {} front moves that reached it (ring sum of tet_energy rose)",
         m_front_veto_fired.exchange(0),
         m_front_veto_asked.exchange(0));
+    if (damping_active()) {
+        const size_t bounded = m_damping_bounded.exchange(0);
+        const size_t moves = m_damping_moves.exchange(0);
+        logger().info(
+            "\t[damping] {} of {} accepted smoothing moves ended on the bound ({} x the shortest "
+            "edge at the vertex)",
+            bounded,
+            moves,
+            m_offset_params.damping_factor);
+    }
     {
         // Diagnostic: where the front solves stop (see m_front_grad_abs). Bins are log10 of the
         // value; the first bin is "<= 0 or below the range".
@@ -1856,9 +1927,9 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
             cand.c += m_vertex_attribute[v].m_posf / 4.;
             cand.sizing = std::min(cand.sizing, m_vertex_attribute[v].m_sizing_scalar);
         }
-        if (m_input_complex_bvh) {
-            cand.dist = (cand.c - m_input_complex_bvh->nearest_point(cand.c)).norm();
-        }
+        // The line's "dist to complex": the distance to the input complex itself, 0 inside its
+        // solid (input_complex_distance()).
+        if (m_input_complex_envelope) cand.dist = input_complex_distance(cand.c);
         if (m_offset_potential && c_level > 0.) {
             cand.phi_over_c = m_offset_potential->value(cand.c) / c_level;
         }
@@ -1896,7 +1967,7 @@ void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const d
                         if (!found) continue;
                         const size_t fid = std::get<1>(*found);
                         if (!m_face_attribute[fid].m_is_surface_fs) continue;
-                        const std::shared_ptr<SampleEnvelope> env =
+                        const std::shared_ptr<Envelope> env =
                             surface_envelope_for_face({{a, b, w}});
                         if (!env) continue;
                         const Vector3d mid = 0.5 * (pa + pb);
@@ -2484,7 +2555,7 @@ std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
 double TopoOffsetTetMesh::band_vertex_distance_error(const size_t vid) const
 {
     const Vector3d p = m_vertex_attribute[vid].m_posf;
-    return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+    return std::abs(input_complex_distance(p) - m_offset_params.target_distance);
 }
 
 double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
@@ -2530,7 +2601,7 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
         if (band_vertex_is_reachable(vid)) {
             if (!potential_for(vid).within_support(p)) {
                 ++s.n_outside_support;
-                const double d = m_input_complex_bvh->dist(VectorXd(p));
+                const double d = input_complex_distance(p);
                 if (d > s.worst_outside_dist) {
                     s.worst_outside_dist = d;
                     s.worst_outside_vid = vid;
@@ -2640,10 +2711,10 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
 {
     EnergyCriterion s;
     // THE bar, as a length: a face is resolved when its RMS relative error is within it, and a
-    // vertex placed when its own relative error is. One key for both since 2026-09-24. See
-    // offset_envelope_rel for the leash on the operations, which is not an accuracy and which
-    // startup requires to be no wider than this.
-    s.tube = m_offset_params.front_conv;
+    // vertex placed when its own relative error is. One key for both since 2026-09-24. The
+    // offset surface's envelope (envelope_size) holds the front in a TetWild pass alone and is
+    // not an accuracy.
+    s.bar_length = m_offset_params.front_conv;
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
@@ -2698,7 +2769,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         // front_measure "vertex_ring" it feeds both through the ring measure instead. gn is
         // the root of the face term, the figure the logs print.
         const double term = face_offset_term(va, vb, vc);
-        const double gn = term < 0. ? -1. : std::sqrt(term); // the sag / the tube
+        const double gn = term < 0. ? -1. : std::sqrt(term); // the sag / bar_length
         if (gn < 0.) {
             ++s.n_unmeasurable;
             if (s.ring_exit) ring_bad[va] = ring_bad[vb] = ring_bad[vc] = 1;
@@ -2758,11 +2829,12 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 // the halving in refine_front_by_halving(), but the question asked here is the
                 // same one either way -- is there any target left below what the corners
                 // already carry, or are they at the floor.
-                const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
+                const double target =
+                    front_chord_target(la, lb, len, gn * s.bar_length, s.bar_length);
                 const double sn =
                     std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 if (sn < have) {
-                    s.refinable.push_back({la, lb, lc, gn * s.tube, len});
+                    s.refinable.push_back({la, lb, lc, gn * s.bar_length, len});
                 } else {
                     // Not handed to the refinement, for one of two reasons. Either the corners
                     // are at the sizing floor (have <= s_floor): nothing can refine the face and
@@ -2957,17 +3029,17 @@ Vector3d TopoOffsetTetMesh::front_vertex_field_gradient(const size_t vid) const
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
-    // with an input-complex vertex, whose piece is read off the per-piece BVHs (the nearest
+    // with an input-complex vertex, whose piece is read off the per-piece envelopes (the nearest
     // piece to a vertex ON the complex is its own, at distance 0). As in 2D, a cell reached from
     // two regions and a vertex on cells of two regions read -2 and fall back to the union field.
     m_cell_region.assign(tet_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
-    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_bvhs.empty()) return;
+    if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
     const auto region_at = [&](const Vector3d& p) -> int {
         int best = -1;
         double best_d = std::numeric_limits<double>::infinity();
-        for (size_t r = 0; r < m_region_bvhs.size(); ++r) {
-            const double d = m_region_bvhs[r]->squared_dist(VectorXd(p));
+        for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
+            const double d = m_region_envelopes[r]->squared_distance(p);
             if (d < best_d) {
                 best_d = d;
                 best = int(r);
@@ -3091,13 +3163,13 @@ double TopoOffsetTetMesh::front_chord_target(
     const size_t vb,
     const double len,
     const double sag,
-    const double tube) const
+    const double bar) const
 {
-    // 3/4 L (tube / sag)^(1/p), capped at L/2, with the exponent p measured from how the level
+    // 3/4 L (bar / sag)^(1/p), capped at L/2, with the exponent p measured from how the level
     // set turns across the chord: 2 on a smooth level set, 1 where the chord straddles a kink.
     // See the 2D twin for the derivation. The sag fraction a halving leaves is ratio = 2^-p, so
     // p = -log2(ratio): 1/4 -> 2, 1/2 -> 1. (The 2D twin writes -1 / log2(ratio), which maps
-    // 1/4 to 0.5 and 1/2 to 1 and so over-refines every smooth chord by (sag / tube)^(1..2)
+    // 1/4 to 0.5 and 1/2 to 1 and so over-refines every smooth chord by (sag / bar)^(1..2)
     // instead of the square root -- affordable on a curve, cubic on a surface. Not mirrored.)
     double p = 2.;
     const OffsetPotential3D& pot = potential_for_edge(va, vb);
@@ -3117,7 +3189,7 @@ double TopoOffsetTetMesh::front_chord_target(
             p = -std::log2(ratio);
         }
     }
-    return std::min(0.75 * len * std::pow(tube / sag, 1. / p), 0.5 * len);
+    return std::min(0.75 * len * std::pow(bar / sag, 1. / p), 0.5 * len);
 }
 
 size_t TopoOffsetTetMesh::refine_front_by_halving(
@@ -3206,11 +3278,20 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 {m_vertex_attribute[f[0]].m_posf,
                  m_vertex_attribute[f[1]].m_posf,
                  m_vertex_attribute[f[2]].m_posf}};
-            const double inside = delta - m_band_tris->min_triangle_distance(p[0], p[1], p[2]);
-            const double outside = (m_band_exact && !rms_mode && !vertex_mode
-                                        ? m_band_exact->max_distance(p)
-                                        : m_band_tris->min_max_corner_distance(p.data(), 3)) -
-                                   delta;
+            const double inside = delta - min_triangle_distance(
+                                              *m_input_complex_envelope,
+                                              m_input_complex_pad,
+                                              p[0],
+                                              p[1],
+                                              p[2]);
+            const double outside =
+                (m_band_exact && !rms_mode && !vertex_mode ? m_band_exact->max_distance(p)
+                                                           : min_max_corner_distance(
+                                                                 *m_input_complex_envelope,
+                                                                 m_input_complex_pad,
+                                                                 p.data(),
+                                                                 3)) -
+                delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
             const bool over_max = std::max(inside, outside) > eps;
@@ -3227,7 +3308,14 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                     if (n.dot(p[0] - m_vertex_attribute[v].m_posf) < 0.) n = -n;
                 }
             }
-            const double q = m_band_tris->face_mean_sq_cos(p[0], p[1], p[2], n.normalized(), delta);
+            const double q = face_mean_sq_cos(
+                *m_input_complex_envelope,
+                m_input_complex_pad,
+                p[0],
+                p[1],
+                p[2],
+                n.normalized(),
+                delta);
             const bool over_rms = bc >= 0 && q > eps * eps;
             max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
             n_over_max += over_max;
@@ -3250,7 +3338,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         n_front_vertices = front_vids.size();
         for (const size_t v : front_vids) {
             const Vector3d& x = m_vertex_attribute[v].m_posf;
-            const double err = std::abs(m_band_tris->distance(m_band_tris->nearest(x), x) - delta);
+            const Envelope& env = *m_input_complex_envelope;
+            const double err = std::abs(
+                env.primitive_distance(nearest_primitive(env, m_input_complex_pad, x), x) - delta);
             max_vertex = std::max(max_vertex, err / eps);
             if (!(err > eps)) continue;
             ++n_over_vertex;
@@ -3280,9 +3370,16 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                 std::array<Vector3d, 4> p;
                 for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vs[size_t(j)]].m_posf;
                 int64_t best = -1;
-                const double md = m_band_tris->min_mean_distance(p.data(), 4, best);
+                const double md = min_mean_distance(
+                    *m_input_complex_envelope,
+                    m_input_complex_pad,
+                    p.data(),
+                    4,
+                    best);
                 const Vector3d ctr = 0.25 * (p[0] + p[1] + p[2] + p[3]);
-                const double dc = m_band_tris->distance(m_band_tris->nearest(ctr), ctr);
+                const Envelope& env = *m_input_complex_envelope;
+                const double dc =
+                    env.primitive_distance(nearest_primitive(env, m_input_complex_pad, ctr), ctr);
                 max_gap = std::max(max_gap, (md - dc) / eps);
                 if (!(md - dc > eps)) continue;
                 ++n_gap_over;
@@ -3356,9 +3453,10 @@ void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& se
 
 size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
 {
-    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
-    // (attic/app/tetwild/TetWild.cpp): the same R, the same ramp, the same breadth-first walk
-    // that stops at R, the same floor. Two parts of that function are NOT ported on purpose:
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field (the attic/
+    // directory, since deleted; read attic/app/tetwild/TetWild.cpp at 2371c13fe8): the same R,
+    // the same ramp, the same breadth-first walk that stops at R, the same floor. Two parts of
+    // that function are NOT ported on purpose:
     //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
     //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
     //     the value it wants, and halving it again would refine the seed twice.
@@ -3564,9 +3662,8 @@ double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
 {
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
-    // same way, seeding the same force-split edges. Final pass only, by construction:
-    // mesh_improvement() is this function's one caller, and the driver only ever runs that for
-    // the frozen-front finishing pass.
+    // same way, seeding the same force-split edges. TetWild passes only, by construction:
+    // mesh_improvement() is this function's one caller, and only tetwild_pass() runs that.
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
 
@@ -3649,8 +3746,9 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     const size_t vid = m_worst_dist_vid;
     if (vid == static_cast<size_t>(-1)) return;
 
+    // The distance band_vertex_distance_error() chose the vertex by, printed beside it.
     const Vector3d p = m_vertex_attribute[vid].m_posf;
-    const double d = (p - m_input_complex_bvh->nearest_point(p)).norm();
+    const double d = input_complex_distance(p);
 
     // Every face incident to vid, classified.
     const auto& ve = m_vertex_extra[vid];
@@ -3696,8 +3794,9 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     const char* fate = "TetWild's smooth_after(): AMIPS, no offset term";
     if (!m_vertex_attribute[vid].m_is_rounded) {
         fate = "REFUSED by smooth_before: not rounded";
-    } else if (m_freeze_front && ve.m_is_on_offset) {
-        fate = "REFUSED by smooth_before: front frozen in the final pass";
+    } else if (m_tetwild_pass && ve.m_is_on_offset) {
+        fate =
+            "a TetWild pass: TetWild's smooth_after() (raw AMIPS sum), held in the offset envelope";
     } else if (ve.m_is_on_offset) {
         fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
     }
@@ -3937,94 +4036,32 @@ void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
         invalid);
 }
 
-/// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
-/// over: the angle between its two faces measured through ONE of the two sides. 180 is flat and
-/// 360 is the two faces exactly on top of each other. Because the two sides sum to 360, "over
-/// 330 on one side" is the same statement as "under 30 unsigned", which is what the code tests --
-/// see offset_surface_foldover_labels() for why the side is not determined.
-/// Optimize2d.cpp carries the same constant; the two values must stay equal.
-static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
-
-std::vector<char> TopoOffsetTetMesh::offset_surface_foldover_labels() const
+double TopoOffsetTetMesh::front_face_field_angle(const size_t a, const size_t b, const size_t c)
+    const
 {
-    std::vector<char> fold(vert_capacity(), 0);
-
-    // Every live offset face against each of its three edges, so an edge arrives with the faces
-    // that actually carry it. A std::map keyed on the sorted vertex pair: the surface is a small
-    // part of the mesh and this runs once per debug frame.
-    //
-    // The faces are found from the band side: a live offset face has exactly one band cell
-    // (face_is_offset_surface_live() is true only where its two cells differ, or for a band
-    // cell's face on the domain boundary), so the band cells' faces list each one exactly once,
-    // at one switch_tetrahedron() per band-cell face -- not a canonical-id lookup for every face
-    // of the mesh before the same test. MEASURED 2026-10-09 on the cube (22k tets): 9 of the 40
-    // ms a debug frame spent reading the mesh, before. The order the faces arrive in does not
-    // change the labels: an edge keeps the two faces' third vertices, and the angle between them
-    // is symmetric in the two.
-    struct EdgeFaces
-    {
-        int n = 0;
-        std::array<size_t, 2> opposite{{0, 0}}; // the two faces' third vertices
-    };
-    std::map<std::array<size_t, 2>, EdgeFaces> edges;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (!cell_is_offset_band(tid)) continue;
-        for (int j = 0; j < 4; ++j) {
-            const Tuple f = tuple_from_face(tid, j);
-            if (!face_is_offset_surface_live(f)) continue;
-            const auto fv = get_face_vids(f);
-            for (int i = 0; i < 3; ++i) {
-                const size_t a = fv[i], b = fv[(i + 1) % 3], c = fv[(i + 2) % 3];
-                std::array<size_t, 2> key{{a, b}};
-                if (key[0] > key[1]) std::swap(key[0], key[1]);
-                EdgeFaces& ef = edges[key];
-                if (ef.n < 2) ef.opposite[size_t(ef.n)] = c;
-                ++ef.n; // counted past 2 on purpose, so a non-manifold edge can be recognised
-            }
-        }
+    // See the declaration.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_input_complex_envelope) return nan;
+    const Vector3d& pa = m_vertex_attribute[a].m_posf;
+    const Vector3d& pb = m_vertex_attribute[b].m_posf;
+    const Vector3d& pc = m_vertex_attribute[c].m_posf;
+    Vector3d n = (pb - pa).cross(pc - pa);
+    if (!(n.norm() > 0.)) return nan;
+    const int64_t bc = front_face_band_cell(a, b, c);
+    if (bc < 0) return nan;
+    for (const size_t v : oriented_tet_vids(size_t(bc))) {
+        if (v == a || v == b || v == c) continue;
+        if (n.dot(pa - m_vertex_attribute[v].m_posf) < 0.) n = -n;
     }
-
-    // A fold is the two faces lying on top of each other, and WHICH side is pinched is not part
-    // of it. MEASURED, on the cube at target_distance_rel 5e-2 with the construction probe off
-    // and the alignment term off: at every folded edge in that run it is the BACKGROUND that is
-    // pinched, not the band -- the two band tets sit at angles like 92 and 265 degrees around
-    // the edge, on either side of a sliver of outside a fraction of a degree wide. Measuring
-    // through the background there gives 0.67 degrees, not 359.33. So the side is deliberately
-    // not determined: the two sides sum to 360, "over 355 through one side" is exactly "under 5
-    // unsigned", and testing the unsigned angle catches the fold whichever wedge collapsed.
-    // This also drops the band-apex orientation the first version needed, which was the part
-    // that could be got wrong.
-    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
-    for (const auto& [e, ef] : edges) {
-        // Not two faces means the angle is not defined -- a domain-boundary rim, or a
-        // non-manifold edge. Not measurable is not a fold.
-        if (ef.n != 2) continue;
-        const Vector3d pa = m_vertex_attribute[e[0]].m_posf;
-        const Vector3d pb = m_vertex_attribute[e[1]].m_posf;
-        Vector3d dir = pb - pa;
-        const double elen = dir.norm();
-        if (!(elen > 0.)) continue;
-        dir /= elen;
-        // Each face's in-plane direction away from the edge, so the angle between them is the
-        // angle around the edge and not the angle between two arbitrary chords.
-        const auto perp = [&](const size_t opp_vid, Vector3d& u) -> bool {
-            const Vector3d w = m_vertex_attribute[opp_vid].m_posf - pa;
-            u = w - w.dot(dir) * dir;
-            const double len = u.norm();
-            if (!(len > 0.) || !std::isfinite(len)) return false;
-            u /= len;
-            return true;
-        };
-        Vector3d u0, u1;
-        if (!perp(ef.opposite[0], u0) || !perp(ef.opposite[1], u1)) continue;
-        const double ang = std::acos(std::clamp(u0.dot(u1), -1., 1.)) * 180. / M_PI; // [0, 180]
-        if (ang < coincidence_deg) {
-            fold[e[0]] = 1;
-            fold[e[1]] = 1;
-        }
-    }
-    return fold;
+    const Vector3d x = (pa + pb + pc) / 3.;
+    const Envelope& env = *m_input_complex_envelope;
+    const int64_t prim = nearest_primitive(env, m_input_complex_pad, x);
+    if (prim < 0) return nan;
+    Vector3d g;
+    env.primitive_distance(prim, x, &g);
+    if (!(g.norm() > 0.)) return nan;
+    // atan2 of the cross and dot products: accurate at every angle, unlike acos near 0 and 180.
+    return std::atan2(n.cross(g).norm(), n.dot(g)) * 180. / M_PI;
 }
 
 const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
@@ -4048,7 +4085,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input) {
             continue;
         }
-        if (m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf)) >
+        if (input_complex_distance(m_vertex_attribute[vid].m_posf) >
             m_offset_params.envelope_size) {
             continue;
         }
@@ -4062,7 +4099,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
     std::string detail;
     for (size_t i = 0; i < n_show; ++i) {
         const size_t vid = both[i];
-        const double d = m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf));
+        const double d = input_complex_distance(m_vertex_attribute[vid].m_posf);
         detail += fmt::format("{}{} (dist to input {:.6g})", i ? ", " : "", vid, d);
     }
     log_and_throw_error(
@@ -4099,20 +4136,26 @@ void TopoOffsetTetMesh::build_offset_envelope()
         verts[i] = m_vertex_attribute[i].m_posf;
     }
 
-    // The leash as init() resolved it: absolute if the config gave one, else offset_envelope_rel
-    // x the bbox diagonal. Referenced to the BOX, not to target_distance, since 2026-09-24. As
-    // in 2D.
-    const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
+    // envelope_size, as init() resolved it: the eps of every held surface's envelope, the offset
+    // surface's too (its own key, offset_envelope, went on 2026-10-20).
+    // optimize_construction's pass alone holds the front in a wider envelope, half the distance
+    // the march traced it to (m_construction_envelope_eps, 0 at every other time).
+    const bool construction_envelope = m_construction_envelope_eps > 0.;
+    const double eps = construction_envelope ? m_construction_envelope_eps
+                                             : std::max(m_offset_params.envelope_size, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+    m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
     logger().info(
-        "\t[offset envelope] built: {} faces, {} (eps {:.6g} = offset_envelope, "
-        "{:.4} x the bbox diagonal)",
+        "\t[offset envelope] built: {} faces, {} (eps {:.6g} = {})",
         tris.size(),
         m_offset_envelope->use_exact ? "EXACT" : "sampled",
         eps,
-        m_offset_params.offset_envelope_rel);
+        construction_envelope
+            ? std::string("half the traced distance, optimize_construction's pass only")
+            : fmt::format(
+                  "envelope_size, {:.4} x the bbox diagonal",
+                  m_offset_params.envelope_size_rel));
 }
 
 namespace {
@@ -4186,6 +4229,7 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
 
 void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 {
+    if (!m_params.output_enabled) return;
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
     if (m_offset_potential) {
@@ -4290,9 +4334,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const std::string& label)
 {
     // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
-    // with the front placed by the offset objective inside the smoothing passes. No offset tube
-    // holds the front in the loop, neither the operations nor the smoothing; only the frozen-front
-    // final pass is held to one (build_offset_envelope()).
+    // with the front placed by the offset objective inside the smoothing passes. No envelope
+    // holds the front in the loop, neither the operations nor the smoothing; only a TetWild pass
+    // holds it to one (build_offset_envelope()).
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
@@ -4304,7 +4348,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         "\tLOOP: TetWild's operation groups with the front placed inside their "
         "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
         "relative error over a stencil_order {} stencil ({} points per face) against front_conv "
-        "{:.6g} ({:.6g} x the bbox diagonal)",
+        "{:.6g} ({:.6g} x the configured target_distance)",
         m_front_gradient_reference,
         m_offset_params.stencil_order,
         stencil_points_per_face(),
@@ -4312,8 +4356,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_offset_params.front_conv_rel);
     logger().info(
         "\t[offset envelope] the loop's operations and smoothing do not hold the offset surface "
-        "to an envelope; the final pass does (eps {:.6g})",
-        m_offset_params.offset_envelope);
+        "to an envelope; a TetWild pass does (eps envelope_size {:.6g})",
+        m_offset_params.envelope_size);
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
@@ -4641,12 +4685,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             write_optimization_debug_output(fmt::format("end_{}S", it + 1));
         }
         // Termination: every offset face's measure within the bar and nothing unmeasurable
-        // (EnergyCriterion::converged()) -- then quality with the front frozen (below). The face
-        // measure is the one quantity the smoothing minimises and the refinement reads; the
-        // vertex measure is reported on the turn line and in the verdict, and tested nowhere.
-        // Nothing refinable is implied, a refinable face being over the bar. Under front_measure
-        // "vertex_ring" the tested measure is every front vertex's ring measure instead, and the
-        // face measure joins the vertex measure as a diagnostic (EnergyCriterion::ring_exit).
+        // (EnergyCriterion::converged()) -- then quality with the front held in its envelope
+        // (below). The face measure is the one quantity the smoothing minimises and the refinement
+        // reads; the vertex measure is reported on the turn line and in the verdict, and tested
+        // nowhere. Nothing refinable is implied, a refinable face being over the bar. Under
+        // front_measure "vertex_ring" the tested measure is every front vertex's ring measure
+        // instead, and the face measure joins the vertex measure as a diagnostic
+        // (EnergyCriterion::ring_exit).
         //
         // The loop exits on the FIRST turn that meets the criterion. It used to additionally
         // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
@@ -4726,29 +4771,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             }
             if (amips >= bar) {
                 logger().info(
-                    "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
+                    "======== final pass, TetWild with the front held in its envelope: max AMIPS "
+                    "{:.6g} >= stop_energy {} "
                     "========",
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                // The final pass's envelopes -- the front's tube, and m_envelope widened to every
-                // region boundary as placement left them (build_final_envelopes()). Every cell
-                // elastic: no plastic medium, so AMIPS is against the regular tet, the quality the
-                // pass is driving down.
-                build_final_envelopes();
-                m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
-                mesh_improvement(a_iters);
-                logger().info(
-                    "\t[split order] final pass: waited {} | committed off the longest edge {}",
-                    m_split_order_waits.exchange(0),
-                    m_split_off_longest.exchange(0));
-                m_plastic_active = plastic_was;
-                m_freeze_front = false;
-                release_final_envelopes();
-                assign_band_regions();
-                const double final_amips = std::get<0>(optimization_quality_stats());
+                const double final_amips = tetwild_pass("final pass", a_iters);
                 m_quality_max_amips = final_amips;
                 m_quality_converged = final_amips < m_params.stop_energy;
                 logger().log(
@@ -4757,7 +4786,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     final_amips,
                     optimization_stop_metric(),
                     m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
-                if (m_offset_params.debug_output) {
+                // Under DEBUG_remote_output the "final" frame at the end of optimize_offset() is
+                // this mesh.
+                if (m_offset_params.debug_output && !remote_frames()) {
                     write_optimization_debug_output(fmt::format("end_{}F", it + 2));
                 }
             }
@@ -4774,6 +4805,204 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                           m_offset_params.target_distance));
     log_front_profile(energy_criterion().worst_vid);
     return false;
+}
+
+double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
+{
+    // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
+    // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
+    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no band term, no plastic medium
+    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
+    build_final_envelopes();
+    m_tetwild_pass = true;
+    // TetWild's own rules for the operations and the smoother (m_op_rules).
+    const OpRules rules_was = m_op_rules;
+    m_op_rules = OpRules::TetWild;
+    const bool plastic_was = m_plastic_active;
+    m_plastic_active = false;
+    // DEBUG_remote_output: the pass's start frame; its iterations' frames come from
+    // optimization_iteration_done().
+    if (remote_frames()) {
+        write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
+    }
+    mesh_improvement(max_its);
+    logger().info(
+        "\t[split order] {}: waited {} | committed off the longest edge {}",
+        what,
+        m_split_order_waits.exchange(0),
+        m_split_off_longest.exchange(0));
+    m_plastic_active = plastic_was;
+    m_op_rules = rules_was;
+    m_tetwild_pass = false;
+    release_final_envelopes();
+    assign_band_regions();
+    return std::get<0>(optimization_quality_stats());
+}
+
+void TopoOffsetTetMesh::optimize_construction_pass()
+{
+    // See the declaration and the spec doc (optimize_construction).
+    const auto t0 = std::chrono::steady_clock::now();
+    // The sizing field at 1 everywhere. Nothing before this pass lowers it (the march's splits
+    // carry it, at 1), so a vertex that needs resetting here is unexpected: counted and warned.
+    size_t n_reset = 0;
+    for (const Tuple& v : get_vertices()) {
+        double& s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+        if (s != 1.) {
+            s = 1.;
+            ++n_reset;
+        }
+    }
+    if (n_reset > 0) {
+        logger().warn(
+            "\t[optimize construction] {} vertices had a sizing scalar other than 1; set to 1",
+            n_reset);
+    }
+    // The offset surface's envelope in this pass only: half the distance the march traced it to
+    // (d_0 under EXPERIMENTAL_incremental_growth, else target_distance); every other tracked
+    // surface keeps m_envelope (envelope_size). Nothing marched: envelope_size for it too.
+    m_construction_envelope_eps = m_construction_distance > 0. ? 0.5 * m_construction_distance : 0.;
+    const double amips0 = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "======== [optimize construction] TetWild on the mesh as constructed, from the sizing "
+        "field at 1, under TetWild's own rules (raw AMIPS sum, max-AMIPS guards; no band term), "
+        "every tracked surface held (the offset surface to eps {:.6g}, half the traced distance "
+        "{:.6g}; the rest to eps {:.6g}): max AMIPS {:.6g}, stop_energy {} | #V {}, #T {} ========",
+        m_construction_envelope_eps > 0. ? m_construction_envelope_eps
+                                         : m_offset_params.envelope_size,
+        m_construction_distance,
+        m_envelope_eps,
+        amips0,
+        m_params.stop_energy,
+        vertex_size(),
+        tet_size());
+    log_energy_step("start");
+    m_frame_prefix = "c";
+    m_round = 0;
+    const double amips1 =
+        tetwild_pass("optimize construction", std::max(1, m_offset_params.max_iterations));
+    m_construction_envelope_eps = 0.;
+    // The loop's setup, redone on what the pass left: a compact mesh, the band regions on it, the
+    // vertex order, and under use_rest_pose the rests the loop measures plastic cells against.
+    consolidate_mesh();
+    assign_band_regions();
+    init_vertex_order();
+    stamp_plastic_rests();
+    log_energy_step("tetwild");
+    if (m_params.debug_output) write_optimization_debug_output("end_construction_tetwild");
+    m_frame_prefix.clear();
+    double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
+    for (const Tuple& v : get_vertices()) {
+        const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+        s_min = std::min(s_min, s);
+        s_max = std::max(s_max, s);
+    }
+    const bool under = amips1 < m_params.stop_energy;
+    logger().log(
+        under ? spdlog::level::info : spdlog::level::warn,
+        "\t[optimize construction] max AMIPS {:.6g} -> {:.6g} (stop {}){} | #V {}, #T {} | sizing "
+        "scalar {:.6g} .. {:.6g} | {:.3g} s",
+        amips0,
+        amips1,
+        m_params.stop_energy,
+        under ? "" : ", STILL OVER stop_energy",
+        vertex_size(),
+        tet_size(),
+        s_min,
+        s_max,
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+}
+
+double TopoOffsetTetMesh::growth_stage_target(
+    const double d0,
+    const double delta,
+    const int k,
+    const int n)
+{
+    return k >= n ? delta : d0 + double(k) * (delta - d0) / double(n);
+}
+
+void TopoOffsetTetMesh::incremental_growth()
+{
+    // See the declaration and the spec doc (EXPERIMENTAL_incremental_growth). Between stages only
+    // target_distance changes, and what init_offset_potential() builds on it: the field, the
+    // per-piece fields, the exact integral's reach. Every other reader of target_distance (the
+    // band term, the settle test, the measures, the front smoother) asks for it when it runs, and
+    // no pass is running here.
+    const double delta = m_offset_params.target_distance;
+    const double d0 = m_growth_start;
+    const int n = m_offset_params.incremental_growth_steps;
+    const auto set_target = [&](const double d) {
+        m_offset_params.target_distance = d;
+        init_offset_potential();
+    };
+    std::string done; // the stages before the last, for the last one's header
+    for (int k = 0; k < n; ++k) {
+        set_target(growth_stage_target(d0, delta, k, n));
+        m_frame_prefix = fmt::format("g{}", k);
+        logger().info(
+            "======== [incremental growth] stage {} / {}: target_distance {:.6g} ({:.4g}x "
+            "target_distance {:.6g}){} ========",
+            k,
+            n,
+            m_offset_params.target_distance,
+            m_offset_params.target_distance / delta,
+            delta,
+            k == 0 ? ", the distance the march traced to" : "");
+        // Parameters::init() refuses front_conv above target_distance itself; a stage's target
+        // below it is not refused, only said.
+        if (m_offset_params.front_conv > m_offset_params.target_distance) {
+            logger().warn(
+                "[incremental growth] stage {} / {}: front_conv {:.6g} exceeds the stage's "
+                "target_distance {:.6g}, so its tests read nearly every front vertex as within "
+                "the bar",
+                k,
+                n,
+                m_offset_params.front_conv,
+                m_offset_params.target_distance);
+        }
+        const bool converged = optimize_offset_loop(
+            /*final_stage=*/false,
+            /*refine=*/true,
+            fmt::format("incremental growth stage {} / {}", k, n));
+        // The loop sets m_iterations_used every turn, and a stage before the last has no final
+        // pass to reset it: its turns.
+        done += fmt::format(
+            "{}stage {} at {:.6g} in {} turn(s)",
+            k == 0 ? "" : ", ",
+            k,
+            m_offset_params.target_distance,
+            m_iterations_used);
+        m_converged = false;
+        m_energy_verdict.reset();
+        if (!converged) {
+            m_frame_prefix.clear();
+            // The verdict and the report measure this mesh against target_distance itself.
+            set_target(delta);
+            logger().warn(
+                "[incremental growth] stage {} / {} at target_distance {:.6g} did not converge in "
+                "max_rounds {} turns: the run stops here, stages {}..{} not run; the verdict "
+                "measures this mesh against target_distance {:.6g}",
+                k,
+                n,
+                growth_stage_target(d0, delta, k, n),
+                m_offset_params.max_rounds,
+                k + 1,
+                n,
+                delta);
+            return;
+        }
+    }
+    m_frame_prefix.clear();
+    set_target(delta);
+    logger().info(
+        "======== [incremental growth] stage {} / {}: target_distance {:.6g}, the ordinary loop "
+        "(converged before it: {}) ========",
+        n,
+        n,
+        delta,
+        done);
+    optimize_offset_loop();
 }
 
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
@@ -4838,7 +5067,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             s_min,
             s_max);
     }
-
     // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin). No
     // frame here: nothing changes the mesh between this point and the "construction" frame the
     // optimization writes first, so one would duplicate the other.
@@ -4852,10 +5080,16 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     optimization_metrics.clear();
 
     // Frame 0 is the mesh as constructed, before the optimization touches it.
-    if (m_params.debug_output) {
+    if (remote_frames()) {
+        write_debug_frame("construction"); // DEBUG_remote_output's first frame
+    } else if (m_params.debug_output) {
         m_debug_pass_name = "construction";
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
+
+    // optimize_construction: TetWild on the mesh as constructed, from the sizing field at 1, the
+    // offset surface held to half the traced distance (optimize_construction_pass()).
+    if (m_offset_params.optimize_construction) optimize_construction_pass();
 
     if (m_init_optimize) {
         // init_optimize (see marching_tets()): the loop first runs to
@@ -4879,7 +5113,13 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.stencil_order);
     }
 
-    optimize_offset_loop();
+    // EXPERIMENTAL_incremental_growth (see marching_tets()): the loop in stages, the last of them
+    // the ordinary loop at target_distance.
+    if (m_growth_start > 0.) {
+        incremental_growth();
+    } else {
+        optimize_offset_loop();
+    }
 
     log_smooth_trace();
     logger().info(
@@ -5045,39 +5285,52 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
-    // the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
-    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
-    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
-    // Reported for a run that did not converge too, where a fold is if anything more likely.
-    // See offset_surface_foldover_labels() for what the angle is and why its side is not
-    // determined. Costs one pass over the live offset simplices, once, with no field evaluation.
+    // DEBUG_remote_output: the final mesh, the one the driver writes.
+    if (remote_frames()) write_debug_frame("final");
+
+    // Foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in the
+    // delivered mesh, not a debug curiosity, so it is reported whether or not debug_output wrote
+    // the per-face field. Run here, at the end of optimize_offset, so it describes the mesh the
+    // driver is about to write: after the finishing pass, not at the loop's verdict. Reported for
+    // a run that did not converge too. A face is a foldover when its normal, out of the band, is
+    // more than foldover_angle from the field's normal (front_face_field_angle()).
     {
-        const std::vector<char> fold = offset_surface_foldover_labels();
-        size_t n_fold = 0;
-        size_t first = std::numeric_limits<size_t>::max();
-        for (size_t vid = 0; vid < fold.size(); ++vid) {
-            if (!fold[vid]) continue;
+        size_t n_fold = 0, n_faces = 0, n_unmeasured = 0;
+        double worst = 0.;
+        Vector3d worst_at = Vector3d::Zero();
+        for (const auto& f : offset_surface_faces()) {
+            ++n_faces;
+            const double ang = front_face_field_angle(f[0], f[1], f[2]);
+            if (!std::isfinite(ang)) {
+                ++n_unmeasured;
+                continue;
+            }
+            if (!(ang > m_offset_params.foldover_angle)) continue;
             ++n_fold;
-            if (first == std::numeric_limits<size_t>::max()) first = vid;
+            if (ang > worst) {
+                worst = ang;
+                worst_at = (m_vertex_attribute[f[0]].m_posf + m_vertex_attribute[f[1]].m_posf +
+                            m_vertex_attribute[f[2]].m_posf) /
+                           3.;
+            }
         }
         if (n_fold > 0) {
-            const auto& p = m_vertex_attribute[first].m_posf;
             logger().warn(
-                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
-                "meet within {} degrees of coincident (over {} degrees through one side). "
-                "First at v{} ({:.4}, {:.4}{}). {}",
+                "[foldover] {} of {} offset faces are folded: their normal, out of the band, is "
+                "more "
+                "than foldover_angle {} degrees from the field's normal (grad d at the centroid); "
+                "the worst {:.4g} degrees, at ({:.4}, {:.4}, {:.4}). {} face(s) not measurable. {}",
                 n_fold,
-                "two faces of an offset-surface edge",
-                360. - FOLDOVER_OUTER_ANGLE_DEG,
-                FOLDOVER_OUTER_ANGLE_DEG,
-                first,
-                p[0],
-                p[1],
-                fmt::format(", {:.4}", p[2]),
+                n_faces,
+                m_offset_params.foldover_angle,
+                worst,
+                worst_at[0],
+                worst_at[1],
+                worst_at[2],
+                n_unmeasured,
                 m_offset_params.debug_output
-                    ? "The per-vertex flag offset_foldover is on the debug frames."
-                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+                    ? "The per-face flag offset_foldover is on the debug frames' _off files."
+                    : "Set DEBUG_output to get the per-face offset_foldover field.");
         }
     }
 

@@ -76,12 +76,17 @@ struct Ctx
     bool timing = false;
     /// The partition's tolerance budget (ExactBandIntegral::partition(), the checks in value()):
     /// the sum of tol over the clips that cut (tol_cut), and over every decision taken with a
-    /// tolerance, clips and region tests alike (tol_any). Null outside the partition.
+    /// tolerance, clips and region tests alike (tol_any). Null outside the partition. A face's
+    /// partition (tri_partition()) adds ring_tol() instead of tol.
     double* tol_cut = nullptr;
     double* tol_any = nullptr;
     /// The cell's rounding scale (ExactBandIntegral::partition()): every clip and region test of
     /// the cell takes its tolerance on it, never below the polytope's own coordinates.
     double scale = 0.;
+    /// A face's partition only (tri_partition()): the face's unit normal, and the most one
+    /// decision adds to the budget (ring_tol()). Null for a cell.
+    const Vec3* ring_n = nullptr;
+    double ring_cap = 0.;
 };
 
 struct Timer
@@ -1522,12 +1527,27 @@ double ring_max_abs(const Ring& V)
     return m;
 }
 
+/// What a decision of tolerance tol against the plane of unit normal g adds to a face partition's
+/// budget (Ctx::tol_cut, Ctx::tol_any): tol / sin(theta), theta the angle between that plane and
+/// the face's (Ctx::ring_n), at most Ctx::ring_cap and never below tol; tol itself outside a face
+/// partition. The slab |g.x - h| <= tol meets the face's plane in a strip 2 tol / sin(theta) wide,
+/// so a snap or a classification at tol moves a ring's boundary that far across the face, not tol.
+/// See check_face_pieces().
+double ring_tol(const Ctx& cx, const Vec3& g, const double tol)
+{
+    if (!cx.ring_n) return tol;
+    const Vec3& n = *cx.ring_n;
+    const double sin_theta = (g - g.dot(n) * n).norm();
+    return std::max(tol, std::min(tol / sin_theta, cx.ring_cap));
+}
+
 /// _pclip: the ring V cut by {g.x <= h}, |g| = 1; Same (V inside up to tol, `out` untouched),
 /// None (nothing inside) or New (in `out`): clip()'s rules on one face ring.
 Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx)
 {
     const double tol = 16 * EPS * (std::abs(h) + std::max(ring_max_abs(V), cx.scale));
-    if (cx.tol_any) *cx.tol_any += tol;
+    const double budget = ring_tol(cx, g, tol);
+    if (cx.tol_any) *cx.tol_any += budget;
     const int k = int(V.size());
     thread_local std::vector<double> s;
     thread_local Ring P;
@@ -1554,7 +1574,7 @@ Cut pclip(const Ring& V, const Vec3& g, const double h, Ring& out, const Ctx& cx
             P.push_back(V[size_t(a)] + (sa / (sa - sb)) * (V[size_t(b)] - V[size_t(a)]));
         }
     }
-    if (cx.tol_cut) *cx.tol_cut += tol;
+    if (cx.tol_cut) *cx.tol_cut += budget;
     return clean_ring(P, tol, out) ? Cut::New : Cut::None;
 }
 
@@ -1585,7 +1605,7 @@ Side pclassify(const Ring& V, const std::pair<Vec3, double>* H, const int nh, co
             smax = std::max(smax, sv);
         }
         const double tol = 16 * EPS * (std::abs(h) + ma);
-        if (cx.tol_any) *cx.tol_any += tol;
+        if (cx.tol_any) *cx.tol_any += ring_tol(cx, g, tol);
         if (smax <= tol) continue;
         if (smin >= -tol) return Side::Out;
         s_in = false;
@@ -3057,7 +3077,8 @@ ExactBandIntegral::ExactBandIntegral(
     const Eigen::MatrixXi& Fin,
     const std::vector<int8_t>& face_side,
     const int sigma,
-    const size_t value_slots)
+    const size_t value_slots,
+    std::shared_ptr<const wmtk::Envelope> envelope)
 {
     static std::atomic<uint64_t> n_constructed{0};
     m_id = ++n_constructed;
@@ -3253,104 +3274,62 @@ ExactBandIntegral::ExactBandIntegral(
         }
     }
 
-    // the triangle tree (InputTriangles' construction)
+    // The triangles' box queries (m_env): the caller's envelope, or one built here over the same
+    // triangles, face f its primitive f (eps 0: its BVH and its copies of the input, no
+    // containment structure, which nothing here asks for).
     if (nf == 0) return;
-    std::vector<Vec3> centroid(static_cast<size_t>(nf));
     Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity()), hi = -lo;
     for (int f = 0; f < nf; ++f) {
-        centroid[size_t(f)] = (m_A[size_t(f)] + m_B[size_t(f)] + m_C[size_t(f)]) / 3.;
         lo = lo.cwiseMin(m_feat[size_t(f)].lo);
         hi = hi.cwiseMax(m_feat[size_t(f)].hi);
     }
-    m_order.resize(size_t(nf));
-    std::iota(m_order.begin(), m_order.end(), 0);
-    m_nodes.reserve(size_t(2 * nf));
-    build_node(0, nf, centroid, 1e-9 * std::max((hi - lo).norm(), 1e-300));
-}
-
-int ExactBandIntegral::build_node(
-    const int begin,
-    const int end,
-    const std::vector<Eigen::Vector3d>& centroid,
-    const double pad)
-{
-    const int id = int(m_nodes.size());
-    m_nodes.emplace_back();
-    Vec3 lo = Vec3::Constant(std::numeric_limits<double>::infinity());
-    Vec3 hi = -lo, clo = lo, chi = -lo;
-    for (int j = begin; j < end; ++j) {
-        const int f = m_order[size_t(j)];
-        lo = lo.cwiseMin(m_feat[size_t(f)].lo);
-        hi = hi.cwiseMax(m_feat[size_t(f)].hi);
-        clo = clo.cwiseMin(centroid[size_t(f)]);
-        chi = chi.cwiseMax(centroid[size_t(f)]);
+    m_pad = 1e-9 * std::max((hi - lo).norm(), 1e-300);
+    if (envelope) {
+        if (envelope->kind() != wmtk::Envelope::Kind::Triangles3d) {
+            log_and_throw_error("ExactBandIntegral: the envelope given does not hold triangles");
+        }
+        m_env = std::move(envelope);
+    } else {
+        std::vector<Vec3> corners;
+        std::vector<Eigen::Vector3i> faces;
+        corners.reserve(size_t(3 * nf));
+        faces.reserve(size_t(nf));
+        for (int f = 0; f < nf; ++f) {
+            corners.push_back(m_A[size_t(f)]);
+            corners.push_back(m_B[size_t(f)]);
+            corners.push_back(m_C[size_t(f)]);
+            faces.emplace_back(3 * f, 3 * f + 1, 3 * f + 2);
+        }
+        auto env = std::make_shared<wmtk::Envelope>(true);
+        env->init(corners, faces, 0.);
+        m_env = std::move(env);
     }
-    m_nodes[size_t(id)].lo = lo - Vec3::Constant(pad);
-    m_nodes[size_t(id)].hi = hi + Vec3::Constant(pad);
-    m_nodes[size_t(id)].begin = begin;
-    m_nodes[size_t(id)].end = end;
-    if (end - begin <= 4) return id;
-    int axis = 0;
-    (chi - clo).maxCoeff(&axis);
-    const int mid = (begin + end) / 2;
-    std::nth_element(
-        m_order.begin() + begin,
-        m_order.begin() + mid,
-        m_order.begin() + end,
-        [&](const int a, const int b) {
-            return centroid[size_t(a)][axis] < centroid[size_t(b)][axis] ||
-                   (centroid[size_t(a)][axis] == centroid[size_t(b)][axis] && a < b);
-        });
-    const int left = build_node(begin, mid, centroid, pad);
-    const int right = build_node(mid, end, centroid, pad);
-    m_nodes[size_t(id)].left = left;
-    m_nodes[size_t(id)].right = right;
-    return id;
 }
 
 double ExactBandIntegral::upper_bound(const Eigen::Vector3d* t, const int n) const
 {
-    // Branch and bound: max over the corners of the distance to a node's (padded) box is a lower
-    // bound of max_i d_P(t_i) for every triangle P in it, so the result is the exact minimum.
+    // A start, then one box query. The triangles at t[0]'s foot on the input (the envelope's
+    // nearest point) give a bound m on the min. A triangle P with max over the corners of d_P at
+    // most m has t[0] within m, so its box meets t[0]'s box grown by m (and m_pad, for rounding):
+    // the min over the triangles listed there is the exact minimum.
     double m = std::numeric_limits<double>::infinity();
-    if (m_nodes.empty()) return m;
-    const auto lower = [&](const Node& nd) {
+    if (m_nF == 0) return m;
+    const auto offer = [&](const int64_t f) {
         double s = 0.;
         for (int i = 0; i < n; ++i) {
-            s = std::max(s, (nd.lo - t[i]).cwiseMax(t[i] - nd.hi).cwiseMax(0.).norm());
+            s = std::max(s, point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
+            if (s >= m) break; // this triangle cannot lower the min: the result is unchanged
         }
-        return s;
+        m = std::min(m, s);
     };
-    std::vector<std::pair<double, int>> stack = {{lower(m_nodes[0]), 0}};
-    while (!stack.empty()) {
-        const auto [lb, id] = stack.back();
-        stack.pop_back();
-        if (lb > m) continue;
-        const Node& nd = m_nodes[size_t(id)];
-        if (nd.left < 0) {
-            for (int j = nd.begin; j < nd.end; ++j) {
-                const int f = m_order[size_t(j)];
-                double s = 0.;
-                for (int i = 0; i < n; ++i) {
-                    s = std::max(
-                        s,
-                        point_tri_dist(t[i], m_A[size_t(f)], m_B[size_t(f)], m_C[size_t(f)]));
-                    if (s >= m)
-                        break; // this triangle cannot lower the min: the result is unchanged
-                }
-                m = std::min(m, s);
-            }
-            continue;
-        }
-        const double ll = lower(m_nodes[size_t(nd.left)]), lr = lower(m_nodes[size_t(nd.right)]);
-        if (ll <= lr) {
-            stack.push_back({lr, nd.right});
-            stack.push_back({ll, nd.left});
-        } else {
-            stack.push_back({ll, nd.left});
-            stack.push_back({lr, nd.right});
-        }
-    }
+    std::vector<int64_t> ids;
+    Vec3 foot;
+    m_env->nearest_point(t[0], foot);
+    m_env->primitives_in_box(Vec3(foot.array() - m_pad), Vec3(foot.array() + m_pad), ids);
+    for (const int64_t f : ids) offer(f);
+    const double r = m + m_pad;
+    m_env->primitives_in_box(Vec3(t[0].array() - r), Vec3(t[0].array() + r), ids);
+    for (const int64_t f : ids) offer(f);
     return m;
 }
 
@@ -3360,29 +3339,24 @@ void ExactBandIntegral::candidates(
     const double r,
     std::vector<int>& out) const
 {
-    // Faces from the tree; then their edges and vertices. A face's box contains its edges' and
-    // vertices' boxes, so its box distance is never larger: every edge or vertex within r has an
-    // incident face within r (exactly so in floating point: the per-axis gaps are monotone).
+    // Faces from the envelope's box query; then their edges and vertices. A face whose box is
+    // within r of t's box has every per-axis gap at most r, so it meets t's box grown by r (and
+    // m_pad, for the rounding of the grown box); the test on its own box below decides, as it
+    // did on the tree's leaves. A face's box contains its edges' and vertices' boxes, so its box
+    // distance is never larger: every edge or vertex within r has an incident face within r
+    // (exactly so in floating point: the per-axis gaps are monotone).
     out.clear();
-    if (m_nodes.empty()) return;
-    std::vector<int> stack = {0};
-    while (!stack.empty()) {
-        const Node& nd = m_nodes[size_t(stack.back())];
-        stack.pop_back();
-        if (box_dist(nd.lo, nd.hi, tlo, thi) > r) continue;
-        if (nd.left >= 0) {
-            stack.push_back(nd.left);
-            stack.push_back(nd.right);
-            continue;
-        }
-        for (int j = nd.begin; j < nd.end; ++j) {
-            const int f = m_order[size_t(j)];
-            if (box_dist(m_feat[size_t(f)].lo, m_feat[size_t(f)].hi, tlo, thi) > r) continue;
-            out.push_back(f);
-            for (const int g : m_face_feats[size_t(f)]) {
-                if (box_dist(m_feat[size_t(g)].lo, m_feat[size_t(g)].hi, tlo, thi) <= r) {
-                    out.push_back(g);
-                }
+    if (m_nF == 0) return;
+    std::vector<int64_t> ids;
+    const double g = r + m_pad;
+    m_env->primitives_in_box(Vec3(tlo.array() - g), Vec3(thi.array() + g), ids);
+    for (const int64_t fi : ids) {
+        const int f = int(fi);
+        if (box_dist(m_feat[size_t(f)].lo, m_feat[size_t(f)].hi, tlo, thi) > r) continue;
+        out.push_back(f);
+        for (const int h : m_face_feats[size_t(f)]) {
+            if (box_dist(m_feat[size_t(h)].lo, m_feat[size_t(h)].hi, tlo, thi) <= r) {
+                out.push_back(h);
             }
         }
     }
@@ -3571,6 +3545,21 @@ void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, T
     const std::vector<std::pair<Vec3, double>>& hs = w.hs;
     cx.scale = w.scale;
     w.V0 = {Vec3(f[0] - w.c0), Vec3(f[1] - w.c0), Vec3(f[2] - w.c0)};
+    // The face's normal and the cap of one decision's share of the budget (ring_tol()): A / (2 D),
+    // A the face's area and D its longest edge (check_face_pieces()'s D). The most a decision can
+    // misplace is the whole face, and check_face_pieces() charges a capped decision a small
+    // multiple of A. A flat face keeps the plain tol.
+    Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
+    const double nn = nf.norm();
+    if (nn > 0.) {
+        nf /= nn;
+        double D = 0.;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < i; ++j) D = std::max(D, (f[size_t(i)] - f[size_t(j)]).norm());
+        }
+        cx.ring_n = &nf;
+        cx.ring_cap = 0.5 * nn / (2. * D);
+    }
 
     // step 1: the convex pieces (rings) of f with constant member sets
     std::vector<RingPiece>& pieces = w.pieces;
@@ -4455,10 +4444,17 @@ void ExactBandIntegral::check_face_pieces(
     const char* who) const
 {
     // The checks of value(), on areas. A cutting clip moves the parts' boundary only within the
-    // slab |g.x - h| <= sqrt(3) tol, whose section of the ring has area at most 2 sqrt(3) tol D
-    // (D f's longest edge, its longest chord); a decision taken with a tolerance misplaces at most
-    // a slab of half-width tol, area 2 tol D; a fan sum of m terms of size <= D^2 rounds by at
-    // most (13 m + m^2) eps D^2 / 2.
+    // slab |g.x - h| <= sqrt(3) tol, and a decision taken with a tolerance misplaces at most the
+    // slab of half-width tol. A slab of half-width t meets f's plane in a strip 2 t / sin(theta)
+    // wide, theta the angle between the two planes, so its section of the ring has area at most
+    // 2 t D / sin(theta) (D f's longest edge, its longest chord): tol_cut and tol_any sum
+    // tol / sin(theta) (ring_tol(), capped). A fan sum of m terms of size <= D^2 rounds by at most
+    // (13 m + m^2) eps D^2 / 2.
+    // MEASURED (70565, 2026-10-16, a front face 0.08 degrees off a side plane of an input
+    // triangle's region): the cut by that plane snapped two neighbouring ring vertices, 0.39 and
+    // 0.001 tol off it, onto it; both parts kept the edge between them, and the sliver they
+    // shared, 2.8e-12 wide across f, put the pieces 7.07e-13 over f's area, 5.1 times the former
+    // bound 1.38e-13 (2 sqrt(3) tol D, as if every plane crossed f square). The run aborted.
     Vec3 nf = (w.V0[1] - w.V0[0]).cross(w.V0[2] - w.V0[0]);
     const double nn = nf.norm();
     if (nn > 0.) nf /= nn;

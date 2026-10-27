@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <wmtk/TriOptimizerMesh.h>
 
 #include <wmtk/SurfaceTagAttributes.h>
@@ -58,7 +60,7 @@ public:
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
-    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
+    /// the envelope. See TriOptimizerMesh's feature-point anchors for the case that is.
     bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
     {
         return true;
@@ -174,7 +176,7 @@ public:
 
     void write_msh(std::string file, const bool write_envelope = true);
 
-    void write_vtu(const std::string& path) const;
+    void write_vtu(const std::string& path, MeshMap* output = nullptr) const;
     void write_vtu_with_energies(const std::string& path) const;
 
 public:

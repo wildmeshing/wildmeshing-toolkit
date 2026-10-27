@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/io/ComponentIO.hpp>
+
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -83,18 +85,24 @@ public:
         const std::vector<Matrix4d>& img_transform = {},
         const double tol_rel = -1,
         const double tol_abs = -1,
-        const bool split_connected_components = false);
+        const bool split_connected_components = false,
+        const io::ComponentIO* component_io = nullptr);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.
      *
      * @param eps The absolute envelope thickness.
+     * @param use_exact Whether the envelope uses the exact predicate rather than the sampled
+     *        one. The simwild application passes !simplify_use_sample_envelope.
      * @param boundary_eps How the open boundary is held: 0 freezes it; positive lets it move
      *        within a tube of this radius around the input's boundary edges. See
      *        ShortestEdgeCollapse::create_mesh.
      */
-    void
-    simplify_surface(const double eps, const int num_threads = 0, const double boundary_eps = 0);
+    void simplify_surface(
+        const double eps,
+        const bool use_exact,
+        const int num_threads = 0,
+        const double boundary_eps = 0);
 
     /**
      * @brief Merge vertices that are closer than eps.

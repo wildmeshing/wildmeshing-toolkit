@@ -108,8 +108,10 @@ void unique_points(
  * @brief Whether four of the points span a volume.
  *
  * Mirrors the search in Del3D::TetMesh_t::init(): fix the first two points and look for a
- * third and fourth that are not coplanar with them. init() calls ip_error() when it fails,
- * which exits the process, so the check has to happen before we hand anything over. The
+ * third and fourth that are not coplanar with them. Since Delaunay3D 60d00a8, init() fails
+ * softly on coplanar input (tetrahedrize() returns no tets) instead of calling ip_error(),
+ * but its search computes n - 1 unsigned, so on an empty point set it indexes past the
+ * vertex array; checking here keeps every degenerate case out of the kernel. The
  * geogram-backed implementation returned an empty tetrahedrization for such input.
  */
 bool spans_a_volume(const std::vector<double>& coords, size_t n)
@@ -148,7 +150,7 @@ auto delaunay3D(const std::vector<Point3D>& points)
     std::vector<Tetrahedron> tets;
 
     // Degenerate input (fewer than four distinct points, or all of them coplanar) has no
-    // tetrahedrization; report it as an empty one rather than letting the kernel exit().
+    // tetrahedrization; report it as an empty one without handing it to the kernel.
     if (spans_a_volume(coords, n)) {
         vol_rem::TetMesh mesh;
         mesh.init_vertices(coords.data(), static_cast<uint32_t>(n));

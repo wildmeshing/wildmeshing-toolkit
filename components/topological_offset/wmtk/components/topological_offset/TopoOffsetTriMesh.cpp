@@ -4,6 +4,7 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <utility>
+#include <wmtk/io/DataWriter.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
 
@@ -231,6 +232,15 @@ bool TopoOffsetTriMesh::edge_is_complex_boundary(const Tuple& e) const
 void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
 {
     m_envelope_eps = m_offset_params.envelope_size;
+    // Always the exact envelope, as in 3D (build_envelopes()). An eps that is not a positive
+    // length has no exact tube to build, and is an error, where it used to switch to the sampled
+    // envelope.
+    if (!(std::isfinite(m_envelope_eps) && m_envelope_eps > 0.)) {
+        log_and_throw_error(
+            "envelope_size {} is not a valid envelope half-width (finite and > 0); set "
+            "envelope_size or envelope_size_rel to a positive length",
+            m_envelope_eps);
+    }
 
     // Fresh: every mask from the tracked edges as they stand, nothing carried over.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
@@ -292,12 +302,11 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         m_isect_cache.clear();
         m_offset_isect_cache.clear();
     }
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    std::vector<std::shared_ptr<Envelope>> members;
     std::string per_tag_log;
     for (const auto& [tag, bucket] : buckets) {
         if (bucket.empty()) continue;
-        auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        auto env = std::make_shared<Envelope>(/*exact=*/true);
         env->init(tempV, bucket, m_envelope_eps);
         m_tag_envelopes[tag] = env;
         members.push_back(env);
@@ -310,13 +319,12 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
 
     logger().info(
         "\t[envelopes @ {}] {}: {} region-boundary segments tracked ({} on the wall), eps {:.6g}, "
-        "{} |{}{}",
+        "EXACT |{}{}",
         when,
         setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
         n_tracked,
         n_wall,
         m_envelope_eps,
-        exact_ok ? "EXACT" : "sampled (no valid eps)",
         per_tag_log,
         setup == EnvelopeSetup::WallComplex
             ? fmt::format(
@@ -373,7 +381,7 @@ void TopoOffsetTriMesh::classify_curve_edges()
     std::vector<Eigen::Vector2i> ce(m_curve_E.rows());
     for (int i = 0; i < m_curve_E.rows(); ++i)
         ce[i] = Eigen::Vector2i(m_curve_E(i, 0), m_curve_E(i, 1));
-    SampleEnvelope curve(/*exact=*/true);
+    Envelope curve(/*exact=*/true);
     curve.init(cv, ce, eps);
     size_t n_on = 0;
     for (const Tuple& e : get_edges()) {
@@ -1675,6 +1683,7 @@ bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 
 void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.vtu", path);
 
     std::vector<int> vid_map(
@@ -1734,8 +1743,9 @@ void TopoOffsetTriMesh::write_input_complex(const std::string& path)
 }
 
 
-void TopoOffsetTriMesh::write_vtu(const std::string& path)
+void TopoOffsetTriMesh::write_vtu(const std::string& path, MeshMap* output)
 {
+    if (!m_params.output_enabled && !output) return;
     logger().info("Write {}.vtu (tag for offset is included)", path);
 
     // Writing debug output must not change the mesh: consolidate_mesh() compacts the slot arrays
@@ -1897,8 +1907,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         }
     }
 
-    std::shared_ptr<paraviewo::ParaviewWriter> writer;
-    writer = std::make_shared<paraviewo::VTUWriter>();
+    std::shared_ptr<io::DataWriter> writer;
+    writer = std::make_shared<io::DataWriter>(output);
     writer->add_cell_field("amips", amips);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
@@ -1984,8 +1994,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
                                  : std::numeric_limits<double>::quiet_NaN();
             }
             const std::string front_path = path + "_front.vtu";
-            std::shared_ptr<paraviewo::ParaviewWriter> front_writer =
-                std::make_shared<paraviewo::VTUWriter>();
+            std::shared_ptr<io::DataWriter> front_writer = std::make_shared<io::DataWriter>(output);
             front_writer->add_cell_field("front_err_ratio", ERR);
             front_writer->add_cell_field("chord_length", LEN);
             front_writer->add_field("vid", VID);
@@ -2012,8 +2021,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // surface output
     if (m_has_envelope) {
         const auto out_surf_path = path + "_surf.vtu";
-        std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
-        surf_writer = std::make_shared<paraviewo::VTUWriter>();
+        std::shared_ptr<io::DataWriter> surf_writer;
+        surf_writer = std::make_shared<io::DataWriter>(output);
         logger().info("Write {}", out_surf_path);
         surf_writer
             ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
@@ -2023,6 +2032,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
 void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) const
 {
+    if (!m_params.output_enabled) return;
     // A dense triangulated grid over the bounding box carrying Phi as a vertex field, so a viewer
     // can draw the level set Phi = c as an isoline. The offset is a level set of a field that
     // exists everywhere, and the mesh only ever samples it along one curve.
@@ -2078,6 +2088,7 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
 
 void TopoOffsetTriMesh::write_msh_groups(const std::string& file)
 {
+    if (!m_params.output_enabled) return;
     logger().info("Write {}.msh", file);
     consolidate_mesh();
 

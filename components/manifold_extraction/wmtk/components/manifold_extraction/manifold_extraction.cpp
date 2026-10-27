@@ -5,6 +5,9 @@
 #include <manifold_extraction_spec.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
+#include <wmtk/components/topological_offset/output_conversion.hpp>
+#include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 #include <wmtk/utils/resolve_path.hpp>
@@ -18,10 +21,13 @@ using namespace wmtk::components;
 namespace wmtk::components::manifold_extraction {
 
 
-void manifold_extraction(nlohmann::json json_params)
+static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "manifold_extraction");
     using wmtk::utils::resolve_path;
 
+    const auto envelope_selector = json_params.value("envelope", nlohmann::json());
+    if (component_io.memory()) json_params.erase("envelope");
     // verify input and inject defaults
     {
         const auto spec =
@@ -47,7 +53,7 @@ void manifold_extraction(nlohmann::json json_params)
     }
 
     // load input file path
-    std::string input_path = resolve_path(root, json_params["input"]).string();
+    std::string input_path = component_io.path(root, json_params["input"]);
 
     // load params
     Parameters man_params(json_params);
@@ -60,16 +66,25 @@ void manifold_extraction(nlohmann::json json_params)
     debug_outfilename.replace_extension("");
 
     // input must be .msh
-    if (std::filesystem::path(input_path).extension() != ".msh") {
+    if (!component_io.memory() && std::filesystem::path(input_path).extension() != ".msh") {
         log_and_throw_error("Input must be a .msh file.");
     }
 
     // read image / MSH
-    InputData input_data = read_image_msh(input_path);
+    InputData input_data =
+        component_io.memory()
+            ? read_mesh_data(
+                  component_io.mesh(input_path),
+                  !envelope_selector.is_null() ? &component_io.mesh(envelope_selector) : nullptr)
+            : read_image_msh(input_path);
     man_params.init(
         input_data.V_input.colwise().minCoeff(),
         input_data.V_input.colwise().maxCoeff());
     topological_offset::Parameters offset_params = man_params.generate_offset_params();
+    offset_params.output_enabled = !component_io.memory();
+    offset_params.init(
+        input_data.V_input.colwise().minCoeff(),
+        input_data.V_input.colwise().maxCoeff());
 
 
     // split into 2d and 3d cases
@@ -118,15 +133,14 @@ void manifold_extraction(nlohmann::json json_params)
         wmtk::logger().info("total time {}s", time);
 
         // write curve mesh
-        if (mesh.m_man_params.write_surface) {
+        if (!component_io.memory() && mesh.m_man_params.write_surface) {
             logger().info("Extracting curve mesh...");
             mesh.write_curve(output_filename.string());
         }
 
         // report
         const std::string report_file = json_params["report"];
-        if (!report_file.empty()) {
-            std::ofstream f_out(report_file);
+        if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
             report["before #v"] = mesh.m_init_counts[0];
             report["before #e"] = mesh.m_init_counts[1];
@@ -136,12 +150,19 @@ void manifold_extraction(nlohmann::json json_params)
             report["after #f"] = mesh.get_faces().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
-            f_out << std::setw(4) << report;
-            f_out.close();
+            component_io.result.second = report;
+            if (!component_io.memory()) {
+                std::ofstream f_out(report_file);
+                f_out << std::setw(4) << report;
+            }
         }
 
         // save output
-        mesh.write_msh_groups(output_filename.string());
+        if (component_io.memory()) {
+            topological_offset::collect_memory_output(mesh, component_io);
+            mesh.write_curve("", &component_io.result.first);
+        } else
+            mesh.write_msh_groups(output_filename.string());
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
@@ -193,15 +214,14 @@ void manifold_extraction(nlohmann::json json_params)
         wmtk::logger().info("total time {}s", time);
 
         // write surface mesh
-        if (mesh.m_man_params.write_surface) {
+        if (!component_io.memory() && mesh.m_man_params.write_surface) {
             logger().info("Extracting surface mesh...");
             mesh.write_surface(output_filename.string());
         }
 
         // report
         const std::string report_file = json_params["report"];
-        if (!report_file.empty()) {
-            std::ofstream f_out(report_file);
+        if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
             report["before #v"] = mesh.m_init_counts[0];
             report["before #e"] = mesh.m_init_counts[1];
@@ -213,12 +233,22 @@ void manifold_extraction(nlohmann::json json_params)
             report["after #t"] = mesh.get_tets().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
-            f_out << std::setw(4) << report;
-            f_out.close();
+            component_io.result.second = report;
+            if (!component_io.memory()) {
+                std::ofstream f_out(report_file);
+                f_out << std::setw(4) << report;
+            }
         }
 
         // save output
-        mesh.write_msh_groups(output_filename.string());
+        if (component_io.memory()) {
+            // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
+            auto keys = io::default_output_keys();
+            keys["mesh_surf.vtu"] = "input_complex";
+            topological_offset::collect_memory_output(mesh, component_io, keys);
+            mesh.write_surface("", &component_io.result.first);
+        } else
+            mesh.write_msh_groups(output_filename.string());
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
@@ -226,5 +256,17 @@ void manifold_extraction(nlohmann::json json_params)
     }
 }
 
+
+void manifold_extraction(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult manifold_extraction(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
+}
 
 } // namespace wmtk::components::manifold_extraction

@@ -661,7 +661,7 @@ TEST_CASE(
         Eigen::Vector3i(0, 1, 2),
         Eigen::Vector3i(0, 1, 3),
         Eigen::Vector3i(0, 1, 4)};
-    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>();
+    auto tet_envelope = std::make_shared<wmtk::Envelope>();
     tet_envelope->init(
         std::vector<Vector3d>(kTetRingVertices.begin(), kTetRingVertices.end()),
         interface_faces,
@@ -822,8 +822,8 @@ TEST_CASE(
     wmtk::components::simwild::Parameters sim_params;
     sim_params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 
-    auto surface = std::make_shared<wmtk::SampleEnvelope>();
-    auto feature = std::make_shared<wmtk::SampleEnvelope>();
+    auto surface = std::make_shared<wmtk::Envelope>();
+    auto feature = std::make_shared<wmtk::Envelope>();
     feature->init(
         std::vector<Vector3d>{{0, 0, 0}, {1, 0, 0}},
         std::vector<Eigen::Vector2i>{{0, 1}},

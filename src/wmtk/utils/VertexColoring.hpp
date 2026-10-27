@@ -250,8 +250,12 @@ smooth_classes_checked(Mesh& m, const std::vector<std::vector<size_t>>& classes,
         bool& flag;
         bool saved;
         ~Restore() { flag = saved; }
-    } restore{m.m_check_smoothing_stays_in_star, m.m_check_smoothing_stays_in_star};
+    } restore{m.m_check_smoothing_stays_in_star, m.m_check_smoothing_stays_in_star},
+        restore_pass{m.m_in_operation_pass, m.m_in_operation_pass};
     m.m_check_smoothing_stays_in_star = true;
+    // A pass is running (see TetOptimizerMesh::m_in_operation_pass); this sweep does not go
+    // through run_pass().
+    m.m_in_operation_pass = true;
     return for_each_in_classes(classes, m.NUM_THREADS, max_chunk, [&m](size_t v) {
         return m.smooth_vertex(m.tuple_from_vertex(v));
     });
