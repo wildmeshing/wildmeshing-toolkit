@@ -1012,4 +1012,75 @@ private:
     std::vector<Cell> m_cells;
 };
 
+/**
+ * @brief The 3D face stencil of order k >= 1 (stencil_order): the barycentric weights of the
+ * points of the lattice (i, j, l) / (k + 2) with i, j, l >= 1, every one interior to the face
+ * (none on its edges or corners), k (k + 1) / 2 of them -- 1, 3, 6, 10, 15 for k = 1..5. Order 1
+ * is the centroid. Empty for k < 1. Equal weights: the face integral of a function is read as the
+ * area times the mean over the points (EXPERIMENTAL_band_volume_rule "surface").
+ */
+const std::vector<std::array<double, 3>>& interior_face_stencil(int order);
+
+/**
+ * @brief EXPERIMENTAL_band_volume_rule "surface": a vertex's part of the offset term, the vertex x
+ * moving, over its live offset faces (x, q1, q2):
+ *
+ *     S(x) = W sum_f A_f(x) m_f(x),   m_f = (1 / |S|) sum over the stencil points q_k of r(q_k)^2,
+ *
+ * r = (d - delta) / delta the potential's relative_residual(), q_k = w_k0 x + w_k1 q1 + w_k2 q2
+ * (interior_face_stencil()), A_f = |N| / 2 with N = (q1 - x) x (q2 - x) affine in x, and W the
+ * term's weight ((1 - w) L / front_conv_frac()^2, L the bounding box diagonal,
+ * TopoOffsetTetMesh::surface_term_weight()). So W A_f m_f = (1 - w) L (A_f / |S|) sum
+ * (d(q_k) - delta)^2 / front_conv^2, the spec's weighted O(f).
+ * Exact derivatives: grad m = (2 / |S|) sum r w_k0 grad r(q_k), hess m = (2 / |S|) sum w_k0^2
+ * (grad r grad r^T + r hess r); grad (A m) = A grad m + m grad A, hess (A m) = A hess m +
+ * grad A grad m^T + grad m grad A^T + m hess A. A face of zero area contributes 0 and no area
+ * derivative; a sample whose residual is not finite makes the value +inf. The value is
+ * TopoOffsetTetMesh::surface_face_term()'s arithmetic with x as the face's first corner.
+ */
+class SurfaceOffsetError3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    /// One offset face at the moving vertex: its two fixed corners.
+    struct Face
+    {
+        Eigen::Vector3d q1, q2;
+    };
+    SurfaceOffsetError3D(
+        std::shared_ptr<const OffsetPotential3D> pot,
+        std::vector<Face> faces,
+        int stencil_order,
+        double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+    /// W A_f m_f of the triangle (a, b, c), its first corner taking the stencil's first weight:
+    /// the shared value arithmetic (+inf where a sample is not finite).
+    static double face_value(
+        const OffsetPotential3D& pot,
+        const std::vector<std::array<double, 3>>& stencil,
+        double weight,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c);
+
+private:
+    /// need: 0 value, 1 + gradient, 2 + Hessian.
+    double eval(const Eigen::Vector3d& x, int need, Eigen::Vector3d& g, Eigen::Matrix3d& H) const;
+    std::shared_ptr<const OffsetPotential3D> m_pot;
+    std::vector<Face> m_faces;
+    const std::vector<std::array<double, 3>>& m_stencil;
+    double m_weight;
+};
+
 } // namespace wmtk::components::topological_offset

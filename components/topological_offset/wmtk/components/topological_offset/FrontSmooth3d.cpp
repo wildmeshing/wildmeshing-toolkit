@@ -66,7 +66,10 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     };
     const auto solve_3d = [&]() {
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
-        const double before = tet_energy_sum(ring);
+        // EXPERIMENTAL_band_volume_rule "surface": the offset faces through vid move with it, and
+        // their term joins both sides of the veto.
+        const bool surface = surface_energy();
+        const double before = tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.);
         // growth_mode "individual_op_reject": the folded offset faces through vid before the
         // move, which may not raise them (every face it changes goes through vid).
         int folds_before = -1;
@@ -130,7 +133,8 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
         }
         ++m_front_veto_asked;
-        if (!(tet_energy_sum(ring) <= before)) { // a NaN refuses
+        if (!(tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.) <=
+              before)) { // a NaN refuses
             ++m_front_veto_fired;
             --m_smooth_rejects.accepted;
             ++m_smooth_rejects.quality;
@@ -305,6 +309,34 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
 {
     // The vertex's part of the energy's band term; see band_volume_energy_at().
     auto sum = std::make_shared<optimization::EnergySum>();
+    // EXPERIMENTAL_band_volume_rule "surface": the face term of the live offset faces through
+    // vid, vid moving (SurfaceOffsetError3D), in place of the band term.
+    if (surface_energy()) {
+        if (!m_offset_potential) return sum;
+        std::vector<std::array<size_t, 3>> faces;
+        live_offset_faces_at(vid, faces);
+        std::vector<SurfaceOffsetError3D::Face> fs;
+        fs.reserve(faces.size());
+        const auto& VA = std::as_const(m_vertex_attribute);
+        for (const auto& f : faces) {
+            std::array<size_t, 2> o{{0, 0}};
+            int n = 0;
+            for (const size_t u : f) {
+                if (u != vid && n < 2) o[size_t(n++)] = u;
+            }
+            if (n != 2) continue;
+            fs.push_back({VA[o[0]].m_posf, VA[o[1]].m_posf});
+        }
+        if (!fs.empty()) {
+            sum->add_energy(
+                std::make_shared<SurfaceOffsetError3D>(
+                    m_offset_potential,
+                    std::move(fs),
+                    m_offset_params.stencil_order,
+                    surface_term_weight()));
+        }
+        return sum;
+    }
     if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
     return sum;
 }
@@ -313,6 +345,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
     const size_t vid) const
 {
     // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
+    // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term.
+    if (surface_energy()) return nullptr;
     if (m_n_regions > 1 && !m_offset_params.allow_mult_comp) {
         log_and_throw_error(
             "the energy's band term reads one field, and this input has {} regions",

@@ -1149,7 +1149,11 @@ void TopoOffsetTetMesh::init_offset_potential()
         // nothing else reads it unless one of the other conditions holds.
         const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
                                 m_offset_params.band_volume_rule == "front_flux";
-        if (exact_rule ||
+        // EXPERIMENTAL_band_volume_rule "surface" with EXPERIMENTAL_label_cleanup: the clean-up
+        // reads d through the integral's searches (distance(), distance_bound()), nothing else.
+        const bool surface_cleanup =
+            m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
+        if (exact_rule || surface_cleanup ||
             (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
             m_offset_params.debug_output) {
             // The band is on the offset side of the input only (ExactBandIntegral's class
@@ -2470,7 +2474,9 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
             if (!(e < MAX_ENERGY)) continue;
             fr.tet_e[k] = e;
             fr.amips_term[k] = e;
-            if (!cell_is_offset_band(t_id)) continue;
+            // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term (the fields
+            // band_term and band_gap_bars stay NaN).
+            if (surface_energy() || !cell_is_offset_band(t_id)) continue;
             const std::array<size_t, 4> vids = oriented_tet_vids(t_id);
             const double b = band_cell_term(vids);
             fr.band_term[k] = b;

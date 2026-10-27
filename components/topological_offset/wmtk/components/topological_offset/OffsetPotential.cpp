@@ -1735,4 +1735,153 @@ void StencilEnergy2D::hessian(const TVector& xv, MatrixXd& hess)
     hess = m_weight * H;
 }
 
+// ---------------------------------------------------------------------------------------------
+// The interior face stencil; SurfaceOffsetError3D (EXPERIMENTAL_band_volume_rule "surface")
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+std::vector<std::array<double, 3>> build_interior_face_stencil(const int k)
+{
+    std::vector<std::array<double, 3>> w;
+    if (k < 1) return w;
+    const int n = k + 2;
+    const double dn = double(n);
+    for (int i = n - 2; i >= 1; --i) {
+        for (int j = n - 1 - i; j >= 1; --j) {
+            const int l = n - i - j;
+            if (l < 1) continue;
+            w.push_back({{double(i) / dn, double(j) / dn, double(l) / dn}});
+        }
+    }
+    return w;
+}
+} // namespace
+
+const std::vector<std::array<double, 3>>& interior_face_stencil(const int order)
+{
+    // Built once per order (the function-local static is initialised once, thread-safely); an
+    // order past the table is built per thread and kept.
+    static const std::array<std::vector<std::array<double, 3>>, 12> table = [] {
+        std::array<std::vector<std::array<double, 3>>, 12> t;
+        for (int k = 0; k < 12; ++k) t[size_t(k)] = build_interior_face_stencil(k);
+        return t;
+    }();
+    if (order >= 0 && order < 12) return table[size_t(order)];
+    thread_local std::map<int, std::vector<std::array<double, 3>>> more;
+    auto it = more.find(order);
+    if (it == more.end()) it = more.emplace(order, build_interior_face_stencil(order)).first;
+    return it->second;
+}
+
+double SurfaceOffsetError3D::face_value(
+    const OffsetPotential3D& pot,
+    const std::vector<std::array<double, 3>>& stencil,
+    const double weight,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+    // See the class doc: W times the area times the mean of r^2 over the interior stencil.
+    if (stencil.empty()) return 0.;
+    double m = 0.;
+    const double ns = double(stencil.size());
+    for (const auto& w : stencil) {
+        const double r = pot.relative_residual(w[0] * a + w[1] * b + w[2] * c);
+        if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
+        m += r * r / ns;
+    }
+    return weight * (0.5 * (b - a).cross(c - a).norm() * m);
+}
+
+SurfaceOffsetError3D::SurfaceOffsetError3D(
+    std::shared_ptr<const OffsetPotential3D> pot,
+    std::vector<Face> faces,
+    const int stencil_order,
+    const double weight)
+    : m_pot(std::move(pot))
+    , m_faces(std::move(faces))
+    , m_stencil(interior_face_stencil(stencil_order))
+    , m_weight(weight)
+{}
+
+double SurfaceOffsetError3D::eval(
+    const Eigen::Vector3d& x,
+    const int need,
+    Eigen::Vector3d& g,
+    Eigen::Matrix3d& H) const
+{
+    // See the class doc. The moving vertex is each face's first corner, so q_k's weight on x is
+    // m_stencil[k][0].
+    g.setZero();
+    H.setZero();
+    if (m_stencil.empty()) return 0.;
+    const double ns = double(m_stencil.size());
+    double e = 0.;
+    for (const Face& f : m_faces) {
+        double m = 0.;
+        Eigen::Vector3d gm = Eigen::Vector3d::Zero();
+        Eigen::Matrix3d Hm = Eigen::Matrix3d::Zero();
+        for (const auto& w : m_stencil) {
+            const Eigen::Vector3d q = w[0] * x + w[1] * f.q1 + w[2] * f.q2;
+            const double r = m_pot->relative_residual(q);
+            if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
+            m += r * r / ns;
+            if (need < 1) continue;
+            const Eigen::Vector3d gr = w[0] * m_pot->gradient(q) / m_pot->target_level();
+            gm += (2. / ns) * r * gr;
+            if (need < 2) continue;
+            Hm += (2. / ns) * (gr * gr.transpose() +
+                               (r * w[0] * w[0] / m_pot->target_level()) * m_pot->hessian(q));
+        }
+        const Eigen::Vector3d N = (f.q1 - x).cross(f.q2 - x);
+        const double nn = N.norm();
+        const double A = 0.5 * nn;
+        e += A * m;
+        if (need < 1) continue;
+        Eigen::Vector3d gA = Eigen::Vector3d::Zero();
+        Eigen::Matrix3d HA = Eigen::Matrix3d::Zero();
+        if (nn > 0.) {
+            const Eigen::Vector3d ev = f.q2 - f.q1;
+            Eigen::Matrix3d E;
+            E << 0., -ev.z(), ev.y(), ev.z(), 0., -ev.x(), -ev.y(), ev.x(), 0.;
+            const Eigen::Vector3d gn = E.transpose() * N / nn;
+            gA = 0.5 * gn;
+            HA = 0.5 * (E.transpose() * E - gn * gn.transpose()) / nn;
+        }
+        g += A * gm + m * gA;
+        if (need < 2) continue;
+        H += A * Hm + gA * gm.transpose() + gm * gA.transpose() + m * HA;
+    }
+    g *= m_weight;
+    H *= m_weight;
+    return m_weight * e;
+}
+
+double SurfaceOffsetError3D::value(const TVector& xv)
+{
+    // face_value()'s arithmetic, face by face, so a veto that reads the faces through
+    // TopoOffsetTetMesh::surface_face_term() sees the same numbers up to the summation order.
+    double e = 0.;
+    for (const Face& f : m_faces) {
+        e += face_value(*m_pot, m_stencil, m_weight, xv.head<3>(), f.q1, f.q2);
+    }
+    return e;
+}
+
+void SurfaceOffsetError3D::gradient(const TVector& xv, TVector& gradv)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 1, g, H);
+    gradv = g;
+}
+
+void SurfaceOffsetError3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    Eigen::Vector3d g;
+    Eigen::Matrix3d H;
+    eval(xv.head<3>(), 2, g, H);
+    hess = H;
+}
+
 } // namespace wmtk::components::topological_offset

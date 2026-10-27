@@ -1091,9 +1091,9 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
 
 TEST_CASE("stencil-order-point-counts", "[offset]")
 {
-    // The stencil the whole 3D criterion and energy sample, checked against the counts the
-    // design states: 3 at order 0 (the corners alone), then the vertices of the triangle
-    // subdivided k-1 times plus one centroid per sub-triangle -- 4, 10, 31, 109, 409.
+    // The stencil the whole 3D criterion and the "surface" energy sample, checked against the
+    // counts the design states (since 2026-10-27): the interior lattice (i, j, l) / (k + 2), i, j,
+    // l >= 1, k (k + 1) / 2 points -- 1, 3, 6, 10, 15, 21 for k = 1..6 -- and nothing at order 0.
     //
     // This also pins stencil_points_per_face() to for_each_face_sample(), which are two separate
     // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
@@ -1102,7 +1102,7 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
     TopoOffsetTetMesh mesh(param, 0);
 
     const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
-    const std::array<int, 6> expected = {{3, 4, 10, 31, 109, 409}};
+    const std::array<int, 7> expected = {{0, 1, 3, 6, 10, 15, 21}};
 
     for (int k = 0; k < int(expected.size()); ++k) {
         mesh.m_offset_params.stencil_order = k;
@@ -1123,11 +1123,12 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
         CHECK(int(w.size()) == expected[size_t(k)]);
         CHECK(mesh.stencil_points_per_face() == expected[size_t(k)]);
 
+        // Every point interior: each weight at least 1 / (k + 2), so none on an edge or corner.
         for (const auto& b : w) {
             CHECK(std::abs(b[0] + b[1] + b[2] - 1.) <= 1e-14);
-            CHECK(b[0] >= -1e-15);
-            CHECK(b[1] >= -1e-15);
-            CHECK(b[2] >= -1e-15);
+            CHECK(b[0] >= 1. / double(k + 2) - 1e-15);
+            CHECK(b[1] >= 1. / double(k + 2) - 1e-15);
+            CHECK(b[2] >= 1. / double(k + 2) - 1e-15);
         }
 
         // No duplicated sample: a repeated point would silently weight part of the face twice.
@@ -1140,17 +1141,33 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
         CHECK(seen.size() == w.size());
     }
 
-    // Order 0 is exactly the three corners, which is what lets one stencil carry the vertex
-    // placement test as well as the face resolution test.
-    mesh.m_offset_params.stencil_order = 0;
-    std::vector<Vector3d> pts;
-    mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
-        pts.push_back(q);
+    // Order 1 is exactly the centroid; the lattice is symmetric, so at every order the points'
+    // mean is the centroid too (the stencil integrates affine functions exactly).
+    const Vector3d centroid = (p0 + p1 + p2) / 3.;
+    for (int k = 1; k <= 6; ++k) {
+        mesh.m_offset_params.stencil_order = k;
+        Vector3d mean = Vector3d::Zero();
+        int n = 0;
+        mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
+            mean += q;
+            ++n;
+        });
+        INFO("stencil_order " << k);
+        REQUIRE(n > 0);
+        CHECK((mean / double(n) - centroid).norm() <= 1e-15);
+    }
+    // The shared table and the visitor agree point for point.
+    mesh.m_offset_params.stencil_order = 5;
+    const auto& table = interior_face_stencil(5);
+    size_t i = 0;
+    mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d&, double wa, double wb, double wc) {
+        REQUIRE(i < table.size());
+        CHECK(table[i][0] == wa);
+        CHECK(table[i][1] == wb);
+        CHECK(table[i][2] == wc);
+        ++i;
     });
-    REQUIRE(pts.size() == 3);
-    CHECK((pts[0] - p0).norm() <= 1e-15);
-    CHECK((pts[1] - p1).norm() <= 1e-15);
-    CHECK((pts[2] - p2).norm() <= 1e-15);
+    CHECK(i == 15);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1315,7 +1332,7 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
 {
     // face_offset_term(), the face measure the exit, the refinement and the frames read, is its
     // definition computed by hand from the stencil for_each_face_sample() visits, at stencil
-    // orders 0 (corners only), 1 and 2, on three faces placed above and below the level set.
+    // orders 1 (the centroid), 2 and 5, on three faces placed above and below the level set.
     Parameters param;
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
@@ -1329,7 +1346,7 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
         {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
         {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
         {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
-    for (const int k : {0, 1, 2}) {
+    for (const int k : {1, 2, 5}) {
         mesh.m_offset_params.stencil_order = k;
         double by_hand = 0., by_term = 0.;
         for (const auto& [q1, q2] : others) {
@@ -3651,4 +3668,229 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     CHECK(mesh->get_tets().size() == n_cells0 + 2);
     CHECK(mesh->get_incident_tids_for_edge(1, 3).empty());
     CHECK_FALSE(mesh->m_vertex_extra[n_verts0].m_is_on_offset);
+}
+
+TEST_CASE("surface-offset-error-3d", "[offset][3d]")
+{
+    // EXPERIMENTAL_band_volume_rule "surface": SurfaceOffsetError3D, a front vertex's part of the
+    // face term, against its definition computed by hand -- W sum_f A_f mean over the interior
+    // stencil of r^2, r = (d - delta) / delta -- and its exact gradient and Hessian against
+    // central differences, at stencil orders 1, 2 and 5, on three faces around x placed above and
+    // below the plane field's level set.
+    const auto pot = plane_field();
+    const Vector3d x(0.1, -0.05, 0.53);
+    const std::vector<std::pair<Vector3d, Vector3d>> others = {
+        {{0.4, 0.1, 0.61}, {0.2, 0.35, 0.44}},
+        {{0.2, 0.35, 0.44}, {-0.25, 0.2, 0.58}},
+        {{-0.25, 0.2, 0.58}, {-0.1, -0.4, 0.37}}};
+    const double W = 0.7;
+    for (const int k : {1, 2, 5}) {
+        INFO("stencil_order " << k);
+        std::vector<SurfaceOffsetError3D::Face> faces;
+        double by_hand = 0.;
+        const auto& st = interior_face_stencil(k);
+        REQUIRE(int(st.size()) == k * (k + 1) / 2);
+        for (const auto& [q1, q2] : others) {
+            faces.push_back({q1, q2});
+            double m = 0.;
+            for (const auto& w : st) {
+                const double r = pot->relative_residual(w[0] * x + w[1] * q1 + w[2] * q2);
+                m += r * r;
+            }
+            by_hand += W * 0.5 * (q1 - x).cross(q2 - x).norm() * m / double(st.size());
+        }
+        SurfaceOffsetError3D e(pot, faces, k, W);
+        Eigen::VectorXd xv = x;
+        CHECK(by_hand > 0.);
+        CHECK(e.value(xv) == Catch::Approx(by_hand).epsilon(1e-13));
+
+        Eigen::VectorXd g;
+        e.gradient(xv, g);
+        Eigen::MatrixXd H;
+        e.hessian(xv, H);
+        const double h = 1e-6;
+        for (int i = 0; i < 3; ++i) {
+            Eigen::VectorXd xp = xv, xm = xv;
+            xp[i] += h;
+            xm[i] -= h;
+            const double fd = (e.value(xp) - e.value(xm)) / (2. * h);
+            CHECK(g[i] == Catch::Approx(fd).epsilon(1e-6).margin(1e-9));
+            Eigen::VectorXd gp, gm;
+            e.gradient(xp, gp);
+            e.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                CHECK(H(j, i) == Catch::Approx(fdh).epsilon(1e-5).margin(1e-7));
+            }
+        }
+    }
+}
+
+TEST_CASE("surface-energy-keys", "[offset][3d]")
+{
+    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the rule's
+    // own offset_amips_weight default (0.5 under "surface", 1 otherwise), a weight read through,
+    // the refusals (a weight > 1 under "surface", a negative weight other than -1,
+    // settle_stall_eps away from its default under another rule), stencil_order's new default 5
+    // and its min 1.
+    const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+    const auto with_app = [](nlohmann::json j) {
+        j["application"] = "topological_offset";
+        j["input"] = "unused.msh";
+        return j;
+    };
+    const auto injected = [&](const nlohmann::json& j) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        REQUIRE(spec_engine.verify_json(with_app(j), spec));
+        return spec_engine.inject_defaults(with_app(j), spec);
+    };
+    const Parameters by_default(injected(nlohmann::json::object()));
+    CHECK(by_default.band_volume_rule == "corner_bound");
+    CHECK(by_default.offset_amips_weight == 1.);
+    CHECK(by_default.stencil_order == 5);
+    CHECK(by_default.settle_stall_eps == 0.1);
+    const Parameters surface(injected({{"EXPERIMENTAL_band_volume_rule", "surface"}}));
+    CHECK(surface.band_volume_rule == "surface");
+    CHECK(surface.offset_amips_weight == 0.5);
+    const Parameters weighted(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "surface"},
+         {"offset_amips_weight", 0.25},
+         {"settle_stall_eps", 0.05}}));
+    CHECK(weighted.offset_amips_weight == 0.25);
+    CHECK(weighted.settle_stall_eps == 0.05);
+    const Parameters exact_w(injected({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
+    CHECK(exact_w.offset_amips_weight == 1.);
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 1.5}})});
+    CHECK_THROWS(Parameters{injected({{"offset_amips_weight", -0.5}})});
+    CHECK_THROWS(Parameters{injected({{"settle_stall_eps", 0.2}})});
+    jse::JSE strict;
+    strict.strict = true;
+    CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", 0}}), spec));
+    // EXPERIMENTAL_settle_test: "stall" by default, "bar" read through under "surface", refused
+    // under another rule, and settle_stall_eps refused beside "bar".
+    CHECK(by_default.settle_test == "stall");
+    const Parameters bar(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"EXPERIMENTAL_settle_test", "bar"}}));
+    CHECK(bar.settle_test == "bar");
+    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_settle_test", "bar"}})});
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_band_volume_rule", "surface"},
+             {"EXPERIMENTAL_settle_test", "bar"},
+             {"settle_stall_eps", 0.2}})});
+}
+
+TEST_CASE("surface-energy-sums", "[offset][3d]")
+{
+    // EXPERIMENTAL_band_volume_rule "surface" on the grid constructed at 0.2: no cell carries a
+    // band term (tet_energy() is the AMIPS term of every cell), the face term is read the same in
+    // any corner order, and the sums every rule and log read are the same faces' terms --
+    // surface_term_total() over offset_surface_faces(), surface_term_at() over the faces through
+    // a vertex, global_energy() and energy_parts() with the face term as the offset part -- and
+    // the front smoother's objective (front_energy()) is surface_term_at() up to rounding.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "surface"}},
+        g.V);
+    REQUIRE(param.offset_amips_weight == 0.5);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_surface_sums";
+    const auto mesh = grid_offset_mesh(g, param, out);
+    REQUIRE(mesh->surface_energy());
+    const double f = mesh->m_offset_params.front_conv_frac();
+    // (1 - w) L / front_conv_frac()^2, L the bounding box diagonal
+    REQUIRE(mesh->m_offset_params.diag_l > 0.);
+    CHECK(
+        mesh->surface_term_weight() == Catch::Approx(0.5 * mesh->m_offset_params.diag_l / (f * f)));
+
+    const auto faces = mesh->offset_surface_faces();
+    REQUIRE(faces.size() > 10);
+    double total = 0.;
+    for (const auto& fc : faces) {
+        const double t = mesh->surface_face_term(fc[0], fc[1], fc[2]);
+        CHECK(t >= 0.);
+        const double perm = mesh->surface_face_term(fc[2], fc[0], fc[1]);
+        CHECK(std::memcmp(&t, &perm, sizeof(double)) == 0);
+        total += t;
+    }
+    CHECK(total > 0.);
+    CHECK(mesh->surface_term_total() == Catch::Approx(total).epsilon(1e-12));
+    CHECK(mesh->offset_energy() == Catch::Approx(total).epsilon(1e-12));
+
+    // O*, the settle test's metric: the max over every offset face's stencil points of
+    // (d - delta)^2, by hand from the same stencil and the field's distance.
+    double o_star = 0.;
+    const auto& st = interior_face_stencil(mesh->m_offset_params.stencil_order);
+    REQUIRE(st.size() == 15);
+    for (const auto& fc : faces) {
+        for (const auto& w : st) {
+            const Vector3d q = w[0] * mesh->m_vertex_attribute[fc[0]].m_posf +
+                               w[1] * mesh->m_vertex_attribute[fc[1]].m_posf +
+                               w[2] * mesh->m_vertex_attribute[fc[2]].m_posf;
+            // the euclidean field's value is d / delta
+            const double e = mesh->m_offset_potential->value(q) * 0.2 - 0.2;
+            o_star = std::max(o_star, e * e);
+        }
+    }
+    CHECK(o_star > 0.);
+    CHECK(mesh->stencil_max_sq_error() == Catch::Approx(o_star).epsilon(1e-10));
+    // O_g, EXPERIMENTAL_settle_test "bar"'s metric: the face term without its weight, sum_f
+    // (A_f / |S|) sum_k (d - delta)^2, by hand; and the settle metric of each test.
+    double o_g = 0.;
+    for (const auto& fc : faces) {
+        const Vector3d& p0 = mesh->m_vertex_attribute[fc[0]].m_posf;
+        const Vector3d& p1 = mesh->m_vertex_attribute[fc[1]].m_posf;
+        const Vector3d& p2 = mesh->m_vertex_attribute[fc[2]].m_posf;
+        double m = 0.;
+        for (const auto& w : st) {
+            const double e =
+                mesh->m_offset_potential->value(w[0] * p0 + w[1] * p1 + w[2] * p2) * 0.2 - 0.2;
+            m += e * e;
+        }
+        o_g += 0.5 * (p1 - p0).cross(p2 - p0).norm() * m / double(st.size());
+    }
+    CHECK(mesh->surface_integral_raw() == Catch::Approx(o_g).epsilon(1e-10));
+    CHECK(mesh->settle_metric() == mesh->stencil_max_sq_error());
+    mesh->m_offset_params.settle_test = "bar";
+    CHECK(mesh->settle_metric() == mesh->surface_integral_raw());
+    mesh->m_offset_params.settle_test = "stall";
+
+    double amips = 0.;
+    for (const auto& t : mesh->get_tets()) {
+        const size_t tid = t.tid(*mesh);
+        const double e = mesh->tet_energy(tid);
+        if (mesh->cell_is_offset_band(tid)) {
+            const auto vids = mesh->oriented_tet_vids(tid);
+            CHECK(e == mesh->cell_energy(vids, mesh->get_quality(t), false));
+        }
+        amips += e;
+    }
+    CHECK(mesh->global_energy() == Catch::Approx(amips + total).epsilon(1e-12));
+    const auto [a_part, o_part] = mesh->energy_parts();
+    CHECK(a_part == Catch::Approx(amips).epsilon(1e-12));
+    CHECK(o_part == Catch::Approx(total).epsilon(1e-12));
+
+    size_t checked = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset) continue;
+        double by_faces = 0.;
+        for (const auto& fc : faces) {
+            if (fc[0] == vid || fc[1] == vid || fc[2] == vid) {
+                by_faces += mesh->surface_face_term(fc[0], fc[1], fc[2]);
+            }
+        }
+        CHECK(mesh->surface_term_at(vid) == Catch::Approx(by_faces).epsilon(1e-12));
+        const auto obj = mesh->front_energy(vid);
+        Eigen::VectorXd xv = mesh->m_vertex_attribute[vid].m_posf;
+        CHECK(obj->value(xv) == Catch::Approx(by_faces).epsilon(1e-12));
+        if (++checked >= 20) break;
+    }
+    CHECK(checked > 0);
 }

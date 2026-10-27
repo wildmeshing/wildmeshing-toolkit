@@ -178,8 +178,21 @@ struct Parameters : public wmtk::OptimizerParameters
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
-    /// at the vertex, plus the bisector jumps D_t of its flagged cells). See the spec doc.
+    /// at the vertex, plus the bisector jumps D_t of its flagged cells). "surface" (2026-10-27):
+    /// no band term; the offset term is a surface integral over the front, (1 - w) L /
+    /// front_conv^2 (L the bounding box diagonal) sum over the offset faces of (A_f / |S|) sum over the interior stencil of
+    /// (d - target_distance)^2 (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
     std::string band_volume_rule = "corner_bound";
+    /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
+    /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
+    /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall
+    /// test on the max offset error. See the spec doc.
+    double settle_stall_eps = 0.1;
+    /// EXPERIMENTAL_band_volume_rule "surface" only: which settle test. "stall" (the default):
+    /// O* stall test above (settle_stall_eps). "bar": the volume rules' bar test on the surface
+    /// integral -- settled when O_g = int over the front of (d - target_distance)^2 fell by less
+    /// than front_conv^2 times the front's area, O_g of a front one front_conv off everywhere.
+    std::string settle_test = "stall";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when the offset energy (E without its AMIPS term) fell by less than the bar
     /// energy
@@ -350,10 +363,38 @@ struct Parameters : public wmtk::OptimizerParameters
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
         if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&
-            band_volume_rule != "front_flux") {
+            band_volume_rule != "front_flux" && band_volume_rule != "surface") {
             log_and_throw_error(
-                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\" or \"front_flux\", "
-                "not \"{}\"",
+                "EXPERIMENTAL_band_volume_rule is \"corner_bound\", \"exact\", \"front_flux\" or "
+                "\"surface\", not \"{}\"",
+                band_volume_rule);
+        }
+        settle_stall_eps = json_params["settle_stall_eps"];
+        settle_test = json_params["EXPERIMENTAL_settle_test"];
+        if (settle_test != "stall" && settle_test != "bar") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_test is \"stall\" or \"bar\", not \"{}\"",
+                settle_test);
+        }
+        if (band_volume_rule != "surface" && settle_test != "stall") {
+            log_and_throw_error(
+                "EXPERIMENTAL_settle_test \"{}\" is read only under "
+                "EXPERIMENTAL_band_volume_rule \"surface\" (this config has \"{}\"): leave it "
+                "out",
+                settle_test,
+                band_volume_rule);
+        }
+        if (settle_test == "bar" && settle_stall_eps != 0.1) {
+            log_and_throw_error(
+                "settle_stall_eps ({}) is read only by EXPERIMENTAL_settle_test \"stall\": leave "
+                "it out under \"bar\"",
+                settle_stall_eps);
+        }
+        if (band_volume_rule != "surface" && settle_stall_eps != 0.1) {
+            log_and_throw_error(
+                "settle_stall_eps ({}) is read only under EXPERIMENTAL_band_volume_rule "
+                "\"surface\" (this config has \"{}\"): leave it out",
+                settle_stall_eps,
                 band_volume_rule);
         }
         settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
@@ -477,6 +518,27 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
+        // -1 (the spec's default): the rule's own default -- 0.5 under
+        // EXPERIMENTAL_band_volume_rule "surface", whose offset term is weighted 1 - w (Spencer
+        // 2026-10-27), 1 otherwise (and in 2D), the weight the band-volume runs used.
+        if (offset_amips_weight == -1.) {
+            offset_amips_weight = band_volume_rule == "surface" ? 0.5 : 1.;
+        } else if (offset_amips_weight < 0.) {
+            log_and_throw_error(
+                "offset_amips_weight must be >= 0 (or -1, the rule's default), not {}",
+                offset_amips_weight);
+        }
+        if (band_volume_rule == "surface" && offset_amips_weight > 1.) {
+            log_and_throw_error(
+                "offset_amips_weight {} > 1: under EXPERIMENTAL_band_volume_rule \"surface\" the "
+                "offset term is weighted 1 - offset_amips_weight, which would be negative",
+                offset_amips_weight);
+        }
+        if (band_volume_rule == "surface" && offset_amips_weight == 1.) {
+            logger().warn(
+                "offset_amips_weight 1 under EXPERIMENTAL_band_volume_rule \"surface\": the "
+                "offset term's weight 1 - w is 0, so the energy is the AMIPS term alone");
+        }
         debug_crossings = json_params["DEBUG_crossings"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];

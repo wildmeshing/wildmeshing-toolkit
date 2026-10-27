@@ -870,6 +870,12 @@ public:
         if (tetwild_rules()) return TetOptimizerMesh::smoothing_ring_energy(ring, stored);
         double s = 0.;
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
+        // EXPERIMENTAL_band_volume_rule "surface": the offset faces through the vertex move with
+        // it (smooth_nonfront_vertex() names it).
+        if (surface_energy()) {
+            const size_t vid = m_smoothing_vid.local();
+            if (vid != size_t(-1) && m_vertex_extra[vid].m_is_on_offset) s += surface_term_at(vid);
+        }
         return s;
     }
     /// vol AMIPS^3 of a valid cell from its AMIPS^3 and edge lengths, never from a determinant:
@@ -981,7 +987,9 @@ public:
     {
         if (amips3 >= MAX_ENERGY) return MAX_ENERGY;
         double a = band_amips_weight() * vol_amips3(vids, amips3);
-        if (band) a += band_cell_term(vids);
+        // EXPERIMENTAL_band_volume_rule "surface": no cell carries an offset term; it lives on the
+        // front's faces (surface_face_term()), which every rule adds beside the cells' sums.
+        if (band && !surface_energy()) a += band_cell_term(vids);
         if (m_repulsion_potential) a += repulsion_cell_term(vids);
         return a;
     }
@@ -998,11 +1006,76 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
     mutable std::atomic<int> m_volume_reject_split{0};
 
-    /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'.
+    /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'. Under
+    /// EXPERIMENTAL_band_volume_rule "surface" plus surface_term_total().
     double global_energy() const;
-    /// The offset energy: band_cell_term() summed over the band cells, E without its AMIPS term.
-    /// What the settle test compares (settle_refinement_turn()).
+    /// The offset energy: band_cell_term() summed over the band cells, E without its AMIPS term;
+    /// under "surface" surface_term_total(). What the settle test compares
+    /// (settle_refinement_turn()).
     double offset_energy() const;
+
+    /**
+     * @name EXPERIMENTAL_band_volume_rule "surface" (2026-10-27, Spencer's HackMD "Global surface
+     * integral", revised the same day): E = (w / s^3) sum_t V_t A(t)^3 + (1 - w) L / front_conv^2
+     * sum over the front's faces of O(f), L the bounding box diagonal, O(f) = (A_f / |S|) sum over the interior stencil points x_i
+     * (interior_face_stencil(), stencil_order) of (d(x_i) - delta)^2. No cell carries an offset
+     * term (cell_energy()); every rule adds the faces it changes beside its cells' sums: a collapse
+     * the offset faces through its two ends before against the survivor's after, a flip of the
+     * offset surface its two faces out and two in, a split the faces on the edge against the new
+     * vertex's, a smoothing move the faces through the vertex. A face outside those is unchanged
+     * by the operation and left out of both sides.
+     * @{
+     */
+    bool surface_energy() const { return m_offset_params.band_volume_rule == "surface"; }
+    /// W = (1 - w) L / front_conv_frac()^2, w = offset_amips_weight, L the bounding box diagonal
+    /// (diag_l): W A_f mean r^2, r = (d - delta) / delta, is (1 - w) L (A_f / |S|) sum
+    /// (d - delta)^2 / front_conv^2 -- a volume, as the AMIPS term (w / s^3) V A^3 is, both
+    /// integrands 1 at convergence (HackMD, 2026-10-27 revision).
+    double surface_term_weight() const;
+    /// W A_f m_f of triangle (a, b, c), its corners read in ascending vertex order so every
+    /// reader gets the same number (SurfaceOffsetError3D::face_value()); +inf where a stencil
+    /// point is unmeasurable; 0 without a potential.
+    double surface_face_term(size_t a, size_t b, size_t c) const;
+    /// surface_face_term() summed over the live offset faces through vid.
+    double surface_term_at(size_t vid) const;
+    /// ... over the live offset faces through both a and b: those on the edge (a, b).
+    double surface_term_on_edge(size_t a, size_t b) const;
+    /// ... over every live offset face.
+    double surface_term_total() const;
+    /// O*, the settle test's metric under "surface" (HackMD "settlement option 2"): the max over
+    /// every live offset face's stencil points (interior_face_stencil(), stencil_order) of
+    /// (d - delta)^2, a squared length; +inf when a point is unmeasurable, 0 without a front or
+    /// a potential.
+    double stencil_max_sq_error() const;
+    /// O_g = int over the front of (d - delta)^2 dS by the faces' stencils, sum_f (A_f / |S|)
+    /// sum_k (d(x_k) - delta)^2: the face term without its weight, a squared length times an
+    /// area; EXPERIMENTAL_settle_test "bar"'s metric. +inf where a point is unmeasurable.
+    double surface_integral_raw() const;
+    /// What the settle test compares turn to turn: offset_energy() under the volume rules; under
+    /// "surface" stencil_max_sq_error() (EXPERIMENTAL_settle_test "stall") or
+    /// surface_integral_raw() ("bar").
+    double settle_metric() const
+    {
+        if (!surface_energy()) return offset_energy();
+        return m_offset_params.settle_test == "bar" ? surface_integral_raw()
+                                                    : stencil_max_sq_error();
+    }
+    /// The live offset faces through vid, as sorted vertex triples (for_each_live_offset_face_at()).
+    void live_offset_faces_at(size_t vid, std::vector<std::array<size_t, 3>>& out) const;
+    /// The vertex the shared smoother is placing on this thread, for smoothing_ring_energy()
+    /// (which is handed the ring alone); size_t(-1) outside smooth_nonfront_vertex().
+    mutable wmtk::threading::enumerable_thread_specific<size_t> m_smoothing_vid{size_t(-1)};
+    /// The split gate's surface half: the faces on the split edge, taken in split_before_cells().
+    mutable wmtk::threading::enumerable_thread_specific<double> m_split_surface_before;
+    /// Whether a loop split is gated by the energy: EXPERIMENTAL_split_energy_gate or the
+    /// "surface" rule, never under TetWild's rules (m_op_rules) and never for
+    /// front_pocket_split()'s splits (m_pocket_splitting).
+    bool split_gate_active() const
+    {
+        return (m_offset_params.split_energy_gate || surface_energy()) && !tetwild_rules() &&
+               !m_pocket_splitting;
+    }
+    /** @} */
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The scale of face_offset_term() and of the repulsion term.
     double offset_term_weight() const
@@ -1920,6 +1993,9 @@ public:
         bool tie = false;
         /// band_term_cancels() for v1's ring: both sums leave the band term out.
         bool band_cancels = false;
+        /// EXPERIMENTAL_band_volume_rule "surface": the offset faces through v1 or v2 before
+        /// (surface_face_term()), against the survivor's after.
+        double surface_before = 0.;
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2200,16 +2276,14 @@ public:
 
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
-    /// How many points for_each_face_sample() visits at the configured order: 3 at order 0, and
-    /// (n+1)(n+2)/2 + n^2 with n = 2^(k-1) above it, i.e. 4, 10, 31, 109, ... Kept in step with
-    /// for_each_face_sample() by the unit test `stencil-order-point-counts`.
+    /// How many points for_each_face_sample() visits at the configured order: k (k + 1) / 2, the
+    /// interior lattice of interior_face_stencil() (1, 3, 6, 10, 15 for k = 1..5); 0 below order
+    /// 1. Kept in step with for_each_face_sample() by the unit test `stencil-order-point-counts`.
     int stencil_points_per_face() const
     {
         const int k = m_offset_params.stencil_order;
-        if (k < 0) return 0;
-        if (k == 0) return 3;
-        const int n = 1 << (k - 1);
-        return (n + 1) * (n + 2) / 2 + n * n;
+        if (k < 1) return 0;
+        return k * (k + 1) / 2;
     }
 
     /// Stop the run if any reachable band vertex has left the potential's support. Called once
@@ -2244,7 +2318,7 @@ public:
     /// How far vid is from the level set Phi = c, as a length.
     double band_vertex_residual(const size_t vid) const;
 
-    /// A quantity sampled at the stencil points of an offset-surface face, corners included
+    /// A quantity sampled at the stencil points of an offset-surface face, all interior
     /// (for_each_face_sample()).
     struct FaceSamples
     {
@@ -2255,15 +2329,18 @@ public:
 
     /**
      * @brief The stencil_order stencil a triangle is sampled on, handed to `visit` one point at
-     * a time as (point, wa, wb, wc) with the barycentric weights that built it. Order 0 is the
-     * three corners alone; order k >= 1 is the vertices of the triangle subdivided k-1 times by
-     * 4-way midpoint refinement plus the centroid of each of its 4^(k-1) sub-triangles, so the
-     * counts are 3, 4, 10, 31, 109 for k = 0..4 (stencil_points_per_face()). The corners are in
-     * it on purpose: the quantity sampled is a distance to the level set, which at a corner is
-     * that vertex's own placement error (see face_offset_term()).
+     * a time as (point, wa, wb, wc) with the barycentric weights that built it: since 2026-10-27
+     * (Spencer: the surface integral's stencil, "all stencil points must be internal to each
+     * face") the interior lattice of interior_face_stencil(), (i, j, l) / (k + 2) with i, j, l >=
+     * 1, k (k + 1) / 2 points -- 1 (the centroid), 3, 6, 10, 15 for k = 1..5. No point on an edge
+     * or a corner, so no point is shared between faces. Nothing below order 1.
+     *
+     * Before it the stencil held the corners (order 0 the corners alone, order k the vertices of
+     * the face subdivided k-1 times plus the sub-triangles' centroids), so the face measure
+     * (face_offset_term()) read each corner's own placement error; it no longer does.
      *
      * Takes positions rather than a Tuple, so a face can be read at any positions. The 2D twin is
-     * for_each_offset_edge_sample().
+     * for_each_offset_edge_sample(), which keeps its own lattice.
      */
     template <typename Visit>
     void for_each_face_sample(
@@ -2272,49 +2349,9 @@ public:
         const Vector3d& p2,
         Visit&& visit) const
     {
-        const int k = m_offset_params.stencil_order;
-        if (k < 0) return;
-
-        const auto emit = [&](const double wa, const double wb, const double wc) {
-            const Vector3d q(wa * p0 + wb * p1 + wc * p2);
-            visit(q, wa, wb, wc);
-        };
-        // Order 0 is the three CORNERS alone. That is the whole point of including them: the
-        // measure sampled here is a distance to the level set, which at a corner is exactly that
-        // vertex's own placement error, so one stencil covers what used to be two criteria.
-        if (k == 0) {
-            emit(1., 0., 0.);
-            emit(0., 1., 0.);
-            emit(0., 0., 1.);
-            return;
-        }
-        // Order k >= 1: the vertices of the triangle subdivided k-1 times by 4-way midpoint
-        // refinement, plus the centroid of each of its 4^(k-1) sub-triangles. With n = 2^(k-1)
-        // segments per side that is (n+1)(n+2)/2 + n^2 points: 4, 10, 31, 109, ...
-        const int n = 1 << (k - 1);
-        const double dn = double(n);
-        for (int i = n; i >= 0; --i) {
-            for (int j = n - i; j >= 0; --j) {
-                const int l = n - i - j;
-                emit(double(i) / dn, double(j) / dn, double(l) / dn);
-            }
-        }
-        // The sub-triangles, in integer barycentric coordinates over 3n. "Up" triangles have
-        // corners (i+1,j,l), (i,j+1,l), (i,j,l+1) for i+j+l = n-1, so centroid (3i+1, 3j+1,
-        // 3l+1); "down" triangles (i+1,j+1,l), (i,j+1,l+1), (i+1,j,l+1) for i+j+l = n-2, so
-        // centroid (3i+2, 3j+2, 3l+2). n(n+1)/2 + n(n-1)/2 = n^2 of them.
-        const double d3n = 3. * dn;
-        for (int i = n - 1; i >= 0; --i) {
-            for (int j = n - 1 - i; j >= 0; --j) {
-                const int l = n - 1 - i - j;
-                emit((3. * i + 1.) / d3n, (3. * j + 1.) / d3n, (3. * l + 1.) / d3n);
-            }
-        }
-        for (int i = n - 2; i >= 0; --i) {
-            for (int j = n - 2 - i; j >= 0; --j) {
-                const int l = n - 2 - i - j;
-                emit((3. * i + 2.) / d3n, (3. * j + 2.) / d3n, (3. * l + 2.) / d3n);
-            }
+        for (const auto& w : interior_face_stencil(m_offset_params.stencil_order)) {
+            const Vector3d q(w[0] * p0 + w[1] * p1 + w[2] * p2);
+            visit(q, w[0], w[1], w[2]);
         }
     }
 
