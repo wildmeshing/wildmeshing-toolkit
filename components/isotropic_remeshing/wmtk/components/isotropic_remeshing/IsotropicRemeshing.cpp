@@ -621,6 +621,13 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     if (m_check_inversions && folds(get_one_ring_tris_for_vertex(t), cache.replaced)) {
         return false;
     }
+    if (m_limit_collapse_length && m_collapse_target > 0) {
+        for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+            if ((vertex_attrs[e.vid(*this)].pos - p).norm() > 4. / 3. * m_collapse_target) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -930,6 +937,7 @@ std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after_swap(const TriMe
 
 bool IsotropicRemeshing::collapse_remeshing(double L)
 {
+    m_collapse_target = L;
     igl::Timer timer;
     timer.start();
     std::vector<std::pair<std::string, Tuple>> collect_all_ops;

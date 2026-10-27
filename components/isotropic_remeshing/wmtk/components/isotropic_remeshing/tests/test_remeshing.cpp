@@ -331,3 +331,40 @@ TEST_CASE("inversion-check-refuses-swap-that-folds", "[test_remeshing]")
         CHECK((not_counter_clockwise(m) > 0) == !check);
     }
 }
+
+TEST_CASE("limit-collapse-length", "[test_remeshing]")
+{
+    // A grid of unit squares whose edges are all under 4/5 of the target: every collapse is
+    // wanted, and many leave longer edges than the split threshold, 4/3 of the target.
+    const int n = 10;
+    std::vector<Eigen::Vector3d> v;
+    std::vector<std::array<size_t, 3>> tris;
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) v.emplace_back(i, j, 0);
+    }
+    const auto id = [](int i, int j) { return size_t(i * (n + 1) + j); };
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            tris.push_back({{id(i, j), id(i + 1, j), id(i + 1, j + 1)}});
+            tris.push_back({{id(i, j), id(i + 1, j + 1), id(i, j + 1)}});
+        }
+    }
+    const double L = 1.8;
+    for (const bool limit : {false, true}) {
+        INFO("limit " << limit);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris);
+        m.set_limit_collapse_length(limit);
+        m.collapse_remeshing(L);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        double longest = 0;
+        for (const auto& e : m.get_edges()) {
+            longest = std::max(
+                longest,
+                (m.vertex_attrs[e.vid(m)].pos - m.vertex_attrs[e.switch_vertex(m).vid(m)].pos)
+                    .norm());
+        }
+        CHECK(m.get_vertices().size() < v.size());
+        CHECK((longest <= 4. / 3. * L) == limit);
+    }
+}

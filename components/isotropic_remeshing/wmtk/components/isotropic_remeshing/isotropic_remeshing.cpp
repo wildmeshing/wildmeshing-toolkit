@@ -360,6 +360,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool use_link_condition = json_params["use_link_condition"];
     const bool check_inversions = json_params["check_inversions"];
     const bool swap_quality = json_params["swap_quality"];
+    const bool limit_collapse_length = json_params["limit_collapse_length"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
@@ -432,6 +433,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     m.set_use_link_condition(use_link_condition);
     m.set_check_inversions(check_inversions);
     m.set_swap_quality(swap_quality);
+    m.set_limit_collapse_length(limit_collapse_length);
     m.create_mesh(
         verts.size(),
         tris,
@@ -573,6 +575,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["use_link_condition"] = use_link_condition;
         report["check_inversions"] = check_inversions;
         report["swap_quality"] = swap_quality;
+        report["limit_collapse_length"] = limit_collapse_length;
         report["refused_inversions"] = m.refused_inversions();
         component_io.result.second = report;
         if (!component_io.memory()) {

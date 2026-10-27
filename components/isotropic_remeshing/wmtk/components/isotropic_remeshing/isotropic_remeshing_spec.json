@@ -20,6 +20,7 @@
       "use_link_condition",
       "check_inversions",
       "swap_quality",
+      "limit_collapse_length",
       "remove_duplicate_eps",
       "history_output",
       "feature_fields",
@@ -149,6 +150,12 @@
     "type": "bool",
     "default": false,
     "doc": "Swap an edge where that raises the worse shape quality (4 sqrt(3) area / sum of squared edge lengths) of its two triangles, as the remeshing app of the topology-first B-rep pipeline does, instead of where it brings the valences of its four vertices closer to 6 (4 on the boundary). Valence leaves flat triangles and needles alone when the swap would not change the valences much -- next to feature curves, say, where the curves themselves cannot be swapped. check_inversions still refuses a swap that folds the surface."
+  },
+  {
+    "pointer": "/limit_collapse_length",
+    "type": "bool",
+    "default": false,
+    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length, the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
   },
   {
     "pointer": "/remove_duplicate_eps",

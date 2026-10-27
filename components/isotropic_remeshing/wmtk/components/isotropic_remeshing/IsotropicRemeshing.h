@@ -211,6 +211,13 @@ public:
      * notices. The remeshing app of the topology-first B-rep pipeline swaps by quality.
      */
     void set_swap_quality(bool quality) { m_swap_quality = quality; }
+    /**
+     * @brief Refuse a collapse that leaves an edge longer than 4/3 of the target length -- the
+     * split threshold -- as Botsch and Kobbelt's remeshing does. Off by default: a collapse is
+     * then judged by the edge it removes alone, and those of the last iteration leave edges
+     * that no split comes after to cut.
+     */
+    void set_limit_collapse_length(bool limit) { m_limit_collapse_length = limit; }
     /// The operations set_check_inversions() refused, since the mesh was made.
     size_t refused_inversions() const { return m_refused_inversions; }
 
@@ -354,6 +361,9 @@ private:
     bool m_removing_ears = false;
     bool m_check_inversions = true;
     bool m_swap_quality = false;
+    bool m_limit_collapse_length = false;
+    /// The target length of the last collapse_remeshing(), for the limit above.
+    double m_collapse_target = 0;
     std::atomic<size_t> m_refused_inversions = 0;
 
     /// The area vectors of the triangles, summed (twice over).
