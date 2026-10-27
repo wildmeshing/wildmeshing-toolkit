@@ -13,7 +13,10 @@
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <filesystem>
+#include <fstream>
 #include <map>
+#include <set>
 
 #include <isotropic_remeshing_spec.hpp>
 #include "IsotropicRemeshing.h"
@@ -100,6 +103,105 @@ std::vector<std::array<size_t, 2>> field_boundaries(
     return edges;
 }
 
+/// The contents of a "features" file (see the spec), checked against the input mesh.
+struct FeatureFile
+{
+    std::vector<std::array<size_t, 2>> edges;
+    std::vector<int64_t> edge_ids;
+    std::vector<std::pair<size_t, int64_t>> vertices;
+};
+
+FeatureFile read_features(
+    const std::string& path,
+    const size_t n_vertices,
+    const std::vector<std::array<size_t, 3>>& tris)
+{
+    nlohmann::json j;
+    {
+        std::ifstream in(path);
+        if (!in) log_and_throw_error("features: cannot open {}", path);
+        try {
+            j = nlohmann::json::parse(in);
+        } catch (const std::exception& e) {
+            log_and_throw_error("features: {} is not JSON: {}", path, e.what());
+        }
+    }
+    const auto vertex = [&](const nlohmann::json& v, const char* what) -> size_t {
+        if (!v.is_number_integer() || v.get<int64_t>() < 0 || v.get<size_t>() >= n_vertices) {
+            log_and_throw_error(
+                "features: {} {} in {} is not a vertex of the input ({} vertices)",
+                what,
+                v.dump(),
+                path,
+                n_vertices);
+        }
+        return v.get<size_t>();
+    };
+    std::set<std::array<size_t, 2>> mesh_edges;
+    for (const auto& t : tris) {
+        for (int k = 0; k < 3; ++k) {
+            mesh_edges.insert({{std::min(t[k], t[(k + 1) % 3]), std::max(t[k], t[(k + 1) % 3])}});
+        }
+    }
+
+    FeatureFile out;
+    const nlohmann::json edges = j.value("edges", nlohmann::json::array());
+    const nlohmann::json ids = j.value("edge_ids", nlohmann::json::array());
+    if (!ids.empty() && ids.size() != edges.size()) {
+        log_and_throw_error(
+            "features: {} has {} edge_ids for {} edges",
+            path,
+            ids.size(),
+            edges.size());
+    }
+    std::map<std::array<size_t, 2>, int64_t> seen;
+    for (size_t i = 0; i < edges.size(); ++i) {
+        if (!edges[i].is_array() || edges[i].size() != 2) {
+            log_and_throw_error("features: edge {} in {} is not a pair", edges[i].dump(), path);
+        }
+        const size_t a = vertex(edges[i][0], "edge end"), b = vertex(edges[i][1], "edge end");
+        if (a == b) continue; // a B-rep edge of no length: its one vertex, no mesh edge
+        const std::array<size_t, 2> e{{std::min(a, b), std::max(a, b)}};
+        if (!mesh_edges.count(e)) {
+            log_and_throw_error("features: ({}, {}) in {} is not an edge of the input", a, b, path);
+        }
+        const int64_t id = ids.empty() ? -1 : ids[i].get<int64_t>();
+        const auto [it, inserted] = seen.emplace(e, id);
+        if (!inserted) {
+            if (it->second != id) {
+                log_and_throw_error(
+                    "features: edge ({}, {}) is listed with ids {} and {} in {}",
+                    a,
+                    b,
+                    it->second,
+                    id,
+                    path);
+            }
+            continue;
+        }
+        out.edges.push_back(e);
+        out.edge_ids.push_back(id);
+    }
+    std::map<size_t, int64_t> fixed;
+    for (const nlohmann::json& v : j.value("vertices", nlohmann::json::array())) {
+        if (!v.is_array() || v.size() != 2 || !v[1].is_number_integer()) {
+            log_and_throw_error("features: vertex {} in {} is not [vertex, id]", v.dump(), path);
+        }
+        const size_t x = vertex(v[0], "vertex");
+        const auto [it, inserted] = fixed.emplace(x, v[1].get<int64_t>());
+        if (!inserted && it->second != v[1].get<int64_t>()) {
+            log_and_throw_error(
+                "features: vertex {} is listed with ids {} and {} in {}",
+                x,
+                it->second,
+                v[1].get<int64_t>(),
+                path);
+        }
+        if (inserted) out.vertices.emplace_back(x, it->second);
+    }
+    return out;
+}
+
 } // namespace
 
 double
@@ -170,6 +272,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
+    const std::string features_file = json_params["features"];
     // The fields are read from the .msh file the input names; a memory input carries none.
     if (component_io.memory() && !feature_fields.empty()) {
         throw std::runtime_error(
@@ -196,7 +299,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             remove_duplicate_eps,
             -1,
             nullptr,
-            history_output.empty() ? nullptr : &read);
+            history_output.empty() && features_file.empty() ? nullptr : &read);
+        if (!features_file.empty()) {
+            // The features name vertices of the file; the reader must not renumber them.
+            bool same = read.vertex_map.size() == size_t(V.rows());
+            for (size_t i = 0; same && i < read.vertex_map.size(); ++i) {
+                same = read.vertex_map[i] == int(i);
+            }
+            if (!same) {
+                log_and_throw_error(
+                    "features: reading {} renumbered its vertices ({} in the file, {} after "
+                    "merging duplicates and dropping unreferenced ones), so {} no longer names "
+                    "them. Merging sorts the vertices even where none coincide: set "
+                    "remove_duplicate_eps to -1.",
+                    input_path,
+                    read.vertex_map.size(),
+                    V.rows(),
+                    features_file);
+            }
+        }
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -256,12 +377,37 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    std::vector<std::array<size_t, 2>> boundaries;
     if (!feature_fields.empty()) {
-        m.set_feature_edges(field_boundaries(input_path, tris, feature_fields));
+        boundaries = field_boundaries(input_path, tris, feature_fields);
+        if (features_file.empty()) {
+            m.set_feature_edges(boundaries);
+            logger().info(
+                "{} feature edges: the boundaries of {}",
+                m.feature_edges().size(),
+                nlohmann::json(feature_fields).dump());
+        }
+    }
+    if (!features_file.empty()) {
+        const std::string path = resolve_path(root, features_file).string();
+        FeatureFile features = read_features(path, verts.size(), tris);
+        const size_t listed = features.edges.size();
+        // The field boundaries join them, without an id.
+        for (const auto& e : boundaries) {
+            features.edges.push_back(e);
+            features.edge_ids.push_back(-1);
+        }
+        m.set_feature_edges(features.edges, features.edge_ids);
+        m.set_fixed_vertices(features.vertices);
         logger().info(
-            "{} feature edges: the boundaries of {}",
+            "{} feature edges, {} of them from {}{}; {} fixed vertices",
             m.feature_edges().size(),
-            nlohmann::json(feature_fields).dump());
+            listed,
+            path,
+            feature_fields.empty()
+                ? ""
+                : ", with the boundaries of " + nlohmann::json(feature_fields).dump(),
+            features.vertices.size());
     }
 
     std::shared_ptr<history::Recorder> history;

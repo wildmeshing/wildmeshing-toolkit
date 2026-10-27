@@ -100,17 +100,38 @@ void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
     cache.v2p = vertex_attrs[cache.v2].pos;
     cache.partition_id = vertex_attrs[cache.v1].partition_id;
     cache.feature_edge = is_feature_edge(cache.v1, cache.v2);
+    cache.feature_id = cache.feature_edge ? feature_edge_id(cache.v1, cache.v2) : -1;
     cache.keep_v2_position = false;
 }
 
 namespace {
-void replace_nbr(std::vector<size_t>& nbrs, const size_t from, const size_t to)
+/// Renames the neighbour `from` to `to`, its edge keeping its id. The neighbours stay sorted, each
+/// once; where `to` was one already, the first of the two in the list keeps its id.
+void replace_nbr(FeatureAttributes& f, const size_t from, const size_t to)
 {
-    for (size_t& n : nbrs) {
-        if (n == from) n = to;
+    std::vector<std::pair<size_t, int64_t>> e(f.nbrs.size());
+    for (size_t k = 0; k < e.size(); ++k) e[k] = {f.nbrs[k] == from ? to : f.nbrs[k], f.ids[k]};
+    std::stable_sort(e.begin(), e.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    e.erase(
+        std::unique(
+            e.begin(),
+            e.end(),
+            [](const auto& a, const auto& b) { return a.first == b.first; }),
+        e.end());
+    f.nbrs.resize(e.size());
+    f.ids.resize(e.size());
+    for (size_t k = 0; k < e.size(); ++k) std::tie(f.nbrs[k], f.ids[k]) = e[k];
+}
+
+void remove_nbr(FeatureAttributes& f, const size_t v)
+{
+    for (size_t k = f.nbrs.size(); k-- > 0;) {
+        if (f.nbrs[k] != v) continue;
+        f.nbrs.erase(f.nbrs.begin() + k);
+        f.ids.erase(f.ids.begin() + k);
     }
-    std::sort(nbrs.begin(), nbrs.end());
-    nbrs.erase(std::unique(nbrs.begin(), nbrs.end()), nbrs.end());
 }
 
 using wmtk::utils::predicates::faces_along;
@@ -177,16 +198,49 @@ bool IsotropicRemeshing::folds(const std::vector<Tuple>& tris, const ReplacedSur
 
 void IsotropicRemeshing::set_feature_edges(const std::vector<std::array<size_t, 2>>& edges)
 {
+    set_feature_edges(edges, std::vector<int64_t>(edges.size(), -1));
+}
+
+void IsotropicRemeshing::set_feature_edges(
+    const std::vector<std::array<size_t, 2>>& edges,
+    const std::vector<int64_t>& ids)
+{
+    if (ids.size() != edges.size()) {
+        log_and_throw_error("set_feature_edges: {} ids for {} edges", ids.size(), edges.size());
+    }
     feature_attrs.resize(vertex_attrs.size());
-    for (auto& f : feature_attrs.m_attributes) f.nbrs.clear();
-    for (const auto& e : edges) {
+    for (auto& f : feature_attrs.m_attributes) {
+        f.nbrs.clear();
+        f.ids.clear();
+    }
+    m_has_edge_ids = false;
+    for (size_t i = 0; i < edges.size(); ++i) {
+        const auto& e = edges[i];
         if (e[0] == e[1]) continue;
         for (const auto& [a, b] : {std::pair{e[0], e[1]}, std::pair{e[1], e[0]}}) {
-            auto& n = feature_attrs.m_attributes[a].nbrs;
-            if (std::find(n.begin(), n.end(), b) == n.end()) n.push_back(b);
+            auto& f = feature_attrs.m_attributes[a];
+            if (std::find(f.nbrs.begin(), f.nbrs.end(), b) == f.nbrs.end()) {
+                f.nbrs.push_back(b);
+                f.ids.push_back(ids[i]);
+            }
         }
+        if (ids[i] != -1) m_has_edge_ids = true;
     }
     m_has_features = !edges.empty();
+}
+
+void IsotropicRemeshing::set_fixed_vertices(const std::vector<std::pair<size_t, int64_t>>& vertices)
+{
+    feature_attrs.resize(vertex_attrs.size());
+    for (auto& f : feature_attrs.m_attributes) {
+        f.fixed = false;
+        f.vertex_id = -1;
+    }
+    for (const auto& [v, id] : vertices) {
+        feature_attrs.m_attributes[v].fixed = true;
+        feature_attrs.m_attributes[v].vertex_id = id;
+    }
+    m_has_fixed = !vertices.empty();
 }
 
 std::vector<std::array<size_t, 2>> IsotropicRemeshing::feature_edges() const
@@ -210,9 +264,34 @@ bool IsotropicRemeshing::is_feature_edge(const size_t a, const size_t b) const
     return std::find(n.begin(), n.end(), b) != n.end();
 }
 
+int64_t IsotropicRemeshing::feature_edge_id(const size_t a, const size_t b) const
+{
+    if (!m_has_features) return -1;
+    const auto& f = feature_attrs.at(a);
+    const auto it = std::find(f.nbrs.begin(), f.nbrs.end(), b);
+    return it == f.nbrs.end() ? -1 : f.ids[it - f.nbrs.begin()];
+}
+
 size_t IsotropicRemeshing::feature_degree(const size_t v) const
 {
     return m_has_features ? feature_attrs.at(v).nbrs.size() : 0;
+}
+
+bool IsotropicRemeshing::stays_put(const size_t v) const
+{
+    if (is_fixed(v)) return true;
+    const size_t d = feature_degree(v);
+    if (d != 0 && d != 2) return true; // a curve's end, or a junction of curves
+    // Inside a curve, unless the id changes there: one curve ends and the next starts.
+    return d == 2 && m_has_edge_ids && feature_attrs.at(v).ids[0] != feature_attrs.at(v).ids[1];
+}
+
+bool IsotropicRemeshing::may_collapse_away(const Tuple& t) const
+{
+    const size_t v = t.vid(*this);
+    if (stays_put(v)) return false;
+    // A curve vertex goes only along its curve.
+    return feature_degree(v) == 0 || is_feature_edge(v, t.switch_vertex(*this).vid(*this));
 }
 
 void IsotropicRemeshing::consolidate_mesh()
@@ -375,8 +454,13 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
     cache.v2_input_boundary = vertex_attrs[t2.vid(*this)].input_boundary;
     cache.v1_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t);
     cache.v2_on_boundary = wmtk::BoundaryEnvelope::on_input_boundary(*this, vertex_attrs, t2);
+    if (m_has_features || m_has_fixed) {
+        // A curve vertex goes only along its curve, and only from inside it; a fixed one not at
+        // all. A survivor on a curve, or fixed, stays where it is.
+        if (!may_collapse_away(t)) return false;
+        cache.keep_v2_position = feature_degree(cache.v2) > 0 || is_fixed(cache.v2);
+    }
     if (m_has_features) {
-        cache.keep_v2_position = feature_degree(cache.v2) > 0;
         // No triangle the collapse renames may come out holding two curve edges: the survivor
         // takes over the removed vertex's feature edges, and a survivor a curve split put at
         // its neighbours' midpoint would leave that triangle flat. remove_feature_ears() may:
@@ -416,11 +500,6 @@ bool IsotropicRemeshing::collapse_edge_before(const Tuple& t)
                 return false;
             }
         }
-        // A curve vertex goes only along its curve, and only from inside it.
-        if (feature_degree(cache.v1) > 0 &&
-            (feature_degree(cache.v1) != 2 || !cache.feature_edge)) {
-            return false;
-        }
         // Nor may a boundary vertex go into a curve vertex inside: the curve would touch the
         // boundary there, pinching the region between them in two.
         if (feature_degree(cache.v2) > 0 && is_boundary_vertex(t) && !is_boundary_vertex(t2)) {
@@ -455,20 +534,23 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
                                   : (cache.v1p + cache.v2p) / 2.0;
     auto vid = t.vid(*this);
     if (m_has_features) {
-        // The removed vertex's feature edges go to the survivor.
+        // The removed vertex's feature edges go to the survivor, with their ids.
         assert(vid == cache.v2);
-        const std::vector<size_t> removed_nbrs = feature_attrs.at(cache.v1).nbrs;
-        auto& kept_nbrs = feature_attrs[vid].nbrs;
-        replace_nbr(kept_nbrs, cache.v1, vid);
-        kept_nbrs.erase(std::remove(kept_nbrs.begin(), kept_nbrs.end(), vid), kept_nbrs.end());
-        for (const size_t x : removed_nbrs) {
+        const FeatureAttributes removed = feature_attrs.at(cache.v1);
+        auto& kept = feature_attrs[vid];
+        replace_nbr(kept, cache.v1, vid);
+        remove_nbr(kept, vid);
+        for (size_t k = 0; k < removed.nbrs.size(); ++k) {
+            const size_t x = removed.nbrs[k];
             if (x == vid) continue;
-            replace_nbr(feature_attrs[x].nbrs, cache.v1, vid);
-            if (std::find(kept_nbrs.begin(), kept_nbrs.end(), x) == kept_nbrs.end()) {
-                kept_nbrs.push_back(x);
+            replace_nbr(feature_attrs[x], cache.v1, vid);
+            if (std::find(kept.nbrs.begin(), kept.nbrs.end(), x) == kept.nbrs.end()) {
+                kept.nbrs.push_back(x);
+                kept.ids.push_back(removed.ids[k]);
             }
         }
         feature_attrs[cache.v1].nbrs.clear();
+        feature_attrs[cache.v1].ids.clear();
     }
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.partition_id;
@@ -508,14 +590,16 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
     va.pos = p;
     va.partition_id = cache.partition_id;
     va.input_boundary = cache.split_input_boundary;
-    if (m_has_features) {
+    if (m_has_features || m_has_fixed) {
         // Always written: the slot may hold a vertex that lived there before.
-        auto& n = feature_attrs[vid].nbrs;
-        n.clear();
+        auto& f = feature_attrs[vid];
+        f = FeatureAttributes();
         if (cache.feature_edge) {
-            n = {cache.v1, cache.v2};
-            replace_nbr(feature_attrs[cache.v1].nbrs, cache.v2, vid);
-            replace_nbr(feature_attrs[cache.v2].nbrs, cache.v1, vid);
+            // Both halves keep the edge's id.
+            f.nbrs = {cache.v1, cache.v2};
+            f.ids = {cache.feature_id, cache.feature_id};
+            replace_nbr(feature_attrs[cache.v1], cache.v2, vid);
+            replace_nbr(feature_attrs[cache.v2], cache.v1, vid);
         }
     }
     return true;
@@ -524,8 +608,8 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
 bool IsotropicRemeshing::smooth_before(const Tuple& t)
 {
     if (vertex_attrs[t.vid(*this)].freeze) return false;
+    if (stays_put(t.vid(*this))) return false; // see there
     const size_t d = feature_degree(t.vid(*this));
-    if (d != 0 && d != 2) return false; // a curve's end, or a junction of curves
     // A curve vertex whose two curve edges share a triangle would flatten it, sliding along the
     // curve. remove_feature_ears() leaves none unless no swap, collapse or split could remove it.
     if (d == 2 && is_feature_ear_tip(t)) return false;
@@ -759,6 +843,18 @@ bool IsotropicRemeshing::collapse_remeshing(double L)
 
     wmtk::logger().info("size for edges to be collapse is {}", collect_all_ops.size());
     auto setup_and_execute = [&](auto& executor) {
+        if (m_has_fixed || m_has_edge_ids) {
+            // Turned around where only the other end may go: see may_collapse_away.
+            executor.edit_operation_maps["edge_collapse"] =
+                [](IsotropicRemeshing& m, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                const Tuple u = !m.may_collapse_away(t) && m.may_collapse_away(t.switch_vertex(m))
+                                    ? t.switch_vertex(m)
+                                    : t;
+                std::vector<Tuple> ret;
+                if (m.collapse_edge(u, ret)) return ret;
+                return {};
+            };
+        }
         executor.renew_neighbor_tuples = renew;
         executor.priority = [&](auto& m, auto _, auto& e) {
             return m.compute_edge_cost_collapse(e, L);

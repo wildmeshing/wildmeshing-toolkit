@@ -39,7 +39,14 @@ struct VertexAttributes
 struct FeatureAttributes
 {
     std::vector<size_t> nbrs;
+    /// The id of the feature edge to each of nbrs, in the same order; -1 for none.
+    std::vector<int64_t> ids;
+    /// Set by IsotropicRemeshing::set_fixed_vertices: never moved, never removed.
+    bool fixed = false;
+    /// The id set_fixed_vertices gave it; -1 for none.
+    int64_t vertex_id = -1;
 };
+
 
 /// The triangles an operation replaces, as IsotropicRemeshing::set_check_inversions sees them.
 struct ReplacedSurface
@@ -65,7 +72,7 @@ public:
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     VertAttCol vertex_attrs;
-    /// Read and written only while the mesh has feature edges.
+    /// Read and written only while the mesh has feature edges or fixed vertices.
     wmtk::AttributeCollection<FeatureAttributes> feature_attrs;
 
     /**
@@ -83,10 +90,49 @@ public:
      * holds the curves at every step.
      */
     void set_feature_edges(const std::vector<std::array<size_t, 2>>& edges);
+    /**
+     * @brief The same, with an id for each edge (-1 for none), which the remeshing carries: the
+     * halves of a split keep it, and a collapse along a curve leaves the curve its id. A vertex
+     * on two feature edges of different ids ends one curve and starts the next, so it stays put
+     * like a junction (see stays_put). `ids` has one entry per edge.
+     */
+    void set_feature_edges(
+        const std::vector<std::array<size_t, 2>>& edges,
+        const std::vector<int64_t>& ids);
     /// The feature edges, smaller vertex id first.
     std::vector<std::array<size_t, 2>> feature_edges() const;
     bool is_feature_edge(size_t a, size_t b) const;
+    /// The id set_feature_edges gave the feature edge (a, b): -1 for none, or for no feature edge.
+    int64_t feature_edge_id(size_t a, size_t b) const;
     size_t feature_degree(size_t v) const;
+
+    /**
+     * @brief Vertices the remeshing keeps exactly: B-rep corners, say, which may sit inside a
+     * curve between two regions as well as where curves meet.
+     *
+     * A fixed vertex stays put (see stays_put), and carries its id to the output. Call after
+     * create_mesh().
+     */
+    void set_fixed_vertices(const std::vector<std::pair<size_t, int64_t>>& vertices);
+    bool is_fixed(size_t v) const { return m_has_fixed && feature_attrs.at(v).fixed; }
+    /**
+     * @brief Whether `v` is never moved and never removed: a curve's end, a junction of curves, a
+     * vertex between feature edges of different ids, or a fixed vertex.
+     *
+     * A collapse removes the vertex of its tuple and keeps the other; one that would remove such
+     * a vertex is refused (see may_collapse_away).
+     */
+    bool stays_put(size_t v) const;
+    /**
+     * @brief Whether the curve rules let a collapse of `t` remove t.vid(): it does not stay put,
+     * and if it is on a curve, `t` runs along it. The rest of collapse_edge_before still applies.
+     *
+     * With fixed vertices or edge ids, collapse_remeshing turns a collapse around when its
+     * tuple's vertex may not go and the other end may: the queue holds an edge in one direction
+     * only, and a fixed vertex is mostly the end that has to stay.
+     */
+    bool may_collapse_away(const Tuple& t) const;
+
     /// TriMesh::consolidate_mesh, plus the renumbering of the feature edges.
     void consolidate_mesh();
     /**
@@ -170,10 +216,11 @@ public:
         bool v2_on_boundary = false;
         // Split: the new vertex lands on a boundary edge that touches an input_boundary vertex.
         bool split_input_boundary = false;
-        // Feature curves: the edge's endpoints (t.vid() first), whether it is a feature edge,
-        // and whether a collapse leaves the survivor where it is.
+        // Feature curves: the edge's endpoints (t.vid() first), whether it is a feature edge and
+        // its id, and whether a collapse leaves the survivor where it is.
         size_t v1 = 0, v2 = 0;
         bool feature_edge = false;
+        int64_t feature_id = -1;
         bool keep_v2_position = false;
         // Collapse and swap, checking inversions: what the operation replaces.
         ReplacedSurface replaced;
@@ -247,6 +294,9 @@ public:
 private:
     wmtk::AttributeContainerGroup m_vertex_group;
     bool m_has_features = false;
+    bool m_has_fixed = false;
+    /// Some feature edge has an id other than -1.
+    bool m_has_edge_ids = false;
     /// Set while remove_feature_ears() runs (serially): its collapses may make an ear.
     bool m_removing_ears = false;
     bool m_check_inversions = true;
