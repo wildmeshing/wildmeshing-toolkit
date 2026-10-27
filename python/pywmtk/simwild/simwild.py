@@ -12,7 +12,7 @@ To install wildmeshing, clone the WMTK repository, then execute:
 python -m pip install .
 
 To install the SimWild wrapper, execute:
-python -m pip install -e /components/simwild/wmtk/components/simwild/pysimwild
+python -m pip install -e ./python/pywmtk
 """
 
 

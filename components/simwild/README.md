@@ -4,7 +4,7 @@ This component provides multiple tools (called operations in the JSON) to genera
 
 ## Python Wrapper
 
-For convenience, we provide a [Python wrapper](pysimwild/simwild/simwild.py) for the SimWild component. The wrapper can be used to call the operations from Python scripts. The wrapper is located in `pysimwild/simwild/simwild.py`.
+For convenience, we provide a [Python wrapper](../../python/pywmtk/simwild/simwild.py) for the SimWild component. The wrapper can be used to call the operations from Python scripts. The wrapper is located in `python/pywmtk/simwild/simwild.py`.
 
 The main function demonstrates how to use the wrapper functions. The input data can be found in the [data repository](https://github.com/wildmeshing/data2/tree/main/models).
 
@@ -18,7 +18,7 @@ Install the wildmeshing package first, as described in the [README](../../README
 To install the SimWild wrapper, execute (from the repository root):
 
 ```bash
-python -m pip install -e ./components/simwild/wmtk/components/simwild/pysimwild
+python -m pip install -e ./python/pywmtk
 ```
 
 Development alternative — reuse an existing CMake build of the bindings
@@ -236,7 +236,7 @@ and boundary conditions selected by tag name); see
 
 ## Tests
 
-From `pysimwild/`:
+From `python/pywmtk/`:
 
 ```bash
 python -m pytest tests

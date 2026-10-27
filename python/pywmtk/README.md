@@ -6,7 +6,7 @@ topological offset, ...) plus the PolyFEM-backed ops (minimum separation,
 Laplacian interface smoothing, full simulation).
 
 Full documentation — installation, the operation catalog with examples, and
-testing — lives in the [SimWild component README](../../../../README.md)
+testing — lives in the [SimWild component README](../../components/simwild/README.md)
 (`components/simwild/README.md`).
 
 Quick start: install the `wildmeshing` bindings, then `pip install -e .`
