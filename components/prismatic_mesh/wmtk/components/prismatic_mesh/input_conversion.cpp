@@ -35,6 +35,7 @@ PrismaticMeshInput load_prismatic_data(const MeshData& data)
          "sizing_scalar",
          "sizing_field",
          "input_distance",
+         "distance_over_target",
          "front_error_bars",
          "band_force_n",
          "amips_force_n",

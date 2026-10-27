@@ -369,8 +369,8 @@ public:
      *
      * Every vertex's sizing scalar is set to 1 first, so the pass starts from the field at 1
      * everywhere. Then tetwild_pass() with the offset surface held in an envelope of eps
-     * m_construction_distance / 2 -- half the distance the march traced it to, d_0 under
-     * EXPERIMENTAL_incremental_growth (m_construction_envelope_eps, this pass only; the final pass
+     * m_construction_distance / 2 -- half the distance the march traced it to, d_0 when
+     * growth_mode applies (m_construction_envelope_eps, this pass only; the final pass
      * keeps envelope_size) -- and every other tracked surface in m_envelope, under TetWild's own
      * rules (m_op_rules: no band term); then the loop's setup redone on its result (vertex order,
      * plastic rests). The loop starts from the sizing field the pass leaves.
@@ -380,6 +380,36 @@ public:
     /// distance the march traced the front to, m_construction_distance / 2. 0 at every other time,
     /// when build_offset_envelope() takes envelope_size (the final pass included).
     double m_construction_envelope_eps = 0.;
+    /**
+     * @brief An in-memory image of the mesh, to put it back as it was (for growth_mode "smart":
+     * the revert after a failed attempt). Taken on a consolidated mesh: the tets in tid order,
+     * each as oriented_tet_vids() gives it -- the order the face and edge slots (4 tid + j,
+     * 6 tid + j) are keyed on -- and copies of every per-element collection over the live slots:
+     * the vertex group (m_vertex_attribute, m_vertex_extra), the face group (m_face_attribute,
+     * m_face_extra), the edge group (m_edge_attribute) and m_tet_attribute.
+     */
+    struct MeshSnapshot
+    {
+        size_t n_vertices = 0;
+        std::vector<std::array<size_t, 4>> tets;
+        std::vector<VertexAttributes> vertex;
+        std::vector<VertexExtra> vertex_extra;
+        std::vector<FaceAttributes> face;
+        std::vector<FaceExtra> face_extra;
+        std::vector<EdgeAttributes> edge;
+        std::vector<TetAttributes> tet;
+    };
+    /// Consolidate, record the image, and rebuild the mesh from it at once (restore_snapshot()):
+    /// the mesh then IS what a restore gives, so every attempt from the image -- the first, and
+    /// each one after a revert -- starts from identical storage (the rebuild orders each vertex's
+    /// tet fan by tid; consolidation keeps the old order). Refused with feature-edge or
+    /// feature-point tracking on: their collections are not in the image. Between passes only.
+    MeshSnapshot take_snapshot();
+    /// Put the mesh back as `s` holds it: the connectivity rebuilt (init_with_isolated_vertices(),
+    /// which clears the old one and resizes every collection), the collections' live slots copied
+    /// back, the band regions re-derived. Not restored: run counters, the debug-frame sequence.
+    /// Between passes only.
+    void restore_snapshot(const MeshSnapshot& s);
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
@@ -440,12 +470,17 @@ public:
     /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
     /// init_optimize loop: it returns on convergence without the final TetWild pass and
     /// without deciding the verdict.
-    /// `refine` false skips the halving. `label` names the loop in its log. Returns whether the
-    /// loop converged within max_rounds.
+    /// `refine` false skips the halving. `label` names the loop in its log. `max_turns` > 0 caps
+    /// the turns in place of max_rounds (growth_mode "smart"'s attempts). `fold_free`: a converged
+    /// turn with any folded offset face (fold_census()) ends the loop as not converged, before the
+    /// verdict and the final TetWild pass. Returns whether the loop converged (fold-free when
+    /// asked) within its turns.
     bool optimize_offset_loop(
         bool final_stage = true,
         bool refine = true,
-        const std::string& label = std::string());
+        const std::string& label = std::string(),
+        int max_turns = 0,
+        bool fold_free = false);
     /**
      * @brief The loop's local_operations(ops). Under EXPERIMENTAL_front_pocket_split, the group's
      * operation passes in one call and then each of its ops[3] smoothing passes in a call of its
@@ -511,16 +546,56 @@ public:
     /// without refinement. Set by marching_tets(), only when the target is beyond the maximum
     /// marchable distance.
     bool m_init_optimize = false;
-    /// Leads every debug frame label: i during the init_optimize loop, g<k> during
-    /// EXPERIMENTAL_incremental_growth's stage k < N, empty otherwise.
+    /// Leads every debug frame label: i during the init_optimize loop, g<k> during growth_mode
+    /// "linear"'s stage k < N, s0 / s<L>a<A> during growth_mode "smart"'s level 0 / level L's
+    /// attempt A, empty otherwise.
     std::string m_frame_prefix;
-    /// EXPERIMENTAL_incremental_growth: stages k = 0..N (N = incremental_growth_steps), stage k at
+    /// growth_mode "linear": stages k = 0..N (N = linear_growth_steps), stage k at
     /// growth_stage_target(m_growth_start, target_distance, k, N). Before each stage
     /// target_distance is set to its target and the field rebuilt on it (init_offset_potential());
     /// stages before the last are optimize_offset_loop(false, true) to convergence, their frames
     /// led by g<k>; stage N is the ordinary loop. A stage before the last that does not converge
     /// stops the run there, target_distance and the field set back for the verdict.
-    void incremental_growth();
+    void linear_growth();
+    /**
+     * @brief growth_mode "smart": which target to try next from the last converged distance,
+     * and what an attempt's result means. Pure, so it is unit-tested apart from the mesh.
+     *
+     * From `base` (d_0, then each converged distance) the j-th try after j failures is at
+     * base + (delta - base) / 2^j: delta itself first. A success at delta is the end; a success
+     * below it becomes the new base (j and the failures start again); `max_fails` failures from
+     * one base give up.
+     */
+    struct SmartGrowthSchedule
+    {
+        double base; ///< the last converged distance
+        double delta; ///< target_distance
+        int max_fails; ///< smart_growth_max_fails
+        int j = 0; ///< failed attempts from base, so halvings of the step
+        int level = 1; ///< level 0 is the loop at d_0; each success below delta adds one
+        double target() const { return j == 0 ? delta : base + (delta - base) / std::ldexp(1., j); }
+        enum class Next { Done, Advance, Retry, GiveUp };
+        Next report(const bool converged)
+        {
+            if (converged) {
+                if (j == 0) return Next::Done;
+                base = target();
+                j = 0;
+                ++level;
+                return Next::Advance;
+            }
+            ++j;
+            return j >= max_fails ? Next::GiveUp : Next::Retry;
+        }
+    };
+    /// growth_mode "smart" (see the spec doc): the loop at d_0 up to max_rounds turns (throws when
+    /// it does not converge), then attempts of smart_growth_attempts turns each, as
+    /// SmartGrowthSchedule picks their targets, each judged converged and fold-free
+    /// (optimize_offset_loop(..., fold_free true)). The mesh is stored (take_snapshot()) after
+    /// level 0 and after every success, and put back (restore_snapshot()) after every failure;
+    /// SmartGrowthSchedule::Next::GiveUp throws. The attempt at target_distance is the final
+    /// stage: on success it runs the final TetWild pass and decides the verdict.
+    void smart_growth();
     /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n
     /// (not the formula, which rounding can leave a hair off it).
     static double growth_stage_target(double d0, double delta, int k, int n);
@@ -1103,6 +1178,11 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
+    /// Every live offset face through vid, from vid's own tet list alone (see
+    /// vertex_has_live_offset_face()): fn(sorted vertex triple, its band cell) for each, until fn
+    /// returns true; returns whether one did. A band face on the domain boundary counts.
+    template <typename F>
+    bool for_each_live_offset_face_at(size_t vid, F&& fn) const;
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
      *
@@ -1171,11 +1251,77 @@ public:
      * the folded faces. The 2D code still labels vertices (TopoOffsetTriMesh).
      */
     double front_face_field_angle(size_t a, size_t b, size_t c) const;
+    /// Front face (a, b, c)'s area normal (b - a) x (c - a) in `n`, turned out of its band cell
+    /// (away from front_face_band_cell()'s fourth corner). False, `n` unusable, where it cannot be
+    /// measured: a degenerate face, or no band cell. front_face_field_angle()'s normal.
+    bool front_face_out_normal(size_t a, size_t b, size_t c, Vector3d& n) const;
+    /// front_face_out_normal() with the face's band cell given: `band_tid`, a band cell holding
+    /// the face (no lookup, so it reads that cell alone).
+    bool front_face_out_normal_in(size_t a, size_t b, size_t c, size_t band_tid, Vector3d& n) const;
+    /// front_face_field_angle() with the face's band cell given (front_face_out_normal_in()).
+    double front_face_field_angle_in(size_t a, size_t b, size_t c, size_t band_tid) const;
+    /// The angle front_face_field_angle() reports, for face (a, b, c) with normal `n` out of the
+    /// band: against grad d at the centroid; NaN without an input envelope or a gradient.
+    double front_face_angle_to_field(size_t a, size_t b, size_t c, const Vector3d& n) const;
+    /// The dihedral angle in degrees, in [0, 360), across an offset-surface edge between two faces
+    /// with unit normals n1, n2 out of the band, measured on the band side: 180 flat, below 180
+    /// where the front bends away from the band (convex seen from the offset side), toward 0 or
+    /// toward 360 as the two faces fold flat onto each other one way or the other. `t` is the
+    /// edge's unit direction as the first face runs it, its corners counterclockwise seen from the
+    /// side n1 points to.
+    static double band_side_dihedral(const Vector3d& n1, const Vector3d& n2, const Vector3d& t)
+    {
+        return 180. - std::atan2(n1.cross(n2).dot(t), n1.dot(n2)) * 180. / M_PI;
+    }
+    /// foldover_angle's dihedral test: the two faces close to within `angle` degrees of each other,
+    /// either way -- a band-side dihedral (band_side_dihedral()) below `angle` or above
+    /// 360 - `angle`. The debug frames' offset_foldover_dihedral.
+    static bool dihedral_is_foldover(const double dihedral, const double angle)
+    {
+        return dihedral < angle || dihedral > 360. - angle;
+    }
     /// front_face_field_angle() > foldover_angle; an unmeasurable face is not a foldover.
     bool front_face_is_foldover(size_t a, size_t b, size_t c) const
     {
         return front_face_field_angle(a, b, c) > m_offset_params.foldover_angle;
     }
+    /// The offset surface's foldovers: over offset_surface_faces(), the faces whose
+    /// front_face_field_angle() exceeds foldover_angle, the unmeasurable ones (NaN, not folds),
+    /// and the worst angle with its face's centroid. The end-of-run [foldover] warning and
+    /// growth_mode "smart"'s fold-free test read it.
+    struct FoldCensus
+    {
+        size_t n_fold = 0, n_faces = 0, n_unmeasured = 0;
+        double worst = 0.;
+        Vector3d worst_at = Vector3d::Zero();
+    };
+    FoldCensus fold_census() const;
+    /// growth_mode "individual_op_reject": a collapse, a flip of the offset surface or a smoothing
+    /// move that raises the number of folded offset faces (front_face_is_foldover()'s test) among
+    /// the faces it changes is refused. In the loops only: not in a TetWild pass (the
+    /// optimize_construction pass, the final pass), nor before the march.
+    bool fold_reject_active() const
+    {
+        return m_offset_params.growth_mode == "individual_op_reject" && !m_tetwild_pass &&
+               !m_repulsion_potential;
+    }
+    /// The folded live offset faces through vid (front_face_field_angle() > foldover_angle), as
+    /// sorted vertex triples, added to `out`. Reads vid's own tet list and its cells only, as
+    /// vertex_has_live_offset_face() does (for_each_live_offset_face_at()), so the operation hooks
+    /// may ask it: the passes' locks always claim vid's list.
+    void folded_front_faces_at(size_t vid, std::set<std::array<size_t, 3>>& out) const;
+    /// Whether face (a, b, c) is folded, its band cell looked for among `cells` (a band cell
+    /// holding it); false when none is.
+    bool face_folded_in(size_t a, size_t b, size_t c, const std::vector<size_t>& cells) const;
+    /// growth_mode "individual_op_reject": the folded faces the collapse / offset-surface flip in
+    /// flight saw before it (folded_front_faces_at(), face_folded_in()), per thread; -1 for no
+    /// rule.
+    mutable wmtk::threading::enumerable_thread_specific<int> m_collapse_folds_before{-1},
+        m_swap_folds_before{-1};
+    /// Operations refused for raising the folded faces (fold_reject_active()), per operation
+    /// group; logged as [op reject].
+    mutable std::atomic<int> m_fold_reject_collapse{0}, m_fold_reject_swap{0},
+        m_fold_reject_smooth{0};
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
@@ -1352,9 +1498,9 @@ public:
     /// The distance the marching's sphere trace aims for: target_distance, or half the maximum
     /// marchable distance under construction_mode "max_marchable_fallback" (see the marching).
     double m_construction_distance = 0.;
-    /// EXPERIMENTAL_incremental_growth: d_0, the distance the march traced the front to when that
+    /// growth_mode "linear" / "smart": d_0, the distance the march traced the front to when that
     /// is below target_distance (m_construction_distance, half the maximum marchable distance).
-    /// Set by marching_tets() with the key on and optimize_offset true; 0 otherwise, and
+    /// Set by marching_tets() with growth on and optimize_offset true; 0 otherwise, and
     /// optimize_offset() then runs the loop once, at target_distance.
     double m_growth_start = 0.;
 
@@ -2636,9 +2782,10 @@ public:
         std::vector<std::string> tag_names;
         // per vertex
         VectorXd labels, order, vid, sizing;
-        VectorXd in_dist, front_err, band_force, amips_force, front_change;
+        VectorXd in_dist, dist_ratio, front_err, band_force, amips_force, front_change;
         // the _off file's: per offset face, and the ring measure per vertex
-        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, ring;
+        VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, f_dihedral,
+            f_fold_dihedral, ring;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.

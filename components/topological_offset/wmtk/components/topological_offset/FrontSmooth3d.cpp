@@ -67,6 +67,14 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
     const auto solve_3d = [&]() {
         const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
         const double before = tet_energy_sum(ring);
+        // growth_mode "individual_op_reject": the folded offset faces through vid before the
+        // move, which may not raise them (every face it changes goes through vid).
+        int folds_before = -1;
+        if (fold_reject_active()) {
+            std::set<std::array<size_t, 3>> f;
+            folded_front_faces_at(vid, f);
+            folds_before = int(f.size());
+        }
         // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
         // every vertex that shares a front face with it -- before the solve.
         std::vector<size_t> nb;
@@ -128,6 +136,17 @@ bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
             ++m_smooth_rejects.quality;
             record_change(false);
             return false;
+        }
+        if (folds_before >= 0) {
+            std::set<std::array<size_t, 3>> f;
+            folded_front_faces_at(vid, f);
+            if (int(f.size()) > folds_before) {
+                ++m_fold_reject_smooth;
+                --m_smooth_rejects.accepted;
+                ++m_smooth_rejects.quality;
+                record_change(false);
+                return false;
+            }
         }
         record_change(true);
         count_damped_move(vid, x0, opts.max_step);
