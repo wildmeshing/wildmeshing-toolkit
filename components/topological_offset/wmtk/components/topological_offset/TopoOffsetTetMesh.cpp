@@ -1048,10 +1048,7 @@ void TopoOffsetTetMesh::init_offset_potential()
             // The band term reads one distance, to the whole input; with several connected
             // pieces each has a field of its own, and the term does not choose between them.
             // Refused here, before the loop, rather than at the term's first evaluation.
-            // Construction records correspondence without evaluating the band energy.
-            // Its distance fields already support separate connected pieces; only the
-            // optimizer requires the single field read by the band-energy term.
-            if (m_n_regions > 1 && m_offset_params.optimize_offset) {
+            if (m_n_regions > 1) {
                 log_and_throw_error(
                     "the energy's band term reads one field, and this input complex has {} "
                     "connected pieces",
