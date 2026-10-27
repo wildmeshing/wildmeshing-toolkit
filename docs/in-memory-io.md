@@ -130,8 +130,10 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
 
-For tagged inputs, `tags` is required on the top-dimensional cells. Its labels name regions
-such as `tag_0`; `ambient` is the untagged region. Existing exported diagnostics have fixed allowed
+For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
+column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
+field is all background. Tagged results label their background `ambient` explicitly; the shared
+readers and writers infer nothing from an untagged row. Existing exported diagnostics have fixed allowed
 names in the adapters and may be supplied again. Extra unrelated fields are errors. As on the
 `.msh` route, a lower-dimensional block of the envelope's type (triangles in a tet mesh, edges in
 a triangle mesh) is the envelope, e.g. simwild's `EnvelopeSurface`; it cannot be combined with an
@@ -177,7 +179,10 @@ smoothing/remeshing reports. Report values are available without a report filena
 The existing topological-offset driver currently refuses 2D inputs; the memory overload preserves that restriction.
 
 The file-oriented entry points retain existing configurations, relative-path conventions,
-output filenames, intermediate exports, and report files. An explicit per-call output policy
+output filenames, intermediate exports, and report files. The tagged components (simwild, triwild,
+topological_offset, manifold_extraction) build the same result on both routes: the file route
+writes its `mesh` (the envelope stays out of the file) through `io::write_mesh`, and
+reads its `.msh` input through `io::read_mesh`. An explicit per-call output policy
 turns off their file observers for memory calls. Component entry points serialize their use of
 the legacy process-wide loggers, temporarily using console sinks during memory calls and restoring
 the previous logger afterward.

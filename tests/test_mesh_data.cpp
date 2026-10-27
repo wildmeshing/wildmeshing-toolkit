@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <filesystem>
@@ -353,7 +352,8 @@ TEST_CASE("MSH field metadata stays out of the interpolation-scheme tag", "[mesh
             d.header.string_tags = {d.header.string_tags[0], d.header.string_tags[2]};
     equal(m, io::from_msh(spec));
 }
-TEST_CASE("MSH gives untagged cells an ambient physical group", "[mesh_data][io]")
+namespace {
+MeshData two_tets(const DataMatrix<uint8_t>& member, const std::vector<std::string>& labels)
 {
     MeshData mesh;
     mesh.V.resize(5, 3);
@@ -361,33 +361,46 @@ TEST_CASE("MSH gives untagged cells an ambient physical group", "[mesh_data][io]
     auto& tets = mesh.cells[CellType::Tetrahedron];
     tets.connectivity.resize(2, 4);
     tets.connectivity << 0, 1, 2, 3, 1, 2, 3, 4;
+    tets.attributes["tags"] = {member, labels};
+    return mesh;
+}
+} // namespace
+TEST_CASE("MSH physical groups are exactly the labels a mesh carries", "[mesh_data][io]")
+{
+    // The IO infers nothing from an untagged row: components label their background.
     DataMatrix<uint8_t> member(2, 1);
     member << 1, 0;
-    tets.attributes["tags"] = {member, {"body"}};
+    auto mesh = two_tets(member, {"body"});
     auto spec = io::to_msh(mesh);
-    auto ambient_groups = [](const mshio::MshSpec& s) {
-        return std::count_if(s.physical_groups.begin(), s.physical_groups.end(), [](const auto& g) {
-            return g.name == "ambient";
-        });
-    };
-    REQUIRE(ambient_groups(spec) == 1);
-    // read_mesh restores the tags from the tags field: no ambient column appears.
+    REQUIRE(spec.physical_groups.size() == 1);
+    REQUIRE(spec.physical_groups[0].name == "body");
     equal(mesh, io::from_msh(spec));
-    // A reader that only sees the physical groups finds the untagged cell in "ambient".
     auto groups_only = spec;
     groups_only.element_data.clear();
     const auto loaded = io::from_msh(groups_only);
-    const auto& tags = loaded.cell(CellType::Tetrahedron).attributes.at("tags");
-    REQUIRE(tags.labels == std::vector<std::string>{"body", "ambient"});
-    DataMatrix<int64_t> expected(2, 2);
-    expected << 1, 0, 0, 1;
-    REQUIRE(tags.integers() == expected);
-    // An explicit ambient label is not duplicated.
-    tets.attributes["tags"] = {DataMatrix<uint8_t>::Identity(2, 2).eval(), {"body", "ambient"}};
-    REQUIRE(ambient_groups(io::to_msh(mesh)) == 1);
+    REQUIRE(loaded.cell(CellType::Tetrahedron).attributes.at("tags").integers() == member.cast<int64_t>());
+    // An explicit ambient label is a group like any other.
+    auto labelled = two_tets(DataMatrix<uint8_t>::Identity(2, 2).eval(), {"body", "ambient"});
+    REQUIRE(io::to_msh(labelled).physical_groups.size() == 2);
     // A mesh without tags gets no groups at all.
-    tets.attributes.erase("tags");
+    mesh.cells[CellType::Tetrahedron].attributes.erase("tags");
     REQUIRE(io::to_msh(mesh).physical_groups.empty());
+}
+TEST_CASE("MSH field headers do not grow with the labels", "[mesh_data][io]")
+{
+    // gmsh reads each string tag into a fixed buffer, so each column's header names only its
+    // own label.
+    std::vector<std::string> labels;
+    for (int i = 0; i < 30; ++i) labels.push_back("region_" + std::to_string(i));
+    const auto mesh = two_tets(DataMatrix<uint8_t>::Ones(2, 30).eval(), labels);
+    const auto spec = io::to_msh(mesh);
+    REQUIRE(spec.element_data.size() == labels.size());
+    for (const auto& d : spec.element_data) {
+        const auto meta = nlohmann::json::parse(d.header.string_tags[2].substr(5));
+        REQUIRE(!meta.contains("labels"));
+        REQUIRE(meta.at("label") == labels[meta.at("column").get<size_t>()]);
+    }
+    equal(mesh, io::from_msh(spec));
 }
 TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
 {
@@ -403,6 +416,27 @@ TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
     REQUIRE(std::isnan(result(0, 0)));
     REQUIRE(result(1, 0) == field(1, 0));
     REQUIRE(result(2, 0) == field(2, 0));
+    // gmsh reads each string tag into a fixed buffer, so the header must not grow with the
+    // values: it is the same as for a finite field.
+    auto finite = mesh;
+    finite.vertex_attributes["diagnostic"].values = DataMatrix<double>::Zero(3, 1).eval();
+    const auto spec = io::to_msh(mesh);
+    REQUIRE(spec.node_data[0].header.string_tags == io::to_msh(finite).node_data[0].header.string_tags);
+    // Older files store a non-finite value as 0 and list it in the metadata.
+    auto old = spec;
+    auto& header = old.node_data[0].header.string_tags[2];
+    auto meta = nlohmann::json::parse(header.substr(5));
+    for (auto& e : old.node_data[0].entries) {
+        const double v = e.data[0];
+        if (std::isfinite(v)) continue;
+        meta["special"][std::to_string(e.tag)] = std::isnan(v) ? "nan" : v > 0 ? "inf" : "-inf";
+        e.data[0] = 0;
+    }
+    header = "wmtk:" + meta.dump();
+    const auto back = io::from_msh(old).vertex_attributes.at("diagnostic").doubles();
+    REQUIRE(std::isnan(back(0, 0)));
+    REQUIRE(back(1, 0) == field(1, 0));
+    REQUIRE(back(2, 0) == field(2, 0));
 }
 TEST_CASE("Mesh I/O retains coincident cell multiplicity and orientation", "[mesh_data][io]")
 {
