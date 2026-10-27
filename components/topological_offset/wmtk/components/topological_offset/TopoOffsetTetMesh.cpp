@@ -2651,6 +2651,55 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         logger().info("Write {}", path + "_off.vtu");
     }
 
+    // stencil points: the _stencil file, a point cloud of one vertex cell per unique stencil
+    // point of the offset surface -- the points the exit (offset_stencil_max()), the front max
+    // rule and the stuck refinement read, named the same way (face_stencil_points(), sorted and
+    // deduplicated), at stencil_point_position(). Point data, NaN where the field cannot measure:
+    //   stencil_error         r^2, r = relative_residual() = (d - target_distance) /
+    //                         target_distance on the union field: stencil_point_error()'s value.
+    //   error_over_bound      r^2 / front_conv_frac()^2; at or above 1 the point is out of
+    //                         convergence.
+    //   signed_error          r: negative inside the level set, positive beyond it.
+    //   distance_over_target  1 + r = d / target_distance.
+    //   point_kind            0 a corner (a front vertex), 1 on an edge, 2 inside a face.
+    //   vid                   a corner's vertex id (the _off file's vid), NaN for the others.
+    // Not written without an offset potential or with no offset face.
+    if (m_offset_potential) {
+        std::vector<StencilPoint> pts;
+        for (const auto& f : offset_surface_faces()) face_stencil_points(f[0], f[1], f[2], pts);
+        std::sort(pts.begin(), pts.end());
+        pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+        const int n = int(pts.size());
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double bar = front_offset_bar();
+        fr.S = MatrixXd::Zero(n, 3);
+        fr.S_cells = MatrixXi::Zero(n, 1);
+        for (VectorXd* x :
+             {&fr.s_err, &fr.s_over, &fr.s_signed, &fr.s_dist_ratio, &fr.s_kind, &fr.s_vid}) {
+            *x = VectorXd::Constant(n, nan);
+        }
+        const TopoOffsetTetMesh& self = *this;
+        diagnostic_parallel_for(pts.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+            for (size_t k = b; k < e; ++k) {
+                const StencilPoint& p = pts[k];
+                const int i = int(k);
+                const Vector3d q = self.stencil_point_position(p);
+                fr.S.row(i) = q;
+                fr.S_cells(i, 0) = i;
+                fr.s_kind[i] = double(p.n - 1);
+                if (p.n == 1) fr.s_vid[i] = double(p.ids[0]);
+                // stencil_point_error()'s own expression, so stencil_error is its value exactly
+                const double r = self.m_offset_potential->relative_residual(q);
+                if (!std::isfinite(r)) continue;
+                fr.s_signed[i] = r;
+                fr.s_err[i] = r * r;
+                fr.s_over[i] = r * r / bar;
+                fr.s_dist_ratio[i] = 1. + r;
+            }
+        });
+        if (n > 0) logger().info("Write {}", path + "_stencil.vtu");
+    }
+
     // The band-region map back exactly as the run left it (see the frame diagnostics above).
     if (region_map_refreshed) {
         m_cell_region.swap(saved_cell_region);
@@ -2721,6 +2770,19 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr)
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
         edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
+    }
+
+    // stencil points
+    if (fr.S.rows() > 0) {
+        paraviewo::VTUWriter stencil_writer;
+        stencil_writer.add_field("stencil_error", fr.s_err);
+        stencil_writer.add_field("error_over_bound", fr.s_over);
+        stencil_writer.add_field("signed_error", fr.s_signed);
+        stencil_writer.add_field("distance_over_target", fr.s_dist_ratio);
+        stencil_writer.add_field("point_kind", fr.s_kind);
+        stencil_writer.add_field("vid", fr.s_vid);
+        stencil_writer
+            .write_mesh(path + "_stencil.vtu", fr.S, fr.S_cells, paraviewo::CellType::Vertex);
     }
 }
 

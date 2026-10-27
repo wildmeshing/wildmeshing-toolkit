@@ -2707,7 +2707,13 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         {"field_normal_angle", &fs.f_field_angle, &ft.f_field_angle},
         {"dihedral_angle", &fs.f_dihedral, &ft.f_dihedral},
         {"offset_foldover_dihedral", &fs.f_fold_dihedral, &ft.f_fold_dihedral},
-        {"front_ring_ratio", &fs.ring, &ft.ring}};
+        {"front_ring_ratio", &fs.ring, &ft.ring},
+        {"stencil_error", &fs.s_err, &ft.s_err},
+        {"error_over_bound", &fs.s_over, &ft.s_over},
+        {"signed_error", &fs.s_signed, &ft.s_signed},
+        {"stencil distance_over_target", &fs.s_dist_ratio, &ft.s_dist_ratio},
+        {"point_kind", &fs.s_kind, &ft.s_kind},
+        {"stencil vid", &fs.s_vid, &ft.s_vid}};
     for (const auto& [name, x, y] : fields) {
         INFO(name);
         size_t n_finite = 0;
@@ -2732,9 +2738,91 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
     CHECK(same(fs.F_off, ft.F_off, n));
     CHECK(fs.F_off.rows() > 0);
     CHECK(same(fs.E, ft.E, n));
+    CHECK(same(fs.S, ft.S, n));
+    CHECK(same(fs.S_cells, ft.S_cells, n));
+    CHECK(fs.S.rows() > 0);
     REQUIRE(fs.tags.size() == ft.tags.size());
     for (size_t i = 0; i < fs.tags.size(); ++i) CHECK(same(fs.tags[i], ft.tags[i], n));
     CHECK(fs.tag_names == ft.tag_names);
+}
+
+TEST_CASE("stencil-frame-points", "[offset][3d]")
+{
+    // The _stencil file's arrays (gather_vtu_frame()): one point per unique stencil point of the
+    // offset surface -- the exit's points (offset_stencil_max()): as many, the same max, the same
+    // unmeasurable count -- each at stencil_point_position() with stencil_point_error()'s value
+    // bit for bit, and the derived fields from it. At stencil_order 3 the points of a face set
+    // with V corners, E edges and F faces are V corners, 2E edge points and F interior points.
+    // The grid mesh of frame-gather-threads-identical, serial.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_stencil_frame";
+    const auto mesh = grid_offset_mesh(g, param, out);
+    mesh->m_offset_params.stencil_order = 3;
+    const TopoOffsetTetMesh::VtuFrame fr = mesh->gather_vtu_frame(out.string());
+    const TopoOffsetTetMesh::StencilMax sm = mesh->offset_stencil_max();
+    REQUIRE(sm.n > 0);
+    REQUIRE(fr.S.rows() == Eigen::Index(sm.n));
+    REQUIRE(fr.S_cells.rows() == fr.S.rows());
+    REQUIRE(fr.S_cells.cols() == 1);
+
+    // The same points, named the same way, in the same order.
+    const auto faces = mesh->offset_surface_faces();
+    std::vector<TopoOffsetTetMesh::StencilPoint> pts;
+    for (const auto& f : faces) mesh->face_stencil_points(f[0], f[1], f[2], pts);
+    std::sort(pts.begin(), pts.end());
+    pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+    REQUIRE(pts.size() == sm.n);
+
+    const double bar = mesh->front_offset_bar();
+    double max_err = 0.;
+    size_t n_nan = 0;
+    std::array<size_t, 3> kinds{{0, 0, 0}};
+    for (size_t k = 0; k < pts.size(); ++k) {
+        const int i = int(k);
+        INFO("point " << k);
+        CHECK(fr.S_cells(i, 0) == i);
+        const Vector3d q = mesh->stencil_point_position(pts[k]);
+        CHECK(fr.S(i, 0) == q[0]);
+        CHECK(fr.S(i, 1) == q[1]);
+        CHECK(fr.S(i, 2) == q[2]);
+        CHECK(fr.s_kind[i] == double(pts[k].n - 1));
+        ++kinds[size_t(pts[k].n - 1)];
+        if (pts[k].n == 1) {
+            CHECK(fr.s_vid[i] == double(pts[k].ids[0]));
+        } else {
+            CHECK(std::isnan(fr.s_vid[i]));
+        }
+        const double e = mesh->stencil_point_error(pts[k]);
+        if (e < 0.) {
+            ++n_nan;
+            CHECK(std::isnan(fr.s_err[i]));
+            continue;
+        }
+        CHECK(fr.s_err[i] == e);
+        CHECK(fr.s_signed[i] * fr.s_signed[i] == e);
+        CHECK(fr.s_over[i] == e / bar);
+        CHECK(fr.s_dist_ratio[i] == 1. + fr.s_signed[i]);
+        max_err = std::max(max_err, e);
+    }
+    CHECK(max_err == sm.max);
+    CHECK(n_nan == sm.n_unmeasurable);
+
+    std::set<size_t> verts;
+    std::set<std::pair<size_t, size_t>> edges;
+    for (const auto& f : faces) {
+        for (int m = 0; m < 3; ++m) {
+            const size_t a = f[size_t(m)], b = f[size_t((m + 1) % 3)];
+            verts.insert(a);
+            edges.insert({std::min(a, b), std::max(a, b)});
+        }
+    }
+    CHECK(kinds[0] == verts.size());
+    CHECK(kinds[1] == 2 * edges.size());
+    CHECK(kinds[2] == faces.size());
 }
 
 TEST_CASE("mesh-snapshot-roundtrip", "[offset][3d]")

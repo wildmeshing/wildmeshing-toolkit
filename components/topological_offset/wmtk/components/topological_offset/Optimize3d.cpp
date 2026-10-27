@@ -4489,7 +4489,7 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
             // Record what this frame actually wrote, then refresh the ParaView collections.
             // Which companions exist is dimension-specific and some are conditional, so they are
             // discovered from disk rather than hard-coded here.
-            for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
+            for (const char* sfx : {"", "_surf", "_off", "_edge", "_front", "_stencil"}) {
                 const std::string p = base + sfx + ".vtu";
                 if (!debug_frame_file_exists(p)) continue;
                 // The label goes INTO the frame as FieldData, not only into the .pvd: a .pvd
