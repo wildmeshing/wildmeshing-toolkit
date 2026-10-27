@@ -2977,9 +2977,9 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                      m_vertex_attribute[vb].m_sizing_scalar,
                      m_vertex_attribute[vc].m_sizing_scalar});
                 // How short this face's chord would have to become, as a sizing scalar: the
-                // chord rule inverts the sagitta's power law to a length. Refinement itself is
-                // the halving in refine_front_by_halving(), but the question asked here is the
-                // same one either way -- is there any target left below what the corners
+                // chord rule inverts the sagitta's power law to a length. A diagnostic since
+                // 2026-10-26 (the loop refines through stuck_refine()); the question asked here is
+                // the same one either way -- is there any target left below what the corners
                 // already carry, or are they at the floor.
                 const double target =
                     front_chord_target(la, lb, len, gn * s.bar_length, s.bar_length);
@@ -3020,8 +3020,8 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     }
     if (s.ring_exit) {
         // The ring measure and its refinement. A vertex over the bar is refinable while the
-        // halving can still lower its own scalar -- the floor rule of refine_front_by_halving(),
-        // nothing else: no chord target, no placement gate. One at the floor blocks the exit.
+        // halving could still lower its own scalar -- the floor rule of the front halving that
+        // the loop used before 2026-10-26, nothing else (diagnostic now).
         const double l = std::max(m_params.l, 1e-300);
         const double s_floor =
             std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
@@ -3311,68 +3311,6 @@ double TopoOffsetTetMesh::front_chord_target(
     return std::min(0.75 * len * std::pow(bar / sag, 1. / p), 0.5 * len);
 }
 
-size_t TopoOffsetTetMesh::refine_front_by_halving(
-    const std::vector<EnergyCriterion::Refinable>& faces)
-{
-    // The corners, face by face in the order given; the vertex form halves each once.
-    std::vector<size_t> corners;
-    corners.reserve(3 * faces.size());
-    for (const EnergyCriterion::Refinable& r : faces) {
-        for (const size_t v : {r.a, r.b, r.c}) corners.push_back(v);
-    }
-    return refine_front_by_halving(corners);
-}
-
-size_t TopoOffsetTetMesh::refine_front_by_halving(const std::vector<size_t>& vertices)
-{
-    const double l = std::max(m_params.l, 1e-300);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    // Each vertex is halved once per call: the first entry that names it does the halving and
-    // marks it, so a vertex shared by several refinable faces is not halved several times.
-    std::vector<size_t> changed;
-    std::vector<char> done(vert_capacity(), 0);
-    for (const size_t v : vertices) {
-        if (done[v]) continue;
-        done[v] = 1;
-        double& sc = m_vertex_attribute[v].m_sizing_scalar;
-        const double sn = std::max(0.5 * sc, s_floor);
-        if (sn < sc) {
-            sc = sn;
-            changed.push_back(v);
-        }
-    }
-    grade_sizing(m_offset_params.sizing_gradation, changed);
-    return changed.size();
-}
-
-size_t TopoOffsetTetMesh::offset_stuck_refine(
-    const std::vector<std::array<size_t, 3>>& faces,
-    size_t* n_edges)
-{
-    // See the declaration: refine_sizing_around_worst()'s forced split and sizing refinement, on
-    // the faces out of convergence instead of the worst cells, the sizing through the front's own
-    // halving. The forced split obeys stuck_refine_force_split, as TetWild's does.
-    std::vector<size_t> corners;
-    corners.reserve(3 * faces.size());
-    size_t queued = 0;
-    for (const auto& f : faces) {
-        if (m_params.stuck_refine_force_split) {
-            queued += m_force_split_edges
-                          .insert(
-                              wmtk::utils::longest_edge(
-                                  f,
-                                  [this](size_t vid) -> const Vector3d& {
-                                      return m_vertex_attribute[vid].m_posf;
-                                  }))
-                          .second;
-        }
-        corners.insert(corners.end(), f.begin(), f.end());
-    }
-    if (n_edges) *n_edges = queued;
-    return refine_front_by_halving(corners);
-}
-
 double TopoOffsetTetMesh::max_loop_amips() const
 {
     // See the declaration. Each cell on the mesh's threads, the max taken on this one.
@@ -3450,10 +3388,9 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
     diagnostic_parallel_for(first.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
         for (size_t u = b; u < e; ++u) pe[u] = self.stencil_point_error(named[first[u]].first);
     });
-    // The floor of refine_front_by_halving(), for the count of out-of-convergence corners at it.
-    const double l = std::max(m_params.l, 1e-300);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    // The floor of the stuck refinement (stuck_refine(): stuck_refine_min_scalar), for the count
+    // of out-of-convergence corners at it.
+    const double s_floor = m_params.stuck_refine_min_scalar;
     double max_o = 0.;
     size_t n_unmeasurable = 0, n_floor = 0, n_points_out = 0;
     std::vector<char> face_out(faces.size(), 0);
@@ -3484,15 +3421,19 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
 
     // The stall response, once per metric, in mesh_improvement()'s order: a cooldown turn only
     // counts down; otherwise, from the second turn on, a metric at or over its bound whose fall
-    // stalled refines. AMIPS first: refine_sizing_around_worst() clears m_force_split_edges,
-    // offset_stuck_refine() appends to it.
+    // stalled fires. What the two fire on goes into ONE refinement (stuck_refine(), Spencer
+    // 2026-10-26: "a single group of things to be refined at the end of each round"): the AMIPS
+    // stuck-refine's worst cells (TetWild's selection) and the offset stuck-refine's faces with a
+    // stencil point out of its bound, each element's longest edge force-split once, each vertex
+    // lowered once.
     const double eps = m_params.stuck_refine_stall_eps;
+    bool fire_a = false, fire_o = false;
     const auto stuck = [&](int& cooldown,
                            const bool over,
                            const double prev,
                            const double cur,
                            const double target,
-                           const auto& refine) -> std::string {
+                           bool& fire) -> std::string {
         if (converged) return "converged";
         if (!refine_now) return "off (this loop does not refine)";
         if (cooldown > 0) {
@@ -3506,26 +3447,30 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
             return fmt::format("falling ({:.4g} > {:g} x {:.4g})", fall, eps, cur - target);
         }
         cooldown = std::max(0, m_params.stuck_refine_cooldown);
-        return fmt::format("STALLED (fell {:.4g} <= {:.4g}) -> {}", fall, bar, refine());
+        fire = true;
+        return fmt::format("STALLED (fell {:.4g} <= {:.4g})", fall, bar);
     };
-    const std::string a_state =
-        stuck(s.cooldown_amips, !(max_amips < a_bar), s.prev_amips, max_amips, a_bar, [&]() {
-            const size_t n = refine_sizing_around_worst(max_amips);
-            return fmt::format(
-                "{} vertices lowered, {} edges queued for a forced split",
-                n,
-                m_force_split_edges.size());
-        });
-    const std::string o_state =
-        stuck(s.cooldown_offset, !out.empty(), s.prev_offset, max_o, o_bar, [&]() {
-            size_t n_edges = 0;
-            const size_t n = offset_stuck_refine(out, &n_edges);
-            return fmt::format(
-                "{} faces: {} longest edges queued for a forced split, {} vertices halved",
-                out.size(),
-                n_edges,
-                n);
-        });
+    std::string a_state =
+        stuck(s.cooldown_amips, !(max_amips < a_bar), s.prev_amips, max_amips, a_bar, fire_a);
+    std::string o_state =
+        stuck(s.cooldown_offset, !out.empty(), s.prev_offset, max_o, o_bar, fire_o);
+    std::string refine_state = "none";
+    if (fire_a || fire_o) {
+        const std::vector<size_t> cells =
+            fire_a ? stuck_worst_cells(max_amips) : std::vector<size_t>{};
+        const std::vector<std::array<size_t, 3>> out_faces =
+            fire_o ? out : std::vector<std::array<size_t, 3>>{};
+        if (fire_a) a_state += fmt::format(" -> {} cells", cells.size());
+        if (fire_o) o_state += fmt::format(" -> {} faces", out_faces.size());
+        size_t n_edges = 0;
+        const size_t n = stuck_refine(cells, out_faces, &n_edges);
+        refine_state = fmt::format(
+            "{} cells + {} faces -> {} vertices lowered, {} edges queued for a forced split",
+            cells.size(),
+            out_faces.size(),
+            n,
+            n_edges);
+    }
     s.prev_amips = max_amips;
     s.prev_offset = max_o;
 
@@ -3536,7 +3481,7 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
         "in distance) over {} stencil points (stencil_order {}) of {} offset faces, {} points "
         "out of convergence on {} faces ({} of their corners at the sizing floor {:.4g}), {} "
         "unmeasurable{} | global offset error {:.10g} (diagnostic) | stuck-refine A: {} | "
-        "stuck-refine O: {}",
+        "stuck-refine O: {} | stuck refinement: {}",
         turn,
         converged ? "yes" : "no",
         max_amips,
@@ -3555,7 +3500,8 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
         n_unmeasurable > 0 ? " (they block the exit)" : "",
         offset_error(),
         a_state,
-        o_state);
+        o_state,
+        refine_state);
     return converged;
 }
 
@@ -3747,67 +3693,88 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::distance_deviation_split() c
     return s;
 }
 
-size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
+std::vector<size_t> TopoOffsetTetMesh::stuck_worst_cells(const double max_metric)
 {
-    // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
-    // same way, seeding the same force-split edges. Two callers: mesh_improvement() in a TetWild
-    // pass, and the loop's AMIPS stuck-refine (convergence_turn()).
-    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    // TetWildMesh::refine_sizing_around_worst()'s selection verbatim: the cells over the filter
+    // energy, ranked by quality, at most stuck_refine_num_worst. The quality is AMIPS^3, so the
+    // energy "max energy" refers to is its cube root; loop_cell_quality() is plastic AMIPS under
+    // use_rest_pose, what the loop's exit reads.
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
-
-    // The quality is AMIPS^3, so the energy "max energy" refers to is its cube root. In a TetWild
-    // pass loop_cell_quality() is cell_quality(); in the loop, plastic AMIPS under use_rest_pose,
-    // what the loop's exit reads.
     const auto worst = wmtk::utils::select_worst_cells(
         tet_capacity(),
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
         [this](size_t tid) { return std::cbrt(loop_cell_quality(tid)); },
         filter_energy,
         m_params.stuck_refine_num_worst);
-    if (worst.empty()) {
-        return 0;
+    std::vector<size_t> cells;
+    cells.reserve(worst.size());
+    for (const auto& [unused_score, tid] : worst) cells.push_back(tid);
+    if (!cells.empty()) {
+        log_stuck_refine_census(max_metric, filter_energy);
+        log_refine_block_census(fmt::format("stuck call {}", m_stuck_calls), filter_energy);
     }
+    return cells;
+}
 
-    log_stuck_refine_census(max_metric, filter_energy);
-    log_refine_block_census(fmt::format("stuck call {}", m_stuck_calls), filter_energy);
-
+size_t TopoOffsetTetMesh::stuck_refine(
+    const std::vector<size_t>& cells,
+    const std::vector<std::array<size_t, 3>>& faces,
+    size_t* n_edges)
+{
+    // See the declaration: TetWildMesh::refine_sizing_around_worst()'s refinement, once, on the
+    // cells and the faces together -- the forced splits replace the queue, each longest edge once
+    // (a set); the seeds are every element's corners, grown by stuck_refine_rings into one vertex
+    // set, so each vertex is lowered once (stuck_refine_factor, floored at
+    // stuck_refine_min_scalar); one gradation from the vertices lowered.
+    const auto pos = [this](size_t vid) -> const Vector3d& {
+        return m_vertex_attribute[vid].m_posf;
+    };
     m_force_split_edges.clear();
-    if (m_params.stuck_refine_force_split) {
-        for (const auto& [unused_score, tid] : worst) {
-            m_force_split_edges.insert(
-                wmtk::utils::longest_edge(
-                    oriented_tet_vids(tid),
-                    [this](size_t vid) -> const Vector3d& {
-                        return m_vertex_attribute[vid].m_posf;
-                    }));
-        }
-    }
-
+    size_t queued = 0;
     std::vector<size_t> seeds;
-    seeds.reserve(4 * worst.size());
-    for (const auto& [unused_score, tid] : worst) {
-        for (const size_t v : oriented_tet_vids(tid)) seeds.push_back(v);
+    seeds.reserve(4 * cells.size() + 3 * faces.size());
+    for (const size_t tid : cells) {
+        const auto vs = oriented_tet_vids(tid);
+        if (m_params.stuck_refine_force_split) {
+            queued += m_force_split_edges.insert(wmtk::utils::longest_edge(vs, pos)).second;
+        }
+        seeds.insert(seeds.end(), vs.begin(), vs.end());
     }
-    const auto region = wmtk::utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
-        return get_one_ring_vids_for_vertex_adj(v);
-    });
-
+    for (const auto& f : faces) {
+        if (m_params.stuck_refine_force_split) {
+            queued += m_force_split_edges.insert(wmtk::utils::longest_edge(f, pos)).second;
+        }
+        seeds.insert(seeds.end(), f.begin(), f.end());
+    }
+    if (n_edges) *n_edges = queued;
+    if (seeds.empty()) return 0;
+    const auto region = wmtk::utils::grow_vertex_region(
+        seeds,
+        std::max(0, m_params.stuck_refine_rings),
+        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
     const auto refined = wmtk::utils::apply_sizing_refinement(
         region,
         m_params.stuck_refine_factor,
         m_params.stuck_refine_min_scalar,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
     grade_sizing(m_params.stuck_refine_gradation, refined);
-
     logger().info(
-        "[stuck-refine A] worst {} tets (max energy {:.4}, filter {:.4}), refined {} of {} "
-        "region vertices",
-        worst.size(),
-        max_metric,
-        filter_energy,
+        "[stuck refinement] {} cells + {} faces, {} edges queued for a forced split, refined {} of "
+        "{} region vertices",
+        cells.size(),
+        faces.size(),
+        queued,
         refined.size(),
         region.size());
     return refined.size();
+}
+
+size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
+{
+    // TetWildMesh::refine_sizing_around_worst(): its selection, then the shared refinement on the
+    // cells alone. The engine's override point (mesh_improvement()); the loop calls the two parts
+    // itself (convergence_turn()).
+    return stuck_refine(stuck_worst_cells(max_metric), {});
 }
 
 void TopoOffsetTetMesh::log_worst_dist_vertex() const
@@ -5573,8 +5540,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                   "(interleaved_smoothing false)",
                   k));
     compute_vertex_partition_morton();
-    // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
-    // scalars at the end of a turn, and the split pass
+    // One turn of grace after the field is lowered: the stuck refinement (stuck_refine()) lowers
+    // sizing scalars at the end of a turn, and the split pass
     // that realizes them does not run until the NEXT turn.
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same

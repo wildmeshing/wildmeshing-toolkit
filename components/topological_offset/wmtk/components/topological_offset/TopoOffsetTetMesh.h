@@ -2502,8 +2502,8 @@ public:
         size_t n_rings = 0, n_rings_unmeasurable = 0;
         size_t worst_ring_vid = static_cast<size_t>(-1);
         size_t n_rings_over = 0; ///< vertices whose ring measure is over the bar
-        /// The ring-mode refinement: every vertex over the bar whose sizing scalar the halving can
-        /// still lower, handed to refine_front_by_halving() as the vertex alone.
+        /// The ring-mode refinement set (a diagnostic since 2026-10-26): every vertex over the bar
+        /// whose sizing scalar the old front halving could still lower.
         std::vector<size_t> refinable_vertices;
         /// Vertices over the bar whose sizing scalar is already at the floor: nothing can refine
         /// them, so they block the exit for good. sizing_floor_fact() names them in ring mode.
@@ -2567,15 +2567,6 @@ public:
     /// asks whether there is any target left below what the face's corners already carry.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double bar) const;
 
-    /// THE refinement: halve the sizing scalar at the corners of every refinable face, once per
-    /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded
-    /// outward. Returns the number of vertices lowered.
-    size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// The same halving at the listed vertices themselves: each lowered once per call, floored,
-    /// then graded. The face form above is this on its faces' corners, in the order given;
-    /// front_measure "vertex_ring" calls it directly with the vertices whose ring measure is over
-    /// the bar.
-    size_t refine_front_by_halving(const std::vector<size_t>& vertices);
     /// TetWild's stall test (TetOptimizerMesh::optimization_stalled()) on any metric: the last
     /// turn's fall is small against the distance still to cover, (prev - cur) <= eps (cur -
     /// target). eps = stuck_refine_stall_eps.
@@ -2607,15 +2598,25 @@ public:
         return m_plastic_active && !tetwild_rules() ? plastic_quality(tid) : cell_quality(tid);
     }
     /**
-     * @brief The offset stuck-refine, TetWild's stuck-refine on the offset error: every face in
-     * `faces` (a stencil point out of convergence) has its longest edge queued for one forced
-     * split by the next split pass (m_force_split_edges, split_edge_is_due()) and its corners'
-     * sizing halved (refine_front_by_halving(): floored, graded). Appends to
-     * m_force_split_edges. Returns the number of vertices lowered; `n_edges` the edges queued.
+     * @brief THE STUCK REFINEMENT (since 2026-10-26 one for both stuck-refines; Spencer: "a single
+     * group of things to be refined at the end of each round ... a single element should never
+     * be refined multiple times"): TetWildMesh::refine_sizing_around_worst()'s refinement, once,
+     * on `cells` (the AMIPS stuck-refine's, stuck_worst_cells()) and `faces` (the offset
+     * stuck-refine's: offset faces with a stencil point out of its bound) together. The forced
+     * splits REPLACE m_force_split_edges: each element's longest edge once (under
+     * stuck_refine_force_split), for the next split pass (split_edge_is_due()). The sizing: the
+     * elements' corners, grown by stuck_refine_rings, as one vertex set -- each vertex lowered
+     * once, by stuck_refine_factor, floored at stuck_refine_min_scalar -- then one gradation
+     * (stuck_refine_gradation) from the vertices lowered. Returns the number lowered; `n_edges`
+     * the edges queued.
      */
-    size_t offset_stuck_refine(
+    size_t stuck_refine(
+        const std::vector<size_t>& cells,
         const std::vector<std::array<size_t, 3>>& faces,
         size_t* n_edges = nullptr);
+    /// TetWildMesh::refine_sizing_around_worst()'s selection: the cells over its filter energy,
+    /// ranked by loop_cell_quality(), at most stuck_refine_num_worst (logs its two censuses).
+    std::vector<size_t> stuck_worst_cells(double max_metric);
     /**
      * @brief One turn, after consolidation (since 2026-10-26): the loop's exit -- its only
      * one -- and its two stuck-refines. Converged = max AMIPS over every cell below
@@ -2624,9 +2625,10 @@ public:
      * and none unmeasurable. Otherwise, when
      * `refine_now`, mesh_improvement()'s stall response once per metric, each with its own
      * cooldown and only from the second turn: max AMIPS at or over stop_energy and stalled
-     * (optimization_stalled()) -> refine_sizing_around_worst(); max offset error at or over its
-     * bound and stalled (metric_stalled(), stuck_refine_stall_eps) -> offset_stuck_refine() on
-     * every face out of convergence. Logs the turn's [convergence] line. Returns converged.
+     * (optimization_stalled()) -> the AMIPS stuck-refine fires on stuck_worst_cells(); max offset
+     * error at or over its bound and stalled (metric_stalled(), stuck_refine_stall_eps) -> the
+     * offset stuck-refine fires on every face out of convergence. Whatever fired is refined ONCE,
+     * together (stuck_refine()). Logs the turn's [convergence] line. Returns converged.
      */
     bool convergence_turn(int turn, StuckState& s, bool refine_now);
     /// The max AMIPS over every live cell, as the loop's exit reads it: the cube root of the max

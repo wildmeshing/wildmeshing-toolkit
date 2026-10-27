@@ -3103,8 +3103,9 @@ TEST_CASE("offset-stuck-refine", "[offset][3d]")
     // target 0.2, its offset faces nowhere near a tiny front_conv: not converged, and with the
     // offset error stalled (turn 2, no previous max) every face with a stencil point at or over
     // front_conv_frac()^2 has its longest edge queued for a forced split and its corners' sizing
-    // halved (or at the floor). The AMIPS stuck-refine is kept out (its previous max far above,
-    // so not stalled). With both bounds wide open the same mesh converges and nothing is queued.
+    // lowered by the stuck refinement (stuck_refine(): stuck_refine_factor 0.5, floored). The AMIPS
+    // stuck-refine is kept out (its previous max far above, so not stalled). With both bounds wide
+    // open the same mesh converges and nothing is queued.
     const GridInput g = grid_input();
     Parameters param = construction_params(
         {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
@@ -3328,6 +3329,61 @@ TEST_CASE("collapse-rule-reads-its-own-collapse", "[offset][3d]")
     INFO(n_interior << " interior edges, " << n_refused << " refused");
     REQUIRE(n_refused > 0);
     CHECK(n_differ == 0);
+}
+
+TEST_CASE("stuck-refine-union", "[offset][3d]")
+{
+    // stuck_refine() on the grid of save-offset-correspondence-3d (serial, target 0.2), every
+    // sizing scalar at 1, the stuck_refine_* defaults (factor 0.5, rings 0): a few cells and the
+    // offset faces that share corners with them, refined ONCE together. Every corner of either
+    // ends at exactly 0.5 -- lowered once, not once per element it is in -- and the forced-split
+    // queue holds each element's longest edge once.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    auto mesh =
+        grid_offset_mesh(g, param, std::filesystem::temp_directory_path() / "wmtk_offset_union");
+    mesh->m_params.stuck_refine_force_split = true;
+    for (const auto& v : mesh->get_vertices())
+        mesh->m_vertex_attribute[v.vid(*mesh)].m_sizing_scalar = 1.;
+    const auto faces = mesh->offset_surface_faces();
+    REQUIRE(faces.size() >= 4);
+    // cells: a band cell at each of the first faces, so every such cell shares a face's corners
+    std::vector<size_t> cells;
+    std::vector<std::array<size_t, 3>> fs(faces.begin(), faces.begin() + 4);
+    for (const auto& f : fs) {
+        for (const size_t tid : mesh->get_one_ring_tids_for_vertex(f[0])) {
+            const auto vs = mesh->oriented_tet_vids(tid);
+            if (std::count(vs.begin(), vs.end(), f[1]) && std::count(vs.begin(), vs.end(), f[2])) {
+                cells.push_back(tid);
+                break;
+            }
+        }
+    }
+    REQUIRE(cells.size() == fs.size());
+    const auto pos = [&](size_t vid) -> const Vector3d& {
+        return mesh->m_vertex_attribute[vid].m_posf;
+    };
+    std::set<wmtk::simplex::Edge> want_edges;
+    std::set<size_t> corners;
+    for (const size_t tid : cells) {
+        const auto vs = mesh->oriented_tet_vids(tid);
+        const auto e = wmtk::utils::longest_edge(vs, pos);
+        want_edges.insert(e);
+        corners.insert(vs.begin(), vs.end());
+    }
+    for (const auto& f : fs) {
+        const auto e = wmtk::utils::longest_edge(f, pos);
+        want_edges.insert(e);
+        corners.insert(f.begin(), f.end());
+    }
+    size_t n_edges = 0;
+    const size_t n = mesh->stuck_refine(cells, fs, &n_edges);
+    CHECK(n == corners.size());
+    for (const size_t v : corners) CHECK(mesh->m_vertex_attribute[v].m_sizing_scalar == 0.5);
+    CHECK(n_edges == want_edges.size());
+    CHECK(mesh->m_force_split_edges.size() == want_edges.size());
 }
 
 TEST_CASE("growth-mode-keys", "[offset][3d]")
