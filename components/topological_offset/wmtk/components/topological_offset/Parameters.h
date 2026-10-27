@@ -180,12 +180,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
-    /// EXPERIMENTAL (2026-10-09), 3D. Since 2026-10-26 the loop's exit and refinement are
-    /// TetWild's on two bounded maxima (TopoOffsetTetMesh::convergence_turn()): exit when the max
-    /// AMIPS is below stop_energy and every offset face's stencil-point offset error below
-    /// front_conv_frac()^2; else the stuck-refine (stuck_refine_* keys) for each max whose fall
-    /// stalled. The energy criterion's own refinement and exit are off. See the spec doc.
-    bool settle_refinement = true;
     /// EXPERIMENTAL (2026-10-15), 3D: every smoothing solve of the loop may move its vertex at
     /// most damping_factor times the shortest edge at the vertex (to any vertex of its one-ring),
     /// measured from where the solve started (TopoOffsetTetMesh::damping_step(),
@@ -195,11 +189,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL (2026-10-15), 3D, with damping: the bound as a factor of the shortest edge at
     /// the vertex. 0.5 (the default) = half, the bound damping had before the key existed.
     double damping_factor = 0.5;
-    /// 3D, with optimize_offset (2026-10-21): before the loop, TetWild's own pass on the mesh as
-    /// constructed, from the sizing field at 1 everywhere, the offset surface held in an envelope
-    /// of half the distance the march traced it to (TopoOffsetTetMesh::optimize_construction_pass()).
-    /// Ignored when optimize_offset is false. See the spec doc.
-    bool optimize_construction = true;
     /// 3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the
     /// offset when the march traces the front below target_distance (construction_mode
     /// "max_marchable_fallback", the target not below the maximum marchable distance), from the
@@ -241,13 +230,13 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop, which runs only in the TetWild passes: the final
-    /// pass, and in 3D the construction pass (optimize_construction).
+    /// Cap of the shared TriWild loop, which runs only in 2D's final pass (3D has no TetWild pass
+    /// since 2026-10-26).
     int max_iterations;
     // NO KEY since 2026-10-20 (offset_envelope / offset_envelope_rel removed): the offset
-    // surface's envelope in a TetWild pass has envelope_size's eps, like every other held surface
-    // (optimize_construction's pass alone widens it). init() sets these two to
-    // envelope_size / envelope_size_rel; only the 2D code still reads them.
+    // surface's envelope (3D: the final coarsening) has envelope_size's eps, like every other held
+    // surface. init() sets these two to envelope_size / envelope_size_rel; only the 2D code still
+    // reads them.
     double offset_envelope = -1.;
     double offset_envelope_rel = -1.;
 
@@ -323,7 +312,6 @@ struct Parameters : public wmtk::OptimizerParameters
         repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         repulsion_rounds = json_params["repulsion_rounds"];
         split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
-        settle_refinement = json_params["EXPERIMENTAL_settle_refinement"];
         damping = json_params["EXPERIMENTAL_damping"];
         damping_factor = json_params["EXPERIMENTAL_damping_factor"];
         if (!(damping_factor > 0.)) {
@@ -335,7 +323,6 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_damping_factor {} needs EXPERIMENTAL_damping true",
                 damping_factor);
         }
-        optimize_construction = json_params["optimize_construction"];
         growth_mode = json_params["growth_mode"];
         linear_growth_steps = json_params["linear_growth_steps"];
         smart_growth_attempts = json_params["smart_growth_attempts"];

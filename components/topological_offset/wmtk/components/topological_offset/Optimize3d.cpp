@@ -1371,9 +1371,11 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         }
     }
 
-    // The front is always length-limited, whatever the pass says: it deliberately has no
-    // envelope while it moves, so its sizing field is the only thing bounding its resolution.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+    // The front is length-limited, whatever the pass says, while it has no envelope (the loop): its
+    // sizing field is then the only thing bounding its resolution. In the final coarsening
+    // (m_tetwild_pass) it is held in m_offset_envelope and each collapse keeps the stencil-point
+    // offset bound (collapse_after_connectivity()), so the coarsening may remove front vertices.
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset && !m_tetwild_pass) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
@@ -1480,14 +1482,14 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             }
         }
     }
-    // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
-    // elements for nothing but the promise that the result is still good. As in 2D.
+    // THE FINAL COARSENING (final_coarsening()) keeps the loop's offset bound besides the
+    // engine's AMIPS rule (the worst cell around the collapse no worse than before): it runs after
+    // the loop converged and trades elements for nothing but the promise that the result still
+    // meets the exit. Every stencil-point offset error the collapse changes -- the points involving
+    // the survivor -- stays below front_conv_frac()^2, none unmeasurable.
     if (m_coarsen_mode && m_offset_potential) {
-        double after = 0.;
-        for (const Tuple& f : offset_surface_faces_live_at(v2_id)) {
-            after = std::max(after, face_criterion_rel(f));
-        }
-        if (after > 1.0) {
+        const StencilMax om = stencil_max(stencil_points_changed_at(v2_id));
+        if (om.n_unmeasurable > 0 || !(om.max < front_offset_bar())) {
             ++iter_cnt_collapse_offset_reject;
             return false;
         }
@@ -3354,6 +3356,46 @@ size_t TopoOffsetTetMesh::offset_stuck_refine(
     return refine_front_by_halving(corners);
 }
 
+double TopoOffsetTetMesh::max_loop_amips() const
+{
+    // See the declaration. Each cell on the mesh's threads, the max taken on this one.
+    const TopoOffsetTetMesh& self = *this;
+    std::vector<double> q(tet_capacity(), 0.);
+    diagnostic_parallel_for(q.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
+        for (size_t t = b; t < e; ++t) {
+            if (self.tuple_from_tet(t).is_valid(self)) q[t] = self.loop_cell_quality(t);
+        }
+    });
+    double a3 = 0.;
+    for (const double x : q) a3 = std::max(a3, x);
+    return std::cbrt(a3);
+}
+
+TopoOffsetTetMesh::StencilMax TopoOffsetTetMesh::offset_stencil_max() const
+{
+    // See the declaration: every offset face's points named, each unique point once, evaluated on
+    // the mesh's threads.
+    std::vector<StencilPoint> pts;
+    for (const auto& f : offset_surface_faces()) face_stencil_points(f[0], f[1], f[2], pts);
+    std::sort(pts.begin(), pts.end());
+    pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+    std::vector<double> e(pts.size(), 0.);
+    const TopoOffsetTetMesh& self = *this;
+    diagnostic_parallel_for(pts.size(), kDiagnosticChunk, [&](const size_t b, const size_t en) {
+        for (size_t k = b; k < en; ++k) e[k] = self.stencil_point_error(pts[k]);
+    });
+    StencilMax out;
+    out.n = pts.size();
+    for (const double x : e) {
+        if (x < 0.) {
+            ++out.n_unmeasurable;
+        } else {
+            out.max = std::max(out.max, x);
+        }
+    }
+    return out;
+}
+
 bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bool refine_now)
 {
     // See the declaration: mesh_improvement()'s exit and stall response, on the two bounded
@@ -3364,16 +3406,7 @@ bool TopoOffsetTetMesh::convergence_turn(const int turn, StuckState& s, const bo
     const TopoOffsetTetMesh& self = *this;
     const double a_bar = m_params.stop_energy;
     const double o_bar = front_offset_bar();
-
-    std::vector<double> q(tet_capacity(), 0.);
-    diagnostic_parallel_for(q.size(), kDiagnosticChunk, [&](const size_t b, const size_t e) {
-        for (size_t t = b; t < e; ++t) {
-            if (self.tuple_from_tet(t).is_valid(self)) q[t] = self.loop_cell_quality(t);
-        }
-    });
-    double a3 = 0.;
-    for (const double x : q) a3 = std::max(a3, x);
-    const double max_amips = std::cbrt(a3);
+    const double max_amips = max_loop_amips();
 
     // Every stencil point of the offset surface ONCE (StencilPoint): each face's points named,
     // sorted, the first entry of each name evaluated. A face is out of convergence when any of
@@ -3695,36 +3728,6 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::distance_deviation_split() c
     }
     s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
     return s;
-}
-
-double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
-{
-    // cell_quality stores AMIPS^3 and stop_energy is a bar on AMIPS, so the cube root is not
-    // optional.
-    return std::cbrt(cell_quality(tid)) / std::max(m_params.stop_energy, 1e-16);
-}
-
-double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
-{
-    double q = cell_quality_rel(f.tid(*this));
-    if (const auto opp = f.switch_tetrahedron(*this)) {
-        q = std::max(q, cell_quality_rel(opp->tid(*this)));
-    }
-    return q;
-}
-
-double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
-{
-    // The max of the face's AMIPS over stop_energy and, on a live offset face, the root of its
-    // face_offset_term() -- the loop's own face measure, in units of the bar. Sorted corners, as
-    // tet_energy() reads the term. An unmeasurable face fails.
-    const double score = amips_rel_at_face(f);
-    if (!face_is_offset_surface_live(f)) return score;
-    std::array<size_t, 3> v = get_face_vids(f);
-    std::sort(v.begin(), v.end());
-    const double term = face_offset_term(v[0], v[1], v[2]);
-    if (!(term >= 0.)) return std::numeric_limits<double>::infinity();
-    return std::max(score, std::sqrt(term));
 }
 
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
@@ -4378,24 +4381,17 @@ void TopoOffsetTetMesh::build_offset_envelope()
 
     // envelope_size, as init() resolved it: the eps of every held surface's envelope, the offset
     // surface's too (its own key, offset_envelope, went on 2026-10-20).
-    // optimize_construction's pass alone holds the front in a wider envelope, half the distance
-    // the march traced it to (m_construction_envelope_eps, 0 at every other time).
-    const bool construction_envelope = m_construction_envelope_eps > 0.;
-    const double eps = construction_envelope ? m_construction_envelope_eps
-                                             : std::max(m_offset_params.envelope_size, 1e-12);
+    const double eps = std::max(m_offset_params.envelope_size, 1e-12);
 
     m_offset_envelope = std::make_shared<Envelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
     logger().info(
-        "\t[offset envelope] built: {} faces, {} (eps {:.6g} = {})",
+        "\t[offset envelope] built: {} faces, {} (eps {:.6g} = envelope_size, {:.4} x the bbox "
+        "diagonal)",
         tris.size(),
         m_offset_envelope->use_exact ? "EXACT" : "sampled",
         eps,
-        construction_envelope
-            ? std::string("half the traced distance, optimize_construction's pass only")
-            : fmt::format(
-                  "envelope_size, {:.4} x the bbox diagonal",
-                  m_offset_params.envelope_size_rel));
+        m_offset_params.envelope_size_rel);
 }
 
 namespace {
@@ -5497,7 +5493,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     // holds the front in the loop, neither the operations nor the smoothing; only a TetWild pass
     // holds it to one (build_offset_envelope()).
     const int rounds = std::max(1, m_offset_params.max_rounds);
-    const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
     audit_surface_containment("construction");
     needle_scan("after construction, before the loop");
@@ -5505,9 +5500,9 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     m_front_gradient_reference = front_gradient_linf();
     logger().info(
         "\tLOOP: TetWild's operation groups with the front placed inside their "
-        "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
-        "relative error over a stencil_order {} stencil ({} points per face) against front_conv "
-        "{:.6g} ({:.6g} x the configured target_distance)",
+        "smoothing passes | front energy-gradient reference {:.6g} | THE EXIT: max AMIPS below "
+        "stop_energy and every stencil-point offset error (stencil_order {}, {} points per face) "
+        "within front_conv {:.6g} ({:.6g} x the configured target_distance)",
         m_front_gradient_reference,
         m_offset_params.stencil_order,
         stencil_points_per_face(),
@@ -5515,15 +5510,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_offset_params.front_conv_rel);
     logger().info(
         "\t[offset envelope] the loop's operations and smoothing do not hold the offset surface "
-        "to an envelope; a TetWild pass does (eps envelope_size {:.6g})",
+        "to an envelope; the final coarsening does (eps envelope_size {:.6g})",
         m_offset_params.envelope_size);
     (void)rounds;
     // max_turns > 0: growth_mode "smart"'s attempt (smart_growth_attempts) in place of max_rounds.
     const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
     const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement().
-    // Since 2026-10-26 its stall response is here too, once for AMIPS and once for the offset error
-    // (convergence_turn(), under EXPERIMENTAL_settle_refinement).
+    // Since 2026-10-26 its exit and stall response are here too, once for AMIPS and once for the
+    // offset error (convergence_turn()).
     // interleaved_smoothing true is TetWild's shape of a turn: three groups, each one operation
     // pass followed by k smoothing passes. With it false, this component's default, a turn is ONE
     // group -- split, collapse and swap back to back -- followed by one smoothing block of
@@ -5547,8 +5542,10 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     : std::vector<const char*>{"ops"};
     logger().info(
         "\tTurn shape: {}, run twice per turn -- a FRONT block whose smoothing moves only the "
-        "front vertices the loop places (the offset error objective), then a BACKGROUND block "
-        "whose smoothing moves every other vertex (TetWild's smoother)",
+        "front vertices the loop places (the offset error objective), run only while some "
+        "stencil-point offset error is out of its bound, then a BACKGROUND block whose smoothing "
+        "moves every other vertex (TetWild's smoother), run only while max AMIPS is at or over "
+        "stop_energy",
         interleaved
             ? fmt::format(
                   "INTERLEAVED -- split, collapse, swap, each followed by {} smoothing "
@@ -5574,10 +5571,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     op_accounting_reset(); // the [ops accounting] lines are per turn, from turn 1's first op
     m_split_order_waits = 0; // and so are the [split order] lines
     m_split_off_longest = 0;
-    // EXPERIMENTAL_settle_refinement: the max-based exit and the two stuck-refines
-    // (convergence_turn()); the energy criterion's refinable sets, its sizing-floor warnings and
-    // its exit do not act. stuck carries the stall tests' previous maxima and cooldowns.
-    const bool settle = m_offset_params.settle_refinement;
+    // The max-based exit and the two stuck-refines (convergence_turn()); the energy criterion's
+    // measures are diagnostics. stuck carries the stall tests' previous maxima and cooldowns.
     StuckState stuck = stuck_state_start();
     // Forced splits are vertex ids queued for the next split pass; ids left by an earlier pass or
     // loop (a TetWild pass's last stall, a smart growth attempt restored from its snapshot) name
@@ -5598,6 +5593,37 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         m_round = it + 1;
         m_iterations_used = it + 1;
         for (const auto& [block_set, block_name] : blocks) {
+            // THE BLOCK GATES (Spencer, 2026-10-26: "Make these blocks only trigger if the
+            // corresponding energy is out of convergence"): the front block runs only while some
+            // stencil-point offset error is at or over front_conv_frac()^2 (or unmeasurable); the
+            // background block, tested after the front block, only while the max AMIPS is at or
+            // over stop_energy. A skipped block runs none of its operation groups.
+            if (block_set == SmoothSet::Front) {
+                const StencilMax om = offset_stencil_max();
+                if (om.n_unmeasurable == 0 && om.max < front_offset_bar()) {
+                    ++m_block_skips[0];
+                    logger().info(
+                        "\t[block] turn {} front block skipped: every stencil-point offset error "
+                        "within its bound (max {:.6g} < {:.6g} over {} points)",
+                        it + 1,
+                        om.max,
+                        front_offset_bar(),
+                        om.n);
+                    continue;
+                }
+            } else {
+                const double a = max_loop_amips();
+                if (a < m_params.stop_energy) {
+                    ++m_block_skips[1];
+                    logger().info(
+                        "\t[block] turn {} background block skipped: max AMIPS {:.6g} below "
+                        "stop_energy {}",
+                        it + 1,
+                        a,
+                        m_params.stop_energy);
+                    continue;
+                }
+            }
             m_smooth_set = block_set;
             const size_t skipped0 = m_smooth_set_skipped.load();
             for (size_t gi = 0; gi < groups.size(); ++gi) {
@@ -5708,7 +5734,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             logger().info(
                 "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
                 "{:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) over {} "
-                "front vertices, {} rings unmeasurable, {} unmeasurable in all (the exit test) | "
+                "front vertices, {} rings unmeasurable, {} unmeasurable in all (diagnostic) | "
                 "diagnostic: faces max {:.4}x (avg {:.4}x), {} faces over the bar of {}; front "
                 "vertices max {:.4}x (avg {:.4}x), {} not placed of {} | vertices over the bar: "
                 "{}, refinable {} (at the sizing floor {}) ========",
@@ -5741,7 +5767,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             logger().info(
                 "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
                 "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) "
-                "(diagnostic), faces max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | {} "
+                "(diagnostic), faces max {:.4}x (avg {:.4}x), {} unmeasurable (diagnostic) | {} "
                 "vertices, {} faces | faces over the bar: {}, of which {} with all corners placed "
                 "(worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | refinable faces {} (at the "
                 "sizing floor {}) ========",
@@ -5768,29 +5794,6 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 ec.worst_placed_centroid.z(),
                 ec.refinable.size(),
                 ec.n_at_floor);
-        }
-        // Faces over the bar with every corner at the sizing floor block the exit (they are over
-        // the bar) and no refinement will ever take them, so a run that keeps them never
-        // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
-        // count also holds faces whose corners are ABOVE the floor and whose longest edge the
-        // split pass will shorten -- on the deliverable cube at target_distance_rel 1e-2 /
-        // front_conv_rel 1e-4, every face it counted in turns 2, 4 and 5 (2, 2 and 16) was of
-        // that kind, with corner scalars down to 0.0625 against a floor of 0.002 -- so the same
-        // line says which, at info when none is at the floor. A turn with neither says nothing
-        // beyond its turn line.
-        //
-        // Under the ring measure the same line names the VERTICES over the bar at the floor,
-        // always a warning: the vertex form of the halving has no chord rule, so every vertex it
-        // cannot take is one nothing will ever take.
-        if (!settle && ec.n_at_floor > 0) {
-            logger().log(
-                ec.n_corners_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
-                "\t[sizing floor] turn {}: {}",
-                it + 1,
-                ec.sizing_floor_fact());
-        }
-        if (!settle && ec.ring_exit && ec.n_rings_at_floor > 0) {
-            logger().warn("\t[sizing floor] turn {}: {}", it + 1, ec.sizing_floor_fact());
         }
         // Every place a proposed swap can be turned down, counted for this turn. See
         // TetOptimizerMesh::SwapReject: this is instrumentation for why an offset-surface flip
@@ -5832,82 +5835,22 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         // Not gated on the key: silent unless a face lookup actually missed this run.
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
-        if (!settle && !refine &&
-            (!ec.refinable.empty() || (ec.ring_exit && ec.n_rings_over > 0))) {
-            logger().info(
-                "\t[resolution] turn {}: {} -- no refinement ({} front vertex(es) / {} face(s) "
-                "over the bar left as they are)",
-                it + 1,
-                label,
-                ec.n_rings_over,
-                ec.refinable.size());
-        }
-        if (!settle && refine && !ec.refinable.empty()) {
-            // Refinement is the halving, and only the halving: every refinable face has the
-            // sizing scalar at its corners halved.
-            const size_t n = refine_front_by_halving(ec.refinable);
-            logger().info(
-                "\t[resolution] turn {}: {} front face(s) {} whose RMS "
-                "relative error over {} stencil point(s) is over the bar (worst placed {:.4}x, "
-                "centroid ({:.4}, {:.4}, {:.4})) -> sizing scalar halved at {} vertices",
-                it + 1,
-                ec.refinable.size(),
-                "(placed or not)",
-                stencil_points_per_face(),
-                ec.max_face_placed,
-                ec.worst_placed_centroid.x(),
-                ec.worst_placed_centroid.y(),
-                ec.worst_placed_centroid.z(),
-                n);
-        }
-        if (!settle && refine && ec.ring_exit && ec.n_rings_over > 0) {
-            // front_measure "vertex_ring": the halving takes each vertex over the bar, that
-            // vertex alone. refinable is empty in this mode, so the face line above is silent.
-            const size_t n = refine_front_by_halving(ec.refinable_vertices);
-            logger().info(
-                "\t[resolution] turn {}: {} front vertex(es) whose {} (the RMS of the face "
-                "measures of its incident offset faces, each face weighted equally) is over the "
-                "bar, {} of them at the sizing floor (worst {:.4}x) -> sizing scalar halved at {} "
-                "vertices",
-                it + 1,
-                ec.n_rings_over,
-                ec.ring_name(),
-                ec.n_rings_at_floor,
-                ec.max_ring,
-                n);
-        }
-        // EXPERIMENTAL_settle_refinement: the max-based exit and the two stuck-refines, after the
-        // consolidation (the forced splits are vertex ids); true when the loop may exit, which then
-        // replaces EnergyCriterion::converged() below.
-        const bool settle_exit = settle && convergence_turn(it + 1, stuck, refine);
+        // THE EXIT and the two stuck-refines (convergence_turn()), after the consolidation (the
+        // forced splits are vertex ids): true when max AMIPS is below stop_energy and every
+        // stencil-point offset error below front_conv_frac()^2, nothing unmeasurable -- the ONLY
+        // way out of the loop (Spencer, 2026-10-26: "we only exit the main iterations if both max
+        // amips and max offset error are within tolerance"; EXPERIMENTAL_settle_refinement, whose
+        // false exited on the energy criterion, is gone).
+        const bool converged_now = convergence_turn(it + 1, stuck, refine);
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the refinement just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("end_{}S", it + 1));
         }
-        // Termination: every offset face's measure within the bar and nothing unmeasurable
-        // (EnergyCriterion::converged()) -- then quality with the front held in its envelope
-        // (below). The face measure is the one quantity the smoothing minimises and the refinement
-        // reads; the vertex measure is reported on the turn line and in the verdict, and tested
-        // nowhere. Nothing refinable is implied, a refinable face being over the bar. Under
-        // front_measure "vertex_ring" the tested measure is every front vertex's ring measure
-        // instead, and the face measure joins the vertex measure as a diagnostic
-        // (EnergyCriterion::ring_exit).
-        //
-        // The loop exits on the FIRST turn that meets the criterion. It used to additionally
-        // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
-        // which given that the exit required an empty refinable set amounted to two
-        // consecutive turns without a lowering, the second of them converged. That was dropped
-        // because it cost many turns waiting for two to line up, and TetWild's loop takes the
-        // same choice: it breaks the moment its max energy is under stop_energy, that number
-        // being a property of the mesh it is holding, where refinable is a request for work on
-        // the next turn.
-        //
-        // EXPERIMENTAL_settle_refinement: convergence_turn()'s exit (max AMIPS below stop_energy,
-        // every offset face's stencil-point offset error below front_conv_frac()^2) in place of
-        // converged(); the criterion's measures are then diagnostics.
-        bool resolved = settle ? settle_exit : ec.converged();
+        // The loop exits on the FIRST turn that meets it, as TetWild's loop breaks the moment its
+        // max energy is under stop_energy.
+        bool resolved = converged_now;
         // EXPERIMENTAL_exit_no_folds: no exit while a real fold remains (count_real_folds()). The
         // vertex exit tests the front's vertices only; a flat sheet of inner cells within
         // front_conv of the level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30
@@ -5924,7 +5867,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             if (folds > 0) resolved = false;
         }
         // fold_free (growth_mode "smart"): a converged loop with a folded offset face has failed,
-        // judged here, before the verdict and the final TetWild pass, which it does not get.
+        // judged here, before the verdict and the final coarsening, which it does not get.
         if (resolved && fold_free) {
             const FoldCensus fc = fold_census();
             if (fc.n_fold > 0) {
@@ -5946,17 +5889,15 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             }
         }
         if (resolved && !final_stage) {
-            // The init_optimize loop ends here; the final pass and the verdict belong to the
-            // ordinary loop that follows it.
+            // The init_optimize loop ends here; the final coarsening and the verdict belong to
+            // the ordinary loop that follows it.
             logger().info(
-                "[{}] converged at target_distance {:.6g} after {} turn(s): {}{} max {:.4}x the "
+                "[{}] converged at target_distance {:.6g} after {} turn(s): max AMIPS and every "
+                "stencil-point offset error within their bounds; diagnostic: {} max {:.4}x the "
                 "bar over {} front vertices, max AMIPS {:.4}",
                 label,
                 m_offset_params.target_distance,
                 it + 1,
-                settle ? "max AMIPS and every stencil-point offset error within their bounds "
-                         "(EXPERIMENTAL_settle_refinement); diagnostic: "
-                       : "",
                 ec.ring_exit ? std::string(ec.ring_name()) : std::string("faces"),
                 (ec.ring_exit ? ec.max_ring : ec.max_face) / ec.bar,
                 ec.n_vertices,
@@ -5966,70 +5907,31 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         if (resolved) {
             m_energy_verdict = ec;
             m_converged = true;
-            // Provisional: the final pass below overwrites both when it runs. The verdict at the
-            // end of optimize_offset() requires this AND the front's.
+            // Provisional: the final coarsening below overwrites both. The verdict at the end of
+            // optimize_offset() requires this AND the front's.
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
-            if (settle) {
-                logger().info(
-                    "The front is resolved after {} iteration(s): max AMIPS below stop_energy "
-                    "and every offset face's stencil-point offset error below front_conv_frac^2 "
-                    "(EXPERIMENTAL_settle_refinement); offset faces max {:.4}x with {} over the "
-                    "bar (diagnostic); front vertices max {:.4}x (diagnostic); max AMIPS {:.4} "
-                    "against stop {:.4}",
-                    it + 1,
-                    ec.max_face / ec.bar,
-                    ec.n_faces_over,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            } else if (ec.ring_exit) {
-                logger().info(
-                    "The front is resolved after {} iteration(s): every front "
-                    "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; offset "
-                    "faces max {:.4}x with {} over the bar (diagnostic); front vertices max {:.4}x "
-                    "(diagnostic); max AMIPS {:.4} against stop {:.4}",
-                    it + 1,
-                    ec.ring_name(),
-                    ec.max_ring / ec.bar,
-                    ec.max_face / ec.bar,
-                    ec.n_faces_over,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            } else {
-                logger().info(
-                    "The front is resolved after {} iteration(s): every offset face "
-                    "within the bar (faces max {:.4}x), nothing unmeasurable; front vertices max "
-                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
-                    it + 1,
-                    ec.max_face / ec.bar,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            }
-            if (amips >= bar) {
-                logger().info(
-                    "======== final pass, TetWild with the front held in its envelope: max AMIPS "
-                    "{:.6g} >= stop_energy {} "
-                    "========",
-                    amips,
-                    m_params.stop_energy);
-                m_round = it + 2;
-                const double final_amips = tetwild_pass("final pass", a_iters);
-                m_quality_max_amips = final_amips;
-                m_quality_converged = final_amips < m_params.stop_energy;
-                logger().log(
-                    m_quality_converged ? spdlog::level::info : spdlog::level::warn,
-                    "\t[final pass] max element quality {:.4} (stop {:.4}) -> {}",
-                    final_amips,
-                    optimization_stop_metric(),
-                    m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
-                // Under DEBUG_remote_output the "final" frame at the end of optimize_offset() is
-                // this mesh.
-                if (m_offset_params.debug_output && !remote_frames()) {
-                    write_optimization_debug_output(fmt::format("end_{}F", it + 2));
-                }
+            logger().info(
+                "The front is resolved after {} iteration(s): max AMIPS below stop_energy and "
+                "every stencil-point offset error below front_conv_frac^2; offset faces max {:.4}x "
+                "with {} over the bar (diagnostic); front vertices max {:.4}x (diagnostic); max "
+                "AMIPS {:.4} against stop {:.4}",
+                it + 1,
+                ec.max_face / ec.bar,
+                ec.n_faces_over,
+                ec.max_vertex / ec.bar,
+                amips,
+                bar);
+            // THE FINAL COARSENING (Spencer, 2026-10-26: "remove the final tetwild pass. instead,
+            // do a coarsening pass, like from normal tetwild, with still everything in an
+            // envelope, like the final tetwild pass did"): every time the loop converges at
+            // target_distance.
+            m_round = it + 2;
+            final_coarsening();
+            // Under DEBUG_remote_output the "final" frame at the end of optimize_offset() is this
+            // mesh.
+            if (m_offset_params.debug_output && !remote_frames()) {
+                write_optimization_debug_output(fmt::format("end_{}F", it + 2));
             }
             return true;
         }
@@ -6046,118 +5948,77 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     return false;
 }
 
-double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
+void TopoOffsetTetMesh::final_coarsening()
 {
+    // See the declaration: the final TetWild pass's envelopes and rules (it ran here before
+    // 2026-10-26) around the engine's coarsening pass in place of mesh_improvement().
+    const auto t_start = std::chrono::steady_clock::now();
+    const double a0 = std::get<0>(optimization_quality_stats());
+    const StencilMax o0 = offset_stencil_max();
+    const size_t v0 = get_vertices().size(), t0 = get_tets().size();
+    logger().info(
+        "======== final coarsening: TetWild's coarsening pass, every tracked surface held in its "
+        "envelope (the offset surface to eps {:.6g}) | max AMIPS {:.6g} (stop {}) | max "
+        "stencil-point offset error {:.6g} (bound {:.6g}) | #V {}, #T {} ========",
+        m_offset_params.envelope_size,
+        a0,
+        m_params.stop_energy,
+        o0.max,
+        front_offset_bar(),
+        v0,
+        t0);
     // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
     // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
-    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no plastic medium
-    // (AMIPS against the regular tet); the front smoothed inside its envelope like any held vertex.
+    // smoother's raw AMIPS sum, the operations' max of AMIPS^3), no plastic medium (AMIPS against
+    // the regular tet), no damping (damping_active()); the front smoothed inside its envelope like
+    // any held vertex.
     build_final_envelopes();
-    // A loop's last stuck-refine may have queued forced splits by vertex ids the pass's mesh has
-    // renumbered since; the pass's own stall response queues its own.
+    // The loop's last stuck-refine may have queued forced splits; nothing here splits.
     m_force_split_edges.clear();
     m_tetwild_pass = true;
-    // TetWild's own rules for the operations and the smoother (m_op_rules).
     const OpRules rules_was = m_op_rules;
     m_op_rules = OpRules::TetWild;
     const bool plastic_was = m_plastic_active;
     m_plastic_active = false;
-    // DEBUG_remote_output: the pass's start frame; its iterations' frames come from
-    // optimization_iteration_done().
-    if (remote_frames()) {
-        write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
-    }
-    if (m_offset_params.debug_pinned_counts) pinned_counts_reset(1);
-    mesh_improvement(max_its);
-    logger().info(
-        "\t[split order] {}: waited {} | committed off the longest edge {}",
-        what,
-        m_split_order_waits.exchange(0),
-        m_split_off_longest.exchange(0));
-    // DEBUG_pinned_counts: the whole pass, its iterations together (mesh_improvement() runs them).
-    if (m_offset_params.debug_pinned_counts) {
-        logger().info("\t[pinned would-refuse] {}: {}", what, pinned_counts_report(1));
-    }
+    // coarsen_mesh() runs only under coarsen_pass, 2D's key: in 3D the converged loop always
+    // coarsens.
+    const bool coarsen_was = m_params.coarsen_pass;
+    m_params.coarsen_pass = true;
+    op_accounting_reset(); // the [coarsening] accounting line is this pass's alone
+    const size_t accepted = coarsen_mesh();
+    m_params.coarsen_pass = coarsen_was;
+    logger().info("\t[coarsening] {}", op_accounting_report(OpKind::collapse));
+    op_accounting_reset();
     m_plastic_active = plastic_was;
     m_op_rules = rules_was;
     m_tetwild_pass = false;
     release_final_envelopes();
     assign_band_regions();
-    return std::get<0>(optimization_quality_stats());
-}
-
-void TopoOffsetTetMesh::optimize_construction_pass()
-{
-    // See the declaration and the spec doc (optimize_construction).
-    const auto t0 = std::chrono::steady_clock::now();
-    // The sizing field at 1 everywhere. Nothing before this pass lowers it (the march's splits
-    // carry it, at 1), so a vertex that needs resetting here is unexpected: counted and warned.
-    size_t n_reset = 0;
-    for (const Tuple& v : get_vertices()) {
-        double& s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
-        if (s != 1.) {
-            s = 1.;
-            ++n_reset;
-        }
-    }
-    if (n_reset > 0) {
-        logger().warn(
-            "\t[optimize construction] {} vertices had a sizing scalar other than 1; set to 1",
-            n_reset);
-    }
-    // The offset surface's envelope in this pass only: half the distance the march traced it to
-    // (d_0 when growth_mode applies, else target_distance); every other tracked
-    // surface keeps m_envelope (envelope_size). Nothing marched: envelope_size for it too.
-    m_construction_envelope_eps = m_construction_distance > 0. ? 0.5 * m_construction_distance : 0.;
-    const double amips0 = std::get<0>(optimization_quality_stats());
-    logger().info(
-        "======== [optimize construction] TetWild on the mesh as constructed, from the sizing "
-        "field at 1, under TetWild's own rules (raw AMIPS sum, max-AMIPS guards; no band term), "
-        "every tracked surface held (the offset surface to eps {:.6g}, half the traced distance "
-        "{:.6g}; the rest to eps {:.6g}): max AMIPS {:.6g}, stop_energy {} | #V {}, #T {} ========",
-        m_construction_envelope_eps > 0. ? m_construction_envelope_eps
-                                         : m_offset_params.envelope_size,
-        m_construction_distance,
-        m_envelope_eps,
-        amips0,
-        m_params.stop_energy,
-        vertex_size(),
-        tet_size());
-    log_energy_step("start");
-    m_frame_prefix = "c";
-    m_round = 0;
-    const double amips1 =
-        tetwild_pass("optimize construction", std::max(1, m_offset_params.max_iterations));
-    m_construction_envelope_eps = 0.;
-    // The loop's setup, redone on what the pass left: a compact mesh, the band regions on it, the
-    // vertex order, and under use_rest_pose the rests the loop measures plastic cells against.
-    consolidate_mesh();
-    assign_band_regions();
-    init_vertex_order();
-    stamp_plastic_rests();
-    log_energy_step("tetwild");
-    if (m_params.debug_output) write_optimization_debug_output("end_construction_tetwild");
-    m_frame_prefix.clear();
-    double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
-    for (const Tuple& v : get_vertices()) {
-        const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
-        s_min = std::min(s_min, s);
-        s_max = std::max(s_max, s);
-    }
-    const bool under = amips1 < m_params.stop_energy;
+    const double a1 = std::get<0>(optimization_quality_stats());
+    const StencilMax o1 = offset_stencil_max();
+    m_quality_max_amips = a1;
+    m_quality_converged = a1 < m_params.stop_energy;
+    const bool offset_ok = o1.n_unmeasurable == 0 && o1.max < front_offset_bar();
     logger().log(
-        under ? spdlog::level::info : spdlog::level::warn,
-        "\t[optimize construction] max AMIPS {:.6g} -> {:.6g} (stop {}){} | #V {}, #T {} | sizing "
-        "scalar {:.6g} .. {:.6g} | {:.3g} s",
-        amips0,
-        amips1,
+        m_quality_converged && offset_ok ? spdlog::level::info : spdlog::level::warn,
+        "\t[coarsening] {} collapses accepted | #V {} -> {}, #T {} -> {} | max AMIPS {:.6g} -> "
+        "{:.6g} (stop {}){} | max stencil-point offset error {:.6g} -> {:.6g} (bound {:.6g}, {} "
+        "unmeasurable){} | {:.3g} s",
+        accepted,
+        v0,
+        get_vertices().size(),
+        t0,
+        get_tets().size(),
+        a0,
+        a1,
         m_params.stop_energy,
-        under ? "" : ", STILL OVER stop_energy",
-        vertex_size(),
-        tet_size(),
-        s_min,
-        s_max,
-        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+        m_quality_converged ? "" : " STILL OVER",
+        o0.max,
+        o1.max,
+        front_offset_bar(),
+        o1.n_unmeasurable,
+        offset_ok ? "" : " OVER",
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count());
 }
 
 TopoOffsetTetMesh::MeshSnapshot TopoOffsetTetMesh::take_snapshot()
@@ -6530,10 +6391,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    // optimize_construction: TetWild on the mesh as constructed, from the sizing field at 1, the
-    // offset surface held to half the traced distance (optimize_construction_pass()).
-    if (m_offset_params.optimize_construction) optimize_construction_pass();
-
     if (m_init_optimize) {
         // init_optimize (see marching_tets()): the loop first runs to
         // convergence under stencil_order without refinement, the sizing field left as it is, and
@@ -6649,15 +6506,13 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
         // diagnostic and decide nothing.
         //
-        // EXPERIMENTAL_settle_refinement: the front half is the loop's exit (convergence_turn()),
-        // the one place that sets m_energy_verdict under the key; the criterion's measures and its
-        // sizing-floor fact (about refinable sets that do not act) are diagnostics.
-        const bool settle = m_offset_params.settle_refinement;
-        front_ok = settle ? m_energy_verdict.has_value() : ec.converged();
+        // The front half is the loop's exit (convergence_turn()), the one place that sets
+        // m_energy_verdict; the criterion's measures are diagnostics.
+        front_ok = m_energy_verdict.has_value();
         m_converged = front_ok && m_quality_converged;
-        floor_fact = settle ? std::string() : ec.sizing_floor_fact();
+        floor_fact = std::string();
         quality = quality_fact(front_ok);
-        if (settle) {
+        {
             logger().info(
                 "[convergence] verdict: front {} -- tested: the loop's exit (max AMIPS below "
                 "stop_energy, every offset face's stencil-point offset error below "

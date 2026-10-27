@@ -2714,6 +2714,17 @@ TEST_CASE("frame-gather-threads-identical", "[offset][3d]")
         CHECK(same(*x, *y, n_finite));
         CHECK(n_finite > 0);
     }
+    // distance_over_target at front vertices only (input_distance / target_distance there), NaN
+    // at every other vertex.
+    for (const auto& v : serial->get_vertices()) {
+        const size_t vid = v.vid(*serial);
+        INFO("vid " << vid);
+        if (serial->m_vertex_extra[vid].m_is_on_offset) {
+            CHECK(fs.dist_ratio[vid] == fs.in_dist[vid] / serial->m_offset_params.target_distance);
+        } else {
+            CHECK(std::isnan(fs.dist_ratio[vid]));
+        }
+    }
     size_t n = 0;
     CHECK(same(fs.V, ft.V, n));
     CHECK(same(fs.T, ft.T, n));
@@ -3002,10 +3013,11 @@ TEST_CASE("plastic-amips-quality", "[offset][3d]")
 
 TEST_CASE("convergence-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_settle_refinement through the spec, as the app reads it: on by default, false
-    // read through. Since 2026-10-26 its exit is the max-based one (convergence_turn()), and the
-    // old settle test's keys, settle_rel_thresh and EXPERIMENTAL_settle_mark, are gone: the strict
-    // spec refuses a config that sets either, as it does the removed band keys and AMIPS weight.
+    // Since 2026-10-26 the loop's only exit is the max-based one (convergence_turn()):
+    // EXPERIMENTAL_settle_refinement, whose false exited on the energy criterion, is gone, and so
+    // are the old settle test's keys, settle_rel_thresh and EXPERIMENTAL_settle_mark: the strict
+    // spec refuses a config that sets any of them, as it does the removed band keys and AMIPS
+    // weight.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto verify = [&](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3022,10 +3034,9 @@ TEST_CASE("convergence-keys", "[offset][3d]")
         REQUIRE(spec_engine.verify_json(j, spec));
         return spec_engine.inject_defaults(j, spec);
     };
-    const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.settle_refinement);
-    const Parameters off(injected({{"EXPERIMENTAL_settle_refinement", false}}));
-    CHECK_FALSE(off.settle_refinement);
+    CHECK_NOTHROW(Parameters(injected(nlohmann::json::object())));
+    CHECK_FALSE(verify({{"EXPERIMENTAL_settle_refinement", true}}));
+    CHECK_FALSE(verify({{"EXPERIMENTAL_settle_refinement", false}}));
     CHECK_FALSE(verify({{"settle_rel_thresh", 0.1}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_settle_mark", "vertex"}}));
     CHECK_FALSE(verify({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
@@ -3156,6 +3167,115 @@ TEST_CASE("offset-stuck-refine", "[offset][3d]")
     }
 }
 
+TEST_CASE("final-coarsening", "[offset][3d]")
+{
+    // final_coarsening() on the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2, with both bounds wide open (front_conv 10 x the target, stop_energy far above
+    // every cell): TetWild's coarsening pass removes vertices, the max AMIPS does not rise (the
+    // engine's coarsen rule), every stencil-point offset error stays below its bound, the
+    // pass's state is put back (no TetWild rules, envelopes released, coarsen_pass as it was) and
+    // the quality half of the verdict is set. With the offset bound tight (front_conv 1e-9, every
+    // point already over it), the collapses that change a stencil point are refused by that bound
+    // (counted in iter_cnt_collapse_offset_reject). The smoothing between rounds is held by the
+    // envelopes alone, as the final TetWild pass's was, so it is not checked against the bound.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    const auto offset_max = [](const TopoOffsetTetMesh& m) {
+        std::vector<TopoOffsetTetMesh::StencilPoint> pts;
+        for (const auto& f : m.offset_surface_faces()) m.face_stencil_points(f[0], f[1], f[2], pts);
+        return m.stencil_max(std::move(pts));
+    };
+    {
+        const std::filesystem::path out =
+            std::filesystem::temp_directory_path() / "wmtk_offset_final_coarsening";
+        auto mesh = grid_offset_mesh(g, param, out);
+        mesh->m_offset_params.front_conv = 10. * mesh->m_offset_params.target_distance;
+        mesh->m_params.stop_energy = 1e30;
+        mesh->m_params.coarsen_pass = false;
+        const size_t v0 = mesh->get_vertices().size();
+        const double a0 = std::get<0>(mesh->get_max_avg_energy());
+        REQUIRE(offset_max(*mesh).max < mesh->front_offset_bar());
+        mesh->final_coarsening();
+        CHECK(mesh->get_vertices().size() < v0);
+        CHECK(std::get<0>(mesh->get_max_avg_energy()) <= a0 * (1. + 1e-12));
+        const auto om = offset_max(*mesh);
+        CHECK(om.n_unmeasurable == 0);
+        CHECK(om.max < mesh->front_offset_bar());
+        CHECK_FALSE(mesh->m_tetwild_pass);
+        CHECK_FALSE(mesh->tetwild_rules());
+        CHECK_FALSE(mesh->m_params.coarsen_pass);
+        CHECK(mesh->m_quality_converged);
+    }
+    {
+        const std::filesystem::path out =
+            std::filesystem::temp_directory_path() / "wmtk_offset_final_coarsening_tight";
+        auto mesh = grid_offset_mesh(g, param, out);
+        mesh->m_offset_params.front_conv = 1e-9;
+        mesh->m_params.stop_energy = 1e30;
+        REQUIRE(!(offset_max(*mesh).max < mesh->front_offset_bar()));
+        const int refused0 = mesh->iter_cnt_collapse_offset_reject.load();
+        mesh->final_coarsening();
+        CHECK(mesh->iter_cnt_collapse_offset_reject.load() > refused0);
+    }
+}
+
+TEST_CASE("loop-block-gates", "[offset][3d]")
+{
+    // The loop's block gates on the grid of save-offset-correspondence-3d, constructed serially at
+    // target 0.2 (optimize_offset_loop(), final_stage false: no coarsening). Both bounds wide open
+    // (front_conv 10 x the target, stop_energy far above every cell): turn 1 skips both blocks and
+    // exits, the mesh untouched. The offset bound tight and the AMIPS bound open: the front block
+    // runs, the background block does not.
+    const GridInput g = grid_input();
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+        g.V);
+    const auto prepared = [&](const char* name) {
+        auto mesh = grid_offset_mesh(g, param, std::filesystem::temp_directory_path() / name);
+        // As optimize_offset() sets them before the loop.
+        mesh->m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Optimization;
+        mesh->init_vertex_order();
+        mesh->m_params.stop_energy = 1e30;
+        return mesh;
+    };
+    {
+        auto mesh = prepared("wmtk_offset_block_gates_open");
+        mesh->m_offset_params.front_conv = 10. * mesh->m_offset_params.target_distance;
+        mesh->consolidate_mesh();
+        std::vector<Vector3d> x0;
+        for (const auto& v : mesh->get_vertices())
+            x0.push_back(mesh->m_vertex_attribute[v.vid(*mesh)].m_posf);
+        CHECK(mesh->optimize_offset_loop(/*final_stage=*/false,
+                                         /*refine=*/true,
+                                         "test",
+                                         /*max_turns=*/2));
+        CHECK(mesh->m_iterations_used == 1);
+        CHECK(mesh->m_block_skips[0] == 1);
+        CHECK(mesh->m_block_skips[1] == 1);
+        const auto vs = mesh->get_vertices();
+        REQUIRE(vs.size() == x0.size());
+        for (size_t i = 0; i < vs.size(); ++i) {
+            CHECK(mesh->m_vertex_attribute[vs[i].vid(*mesh)].m_posf == x0[i]);
+        }
+    }
+    {
+        auto mesh = prepared("wmtk_offset_block_gates_tight");
+        mesh->m_offset_params.front_conv = 1e-9;
+        REQUIRE(!(mesh->offset_stencil_max().max < mesh->front_offset_bar()));
+        // One turn: the front block runs (its points are out of their bound), the background
+        // block does not (max AMIPS far below stop_energy). The grid's flat front may then be
+        // placed exactly, so the loop's verdict is not checked.
+        mesh->optimize_offset_loop(/*final_stage=*/false,
+                                   /*refine=*/false,
+                                   "test",
+                                   /*max_turns=*/1);
+        CHECK(mesh->m_block_skips[0] == 0);
+        CHECK(mesh->m_block_skips[1] == 1);
+    }
+}
+
 TEST_CASE("growth-mode-keys", "[offset][3d]")
 {
     // growth_mode, linear_growth_steps, smart_growth_attempts and smart_growth_max_fails through
@@ -3237,11 +3357,10 @@ TEST_CASE("growth-mode-keys", "[offset][3d]")
 
 TEST_CASE("optimize-construction-key", "[offset][3d]")
 {
-    // optimize_construction through the spec, as the app reads it: on by default, false read
-    // through, and accepted with optimize_offset false (the pass is then never reached). The keys
-    // it replaced, and the features removed with them (EXPERIMENTAL_amips_pow,
-    // EXPERIMENTAL_laplacian, EXPERIMENTAL_initial_smoothing_passes), are refused by the strict
-    // spec.
+    // No TetWild pass on the constructed mesh since 2026-10-26: optimize_construction is gone,
+    // and the strict spec refuses it at either value, as it does the keys it replaced and the
+    // features removed with them (EXPERIMENTAL_amips_pow, EXPERIMENTAL_laplacian,
+    // EXPERIMENTAL_initial_smoothing_passes). optimize_offset false goes through.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto base = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3254,8 +3373,11 @@ TEST_CASE("optimize-construction-key", "[offset][3d]")
         REQUIRE(spec_engine.verify_json(base(j), spec));
         return spec_engine.inject_defaults(base(j), spec);
     };
-    CHECK(Parameters(injected(nlohmann::json::object())).optimize_construction);
-    CHECK_FALSE(Parameters(injected({{"optimize_construction", false}})).optimize_construction);
+    for (const bool on : {true, false}) {
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        CHECK_FALSE(spec_engine.verify_json(base({{"optimize_construction", on}}), spec));
+    }
     CHECK_NOTHROW(Parameters(injected({{"optimize_offset", false}})));
     for (const char* removed :
          {"EXPERIMENTAL_construction_tetwild_run",
@@ -3518,9 +3640,9 @@ TEST_CASE("op-rules-switch", "[offset][3d]")
 TEST_CASE("damping-loop-only", "[offset][3d]")
 {
     // EXPERIMENTAL_damping bounds the loop's smoothing solves only: damping_step() is
-    // damping_factor x the shortest edge at the vertex there, and infinity in a TetWild pass
-    // (m_tetwild_pass: the optimize_construction pass, the final pass) and
-    // with damping off. The unit tet: every edge at vertex 0 has length 1.
+    // damping_factor x the shortest edge at the vertex there, and infinity in the final
+    // coarsening (m_tetwild_pass) and with damping off. The unit tet: every edge at vertex 0 has
+    // length 1.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(4, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
     Eigen::MatrixXi T(1, 4);

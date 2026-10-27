@@ -345,35 +345,28 @@ public:
     /// simplicial embedding: the complex has to be labelled for face_is_held(), and it has to
     /// precede the march, whose band replaces the tags of the cells it covers.
     void build_envelopes();
-    /// The final pass's envelopes: the offset surface's envelope (build_offset_envelope()), and
+    /// The final coarsening's envelopes: the offset surface's envelope (build_offset_envelope()), and
     /// m_envelope swapped for one that also holds every other region boundary, at its position as
     /// the loop left it, beside the surfaces build_envelopes() captured (held where they were
     /// then). release_final_envelopes() puts the loop's envelope back.
     void build_final_envelopes();
     void release_final_envelopes();
-    /// A TetWild pass: every tracked surface held (the final envelopes; the front in its envelope,
-    /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
-    /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
-    /// re-derived. Returns the max AMIPS after it. The final pass and
-    /// optimize_construction_pass() both run it; `what` names it in the log.
-    double tetwild_pass(const char* what, int max_its);
     /**
-     * @brief optimize_construction: TetWild on the mesh as constructed, before the loop (and
-     * before an init_optimize loop). Called by optimize_offset() after the "construction" frame.
-     *
-     * Every vertex's sizing scalar is set to 1 first, so the pass starts from the field at 1
-     * everywhere. Then tetwild_pass() with the offset surface held in an envelope of eps
-     * m_construction_distance / 2 -- half the distance the march traced it to, d_0 when
-     * growth_mode applies (m_construction_envelope_eps, this pass only; the final pass
-     * keeps envelope_size) -- and every other tracked surface in m_envelope, under TetWild's own
-     * rules (m_op_rules); then the loop's setup redone on its result (vertex order,
-     * plastic rests). The loop starts from the sizing field the pass leaves.
+     * @brief THE FINAL COARSENING (Spencer, 2026-10-26; in place of the final TetWild pass, and
+     * with its setup): TetWild's coarsening pass (the engine's coarsen_mesh(), run whatever
+     * coarsen_pass says -- that key is 2D's) on the mesh the loop converged on at target_distance,
+     * every tracked surface held in its envelope as the final TetWild pass held it (the final
+     * envelopes: the offset surface in m_offset_envelope, eps envelope_size; every other region
+     * boundary, the wall and the input complex's boundary in m_envelope), under TetWild's own
+     * rules (m_tetwild_pass, m_op_rules), no plastic medium, no damping. A collapse is kept only
+     * if the worst cell around it is no worse than before (the engine's coarsen rule) and every
+     * stencil-point offset error it changes stays below front_conv_frac()^2
+     * (collapse_after_connectivity()); the whole-mesh smoothing between rounds runs with the
+     * quality veto. Everything put back and the band regions re-derived after it; sets
+     * m_quality_max_amips / m_quality_converged. Logs a [coarsening] line: collapses, #V / #T,
+     * max AMIPS and max stencil-point offset error before and after.
      */
-    void optimize_construction_pass();
-    /// The offset surface's envelope eps while optimize_construction_pass() runs: half the
-    /// distance the march traced the front to, m_construction_distance / 2. 0 at every other time,
-    /// when build_offset_envelope() takes envelope_size (the final pass included).
-    double m_construction_envelope_eps = 0.;
+    void final_coarsening();
     /**
      * @brief An in-memory image of the mesh, to put it back as it was (for growth_mode "smart":
      * the revert after a failed attempt). Taken on a consolidated mesh: the tets in tid order,
@@ -407,10 +400,10 @@ public:
     /// The held triangle soup as build_envelopes() captured it, for build_final_envelopes().
     std::vector<Eigen::Vector3d> m_held_verts;
     std::vector<Eigen::Vector3i> m_held_tris;
-    /// The loop's m_envelope while the final pass holds its own.
+    /// The loop's m_envelope while the final coarsening holds its own.
     std::shared_ptr<Envelope> m_loop_envelope;
 
-    /// Inside tetwild_pass(): every tracked face is held, the offset surface to m_offset_envelope
+    /// Inside final_coarsening(): every tracked face is held, the offset surface to m_offset_envelope
     /// (surface_envelope_for_face(), face_is_held()); a front vertex is smoothed like every other
     /// held vertex, pulled to and contained in its envelope (smoothing_energy_envelope()); every
     /// cell's energy, where it is still read (tet_energy(): the logs and frames), is its
@@ -441,9 +434,9 @@ public:
      * rest wherever these rules read it (plastic_quality(), plastic_amips_energy(),
      * smoothing_cell_energy()); stamping as before.
      *
-     * TetWild (every TetWild pass, tetwild_pass(): optimize_construction's and the final pass):
-     * TetWild's own, for everything. The engine's rules
-     * on the MAX of AMIPS^3 over those cells: collapse_quality_allowed() and swap_quality_allowed()
+     * TetWild (the final coarsening, final_coarsening()): TetWild's own, for everything. The
+     * engine's rules on the MAX of AMIPS^3 over those cells: collapse_quality_allowed() and
+     * swap_quality_allowed()
      * as the base has them, the base's scores in the 4-4 / 5-6 search and the base's face swap
      * gate; no face-error rule and no split gate. The smoother is TetOptimizerMesh::smooth_after():
      * the raw sum of AMIPS over the one-ring (AMIPSEnergy3D; no extra energy), its quality veto and
@@ -458,8 +451,9 @@ public:
     /**
      * @brief Which vertices a smoothing pass moves (Spencer, 2026-10-26: each turn of the loop
      * runs its operation groups twice -- a FRONT block that places the offset surface, then a
-     * BACKGROUND block that cleans up the mesh around it; optimize_offset_loop()). All: every
-     * vertex (pre_smooth, the TetWild passes, the repulsion passes, anything outside the loop's
+     * BACKGROUND block that cleans up the mesh around it; optimize_offset_loop()) -- each only
+     * while its own quantity is out of its bound (the block gates, m_block_skips). All: every
+     * vertex (pre_smooth, the final coarsening, the repulsion passes, anything outside the loop's
      * blocks). Front: only the vertices the loop places against the offset error
      * (vertex_front_placed()). Background: every other vertex, held front vertices among them,
      * with TetWild's smoother. smooth_before() refuses a vertex outside the set before anything
@@ -475,11 +469,10 @@ public:
     }
 
     /**
-     * @brief The envelope the offset surface may not leave during a TetWild pass (tetwild_pass()),
-     * of eps envelope_size (optimize_construction's pass: half the traced distance),
-     * built by build_offset_envelope() from the surface as it is just
-     * before that pass. Null until then: the loop holds the offset surface to no
-     * envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
+     * @brief The envelope the offset surface may not leave during the final coarsening
+     * (final_coarsening()), of eps envelope_size, built by build_offset_envelope() from the
+     * surface as it is just before that pass. Null until then: the loop holds the offset surface to
+     * no envelope. The surface is a closed manifold by then (offset_is_manifold() is the driver's
      * check), so it is one triangle set with no junctions: a face is either on it or not, and
      * surface_envelope_for_face() answers an offset face with this envelope alone.
      */
@@ -490,13 +483,15 @@ public:
     /// no placement satisfies. Called at construction.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
-    /// TetWild's loop, the front placed inside its smoothing passes. `final_stage` false is the
-    /// init_optimize loop: it returns on convergence without the final TetWild pass and
-    /// without deciding the verdict.
+    /// TetWild's loop, the front placed inside its smoothing passes. It exits only when
+    /// convergence_turn() says so: max AMIPS below stop_energy AND every stencil-point offset
+    /// error below front_conv_frac()^2. `final_stage` false (init_optimize, a growth stage before
+    /// the last) returns on convergence without the final coarsening and without deciding the
+    /// verdict; true runs final_coarsening() on convergence.
     /// `refine` false skips the halving. `label` names the loop in its log. `max_turns` > 0 caps
     /// the turns in place of max_rounds (growth_mode "smart"'s attempts). `fold_free`: a converged
     /// turn with any folded offset face (fold_census()) ends the loop as not converged, before the
-    /// verdict and the final TetWild pass. Returns whether the loop converged (fold-free when
+    /// verdict and the final coarsening. Returns whether the loop converged (fold-free when
     /// asked) within its turns.
     bool optimize_offset_loop(
         bool final_stage = true,
@@ -637,7 +632,7 @@ public:
     /// (optimize_offset_loop(..., fold_free true)). The mesh is stored (take_snapshot()) after
     /// level 0 and after every success, and put back (restore_snapshot()) after every failure;
     /// SmartGrowthSchedule::Next::GiveUp throws. The attempt at target_distance is the final
-    /// stage: on success it runs the final TetWild pass and decides the verdict.
+    /// stage: on success it runs the final coarsening and decides the verdict.
     void smart_growth();
     /// Stage k of n's target: d0 + k (delta - d0) / n, so d0 at k = 0, and delta itself at k = n
     /// (not the formula, which rounding can leave a hair off it).
@@ -978,8 +973,8 @@ public:
 
     // ------- the plastic medium (use_rest_pose) -------
 
-    /// Set while the loop runs under use_rest_pose (not in the final pass, which is TetWild's
-    /// regular-tet AMIPS).
+    /// Set while the loop runs under use_rest_pose (not in the final coarsening, which is
+    /// TetWild's regular-tet AMIPS).
     bool m_plastic_active = false;
     /// Every cell outside the offset band and the input complex (cell_in_region() false), while
     /// the plastic medium is active: its AMIPS term in tet_energy() and in the smoother is
@@ -1223,8 +1218,8 @@ public:
     FoldCensus fold_census() const;
     /// growth_mode "individual_op_reject": a collapse, a flip of the offset surface or a smoothing
     /// move that raises the number of folded offset faces (front_face_is_foldover()'s test) among
-    /// the faces it changes is refused. In the loops only: not in a TetWild pass (the
-    /// optimize_construction pass, the final pass), nor before the march.
+    /// the faces it changes is refused. In the loops only: not in the final coarsening, nor
+    /// before the march.
     bool fold_reject_active() const
     {
         return m_offset_params.growth_mode == "individual_op_reject" && !m_tetwild_pass &&
@@ -1294,9 +1289,10 @@ public:
     /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
     /// Read by the report and by throw_on_nonconvergence.
     bool m_converged = false;
-    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is resolved,
-    /// after the final pass when one ran. True when no pass was needed; false when the pass ended
-    /// still over. m_quality_max_amips is the value it was judged on.
+    /// The finishing half of the verdict: max AMIPS < stop_energy once the front is resolved,
+    /// after the final coarsening. False when it ended still over (the coarsening's rule keeps
+    /// the max from rising, so only a loop that ended over can). m_quality_max_amips is the value
+    /// it was judged on.
     bool m_quality_converged = true;
     double m_quality_max_amips = 0.;
 
@@ -1768,8 +1764,8 @@ public:
      * EVERY smoothing pass, in every path: a group's passes and pre_smooth): use_rest_pose
      * restamps the plastic rests here -- between passes and after the last, never before the
      * first. With the operations stamping the cells they make or change, every rule reads rests
-     * that are up to date. A no-op while the plastic medium is off (the final pass, coarsening,
-     * the repulsion passes).
+     * that are up to date. A no-op while the plastic medium is off (the final coarsening, the
+     * repulsion passes).
      *
      * Inside a turn's operation group it also logs the pass's [energy step] line
      * (log_energy_step()), before the restamp, and a "stamp" line after it when the plastic
@@ -1814,7 +1810,7 @@ public:
     /// varies a lot (a band cell's exact integral against an AMIPS term alone).
     static constexpr size_t kDiagnosticChunk = 64;
     /// The turn (1-based) whose operation group is running, 0 outside one: smoothing_pass_done()
-    /// logs only inside a group, so pre_smooth, the final pass and coarsening log nothing.
+    /// logs only inside a group, so pre_smooth and the final coarsening log nothing.
     int m_energy_step_turn = 0;
     /// The running group's name, and whether its first smoothing pass is still to come.
     const char* m_energy_step_group = "";
@@ -2040,9 +2036,9 @@ public:
     /// SmoothVertexOptions::max_step. Infinity when damping is off or not active
     /// (damping_active()).
     double damping_step(size_t vid) const;
-    /// EXPERIMENTAL_damping acts in the loop's smoothing passes only: never in a TetWild pass
-    /// (m_tetwild_pass: optimize_construction's, the final pass) nor in the repulsion passes
-    /// before the march (m_repulsion_potential).
+    /// EXPERIMENTAL_damping acts in the loop's smoothing passes only: never in the final
+    /// coarsening (m_tetwild_pass) nor in the repulsion passes before the march
+    /// (m_repulsion_potential).
     bool damping_active() const
     {
         return m_offset_params.damping && !m_tetwild_pass && !m_repulsion_potential;
@@ -2621,8 +2617,8 @@ public:
         const std::vector<std::array<size_t, 3>>& faces,
         size_t* n_edges = nullptr);
     /**
-     * @brief EXPERIMENTAL_settle_refinement, one turn, after consolidation (since 2026-10-26):
-     * the loop's exit and its two stuck-refines. Converged = max AMIPS over every cell below
+     * @brief One turn, after consolidation (since 2026-10-26): the loop's exit -- its only
+     * one -- and its two stuck-refines. Converged = max AMIPS over every cell below
      * stop_energy (loop_cell_quality()) AND every offset face's stencil-point offset error below
      * front_conv_frac()^2 -- every unique stencil point of the offset surface (StencilPoint) --
      * and none unmeasurable. Otherwise, when
@@ -2633,6 +2629,17 @@ public:
      * every face out of convergence. Logs the turn's [convergence] line. Returns converged.
      */
     bool convergence_turn(int turn, StuckState& s, bool refine_now);
+    /// The max AMIPS over every live cell, as the loop's exit reads it: the cube root of the max
+    /// loop_cell_quality() (plastic AMIPS under use_rest_pose), evaluated on the mesh's threads.
+    double max_loop_amips() const;
+    /// The max stencil-point offset error over every unique stencil point of the offset surface
+    /// (stencil_point_error(), evaluated on the mesh's threads), how many points there were and
+    /// how many of them are unmeasurable.
+    StencilMax offset_stencil_max() const;
+    /// The loop's block gates (optimize_offset_loop()), counted over the run: [0] front blocks
+    /// skipped because every stencil-point offset error was within its bound, [1] background
+    /// blocks skipped because the max AMIPS was below stop_energy.
+    std::array<int, 2> m_block_skips{{0, 0}};
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -2646,8 +2653,8 @@ public:
     /// the scalar the caller gave them. Returns the number of vertices lowered.
     size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
 
-    /// The energy criterion as measured when the loop converged; the final pass runs after
-    /// it and the verdict must not be re-measured on that mesh.
+    /// The energy criterion as measured when the loop converged; the final coarsening runs
+    /// after it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
 
     /// Turn a residual_split()'s outside-support tally into the hard error.
@@ -2665,7 +2672,7 @@ public:
     /// cells by loop_cell_quality(). See the 2D twin.
     size_t refine_sizing_around_worst(double max_metric) override;
 
-    /// Why the final pass is stuck: a census of the tets stuck-refine is about to chase. The 3D
+    /// Why the loop's AMIPS is stuck: a census of the tets stuck-refine is about to chase. The 3D
     /// twin of log_stuck_refine_census().
     void log_stuck_refine_census(double max_metric, double filter_energy);
 
@@ -2709,25 +2716,15 @@ public:
 
     /// TetWild's bare coarsening passes (collapse + swap with no length gate, before the first
     /// iteration of mesh_improvement() and after the last): on under TetWild's rules (m_op_rules),
-    /// as in TetWild -- mesh_improvement() runs only in tetwild_pass(), so in every TetWild pass
-    /// (since 2026-10-20). Off otherwise: in the loop, with no length gate, the quality test alone
+    /// as in TetWild (since 2026-10-20). Since 2026-10-26 nothing in 3D runs mesh_improvement()
+    /// (no TetWild pass), so they never run; the final coarsening is coarsen_mesh() alone. Off otherwise: in the loop, with no length gate, the quality test alone
     /// demolished the band, and the sizing field cannot refuse a collapse.
     bool optimization_bare_coarsen_passes() const override { return tetwild_rules(); }
-
-    /// Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it
-    /// separates, and on a live offset face the root of face_offset_term() (the face's RMS
-    /// relative error over its stencil in units of the bar; +inf if unmeasurable). > 1 means it
-    /// fails at least one. The coarsen-mode collapse accept reads it.
-    double face_criterion_rel(const Tuple& f) const;
-    /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel().
-    double cell_quality_rel(const size_t tid) const;
-    /// ... and the worst of the (up to two) cells a face separates.
-    double amips_rel_at_face(const Tuple& f) const;
 
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<turn><tag><pass>_<op>" / "r<turn><tag>_end", tag S in
-     * the loop and F in the final pass; led by m_frame_prefix (i during
+     * the loop and F after the final coarsening; led by m_frame_prefix (i during
      * init_optimize).
      */
     void write_optimization_debug_output(const std::string& path) override
@@ -2763,8 +2760,8 @@ public:
     /// The construction stages' frames (input, simplicial embedding, march, tagging, repulsion):
     /// DEBUG_output's, none under DEBUG_remote_output.
     bool stage_frames() const { return m_offset_params.debug_output && !remote_frames(); }
-    /// DEBUG_remote_output: a frame after every iteration of a TetWild pass (mesh_improvement()
-    /// runs only in tetwild_pass()), labelled "<prefix>r<turn>F_it<k>".
+    /// DEBUG_remote_output: a frame after every iteration of mesh_improvement(), labelled
+    /// "<prefix>r<turn>F_it<k>" -- which nothing in 3D runs since 2026-10-26 (no TetWild pass).
     void optimization_iteration_done(const int it) override
     {
         if (remote_frames()) {

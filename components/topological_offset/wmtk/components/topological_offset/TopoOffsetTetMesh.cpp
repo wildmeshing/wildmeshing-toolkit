@@ -2342,8 +2342,11 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     //   input_distance    d: the exact distance to the input's triangles (band_env below),
     //                     every vertex; NaN before the field exists (the construction frames).
     //   distance_over_target  d / target_distance, the running loop's (a growth stage's own),
-    //                     every vertex: |this - 1| > front_conv / target_distance is a vertex
-    //                     more than front_conv from the level set. NaN where input_distance is.
+    //                     at FRONT vertices only (m_is_on_offset), NaN at every other vertex
+    //                     (Spencer, 2026-10-26: a viewer's range then is the front's, not the
+    //                     input's 0 and the domain wall's far end): |this - 1| > front_conv /
+    //                     target_distance is a front vertex more than front_conv from the level
+    //                     set. NaN where input_distance is.
     //   front_error_bars  (d - target_distance) / front_conv at a front vertex: signed, in
     //                     bars, so |.| > 1 is a vertex more than front_conv from the level set,
     //                     and the sign says beyond (+) or inside (-) it.
@@ -2419,7 +2422,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 fr.in_dist[vid] = band_env->primitive_distance(
                     nearest_primitive(*band_env, m_input_complex_pad, x),
                     x);
-                fr.dist_ratio[vid] = fr.in_dist[vid] / delta;
+                if (VX[vid].m_is_on_offset) fr.dist_ratio[vid] = fr.in_dist[vid] / delta;
             }
         }
     });
