@@ -1,172 +1,176 @@
 #include "TopoOffsetTriMesh.h"
 
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
 
 /**
- * Phase B's front placement: an offset-front vertex is moved by a one-dimensional Newton solve
- * along the offset field's gradient, widened to the shared 2-D smoother where the alignment term
- * traps that line. Everything else is smoothed by Optimize2d.cpp. The 3D twin is Smooth.cpp.
+ * Front placement: an offset-front vertex is placed by the shared 2-D smoother with the offset's
+ * energy (see smooth_front_vertex()). Everything else is smoothed by Optimize2d.cpp. The 3D twin
+ * is FrontSmooth3d.cpp.
  */
 
 namespace {
-/// The front vertex's objective restricted to the line x(s) = x0 + s n: the same energy, one
-/// unknown. Every hook the solver's line search asks -- step validity (the AMIPS inversion
-/// guard), the step cap, begin/end, solution_changed -- is forwarded on the mapped points.
-class LineProblem2D : public polysolve::nonlinear::Problem
+/// One live front chord at x, as the offset term wants it: the chord's other end, and the
+/// barycentric weights of the chord's stencil_order stencil. Only the weights are frozen -- the
+/// sample points themselves slide with x and the field is read live -- see StencilEnergy2D. The
+/// 3D twin is stencil_face_at().
+template <typename Mesh>
+bool stencil_edge_at(
+    const Mesh& m,
+    const typename Mesh::Tuple& e,
+    const size_t vid,
+    StencilEnergy2D::Edge& out)
 {
-public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-    LineProblem2D(
-        std::shared_ptr<polysolve::nonlinear::Problem> p,
-        const Vector2d& x0,
-        const Vector2d& n)
-        : m_p(std::move(p))
-        , m_x0(x0)
-        , m_n(n)
-    {}
-    Eigen::VectorXd at(const TVector& s) const { return Eigen::VectorXd(m_x0 + s(0) * m_n); }
-    double value(const TVector& s) override { return m_p->value(at(s)); }
-    void gradient(const TVector& s, TVector& g) override
-    {
-        Eigen::VectorXd g2(2);
-        m_p->gradient(at(s), g2);
-        g.resize(1);
-        g(0) = m_n.dot(Vector2d(g2));
+    const auto vs = m.get_edge_vids(e);
+    size_t q = 0;
+    int k = 0;
+    for (const size_t v : vs) {
+        if (v == vid) continue;
+        q = v;
+        ++k;
     }
-    void hessian(const TVector&, THessian&) override
-    {
-        log_and_throw_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& s, Eigen::MatrixXd& h) override
-    {
-        Eigen::MatrixXd h2(2, 2);
-        m_p->hessian(at(s), h2);
-        h.resize(1, 1);
-        h(0, 0) = m_n.dot(h2 * m_n);
-    }
-    bool is_step_valid(const TVector& s0, const TVector& s1) override
-    {
-        return m_p->is_step_valid(at(s0), at(s1));
-    }
-    double max_step_size(const TVector& s0, const TVector& s1) override
-    {
-        return m_p->max_step_size(at(s0), at(s1));
-    }
-    void line_search_begin(const TVector& s0, const TVector& s1) override
-    {
-        m_p->line_search_begin(at(s0), at(s1));
-    }
-    void line_search_end() override { m_p->line_search_end(); }
-    void solution_changed(const TVector& s) override { m_p->solution_changed(at(s)); }
-
-private:
-    std::shared_ptr<polysolve::nonlinear::Problem> m_p;
-    Vector2d m_x0, m_n;
-};
+    if (k != 1) return false;
+    const Vector2d x = m.m_vertex_attribute[vid].m_posf;
+    out.q1 = m.m_vertex_attribute[q].m_posf;
+    out.samples.clear();
+    m.for_each_edge_sample(x, out.q1, [&](const Vector2d&, const double wa, const double wb) {
+        StencilEnergy2D::Sample sm;
+        sm.a = wa;
+        sm.b = wb;
+        out.samples.push_back(sm);
+    });
+    return !out.samples.empty();
+}
 } // namespace
 
-bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
+bool TopoOffsetTriMesh::smooth_front_vertex(const Tuple& t)
 {
-    // See the header: the shared smoother with the offset's options. The offset terms arrive
-    // through smoothing_extra_energy(), AMIPS is weighted as in TriOptimizerMesh::smooth_after(),
-    // and a front vertex has no envelope in Phase B, so neither the projected path nor the
-    // containment check applies -- solve, exact inversion test, done.
+    // See the header: the shared smoother with the offset's options. The whole objective arrives
+    // through smoothing_extra_energy() -- w AMIPS over the ring and the offset terms at
+    // offset_term_weight(), tri_energy()'s two parts -- and w_amips 0 keeps the smoother from
+    // adding an AMIPS term of its own; a front vertex an input envelope pins carries no offset
+    // term. The smoother holds a front vertex to no envelope (see
+    // smoothing_containment_envelope()), so neither the projected path nor the containment check
+    // applies -- solve, exact inversion test, then the veto on tri_energy() below. As in 3D.
+    const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_params.w_amips;
+    opts.w_amips = 0.;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = false;
+    // The engine's veto compares AMIPS alone, and a front vertex must be free to worsen its
+    // ring's shape on the way to the level set: off. The veto below is on the energy instead.
+    opts.quality_veto = false;
+    polysolve::nonlinear::Solver& solver = smoothing_solver();
+    // THE FRONT SMOOTHER'S VETO (see tri_energy()): the max of tri_energy() over the vertex's
+    // one-ring may not rise, under offset_front_smooth_veto. A tie passes. Read before the solve
+    // and after it, on the mesh: a smoothing move changes no label and moves one vertex, so the
+    // one-ring holds every face whose energy it can change. Refused, TriMesh::smooth_vertex()
+    // rolls back the position and the ring's stored qualities. The smoother has counted the move
+    // accepted by then; it is recounted as a quality refusal, so the counters still partition the
+    // attempts.
+    const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
+    const bool veto = m_offset_params.offset_front_smooth_veto;
+    const double before = veto ? max_tri_energy(ring) : 0.;
+    // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of every
+    // vertex that shares a front chord with it -- before the solve.
+    std::vector<size_t> nb;
+    std::vector<double> nb_before;
+    if (m_offset_params.debug_crossings) {
+        nb.push_back(vid);
+        for (const Tuple& et : offset_surface_edges_live_at(vid)) {
+            for (const size_t u : get_edge_vids(et)) nb.push_back(u);
+        }
+        wmtk::vector_unique(nb);
+        for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
+    }
+    // The solve is folded into the pass's m_newton_front; under DEBUG_output its outcome is also
+    // pinned to vid (m_front_solve_log). At most one solve (two_stage is off), none when the ring
+    // is already inverted; nothing after the solve touches the solver, so it still holds that
+    // solve's state here.
+    bool solved = false;
+    const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_front, &solved);
+    if (solved && m_offset_params.debug_output) {
+        std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
+        m_front_solve_log.push_back(
+            {vid, int(solver.current_criteria().iterations), int(solver.status()) + 1});
+    }
+    if (!ok) {
+        return false;
+    }
+    {
+        // Diagnostic: the solve's final gradient norm and its ratio to the first one.
+        const auto& cr = solver.current_criteria();
+        const auto bin = [](double v, int lo) {
+            if (!(v > 0.)) return 0;
+            return std::clamp(int(std::floor(std::log10(v))) - lo + 1, 0, kGradBins - 1);
+        };
+        ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
+        ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
+    }
+    if (veto) ++m_front_veto_asked;
+    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+        ++m_front_veto_fired;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return false;
+    }
+    m_released_tube_dirty.store(true, std::memory_order_release);
+    if (m_offset_params.debug_crossings) {
+        for (size_t k = 0; k < nb.size(); ++k) {
+            const double after = ring_measure_at(nb[k]);
+            if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
+            if (nb[k] == vid) {
+                ++m_cross_own;
+            } else {
+                ++m_cross_neighbour;
+            }
+        }
+    }
+    return true;
+}
+
+bool TopoOffsetTriMesh::smooth_repulsion_vertex(const Tuple& t)
+{
+    // The front's path with the repulsion term in place of the chord terms: the whole objective
+    // arrives through smoothing_extra_energy() -- w AMIPS over the ring and repulsion_energy(vid)
+    // -- and w_amips 0 keeps the smoother from adding an AMIPS term of its own; no engine veto. A
+    // repulsion vertex is never envelope-held (repulsion_smoothing() leaves those to TriWild's
+    // rule), so the solve has no envelope term and no containment check. As in 3D.
+    const size_t vid = t.vid(*this);
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = 0.;
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
     opts.quality_veto = false;
-    auto& solver = m_solver.local();
-    if (!solver) {
-        solver = polysolve::nonlinear::Solver::create(
-            optimization::basic_nonlinear_solver_params,
-            optimization::basic_linear_solver_params,
-            1,
-            opt_logger());
+    smoothing_solver();
+    // The front veto's rule (see tri_energy()): the max of the per-tri energy over the ring --
+    // which includes the repulsion terms of the faces that carry them, O(v) among them -- may
+    // not rise (a tie passes). Read before the solve and after it; refused,
+    // TriMesh::smooth_vertex() rolls the move back.
+    const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
+    const bool veto = m_offset_params.offset_front_smooth_veto;
+    const double before = veto ? max_tri_energy(ring) : 0.;
+    const bool ok = smooth_vertex_2d_counted(t, opts, m_newton_repulsion);
+    if (!ok) return false;
+    if (veto) ++m_repulsion_veto_asked;
+    if (veto && !(max_tri_energy(ring) <= before)) { // a NaN refuses
+        ++m_repulsion_veto_fired;
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        return false;
     }
-    if (!m_offset_params.front_normal_projection) {
-        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
-    }
-
-    // Normal-only placement is a one-dimensional solve: the same objective the 2-D path minimises
-    // (phase_b_front_objective), restricted to the line along n = grad Phi / |grad Phi|, with the
-    // same solver, the same line search and the same accept test as the shared smoother's
-    // no-envelope path (exact inversion of the ring; no envelope, no veto). Nothing is added to
-    // the energy -- do not re-add a stiff tangential penalty standing in for the restriction; it
-    // wrecks the Hessian's conditioning and was never what "along the normal" meant.
-    const size_t vid = t.vid(*this);
-    const Vector2d n = front_vertex_move_direction(vid);
-    if (!(n.squaredNorm() > 0.)) { // no direction here: the 2-D solve is the fallback
-        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
-    }
-    // Widen the motion where the alignment term traps the 1-D solve: at a jog of the outline the
-    // alignment residual's fixing motion is tangential, which the radial line projects away, so
-    // where it opposes the placement pull it cancels it and the jog freezes. The trap is the
-    // fight, not the perpendicular edge -- on a travelling staircase the same radial stretching
-    // preference points with placement and is a travel engine -- hence both conditions in the
-    // predicate. Do not gate on edge orientation alone; measured worse -- see git history of this
-    // file. Seam edges run parallel to the field, so a pressed seam never takes this path.
-    if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
-        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
-        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
-        return ok;
-    }
-    const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
-    const std::vector<size_t>& locs = get_one_ring_fids_for_vertex(t);
-    for (const size_t fid : locs) {
-        if (is_inverted_f(fid)) {
-            ++m_smooth_rejects.already_inverted;
-            return false;
-        }
-    }
-    const Vector2d x0 = smoothing_position(vid);
-    auto line = std::make_shared<LineProblem2D>(phase_b_front_objective(vid, x0), x0, n);
-    Eigen::VectorXd s = Eigen::VectorXd::Zero(1);
-    try {
-        solver->minimize(*line, s);
-    } catch (const std::exception&) {
-    }
-    set_smoothing_position(vid, Vector2d(x0 + s(0) * n));
-    if (hold) { // the boundary's tube, on the region edges the move reshaped -- as the shared
-                // smoother
-        const Vector2d p = smoothing_position(vid);
-        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
-            const size_t eid = e.eid(*this);
-            if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
-            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-            const Vector2d q = m_vertex_attribute[(va == vid) ? vb : va].m_posf;
-            if (hold->is_outside(std::array<Vector2d, 2>{{p, q}})) {
-                set_smoothing_position(vid, x0);
-                ++m_smooth_rejects.envelope;
-                return false;
-            }
-        }
-    }
-    for (const size_t fid : locs) {
-        if (is_inverted(fid)) {
-            set_smoothing_position(vid, x0);
-            ++m_smooth_rejects.inverted;
-            return false;
-        }
-    }
-    for (const size_t fid : locs) m_face_attribute[fid].m_quality = get_quality(fid);
-    ++m_smooth_rejects.accepted;
-    m_released_tube_dirty.store(true, std::memory_order_release); // the boundary may have moved
     return true;
 }
 
@@ -228,174 +232,42 @@ Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
     return (std::isfinite(gn) && gn > 0.) ? Vector2d(g / gn) : Vector2d::Zero();
 }
 
-bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_objective(
+    const size_t vid) const
 {
-    // Three conditions, all required -- see the use in smooth_front_vertex_phase_b().
-    //
-    // (1) An incident live front edge at or past perpendicular to the field. Only there does the
-    //     alignment residual sit on its plateau, where its fixing motion is tangential. The edge
-    //     normal is built exactly as phase_b_front_energy() builds it, so this predicate and the
-    //     energy cannot disagree.
-    // (2) The alignment term's 1-D gradient OPPOSES the placement term's along the vertex's move
-    //     direction. On a travelling staircase both point outward and the radial stretching is a
-    //     travel engine, not a trap; the trap is specifically the fight.
-    const std::shared_ptr<const OffsetPotential2D> pot = potential_ptr_for(vid);
-    if (!pot) return false;
-    const Vector2d x = m_vertex_attribute[vid].m_posf;
-    // (3) And stationary off the level set: residual over the tube while the remaining 1-D step
-    //     is under the vertex test's bar (checked last, it is the expensive one). Mid-travel the
-    //     alignment gradient opposes placement too, weakly, and the 1-D solve drives through it,
-    //     so (1)+(2) alone would cut in at travelling staircase vertices as well. A trapped
-    //     vertex is one the 1-D solve has finished with, at a position off the level set.
-    const double rho = pot->residual_length(x);
-    const double tube = std::max(m_offset_params.offset_envelope, 1e-12);
-    if (!std::isfinite(rho) || rho <= tube) return false;
-    const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
-    bool past_perpendicular = false;
-    std::vector<AlignEnergy2D::Edge> edges;
-    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
-        if (!edge_is_offset_surface_live(e)) continue;
-        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        const size_t q = (va == vid) ? vb : va;
-        const std::optional<Tuple> opp = e.switch_face(*this);
-        if (!opp) continue;
-        const size_t fa = e.fid(*this), fb = opp->fid(*this);
-        const size_t band_f = face_is_offset_band(fa) ? fa : fb;
-        const auto vs = oriented_tri_vids(band_f);
-        const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
-                            m_vertex_attribute[vs[2]].m_posf) /
-                           3.;
-        const Vector2d d = m_vertex_attribute[q].m_posf - x;
-        if (!(d.norm() > 0.)) continue;
-        const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
-        const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
-        const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
-        const Vector2d g = pot->gradient(mid);
-        const double gn = g.norm();
-        if (!std::isfinite(gn) || gn <= 0.) continue;
-        // The true weights, so the probe gradient is the term's own: an edge the agreement weight
-        // silences (a Euclidean crease) exerts no force and must neither count as
-        // past-perpendicular nor pollute the conflict sign.
-        const Vector2d ga_e = pot->gradient(x);
-        const Vector2d gb_e = pot->gradient(m_vertex_attribute[q].m_posf);
-        const double na = ga_e.norm(), nb = gb_e.norm();
-        const bool ok = std::isfinite(na) && na > 0. && std::isfinite(nb) && nb > 0.;
-        const double agree = ok ? std::max(0., ga_e.dot(gb_e) / (na * nb)) : 0.;
-        if (agree > 0. && (sigma / d.norm()) * n_plus.dot(s * g / gn) <= 0.)
-            past_perpendicular = true;
-        edges.push_back({m_vertex_attribute[q].m_posf, sigma, agree});
-    }
-    if (!past_perpendicular || edges.empty()) return false;
-    const Vector2d n_dir = front_vertex_move_direction(vid);
-    if (!(n_dir.squaredNorm() > 0.)) return false;
-    const double w_off = 1. - m_params.w_amips;
-    AlignEnergy2D align(pot, std::move(edges), s, w_off);
-    OffsetEnergy2D place(pot, w_off, true, true);
-    Eigen::VectorXd xv(2), ga(2), gp(2);
-    xv << x.x(), x.y();
-    align.gradient(xv, ga);
-    place.gradient(xv, gp);
-    if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
-    return front_vertex_placed(vid);
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_objective(
-    const size_t vid,
-    const Vector2d& x) const
-{
-    // The one-ring's AMIPS with the vertex first in every cell (what AMIPS2D_jacobian
-    // differentiates against), weighted as the shared smoother weights it, plus the offset terms
-    // on the vertex's own region's field.
-    std::vector<std::array<double, 6>> cells;
-    std::vector<RestAMIPSEnergy2D::Cell> plastic_cells; // deform_others: increments only
-    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
-        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
-        int k = 0;
-        while (k < 3 && vs[k] != vid) ++k;
-        if (k == 3) continue;
-        const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
-        const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
-        // A plastic ring face brakes the front only by its increment since the group started
-        // (rest-shape AMIPS on the group-start rest); judged equilateral it becomes a permanent
-        // brake that parks the front at an elastic equilibrium. Band faces stay equilateral,
-        // except a band cell that is a released object's material (face_is_released_band): the
-        // front pushing through the overlap must do work against that material too. Only the
-        // front placement reads this; the band's interior smoothing stays equilateral.
-        const FaceExtra2d& fx = m_face_extra[fid];
-        if ((face_is_plastic(fid) || face_is_released_band(fid)) && fx.rest_valid) {
-            Eigen::Matrix2d R;
-            R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
-            R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
-            if (R.determinant() > 0.) {
-                RestAMIPSEnergy2D::Cell c;
-                c.q1 = a;
-                c.q2 = b;
-                c.rest_inv = R.inverse();
-                plastic_cells.push_back(c);
-                continue;
-            }
-        }
-        cells.push_back({{x.x(), x.y(), a.x(), a.y(), b.x(), b.y()}});
-    }
-    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    // smoothing_extra_energy() at a front vertex that carries the offset term, with the offset
+    // term included unconditionally: w AMIPS over the one-ring, the plastic faces' rest-shape
+    // AMIPS, and the offset terms on the vertex's own region's field. As in 3D, where the AMIPS
+    // part is cubed.
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (m_params.w_amips > 0 && !cells.empty())
-        sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
-    if (!plastic_cells.empty())
-        sum->add_energy(std::make_shared<RestAMIPSEnergy2D>(std::move(plastic_cells), amips_w));
-    sum->add_energy(phase_b_front_energy(vid, potential_ptr_for(vid)));
+    sum->add_energy(amips_energy(vid));
+    if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
+    sum->add_energy(front_energy(vid, potential_ptr_for(vid)));
     return sum;
 }
 
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_energy(
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::front_energy(
     const size_t vid,
     const std::shared_ptr<const OffsetPotential2D>& pot) const
 {
-    const double w_off = 1. - m_params.w_amips;
+    // 1 / front_conv_frac()^2: the squared relative error (Phi - c)/c becomes the squared error
+    // in units of the tolerance, so the term below is sum_e O(e) -- for the euclidean field the
+    // very terms the per-cell energy tri_energy() carries on these chords' band faces, and the
+    // ring measure's n_v r_v^2. As in 3D.
+    const double w_off = offset_term_weight();
     auto sum = std::make_shared<optimization::EnergySum>();
-    // The same under both front_measure values. The 3D twin weights its stencil energy by face
-    // area under "vertex_ring", so that the smoother minimises what the ring measure tests; this
-    // offset term is OffsetEnergy2D, the vertex's own residual, with no per-chord term of the
-    // chord measure to weight (the alignment residuals below are per chord, but they measure the
-    // chord's normal, not its sag).
-    // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
-    sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off, true, true));
-    // One alignment residual per incident live front edge. sigma orients the edge's normal
-    // away from its band face, read off the face centroid exactly as distance_criterion() does.
-    std::vector<AlignEnergy2D::Edge> edges;
-    const Vector2d x = m_vertex_attribute[vid].m_posf;
-    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
-        if (!edge_is_offset_surface_live(e)) continue;
-        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        const size_t q = (va == vid) ? vb : va;
-        const std::optional<Tuple> opp = e.switch_face(*this);
-        if (!opp) continue;
-        const size_t fa = e.fid(*this), fb = opp->fid(*this);
-        const size_t band_f = face_is_offset_band(fa) ? fa : fb;
-        const auto vs = oriented_tri_vids(band_f);
-        const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
-                            m_vertex_attribute[vs[2]].m_posf) /
-                           3.;
-        const Vector2d d = m_vertex_attribute[q].m_posf - x;
-        if (!(d.norm() > 0.)) continue;
-        const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
-        const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
-        const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
-        // The agreement weight: see AlignEnergy2D::Edge::agree. The two endpoint gradients; the
-        // field's outward sign squares away in the dot product. Either one degenerate means no
-        // consistent target for this edge: weight 0, not a guess.
-        const Vector2d ga = pot->gradient(x);
-        const Vector2d gb = pot->gradient(m_vertex_attribute[q].m_posf);
-        const double na = ga.norm(), nb = gb.norm();
-        const bool ok = std::isfinite(na) && na > 0. && std::isfinite(nb) && nb > 0.;
-        const double agree = ok ? std::max(0., ga.dot(gb) / (na * nb)) : 0.;
-        edges.push_back({m_vertex_attribute[q].m_posf, sigma, agree});
+    // THE offset term, and the only one: the mean squared relative error over each incident
+    // chord's stencil, summed over the chords. The stencil contains the chord's ends, so the
+    // moving vertex's own residual is in it once per incident chord. See StencilEnergy2D. Every
+    // chord weighs 1.
+    std::vector<StencilEnergy2D::Edge> stencil_edges;
+    for (const Tuple& e : offset_surface_edges_live_at(vid)) {
+        StencilEnergy2D::Edge se;
+        if (!stencil_edge_at(*this, e, vid, se)) continue;
+        stencil_edges.push_back(std::move(se));
     }
-    // Kept: without it the seam is rougher, since under front_normal_projection nothing else acts
-    // on the edge normals. The few percent of passes it costs is not worth that.
-    if (!edges.empty() && m_offset_params.front_alignment_energy) {
-        const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
-        sum->add_energy(std::make_shared<AlignEnergy2D>(pot, std::move(edges), sign, w_off));
+    if (!stencil_edges.empty()) {
+        sum->add_energy(std::make_shared<StencilEnergy2D>(pot, std::move(stencil_edges), w_off));
     }
     return sum;
 }

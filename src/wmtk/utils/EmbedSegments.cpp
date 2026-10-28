@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -87,7 +88,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
         ds[i].push_back(box_max[i]);
     }
 
-    SampleEnvelope envelope;
+    Envelope envelope;
     envelope.init(V, E, 0);
 
     const double min_dis = voxel_resolution * voxel_resolution / 4;
@@ -174,7 +175,8 @@ void embed_segments(
     MatrixXi& F_out,
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources,
-    std::vector<int>* E_out_orientation)
+    std::vector<int>* E_out_orientation,
+    std::vector<int>* point_map)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -329,6 +331,20 @@ void embed_segments(
         orient_curve_patches(V_out, E_out, *E_out_orientation);
     }
 
+    // Where did each input point end up? The remesher reports {triangle, vertex} per input
+    // point, in input order; the input points went in first, so the first V.rows() entries
+    // are ours and the background-grid entries after them are dropped.
+    if (point_map != nullptr) {
+        assert(point_provenance.size() >= size_t(V.rows()));
+        point_map->assign(V.rows(), -1);
+        for (int i = 0; i < V.rows(); ++i) {
+            const uint32_t v = point_provenance[i][1];
+            if (v != UINT32_MAX) {
+                (*point_map)[i] = int(v);
+            }
+        }
+    }
+
     logger().info(
         "2D arrangement: #V = {}, #F = {}, #E_constrained = {} ({} vertices have no exact "
         "double representation)",
@@ -344,7 +360,8 @@ void read_input_curves(
     MatrixXd& V_all,
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
-    std::vector<MatrixXi>& Es_out)
+    std::vector<MatrixXi>& Es_out,
+    const io::ComponentIO* component_io)
 {
     Vs_out.clear();
     Es_out.clear();
@@ -353,7 +370,10 @@ void read_input_curves(
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
-        io::read_edge_mesh(path, V, E, remove_duplicate_eps);
+        if (component_io)
+            component_io->edges(path, V, E, remove_duplicate_eps);
+        else
+            io::read_edge_mesh(path, V, E, remove_duplicate_eps);
         logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
         V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
         Vs_out.push_back(V);

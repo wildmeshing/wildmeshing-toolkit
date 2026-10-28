@@ -10,6 +10,7 @@
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/VertexColoring.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -20,6 +21,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <cstdlib>
 #include <queue>
 
@@ -69,6 +71,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         logger().info("max energy {:.6} | stop {:.6}", max_metric, optimization_stop_metric());
+        optimization_iteration_done(it);
 
         std::atomic<int> n_round = 0;
         std::atomic<int> n_verts = 0;
@@ -395,14 +398,19 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
         logger().debug("#V = {}", collect_all_ops.size());
-        run_pass(
-            *this,
-            PassLock::VertexRing,
-            "vertex smoothing operation",
-            [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        if (use_colored_smoothing()) {
+            smooth_vertices_colored(collect_all_ops);
+        } else {
+            run_pass(
+                *this,
+                PassLock::VertexRing,
+                "vertex smoothing operation",
+                [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        }
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
         log_smoothing_pass_accounting();
+        smoothing_pass_done();
 
         if (m_params.debug_output) {
             write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
@@ -411,7 +419,60 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 }
 
 
-std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
+bool TetOptimizerMesh::use_colored_smoothing() const
+{
+    return NUM_THREADS > 0 && m_params.colored_smoothing;
+}
+
+void TetOptimizerMesh::smooth_vertices_colored(
+    const std::vector<std::pair<std::string, Tuple>>& ops)
+{
+    igl::Timer timer;
+    timer.start();
+
+    std::vector<size_t> vids;
+    vids.reserve(ops.size());
+    for (const auto& op : ops) {
+        vids.push_back(op.second.vid(*this));
+    }
+    auto classes = utils::greedy_vertex_coloring(
+        vids,
+        vert_capacity(),
+        NUM_THREADS,
+        [this](size_t vid, std::vector<size_t>& out) {
+            const std::vector<size_t> ring = get_one_ring_vids_for_vertex(vid);
+            out.insert(out.end(), ring.begin(), ring.end());
+        });
+    const double coloring_time = timer.getElapsedTime();
+
+    // Each class runs fully in parallel: its vertices share no edge and no cell, so smoothing one
+    // neither moves a vertex another reads nor writes a cell attribute another writes -- as long
+    // as the hooks read everything outside the vertex's star through const access (see
+    // smooth_after()), which every smooth checks (m_check_smoothing_stays_in_star). Nothing is
+    // locked, and the result does not depend on which thread smooths which vertex.
+    // Surface vertices first: they are the expensive ones (envelope), and starting them early
+    // keeps a thread from picking one up just before a class's barrier. The order within a class
+    // does not change the result -- its vertices do not interact.
+    size_t n_total = 0;
+    for (std::vector<size_t>& cls : classes) {
+        std::stable_partition(cls.begin(), cls.end(), [this](size_t v) {
+            return m_vertex_attribute.at(v).m_is_on_surface;
+        });
+        n_total += cls.size();
+    }
+    const size_t successes = utils::smooth_classes_checked(*this, classes, 16);
+    const size_t failures = n_total - successes;
+
+    logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);
+    logger().info(
+        "vertex smoothing colored: {} classes, coloring {:.4}s",
+        classes.size(),
+        coloring_time);
+    // Same wording as run_pass's line, so pass timings read the same either way.
+    logger().info("vertex smoothing operation time parallel: {:.4}s", timer.getElapsedTime());
+}
+
+std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
 {
     // Both applications keep one surface envelope. The pull energy may additionally select
     // an order-2 feature envelope, but containment remains against the surface envelope.
@@ -443,6 +504,7 @@ void TetOptimizerMesh::output_faces(
     std::string file,
     std::function<bool(const FaceAttributes&)> cond)
 {
+    if (!m_params.output_enabled) return;
     auto outface = get_faces_by_condition(cond);
     Eigen::MatrixXd matV = Eigen::MatrixXd::Zero(vert_capacity(), 3);
     for (const auto& v : get_vertices()) {
@@ -577,6 +639,10 @@ bool TetOptimizerMesh::round(const Tuple& v)
 {
     size_t i = v.vid(*this);
     if (m_vertex_attribute[i].m_is_rounded) return true;
+    // Rounding writes the vertex, which a dry run must not do (other threads are reading it).
+    // Answer optimistically: a dry run that passes only means "worth attempting", and the real
+    // attempt rounds, or finds it cannot, for itself.
+    if (dry_run()) return true;
 
     const auto old_exact = m_vertex_attribute[i].m_exact;
     m_vertex_attribute[i].set_pos_to_posf();
@@ -790,6 +856,233 @@ double TetOptimizerMesh::get_length2(const Tuple& l) const
     return length;
 }
 
+// ---- Feature-edge tag propagation helpers (see the header banner) ------------------------
+
+bool TetOptimizerMesh::vertex_has_feature_edge(const size_t vid) const
+{
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+            return true;
+        }
+    }
+    return false;
+}
+
+size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>& vids) const
+{
+    size_t order = TetMesh::substructure_order_of_edge(vids);
+    if (order < 2 && m_track_feature_edges) {
+        const Tuple e = tuple_from_edge(vids);
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+            order = 2;
+        }
+    }
+    return order;
+}
+
+size_t TetOptimizerMesh::substructure_order_of_vertex(const size_t vid) const
+{
+    size_t order = TetMesh::substructure_order_of_vertex(vid);
+    if (order < 3 && m_track_feature_edges) {
+        size_t n_tagged = 0;
+        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+            const Tuple e = tuple_from_edge({{vid, u}});
+            if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+                ++n_tagged;
+            }
+        }
+        if (n_tagged == 2) {
+            order = std::max<size_t>(order, 2);
+        } else if (n_tagged == 1 || n_tagged >= 3) {
+            order = 3; // curve endpoint or junction
+        }
+    }
+    return order;
+}
+
+void TetOptimizerMesh::substructure_feature_neighbors(const size_t vid, std::vector<size_t>& out)
+    const
+{
+    if (!m_track_feature_edges) {
+        return;
+    }
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+            out.push_back(u);
+        }
+    }
+}
+
+bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
+{
+    if (!m_track_feature_edges || !m_feature_envelope) {
+        return true;
+    }
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (!e.is_valid(*this) || !m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
+            continue;
+        }
+        if (m_feature_envelope->is_outside(
+                std::array<Eigen::Vector3d, 2>{
+                    {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TetOptimizerMesh::collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const
+{
+    if (!m_preserve_feature_points) return false;
+    // v1 disappears into v2, and v2 does not move: the only question is whether v2 still
+    // covers the feature v1 stood for. See the 2D twin for why distance is the whole test.
+    const size_t f1 = m_feature_point_attribute[v1_id].m_feature_point_id;
+    if (f1 == NO_FEATURE_POINT) return false;
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
+           m_feature_eps * m_feature_eps;
+}
+
+bool TetOptimizerMesh::feature_point_ball_contains(const size_t vid, const Vector3d& p) const
+{
+    if (!m_preserve_feature_points) return true;
+    const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
+    if (f == NO_FEATURE_POINT) return true;
+    // A ball, not a pin -- the vertex may move anywhere within m_feature_eps of its
+    // anchor, exactly the freedom the envelope gives everywhere else.
+    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
+}
+
+std::pair<size_t, size_t> TetOptimizerMesh::feature_retention(double* worst_ratio) const
+{
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+
+    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
+    // 2D version learned the hard way not to scan every vertex per feature.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
+    for (const Tuple& v : get_vertices()) {
+        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector3d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(anchor, idx, sq);
+        if (sq <= m_feature_eps * m_feature_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+        }
+    }
+    return {kept, m_feature_points.size()};
+}
+
+
+void TetOptimizerMesh::feature_edges_cache(
+    const std::vector<size_t>& tids,
+    std::map<std::array<size_t, 2>, bool>& cache)
+{
+    cache.clear();
+    for (const size_t tid : tids) {
+        const auto vs = oriented_tet_vids(tid);
+        for (int local_eid = 0; local_eid < 6; ++local_eid) {
+            const auto [l0, l1] = m_local_edges[local_eid];
+            std::array<size_t, 2> pair = {{vs[l0], vs[l1]}};
+            if (pair[0] > pair[1]) {
+                std::swap(pair[0], pair[1]);
+            }
+            if (cache.count(pair) != 0) {
+                continue;
+            }
+            const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
+            cache.emplace(pair, m_feature_edge_attribute[eid].m_is_feature_edge);
+        }
+    }
+}
+
+void TetOptimizerMesh::feature_edges_restore_region(
+    const std::vector<size_t>& tids,
+    const std::map<std::array<size_t, 2>, bool>& cache)
+{
+    std::vector<Tuple> tets;
+    tets.reserve(tids.size());
+    for (const size_t tid : tids) {
+        tets.push_back(tuple_from_tet(tid));
+    }
+    feature_edges_restore_region(tets, cache);
+}
+
+void TetOptimizerMesh::feature_edges_restore_region(
+    const std::vector<Tuple>& tets,
+    const std::map<std::array<size_t, 2>, bool>& cache)
+{
+    for (const Tuple& t : tets) {
+        const size_t tid = t.tid(*this);
+        const auto vs = oriented_tet_vids(tid);
+        for (int local_eid = 0; local_eid < 6; ++local_eid) {
+            const auto [l0, l1] = m_local_edges[local_eid];
+            std::array<size_t, 2> pair = {{vs[l0], vs[l1]}};
+            if (pair[0] > pair[1]) {
+                std::swap(pair[0], pair[1]);
+            }
+            const auto it = cache.find(pair);
+            // A pair not in the cache is a genuinely new edge: default, never inherit --
+            // the slot may be reused and hold a stale value.
+            const bool tag = it != cache.end() && it->second;
+            const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
+            m_feature_edge_attribute[eid].m_is_feature_edge = tag;
+        }
+    }
+}
+
+bool TetOptimizerMesh::feature_edges_restore_remap(
+    const std::map<std::array<size_t, 2>, bool>& cache,
+    const size_t v_old,
+    const size_t v_new)
+{
+    // Remap and OR-merge first: (v_old,x) and (v_new,x) become the same pair.
+    std::map<std::array<size_t, 2>, bool> merged;
+    for (const auto& [pair, tag] : cache) {
+        std::array<size_t, 2> p = pair;
+        for (size_t& v : p) {
+            if (v == v_old) {
+                v = v_new;
+            }
+        }
+        if (p[0] == p[1]) {
+            continue; // the collapsed edge itself; its tag dies with it (the chain shortens)
+        }
+        if (p[0] > p[1]) {
+            std::swap(p[0], p[1]);
+        }
+        merged[p] = merged[p] || tag;
+    }
+    for (const auto& [pair, tag] : merged) {
+        const Tuple t = tuple_from_edge(pair);
+        if (!t.is_valid(*this)) {
+            if (tag) {
+                return false; // a tagged edge vanished; abort, as the face path does
+            }
+            continue;
+        }
+        m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge = tag;
+    }
+    return true;
+}
+
 // ---- OPERATION ACCOUNTING ----
 
 TetOptimizerMesh::SwapRejectRole TetOptimizerMesh::swap_reject_role(const SwapReject r)
@@ -803,6 +1096,7 @@ TetOptimizerMesh::SwapRejectRole TetOptimizerMesh::swap_reject_role(const SwapRe
     case SwapReject::base_after:
     case SwapReject::after_inverted:
     case SwapReject::after_quality:
+    case SwapReject::app_sag_raised:
     case SwapReject::app_after_side_conflict:
     case SwapReject::app_after_no_side:
     case SwapReject::after_envelope: return SwapRejectRole::after_leaf;
@@ -884,6 +1178,7 @@ const char* TetOptimizerMesh::op_event_name(const OpEvent e)
     case OpEvent::after_hook: return "after_hook";
     case OpEvent::invariants: return "invariants";
     case OpEvent::committed: return "committed";
+    case OpEvent::screened: return "screened";
     default: return "?";
     }
 }
@@ -927,11 +1222,12 @@ std::string TetOptimizerMesh::op_accounting_report(const OpKind k) const
         return fmt::format("{} {{{} unattributed={} }}", total, leaves, total - sum);
     };
     std::string out = fmt::format(
-        "{}: attempts={} committed={} | before_hook={} |{} | after_hook={} | invariants={} | "
-        "unaccounted={}",
+        "{}: attempts={} committed={} screened={} | before_hook={} |{} | after_hook={} | "
+        "invariants={} | unaccounted={}",
         op_kind_name(k),
         op_event_count(k, OpEvent::attempt),
         op_event_count(k, OpEvent::committed),
+        op_event_count(k, OpEvent::screened),
         hook(before, h.before, h.before_sum),
         between.empty() ? std::string(" none") : between,
         hook(after, h.after, h.after_sum),

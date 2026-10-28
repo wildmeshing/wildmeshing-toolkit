@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -169,6 +170,241 @@ public:
     AttributeContainerGroup m_face_attr_group;
 
     /**
+     * @brief What p_edge_attrs points at, once a collection is registered with it.
+     *
+     * The 3D counterpart of wmtk::TriOptimizerMesh::m_edge_attr_group. Two owners keep a
+     * per-edge collection: the feature-edge tags (enable_feature_edge_tracking()) and
+     * topological_offset, which labels each edge by which part of the construction produced
+     * it. With one p_edge_attrs slot only one of them could register, so feature tracking had
+     * to refuse to run in the offset; registered here, each is resized, moved, protected and
+     * rolled back with the others.
+     *
+     * Unlike the 2D group, which always holds the shared m_edge_attribute, this one starts
+     * EMPTY -- the 3D base keeps no edge attribute of its own -- so p_edge_attrs stays null
+     * until add_edge_attributes() registers the first collection. TetMesh skips every per-edge
+     * step on a null p_edge_attrs (the owner migration in remove_tets_by_ids, the moves in
+     * consolidate_mesh, the protect/rollback forwarding); pointing it at an empty group would
+     * pay for all of them in the tetwild and simwild runs that track no edges.
+     *
+     * Same caveat as the 2D group: this moves the storage and nothing more. The shared
+     * operations maintain the VALUES of m_feature_edge_attribute only (the split and collapse
+     * restores); anything else registered here is its registering application's to maintain.
+     */
+    AttributeContainerGroup m_edge_attr_group;
+    /**
+     * @brief True while a pass of the shared operations runs.
+     *
+     * Set, and restored on exit or throw, by the two drivers every such pass goes through:
+     * run_pass() (utils/RunPass.cpp) and the colored smoothing sweep
+     * (utils::smooth_classes_checked). No existing state says this: the attribute collections'
+     * protect flag is per thread and per operation, so it is false between two operations of a
+     * pass and on every thread not running one. Only the calls that register a collection read
+     * it; see throw_if_in_operation_pass().
+     */
+    bool m_in_operation_pass = false;
+    /**
+     * Registering a collection resizes it, which reallocates the storage under the pass's
+     * readers, and an operation already in flight has not protected it -- nothing fails at the
+     * call, the corruption shows up later. Thrown, not asserted: release builds compile
+     * asserts out.
+     */
+    void throw_if_in_operation_pass(const char* call) const
+    {
+        if (m_in_operation_pass) {
+            log_and_throw_error(
+                "{}() called while an operation pass runs; call it before or after the pass.",
+                call);
+        }
+    }
+    /**
+     * @brief Register an edge collection with m_edge_attr_group and point p_edge_attrs at the
+     * group.
+     *
+     * Valid before or after init(), but not while an operation pass runs (it throws then; see
+     * throw_if_in_operation_pass()). Before init() the storage is empty and the resize here is
+     * a no-op; init() sizes the collection with the rest. After init() the resize brings it to
+     * what init() and every capacity growth size edge collections to -- one entry per tet edge
+     * slot, 6 x tet_storage_capacity() -- so the registered collections keep the invariant
+     * the operations index by (size >= every slot id they can hand out), and the new entries
+     * start at their default values. From then on growth, the owner migration in
+     * remove_tets_by_ids, consolidation and rollback move it with the others.
+     */
+    void add_edge_attributes(AbstractAttributeContainer* c)
+    {
+        throw_if_in_operation_pass("add_edge_attributes");
+        m_edge_attr_group.add(c);
+        p_edge_attrs = &m_edge_attr_group;
+        c->resize(6 * tet_storage_capacity());
+    }
+
+    /**
+     * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
+     *
+     * A single union bool, deliberately, mirroring how the tracked surface is one
+     * m_is_surface_fs for every input file and sheet. Which curve an edge belongs to is not
+     * carried through the optimization anywhere in this codebase; identity questions are
+     * answered at the boundaries -- provenance at insertion, combinatorial and geometric
+     * audits at the end.
+     */
+    struct FeatureEdgeAttributes
+    {
+        bool m_is_feature_edge = false;
+    };
+    using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
+    /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
+    EdgeAttCol m_feature_edge_attribute;
+
+    /**
+     * @brief Whether the shared operations maintain m_feature_edge_attribute.
+     *
+     * The operations are guarded by THIS flag, never by `p_edge_attrs != nullptr`:
+     * topological_offset also registers an edge collection with m_edge_attr_group, with its
+     * own attribute type, so a non-null p_edge_attrs says nothing about feature tags.
+     */
+    bool m_track_feature_edges = false;
+
+    /**
+     * @brief Envelope around the input feature curves: the tube a tagged edge must stay in.
+     *
+     * The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface
+     * envelope and the order-2 envelope: merging would let feature curves vouch for open
+     * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
+     * but not geometrically constrained.
+     */
+    std::shared_ptr<Envelope> m_feature_envelope;
+
+    /**
+     * @brief Turn on feature-edge tracking. The collection joins m_edge_attr_group beside
+     * whatever the application registered there.
+     *
+     * Valid before or after init(), not during an operation pass (it throws then; see
+     * add_edge_attributes(), which sizes it). After init() it starts with no edge tagged, and the
+     * application tags the edges it needs. Late enabling is supported because an application may
+     * learn only from the built mesh whether its input has feature curves -- topological_offset
+     * reads that off the labels init() produces -- and enabling it for every input would make every
+     * operation cache and restore feature data it does not have (+50% wall time on the offset's
+     * triangle inputs). Idempotent: registering twice would move every tag twice.
+     */
+    void enable_feature_edge_tracking()
+    {
+        throw_if_in_operation_pass("enable_feature_edge_tracking");
+        if (m_track_feature_edges) return;
+        add_edge_attributes(&m_feature_edge_attribute);
+        m_track_feature_edges = true;
+    }
+
+    /// Does any edge incident to `vid` carry the feature tag? Derived from the edge tags
+    /// rather than from a vertex flag, so it cannot go stale.
+    bool vertex_has_feature_edge(size_t vid) const;
+
+    // Substructure widening for the link condition (preserve_topology): a tagged feature
+    // edge is order-2 substructure, a vertex with two incident tagged edges is on a curve
+    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
+    // meaning of get_order_of_* is untouched.
+    size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
+    size_t substructure_order_of_vertex(size_t vid) const override;
+    void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
+    /// Are all tagged edges at `vid` inside the feature tube, at the CURRENT positions?
+    /// True when tracking or the tube is off. Smoothing calls this with the candidate
+    /// position already written into the vertex attribute.
+    bool feature_edges_at_vertex_inside(size_t vid) const;
+
+    /**
+     * @name Feature-point anchors
+     *
+     * The 3D twin of TriOptimizerMesh's block of the same name, which states the reasoning:
+     * preserving a 0-dimensional feature -- an input point, or a feature curve's endpoint (a
+     * junction too, when the application anchors those) -- is a COVERAGE property, so each
+     * anchor vertex names WHICH feature it stands for. Lifted from tetwild, itself a port of
+     * triwild, with the same semantics and the same distance test.
+     *
+     * Opt-in, in two levels. enable_feature_point_tracking() registers the per-vertex ids
+     * and has the shared operations maintain them: a split vertex stands for no feature, and
+     * a collapse survivor that stands for none takes over the collapsed vertex's. Its
+     * `preserve` argument additionally turns on the policy: a collapse that would leave a
+     * feature further than m_feature_eps from every vertex is refused
+     * (CollapseReject::feature_point), and smoothing may move an anchor vertex only inside its
+     * ball (the default smoothing_position_is_allowed()). The ids are maintained with the
+     * policy off too, so an application can still export and audit its anchors.
+     *
+     * The application supplies the data, because which vertices stand for which features
+     * depends on its input: it fills m_feature_points and the ids after init(), and sets
+     * m_feature_eps.
+     * @{
+     */
+    /// A vertex that stands for no feature point. See FeaturePointAttributes.
+    static constexpr size_t NO_FEATURE_POINT = std::numeric_limits<size_t>::max();
+    struct FeaturePointAttributes
+    {
+        /// Index into m_feature_points, or NO_FEATURE_POINT.
+        size_t m_feature_point_id = NO_FEATURE_POINT;
+    };
+    using FeaturePointAttCol = AttributeCollection<FeaturePointAttributes>;
+    /// Registered with m_vertex_attr_group only once enable_feature_point_tracking() ran.
+    FeaturePointAttCol m_feature_point_attribute;
+    /// Anchor positions, indexed by FeaturePointAttributes::m_feature_point_id. A vertex
+    /// carrying feature f may never end up further than m_feature_eps from
+    /// m_feature_points[f]; the anchor never moves, so the id is a direct lookup.
+    std::vector<Vector3d> m_feature_points;
+    /// Radius of the anchor ball. A separate name from the tube eps for the same reason
+    /// triwild keeps it separate from its envelope eps; tetwild gives both the same value.
+    double m_feature_eps = -1;
+    /// Whether the shared operations maintain the ids (enable_feature_point_tracking()).
+    bool m_track_feature_points = false;
+    /// Whether the collapse and smoothing policy is on (its `preserve` argument).
+    bool m_preserve_feature_points = false;
+
+    /**
+     * @brief Turn on feature-point tracking, and the policy when `preserve`.
+     *
+     * Valid before or after init(), not during an operation pass (it throws then; see
+     * throw_if_in_operation_pass()). Before init() the storage is empty and the resize is a no-op;
+     * init() sizes the ids with the rest of m_vertex_attr_group. After init() the resize brings
+     * them to what init() and every capacity growth size vertex collections to,
+     * vert_storage_capacity(), with every vertex NO_FEATURE_POINT; the application then anchors
+     * what it needs. Late enabling is supported because an application may learn only from the
+     * built mesh whether its input has feature points, and enabling it for every input would make
+     * every operation cache and restore anchors it does not have. A second call changes only the
+     * policy.
+     */
+    void enable_feature_point_tracking(const bool preserve)
+    {
+        throw_if_in_operation_pass("enable_feature_point_tracking");
+        if (!m_track_feature_points) {
+            m_vertex_attr_group.add(&m_feature_point_attribute);
+            m_feature_point_attribute.resize(vert_storage_capacity());
+        }
+        m_track_feature_points = true;
+        m_preserve_feature_points = preserve;
+    }
+
+    /**
+     * True iff collapsing v1 into v2 would drop or displace a feature-point anchor. False
+     * when the policy is off. Distance test included, as in 2D: two anchors within
+     * m_feature_eps of each other are allowed to merge -- the survivor covers both -- and
+     * forbidding that deadlocks the mesh (measured in 2D, see TriOptimizerMesh).
+     */
+    bool collapse_breaks_feature_point(const size_t v1_id, const size_t v2_id) const;
+
+    /// May vertex `vid` sit at `p` as far as its anchor goes? True unless the policy is on,
+    /// the vertex stands for a feature, and `p` is outside that feature's ball.
+    bool feature_point_ball_contains(const size_t vid, const Vector3d& p) const;
+
+    /// {anchors still represented within m_feature_eps, total}. Geometric, as in 2D: "some
+    /// vertex is within eps of this anchor", whether or not it carries the id.
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
+    /** @} */
+
+    /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
+    /// TriOptimizerMesh's hook of the same name. The default is the feature-point ball, which
+    /// answers true when the anchors are off; an application overriding this while anchoring
+    /// feature points must AND its own answer with feature_point_ball_contains().
+    virtual bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const
+    {
+        return feature_point_ball_contains(vid, p);
+    }
+
+    /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
      *
      * Not an energy: a positively oriented tet whose volume is too small for AMIPS, or one that
@@ -183,7 +419,7 @@ public:
     OptimizerParameters& m_params;
 
     /// Surface envelope: what a surface vertex is pulled toward and checked against.
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<Envelope> m_envelope;
 
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
@@ -255,7 +491,7 @@ public:
     size_t m_split_order_waits = 0;
     size_t m_split_order_wait_defects = 0;
 
-    explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
+    explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<Envelope> env)
         : m_params(params)
         , m_envelope(std::move(env))
     {
@@ -396,7 +632,7 @@ public:
      * operation asking about the triangles it is ABOUT to create or has just created, where
      * only the vids are known for certain.
      */
-    virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+    virtual std::shared_ptr<Envelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const
     {
         return m_envelope;
@@ -406,7 +642,7 @@ public:
     /// when it has none. Every surface containment check in the operations goes through here.
     bool surface_triangle_is_outside(const size_t a, const size_t b, const size_t c) const
     {
-        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face({{a, b, c}});
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face({{a, b, c}});
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside({{VA[a].m_posf, VA[b].m_posf, VA[c].m_posf}});
@@ -536,8 +772,14 @@ public:
      * The surface envelope is shared by both applications. A derived mesh may additionally
      * select an order-2 feature envelope for the pull energy.
      */
-    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
-    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
+    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const;
+    virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
+
+    /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
+    /// Default true; tetwild overrides with its open-boundary flags and envelope. Membership is
+    /// decided by flags + the topological face count, NOT by the tube itself -- a tube-based
+    /// membership test self-disables the moment geometry leaves the tube.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
 
     /**
      * @brief An extra term the application adds to this vertex's smoothing objective, or null.
@@ -558,12 +800,74 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief The number the shared smoother compares for one cell, given the cell's quality
+     * (AMIPS^3) at the position being tested. Its quality veto compares the max of this over the
+     * ring before and after the move, and the default smoothing_ring_energy() is the same max.
+     *
+     * The quality itself by default, so TetWild and SimWild compare exactly what they compared
+     * before. An application whose smoother minimises another per-cell energy (through
+     * smoothing_extra_energy()) overrides it, so that the smoother's tests judge a move by that
+     * same energy. The 2D twin is TriOptimizerMesh::smoothing_cell_energy.
+     */
+    virtual double smoothing_cell_energy(const size_t /*tid*/, const double quality) const
+    {
+        return quality;
+    }
+
+    /**
+     * @brief The number the shared smoother's projected step compares for a whole one-ring: a
+     * vertex held on a surface takes the first projected candidate whose value is strictly below
+     * the value before the move.
+     *
+     * `stored` true: the ring before the move, read from the stored cell qualities; it is asked
+     * before the solve moves the vertex, so the mesh as it is is that ring too. `stored` false: the
+     * ring at the candidate position, every cell of it already tested for inversion.
+     *
+     * By default the max over the ring of smoothing_cell_energy() -- what the projected step
+     * compared before this hook existed -- so TetWild and SimWild are unchanged. An application
+     * whose rules compare a sum of a per-cell energy over the cells a move changes overrides it
+     * with that sum, so that the projected step picks its candidate by the same rule. 3D only.
+     */
+    virtual double smoothing_ring_energy(const std::vector<Tuple>& ring, const bool stored) const
+    {
+        double m = 0.;
+        for (const Tuple& loc : ring) {
+            const size_t tid = loc.tid(*this);
+            m = std::max(
+                m,
+                smoothing_cell_energy(tid, stored ? cell_quality(tid) : get_quality(loc)));
+        }
+        return m;
+    }
+
+    /**
+     * @brief The smoothing hooks. A derived class overriding them -- or invariants(), which a
+     * smooth also runs -- must read every attribute outside the smoothed vertex's star (other
+     * vertices, and the edges, faces and tets not incident to the vertex) through const access,
+     * e.g. `std::as_const(m_vertex_attribute)[u]`.
+     *
+     * Parallel smoothing runs non-adjacent vertices concurrently without locks (see
+     * OptimizerParameters::colored_smoothing). Two of them can share a neighbour, and a
+     * non-const access inside the smooth records the entry, which a rejected smooth writes
+     * back: two threads would write the same neighbour at once. Every smooth of that pass checks
+     * this (TetMesh/TriMesh::m_check_smoothing_stays_in_star) and throws on the first offence.
+     */
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
+    /// Whether this pass smooths by color class (see OptimizerParameters::colored_smoothing).
+    bool use_colored_smoothing() const;
+    /// One smoothing sweep over `ops` (all "vertex_smooth"), one color class at a time.
+    void smooth_vertices_colored(const std::vector<std::pair<std::string, Tuple>>& ops);
     /// Called by smooth_all_vertices() after each pass's own accounting lines: an application
     /// that solves some vertices on a path of its own logs, and then resets, its counters here.
     virtual void log_smoothing_pass_accounting() {}
+    /// Called by smooth_all_vertices() at the end of EVERY smoothing pass, after its accounting
+    /// (log_smoothing_pass_accounting()) and before its debug frame: an application that keeps
+    /// state derived from the positions the pass just moved refreshes it here. Not called before
+    /// the first pass.
+    virtual void smoothing_pass_done() {}
 
     bool invariants(const std::vector<Tuple>& t) override;
 
@@ -597,6 +901,9 @@ protected:
      * enough.
      */
     virtual bool optimization_bare_coarsen_passes() const { return true; }
+    /// Called at the end of each iteration of mesh_improvement(), after its operation groups and
+    /// before the stop test (`it` from 0). No-op by default.
+    virtual void optimization_iteration_done(int /*it*/) {}
     virtual void write_optimization_debug_output(const std::string& path) = 0;
     virtual void optimization_sanity_checks_extra() {}
 
@@ -640,6 +947,9 @@ protected:
         return true;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
+    /// Called once the feature-edge tags are restored after a collapse of v1 into v2, only
+    /// when feature edges are tracked: the survivor's feature state is decided here.
+    virtual void collapse_after_features(size_t, size_t) {}
 
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
@@ -686,6 +996,7 @@ protected:
         valence, // wrong incident-tet count for this swap kind
         bbox, // edge on the bounding box
         surface_not_allowed, // has surface faces and allow_surface_swap() is false
+        feature_edge, // the swap would delete a tagged feature edge (it is the operated edge)
         prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
         interior_hook, // swap_before_interior() refused
         flip_open_boundary, // flipping would change the surface's boundary loops
@@ -717,12 +1028,17 @@ protected:
     /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
     /// entered the surface branch at all, so "the surface never even presents a candidate" is
     /// distinguishable from "candidates are presented and refused".
+    ///
+    /// In a screened pass (ExecutePass::screen_before_commit) the stages up to before_pass are
+    /// counted by the dry run as well as by the real attempt. `screened` counts the dry runs
+    /// that passed every check, i.e. the before_pass counts a real attempt repeats.
     enum class SwapStage : int {
         attempt,
         surface_attempt,
         before_pass,
         after_enter,
         accepted,
+        screened,
         COUNT
     };
 
@@ -767,6 +1083,8 @@ protected:
         inverted, // a cell the collapse reshapes would invert
         quality, // collapse_quality_allowed() said no
         substructure_link, // preserve_topology, both ends on the surface: substructure link
+        feature_leaves_tube, // a tagged feature edge the collapse moves would leave its tube
+        feature_point, // v1 stands for a feature point and v2 is outside its ball
         app_both_surfaces, // application: an end on the input complex and an end on the offset
         app_front_unlimited, // application: an unlimited-length pass may not remove a front vertex
         app_leaves_input, // application: v1 on the input complex, v2 not
@@ -779,6 +1097,8 @@ protected:
         after_connectivity, // collapse_after_connectivity() said no
         after_envelope, // a surface face the survivor keeps left the envelope
         after_face_attribute, // a face attribute found no face left to land on
+        after_order2_chord, // an order-2 edge the survivor keeps is no longer order-2 substructure
+        after_feature_edge, // a tagged feature edge found no edge left to land on
         after_coarsen_region, // coarsening only: the region's worst quality rose
         COUNT
     };
@@ -799,6 +1119,11 @@ protected:
     {
         if (e == OpEvent::attempt) current_op_kind() = k;
         m_op_events[size_t(k)][size_t(e)].fetch_add(1, std::memory_order_relaxed);
+        // The edge swaps whose hooks count SwapStage; see swap_reject_report().
+        if (e == OpEvent::screened &&
+            (k == OpKind::swap_32 || k == OpKind::swap_44 || k == OpKind::swap_56)) {
+            swap_stage(SwapStage::screened);
+        }
     }
     /// The operation running on this thread, set at its `attempt`, so a hook's swap_reject()
     /// can be charged to the right kind without passing the kind through every hook. COUNT
@@ -867,6 +1192,8 @@ protected:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
@@ -884,8 +1211,11 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        bool is_edge_on_feature = false;
         size_t edge_order = 0;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -904,11 +1234,55 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+    // ---- Feature-edge tag propagation (m_track_feature_edges) ----------------------------
+    //
+    // An edge attribute's slot is (lowest incident tet id) * 6 + local index, so it moves
+    // whenever that tet dies. Any edge whose slot can move is an edge of an affected tet
+    // (deleted tets are affected; created tets only affect their own six edges), so caching
+    // every edge of every affected tet before the operation and rewriting afterwards covers
+    // every slot that can move -- the same argument the face tags rely on.
+    //
+    // Restore comes in two forms because the operations differ in what they create:
+    //  * split and the swaps CREATE tets, whose slots may be reused and hold stale values;
+    //    restore_region walks every edge of every created tet and writes the cached value or
+    //    the default. The created region provably contains every surviving cached edge.
+    //  * collapse creates NO tets, and its link edges (la,lb) -- which contain neither
+    //    endpoint, a case a tet FACE cannot exhibit -- can live on in tets outside any
+    //    enumerable region. restore_remap walks the CACHE instead: remaps v1 -> v2, OR-merges
+    //    colliding pairs, and writes each surviving edge wherever its slot now is. Returns
+    //    false if a TAGGED cached edge no longer exists (the caller aborts, mirroring the
+    //    face path's try_tuple_from_face bailout).
+
+    /// Cache the feature tag of every edge of every tet in `tids`.
+    void feature_edges_cache(
+        const std::vector<size_t>& tids,
+        std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags over every edge of every tet in `tets` (created regions).
+    void feature_edges_restore_region(
+        const std::vector<Tuple>& tets,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    void feature_edges_restore_region(
+        const std::vector<size_t>& tids,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
+    bool feature_edges_restore_remap(
+        const std::map<std::array<size_t, 2>, bool>& cache,
+        size_t v_old,
+        size_t v_new);
+
+    /// Hook: the split vertex was created on a feature edge (or not). Runs only when
+    /// m_track_feature_edges is set; the counterpart of split_after_vertex for the feature
+    /// flag, separate so existing overrides keep their signature.
+    virtual void split_after_vertex_feature(size_t, bool) {}
+
 
     /// Set for the duration of coarsen_mesh(); read-only while a pass is running.
     bool m_coarsen_mode = false;

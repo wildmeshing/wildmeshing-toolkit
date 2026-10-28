@@ -3,9 +3,12 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
+#include <wmtk/utils/VertexColoring.hpp>
 
 #include <igl/Timer.h>
 #include <spdlog/fmt/bundled/format.h>
+#include <algorithm>
+#include <string>
 
 namespace wmtk {
 
@@ -81,13 +84,71 @@ void TriOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
         logger().info("#V = {}", collect_all_ops.size());
-        run_pass(*this, PassLock::VertexRing, "vertex smoothing", [&](auto& executor, auto& mesh) {
-            executor(mesh, std::move(collect_all_ops));
-        });
+        if (use_colored_smoothing()) {
+            smooth_vertices_colored(collect_all_ops);
+        } else {
+            run_pass(
+                *this,
+                PassLock::VertexRing,
+                "vertex smoothing",
+                [&](auto& executor, auto& mesh) { executor(mesh, std::move(collect_all_ops)); });
+        }
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
 
         optimization_debug_checkpoint();
     }
+}
+
+bool TriOptimizerMesh::use_colored_smoothing() const
+{
+    return NUM_THREADS > 0 && m_params.colored_smoothing;
+}
+
+void TriOptimizerMesh::smooth_vertices_colored(
+    const std::vector<std::pair<std::string, Tuple>>& ops)
+{
+    // The 2D twin of TetOptimizerMesh::smooth_vertices_colored: classes of pairwise
+    // non-adjacent vertices, each run fully in parallel without locks. TriOptimizerMesh's own
+    // smoothing reads its neighbours only through smoothing_position(), which is const, and writes
+    // the vertex and the qualities of its own triangles, which no other vertex of its class
+    // shares. A derived class's hooks must keep to the same rule (see smooth_after()); every
+    // smooth checks that it did (m_check_smoothing_stays_in_star).
+    igl::Timer timer;
+    timer.start();
+
+    std::vector<size_t> vids;
+    vids.reserve(ops.size());
+    for (const auto& op : ops) {
+        vids.push_back(op.second.vid(*this));
+    }
+    auto classes = utils::greedy_vertex_coloring(
+        vids,
+        vert_capacity(),
+        NUM_THREADS,
+        [this](size_t vid, std::vector<size_t>& out) {
+            get_one_ring_vids_for_vertex_duplicate(vid, out);
+        });
+    const double coloring_time = timer.getElapsedTimeInSec();
+
+    // Surface vertices first: they are the expensive ones (envelope), and starting them early
+    // keeps a thread from picking one up just before a class's barrier. The order within a class
+    // does not change the result -- its vertices do not interact.
+    size_t n_total = 0;
+    for (std::vector<size_t>& cls : classes) {
+        std::stable_partition(cls.begin(), cls.end(), [this](size_t v) {
+            return m_vertex_attribute.at(v).m_is_on_surface;
+        });
+        n_total += cls.size();
+    }
+    const size_t successes = utils::smooth_classes_checked(*this, classes, 32);
+    const size_t failures = n_total - successes;
+
+    logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);
+    logger().info(
+        "vertex smoothing colored: {} classes, coloring {:.4}s",
+        classes.size(),
+        coloring_time);
+    logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
 }
 
 std::vector<size_t> TriOptimizerMesh::active_vertices() const

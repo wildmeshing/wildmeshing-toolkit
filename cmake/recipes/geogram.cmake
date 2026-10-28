@@ -22,7 +22,7 @@
 #
 # The alternative was IPC_TOOLKIT_WITH_GEOGRAM OFF, which does build. It is rejected because it is
 # not free: ipc falls back to its analytic distance-type classification, and the exact path is the
-# default (DistanceTypeConfig::use_standard_ is false). high_order_contact -- the subtree the
+# default (DistanceTypeConfig::use_standard() is false). esp -- the subtree the
 # offset potential actually evaluates -- calls distance_type from its collision builder and its
 # pair-distance templates, so that fallback would land squarely on our own code, in exactly the
 # near-degenerate configurations an offset surface produces. A version bump changes nothing;

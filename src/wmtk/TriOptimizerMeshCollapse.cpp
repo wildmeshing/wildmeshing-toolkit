@@ -24,6 +24,7 @@ size_t
 TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
 {
     m_collapse_limit_length = is_limit_length;
+    m_feature_rejects = 0;
     collapse_pass_begin();
     igl::Timer timer;
     timer.start();
@@ -47,6 +48,13 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
         lock_ring,
         "edge collapse",
         [&](auto& executor, auto& mesh) {
+            // The one pass that is not screened (ExecutePass::screen_before_commit). In 2D a
+            // collapse's time goes into the attempts that pass their pre-checks -- the queue
+            // already turns the refusals away cheaply, with no 3D-sized ring to lock -- so
+            // screening only added the dry runs, and the attempts that a stale snapshot
+            // multiplies: triwild 191265 collapsed in 8.8-9.7s screened, 5.8-6.2s not (main
+            // 6.2-6.4s), 190586 in 11.8-13.6s against 9.8-11.1s.
+            executor.screen_before_commit = false;
             executor.renew_neighbor_tuples =
                 [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
                     std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
@@ -89,6 +97,13 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
             const size_t total_success =
                 wmtk::run_localized_to_convergence(mesh, executor, std::move(all_ops), max_passes);
             logger().info("collapse success: {}", total_success);
+            if (const size_t n = m_feature_rejects.load(); n > 0) {
+                logger().info(
+                    "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
+                    "junction, or input free point) within {:.6} of its input position",
+                    n,
+                    m_feature_eps);
+            }
             collapse_pass_end(total_success);
             accepted = total_success;
         });
@@ -124,6 +139,13 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
             return false;
         }
+    }
+
+    // Feature-point anchors (see TriOptimizerMesh). Immediately before the application's
+    // hook, which is where triwild asked it.
+    if (collapse_breaks_feature_point(v1_id, v2_id)) {
+        m_feature_rejects.fetch_add(1, std::memory_order_relaxed);
+        return false;
     }
 
     ///check if on bbox/surface/boundary
@@ -355,6 +377,13 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
             return false; // the collapse removed the edge this attribute was to land on
         }
         m_edge_attribute[std::get<1>(found.value())] = f_attr;
+    }
+
+    // The survivor takes over the anchor the collapsed vertex carried, if it carries none.
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v2_id].m_feature_point_id == NO_FEATURE_POINT) {
+        m_feature_point_attribute[v2_id].m_feature_point_id =
+            m_feature_point_attribute[v1_id].m_feature_point_id;
     }
 
     collapse_after_vertex(v1_id, v2_id);

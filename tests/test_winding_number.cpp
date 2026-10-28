@@ -1,4 +1,7 @@
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
+
+#include <igl/winding_number.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -44,7 +47,100 @@ Eigen::MatrixXd query_grid(int n)
     return O;
 }
 
+/// A UV sphere of radius 1 around the origin, 24 x 48 faces, closed unless `hemisphere`, in
+/// which case only its upper half is kept: open, with the equator as boundary.
+void uv_sphere(Eigen::MatrixXd& V, Eigen::MatrixXi& F, bool hemisphere = false)
+{
+    const int n_lat = 24, n_lon = 48;
+    V.resize((n_lat - 1) * n_lon + 2, 3);
+    V.row(0) << 0, 0, 1;
+    V.row(1) << 0, 0, -1;
+    for (int i = 1; i < n_lat; ++i) {
+        for (int j = 0; j < n_lon; ++j) {
+            const double th = M_PI * i / n_lat, ph = 2 * M_PI * j / n_lon;
+            V.row(2 + (i - 1) * n_lon + j) << std::sin(th) * std::cos(ph),
+                std::sin(th) * std::sin(ph), std::cos(th);
+        }
+    }
+    const auto ring = [&](int i, int j) { return 2 + (i - 1) * n_lon + (j % n_lon); };
+    std::vector<Eigen::RowVector3i> Fs;
+    const int last = hemisphere ? n_lat / 2 : n_lat - 1;
+    for (int j = 0; j < n_lon; ++j) {
+        Fs.emplace_back(0, ring(1, j), ring(1, j + 1));
+        if (!hemisphere) Fs.emplace_back(1, ring(n_lat - 1, j + 1), ring(n_lat - 1, j));
+        for (int i = 1; i < last; ++i) {
+            Fs.emplace_back(ring(i, j), ring(i + 1, j), ring(i + 1, j + 1));
+            Fs.emplace_back(ring(i, j), ring(i + 1, j + 1), ring(i, j + 1));
+        }
+    }
+    F.resize(Fs.size(), 3);
+    for (size_t i = 0; i < Fs.size(); ++i) F.row(i) = Fs[i];
+}
+
+Eigen::MatrixXd random_points(int n, double extent, unsigned seed)
+{
+    Eigen::MatrixXd O(n, 3);
+    std::mt19937 gen(seed);
+    std::uniform_real_distribution<double> d(-extent, extent);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) O.row(i) << d(gen), d(gen), d(gen);
+    return O;
+}
+
 } // namespace
+
+TEST_CASE("WindingNumberHierarchy is igl's winding number", "[winding_number]")
+{
+    // igl's hierarchy, step for step, but for the apex of the fans closing its nodes, which igl
+    // draws with rand(): the values agree to rounding, closed or open, and whatever duplicate
+    // vertices the mesh carries (merged first, as igl does).
+    for (const bool open : {false, true}) {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        uv_sphere(V, F, open);
+        // A duplicated vertex: the first face refers to a copy of vertex 0.
+        V.conservativeResize(V.rows() + 1, 3);
+        V.row(V.rows() - 1) = V.row(0);
+        F(0, 0) = int(V.rows() - 1);
+        const Eigen::MatrixXd O = random_points(5000, 1.5, open ? 5 : 4);
+        Eigen::VectorXd W_igl;
+        igl::winding_number(V, F, O, W_igl);
+        const utils::WindingNumberHierarchy hier(V, F);
+        double max_diff = 0;
+        for (Eigen::Index i = 0; i < O.rows(); ++i) {
+            max_diff = std::max(max_diff, std::abs(hier.winding_number(O.row(i)) - W_igl(i)));
+        }
+        INFO("open " << open);
+        CHECK(max_diff < 1e-12);
+    }
+}
+
+TEST_CASE("WindingNumberHierarchy is reproducible and owns its vertices", "[winding_number]")
+{
+    Eigen::MatrixXd V, V2;
+    Eigen::MatrixXi F, F2;
+    uv_sphere(V, F);
+    uv_sphere(V2, F2);
+    V2.col(0).array() += 0.5; // the same sphere, shifted
+    const Eigen::MatrixXd O = random_points(5000, 1.5, 6);
+
+    const utils::WindingNumberHierarchy a(V, F);
+    Eigen::VectorXd W_a(O.rows());
+    for (Eigen::Index i = 0; i < O.rows(); ++i) W_a(i) = a.winding_number(O.row(i));
+
+    // Two builds of one mesh agree to the last bit: igl's drew each node's fan apex with rand().
+    const utils::WindingNumberHierarchy a2(V, F);
+    // Building another mesh's hierarchy leaves the first one alone: igl kept every tree's
+    // vertices in one static, which the second build overwrote.
+    const utils::WindingNumberHierarchy b(V2, F2);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) {
+        REQUIRE(a2.winding_number(O.row(i)) == W_a(i));
+        REQUIRE(a.winding_number(O.row(i)) == W_a(i));
+    }
+    // And b answers for its own sphere.
+    CHECK(std::abs(b.winding_number(Eigen::RowVector3d(1.3, 0, 0)) - 1) < 1e-9);
+    CHECK(std::abs(a.winding_number(Eigen::RowVector3d(1.3, 0, 0))) < 1e-9);
+}
+
 
 TEST_CASE("winding_number_2d matches igl bit for bit", "[winding_number]")
 {
@@ -127,5 +223,198 @@ TEST_CASE("winding_number_2d honours num_threads", "[winding_number]")
             },
             nt);
         REQUIRE(ids.size() <= static_cast<size_t>(nt));
+    }
+}
+
+TEST_CASE("winding numbers do not depend on the number of threads", "[winding_number]")
+{
+    // The queries are handed out in chunks on demand, so which thread evaluates which query
+    // depends on the schedule. Each query is evaluated on its own, so the values must not:
+    // bit for bit the same on any number of threads.
+    SECTION("3D")
+    {
+        // A closed UV sphere with enough faces for the hierarchy to grow below its root.
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi F;
+        uv_sphere(V, F);
+
+        const Eigen::MatrixXd O = random_points(20000, 1.5, 3);
+
+        Eigen::VectorXd W1, W3, W8;
+        utils::winding_number(V, F, O, W1, 1);
+        utils::winding_number(V, F, O, W3, 3);
+        utils::winding_number(V, F, O, W8, 8);
+        CHECK(W1 == W3);
+        CHECK(W1 == W8);
+        // And it is a winding number: 1 inside the sphere, 0 outside, away from it.
+        for (Eigen::Index i = 0; i < O.rows(); ++i) {
+            const double r = O.row(i).norm();
+            if (r < 0.9) CHECK(std::abs(W1(i) - 1) < 1e-9);
+            if (r > 1.1) CHECK(std::abs(W1(i)) < 1e-9);
+        }
+    }
+    SECTION("2D")
+    {
+        Eigen::MatrixXd V;
+        Eigen::MatrixXi E;
+        two_loops(V, E, 64);
+        const Eigen::MatrixXd O = query_grid(120);
+        Eigen::VectorXd W1, W3, W8;
+        utils::winding_number_2d(V, E, O, W1, 1);
+        utils::winding_number_2d(V, E, O, W3, 3);
+        utils::winding_number_2d(V, E, O, W8, 8);
+        CHECK(W1 == W3);
+        CHECK(W1 == W8);
+    }
+}
+
+namespace {
+
+/// Axis-aligned box as 12 triangles appended to (V, F), outward-facing unless `inward`.
+void add_box(
+    std::vector<Eigen::RowVector3d>& V,
+    std::vector<Eigen::RowVector3i>& F,
+    const Eigen::RowVector3d& lo,
+    const Eigen::RowVector3d& hi,
+    bool inward)
+{
+    const int base = int(V.size());
+    for (int i = 0; i < 8; ++i) {
+        V.emplace_back(i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]);
+    }
+    const int tris[12][3] = {
+        {0, 2, 3},
+        {0, 3, 1},
+        {4, 5, 7},
+        {4, 7, 6},
+        {0, 1, 5},
+        {0, 5, 4},
+        {2, 6, 7},
+        {2, 7, 3},
+        {0, 4, 6},
+        {0, 6, 2},
+        {1, 3, 7},
+        {1, 7, 5}};
+    for (const auto& t : tris) {
+        if (inward) {
+            F.emplace_back(base + t[0], base + t[2], base + t[1]);
+        } else {
+            F.emplace_back(base + t[0], base + t[1], base + t[2]);
+        }
+    }
+}
+
+} // namespace
+
+TEST_CASE("winding_number_by_group adds up to the whole mesh", "[winding_number]")
+{
+    // Three closed groups: a box, a box nested in it and oriented inward (a cavity), and a box
+    // beside them. The winding number is additive over faces, so the groups' sum must be the
+    // whole mesh's, which is what tetwild's finalization uses instead of evaluating the whole.
+    std::vector<Eigen::RowVector3d> Vs;
+    std::vector<Eigen::RowVector3i> Fs;
+    std::vector<int> group;
+    add_box(Vs, Fs, {0, 0, 0}, {4, 4, 4}, false);
+    group.resize(Fs.size(), 0);
+    add_box(Vs, Fs, {1, 1, 1}, {3, 3, 3}, true);
+    group.resize(Fs.size(), 1);
+    add_box(Vs, Fs, {6, 0, 0}, {8, 2, 2}, false);
+    group.resize(Fs.size(), 2);
+    Eigen::MatrixXd V(Vs.size(), 3);
+    for (size_t i = 0; i < Vs.size(); ++i) V.row(i) = Vs[i];
+    Eigen::MatrixXi F(Fs.size(), 3);
+    for (size_t i = 0; i < Fs.size(); ++i) F.row(i) = Fs[i];
+
+    Eigen::MatrixXd O(2000, 3);
+    std::mt19937 gen(7);
+    std::uniform_real_distribution<double> d(-1.0, 9.0);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) O.row(i) << d(gen), d(gen) / 2, d(gen) / 2;
+
+    Eigen::VectorXd W_whole;
+    utils::winding_number(V, F, O, W_whole, 4);
+    Eigen::MatrixXd W_groups;
+    utils::winding_number_by_group(V, F, group, 3, O, W_groups, 4);
+    REQUIRE(W_groups.rows() == O.rows());
+    REQUIRE(W_groups.cols() == 3);
+
+    CHECK((W_groups.rowwise().sum() - W_whole).cwiseAbs().maxCoeff() < 1e-9);
+
+    for (int g = 0; g < 3; ++g) {
+        std::vector<int> rows;
+        for (size_t f = 0; f < group.size(); ++f) {
+            if (group[f] == g) rows.push_back(int(f));
+        }
+        Eigen::MatrixXi Fg(rows.size(), 3);
+        for (size_t i = 0; i < rows.size(); ++i) Fg.row(i) = F.row(rows[i]);
+        Eigen::VectorXd W_g;
+        utils::winding_number(V, Fg, O, W_g, 4);
+        CHECK((W_groups.col(g) - W_g).cwiseAbs().maxCoeff() < 1e-9);
+    }
+
+    // The cavity: inside the outer box and the inner one, the whole mesh's winding number is 0.
+    Eigen::MatrixXd center(1, 3);
+    center << 2, 2, 2;
+    Eigen::MatrixXd W_center;
+    utils::winding_number_by_group(V, F, group, 3, center, W_center, 1);
+    CHECK(std::abs(W_center.sum()) < 1e-9);
+    CHECK(std::abs(W_center(0, 1) + 1) < 1e-9);
+}
+
+TEST_CASE("reversing every face negates the winding number", "[winding_number]")
+{
+    // tetwild orients an inside-out input by negating its winding number rather than
+    // evaluating the reversed surface again.
+    std::vector<Eigen::RowVector3d> Vs;
+    std::vector<Eigen::RowVector3i> Fs;
+    add_box(Vs, Fs, {0, 0, 0}, {4, 4, 4}, false);
+    add_box(Vs, Fs, {6, 0, 0}, {8, 2, 2}, false);
+    Eigen::MatrixXd V(Vs.size(), 3);
+    for (size_t i = 0; i < Vs.size(); ++i) V.row(i) = Vs[i];
+    Eigen::MatrixXi F(Fs.size(), 3);
+    for (size_t i = 0; i < Fs.size(); ++i) F.row(i) = Fs[i];
+    Eigen::MatrixXi F_reversed = F;
+    F_reversed.col(1).swap(F_reversed.col(2));
+
+    Eigen::MatrixXd O(1000, 3);
+    std::mt19937 gen(11);
+    std::uniform_real_distribution<double> d(-1.0, 9.0);
+    for (Eigen::Index i = 0; i < O.rows(); ++i) O.row(i) << d(gen), d(gen) / 2, d(gen) / 2;
+
+    Eigen::VectorXd W, W_reversed;
+    utils::winding_number(V, F, O, W, 2);
+    utils::winding_number(V, F_reversed, O, W_reversed, 2);
+    CHECK((W + W_reversed).cwiseAbs().maxCoeff() < 1e-12);
+}
+
+TEST_CASE("winding-number inside test and orientation", "[winding_number]")
+{
+    // The one inside test of tetwild, triwild and simwild: strictly above 1/2, so a point on
+    // the surface is not inside.
+    CHECK_FALSE(utils::winding_number_inside(0.5));
+    CHECK(utils::winding_number_inside(0.5 + 1e-12));
+    CHECK(utils::winding_number_inside(2.0));
+    CHECK_FALSE(utils::winding_number_inside(-1.0));
+
+    SECTION("nothing inside: taken as inside out and negated")
+    {
+        Eigen::VectorXd W(3);
+        W << -1.0, -0.2, 0.5;
+        CHECK(utils::orient_winding_number(W));
+        CHECK(W(0) == 1.0);
+        CHECK(W(2) == -0.5);
+        CHECK(utils::any_winding_number_inside(W));
+    }
+    SECTION("something inside: left as it is")
+    {
+        Eigen::VectorXd W(2);
+        W << 0.0, 1.0;
+        CHECK_FALSE(utils::orient_winding_number(W));
+        CHECK(W(1) == 1.0);
+    }
+    SECTION("no query point: left as it is")
+    {
+        Eigen::VectorXd W;
+        CHECK_FALSE(utils::orient_winding_number(W));
+        CHECK_FALSE(utils::any_winding_number_inside(W));
     }
 }

@@ -266,6 +266,9 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     if (!collapse_edge_before(loc0)) {
         return op_refused(OpKind::collapse, OpEvent::before_hook);
     }
+    // The link condition and the connectivity change are one step (collapse_edge_conn), so a dry
+    // run stops here; ~96% of collapse refusals on tetwild come from the before-hook anyway.
+    if (dry_run()) return op_screened(OpKind::collapse);
 
     size_t v1_id;
     Tuple new_loc;

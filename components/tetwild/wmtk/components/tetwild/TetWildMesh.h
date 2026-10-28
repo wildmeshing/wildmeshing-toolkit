@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/MeshData.hpp>
+
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
@@ -25,6 +27,7 @@
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -72,11 +75,20 @@ public:
     struct VertexExtras
     {
         /// Whether the vertex lies on an open boundary of the input surface. The 2D
-        /// counterpart is TriWildMesh::VertexExtras::m_feature_id, which differs deliberately
-        /// -- see the comment there.
+        /// counterpart is the base's feature-point id
+        /// (TriOptimizerMesh::FeaturePointAttributes), which differs deliberately -- see the
+        /// comment there.
         bool m_is_on_open_boundary = false;
+        /// Whether the vertex lies on an input feature curve (see EdgeAttributes).
+        bool m_is_on_feature_curve = false;
     };
     wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+
+    // The 0-dimensional features -- the input feature points, and the feature-curve
+    // endpoints (junctions too, when allow_junction_cleanup is off) -- are anchored by the
+    // base (TetOptimizerMesh's feature-point anchors), turned on in the constructor. The
+    // driver sets m_feature_eps alongside m_feature_envelope; init_from_Volumeremesher fills
+    // the anchors.
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
@@ -85,7 +97,7 @@ public:
     /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
     /// edge. Named for the order rather than for "open boundary" because that is what
     /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
-    std::shared_ptr<SampleEnvelope> m_order2_envelope;
+    std::shared_ptr<Envelope> m_order2_envelope;
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.
@@ -140,12 +152,36 @@ public:
     {
         m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
     }
+    bool boundary_edges_at_vertex_inside(size_t vid) const override
+    {
+        if (!m_vertex_extra[vid].m_is_on_open_boundary || !m_order2_envelope) {
+            return true;
+        }
+        for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+            if (!m_vertex_extra[u].m_is_on_open_boundary) {
+                continue;
+            }
+            // Exact membership: an open boundary edge has exactly one incident tracked
+            // face. Flags alone would also catch interior chords between two boundary
+            // vertices (e.g. across a corner), which must not be tube-tested.
+            if (get_num_surface_faces_for_edge({{vid, u}}) != 1) {
+                continue;
+            }
+            if (m_order2_envelope->is_outside(
+                    std::array<Eigen::Vector3d, 2>{
+                        {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
+                return false;
+            }
+        }
+        return true;
+    }
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
         if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
         return m_vertex_extra[v2].m_is_on_open_boundary ||
                !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
     }
+
     bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
     {
         return is_open_boundary_edge(e);
@@ -157,6 +193,8 @@ public:
     {
         m_vertex_extra[v2].m_is_on_open_boundary =
             m_vertex_extra[v1].m_is_on_open_boundary || m_vertex_extra[v2].m_is_on_open_boundary;
+        m_vertex_extra[v2].m_is_on_feature_curve =
+            m_vertex_extra[v1].m_is_on_feature_curve || m_vertex_extra[v2].m_is_on_feature_curve;
         return true;
     }
     void collapse_after_vertex(size_t, size_t v2) override
@@ -165,17 +203,32 @@ public:
             m_vertex_extra[v2].m_is_on_open_boundary = false;
         }
     }
+    void collapse_after_features(size_t, size_t v2) override
+    {
+        // Same cleanup for the feature flag: v1's flag was OR-ed in (see
+        // collapse_after_connectivity), but if the survivor has no incident tagged edge the
+        // curve rerouted around it and the flag is stale.
+        if (m_vertex_extra[v2].m_is_on_feature_curve && !vertex_has_feature_edge(v2)) {
+            m_vertex_extra[v2].m_is_on_feature_curve = false;
+        }
+    }
+
+    void split_after_vertex_feature(size_t vid, bool on_feature) override
+    {
+        m_vertex_extra[vid].m_is_on_feature_curve = on_feature;
+    }
+
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
-    TetWildMesh(
-        Parameters& _m_params,
-        std::shared_ptr<SampleEnvelope> _m_envelope,
-        int _num_threads = 1)
+    std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
+    TetWildMesh(Parameters& _m_params, std::shared_ptr<Envelope> _m_envelope, int _num_threads = 1)
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)
     {
         m_vertex_attr_group.add(&m_vertex_extra);
+        // Registered unconditionally, as the ids always were: the driver exports and audits
+        // the anchors whether or not preserve_feature_points turns the policy on.
+        enable_feature_point_tracking(m_tet_params.preserve_feature_points);
         NUM_THREADS = _num_threads;
         m_tet_attr_group.add(&m_tet_attribute);
         p_tet_attrs = &m_tet_attr_group;
@@ -199,6 +252,7 @@ public:
         // The extras carry no data a caller supplies -- every field defaults -- so they only
         // have to be sized alongside the shared collection.
         m_vertex_extra.resize(_vertex_attribute.size());
+        m_feature_point_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
 
@@ -243,31 +297,51 @@ public:
     void mesh_improvement_legacy(int max_its = 80);
 
     /**
-     * @brief Compute the winding number.
-     *
-     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
-     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
-     */
-    /**
      * @brief Barycenter (row per tet) of each tet in `tets`. Computed once and
      * passed to the winding-number passes so they do not each rebuild it.
      */
     Eigen::MatrixXd tet_barycenters(const std::vector<Tuple>& tets) const;
 
+    /**
+     * @brief Compute the winding number.
+     *
+     * If `vertices` and `faces` are empty, compute the winding number for the tracked surface.
+     * Otherwise, compute the winding number for the input surface given by `vertices` and `faces`.
+     */
     void compute_winding_number(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {});
 
-    // `in_vertices`/`in_faces` let the single-input case reuse the already-loaded
-    // surface instead of re-reading it from disk.
-    void compute_winding_numbers(
-        const std::vector<std::string>& input_paths,
+    /**
+     * @brief The winding numbers of the input: with respect to each input surface
+     * (m_winding_number_per_input) and to all of them together (m_winding_number_input).
+     *
+     * `face_input[f]` is the input in [0, n_inputs) that face f of the loaded input came from
+     * (io::read_triangle_mesh's face_input). The whole input's winding number is the sum of the
+     * per-input ones, so it costs nothing on top of them -- evaluated on its own it was the most
+     * expensive step of the finalization.
+     *
+     * Each input is oriented on its own the way compute_winding_number orients the whole: when
+     * none of the tets is inside it (winding number above 1/2) it is taken as inside out and its
+     * winding number negated. The whole input's is the sum of the per-input ones AS GIVEN,
+     * oriented as a whole the same way -- an input that is a cavity of another, oriented inward,
+     * still subtracts.
+     */
+    void compute_input_winding_numbers(
         const std::vector<Tuple>& tets,
         const Eigen::MatrixXd& barycenters,
-        const std::vector<Vector3d>& in_vertices = {},
-        const std::vector<std::array<size_t, 3>>& in_faces = {});
+        const std::vector<Vector3d>& vertices,
+        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<int>& face_input,
+        int n_inputs);
+
+    /// Which of the finalization's per-tet fields were computed, so that the writers leave
+    /// out the ones that were not rather than writing their defaults as if they were values.
+    bool m_has_input_winding_number = false;
+    bool m_has_tracked_winding_number = false;
+    bool m_has_parts = false;
 
     void filter_with_input_surface_winding_number();
     void filter_with_tracked_surface_winding_number();
@@ -299,6 +373,14 @@ public:
      *
      * This is the insertion path. See the banner in VolumemesherInsertion.cpp.
      */
+    /**
+     * Optional feature inputs: `feature_edge_vertices`/`feature_edges` is an edge mesh to
+     * force into the tetrahedralization as tet edges, `feature_points` are points to force
+     * in as tet vertices. Where they ended up comes back in `features_out` (compacted
+     * output ids, see utils::EmbedFeaturesResult), which is required when features are
+     * passed. Features and their forcing-triangle apexes must lie inside the background
+     * box; the caller grows the input bounding box over them (tetwild.cpp does).
+     */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
         const std::vector<std::array<size_t, 3>>& faces,
@@ -307,15 +389,26 @@ public:
         std::vector<bool>& is_v_on_input,
         std::vector<std::array<size_t, 4>>& tets_after,
         std::vector<bool>& tet_face_on_input_surface,
-        std::vector<int8_t>* tet_face_orientation = nullptr);
+        std::vector<int8_t>* tet_face_orientation = nullptr,
+        const std::vector<Vector3d>& feature_edge_vertices = {},
+        const std::vector<std::array<size_t, 2>>& feature_edges = {},
+        const std::vector<Vector3d>& feature_points = {},
+        utils::EmbedFeaturesResult* features_out = nullptr);
 
+    /**
+     * `features` tags the feature-edge tilings on the initial mesh; passing it registers
+     * m_feature_edge_attribute with the base's edge group. Null => no feature tracking,
+     * nothing allocated.
+     */
     void init_from_Volumeremesher(
         const std::vector<Vector3r>& v_rational,
         const std::vector<std::array<size_t, 3>>& facets,
         const std::vector<bool>& is_v_on_input,
         const std::vector<std::array<size_t, 4>>& tets,
         const std::vector<bool>& tet_face_on_input_surface,
-        const std::vector<int8_t>* tet_face_orientation = nullptr);
+        const std::vector<int8_t>* tet_face_orientation = nullptr,
+        const utils::EmbedFeaturesResult* features = nullptr,
+        const std::vector<Vector3d>* feature_anchors = nullptr);
 
     void init_from_file(std::string input_dir);
 
@@ -353,7 +446,7 @@ public:
     // for boolean operations
     int flood_fill();
 
-    void save_paraview(const std::string& path, const bool use_hdf5);
+    void save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output = nullptr);
     void write_optimization_debug_output(const std::string& path) override
     {
         save_paraview(path, false);
@@ -371,7 +464,8 @@ public:
         MatrixXi T;
         // tracked surface
         MatrixXi F;
-        // attributes
+        // attributes; the ones the finalization did not compute (see m_has_parts and the
+        // m_has_*_winding_number flags) hold their defaults: 0, and -1 for the part
         VectorXd t_amips;
         VectorXd t_winding_number_input;
         VectorXd t_winding_number_tracked;

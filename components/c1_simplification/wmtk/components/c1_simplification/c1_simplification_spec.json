@@ -7,10 +7,13 @@
       "surface_mesh",
       "tet_mesh",
       "uv_mesh",
-      "dofs"
+      "dofs",
+      "cones"
     ],
     "optional": [
-      "output"
+      "output",
+      "threshold",
+      "log_level"
     ]
   },
   {
@@ -42,9 +45,26 @@
     "doc": "dofs file name"
   },
   {
+    "pointer": "/cones",
+    "type": "string",
+    "doc": "cone vids file name"
+  },
+  {
     "pointer": "/output",
     "type": "string",
     "default": "out",
     "doc": "Output file name (without extension)."
+  },
+  {
+    "pointer": "/log_level",
+    "type": "int",
+    "default": 2,
+    "doc": "wmtk logger level."
+  },
+  {
+    "pointer": "/threshold",
+    "type": "float",
+    "default": 0.1,
+    "doc": "threshold of deviation"
   }
 ]

@@ -2,6 +2,10 @@
 
 #include <wmtk/Types.hpp>
 
+namespace wmtk::io {
+class ComponentIO;
+}
+
 namespace wmtk::utils {
 
 /**
@@ -38,6 +42,12 @@ namespace wmtk::utils {
  *             input edge count once. Then made consistent curve by curve, by length-weighted
  *             majority, which repairs edges reversed against their neighbours and changes
  *             nothing on a consistently oriented input. See SurfaceTagAttributes::m_orientation.
+ * @param[out] point_map optional: for each row of V, the row of V_out holding that exact
+ *             point. The arrangement triangulates every input point, referenced by a
+ *             segment or not, so this is how a free point (no incident segment) is found
+ *             again in the output; exact duplicates in V map to the same output row. -1
+ *             only if the remesher dropped the point, which it does not do for points --
+ *             the entry exists so a caller can assert that rather than assume it.
  */
 void embed_segments(
     const MatrixXd& V,
@@ -47,7 +57,8 @@ void embed_segments(
     MatrixXi& F_out,
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources = nullptr,
-    std::vector<int>* E_out_orientation = nullptr);
+    std::vector<int>* E_out_orientation = nullptr,
+    std::vector<int>* point_map = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.
@@ -73,6 +84,7 @@ void read_input_curves(
     MatrixXd& V_all,
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
-    std::vector<MatrixXi>& Es_out);
+    std::vector<MatrixXi>& Es_out,
+    const io::ComponentIO* component_io = nullptr);
 
 } // namespace wmtk::utils

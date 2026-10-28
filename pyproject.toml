@@ -8,6 +8,7 @@ version = "v2.0.0"
 description = "Python bindings for WildMeshingToolkit"
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = ["numpy>=1.23"]
 license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 urls = { GitHub = "https://github.com/wildmeshing/wildmeshing-toolkit/" }
@@ -21,11 +22,11 @@ build = ["cp*-*"]
 skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
 
 # Smoke-test every built wheel on its target platform/Python: install it into an
-# isolated environment and confirm the extension imports and dispatches. This
-# needs no test data. The full data-driven integration suite is run separately
+# isolated environment and check dispatch and the NumPy memory interface. These
+# need no external test data. The full data-driven integration suite is run separately
 # in the `test_wheels` CI job (see .github/workflows/wheels.yml).
 test-requires = "pytest"
-test-command = "pytest {project}/tests/python/test_smoke.py"
+test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py"
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"

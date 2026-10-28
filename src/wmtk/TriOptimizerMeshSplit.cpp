@@ -188,8 +188,11 @@ bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
         }
         // Claim only once the whole link is known to be free, so a refusal late in the loop
         // does not burn the budget of a vertex found earlier.
-        for (const size_t vid : to_claim) {
-            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        // A dry run only checks: claiming here would make the real attempt refuse itself.
+        if (!dry_run()) {
+            for (const size_t vid : to_claim) {
+                m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+            }
         }
     }
 
@@ -398,6 +401,9 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     // A split midpoint stands for no input feature: the endpoints keep theirs, and the new
     // vertex is interior to the curve by construction. Set explicitly because attribute slots
     // are recycled and could carry a stale id.
+    if (m_track_feature_points) {
+        m_feature_point_attribute[v_id].m_feature_point_id = NO_FEATURE_POINT;
+    }
     split_after_vertex(v_id);
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;

@@ -55,6 +55,8 @@ struct Parameters : public wmtk::OptimizerParameters
 
     bool skip_simplify = false;
     bool use_sample_envelope = false;
+    /// Opt-in: the sampled envelope for the input simplification alone; see the spec.
+    bool simplify_use_sample_envelope = false;
     int NUM_THREADS = 0;
     bool write_vtu = false;
     bool write_envelope = true;
@@ -65,6 +67,7 @@ struct Parameters : public wmtk::OptimizerParameters
         output_path = json_params["output"];
         skip_simplify = json_params["skip_simplify"];
         use_sample_envelope = json_params["use_sample_envelope"];
+        simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
         write_vtu = json_params["write_vtu"];
         write_envelope = json_params["write_envelope"];
@@ -89,6 +92,7 @@ struct Parameters : public wmtk::OptimizerParameters
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+        colored_smoothing = json_params["colored_smoothing"];
 
         // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
         // 2D mesh and is inert on its 3D one.

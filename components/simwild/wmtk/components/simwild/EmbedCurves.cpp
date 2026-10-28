@@ -28,11 +28,19 @@ EmbedCurves::EmbedCurves(
     const std::vector<std::string>& input_paths,
     const std::vector<Matrix3d>& input_transform,
     const double tol_rel,
-    const double tol_abs)
+    const double tol_abs,
+    const io::ComponentIO* component_io)
 {
     assert(input_paths.size() == input_transform.size());
 
-    utils::read_input_curves(input_paths, tol_rel, m_V_curves, m_E_curves, m_Vs, m_Es);
+    utils::read_input_curves(
+        input_paths,
+        tol_rel,
+        m_V_curves,
+        m_E_curves,
+        m_Vs,
+        m_Es,
+        component_io);
 
     // Transform each input in place, then rebuild the union from the transformed copies. The
     // union has to agree with the per-input meshes: it is what gets arranged, they are what
@@ -99,7 +107,7 @@ void EmbedCurves::simplify_curves(
     const bool use_exact_envelope,
     const int num_threads)
 {
-    SampleEnvelope envelope(use_exact_envelope);
+    Envelope envelope(use_exact_envelope);
     envelope.init(m_V_curves, m_E_curves, eps);
 
     const int nv_before = int(m_V_curves.rows());
@@ -346,21 +354,17 @@ void EmbedCurves::tag_from_winding_number()
     m_F_tags.resize(m_F_emb.rows(), m_Vs.size());
     for (size_t input_idx = 0; input_idx < m_Vs.size(); ++input_idx) {
         const MatrixXd& V = m_Vs[input_idx];
-        MatrixXi E = m_Es[input_idx];
+        const MatrixXi& E = m_Es[input_idx];
 
         VectorXd W;
         utils::winding_number_2d(V, E, C, W, m_num_threads);
 
-        if (W.size() > 0 && W.maxCoeff() <= 0.5) {
-            // Nothing is inside, which for a closed curve means it is wound the other way.
-            // triwild does the same, and so does the 3D EmbedSurface::tag_from_winding_number.
+        // Nothing is inside, which for a closed curve means it is wound the other way.
+        // triwild does the same, and so does the 3D EmbedSurface::tag_from_winding_number.
+        if (utils::orient_winding_number(W)) {
             logger().info("Correcting winding number for input {}", input_idx);
-            for (int i = 0; i < E.rows(); ++i) {
-                std::swap(E(i, 0), E(i, 1));
-            }
-            utils::winding_number_2d(V, E, C, W, m_num_threads);
         }
-        if (W.size() == 0 || W.maxCoeff() <= 0.5) {
+        if (!utils::any_winding_number_inside(W)) {
             logger().warn(
                 "No winding number above 0.5 for input {}: it tags no face. An open polyline "
                 "encloses nothing, so it cannot define a material.",
@@ -368,7 +372,7 @@ void EmbedCurves::tag_from_winding_number()
         }
 
         for (int i = 0; i < W.size(); ++i) {
-            if (W(i) > 0.5) {
+            if (utils::winding_number_inside(W(i))) {
                 m_F_tags.coeffRef(i, int(input_idx)) = 1;
             }
         }

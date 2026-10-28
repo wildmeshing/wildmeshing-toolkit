@@ -1,3 +1,4 @@
+#include <wmtk/io/DataWriter.hpp>
 
 #include "SimWildMesh.h"
 
@@ -476,7 +477,7 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_F_envelope[i] = F.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+    m_envelope = std::make_shared<Envelope>(!m_sim_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     logger().info(
         "Envelope: {} (eps {:.6})",
@@ -487,6 +488,7 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
 
 void SimWildMesh::write_msh(std::string file, const bool write_envelope)
 {
+    if (!m_params.output_enabled) return;
     consolidate_mesh();
 
     wmtk::MshData msh;
@@ -633,8 +635,9 @@ void union_uf(int u, int v, std::vector<int>& parent)
     }
 }
 
-void SimWildMesh::write_vtu(const std::string& path)
+void SimWildMesh::write_vtu(const std::string& path, MeshMap* output)
 {
+    if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
     logger().info("Write {}", out_path);
@@ -729,7 +732,8 @@ void SimWildMesh::write_vtu(const std::string& path)
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
     }
 
-    paraviewo::VTUWriter writer;
+    if (output) T.conservativeResize(tets.size(), 4);
+    io::DataWriter writer(output);
 
     for (size_t j = 0; j < m_tags_count; ++j) {
         if (m_tag_id_to_name.count(j)) {
@@ -750,7 +754,7 @@ void SimWildMesh::write_vtu(const std::string& path)
     // surface
     const std::string surf_out_path = path + "_surf.vtu";
     {
-        paraviewo::VTUWriter surf_writer;
+        io::DataWriter surf_writer(output);
         surf_writer.add_field("sizing_field", v_sizing_field);
         surf_writer.add_field("order", v_order);
         surf_writer.add_field("vid", v_id);
@@ -762,7 +766,7 @@ void SimWildMesh::write_vtu(const std::string& path)
     // edges
     const std::string edge_out_path = path + "_edge.vtu";
     {
-        paraviewo::VTUWriter edge_writer;
+        io::DataWriter edge_writer(output);
         edge_writer.add_field("sizing_field", v_sizing_field);
         edge_writer.add_field("order", v_order);
         edge_writer.add_field("vid", v_id);
@@ -778,11 +782,12 @@ void SimWildMesh::write_vtu(const std::string& path)
     vtm.add_dataset("tets", "mesh", out_path);
     vtm.add_dataset("faces", "mesh", surf_out_path);
     vtm.add_dataset("edges", "mesh", edge_out_path);
-    vtm.save(vtm_path);
+    if (!output) vtm.save(vtm_path);
 }
 
 void SimWildMesh::write_surface(const std::string& path) const
 {
+    if (!m_params.output_enabled) return;
     std::vector<std::array<size_t, 3>> outface;
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) {
