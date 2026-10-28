@@ -5241,6 +5241,24 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
             : std::string());
 }
 
+double TopoOffsetTetMesh::label_flip_surface_change(const size_t tid) const
+{
+    // See the declaration.
+    const int own = m_tet_attribute[tid].label;
+    double now = 0., flipped = 0.;
+    for (int j = 0; j < 4; ++j) {
+        const Tuple ft = tuple_from_face(tid, j);
+        const std::optional<Tuple> o = ft.switch_tetrahedron(*this);
+        if (!o) continue;
+        const int lo = m_tet_attribute[o->tid(*this)].label;
+        if (lo == 1) continue;
+        const auto fv = get_face_vids(ft);
+        const double s = surface_face_term(fv[0], fv[1], fv[2]);
+        (lo == own ? flipped : now) += s;
+    }
+    return flipped - now;
+}
+
 void TopoOffsetTetMesh::label_cleanup(const std::string& where)
 {
     // EXPERIMENTAL_label_cleanup (see the spec and the declaration). MEASURED before it (cube_in,
@@ -5251,8 +5269,16 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     if (mode == "off" || m_tetwild_pass) return;
     const bool tips = mode == "one_sided_tips";
     const bool at_target = mode == "one_sided_at_target";
+    // "energy_decrease" (2026-10-28, Spencer: "if adding/removing the tet from/into the band is
+    // topologically allowed, and doing so decreases the global offset surface energy ... do so.
+    // Do not require the corners to be at target already"): under EXPERIMENTAL_band_volume_rule
+    // "surface" only (Parameters refuses it otherwise). No side test, no corner gate: every cell
+    // with a front face whose flip strictly lowers the face term of its four faces (see
+    // wants_flip()), eligible and topologically allowed, flips; a cell may flip again in a later
+    // pass, every flip strictly lowering E.
+    const bool energy_decrease = mode == "energy_decrease";
     // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
-    if (!m_band_exact) {
+    if (!m_band_exact && !energy_decrease) {
         log_and_throw_error(
             "EXPERIMENTAL_label_cleanup \"one_sided\" reads the distance to the input through the "
             "exact band integral, which this run did not build: it needs "
@@ -5311,7 +5337,20 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     //     two faces on the other label (one with one, at turn 25). At turn 30 the one-sided test
     //     read L 14 to 16 front_conv short of delta, the topology test allowed both cells, and the
     //     tip rule refused them for having two faces, not three.
+    // The face term's change if t flips (EXPERIMENTAL_band_volume_rule "surface"): a face of t
+    // shared with a cell of t's own label becomes a front face, one shared with a cell of the
+    // other label stops being one; an input-complex neighbour or none makes no front face either
+    // way. An eligible cell is not plastic, so its AMIPS term does not read the label: this is the
+    // flip's whole change of E. True iff the faces' term strictly falls.
+    const auto surface_flip_lowers = [&](const size_t tid) {
+        return label_flip_surface_change(tid) < 0.;
+    };
+
     const auto wants_flip = [&](const size_t tid) {
+        if (energy_decrease) {
+            if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
+            return surface_flip_lowers(tid);
+        }
         const std::array<size_t, 4> vs = oriented_tet_vids(tid);
         const bool band = cell_is_offset_band(tid);
         std::array<Vector3d, 4> p;
@@ -5342,21 +5381,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         // never makes one). An eligible cell is not plastic, so its AMIPS term does not read the
         // label: the flip changes E by the faces' term alone, and is taken iff that strictly
         // falls. Every flip lowers E, so the passes still end.
-        if (surface_energy()) {
-            const int own = label_of(tid);
-            double now = 0., flipped = 0.;
-            for (int j = 0; j < 4; ++j) {
-                const Tuple ft = tuple_from_face(tid, j);
-                const std::optional<Tuple> o = ft.switch_tetrahedron(*this);
-                if (!o) continue;
-                const int lo = label_of(o->tid(*this));
-                if (lo == 1) continue;
-                const auto fv = get_face_vids(ft);
-                const double s = surface_face_term(fv[0], fv[1], fv[2]);
-                (lo == own ? flipped : now) += s;
-            }
-            return flipped < now;
-        }
+        if (surface_energy()) return surface_flip_lowers(tid);
         const double b = band_cell_term(vs);
         return band ? b > 0. : b < 0.;
     };
@@ -5572,7 +5597,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             // term, which depends on the neighbours' labels, so a flip next door can ask a cell
             // to flip back (MEASURED: piece08, 8 threads, turn 4: "cell 189689 flips a second
             // time"). A cell flips at most once per clean-up: one already flipped is not asked.
-            if (surface_energy() && flipped[tid]) continue;
+            if (surface_energy() && !energy_decrease && flipped[tid]) continue;
             if (!wants_flip(tid)) continue;
             ++n_want;
             CellTag tag;
@@ -5586,7 +5611,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
                 ++n_refused[size_t(f)];
                 continue;
             }
-            if (flipped[tid]) {
+            if (flipped[tid] && !energy_decrease) {
                 log_and_throw_error(
                     "[label cleanup] {}: cell {} flips a second time; its side test reads its own "
                     "corners alone, which the clean-up does not move",
@@ -5613,6 +5638,18 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             ++n_now;
         }
         if (n_now == 0) break;
+        // energy_decrease lets a cell flip again; each flip strictly lowers E, so the passes end,
+        // but a cap keeps a rounding-level cycle from spinning.
+        if (energy_decrease && passes >= kEnergyDecreasePasses) {
+            logger().warn(
+                "\t[label cleanup] {}: energy_decrease stopped after {} passes with {} flips in "
+                "the "
+                "last one",
+                where,
+                passes,
+                n_now);
+            break;
+        }
     }
     double e1 = e0;
     size_t band1 = band0, non1 = non0, nm1 = nm0;

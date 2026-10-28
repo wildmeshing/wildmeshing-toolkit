@@ -524,11 +524,19 @@ struct Parameters : public wmtk::OptimizerParameters
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
         if (label_cleanup != "off" && label_cleanup != "one_sided" &&
-            label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target") {
+            label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target" &&
+            label_cleanup != "energy_decrease") {
             log_and_throw_error(
-                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\" or "
-                "\"one_sided_at_target\", not \"{}\"",
+                "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\", "
+                "\"one_sided_at_target\" or \"energy_decrease\", not \"{}\"",
                 label_cleanup);
+        }
+        // "energy_decrease" reads the face term of EXPERIMENTAL_band_volume_rule "surface".
+        if (label_cleanup == "energy_decrease" && band_volume_rule != "surface") {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"energy_decrease\" needs "
+                "EXPERIMENTAL_band_volume_rule \"surface\" (this config has \"{}\")",
+                band_volume_rule);
         }
         // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
         // operation passes and the condition-1 splits before the first smoothing pass; the other

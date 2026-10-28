@@ -535,6 +535,14 @@ public:
      * after the operation passes; a no-op with the key "off".
      */
     void label_cleanup(const std::string& where);
+    /// EXPERIMENTAL_band_volume_rule "surface": how much the face term changes if cell tid's
+    /// label flips (band <-> background): + its faces shared with a cell of its own label (they
+    /// become front faces), - its faces shared with a cell of the other label (they stop being
+    /// front faces); a face on an input-complex cell or on the domain boundary counts neither way.
+    /// What label_cleanup()'s surface flips compare against 0.
+    double label_flip_surface_change(size_t tid) const;
+    /// EXPERIMENTAL_label_cleanup "energy_decrease": the most passes one clean-up runs.
+    static constexpr int kEnergyDecreasePasses = 100;
     static constexpr int kPocketMaxRounds = 10;
     /// Set while front_pocket_split() splits: split_edge_before() skips the longest-edge order.
     bool m_pocket_splitting = false;

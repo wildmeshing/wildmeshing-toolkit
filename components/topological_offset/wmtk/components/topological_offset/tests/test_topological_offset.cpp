@@ -2530,22 +2530,26 @@ struct GridInput
     Eigen::MatrixXi Tm;
     MatrixSi Tags;
 };
-GridInput grid_input()
+/// n x n x n unit cubes (n odd, default 3) centred at the origin, 6 tets each, the middle cube
+/// tagged 1.
+GridInput grid_input(const int n = 3)
 {
-    Eigen::MatrixXd V(64, 3);
-    const auto vid = [](int i, int j, int k) { return i + 4 * j + 16 * k; };
-    for (int k = 0; k < 4; ++k) {
-        for (int j = 0; j < 4; ++j) {
-            for (int i = 0; i < 4; ++i) V.row(vid(i, j, k)) << i - 1.5, j - 1.5, k - 1.5;
+    const int m = n + 1;
+    const double h = 0.5 * double(n);
+    Eigen::MatrixXd V(m * m * m, 3);
+    const auto vid = [m](int i, int j, int k) { return i + m * j + m * m * k; };
+    for (int k = 0; k < m; ++k) {
+        for (int j = 0; j < m; ++j) {
+            for (int i = 0; i < m; ++i) V.row(vid(i, j, k)) << i - h, j - h, k - h;
         }
     }
     std::vector<std::array<int, 4>> T;
     std::vector<int> center;
     const std::array<std::array<int, 3>, 6> perms = {
         {{{0, 1, 2}}, {{0, 2, 1}}, {{1, 0, 2}}, {{1, 2, 0}}, {{2, 0, 1}}, {{2, 1, 0}}}};
-    for (int k = 0; k < 3; ++k) {
-        for (int j = 0; j < 3; ++j) {
-            for (int i = 0; i < 3; ++i) {
+    for (int k = 0; k < n; ++k) {
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
                 for (const auto& pm : perms) { // the cube's 6 tets around its main diagonal
                     std::array<int, 3> c = {{i, j, k}};
                     std::array<int, 4> t;
@@ -2554,7 +2558,7 @@ GridInput grid_input()
                         ++c[size_t(pm[size_t(s)])];
                         t[size_t(s + 1)] = vid(c[0], c[1], c[2]);
                     }
-                    if (i == 1 && j == 1 && k == 1) center.push_back(int(T.size()));
+                    if (i == n / 2 && j == n / 2 && k == n / 2) center.push_back(int(T.size()));
                     T.push_back(positive(V, t));
                 }
             }
@@ -3789,6 +3793,18 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
         {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"EXPERIMENTAL_settle_test", "bar"}}));
     CHECK(bar.settle_test == "bar");
     CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_settle_test", "bar"}})});
+    // EXPERIMENTAL_label_cleanup "energy_decrease": read through under "surface" (with the pocket
+    // split every clean-up mode needs), refused under another rule.
+    const Parameters ed(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "surface"},
+         {"EXPERIMENTAL_front_pocket_split", true},
+         {"EXPERIMENTAL_label_cleanup", "energy_decrease"}}));
+    CHECK(ed.label_cleanup == "energy_decrease");
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_band_volume_rule", "exact"},
+             {"EXPERIMENTAL_front_pocket_split", true},
+             {"EXPERIMENTAL_label_cleanup", "energy_decrease"}})});
     CHECK_THROWS(
         Parameters{injected(
             {{"EXPERIMENTAL_band_volume_rule", "surface"},
@@ -3929,4 +3945,73 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
         if (++checked >= 20) break;
     }
     CHECK(checked > 0);
+}
+
+TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]")
+{
+    // EXPERIMENTAL_label_cleanup "energy_decrease" on a 5 x 5 x 5 grid constructed at 0.2 under
+    // the "surface" rule, every other front vertex pushed out: label_flip_surface_change(), the
+    // decision, against the faces' terms by hand for every cell with a front face; the clean-up
+    // never raises E, and a second clean-up right after finds nothing to flip (E unchanged bit for
+    // bit). (On this grid the cells whose flip would pay are band cells with a corner on the
+    // input, which eligibility refuses, so no flip happens here.)
+    const GridInput g = grid_input(5);
+    Parameters param = construction_params(
+        {{"offset_selection", "tag_0"},
+         {"num_threads", 0},
+         {"target_distance", 0.2},
+         {"EXPERIMENTAL_band_volume_rule", "surface"}},
+        g.V);
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_energy_decrease";
+    auto mesh = grid_offset_mesh(g, param, out);
+    mesh->m_offset_params.front_pocket_split = true;
+    mesh->m_offset_params.label_cleanup = "energy_decrease";
+    size_t moved = 0;
+    for (const auto& v : mesh->get_vertices()) {
+        const size_t vid = v.vid(*mesh);
+        if (!mesh->m_vertex_extra[vid].m_is_on_offset || (vid % 2) != 0) continue;
+        auto& x = mesh->m_vertex_attribute[vid].m_posf;
+        x *= 1.6; // outward, away from the centre cube (at the origin)
+        mesh->m_vertex_attribute[vid].set_pos_to_posf();
+        ++moved;
+    }
+    REQUIRE(moved > 0);
+    for (const auto& t : mesh->get_tets()) {
+        mesh->m_tet_attribute[t.tid(*mesh)].m_quality = mesh->get_quality(t);
+    }
+    size_t asked = 0;
+    for (const auto& t : mesh->get_tets()) {
+        const size_t tid = t.tid(*mesh);
+        const int own = mesh->m_tet_attribute[tid].label;
+        if (own == 1) continue;
+        double plus = 0., minus = 0.;
+        bool front = false;
+        for (int j = 0; j < 4; ++j) {
+            const auto ft = mesh->tuple_from_face(tid, j);
+            const auto o = ft.switch_tetrahedron(*mesh);
+            if (!o) continue;
+            const int lo = mesh->m_tet_attribute[o->tid(*mesh)].label;
+            if (lo == 1) continue;
+            const auto fv = mesh->get_face_vids(ft);
+            const double s = mesh->surface_face_term(fv[0], fv[1], fv[2]);
+            if (lo == own) {
+                plus += s;
+            } else {
+                minus += s;
+                front = true;
+            }
+        }
+        if (!front) continue;
+        ++asked;
+        CHECK(mesh->label_flip_surface_change(tid) == Catch::Approx(plus - minus).margin(1e-12));
+    }
+    CHECK(asked > 0);
+    const double e0 = mesh->global_energy();
+    mesh->label_cleanup("test");
+    const double e1 = mesh->global_energy();
+    CHECK(e1 <= e0);
+    mesh->label_cleanup("test again");
+    const double e2 = mesh->global_energy();
+    CHECK(std::memcmp(&e1, &e2, sizeof(double)) == 0);
 }
