@@ -97,17 +97,58 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>T_input_tag</b></
 <tr class="memitem:a87e93cb46a756240748aad7fd9646f62" id="r_a87e93cb46a756240748aad7fd9646f62"><td class="memItemLeft" align="right" valign="top"><a id="a87e93cb46a756240748aad7fd9646f62" name="a87e93cb46a756240748aad7fd9646f62"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tag_names</b></td></tr>
 <tr class="separator:a87e93cb46a756240748aad7fd9646f62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94eb94cfe63d4a5dbf64c2907f30fec5" id="r_a94eb94cfe63d4a5dbf64c2907f30fec5"><td class="memItemLeft" align="right" valign="top">MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a94eb94cfe63d4a5dbf64c2907f30fec5">F_tagged</a></td></tr>
+<tr class="separator:a94eb94cfe63d4a5dbf64c2907f30fec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7566e75e6ef3f8616a8d10cbacfa88b5" id="r_a7566e75e6ef3f8616a8d10cbacfa88b5"><td class="memItemLeft" align="right" valign="top"><a id="a7566e75e6ef3f8616a8d10cbacfa88b5" name="a7566e75e6ef3f8616a8d10cbacfa88b5"></a>
+MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>F_tags</b></td></tr>
+<tr class="separator:a7566e75e6ef3f8616a8d10cbacfa88b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf016ecbc48414fb16906f4230deb754" id="r_acf016ecbc48414fb16906f4230deb754"><td class="memItemLeft" align="right" valign="top"><a id="acf016ecbc48414fb16906f4230deb754" name="acf016ecbc48414fb16906f4230deb754"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_tag_names</b></td></tr>
+<tr class="separator:acf016ecbc48414fb16906f4230deb754"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3135f218f7c791b194b347e8a5f0e52b" id="r_a3135f218f7c791b194b347e8a5f0e52b"><td class="memItemLeft" align="right" valign="top"><a id="a3135f218f7c791b194b347e8a5f0e52b" name="a3135f218f7c791b194b347e8a5f0e52b"></a>
 MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>V_envelope</b></td></tr>
 <tr class="separator:a3135f218f7c791b194b347e8a5f0e52b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5d4c17b2c1ec2257e4d79d3d44c912e" id="r_ac5d4c17b2c1ec2257e4d79d3d44c912e"><td class="memItemLeft" align="right" valign="top"><a id="ac5d4c17b2c1ec2257e4d79d3d44c912e" name="ac5d4c17b2c1ec2257e4d79d3d44c912e"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>F_envelope</b></td></tr>
 <tr class="separator:ac5d4c17b2c1ec2257e4d79d3d44c912e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb756344817dcf785378af2152cd2ebd" id="r_abb756344817dcf785378af2152cd2ebd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#abb756344817dcf785378af2152cd2ebd">F_envelope_labels</a></td></tr>
+<tr class="separator:abb756344817dcf785378af2152cd2ebd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a649f89853b470fa73d7aec9104709264" id="r_a649f89853b470fa73d7aec9104709264"><td class="memItemLeft" align="right" valign="top"><a id="a649f89853b470fa73d7aec9104709264" name="a649f89853b470fa73d7aec9104709264"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_name</b></td></tr>
 <tr class="memdesc:a649f89853b470fa73d7aec9104709264"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of the physical group the envelope curves came from; empty when there was none. <br /></td></tr>
 <tr class="separator:a649f89853b470fa73d7aec9104709264"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="abb756344817dcf785378af2152cd2ebd" name="abb756344817dcf785378af2152cd2ebd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb756344817dcf785378af2152cd2ebd">&#9670;&#160;</a></span>F_envelope_labels</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;uint64_t&gt; wmtk::components::simwild::InputData::F_envelope_labels</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per row of F_envelope: the label bits of the input it came from, as the mesh's faces carry them (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa92f93b503e35eb323b16ff3ae158ce5" title="One envelope per label, and each surface face held by those of the labels it lies on: bit i &lt; F of a ...">SimWildMesh::m_input_envelopes</a>). Empty when F_envelope is not the inputs'. </p>
+
+</div>
+</div>
+<a id="a94eb94cfe63d4a5dbf64c2907f30fec5" name="a94eb94cfe63d4a5dbf64c2907f30fec5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94eb94cfe63d4a5dbf64c2907f30fec5">&#9670;&#160;</a></span>F_tagged</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">MatrixXi wmtk::components::simwild::InputData::F_tagged</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Tagged faces of a tet mesh: rows of V_input, with one 0/1 column per face_tag_names entry. Empty when the mesh has no triangle block. </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<a class="el" href="read__image__msh_8hpp_source.html">read_image_msh.hpp</a></li>
 </ul>

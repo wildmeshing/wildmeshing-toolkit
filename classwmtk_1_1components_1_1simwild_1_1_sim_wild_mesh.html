@@ -177,6 +177,15 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a4b73e3ee2d4bafe6c620ecc0db34d4ba" id="r_a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="memItemLeft" align="right" valign="top"><a id="a4b73e3ee2d4bafe6c620ecc0db34d4ba" name="a4b73e3ee2d4bafe6c620ecc0db34d4ba"></a>
+InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>face_tag_mask</b> () const</td></tr>
+<tr class="memdesc:a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">The face-tag bits of an input set: those below the number of face tags. <br /></td></tr>
+<tr class="separator:a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19187c82a62adb534757f6edf46ac597" id="r_a19187c82a62adb534757f6edf46ac597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597">init_label_envelopes</a> (double eps, bool exact)</td></tr>
+<tr class="separator:a19187c82a62adb534757f6edf46ac597"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a792b7e894260f374e421d1add28e1ead" id="r_a792b7e894260f374e421d1add28e1ead"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a792b7e894260f374e421d1add28e1ead">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const override</td></tr>
+<tr class="memdesc:a792b7e894260f374e421d1add28e1ead"><td class="mdescLeft">&#160;</td><td class="mdescRight">A tracked face's containment: its labels' envelopes if it has any, else m_envelope.  <br /></td></tr>
+<tr class="separator:a792b7e894260f374e421d1add28e1ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2aef162d1dcaaedbfc99489818fd5bcc" id="r_a2aef162d1dcaaedbfc99489818fd5bcc"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a2aef162d1dcaaedbfc99489818fd5bcc">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
 <tr class="memdesc:a2aef162d1dcaaedbfc99489818fd5bcc"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a vertex is pulled toward while smoothing.  <br /></td></tr>
 <tr class="separator:a2aef162d1dcaaedbfc99489818fd5bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,15 +244,17 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>all_rounded</b> () const</td></tr>
 <tr class="memdesc:a40ac025c029e384eaeacd14b91dd918a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if all vertices of the mesh are rounded. <br /></td></tr>
 <tr class="separator:a40ac025c029e384eaeacd14b91dd918a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abdcc4eb62ed58fd829df000906101fd6" id="r_abdcc4eb62ed58fd829df000906101fd6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#abdcc4eb62ed58fd829df000906101fd6">init_from_image</a> (const MatrixXr &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
-<tr class="memdesc:abdcc4eb62ed58fd829df000906101fd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init from meshes image.  <br /></td></tr>
-<tr class="separator:abdcc4eb62ed58fd829df000906101fd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84a5d6f9f700e42b6ab0912e9aa9168d" id="r_a84a5d6f9f700e42b6ab0912e9aa9168d"><td class="memItemLeft" align="right" valign="top"><a id="a84a5d6f9f700e42b6ab0912e9aa9168d" name="a84a5d6f9f700e42b6ab0912e9aa9168d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>init_from_image</b> (const MatrixXd &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const std::vector&lt; std::string &gt; &amp;tag_names)</td></tr>
-<tr class="separator:a84a5d6f9f700e42b6ab0912e9aa9168d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca309b67f3faa6d19b099e34916aaa00" id="r_aca309b67f3faa6d19b099e34916aaa00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aca309b67f3faa6d19b099e34916aaa00">init_from_image</a> (const MatrixXr &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXi &amp;F_tagged=MatrixXi(), const MatrixSi &amp;F_tags=MatrixSi(), const std::vector&lt; std::string &gt; &amp;face_tag_names={})</td></tr>
+<tr class="memdesc:aca309b67f3faa6d19b099e34916aaa00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init from meshes image.  <br /></td></tr>
+<tr class="separator:aca309b67f3faa6d19b099e34916aaa00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacdf79ae59b4dd7bf7f9a9e8089795e4" id="r_aacdf79ae59b4dd7bf7f9a9e8089795e4"><td class="memItemLeft" align="right" valign="top"><a id="aacdf79ae59b4dd7bf7f9a9e8089795e4" name="aacdf79ae59b4dd7bf7f9a9e8089795e4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>init_from_image</b> (const MatrixXd &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXi &amp;F_tagged=MatrixXi(), const MatrixSi &amp;F_tags=MatrixSi(), const std::vector&lt; std::string &gt; &amp;face_tag_names={})</td></tr>
+<tr class="separator:aacdf79ae59b4dd7bf7f9a9e8089795e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab60e23f5619539627af0995af388b6c3" id="r_ab60e23f5619539627af0995af388b6c3"><td class="memItemLeft" align="right" valign="top"><a id="ab60e23f5619539627af0995af388b6c3" name="ab60e23f5619539627af0995af388b6c3"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
 <tr class="separator:ab60e23f5619539627af0995af388b6c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1984ce481c9c35fc7cb294da875ee4fd" id="r_a1984ce481c9c35fc7cb294da875ee4fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1984ce481c9c35fc7cb294da875ee4fd">init_face_tags</a> (const MatrixXi &amp;F_tagged, const MatrixSi &amp;F_tags, const std::vector&lt; std::string &gt; &amp;face_tag_names)</td></tr>
+<tr class="separator:a1984ce481c9c35fc7cb294da875ee4fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a418bfd444954d888bd96a61470a4cd8f" id="r_a418bfd444954d888bd96a61470a4cd8f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a418bfd444954d888bd96a61470a4cd8f">refine_sizing_around_worst</a> (double max_metric=0.) override</td></tr>
 <tr class="memdesc:a418bfd444954d888bd96a61470a4cd8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
 <tr class="separator:a418bfd444954d888bd96a61470a4cd8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -395,11 +406,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a88fe0eeba385539398ea620a99418a92 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a88fe0eeba385539398ea620a99418a92"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a88fe0eeba385539398ea620a99418a92">edge_incident_surface_face_count</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e)</td></tr>
 <tr class="memdesc:a88fe0eeba385539398ea620a99418a92 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the faces incident to edge <code>e</code> are on the tracked surface.  <br /></td></tr>
 <tr class="separator:a88fe0eeba385539398ea620a99418a92 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aebd345cce38dc0eb1a071c4750aa33ea inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aebd345cce38dc0eb1a071c4750aa33ea"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aebd345cce38dc0eb1a071c4750aa33ea">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
-<tr class="memdesc:aebd345cce38dc0eb1a071c4750aa33ea inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside.  <br /></td></tr>
-<tr class="separator:aebd345cce38dc0eb1a071c4750aa33ea inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a491b19bab0edf5e47c56aa606317b4bc inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a491b19bab0edf5e47c56aa606317b4bc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a491b19bab0edf5e47c56aa606317b4bc">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c) const</td></tr>
-<tr class="separator:a491b19bab0edf5e47c56aa606317b4bc inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91a631b12e0bb9c41d0b8ccc6b730ed4 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a91a631b12e0bb9c41d0b8ccc6b730ed4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a91a631b12e0bb9c41d0b8ccc6b730ed4">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const</td></tr>
+<tr class="separator:a91a631b12e0bb9c41d0b8ccc6b730ed4 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c216b0a1b2f288f2d01fdaa4145b232 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
 <tr class="memdesc:a1c216b0a1b2f288f2d01fdaa4145b232 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
 <tr class="separator:a1c216b0a1b2f288f2d01fdaa4145b232 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -506,9 +514,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="memitem:a6afae375ecb270d675871e991c259e88 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a6afae375ecb270d675871e991c259e88"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6afae375ecb270d675871e991c259e88">swap_edge_56_energy</a> (const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;tets, const int op_case) override</td></tr>
 <tr class="memdesc:a6afae375ecb270d675871e991c259e88 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified energy to decide which of the 5 possible orientations should be chosen.  <br /></td></tr>
 <tr class="separator:a6afae375ecb270d675871e991c259e88 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e4c11ad1e91214a72707840cc45fc67 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a2e4c11ad1e91214a72707840cc45fc67"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2e4c11ad1e91214a72707840cc45fc67">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
-<tr class="memdesc:a2e4c11ad1e91214a72707840cc45fc67 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
-<tr class="separator:a2e4c11ad1e91214a72707840cc45fc67 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d59177fa56b8142e21ca9d9ee8cb8bb inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a2d59177fa56b8142e21ca9d9ee8cb8bb"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2d59177fa56b8142e21ca9d9ee8cb8bb">smoothing_containment_envelope</a> (const size_t, const std::array&lt; size_t, 3 &gt; &amp;face, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const</td></tr>
+<tr class="memdesc:a2d59177fa56b8142e21ca9d9ee8cb8bb inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the smoother checks tracked face <code>face</code> (attributes <code>attr</code>) at the moved vertex <code>vid</code> against; null skips the face.  <br /></td></tr>
+<tr class="separator:a2d59177fa56b8142e21ca9d9ee8cb8bb inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
 <tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b6cb95cf16a2904fcf5ae94ec066246 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a5b6cb95cf16a2904fcf5ae94ec066246"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5b6cb95cf16a2904fcf5ae94ec066246">smoothing_extra_energy</a> (const size_t) const</td></tr>
@@ -924,6 +932,15 @@ std::map&lt; int64_t, std::string &gt;&#160;</td><td class="memItemRight" valign
 <tr class="memitem:a99b734682e733cd4a95640377d73ea6a" id="r_a99b734682e733cd4a95640377d73ea6a"><td class="memItemLeft" align="right" valign="top"><a id="a99b734682e733cd4a95640377d73ea6a" name="a99b734682e733cd4a95640377d73ea6a"></a>
 std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_name_to_id</b></td></tr>
 <tr class="separator:a99b734682e733cd4a95640377d73ea6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04e6a745845ff1379cdb664df7e9f031" id="r_a04e6a745845ff1379cdb664df7e9f031"><td class="memItemLeft" align="right" valign="top"><a id="a04e6a745845ff1379cdb664df7e9f031" name="a04e6a745845ff1379cdb664df7e9f031"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_tag_names</b></td></tr>
+<tr class="memdesc:a04e6a745845ff1379cdb664df7e9f031"><td class="mdescLeft">&#160;</td><td class="mdescRight">Names of the face tags: bit i of a face's input set is m_face_tag_names[i]. <br /></td></tr>
+<tr class="separator:a04e6a745845ff1379cdb664df7e9f031"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa92f93b503e35eb323b16ff3ae158ce5" id="r_aa92f93b503e35eb323b16ff3ae158ce5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa92f93b503e35eb323b16ff3ae158ce5">m_input_envelopes</a></td></tr>
+<tr class="memdesc:aa92f93b503e35eb323b16ff3ae158ce5"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per label, and each surface face held by those of the labels it lies on: bit i &lt; F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. As tetwild holds a tracked face to its inputs' envelopes, and topological_offset's 2D mesh a region boundary to its tags'.  <br /></td></tr>
+<tr class="separator:aa92f93b503e35eb323b16ff3ae158ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f7305c1b8708f0bb03a600629a6b23e" id="r_a9f7305c1b8708f0bb03a600629a6b23e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9f7305c1b8708f0bb03a600629a6b23e">m_F_envelope_labels</a></td></tr>
+<tr class="separator:a9f7305c1b8708f0bb03a600629a6b23e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a624be29b679dfce5a3d00d0198947c44" id="r_a624be29b679dfce5a3d00d0198947c44"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a624be29b679dfce5a3d00d0198947c44">m_sim_params</a></td></tr>
 <tr class="separator:a624be29b679dfce5a3d00d0198947c44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a962ca6a6832cd8755c59d1db0c9526" id="r_a2a962ca6a6832cd8755c59d1db0c9526"><td class="memItemLeft" align="right" valign="top"><a id="a2a962ca6a6832cd8755c59d1db0c9526" name="a2a962ca6a6832cd8755c59d1db0c9526"></a>
@@ -1849,8 +1866,43 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="abdcc4eb62ed58fd829df000906101fd6" name="abdcc4eb62ed58fd829df000906101fd6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abdcc4eb62ed58fd829df000906101fd6">&#9670;&#160;</a></span>init_from_image()</h2>
+<a id="a1984ce481c9c35fc7cb294da875ee4fd" name="a1984ce481c9c35fc7cb294da875ee4fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1984ce481c9c35fc7cb294da875ee4fd">&#9670;&#160;</a></span>init_face_tags()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::init_face_tags </td>
+          <td>(</td>
+          <td class="paramtype">const MatrixXi &amp;&#160;</td>
+          <td class="paramname"><em>F_tagged</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixSi &amp;&#160;</td>
+          <td class="paramname"><em>F_tags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>face_tag_names</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface, with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face. </p>
+
+</div>
+</div>
+<a id="aca309b67f3faa6d19b099e34916aaa00" name="aca309b67f3faa6d19b099e34916aaa00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca309b67f3faa6d19b099e34916aaa00">&#9670;&#160;</a></span>init_from_image()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1877,7 +1929,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
-          <td class="paramname"><em>tag_names</em>&#160;</td>
+          <td class="paramname"><em>tag_names</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixXi &amp;&#160;</td>
+          <td class="paramname"><em>F_tagged</em> = <code>MatrixXi()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixSi &amp;&#160;</td>
+          <td class="paramname"><em>F_tags</em> = <code>MatrixSi()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>face_tag_names</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1896,6 +1966,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a19187c82a62adb534757f6edf46ac597" name="a19187c82a62adb534757f6edf46ac597"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19187c82a62adb534757f6edf46ac597">&#9670;&#160;</a></span>init_label_envelopes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::init_label_envelopes </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exact</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>(Re)build m_input_envelopes at <code>eps</code>, around the same surface as m_envelope: each label's rows of m_F_envelope when m_F_envelope_labels says which, else the mesh's faces carrying the label. The input triangles are far fewer than the faces embedded on them. </p>
 
 </div>
 </div>
@@ -2181,7 +2280,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a vertex is pulled toward while smoothing. </p>
 
-<p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a234db64e096d5e1217a1d578577c7400">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -2313,6 +2412,46 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <p>Cache application cell data before a split. TetWild needs none; SimWild caches tags. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad389c1cf86e318d99e4670157f3cbcd8">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a792b7e894260f374e421d1add28e1ead" name="a792b7e894260f374e421d1add28e1ead"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a792b7e894260f374e421d1add28e1ead">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::simwild::SimWildMesh::surface_envelope_for_face </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>A tracked face's containment: its labels' envelopes if it has any, else m_envelope. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -2529,6 +2668,39 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a9f7305c1b8708f0bb03a600629a6b23e" name="a9f7305c1b8708f0bb03a600629a6b23e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f7305c1b8708f0bb03a600629a6b23e">&#9670;&#160;</a></span>m_F_envelope_labels</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;InputSet&gt; wmtk::components::simwild::SimWildMesh::m_F_envelope_labels</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#abb756344817dcf785378af2152cd2ebd">InputData::F_envelope_labels</a>); empty once m_F_envelope is rebuilt from the mesh. </p>
+
+</div>
+</div>
+<a id="aa92f93b503e35eb323b16ff3ae158ce5" name="aa92f93b503e35eb323b16ff3ae158ce5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa92f93b503e35eb323b16ff3ae158ce5">&#9670;&#160;</a></span>m_input_envelopes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a> wmtk::components::simwild::SimWildMesh::m_input_envelopes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>One envelope per label, and each surface face held by those of the labels it lies on: bit i &lt; F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. As tetwild holds a tracked face to its inputs' envelopes, and topological_offset's 2D mesh a region boundary to its tags'. </p>
+<p>Member b is built around the same surface as m_envelope, restricted to label b &ndash; the input triangles of that label in generation, else the mesh's faces carrying it &ndash; at the eps and with the predicate m_envelope has at the time (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597">init_label_envelopes()</a>), and follows it: at eps_simplify while the simplification runs, around the simplified surface after. Built around the faces embedded on the inputs instead, the members cost +33 to +70% time; around the input triangles, +2 to +6%. m_envelope stays the union, for the engine's direct uses of it and for a surface face carrying no label.</p>
+<p>With one union envelope a collapse by the seam of two sheets side by side moved a face of one 0.125 off it (eps 0.029), within eps of the other. Two volumes a fraction of eps apart did not drift so with it (each region's boundary stayed within 0.7 eps of its own box, the tets between them in the way); their labels' envelopes make that hold by construction. </p>
+
+</div>
+</div>
 <a id="a624be29b679dfce5a3d00d0198947c44" name="a624be29b679dfce5a3d00d0198947c44"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a624be29b679dfce5a3d00d0198947c44">&#9670;&#160;</a></span>m_sim_params</h2>
 

@@ -7,6 +7,7 @@ var searchData=
   ['timing_4',['timing',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#aaa544ce65cf43628988baf5a4ff19341',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
   ['tol_5fany_5',['tol_any',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#ab7ec4c917184bde6fa7676a2dd4e9890',1,'wmtk::components::topological_offset::ExactBandIntegral::Local']]],
   ['triangle_5fgroup_6',['triangle_group',['../structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aac4b3b16d2f3921e1a95a208a1e22c64',1,'wmtk::utils::EmbedTrianglesProvenance']]],
-  ['turn_7',['turn',['../structwmtk_1_1utils_1_1_orientation_repair.html#a9f78e95107b1e99290c52938db331ffb',1,'wmtk::utils::OrientationRepair']]],
-  ['two_5fstage_8',['two_stage',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#adc4ff773ab354c4a2496e67fb7341cde',1,'wmtk::optimization::SmoothVertexOptions']]]
+  ['triangle_5finput_7',['triangle_input',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a359ae61a5905c24fb1e6fff1938297f5',1,'wmtk::utils::EmbedTrianglesOptions']]],
+  ['turn_8',['turn',['../structwmtk_1_1utils_1_1_orientation_repair.html#a9f78e95107b1e99290c52938db331ffb',1,'wmtk::utils::OrientationRepair']]],
+  ['two_5fstage_9',['two_stage',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#adc4ff773ab354c4a2496e67fb7341cde',1,'wmtk::optimization::SmoothVertexOptions']]]
 ];

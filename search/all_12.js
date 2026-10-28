@@ -52,12 +52,13 @@ var searchData=
   ['prismjacobianvalue_49',['PrismJacobianValue',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_jacobian_value.html',1,'wmtk::components::prismatic_mesh']]],
   ['project_5fline_5fsearch_5fnested_5fsteps_50',['project_line_search_nested_steps',['../structwmtk_1_1_optimizer_parameters.html#a067e06e84d23b9b9579ab63f5a7c46a1',1,'wmtk::OptimizerParameters::project_line_search_nested_steps'],['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#abf21f58b42013d8a121db52ef78723d2',1,'wmtk::optimization::SmoothVertexOptions::project_line_search_nested_steps']]],
   ['project_5fline_5fsearch_5fsteps_51',['project_line_search_steps',['../structwmtk_1_1_optimizer_parameters.html#aa0f5862071039f90c26a03e25b5b54b3',1,'wmtk::OptimizerParameters::project_line_search_steps'],['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a7b30ae2dd123234edaf8f238f5bfb61b',1,'wmtk::optimization::SmoothVertexOptions::project_line_search_steps']]],
-  ['push_52',['Push',['../structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0',1,'wmtk::ExecutePass']]],
-  ['push_5fback_53',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]],
-  ['py_20tt_54',['Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md46',1,'']]],
-  ['py_20tt_20—_20inspect_20results_20in_20polyscope_55',['&lt;tt&gt;view_offset.py&lt;/tt&gt; — inspect results in polyscope',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md34',1,'']]],
-  ['py_20tt_20—_20the_20simplest_20possible_20test_20input_56',['&lt;tt&gt;make_disk2d.py&lt;/tt&gt; — the simplest possible test input',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md35',1,'']]],
-  ['pyexpression_57',['PyExpression',['../class_py_expression.html',1,'']]],
-  ['python_58',['Python',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md8',1,'']]],
-  ['python_20bindings_59',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]]
+  ['pull_52',['pull',['../classwmtk_1_1_input_envelopes.html#a2ed7927e1f2ee208358b8a792693424e',1,'wmtk::InputEnvelopes']]],
+  ['push_53',['Push',['../structwmtk_1_1_execute_pass.html#a6b80d6ab8db0ce55ae9803b7d172dae0',1,'wmtk::ExecutePass']]],
+  ['push_5fback_54',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]],
+  ['py_20tt_55',['Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md46',1,'']]],
+  ['py_20tt_20—_20inspect_20results_20in_20polyscope_56',['&lt;tt&gt;view_offset.py&lt;/tt&gt; — inspect results in polyscope',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md34',1,'']]],
+  ['py_20tt_20—_20the_20simplest_20possible_20test_20input_57',['&lt;tt&gt;make_disk2d.py&lt;/tt&gt; — the simplest possible test input',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md35',1,'']]],
+  ['pyexpression_58',['PyExpression',['../class_py_expression.html',1,'']]],
+  ['python_59',['Python',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md8',1,'']]],
+  ['python_20bindings_60',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]]
 ];

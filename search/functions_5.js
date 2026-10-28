@@ -20,7 +20,7 @@ var searchData=
   ['edge_5fvalence_17',['edge_valence',['../classwmtk_1_1_tri_mesh.html#a0de24576c0907fb1dadbbea2df454e2e',1,'wmtk::TriMesh']]],
   ['eid_18',['eid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a64010c58c9f5b170f4ca17b89de1b653',1,'wmtk::TetMesh::Tuple::eid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#a21dc175ee57f96f0bf44ef7babb9fd4a',1,'wmtk::TriMesh::Tuple::eid()']]],
   ['embed_5fcurves_19',['embed_curves',['../classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a4304513bc5d43655bb307d73814a9ff3',1,'wmtk::components::simwild::EmbedCurves']]],
-  ['embed_5fsurface_20',['embed_surface',['../classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a68c3ada213da2846c559aeac7050b909',1,'wmtk::components::simwild::EmbedSurface']]],
+  ['embed_5fsurface_20',['embed_surface',['../classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae930c0e89e7eebf504f015d38642063b',1,'wmtk::components::simwild::EmbedSurface']]],
   ['embedcurves_21',['EmbedCurves',['../classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a23eacd322bc23efffef910d5e7771ccd',1,'wmtk::components::simwild::EmbedCurves']]],
   ['embedsurface_22',['EmbedSurface',['../classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#adee9e2f2642d76728fe01b3dfd515640',1,'wmtk::components::simwild::EmbedSurface']]],
   ['emplace_5fback_23',['emplace_back',['../classwmtk_1_1threading_1_1collector.html#a869cf60fe935df42df06e2a294529dd1',1,'wmtk::threading::collector']]],

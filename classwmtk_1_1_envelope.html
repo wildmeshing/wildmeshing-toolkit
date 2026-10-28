@@ -89,8 +89,8 @@ Inheritance diagram for wmtk::Envelope:</div>
  <div class="center">
   <img src="classwmtk_1_1_envelope.png" usemap="#wmtk::Envelope_map" alt=""/>
   <map id="wmtk::Envelope_map" name="wmtk::Envelope_map">
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html" alt="wmtk::components::topological_offset::IntersectionEnvelope" shape="rect" coords="0,56,341,80"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html" alt="wmtk::components::topological_offset::UnionEnvelope" shape="rect" coords="351,56,692,80"/>
+<area href="classwmtk_1_1_intersection_envelope.html" alt="wmtk::IntersectionEnvelope" shape="rect" coords="0,56,163,80"/>
+<area href="classwmtk_1_1_union_envelope.html" alt="wmtk::UnionEnvelope" shape="rect" coords="173,56,336,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -419,9 +419,9 @@ template&lt;typename VertexList &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Four containment queries are VIRTUAL &ndash; the 3D triangle, the 3D point, the 2D segment and the 2D point &ndash; so a containment-only composite over several envelopes can answer them. They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a composite must never reach the NON-virtual queries, whose BVH it does not have. </p>
+<p>Four containment queries are VIRTUAL &ndash; the 3D triangle, the 3D point, the 2D segment and the 2D point &ndash; so a containment-only composite over several envelopes can answer them. They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is not virtual. See the composites in <a class="el" href="_composite_envelopes_8hpp_source.html">wmtk/envelope/CompositeEnvelopes.hpp</a>, and the invariant stated there: a composite must never reach the NON-virtual queries, whose BVH it does not have. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html#a291d4ac0f66752d6b07e9e2181c87ea3">wmtk::components::topological_offset::IntersectionEnvelope</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html#ab0fe9843c33dde516fc32f5172c0d771">wmtk::components::topological_offset::UnionEnvelope</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_intersection_envelope.html#abb563cdef2b3ee653b2a48aff648fc04">wmtk::IntersectionEnvelope</a>, and <a class="el" href="classwmtk_1_1_union_envelope.html#ad1bd1b40430ab61d331316b894334cf9">wmtk::UnionEnvelope</a>.</p>
 
 </div>
 </div>

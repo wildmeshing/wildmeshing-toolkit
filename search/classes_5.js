@@ -1,7 +1,7 @@
 var searchData=
 [
   ['face_0',['face',['../classwmtk_1_1simplex_1_1_face.html',1,'wmtk::simplex::Face'],['../structwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d_1_1_face.html',1,'wmtk::components::topological_offset::BandVolumeEnergy3D::Face']]],
-  ['faceattributes_1',['faceattributes',['../structwmtk_1_1components_1_1qslim_1_1_face_attributes.html',1,'wmtk::components::qslim::FaceAttributes'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html',1,'wmtk::TriOptimizerMesh::FaceAttributes']]],
+  ['faceattributes_1',['faceattributes',['../structwmtk_1_1components_1_1qslim_1_1_face_attributes.html',1,'wmtk::components::qslim::FaceAttributes'],['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_face_attributes.html',1,'wmtk::components::shortest_edge_collapse::FaceAttributes'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html',1,'wmtk::TriOptimizerMesh::FaceAttributes']]],
   ['faceextra_2',['FaceExtra',['../classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html',1,'wmtk::components::topological_offset']]],
   ['faceextra2d_3',['FaceExtra2d',['../classwmtk_1_1components_1_1topological__offset_1_1_face_extra2d.html',1,'wmtk::components::topological_offset']]],
   ['faceparts_4',['FaceParts',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_face_parts.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],

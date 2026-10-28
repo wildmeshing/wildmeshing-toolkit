@@ -82,14 +82,15 @@ $(function() {
   <div class="headertitle"><div class="title">wmtk::SurfaceTagAttributes Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.  
- <a href="classwmtk_1_1_surface_tag_attributes.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="_surface_tag_attributes_8h_source.html">SurfaceTagAttributes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a4d76d2c26d832b561a20d4342d5c0202" id="r_a4d76d2c26d832b561a20d4342d5c0202"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202">input_set</a> () const</td></tr>
+<tr class="memdesc:a4d76d2c26d832b561a20d4342d5c0202"><td class="mdescLeft">&#160;</td><td class="mdescRight">The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs, the width of InputSet.  <br /></td></tr>
+<tr class="separator:a4d76d2c26d832b561a20d4342d5c0202"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a248d209412525429b742eeabd7552bdd" id="r_a248d209412525429b742eeabd7552bdd"><td class="memItemLeft" align="right" valign="top"><a id="a248d209412525429b742eeabd7552bdd" name="a248d209412525429b742eeabd7552bdd"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_set</b> (InputSet s)</td></tr>
+<tr class="separator:a248d209412525429b742eeabd7552bdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc3146f12bf85798b6abed097a3b6db1" id="r_acc3146f12bf85798b6abed097a3b6db1"><td class="memItemLeft" align="right" valign="top"><a id="acc3146f12bf85798b6abed097a3b6db1" name="acc3146f12bf85798b6abed097a3b6db1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_orientation</b> (int o)</td></tr>
 <tr class="memdesc:acc3146f12bf85798b6abed097a3b6db1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store an orientation already measured against the ascending vertex order, clamped. <br /></td></tr>
@@ -107,9 +108,7 @@ template&lt;size_t N&gt; </td></tr>
 <tr class="memitem:a0f0b90f92ba5596a9cb9562ba0059da7" id="r_a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memItemLeft" align="right" valign="top"><a id="a0f0b90f92ba5596a9cb9562ba0059da7" name="a0f0b90f92ba5596a9cb9562ba0059da7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>reset</b> ()</td></tr>
 <tr class="separator:a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf84bb5ec5482935240c5e24711adc30" id="r_adf84bb5ec5482935240c5e24711adc30"><td class="memItemLeft" align="right" valign="top"><a id="adf84bb5ec5482935240c5e24711adc30" name="adf84bb5ec5482935240c5e24711adc30"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>merge</b> (const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;attr)</td></tr>
-<tr class="memdesc:adf84bb5ec5482935240c5e24711adc30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does NOT combine m_orientation &ndash; see there; the caller converts and sums it. <br /></td></tr>
+<tr class="memitem:adf84bb5ec5482935240c5e24711adc30" id="r_adf84bb5ec5482935240c5e24711adc30"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge</a> (const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;attr)</td></tr>
 <tr class="separator:adf84bb5ec5482935240c5e24711adc30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
@@ -136,18 +135,78 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_bbox_fs</b> = 
 <tr class="memitem:a20141019339d52b2b10fac74a7d8c569" id="r_a20141019339d52b2b10fac74a7d8c569"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a20141019339d52b2b10fac74a7d8c569">m_orientation</a>: 5</td></tr>
 <tr class="memdesc:a20141019339d52b2b10fac74a7d8c569"><td class="mdescLeft">&#160;</td><td class="mdescRight">The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15.  <br /></td></tr>
 <tr class="separator:a20141019339d52b2b10fac74a7d8c569"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95b6ae22dd5be68eb747bbd3e27a7451" id="r_a95b6ae22dd5be68eb747bbd3e27a7451"><td class="memItemLeft" align="right" valign="top"><a id="a95b6ae22dd5be68eb747bbd3e27a7451" name="a95b6ae22dd5be68eb747bbd3e27a7451"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_set</b> [sizeof(InputSet)] = {}</td></tr>
+<tr class="separator:a95b6ae22dd5be68eb747bbd3e27a7451"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:ac18a0296017965b5a35aa345d7ff6c7e" id="r_ac18a0296017965b5a35aa345d7ff6c7e"><td class="memItemLeft" align="right" valign="top"><a id="ac18a0296017965b5a35aa345d7ff6c7e" name="ac18a0296017965b5a35aa345d7ff6c7e"></a>
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_orientation</b> = 15</td></tr>
 <tr class="separator:ac18a0296017965b5a35aa345d7ff6c7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa10482b477bd212489df7345832ecf72" id="r_aa10482b477bd212489df7345832ecf72"><td class="memItemLeft" align="right" valign="top"><a id="aa10482b477bd212489df7345832ecf72" name="aa10482b477bd212489df7345832ecf72"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_inputs</b> = int(8 * sizeof(InputSet))</td></tr>
+<tr class="memdesc:aa10482b477bd212489df7345832ecf72"><td class="mdescLeft">&#160;</td><td class="mdescRight">One input per bit of InputSet: the width is set there, and only there. <br /></td></tr>
+<tr class="separator:aa10482b477bd212489df7345832ecf72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on. </p>
-<p>The 3D meshes attach this to faces, the 2D meshes to edges; the four copies were character-identical, <code>reset()</code> and <code><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30" title="Does NOT combine m_orientation – see there; the caller converts and sums it.">merge()</a></code> included.</p>
-<p><code>m_is_bbox_fs</code> is the bbox side the simplex lies on, or -1 for none: 0/1 = x min/max, 2/3 = y min/max, 4/5 = z min/max. Tagging it is what keeps the bounding box from collapsing. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4d76d2c26d832b561a20d4342d5c0202" name="a4d76d2c26d832b561a20d4342d5c0202"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d76d2c26d832b561a20d4342d5c0202">&#9670;&#160;</a></span>input_set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">InputSet wmtk::SurfaceTagAttributes::input_set </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs, the width of InputSet. </p>
+<p>The invariant it carries: a tracked simplex stays within eps of EVERY input in its set &ndash; not merely of the union of all inputs, which is what one envelope around everything enforces. With one envelope the solid's tracked boundary may ride on a sheet that crosses it: measured on Thingi10K 104509 cut by a wavy sheet (eps 0.1956), 12 of the 9532 tracked faces separating the solid's inside from its outside ended up farther than eps from the solid (at most 3.61 eps), 7 of them within eps of the sheet, and kept tets reached a sheet vertex 2.50 eps outside the solid. One bit per simplex usually; several where inputs coincide, and then the simplex is held by all of them.</p>
+<p>Set at insertion from the arrangement's provenance (tetwild, triwild); 0 on a mesh whose application never set it, which then answers containment without it. The operations carry it like every other field here: a split's halves copy it, <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> &ndash; the faces a collapse makes one &ndash; takes the union, and a surface flip gives both new simplices the union of the two it replaces. Bytes rather than one uint64_t so the struct keeps alignment 1: eleven bytes, not sixteen. </p>
+
+</div>
+</div>
+<a id="adf84bb5ec5482935240c5e24711adc30" name="adf84bb5ec5482935240c5e24711adc30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf84bb5ec5482935240c5e24711adc30">&#9670;&#160;</a></span>merge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SurfaceTagAttributes::merge </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Does NOT combine m_orientation &ndash; see there; the caller converts and sums it. The input sets unite: the one simplex left covers what both covered. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
 <a id="a20141019339d52b2b10fac74a7d8c569" name="a20141019339d52b2b10fac74a7d8c569"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a20141019339d52b2b10fac74a7d8c569">&#9670;&#160;</a></span>m_orientation</h2>
 
@@ -163,7 +222,7 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_o
 <p>The input's orientation on this simplex: a signed count of input sheets lying on it, measured against its vertices in ASCENDING id order. -15 to 15. </p>
 <p>For a face (a &lt; b &lt; c), +k means a net k sheets cover it with normal along (b-a) x (c-a); for an edge (a &lt; b), +k means a net k run a -&gt; b. A count rather than a sign so coincident sheets combine the way they do in a winding number: two opposite ones cancel to 0 (a solid resting on another, a fold), two equal ones give 2. A tracked simplex can therefore have orientation 0 and still be constrained; m_is_surface_fs keeps that meaning, and the orientation only feeds winding numbers.</p>
 <p>At insertion a SHEET is a set of coincident input triangles (segments) of one orientation: duplicates of one triangle count once, as do the triangles of one coplanar group overlapping the same way, so the count is +-1 or 0 per coplanar group (per input curve in 2D). A collapse merging two separate sheets can make it larger. See embed_triangles_in_tets and embed_segments.</p>
-<p>Ascending ids because the value then depends on nothing but the simplex's vertex set: attribute copies keyed by the sorted vertex tuple (the swap trackers), a different slot becoming the simplex's canonical one, and consolidate_mesh (which renumbers monotonically) all leave it valid. Anything that moves a value onto a simplex with a DIFFERENT vertex set &ndash; the halves of a split, the faces a collapse merges or renames in place, the faces a surface flip creates &ndash; must convert it, through orientation_along / set_orientation_along. <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30" title="Does NOT combine m_orientation – see there; the caller converts and sums it.">merge()</a> does not touch it for that reason: it cannot know the two vertex orders.</p>
+<p>Ascending ids because the value then depends on nothing but the simplex's vertex set: attribute copies keyed by the sorted vertex tuple (the swap trackers), a different slot becoming the simplex's canonical one, and consolidate_mesh (which renumbers monotonically) all leave it valid. Anything that moves a value onto a simplex with a DIFFERENT vertex set &ndash; the halves of a split, the faces a collapse merges or renames in place, the faces a surface flip creates &ndash; must convert it, through orientation_along / set_orientation_along. <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> does not touch it for that reason: it cannot know the two vertex orders.</p>
 <p>Meaningful only on a mesh whose application set it at insertion (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">TetOptimizerMesh</a> / <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af47f1c426ed7aad35a55096d03115fc8" title="The application set EdgeAttributes::m_orientation at insertion, so the tracked curves carry the input...">TriOptimizerMesh::m_tracks_orientation</a>); 0 elsewhere. Writes clamp to the range rather than wrap: a face would need 16 net coincident sheets to reach it. </p>
 
 </div>
@@ -182,7 +241,7 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>max_o
 
 <p>Which tracked surface this simplex belongs to, for applications that track more than one. 0 to 3. </p>
 <p>0 is the application's primary surface, and is all tetwild and simwild ever use. topological_offset tracks two &ndash; the input complex it must stay in the envelope of, and the offset boundary it is free to move &ndash; and uses 1 for the latter. Meaningless, and left at 0, when m_is_surface_fs is false.</p>
-<p>The class lives here, on the attribute struct, rather than in a container of its own because the shared operations copy face attributes WHOLESALE &ndash; assignment in the split and collapse caches, <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30" title="Does NOT combine m_orientation – see there; the caller converts and sums it.">merge()</a> in collapse_edge_before, reset() in the swap tracker. A field here is carried by all of that for free; a parallel container would be silently dropped by every one of those operations. </p>
+<p>The class lives here, on the attribute struct, rather than in a container of its own because the shared operations copy face attributes WHOLESALE &ndash; assignment in the split and collapse caches, <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adf84bb5ec5482935240c5e24711adc30">merge()</a> in collapse_edge_before, reset() in the swap tracker. A field here is carried by all of that for free; a parallel container would be silently dropped by every one of those operations. </p>
 
 </div>
 </div>

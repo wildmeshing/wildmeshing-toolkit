@@ -95,12 +95,16 @@ Inheritance diagram for wmtk::components::triwild::TriWildMesh:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a1a3a2426a5b6d1edd8fb7deadde4b30a" id="r_a1a3a2426a5b6d1edd8fb7deadde4b30a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a1a3a2426a5b6d1edd8fb7deadde4b30a">surface_envelope_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;attr) const override</td></tr>
+<tr class="separator:a1a3a2426a5b6d1edd8fb7deadde4b30a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04339a0aa3322c9a1125345b6cefd882" id="r_a04339a0aa3322c9a1125345b6cefd882"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a04339a0aa3322c9a1125345b6cefd882">smoothing_energy_envelope</a> (const size_t vid) const override</td></tr>
+<tr class="separator:a04339a0aa3322c9a1125345b6cefd882"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top"><a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TriWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a7cdd3374bab4310909003eb79004eb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc48a873f2cd7ad5c8957e655d5cf8a5" id="r_afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#afc48a873f2cd7ad5c8957e655d5cf8a5">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env, const std::vector&lt; int &gt; *E_orientation=nullptr, const std::vector&lt; size_t &gt; &amp;free_point_vids={})</td></tr>
-<tr class="memdesc:afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
-<tr class="separator:afc48a873f2cd7ad5c8957e655d5cf8a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bbe218c729af7fe0d53371f9a553cdc" id="r_a3bbe218c729af7fe0d53371f9a553cdc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a3bbe218c729af7fe0d53371f9a553cdc">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env, const std::vector&lt; int &gt; *E_orientation=nullptr, const std::vector&lt; size_t &gt; &amp;free_point_vids={}, const std::vector&lt; int &gt; *E_env_input=nullptr, const std::vector&lt; InputSet &gt; *E_input_set=nullptr)</td></tr>
+<tr class="memdesc:a3bbe218c729af7fe0d53371f9a553cdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
+<tr class="separator:a3bbe218c729af7fe0d53371f9a553cdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2513e9e9b7776b5915c40ebcf34472d0" id="r_a2513e9e9b7776b5915c40ebcf34472d0"><td class="memItemLeft" align="right" valign="top"><a id="a2513e9e9b7776b5915c40ebcf34472d0" name="a2513e9e9b7776b5915c40ebcf34472d0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_boundaries</b> ()</td></tr>
 <tr class="separator:a2513e9e9b7776b5915c40ebcf34472d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -260,11 +264,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_smoothing_positio
 <tr class="separator:aff6c13e43410189c7d2b42e9635e0230 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b023939e27813c833e8cb1b21b39604 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a8b023939e27813c833e8cb1b21b39604"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8b023939e27813c833e8cb1b21b39604">smoothing_position_is_allowed</a> (const size_t vid, const Vector2d &amp;p) const</td></tr>
 <tr class="separator:a8b023939e27813c833e8cb1b21b39604 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84527f36a7bfcd3d3b78ec7672939ace inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a84527f36a7bfcd3d3b78ec7672939ace"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a84527f36a7bfcd3d3b78ec7672939ace">smoothing_energy_envelope</a> (const size_t vid) const</td></tr>
-<tr class="memdesc:a84527f36a7bfcd3d3b78ec7672939ace inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>.  <br /></td></tr>
-<tr class="separator:a84527f36a7bfcd3d3b78ec7672939ace inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae324f7e4bbc0b9cd3b55a149efb4340b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ae324f7e4bbc0b9cd3b55a149efb4340b"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ae324f7e4bbc0b9cd3b55a149efb4340b">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
-<tr class="separator:ae324f7e4bbc0b9cd3b55a149efb4340b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8f627ba175a2718f23db4ad8fce646f inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ad8f627ba175a2718f23db4ad8fce646f"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad8f627ba175a2718f23db4ad8fce646f">smoothing_containment_envelope</a> (const size_t, const std::array&lt; size_t, 2 &gt; &amp;edge, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;attr) const</td></tr>
+<tr class="separator:ad8f627ba175a2718f23db4ad8fce646f inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ad53db51377c95f0dfc59f946915e2572"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572">smoothing_extra_energy</a> (const size_t vid) const</td></tr>
 <tr class="memdesc:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
 <tr class="separator:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -301,11 +302,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a81c16b6bbee153e77d3cad21deb0c2a5">edge_is_on_surface</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
 <tr class="memdesc:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is an edge part of the substructure.  <br /></td></tr>
 <tr class="separator:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30c6e56858f152545490ac39edea253a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a30c6e56858f152545490ac39edea253a"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a30c6e56858f152545490ac39edea253a">surface_envelope_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
-<tr class="memdesc:a30c6e56858f152545490ac39edea253a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside.  <br /></td></tr>
-<tr class="separator:a30c6e56858f152545490ac39edea253a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ad5168dc1d54ac89a08941a8b6e7143 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a8ad5168dc1d54ac89a08941a8b6e7143"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ad5168dc1d54ac89a08941a8b6e7143">surface_segment_is_outside</a> (const size_t a, const size_t b) const</td></tr>
-<tr class="separator:a8ad5168dc1d54ac89a08941a8b6e7143 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1416f740c1ba881a31844dd52ed8efde inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a1416f740c1ba881a31844dd52ed8efde"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1416f740c1ba881a31844dd52ed8efde">surface_segment_is_outside</a> (const size_t a, const size_t b, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;attr) const</td></tr>
+<tr class="separator:a1416f740c1ba881a31844dd52ed8efde inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d093c38bbc4d51e85a431cd36453e27 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a5d093c38bbc4d51e85a431cd36453e27"><td class="memItemLeft" align="right" valign="top">
 std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_edges_by_condition</b> (std::function&lt; bool(const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;)&gt; cond) const</td></tr>
 <tr class="separator:a5d093c38bbc4d51e85a431cd36453e27 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -642,6 +640,9 @@ std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a7875bd7c782836d0ed17f607d13e2eb2" id="r_a7875bd7c782836d0ed17f607d13e2eb2"><td class="memItemLeft" align="right" valign="top"><a id="a7875bd7c782836d0ed17f607d13e2eb2" name="a7875bd7c782836d0ed17f607d13e2eb2"></a>
 std::vector&lt; Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_E_envelope</b></td></tr>
 <tr class="separator:a7875bd7c782836d0ed17f607d13e2eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4497c7e354706fc2fdbb21838487327" id="r_aa4497c7e354706fc2fdbb21838487327"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#aa4497c7e354706fc2fdbb21838487327">m_input_envelopes</a></td></tr>
+<tr class="memdesc:aa4497c7e354706fc2fdbb21838487327"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input curve file, when there are several: a tracked segment is held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>), m_envelope stays their union. The 2D twin of TetWildMesh::m_input_envelopes.  <br /></td></tr>
+<tr class="separator:aa4497c7e354706fc2fdbb21838487327"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3cc4cae283bcbfdfb016be2947e94fd3" id="r_a3cc4cae283bcbfdfb016be2947e94fd3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a3cc4cae283bcbfdfb016be2947e94fd3">m_has_parts</a> = false</td></tr>
 <tr class="separator:a3cc4cae283bcbfdfb016be2947e94fd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
@@ -948,8 +949,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="afc48a873f2cd7ad5c8957e655d5cf8a5" name="afc48a873f2cd7ad5c8957e655d5cf8a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc48a873f2cd7ad5c8957e655d5cf8a5">&#9670;&#160;</a></span>init_mesh()</h2>
+<a id="a3bbe218c729af7fe0d53371f9a553cdc" name="a3bbe218c729af7fe0d53371f9a553cdc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3bbe218c729af7fe0d53371f9a553cdc">&#9670;&#160;</a></span>init_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1006,7 +1007,19 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>free_point_vids</em> = <code>{}</code>&#160;</td>
+          <td class="paramname"><em>free_point_vids</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int &gt; *&#160;</td>
+          <td class="paramname"><em>E_env_input</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; InputSet &gt; *&#160;</td>
+          <td class="paramname"><em>E_input_set</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1027,6 +1040,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
     <tr><td class="paramname">V_env,E_env</td><td>the curves the envelope is built around. These are the <em>original</em> input curves, not the arrangement's constrained edges: the optimizer has to stay near what the user gave us, not near the simplified version of it. Same arrangement as tetwild, which hands its optimizer the envelope built on the unsimplified input surface. </td></tr>
     <tr><td class="paramname">E_orientation</td><td>optional: per row of E, the input's direction on it, measured along the row as written (embed_segments' E_out_orientation). When given, the tracked edges carry it and m_tracks_orientation is set. </td></tr>
     <tr><td class="paramname">free_point_vids</td><td>rows of V that stand for input FREE POINTS &ndash; input vertices with no incident segment. Each is anchored in m_feature_points exactly like a polyline endpoint: same ball, same collapse policy, same retention audit. They cannot be derived here the way endpoints and junctions are, because their valence in E is 0 &ndash; the same valence as every background-grid vertex. </td></tr>
+    <tr><td class="paramname">E_env_input,E_input_set</td><td>with several inputs: per row of E_env, the input it came from, which builds m_input_envelopes; per row of E, its input set. Null =&gt; one input, and every tracked segment gets input 0. </td></tr>
   </table>
   </dd>
 </dl>
@@ -1063,6 +1077,74 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <dl class="section return"><dt>Returns</dt><dd>the number of vertices refined. </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a04339a0aa3322c9a1125345b6cefd882" name="a04339a0aa3322c9a1125345b6cefd882"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04339a0aa3322c9a1125345b6cefd882">&#9670;&#160;</a></span>smoothing_energy_envelope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::triwild::TriWildMesh::smoothing_energy_envelope </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The pull toward the inputs of the vertex's own segments, one real envelope at a time: the member of their union of input sets the vertex is farthest from. See TetWildMesh::smoothing_energy_envelope. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a84527f36a7bfcd3d3b78ec7672939ace">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a1a3a2426a5b6d1edd8fb7deadde4b30a" name="a1a3a2426a5b6d1edd8fb7deadde4b30a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a3a2426a5b6d1edd8fb7deadde4b30a">&#9670;&#160;</a></span>surface_envelope_for_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::components::triwild::TriWildMesh::surface_envelope_for_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A tracked segment's containment: the envelopes of its input set. A segment that is not tracked covers no input &ndash; the collapse's chord pre-check asks about one &ndash; and is held to the union, as before: a necessary condition for the segments around it. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac232b143240a6d4b4d788c9fb4faf560">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1107,6 +1189,23 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 <p>Whether flood_fill ran, so that the writers leave the part ids out rather than writing their defaults as if they were parts. </p>
+
+</div>
+</div>
+<a id="aa4497c7e354706fc2fdbb21838487327" name="aa4497c7e354706fc2fdbb21838487327"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4497c7e354706fc2fdbb21838487327">&#9670;&#160;</a></span>m_input_envelopes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a> wmtk::components::triwild::TriWildMesh::m_input_envelopes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>One envelope per input curve file, when there are several: a tracked segment is held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>), m_envelope stays their union. The 2D twin of TetWildMesh::m_input_envelopes. </p>
+<p>Empty with one input, and then every segment is held to m_envelope as it always was. Built by init_mesh around the same curves as m_envelope, at the same eps and predicate. </p>
 
 </div>
 </div>

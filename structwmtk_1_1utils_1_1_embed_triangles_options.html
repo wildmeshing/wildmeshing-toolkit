@@ -99,6 +99,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_collinear_input
 int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</td></tr>
 <tr class="memdesc:a0c7b87023ce71690fb274bca2a3b8154"><td class="mdescLeft">&#160;</td><td class="mdescRight">Threads for the parts that run in parallel (so far the tracked surface's orientation). <br /></td></tr>
 <tr class="separator:a0c7b87023ce71690fb274bca2a3b8154"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a359ae61a5905c24fb1e6fff1938297f5" id="r_a359ae61a5905c24fb1e6fff1938297f5"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_options.html#a359ae61a5905c24fb1e6fff1938297f5">triangle_input</a> = nullptr</td></tr>
+<tr class="separator:a359ae61a5905c24fb1e6fff1938297f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Options for embed_triangles_in_tets. All checks are off by default. </p>
@@ -130,6 +132,21 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</t
       </table>
 </div><div class="memdoc">
 <p>Report how the provenance-derived "face is on the input surface" answer differs from the remesher's older colour-derived <code>facets_on_input</code>. Diagnostic only &ndash; the surface always comes from provenance; this just counts the disagreement. </p>
+
+</div>
+</div>
+<a id="a359ae61a5905c24fb1e6fff1938297f5" name="a359ae61a5905c24fb1e6fff1938297f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a359ae61a5905c24fb1e6fff1938297f5">&#9670;&#160;</a></span>triangle_input</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt;int&gt;* wmtk::utils::EmbedTrianglesOptions::triangle_input = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Optional, per input triangle (indexing <code>triangle_indices</code>): the input it belongs to, negative for none. With it the orientation repair keeps to one input &ndash; a facet is linked only to facets on the same inputs &ndash; so an input facing the other way next to another is not reversed to agree with it. Without it all triangles are one input, as before. </p>
 
 </div>
 </div>

@@ -97,9 +97,9 @@ Public Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_duplicates</b> (const double eps)</td></tr>
 <tr class="memdesc:aa74c124f5249f70b274105df856a699a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merge vertices that are closer than eps. <br /></td></tr>
 <tr class="separator:aa74c124f5249f70b274105df856a699a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68c3ada213da2846c559aeac7050b909" id="r_a68c3ada213da2846c559aeac7050b909"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a68c3ada213da2846c559aeac7050b909">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#acc817f8f6500325879aff94703123805">tag_from_winding_number</a>=true)</td></tr>
-<tr class="memdesc:a68c3ada213da2846c559aeac7050b909"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_run.html">Run</a> the arrangement and tag the resulting cells.  <br /></td></tr>
-<tr class="separator:a68c3ada213da2846c559aeac7050b909"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae930c0e89e7eebf504f015d38642063b" id="r_ae930c0e89e7eebf504f015d38642063b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae930c0e89e7eebf504f015d38642063b">embed_surface</a> (const bool flood_fill=false, const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#acc817f8f6500325879aff94703123805">tag_from_winding_number</a>=true, const bool provenance=false)</td></tr>
+<tr class="memdesc:ae930c0e89e7eebf504f015d38642063b"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_run.html">Run</a> the arrangement and tag the resulting cells.  <br /></td></tr>
+<tr class="separator:ae930c0e89e7eebf504f015d38642063b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a247c5b4ea204873b007265da6815f155" id="r_a247c5b4ea204873b007265da6815f155"><td class="memItemLeft" align="right" valign="top"><a id="a247c5b4ea204873b007265da6815f155" name="a247c5b4ea204873b007265da6815f155"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate</b> ()</td></tr>
 <tr class="memdesc:a247c5b4ea204873b007265da6815f155"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove unreferenced vertices. <br /></td></tr>
@@ -122,9 +122,19 @@ const MatrixSi &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>T_tag
 <tr class="memitem:a633599720ed92ecd015742ede86f1a79" id="r_a633599720ed92ecd015742ede86f1a79"><td class="memItemLeft" align="right" valign="top"><a id="a633599720ed92ecd015742ede86f1a79" name="a633599720ed92ecd015742ede86f1a79"></a>
 const MatrixXi &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>F_on_surface</b> () const</td></tr>
 <tr class="separator:a633599720ed92ecd015742ede86f1a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae69e4ed1f9484d98f9573deba19221d9" id="r_ae69e4ed1f9484d98f9573deba19221d9"><td class="memItemLeft" align="right" valign="top"><a id="ae69e4ed1f9484d98f9573deba19221d9" name="ae69e4ed1f9484d98f9573deba19221d9"></a>
+const std::vector&lt; std::vector&lt; size_t &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>F_tags_surface</b> () const</td></tr>
+<tr class="memdesc:ae69e4ed1f9484d98f9573deba19221d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it. <br /></td></tr>
+<tr class="separator:ae69e4ed1f9484d98f9573deba19221d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa72d54edbecc986b63d7148255173188" id="r_aa72d54edbecc986b63d7148255173188"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aa72d54edbecc986b63d7148255173188">F_tags_surface_orientation</a> () const</td></tr>
+<tr class="separator:aa72d54edbecc986b63d7148255173188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ec77ab204d18f50061e6a820b6065b1" id="r_a5ec77ab204d18f50061e6a820b6065b1"><td class="memItemLeft" align="right" valign="top"><a id="a5ec77ab204d18f50061e6a820b6065b1" name="a5ec77ab204d18f50061e6a820b6065b1"></a>
 const MatrixXi &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>F_surface</b> () const</td></tr>
 <tr class="separator:a5ec77ab204d18f50061e6a820b6065b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9393770c1e5ed485f7a7a64f770f7153" id="r_a9393770c1e5ed485f7a7a64f770f7153"><td class="memItemLeft" align="right" valign="top"><a id="a9393770c1e5ed485f7a7a64f770f7153" name="a9393770c1e5ed485f7a7a64f770f7153"></a>
+const std::vector&lt; size_t &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>F_input</b> () const</td></tr>
+<tr class="memdesc:a9393770c1e5ed485f7a7a64f770f7153"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per row of F_surface(): the input it came from, SIZE_MAX for none. <br /></td></tr>
+<tr class="separator:a9393770c1e5ed485f7a7a64f770f7153"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa94181af8d7d3bc7d92dee3c0edf5f0e" id="r_aa94181af8d7d3bc7d92dee3c0edf5f0e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aa94181af8d7d3bc7d92dee3c0edf5f0e">write_surf_off</a> (const std::string &amp;filename) const</td></tr>
 <tr class="memdesc:aa94181af8d7d3bc7d92dee3c0edf5f0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write surface as read from image.  <br /></td></tr>
 <tr class="separator:aa94181af8d7d3bc7d92dee3c0edf5f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -201,6 +211,9 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="memitem:aa7361065746b3484ce46cb000c786a0e" id="r_aa7361065746b3484ce46cb000c786a0e"><td class="memItemLeft" align="right" valign="top"><a id="aa7361065746b3484ce46cb000c786a0e" name="aa7361065746b3484ce46cb000c786a0e"></a>
 std::vector&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags_surface</b></td></tr>
 <tr class="separator:aa7361065746b3484ce46cb000c786a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0079781b93517d346f481938f7353bd0" id="r_a0079781b93517d346f481938f7353bd0"><td class="memItemLeft" align="right" valign="top"><a id="a0079781b93517d346f481938f7353bd0" name="a0079781b93517d346f481938f7353bd0"></a>
+std::vector&lt; std::vector&lt; int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags_surface_orientation</b></td></tr>
+<tr class="separator:a0079781b93517d346f481938f7353bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a429e59c375473a9ce24df98332db454d" id="r_a429e59c375473a9ce24df98332db454d"><td class="memItemLeft" align="right" valign="top"><a id="a429e59c375473a9ce24df98332db454d" name="a429e59c375473a9ce24df98332db454d"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_nonmanifold_v</b></td></tr>
 <tr class="separator:a429e59c375473a9ce24df98332db454d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -323,8 +336,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a68c3ada213da2846c559aeac7050b909" name="a68c3ada213da2846c559aeac7050b909"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68c3ada213da2846c559aeac7050b909">&#9670;&#160;</a></span>embed_surface()</h2>
+<a id="ae930c0e89e7eebf504f015d38642063b" name="ae930c0e89e7eebf504f015d38642063b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae930c0e89e7eebf504f015d38642063b">&#9670;&#160;</a></span>embed_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -339,7 +352,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>tag_from_winding_number</em> = <code>true</code>&#160;</td>
+          <td class="paramname"><em>tag_from_winding_number</em> = <code>true</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>provenance</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -354,6 +373,7 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
   <table class="params">
     <tr><td class="paramname">flood_fill</td><td>Unify the tags of each region bounded by the surface. </td></tr>
     <tr><td class="paramname">tag_from_winding_number</td><td>Decide each cell's tags by evaluating the winding number of every input at its centroid (the default), rather than by propagating them across the arrangement's own surface provenance. See tag_from_provenance. </td></tr>
+    <tr><td class="paramname">provenance</td><td>Also record which inputs tile each surface face (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae69e4ed1f9484d98f9573deba19221d9" title="Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.">F_tags_surface()</a>), which the provenance tagging records anyway. </td></tr>
   </table>
   </dd>
 </dl>
@@ -363,6 +383,32 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <li>The tags should be volume-weighted so that the tag that represents the most volume should be picked.</li>
 <li>We should not rely on geometric look-up at all, but use the information stored in m_F_tags_surface. This is more work so I took a shortcut here.</li>
 </ol>
+
+</div>
+</div>
+<a id="aa72d54edbecc986b63d7148255173188" name="aa72d54edbecc986b63d7148255173188"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa72d54edbecc986b63d7148255173188">&#9670;&#160;</a></span>F_tags_surface_orientation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; std::vector&lt; int &gt; &gt; &amp; wmtk::components::simwild::EmbedSurface::F_tags_surface_orientation </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Parallel to <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#ae69e4ed1f9484d98f9573deba19221d9" title="Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.">F_tags_surface()</a>: each input's direction on the row, +1 along its vertex order, -1 against, 0 where its triangles face both ways. </p>
 
 </div>
 </div>

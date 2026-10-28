@@ -1,7 +1,7 @@
 var searchData=
 [
   ['u_0',['u',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#aa77efac2d7008c60c37c83116b58cbea',1,'wmtk::components::topological_offset::ExactBandIntegral::Local::U'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html#aaaf64cc25554ceec9fa764896bad804e',1,'wmtk::components::topological_offset::ExactBandIntegral::MaxInfo::U']]],
-  ['unionenvelope_1',['UnionEnvelope',['../classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html',1,'wmtk::components::topological_offset']]],
+  ['unionenvelope_1',['UnionEnvelope',['../classwmtk_1_1_union_envelope.html',1,'wmtk']]],
   ['unlockstatistics_2',['UnlockStatistics',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_unlock_statistics.html',1,'wmtk::components::prismatic_mesh']]],
   ['unstructured_20mesh_20editing_20algorithms_3',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
   ['update_4',['Explicit Attribute Update',['../index.html#autotoc_md57',1,'']]],

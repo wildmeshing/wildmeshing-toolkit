@@ -301,11 +301,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a88fe0eeba385539398ea620a99418a92" id="r_a88fe0eeba385539398ea620a99418a92"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a88fe0eeba385539398ea620a99418a92">edge_incident_surface_face_count</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e)</td></tr>
 <tr class="memdesc:a88fe0eeba385539398ea620a99418a92"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the faces incident to edge <code>e</code> are on the tracked surface.  <br /></td></tr>
 <tr class="separator:a88fe0eeba385539398ea620a99418a92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aebd345cce38dc0eb1a071c4750aa33ea" id="r_aebd345cce38dc0eb1a071c4750aa33ea"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aebd345cce38dc0eb1a071c4750aa33ea">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
-<tr class="memdesc:aebd345cce38dc0eb1a071c4750aa33ea"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside.  <br /></td></tr>
-<tr class="separator:aebd345cce38dc0eb1a071c4750aa33ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a491b19bab0edf5e47c56aa606317b4bc" id="r_a491b19bab0edf5e47c56aa606317b4bc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a491b19bab0edf5e47c56aa606317b4bc">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c) const</td></tr>
-<tr class="separator:a491b19bab0edf5e47c56aa606317b4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3739c2160bf9fab80cbeebf2506f6cb6" id="r_a3739c2160bf9fab80cbeebf2506f6cb6"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const</td></tr>
+<tr class="memdesc:a3739c2160bf9fab80cbeebf2506f6cb6"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside, given the attributes <code>attr</code> it carries &ndash; or, for a triangle an operation is creating, the ones the operation is about to write there.  <br /></td></tr>
+<tr class="separator:a3739c2160bf9fab80cbeebf2506f6cb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91a631b12e0bb9c41d0b8ccc6b730ed4" id="r_a91a631b12e0bb9c41d0b8ccc6b730ed4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a91a631b12e0bb9c41d0b8ccc6b730ed4">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const</td></tr>
+<tr class="separator:a91a631b12e0bb9c41d0b8ccc6b730ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c216b0a1b2f288f2d01fdaa4145b232" id="r_a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
 <tr class="memdesc:a1c216b0a1b2f288f2d01fdaa4145b232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
 <tr class="separator:a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -414,10 +414,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topol
 <tr class="memitem:a6afae375ecb270d675871e991c259e88" id="r_a6afae375ecb270d675871e991c259e88"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6afae375ecb270d675871e991c259e88">swap_edge_56_energy</a> (const std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;tets, const int op_case) override</td></tr>
 <tr class="memdesc:a6afae375ecb270d675871e991c259e88"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified energy to decide which of the 5 possible orientations should be chosen.  <br /></td></tr>
 <tr class="separator:a6afae375ecb270d675871e991c259e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e4c11ad1e91214a72707840cc45fc67" id="r_a2e4c11ad1e91214a72707840cc45fc67"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2e4c11ad1e91214a72707840cc45fc67">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
-<tr class="memdesc:a2e4c11ad1e91214a72707840cc45fc67"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against.  <br /></td></tr>
-<tr class="separator:a2e4c11ad1e91214a72707840cc45fc67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d59177fa56b8142e21ca9d9ee8cb8bb" id="r_a2d59177fa56b8142e21ca9d9ee8cb8bb"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2d59177fa56b8142e21ca9d9ee8cb8bb">smoothing_containment_envelope</a> (const size_t, const std::array&lt; size_t, 3 &gt; &amp;face, const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;attr) const</td></tr>
+<tr class="memdesc:a2d59177fa56b8142e21ca9d9ee8cb8bb"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the smoother checks tracked face <code>face</code> (attributes <code>attr</code>) at the moved vertex <code>vid</code> against; null skips the face.  <br /></td></tr>
+<tr class="separator:a2d59177fa56b8142e21ca9d9ee8cb8bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a234db64e096d5e1217a1d578577c7400" id="r_a234db64e096d5e1217a1d578577c7400"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a234db64e096d5e1217a1d578577c7400">smoothing_energy_envelope</a> (const size_t vid) const =0</td></tr>
+<tr class="memdesc:a234db64e096d5e1217a1d578577c7400"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a surface vertex is pulled toward while smoothing. A real envelope, never a composite (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2d59177fa56b8142e21ca9d9ee8cb8bb" title="Envelope the smoother checks tracked face face (attributes attr) at the moved vertex vid against; nul...">smoothing_containment_envelope()</a>). A derived mesh may select an order-2 or feature envelope here.  <br /></td></tr>
 <tr class="separator:a234db64e096d5e1217a1d578577c7400"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a477ae9fa6fb0040d489aed21cd8920ae" id="r_a477ae9fa6fb0040d489aed21cd8920ae"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a477ae9fa6fb0040d489aed21cd8920ae">boundary_edges_at_vertex_inside</a> (size_t) const</td></tr>
 <tr class="separator:a477ae9fa6fb0040d489aed21cd8920ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2811,8 +2812,8 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 
 </div>
 </div>
-<a id="a2e4c11ad1e91214a72707840cc45fc67" name="a2e4c11ad1e91214a72707840cc45fc67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e4c11ad1e91214a72707840cc45fc67">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
+<a id="a2d59177fa56b8142e21ca9d9ee8cb8bb" name="a2d59177fa56b8142e21ca9d9ee8cb8bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d59177fa56b8142e21ca9d9ee8cb8bb">&#9670;&#160;</a></span>smoothing_containment_envelope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2821,24 +2822,41 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_containment_envelope </td>
+          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::smoothing_containment_envelope </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>vid</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>face</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. </p>
-<p>The surface envelope is shared by both applications. A derived mesh may additionally select an order-2 feature envelope for the pull energy. </p>
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the smoother checks tracked face <code>face</code> (attributes <code>attr</code>) at the moved vertex <code>vid</code> against; null skips the face. </p>
+<p>By default the face's own containment, <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">surface_envelope_for_face()</a> &ndash; the one every operation's check takes, so a move and an operation hold a face to the same set. It used to be ONE envelope per vertex for all its faces, which cannot be right once faces at one vertex belong to different inputs: a vertex where the solid's boundary meets a sheet crossing it would hold the solid's faces to the sheet's envelope too, or the reverse. topological_offset keeps its per-vertex answer by overriding this.</p>
+<p>The pull (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a234db64e096d5e1217a1d578577c7400" title="Envelope a surface vertex is pulled toward while smoothing. A real envelope, never a composite (see s...">smoothing_energy_envelope()</a>) stays one real envelope per vertex: the pull calls the non-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries, which a composite cannot answer. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8bf390e6c30762db6cd4d902f372098a">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af4ae404c72722b541d29b2d213e77240">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -2865,6 +2883,8 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a surface vertex is pulled toward while smoothing. A real envelope, never a composite (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2d59177fa56b8142e21ca9d9ee8cb8bb" title="Envelope the smoother checks tracked face face (attributes attr) at the moved vertex vid against; nul...">smoothing_containment_envelope()</a>). A derived mesh may select an order-2 or feature envelope here. </p>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a2aef162d1dcaaedbfc99489818fd5bcc">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a7ddb5210954e1348d60ef0e9ed3cf7df">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a823346cec868dc9046db538614e9bd02">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
@@ -3449,8 +3469,8 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 
 </div>
 </div>
-<a id="aebd345cce38dc0eb1a071c4750aa33ea" name="aebd345cce38dc0eb1a071c4750aa33ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebd345cce38dc0eb1a071c4750aa33ea">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
+<a id="a3739c2160bf9fab80cbeebf2506f6cb6" name="a3739c2160bf9fab80cbeebf2506f6cb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3739c2160bf9fab80cbeebf2506f6cb6">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3462,8 +3482,18 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
           <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt; wmtk::TetOptimizerMesh::surface_envelope_for_face </td>
           <td>(</td>
           <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vids</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramname"><em>vids</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
   </td>
@@ -3473,16 +3503,16 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside. </p>
-<p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
-<p>Keyed on the vertex ids rather than the fid because every caller is a topological operation asking about the triangles it is ABOUT to create or has just created, where only the vids are known for certain. </p>
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside, given the attributes <code>attr</code> it carries &ndash; or, for a triangle an operation is creating, the ones the operation is about to write there. </p>
+<p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. The default answers with the one surface envelope; tetwild answers with the envelopes of the face's input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>), and an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) answers per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
+<p>Keyed on the vertex ids rather than the fid because every caller is a topological operation asking about the triangles it is ABOUT to create or has just created, where only the vids are known for certain. The attributes come from the caller for the same reason: a new triangle's own slot is written only after the check &ndash; a collapse checks its faces before it writes their attributes back, a split before it writes its halves &ndash; and until then may hold a recycled face's. Every operation knows the face it is deriving the new one from, and passes what it will write. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b48250dc81c766f943f5f1b2e4ac911">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af2bd3cc0da3eb0717829b38c7fdc5f37">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a792b7e894260f374e421d1add28e1ead">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aa20680137eecf377033151afe626b1d8">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
-<a id="a491b19bab0edf5e47c56aa606317b4bc" name="a491b19bab0edf5e47c56aa606317b4bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a491b19bab0edf5e47c56aa606317b4bc">&#9670;&#160;</a></span>surface_triangle_is_outside()</h2>
+<a id="a91a631b12e0bb9c41d0b8ccc6b730ed4" name="a91a631b12e0bb9c41d0b8ccc6b730ed4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91a631b12e0bb9c41d0b8ccc6b730ed4">&#9670;&#160;</a></span>surface_triangle_is_outside()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3506,7 +3536,13 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>c</em>&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3520,7 +3556,7 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Whether the tracked-surface triangle (a,b,c) is outside its containment envelope. False when it has none. Every surface containment check in the operations goes through here. </p>
+<p>Whether the tracked-surface triangle (a,b,c) with attributes <code>attr</code> (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">surface_envelope_for_face()</a>) is outside its containment envelope. False when it has none. Every surface containment check in the operations goes through here. </p>
 
 </div>
 </div>
@@ -4401,7 +4437,7 @@ vertex is within eps of this anchor", whether or not it carries the id. </p>
 
 <p>What p_face_attrs points at, so a derived class can register more. </p>
 <p>The counterpart of m_vertex_attr_group for faces. An application whose faces carry data the shared operations know nothing about &ndash; topological_offset labels each face by which part of the construction produced it &ndash; registers a second collection here, and it is resized, protected and rolled back with the shared one.</p>
-<p>Note what this does NOT do: the shared operations propagate face data by copying <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">SurfaceTagAttributes</a> values around (the split and collapse caches, the swap tracker), and they only ever see their own collection. Anything registered here survives the mesh changing shape, but its values are the registering application's to maintain. </p>
+<p>Note what this does NOT do: the shared operations propagate face data by copying <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> values around (the split and collapse caches, the swap tracker), and they only ever see their own collection. Anything registered here survives the mesh changing shape, but its values are the registering application's to maintain. </p>
 
 </div>
 </div>

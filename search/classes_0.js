@@ -29,8 +29,9 @@ var searchData=
   ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3aqslim_3a_3aedgeattributes_20_3e_26',['AttributeCollection&lt; wmtk::components::qslim::EdgeAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
   ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3aqslim_3a_3afaceattributes_20_3e_27',['AttributeCollection&lt; wmtk::components::qslim::FaceAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
   ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3aqslim_3a_3avertexattributes_20_3e_28',['AttributeCollection&lt; wmtk::components::qslim::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3ashortest_5fedge_5fcollapse_3a_3avertexattributes_20_3e_29',['AttributeCollection&lt; wmtk::components::shortest_edge_collapse::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3atetwild_3a_3atetfinalizeattributes_20_3e_30',['AttributeCollection&lt; wmtk::components::tetwild::TetFinalizeAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3atetwild_3a_3atetwildmesh_3a_3avertexextras_20_3e_31',['AttributeCollection&lt; wmtk::components::tetwild::TetWildMesh::VertexExtras &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
-  ['attributecontainergroup_32',['AttributeContainerGroup',['../classwmtk_1_1_attribute_container_group.html',1,'wmtk']]]
+  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3ashortest_5fedge_5fcollapse_3a_3afaceattributes_20_3e_29',['AttributeCollection&lt; wmtk::components::shortest_edge_collapse::FaceAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
+  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3ashortest_5fedge_5fcollapse_3a_3avertexattributes_20_3e_30',['AttributeCollection&lt; wmtk::components::shortest_edge_collapse::VertexAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
+  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3atetwild_3a_3atetfinalizeattributes_20_3e_31',['AttributeCollection&lt; wmtk::components::tetwild::TetFinalizeAttributes &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
+  ['attributecollection_3c_20wmtk_3a_3acomponents_3a_3atetwild_3a_3atetwildmesh_3a_3avertexextras_20_3e_32',['AttributeCollection&lt; wmtk::components::tetwild::TetWildMesh::VertexExtras &gt;',['../structwmtk_1_1_attribute_collection.html',1,'wmtk']]],
+  ['attributecontainergroup_33',['AttributeContainerGroup',['../classwmtk_1_1_attribute_container_group.html',1,'wmtk']]]
 ];
