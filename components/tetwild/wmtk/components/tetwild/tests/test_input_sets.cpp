@@ -450,3 +450,126 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
     mesh.mesh_improvement(3);
     check_all("after optimization");
 }
+
+TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]")
+{
+    // Input 0: the box [0,1]^3. Input 1: the box [1,2]x[0,1]^2, touching it at x = 1. Their tops,
+    // bottoms, fronts and backs are exactly coplanar and edge-adjacent, so each pair is one
+    // coplanar group spanning both inputs. Only the shared wall lies on both; a face anywhere
+    // else must carry its own box alone. With the group's inputs instead, 5052 of 6260 tracked
+    // faces carried both and the first split pass did not end.
+    std::vector<Vector3d> v;
+    std::vector<std::array<size_t, 3>> f;
+    std::vector<int> f_input;
+    for (int k = 0; k < 2; ++k) {
+        const size_t base = v.size();
+        for (int i = 0; i < 8; ++i) v.emplace_back(k + (i & 1), (i >> 1) & 1, (i >> 2) & 1);
+        const int tris[12][3] = {
+            {0, 2, 3},
+            {0, 3, 1},
+            {4, 5, 7},
+            {4, 7, 6},
+            {0, 1, 5},
+            {0, 5, 4},
+            {2, 6, 7},
+            {2, 7, 3},
+            {0, 4, 6},
+            {0, 6, 2},
+            {1, 3, 7},
+            {1, 7, 5}};
+        for (const auto& t : tris) {
+            f.push_back({{base + t[0], base + t[1], base + t[2]}});
+            f_input.push_back(k);
+        }
+    }
+    Parameters params;
+    params.init(v, f);
+    const auto envelope_of = [&](int k) {
+        std::vector<Eigen::Vector3i> F;
+        for (size_t i = 0; i < f.size(); ++i) {
+            if (k < 0 || f_input[i] == k) F.emplace_back(int(f[i][0]), int(f[i][1]), int(f[i][2]));
+        }
+        return envelope_around(v, F, params.eps);
+    };
+    const auto union_env = envelope_of(-1);
+
+    std::vector<Vector3r> v_rational;
+    std::vector<std::array<size_t, 3>> facets;
+    std::vector<bool> is_v_on_input;
+    std::vector<std::array<size_t, 4>> tets;
+    std::vector<bool> tet_face_on_input_surface;
+    std::vector<int8_t> tet_face_orientation;
+    std::vector<uint16_t> facet_input_set;
+    {
+        TetWildMesh mesh_insertion(params, union_env, 0);
+        mesh_insertion.insertion_by_volumeremesher(
+            v,
+            f,
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            &tet_face_orientation,
+            {},
+            {},
+            {},
+            nullptr,
+            &f_input,
+            &facet_input_set);
+    }
+    TetWildMesh mesh(params, union_env, 0);
+    mesh.init_from_Volumeremesher(
+        v_rational,
+        facets,
+        is_v_on_input,
+        tets,
+        tet_face_on_input_surface,
+        &tet_face_orientation,
+        nullptr,
+        nullptr,
+        &facet_input_set);
+    mesh.m_input_envelopes.set({envelope_of(0), envelope_of(1)});
+
+    const auto check_all = [&](const char* when) {
+        size_t n_both = 0, n_both_off_wall = 0, n_outside = 0;
+        for (const auto& t : mesh.get_faces()) {
+            const FaceAttributes& a = mesh.m_face_attribute[t.fid(mesh)];
+            if (!a.m_is_surface_fs) continue;
+            const uint16_t s = a.input_set();
+            const auto vs = mesh.get_face_vids(t);
+            const std::array<Vector3d, 3> tri{
+                {mesh.m_vertex_attribute[vs[0]].m_posf,
+                 mesh.m_vertex_attribute[vs[1]].m_posf,
+                 mesh.m_vertex_attribute[vs[2]].m_posf}};
+            for (int k = 0; k < 2; ++k) {
+                if ((s & (1u << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
+                    ++n_outside;
+                }
+            }
+            if (s != 0b11) continue;
+            ++n_both;
+            for (const auto& p : tri) {
+                if (std::abs(p[0] - 1) > params.eps) {
+                    ++n_both_off_wall;
+                    break;
+                }
+            }
+        }
+        logger().info(
+            "[input sets] {}: {} faces on both boxes, {} of them off the shared wall; {} outside "
+            "an envelope of their set",
+            when,
+            n_both,
+            n_both_off_wall,
+            n_outside);
+        CHECK(n_both > 0);
+        CHECK(n_both_off_wall == 0);
+        CHECK(n_outside == 0);
+        return n_both > 0 && n_both_off_wall == 0 && n_outside == 0;
+    };
+    // Stop here on failure: the optimization did not end when the sets claimed too much.
+    REQUIRE(check_all("after insertion"));
+    mesh.mesh_improvement(3);
+    check_all("after optimization");
+}

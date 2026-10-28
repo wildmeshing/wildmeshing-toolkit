@@ -201,6 +201,7 @@ void TetWildMesh::insertion_by_volumeremesher(
 
     const bool want_inputs = face_input != nullptr && facet_input_set != nullptr;
     utils::EmbedTrianglesProvenance provenance;
+    provenance.want_face_triangles = want_inputs;
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -218,41 +219,29 @@ void TetWildMesh::insertion_by_volumeremesher(
         has_features ? &vr_features : nullptr,
         has_features ? features_out : nullptr);
 
-    // Each facet's input set: the inputs of the triangles of every coplanar group it tiles. A
-    // group spans the triangles of SEVERAL inputs only where those inputs meet exactly coplanar
-    // along an edge; a facet of such a group then gets all of them, and is held to all of them
-    // -- what the provenance says, though the facet need not lie on each one's own triangles.
-    // Counted, since that is the one case where the set may claim more than the geometry.
+    // Each facet's input set: the inputs of the triangles it overlaps with positive area
+    // (EmbedTrianglesProvenance::face_triangles). Not those of its coplanar group: a group spans
+    // several inputs wherever they are exactly coplanar and edge-adjacent, and every facet of it
+    // would then be held to all of them: on two touching boxes, 4568 of 6260 tracked facets lay
+    // outside an envelope of their set, and the first split pass did not end. Several inputs
+    // only where they overlap.
     if (want_inputs) {
-        const std::vector<uint32_t>& tri_group = provenance.triangle_group;
-        size_t n_groups = 0;
-        for (const uint32_t g : tri_group) {
-            if (g == std::numeric_limits<uint32_t>::max()) continue;
-            n_groups = std::max<size_t>(n_groups, size_t(g) + 1);
-        }
-        std::vector<uint16_t> group_set(n_groups, 0);
-        for (size_t t = 0; t < tri_group.size(); ++t) {
-            const int in = t < face_input->size() ? (*face_input)[t] : -1;
-            if (tri_group[t] == std::numeric_limits<uint32_t>::max() || in < 0) continue;
-            group_set[tri_group[t]] |= uint16_t(1u << in);
-        }
         const auto several = [](uint16_t s) { return (s & (s - 1)) != 0; };
         facet_input_set->assign(polygon_faces.size(), 0);
-        for (const auto& [facet, g] : provenance.face_groups) {
-            (*facet_input_set)[facet] |= group_set[g];
+        for (size_t f = 0; f < polygon_faces.size(); ++f) {
+            for (const uint32_t t : provenance.face_triangles[f]) {
+                const int in = t < face_input->size() ? (*face_input)[t] : -1;
+                if (in >= 0) (*facet_input_set)[f] |= uint16_t(1u << in);
+            }
         }
-        const size_t n_mixed_groups = std::count_if(group_set.begin(), group_set.end(), several);
         const size_t n_tracked = facet_input_set->size() -
                                  std::count(facet_input_set->begin(), facet_input_set->end(), 0);
         const size_t n_multi_facets =
             std::count_if(facet_input_set->begin(), facet_input_set->end(), several);
         logger().info(
-            "input sets: {} tracked facets, {} with several inputs; {} of {} coplanar groups "
-            "span several inputs",
+            "input sets: {} tracked facets, {} with several inputs",
             n_tracked,
-            n_multi_facets,
-            n_mixed_groups,
-            n_groups);
+            n_multi_facets);
     }
 
 
