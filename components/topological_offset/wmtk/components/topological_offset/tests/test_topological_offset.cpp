@@ -3739,11 +3739,11 @@ TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 
 TEST_CASE("surface-energy-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the rule's
-    // own offset_amips_weight default (0.5 under "surface", 1 otherwise), a weight read through,
-    // the refusals (a weight > 1 under "surface", a negative weight other than -1,
-    // settle_stall_eps away from its default under another rule), stencil_order's new default 5
-    // and its min 1.
+    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it:
+    // offset_amips_weight's default 1 under every rule (since 2026-10-28 it weights the AMIPS term
+    // alone, so it is the ratio of the two terms; a weight above 1 is accepted), a weight read
+    // through, the refusals (a negative weight, the spec's min; settle_stall_eps away from its
+    // default under another rule), stencil_order's new default 5 and its min 1.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3763,7 +3763,7 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     CHECK(by_default.settle_stall_eps == 0.1);
     const Parameters surface(injected({{"EXPERIMENTAL_band_volume_rule", "surface"}}));
     CHECK(surface.band_volume_rule == "surface");
-    CHECK(surface.offset_amips_weight == 0.5);
+    CHECK(surface.offset_amips_weight == 1.);
     const Parameters weighted(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"},
          {"offset_amips_weight", 0.25},
@@ -3772,10 +3772,12 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     CHECK(weighted.settle_stall_eps == 0.05);
     const Parameters exact_w(injected({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
     CHECK(exact_w.offset_amips_weight == 1.);
-    CHECK_THROWS(
-        Parameters{injected(
-            {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 1.5}})});
-    CHECK_THROWS(Parameters{injected({{"offset_amips_weight", -0.5}})});
+    const Parameters heavy(
+        injected({{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 10.}}));
+    CHECK(heavy.offset_amips_weight == 10.);
+    jse::JSE negative;
+    negative.strict = true;
+    CHECK_FALSE(negative.verify_json(with_app({{"offset_amips_weight", -0.5}}), spec));
     CHECK_THROWS(Parameters{injected({{"settle_stall_eps", 0.2}})});
     jse::JSE strict;
     strict.strict = true;
@@ -3809,16 +3811,18 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
          {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "surface"}},
         g.V);
-    REQUIRE(param.offset_amips_weight == 0.5);
+    REQUIRE(param.offset_amips_weight == 1.);
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_surface_sums";
     const auto mesh = grid_offset_mesh(g, param, out);
     REQUIRE(mesh->surface_energy());
     const double f = mesh->m_offset_params.front_conv_frac();
-    // (1 - w) L / front_conv_frac()^2, L the bounding box diagonal
+    // L / front_conv_frac()^2, L the bounding box diagonal, whatever offset_amips_weight is
     REQUIRE(mesh->m_offset_params.diag_l > 0.);
-    CHECK(
-        mesh->surface_term_weight() == Catch::Approx(0.5 * mesh->m_offset_params.diag_l / (f * f)));
+    CHECK(mesh->surface_term_weight() == Catch::Approx(mesh->m_offset_params.diag_l / (f * f)));
+    mesh->m_offset_params.offset_amips_weight = 0.3;
+    CHECK(mesh->surface_term_weight() == Catch::Approx(mesh->m_offset_params.diag_l / (f * f)));
+    mesh->m_offset_params.offset_amips_weight = 1.;
 
     const auto faces = mesh->offset_surface_faces();
     REQUIRE(faces.size() > 10);

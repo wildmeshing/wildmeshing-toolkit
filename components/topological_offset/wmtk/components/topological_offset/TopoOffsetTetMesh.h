@@ -1016,7 +1016,8 @@ public:
 
     /**
      * @name EXPERIMENTAL_band_volume_rule "surface" (2026-10-27, Spencer's HackMD "Global surface
-     * integral", revised the same day): E = (w / s^3) sum_t V_t A(t)^3 + (1 - w) L / front_conv^2
+     * integral", revised the same day; offset weight 1 since 2026-10-28): E = (w / s^3) sum_t V_t
+     * A(t)^3 + L / front_conv^2
      * sum over the front's faces of O(f), L the bounding box diagonal, O(f) = (A_f / |S|) sum over the interior stencil points x_i
      * (interior_face_stencil(), stencil_order) of (d(x_i) - delta)^2. No cell carries an offset
      * term (cell_energy()); every rule adds the faces it changes beside its cells' sums: a collapse
@@ -1027,8 +1028,8 @@ public:
      * @{
      */
     bool surface_energy() const { return m_offset_params.band_volume_rule == "surface"; }
-    /// W = (1 - w) L / front_conv_frac()^2, w = offset_amips_weight, L the bounding box diagonal
-    /// (diag_l): W A_f mean r^2, r = (d - delta) / delta, is (1 - w) L (A_f / |S|) sum
+    /// W = L / front_conv_frac()^2, L the bounding box diagonal (diag_l): W A_f mean r^2, r =
+    /// (d - delta) / delta, is L (A_f / |S|) sum
     /// (d - delta)^2 / front_conv^2 -- a volume, as the AMIPS term (w / s^3) V A^3 is, both
     /// integrands 1 at convergence (HackMD, 2026-10-27 revision).
     double surface_term_weight() const;

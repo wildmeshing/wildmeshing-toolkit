@@ -1029,8 +1029,8 @@ const std::vector<std::array<double, 3>>& interior_face_stencil(int order);
  *
  * r = (d - delta) / delta the potential's relative_residual(), q_k = w_k0 x + w_k1 q1 + w_k2 q2
  * (interior_face_stencil()), A_f = |N| / 2 with N = (q1 - x) x (q2 - x) affine in x, and W the
- * term's weight ((1 - w) L / front_conv_frac()^2, L the bounding box diagonal,
- * TopoOffsetTetMesh::surface_term_weight()). So W A_f m_f = (1 - w) L (A_f / |S|) sum
+ * term's weight (L / front_conv_frac()^2, L the bounding box diagonal,
+ * TopoOffsetTetMesh::surface_term_weight()). So W A_f m_f = L (A_f / |S|) sum
  * (d(q_k) - delta)^2 / front_conv^2, the spec's weighted O(f).
  * Exact derivatives: grad m = (2 / |S|) sum r w_k0 grad r(q_k), hess m = (2 / |S|) sum w_k0^2
  * (grad r grad r^T + r hess r); grad (A m) = A grad m + m grad A, hess (A m) = A hess m +

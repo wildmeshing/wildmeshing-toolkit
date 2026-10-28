@@ -4336,11 +4336,12 @@ void TopoOffsetTetMesh::folded_front_faces_at(
 
 double TopoOffsetTetMesh::surface_term_weight() const
 {
-    // (1 - w) L / front_conv_frac()^2, L the bounding box diagonal: the HackMD's
-    // (1 - w) L int (d - delta)^2 / front_conv^2 dS, a volume like the AMIPS term, both
-    // integrands 1 at convergence.
+    // L / front_conv_frac()^2, L the bounding box diagonal: L int (d - delta)^2 / front_conv^2 dS,
+    // a volume like the AMIPS term, both integrands 1 at convergence. Unweighted since 2026-10-28
+    // (Spencer: "the amips term has weight w_a, and the offset term has no weight. This way w_a is
+    // the ratio between the two"); it was (1 - w) L / front_conv_frac()^2.
     const double f = m_offset_params.front_conv_frac();
-    return (1. - m_offset_params.offset_amips_weight) * m_offset_params.diag_l / (f * f);
+    return m_offset_params.diag_l / (f * f);
 }
 
 double TopoOffsetTetMesh::surface_face_term(const size_t a, const size_t b, const size_t c) const

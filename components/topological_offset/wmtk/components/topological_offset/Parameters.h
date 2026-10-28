@@ -179,7 +179,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
     /// at the vertex, plus the bisector jumps D_t of its flagged cells). "surface" (2026-10-27):
-    /// no band term; the offset term is a surface integral over the front, (1 - w) L /
+    /// no band term; the offset term is a surface integral over the front, L /
     /// front_conv^2 (L the bounding box diagonal) sum over the offset faces of (A_f / |S|) sum over the interior stencil of
     /// (d - target_distance)^2 (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
     std::string band_volume_rule = "corner_bound";
@@ -518,27 +518,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         offset_amips_weight = json_params["offset_amips_weight"];
-        // -1 (the spec's default): the rule's own default -- 0.5 under
-        // EXPERIMENTAL_band_volume_rule "surface", whose offset term is weighted 1 - w (Spencer
-        // 2026-10-27), 1 otherwise (and in 2D), the weight the band-volume runs used.
-        if (offset_amips_weight == -1.) {
-            offset_amips_weight = band_volume_rule == "surface" ? 0.5 : 1.;
-        } else if (offset_amips_weight < 0.) {
-            log_and_throw_error(
-                "offset_amips_weight must be >= 0 (or -1, the rule's default), not {}",
-                offset_amips_weight);
-        }
-        if (band_volume_rule == "surface" && offset_amips_weight > 1.) {
-            log_and_throw_error(
-                "offset_amips_weight {} > 1: under EXPERIMENTAL_band_volume_rule \"surface\" the "
-                "offset term is weighted 1 - offset_amips_weight, which would be negative",
-                offset_amips_weight);
-        }
-        if (band_volume_rule == "surface" && offset_amips_weight == 1.) {
-            logger().warn(
-                "offset_amips_weight 1 under EXPERIMENTAL_band_volume_rule \"surface\": the "
-                "offset term's weight 1 - w is 0, so the energy is the AMIPS term alone");
-        }
         debug_crossings = json_params["DEBUG_crossings"];
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
