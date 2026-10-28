@@ -7,6 +7,7 @@
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Preallocation.hpp>
@@ -158,11 +159,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // save output
-        if (component_io.memory()) {
-            topological_offset::collect_memory_output(mesh, component_io);
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (component_io.memory())
             mesh.write_curve("", &component_io.result.first);
-        } else
-            mesh.write_msh_groups(output_filename.string());
+        else
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
@@ -241,14 +242,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // save output
-        if (component_io.memory()) {
-            // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
-            auto keys = io::default_output_keys();
-            keys["mesh_surf.vtu"] = "input_complex";
-            topological_offset::collect_memory_output(mesh, component_io, keys);
+        // `_surf` holds the input-complex faces here; `surface` is the extracted boundary.
+        auto keys = io::default_output_keys();
+        keys["mesh_surf.vtu"] = "input_complex";
+        topological_offset::collect_memory_output(mesh, component_io, keys);
+        if (component_io.memory())
             mesh.write_surface("", &component_io.result.first);
-        } else
-            mesh.write_msh_groups(output_filename.string());
+        else
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_man_params.save_vtu) {
             mesh.write_vtu(debug_outfilename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
         }
