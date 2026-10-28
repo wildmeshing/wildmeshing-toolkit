@@ -438,7 +438,7 @@ public:
      * collapses (collapse_before_vertex() / collapse_after_connectivity()), swaps
      * (swap_after_cells(); the 4-4 / 5-6 case search, swap_edge_44_energy(), and the face swap's
      * gate, swap_face_before(), on candidate_energy()), the smoothing veto and the projected step
-     * (smoothing_ring_energy()), the split gate (EXPERIMENTAL_split_energy_gate). The engine's
+     * (smoothing_ring_energy()); splits have no energy rule. The engine's
      * AMIPS^3 rules admit everything (collapse_quality_allowed(), swap_quality_allowed()), and the
      * smoother minimises the vertex's part of E (smoothing_extra_energy()) with this component's
      * solver criterion (smoothing_solver()).
@@ -793,8 +793,8 @@ public:
      *     (swap_after_cells()). Strict, so a swap pass terminates.
      *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
      *     the sum over the vertex's ring after the move may not exceed the sum before.
-     *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
-     *     the parents').
+     *   - Split: no rule (since 2026-10-28 none at all: EXPERIMENTAL_split_energy_gate and the
+     *     "surface" rule's gate are gone; only the length against the sizing field proposes one).
      * The engine's own AMIPS^3 rules for collapses and swaps are off: collapse_quality_allowed()
      * and swap_quality_allowed() admit everything, and this energy decides in their place.
      *
@@ -1015,10 +1015,6 @@ public:
     /// Collapses and swaps refused for raising E over the cells they change, per operation group
     /// ([band volume energy]).
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
-    /// EXPERIMENTAL_split_energy_gate: the split in flight's parents' sum of tet_energy() (taken in
-    /// split_before_cells()), and the splits refused for not lowering it, per operation group.
-    mutable wmtk::threading::enumerable_thread_specific<double> m_split_energy_before;
-    mutable std::atomic<int> m_volume_reject_split{0};
 
     /// E, the sum of tet_energy() over every live tet: the [band volume energy] lines'. Under
     /// EXPERIMENTAL_band_volume_rule "surface" plus surface_term_total().
@@ -1053,8 +1049,6 @@ public:
     double surface_face_term(size_t a, size_t b, size_t c) const;
     /// surface_face_term() summed over the live offset faces through vid.
     double surface_term_at(size_t vid) const;
-    /// ... over the live offset faces through both a and b: those on the edge (a, b).
-    double surface_term_on_edge(size_t a, size_t b) const;
     /// ... over every live offset face.
     double surface_term_total() const;
     /// O*, the settle test's metric under "surface" (HackMD "settlement option 2"): the max over
@@ -1080,16 +1074,6 @@ public:
     /// The vertex the shared smoother is placing on this thread, for smoothing_ring_energy()
     /// (which is handed the ring alone); size_t(-1) outside smooth_nonfront_vertex().
     mutable wmtk::threading::enumerable_thread_specific<size_t> m_smoothing_vid{size_t(-1)};
-    /// The split gate's surface half: the faces on the split edge, taken in split_before_cells().
-    mutable wmtk::threading::enumerable_thread_specific<double> m_split_surface_before;
-    /// Whether a loop split is gated by the energy: EXPERIMENTAL_split_energy_gate or the
-    /// "surface" rule, never under TetWild's rules (m_op_rules) and never for
-    /// front_pocket_split()'s splits (m_pocket_splitting).
-    bool split_gate_active() const
-    {
-        return (m_offset_params.split_energy_gate || surface_energy()) && !tetwild_rules() &&
-               !m_pocket_splitting;
-    }
     /** @} */
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
     /// error in units of the tolerance. The scale of face_offset_term() and of the repulsion term.

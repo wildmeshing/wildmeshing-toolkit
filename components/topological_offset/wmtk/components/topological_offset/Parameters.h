@@ -180,9 +180,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// collapse, swap, each with its smoothing) before the march, with no refinement and no split
     /// of a marched edge; same stop test. 0 (the default) = off. See the spec doc.
     int repulsion_rounds = 0;
-    /// EXPERIMENTAL (2026-10-09). Every loop split is committed only if E, summed over the cells
-    /// it changes, strictly falls -- judged right after the split, before any smoothing.
-    bool split_energy_gate = false;
     /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
     /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound" (the default): vol times the min
     /// over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on
@@ -379,7 +376,6 @@ struct Parameters : public wmtk::OptimizerParameters
         init_optimize = json_params["init_optimize"];
         repulsion_smoothing_passes = json_params["repulsion_smoothing_passes"];
         repulsion_rounds = json_params["repulsion_rounds"];
-        split_energy_gate = json_params["EXPERIMENTAL_split_energy_gate"];
         band_volume_rule = json_params["EXPERIMENTAL_band_volume_rule"];
         if (band_volume_rule != "corner_bound" && band_volume_rule != "exact" &&
             band_volume_rule != "front_flux" && band_volume_rule != "surface") {

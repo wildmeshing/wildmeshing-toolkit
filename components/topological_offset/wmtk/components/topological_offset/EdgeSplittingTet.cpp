@@ -261,25 +261,14 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) return false;
-        // EXPERIMENTAL_split_energy_gate: the children's tet_energy() -- every cell at the new
-        // vertex, labels inherited -- must sum strictly below the parents' (a NaN refuses). The
-        // engine rolls a refused split back. The loop's gate: TetWild's rules (m_op_rules, every
-        // TetWild pass) have no split rule.
-        // EXPERIMENTAL_band_volume_rule "surface" turns the gate on (Spencer's HackMD: a split's
-        // cells and faces after may not exceed them before, a tie passing) and adds the offset
-        // faces at the new vertex against those on the split edge (split_before_cells()). The
-        // splits of front_pocket_split() -- pinned cells, spanned simplices, settle_mark
-        // "vertex_split"'s edges -- keep invariants the loop relies on and are never gated.
-        if (split_gate_active()) {
-            const size_t vm = t.vid(*this);
-            double after = tet_energy_sum(get_one_ring_tids_for_vertex(vm));
-            if (surface_energy()) after += surface_term_at(vm);
-            const double before = m_split_energy_before.local() + m_split_surface_before.local();
-            if (surface_energy() ? !(after <= before) : !(after < before)) { // a NaN refuses
-                ++m_volume_reject_split;
-                return false;
-            }
-        }
+        // No energy rule for a split (Spencer, 2026-10-28: "There should be no split gates besides
+        // length"): what proposes a split is the length against the sizing field, and nothing
+        // refuses it for the energy. The gate that was here (EXPERIMENTAL_split_energy_gate, and
+        // the "surface" rule's) is gone: a midpoint split moves no geometry, and the gate refused
+        // the very refinement the sizing field asked for -- on 37093 ~1,100 splits a turn, the
+        // long edges of coarse front faces among them (their children's denser stencil found error
+        // the parent's had missed), which held every shorter edge of their cells in the
+        // longest-edge wait (split_edge_before()).
         ++iter_cnt_split;
         // Read from the result, not from a cached flag: the new vertex is on the offset iff
         // split_after_cells() derived it so from the endpoints.
@@ -802,19 +791,6 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
         for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
         face_extra_capture(tids, m_face_extra_split.local());
         edge_label_capture(tids, m_edge_label_split.local());
-    }
-    // EXPERIMENTAL_split_energy_gate (or the "surface" rule's gate, split_gate_active()): the
-    // parents' sum of tet_energy(), which split_edge_after() compares the children's against,
-    // and under "surface" the offset faces on the edge, the only ones the split changes.
-    m_split_surface_before.local() = 0.;
-    if (split_gate_active()) {
-        std::vector<size_t> tids;
-        for (const Tuple& tt : parents) tids.push_back(tt.tid(*this));
-        m_split_energy_before.local() = tet_energy_sum(tids);
-        if (surface_energy()) {
-            m_split_surface_before.local() =
-                surface_term_on_edge(edge.vid(*this), edge.switch_vertex(*this).vid(*this));
-        }
     }
     return true;
 }

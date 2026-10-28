@@ -4005,6 +4005,8 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     jse::JSE strict;
     strict.strict = true;
     CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", 0}}), spec));
+    // EXPERIMENTAL_split_energy_gate is gone (2026-10-28: splits have no energy rule): refused.
+    CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_split_energy_gate", true}}), spec));
     // EXPERIMENTAL_stencil_type: "fem" by default (since 2026-10-28), "interior" read through,
     // anything else refused by the spec's options.
     CHECK(by_default.stencil_type == "fem");

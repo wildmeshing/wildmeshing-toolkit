@@ -1593,7 +1593,7 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
 
     // use_rest_pose: every cell at the midpoint was created by this split and the snapshot copy
     // gave each the parent's rest -- re-stamp, or a child measures itself against a tet twice its
-    // size. Before split_edge_after()'s EXPERIMENTAL_split_energy_gate reads the children.
+    // size.
     for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
         stamp_rest_cell(tid);
     }
@@ -4379,16 +4379,6 @@ double TopoOffsetTetMesh::surface_term_at(const size_t vid) const
     return s;
 }
 
-double TopoOffsetTetMesh::surface_term_on_edge(const size_t a, const size_t b) const
-{
-    double s = 0.;
-    for_each_live_offset_face_at(a, [&](const std::array<size_t, 3>& f, size_t) {
-        if (f[0] == b || f[1] == b || f[2] == b) s += surface_face_term(f[0], f[1], f[2]);
-        return false;
-    });
-    return s;
-}
-
 double TopoOffsetTetMesh::surface_term_total() const
 {
     // offset_surface_faces() order, summed serially; each face evaluated on the mesh's threads.
@@ -5840,7 +5830,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 settle_e_prev = settle_metric();
             }
             const int vol_c0 = m_volume_reject_collapse.load(),
-                      vol_s0 = m_volume_reject_swap.load(), vol_p0 = m_volume_reject_split.load();
+                      vol_s0 = m_volume_reject_swap.load();
             const int tie_c0 = m_plastic_tie_collapse.load(), tie_s0 = m_plastic_tie_swap.load();
             const int fold_c0 = m_fold_reject_collapse.load(), fold_s0 = m_fold_reject_swap.load(),
                       fold_m0 = m_fold_reject_smooth.load();
@@ -5864,15 +5854,14 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 logger().info(
                     "\t[band volume energy] turn {} {} group: E {:.10g} -> {:.10g} ({:+.4g}) | "
                     "refused for raising E over the changed cells (the only rule): {} collapses, "
-                    "{} swaps, {} splits",
+                    "{} swaps",
                     it + 1,
                     group_names[gi],
                     energy_before_group,
                     energy_after_group,
                     energy_after_group - energy_before_group,
                     m_volume_reject_collapse.load() - vol_c0,
-                    m_volume_reject_swap.load() - vol_s0,
-                    m_volume_reject_split.load() - vol_p0);
+                    m_volume_reject_swap.load() - vol_s0);
                 if (fold_reject_active()) {
                     logger().info(
                         "\t[op reject] turn {} {} group: refused for raising the folded offset "
