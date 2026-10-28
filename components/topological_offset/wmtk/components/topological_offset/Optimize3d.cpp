@@ -5830,25 +5830,70 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv from the level set) in place of converged(); the criterion's measures are
         // then diagnostics.
         bool resolved = settle ? settle_exit : ec.converged();
-        // EXPERIMENTAL_exit_no_folds: no exit while a real fold remains (count_real_folds()). The
-        // vertex exit tests the front's vertices only; a flat sheet of inner cells within
-        // front_conv of the level set passes it. MEASURED (cube_in at 0.45, front_conv 5%, 30
-        // runs, 8 threads): one run exited with an inner region of 0.5% of the target's volume,
-        // every front point within 0.76 front_conv, 5 real folds; 5-7 of each batch's 28-30
-        // exits had 1-5 real folds. The count is logged every turn, the key on or off, so a run
-        // without it shows what it exited with.
+        // EXPERIMENTAL_exit_no_folds: no exit while a real fold (count_real_folds()) with a
+        // foldover face remains -- one of its two faces whose normal, out of the band, is more
+        // than foldover_angle from the field's normal at its centroid (front_face_field_angle());
+        // a face that cannot be measured counts as one, so the exit is never released on what was
+        // not measured. The vertex exit tests the front's vertices only; a flat sheet of inner
+        // cells within front_conv of the level set passes it. MEASURED (cube_in at 0.45,
+        // front_conv 5%, 30 runs, 8 threads): one run exited with an inner region of 0.5% of the
+        // target's volume, every front point within 0.76 front_conv, 5 real folds; 5-7 of each
+        // batch's 28-30 exits had 1-5 real folds.
+        //
+        // Why only the folds with a foldover face: where the level set itself has a ridge
+        // sharper than 30 degrees, the correct front is a fold whose faces follow the field, and
+        // holding the exit for every fold held such runs to the turn cap. MEASURED offline (every
+        // turn of the 10-26 batch held for the folds: 117 turns of 31 runs, d exact): in the 4
+        // runs held to the 30-turn cap (p70565 piece17 and input1, inward at 0.5 and 0.25
+        // delta_1, 10%), 845 of 858 folds had both faces within 10 degrees of the field, on a
+        // level set 7.7 to 27 degrees sharp there; the other 13, at 87 to 131 degrees, were at 2
+        // early turns. In the 27 runs that resolved, every one of the 74 folds of their 32 held
+        // turns had a face 32 to 161 degrees from the field (median 108), though 73 had every
+        // corner, edge midpoint and centroid of both faces within front_conv of the level set: a
+        // test of the faces' distance instead would have let 31 of those 32 turns exit. MEASURED
+        // with this rule (those 31 runs, 8 threads): all 31 resolved; the 4 in 38 turns against
+        // 120 at the cap, each releasing once, 35 folds whose faces lay within 0.57 front_conv of
+        // the level set, within 13.1 degrees of the field, on a level set 7.7 to 31.4 degrees
+        // sharp there; the 27 released none and exited with no fold. The counts are logged every
+        // turn, the key on or off, so a run without it shows what it exited with.
         {
-            const size_t folds = count_real_folds();
+            std::vector<std::array<size_t, 3>> fold_faces; // two per fold, in order
+            const size_t folds = count_real_folds(nullptr, &fold_faces);
+            size_t folds_turned = 0;
+            double worst = 0.;
+            for (size_t i = 0; i + 1 < fold_faces.size(); i += 2) {
+                bool turned = false;
+                for (size_t j = i; j < i + 2; ++j) {
+                    const auto& f = fold_faces[j];
+                    const double ang = front_face_field_angle(f[0], f[1], f[2]);
+                    if (ang > worst) worst = ang;
+                    turned = turned || !(ang <= m_offset_params.foldover_angle);
+                }
+                if (turned) ++folds_turned;
+            }
             logger().info(
                 "\t[exit folds] turn {}: real folds {}{}",
                 it + 1,
                 folds,
                 resolved && folds > 0
                     ? (m_offset_params.exit_no_folds
-                           ? " -- the exit test passes; held for the folds"
+                           ? (folds_turned > 0 ? " -- the exit test passes; held for the folds"
+                                               : " -- the exit test passes; not held: no fold has "
+                                                 "a foldover face")
                            : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
                     : "");
-            if (m_offset_params.exit_no_folds && folds > 0) resolved = false;
+            if (folds > 0) {
+                logger().info(
+                    "\t[exit folds foldover] turn {}: {} of {} real folds have a foldover face (a "
+                    "face's normal more than foldover_angle {} degrees from the field's, or not "
+                    "measurable); their faces reach {:.4} degrees",
+                    it + 1,
+                    folds_turned,
+                    folds,
+                    m_offset_params.foldover_angle,
+                    worst);
+            }
+            if (m_offset_params.exit_no_folds && folds_turned > 0) resolved = false;
         }
         // fold_free (growth_mode "smart"): a converged loop with a folded offset face has failed,
         // judged here, before the verdict and the final TetWild pass, which it does not get.
