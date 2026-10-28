@@ -150,7 +150,8 @@ void volume_info(
         vol.push_back(
             std::abs((P[T[1]] - P[T[0]]).dot((P[T[2]] - P[T[0]]).cross(P[T[3]] - P[T[0]]))));
     }
-    if (at_surface.empty()) log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
+    if (at_surface.empty())
+        log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
     Eigen::Vector3d lo = in.vertices[0], hi = lo;
     for (const auto& v : in.vertices) {
         lo = lo.cwiseMin(v);
