@@ -586,6 +586,13 @@ public:
     std::optional<history::SurfaceHistory> finish_surface_history(
         const history::SurfaceHistory* input = nullptr);
 
+    /// Start recording the volume around the tracked surface too (TetMesh::start_volume_history),
+    /// at m_posf. The surface history must be recording.
+    void record_volume_history();
+    /// Stop recording the volume and save it to `path`, its edits indexed as in the surface
+    /// history finish_surface_history() returned. Nothing if not recording.
+    void save_volume_history(const std::string& path);
+
     /// A tracked face by its corners' positions, sorted.
     using PositionKey = std::array<std::array<double, 3>, 3>;
     static PositionKey position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c);
@@ -593,6 +600,10 @@ public:
     /// the input triangles. Filled at insertion when a surface history is to start from the
     /// input; record_surface_history takes it.
     std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
+    /// The volume being recorded, kept past stop_surface_history() until saved, and the offset
+    /// of the recorded surface edits in the surface history (finish_surface_history).
+    std::shared_ptr<history::VolumeRecorder> m_recorded_volume;
+    uint64_t m_surface_edit_offset = 0;
 
     /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
     bool is_tracked_face(size_t tid, int j) const override;

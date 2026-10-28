@@ -3,8 +3,11 @@
 // point on the output is named by three vertices of the tet mesh and barycentric coordinates.
 
 #include <wmtk/components/simwild/simwild.hpp>
+#include <wmtk/components/tracking/VolumeMap.hpp>
 #include <wmtk/components/tracking/tracking.hpp>
+#include <wmtk/components/tracking/volume_io.hpp>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
@@ -290,4 +293,78 @@ TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
             {{"square", square}}),
         Catch::Matchers::ContainsSubstring("3D only"));
     CHECK(!fs::exists("recorded"));
+}
+
+TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_only)
+{
+    const fs::path dir = fs::current_path() / "tracking_example_simwild_volume";
+    fs::create_directories(dir);
+    const fs::path sphere = fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj";
+    const fs::path output = dir / "spheres";
+    const fs::path surface_file = dir / "spheres.wmtkhist";
+    const fs::path volume_file = dir / "spheres.wmtkvol";
+
+    // 1. Run simwild with the surface history and the volume history (volume_history_output).
+    // The history starts at <output>_history_input.msh, the embedding of the two surfaces.
+    simwild::simwild({
+        {"application", "simwild"},
+        {"operation", "remeshing"},
+        {"input", {sphere.string(), sphere.string()}},
+        {"input_transform",
+         {nlohmann::json::array(), {{1, 0, 0, 0.3}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}}},
+        {"output", output.string()},
+        {"history_output", surface_file.string()},
+        {"volume_history_output", volume_file.string()},
+        {"eps_rel", 1e-2},
+        {"stop_energy", 10},
+        {"max_iterations", 3},
+    });
+
+    // 2. The volume map, from both histories.
+    const auto surface = history::SurfaceHistory::load(surface_file.string());
+    auto volume = history::VolumeHistory::load(volume_file.string());
+    REQUIRE(!volume.edits.empty());
+    const tracking::VolumeMap map(surface, std::move(volume));
+
+    // 3. Points of the mesh the history starts from, in tets on both sides of the spheres'
+    // surfaces: each lands in the output in a tet of its own region, and comes back.
+    const auto in = tracking::read_tet_msh(output.string() + "_history_input.msh");
+    const auto out = tracking::read_tet_msh(output.string() + ".msh");
+    const tracking::TetLocator locate(out);
+    std::mt19937 rng(7);
+    std::uniform_real_distribution<double> u(0, 1);
+    std::vector<tracking::VolumePoint> pts;
+    std::vector<size_t> from;
+    while (pts.size() < 2000) {
+        const size_t t = rng() % in.tets.size();
+        const auto& T = in.tets[t];
+        // within the spheres' boxes, where the operations are
+        const Eigen::Vector3d c =
+            (in.vertices[T[0]] + in.vertices[T[1]] + in.vertices[T[2]] + in.vertices[T[3]]) / 4;
+        if (c.norm() > 1.5 && (c - Eigen::Vector3d(0.3, 0, 0)).norm() > 1.5) continue;
+        Eigen::Vector4d w(u(rng), u(rng), u(rng), u(rng));
+        w /= w.sum();
+        Eigen::Vector3d p = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) p += w[k] * in.vertices[T[k]];
+        pts.push_back({p});
+        from.push_back(t);
+    }
+    const auto there = map.to_output(pts);
+    const auto back = map.to_input(there);
+    CHECK(map.stats().failed == 0);
+    CHECK(map.stats().region_changed == 0);
+    CHECK(map.stats().through_failed == 0);
+    size_t moved = 0;
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        moved += there[i].position != pts[i].position;
+        round_trip = std::max(round_trip, (back[i].position - pts[i].position).norm());
+        // in a tet of its own region (one on its faces, for a point on a surface between two)
+        const auto& want = in.group_sets[in.groups[from[i]]];
+        const auto g = std::find(out.group_sets.begin(), out.group_sets.end(), want);
+        REQUIRE(g != out.group_sets.end());
+        CHECK(locate.in_group(there[i].position, uint32_t(g - out.group_sets.begin())));
+    }
+    CHECK(moved > pts.size() / 10);
+    CHECK(round_trip < 1e-8);
 }

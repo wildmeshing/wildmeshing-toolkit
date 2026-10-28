@@ -16,6 +16,7 @@ set(SRC_FILES
     test_surface_map.cpp
     test_curve_map.cpp
     test_tracking.cpp
+    test_volume_map.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

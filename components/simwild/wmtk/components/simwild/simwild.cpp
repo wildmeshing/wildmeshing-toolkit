@@ -293,6 +293,16 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(component_io.history_metadata(json_params));
     }
+    // The volume around the tracked surface: its own choice, as it takes far more room.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (history_output.empty()) {
+            log_and_throw_error(
+                "volume_history_output needs history_output: the volume history "
+                "follows the surface's");
+        }
+        mesh.record_volume_history();
+    }
 
     if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
@@ -313,6 +323,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.has_input_history ? &input_data.input_history : nullptr)) {
         component_io.save_history(*h, history_output);
     }
+    mesh.save_volume_history(volume_history_output);
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written

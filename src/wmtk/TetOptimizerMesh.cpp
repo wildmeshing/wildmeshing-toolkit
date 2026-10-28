@@ -910,6 +910,31 @@ void TetOptimizerMesh::record_surface_history(const std::string& metadata)
     m_insertion_sources.shrink_to_fit();
 }
 
+void TetOptimizerMesh::record_volume_history()
+{
+    m_recorded_volume =
+        start_volume_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
+}
+
+void TetOptimizerMesh::save_volume_history(const std::string& path)
+{
+    if (!m_recorded_volume) return;
+    stop_volume_history();
+    history::VolumeHistory h = m_recorded_volume->history();
+    h.surface_edit_offset = m_surface_edit_offset;
+    h.save(path);
+    size_t tets = 0;
+    for (const auto& e : h.edits) tets += e.tets.size();
+    logger().info(
+        "volume history: {} operations that changed the tracked surface, {} tets around them, "
+        "{} regions -- saved to {}",
+        h.edits.size(),
+        tets,
+        h.regions.size(),
+        path);
+    m_recorded_volume.reset();
+}
+
 std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
     const history::SurfaceHistory* input)
 {
@@ -947,7 +972,9 @@ std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
         history::append_embedded(h, m_recorded_surface->history(), m_recorded_sources);
         h.metadata = m_recorded_surface->history().metadata;
         h.output_vertex_ids = m_recorded_surface->history().output_vertex_ids;
+        m_surface_edit_offset = h.edits.size() - m_recorded_surface->history().edits.size();
     } else {
+        m_surface_edit_offset = 0;
         h = std::move(m_recorded_surface->history());
     }
     m_recorded_surface.reset();

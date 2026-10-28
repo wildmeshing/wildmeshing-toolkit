@@ -247,6 +247,8 @@ public:
     std::array<size_t, 3> orient_tracked_face(
         const std::array<size_t, 3>& f,
         const std::vector<size_t>& tets) const override;
+    /// A tet's tags: the regions of a volume history are the tag sets.
+    std::vector<int64_t> tet_tags(size_t tid) const override;
 
     std::vector<size_t> active_vertices() const override;
 

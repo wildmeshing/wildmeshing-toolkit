@@ -71,11 +71,26 @@ enum class Scaffold {
     ring,
 };
 
+/// The faces a collapse's local map flattens.
+enum class CollapsePatch {
+    /// The stars of both ends before, onto the star of the survivor after: the outline is the
+    /// link of the edge, away from both, so the layout has room around them; the least distorted.
+    both_stars,
+    /// The star of the removed vertex before, onto the faces it becomes: the outline is the
+    /// removed vertex's link, the survivor on it, and faces that only had the survivor are left
+    /// alone. More distorted, since the survivor fans out from the outline, but the faces it
+    /// changes are the ones the collapse changes, as a volume map over the surface needs. Where
+    /// those faces after are not a disk on the same outline -- a vertex of the boundary or of a
+    /// curve collapsed into one off it -- the map takes both stars.
+    removed_star,
+};
+
 /// How a SurfaceMap is built.
 struct SurfaceMapOptions
 {
     Smoothing smoothing = Smoothing::flatten;
     Scaffold scaffold = Scaffold::box;
+    CollapsePatch collapse_patch = CollapsePatch::both_stars;
 };
 
 /**
@@ -106,6 +121,26 @@ public:
     const MapWarnings& build_warnings() const { return m_build_warnings; }
     /// The edits (indices into the history) whose local map raised a build warning.
     const std::vector<size_t>& warned_edits() const { return m_warned_edits; }
+    /// A face of a patch with the domain position of each of its corners -- or a piece of one:
+    /// a face the map splits virtually appears as several, each with its corners given as
+    /// barycentric coordinates in the face.
+    struct Face
+    {
+        uint64_t fid;
+        std::array<Eigen::Vector2d, 3> uv;
+        std::array<Eigen::Vector3d, 3> sub = {
+            {Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ()}};
+    };
+    /// One flattened patch: the faces it covers before and after an edit, in a shared domain.
+    struct Cell
+    {
+        std::vector<Face> before, after;
+    };
+    /// The local maps of history edit `edit`, one cell per patch flattened (a collapse or a move
+    /// has one per side of the curves through it); none for an edit that needed none. A cell
+    /// maps a point of a face before to the same point of the domain, on a face after.
+    std::vector<const Cell*> cells_of(size_t edit) const;
+
 
     /// The complex at the start and at the end, every slot, as the history holds them.
     const std::vector<Eigen::Vector3d>& input_vertices() const { return m_in_vertices; }
@@ -131,21 +166,6 @@ public:
     size_t folded_cells() const { return m_folded_cells; }
 
 private:
-    /// A face of a patch with the domain position of each of its corners -- or a piece of one:
-    /// a face the map splits virtually appears as several, each with its corners given as
-    /// barycentric coordinates in the face.
-    struct Face
-    {
-        uint64_t fid;
-        std::array<Eigen::Vector2d, 3> uv;
-        std::array<Eigen::Vector3d, 3> sub = {
-            {Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ()}};
-    };
-    /// One flattened patch: the faces it covers before and after an edit, in a shared domain.
-    struct Cell
-    {
-        std::vector<Face> before, after;
-    };
     /// An embed: the faces before and after, each with its corners in space and the faces of
     /// the other side it lies on. A point keeps its place in space.
     struct Embedding
@@ -167,6 +187,8 @@ private:
         /// Faces this step adds from nothing (a replace_faces): mapped back, their points have
         /// nowhere to go.
         std::vector<uint64_t> born;
+        /// The history edit this step maps.
+        size_t edit = 0;
     };
 
     std::vector<SurfacePoint>

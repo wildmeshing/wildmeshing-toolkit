@@ -3,6 +3,7 @@
 #include "surface_io.hpp"
 #include "tracking.hpp"
 #include "transfer.hpp"
+#include "volume_app.hpp"
 
 #include <igl/Timer.h>
 #include <jse/jse.h>
@@ -198,6 +199,9 @@ SurfaceMapOptions options_of(const nlohmann::json& json_params)
     SurfaceMapOptions options;
     if (json_params["smoothing"] == "barycentric") options.smoothing = Smoothing::barycentric;
     if (json_params["scaffold"] == "ring") options.scaffold = Scaffold::ring;
+    if (json_params["collapse_patch"] == "removed_star") {
+        options.collapse_patch = CollapsePatch::removed_star;
+    }
     return options;
 }
 
@@ -637,6 +641,14 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
     if (json_params["operation"] == "map") {
         map_points(h, json_params, root);
+        return;
+    }
+    if (json_params["operation"] == "volume") {
+        volume_info(h, json_params, root);
+        return;
+    }
+    if (json_params["operation"] == "map_volume") {
+        map_volume_points(h, json_params, root);
         return;
     }
 

@@ -981,3 +981,72 @@ TEST_CASE("surface-map-scaffolds", "[tracking][surfaces]")
         CHECK(warnings == 0);
     }
 }
+
+TEST_CASE("surface-map-collapse-patch", "[surface_map]")
+{
+    // An octahedron, vertex 4 (the top) collapsed into 2. CollapsePatch::removed_star maps only
+    // the faces the collapse changes, the top's four: points on the faces only 2 had -- below the
+    // equator, on its side -- keep their face and coordinates. CollapsePatch::both_stars lays out
+    // 2's star too, and moves them.
+    history::SurfaceHistory h;
+    h.vertices = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+    h.vertex_alive.assign(6, 1);
+    h.faces = {
+        {{0, 2, 4}},
+        {{2, 1, 4}},
+        {{1, 3, 4}},
+        {{3, 0, 4}},
+        {{2, 0, 5}},
+        {{1, 2, 5}},
+        {{3, 1, 5}},
+        {{0, 3, 5}}};
+    h.face_alive.assign(8, 1);
+    h.edits.push_back({history::EditKind::collapse_edge, {4, 2}, {}, {}});
+
+    const auto pts = sample(h.face_alive, 20, 7);
+    const auto kept_only = [](uint64_t f) { return f == 4 || f == 5; };
+    const SurfaceMap star(h, {{}, {}, tracking::CollapsePatch::removed_star});
+    const SurfaceMap both(h); // CollapsePatch::both_stars
+    const auto there_star = star.to_output(pts), there_both = both.to_output(pts);
+    size_t moved_both = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (!kept_only(pts[i].face)) continue;
+        CHECK(there_star[i].face == pts[i].face);
+        CHECK(there_star[i].bary == pts[i].bary);
+        moved_both += there_both[i].face != pts[i].face || there_both[i].bary != pts[i].bary;
+    }
+    CHECK(moved_both > 0);
+    for (const SurfaceMap* map : {&star, &both}) {
+        CHECK(map->build_warnings().total() == 0);
+        size_t warnings = 0;
+        CHECK(round_trip(*map, pts, true, warnings) < kRoundTrip);
+        CHECK(warnings == 0);
+    }
+
+    // A remeshing, with curves: each collapse maps the removed vertex's star, or both where a
+    // curve or boundary vertex went into one off it, and the map is a bijection both ways.
+    const tracking::SurfaceData in = labelled_sphere();
+    std::vector<Eigen::Vector3d> verts(in.vertices.begin(), in.vertices.end());
+    std::vector<std::array<size_t, 3>> tris;
+    for (const auto& f : in.faces) tris.push_back({{size_t(f[0]), size_t(f[1]), size_t(f[2])}});
+    isotropic_remeshing::IsotropicRemeshing m(verts, 0);
+    m.create_mesh(verts.size(), tris, {}, true, 0, 0);
+    m.set_feature_edges(label_boundaries(in));
+    const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+    for (const auto& e : m.feature_edges()) rec->history().features.push_back({{e[0], e[1]}});
+    m.uniform_remeshing(0.6 * m.average_len_valen()[0], 2);
+    m.consolidate_mesh();
+    m.stop_history();
+    const SurfaceMap remeshed(rec->history(), {{}, {}, tracking::CollapsePatch::removed_star});
+    CHECK(remeshed.build_warnings().total() == 0);
+    CHECK(remeshed.curve_collapses() > 0);
+    size_t warnings = 0;
+    CHECK(
+        round_trip(remeshed, sample(remeshed.input_face_alive(), 3, 8), true, warnings) <
+        kRoundTrip);
+    CHECK(warnings == 0);
+    CHECK(
+        round_trip(remeshed, sample(remeshed.output_face_alive(), 3, 9), false, warnings) <
+        kRoundTrip);
+    CHECK(warnings == 0);
+}

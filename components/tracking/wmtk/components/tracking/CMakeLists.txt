@@ -10,6 +10,16 @@ set(SRC_FILES
 	SurfaceMap.cpp
 	CurveMap.hpp
 	CurveMap.cpp
+	VolumeMap.hpp
+	VolumeMap.cpp
+	volume_complex.hpp
+	volume_complex.cpp
+	volume_geometry.hpp
+	volume_geometry.cpp
+	volume_io.hpp
+	volume_io.cpp
+	volume_app.hpp
+	volume_app.cpp
 
 	slim2d.hpp
 	slim2d.cpp

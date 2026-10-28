@@ -198,6 +198,12 @@ std::array<size_t, 3> SimWildMesh::orient_tracked_face(
     return face_out_of(a < b ? tets[0] : tets[1], f);
 }
 
+std::vector<int64_t> SimWildMesh::tet_tags(const size_t tid) const
+{
+    const CellTag& t = m_tet_attribute.at(tid).tags;
+    return {t.begin(), t.end()};
+}
+
 void SimWildMesh::update_attributes()
 {
     if (m_params.preserve_topology) {
