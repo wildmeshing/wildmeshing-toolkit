@@ -139,18 +139,18 @@ void volume_info(
             on_surface[v] = surface.count({{x[0], x[1], x[2]}}) > 0;
         }
     }
-    std::vector<size_t> near;
+    std::vector<size_t> at_surface;
     std::vector<double> vol;
     for (size_t t = 0; t < in.tets.size(); ++t) {
         const auto& T = in.tets[t];
         if (!(on_surface[T[0]] || on_surface[T[1]] || on_surface[T[2]] || on_surface[T[3]]))
             continue;
-        near.push_back(t);
+        at_surface.push_back(t);
         const auto& P = in.vertices;
         vol.push_back(
             std::abs((P[T[1]] - P[T[0]]).dot((P[T[2]] - P[T[0]]).cross(P[T[3]] - P[T[0]]))));
     }
-    if (near.empty()) log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
+    if (at_surface.empty()) log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
     Eigen::Vector3d lo = in.vertices[0], hi = lo;
     for (const auto& v : in.vertices) {
         lo = lo.cwiseMin(v);
@@ -165,7 +165,7 @@ void volume_info(
     std::vector<size_t> from(n);
     const double eps = 1e-9 * diag;
     for (size_t i = 0; i < n; ++i) {
-        from[i] = near[pick(rng)];
+        from[i] = at_surface[pick(rng)];
         Eigen::Vector4d w(u(rng), u(rng), u(rng), u(rng));
         w /= w.sum();
         Eigen::Vector3d p = Eigen::Vector3d::Zero();

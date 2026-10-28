@@ -116,7 +116,7 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
     // Exact containment, as the volume map locates its points (volume::locate_in): the tets
     // holding p, else those it is out of by a rounding; of the group first, if given.
     const auto& V = m_mesh.vertices;
-    std::vector<uint32_t> holding, near;
+    std::vector<uint32_t> holding, within_rounding;
     for (const uint32_t t : m_cells[size_t((c[0] * m_n[1] + c[1]) * m_n[2] + c[2])]) {
         const auto& T = m_mesh.tets[t];
         Eigen::Vector3d lo = V[T[0]], hi = lo;
@@ -130,7 +130,7 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
         if (o.faces == 0) {
             holding.push_back(t);
         } else if (o.distance <= eps) {
-            near.push_back(t);
+            within_rounding.push_back(t);
         }
     }
     const auto coordinates = [&](const uint32_t t, const bool exact) {
@@ -153,7 +153,7 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
         }
         std::pair<int64_t, Eigen::Vector4d> best{-1, Eigen::Vector4d::Zero()};
         double best_min = -std::numeric_limits<double>::infinity();
-        for (const uint32_t t : near) {
+        for (const uint32_t t : within_rounding) {
             if (own && m_mesh.groups[t] != group) continue;
             const Eigen::Vector4d b = coordinates(t, true);
             if (b.minCoeff() > best_min) {

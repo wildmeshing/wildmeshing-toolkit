@@ -76,7 +76,7 @@ template <typename Accept>
 std::optional<Location>
 locate_in(const Tets& T, const Positions& X, const Eigen::Vector3d& p, const Accept& accept)
 {
-    std::vector<size_t> near;
+    std::vector<size_t> within_rounding;
     for (size_t k = 0; k < T.size(); ++k) {
         if (!accept(k)) continue;
         const auto& t = T[k];
@@ -97,11 +97,11 @@ locate_in(const Tets& T, const Positions& X, const Eigen::Vector3d& p, const Acc
             b = b.cwiseMax(0.);
             return Location{k, b / b.sum(), 0.};
         }
-        if (o.distance <= eps) near.push_back(k);
+        if (o.distance <= eps) within_rounding.push_back(k);
     }
     std::optional<Location> out;
-    if (!near.empty()) {
-        for (const size_t k : near) {
+    if (!within_rounding.empty()) {
+        for (const size_t k : within_rounding) {
             const auto& t = T[k];
             const Eigen::Vector4d b = exact_barycentric(p, X[t[0]], X[t[1]], X[t[2]], X[t[3]]);
             if (!out || b.minCoeff() > out->min_coordinate) out = Location{k, b, b.minCoeff()};
