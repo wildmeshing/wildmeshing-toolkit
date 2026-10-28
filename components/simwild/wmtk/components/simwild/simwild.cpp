@@ -1,5 +1,6 @@
 #include "simwild.hpp"
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
@@ -306,9 +307,8 @@ void run_3D(
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
-    write_unique_vtu();
-    if (component_io.memory()) {
+    // One result for both routes: returned from memory calls, written as the .msh otherwise.
+    {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
@@ -322,7 +322,10 @@ void run_3D(
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+        if (!component_io.memory())
+            io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
     }
+    write_unique_vtu();
     if (params.write_vtu) {
         mesh.write_surface(params.output_path + "_surface.obj");
     }
@@ -415,7 +418,8 @@ void run_2D(
         }
     }
 
-    if (component_io.memory()) {
+    // One result for both routes: returned from memory calls, written as the .msh otherwise.
+    {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
@@ -429,9 +433,10 @@ void run_2D(
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+        if (!component_io.memory())
+            io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
     }
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
 

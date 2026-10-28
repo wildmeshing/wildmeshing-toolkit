@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <set>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
@@ -85,9 +86,15 @@ void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange&
         block.attributes.erase(labels[j]);
         block.attributes.erase("tag_" + std::to_string(j));
     }
-    if (labels.empty()) {
-        labels = {"ambient"};
-        values = DataMatrix<uint8_t>::Ones(cells.size(), 1);
+    // Cells without a tag are the background the component built. They are labelled
+    // explicitly: the IO infers nothing from an empty row.
+    if (std::find(labels.begin(), labels.end(), "ambient") == labels.end()) {
+        const auto empty = (values.template cast<int>().rowwise().sum().array() == 0).eval();
+        if (labels.empty() || empty.any()) {
+            values.conservativeResize(Eigen::NoChange, values.cols() + 1);
+            values.col(values.cols() - 1) = empty.template cast<uint8_t>();
+            labels.push_back("ambient");
+        }
     }
     block.attributes["tags"] = {std::move(values), std::move(labels)};
 }

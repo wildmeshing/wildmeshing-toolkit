@@ -59,7 +59,6 @@ struct Parameters : public wmtk::OptimizerParameters
     bool simplify_use_sample_envelope = false;
     int NUM_THREADS = 0;
     bool write_vtu = false;
-    bool write_envelope = true;
 
 
     Parameters(const nlohmann::json& json_params)
@@ -70,7 +69,6 @@ struct Parameters : public wmtk::OptimizerParameters
         simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
         write_vtu = json_params["write_vtu"];
-        write_envelope = json_params["write_envelope"];
 
         epsr = json_params["eps_rel"];
         eps = json_params["eps"];

@@ -2382,7 +2382,6 @@ public:
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path, MeshMap* output = nullptr);
     // void write_msh(const std::string& file);
-    void write_msh_groups(const std::string& file);
     //// output stuff
 
 private:

@@ -174,7 +174,6 @@ public:
      */
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
-    void write_msh(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path, MeshMap* output = nullptr) const;
     void write_vtu_with_energies(const std::string& path) const;

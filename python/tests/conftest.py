@@ -11,15 +11,15 @@ import gmsh
 import numpy as np
 import pytest
 
-# mesh_core delegates tag expressions to the wildmeshing bindings; when they
-# are not pip-installed, fall back to the toolkit build tree.
+# When wildmeshing is not pip-installed, fall back to the toolkit build tree,
+# which mirrors the package in build/bin/wildmeshing.
 try:
     import wildmeshing  # noqa: F401
 except ImportError:
     import sys
     for up in Path(__file__).resolve().parents:
         cand = up / "build" / "bin"
-        if cand.is_dir() and list(cand.glob("wildmeshing*.so")):
+        if (cand / "wildmeshing" / "__init__.py").is_file():
             sys.path.insert(0, str(cand))
             break
 
