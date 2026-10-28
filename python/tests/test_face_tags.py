@@ -193,15 +193,13 @@ def test_generation_keeps_surface_inputs_as_tagged_faces(iterations):
     assert_hausdorff(m["V"], rows(m, "triangle", "yellow"), to_rect, rect_samples(), EPS)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "simwild holds tagged faces to one union envelope, not each tag's own, so a collapse by the "
-    "seam can move an A face onto B (0.125 from A, eps 0.029; even max_iterations 0 runs a final "
-    "collapse pass) or unite an A and a B face into one on both. Per-tag envelopes fix it."))
 @pytest.mark.parametrize("iterations", [0, 80])
 def test_generation_keeps_side_by_side_sheets_apart(iterations):
     """Two sheets in one plane sharing an edge are one coplanar group. A face's inputs are those
-    of the triangles it overlaps, not of the group: on the group's, all faces carried both. Each
-    tagged face lies within eps of every sheet it carries."""
+    of the triangles it overlaps, not of the group: on the group's, all faces carried both. And
+    each tagged face is held to its own tag's envelope: with one union envelope a collapse by the
+    seam moved an A face 0.125 from A (eps 0.029), even at max_iterations 0, which still runs a
+    final collapse pass. Each tagged face lies within eps of every sheet it carries."""
     a, b = (1.5, 2.0, 0.1, 0.9, 0.5), (2.0, 2.5, 0.1, 0.9, 0.5)
     inputs = {"cube": INPUTS["cube"], "a": square(rect=a), "b": square(rect=b)}
     m = wm.simwild({"input": ["cube", "a", "b"], "input_names": ["red", "A", "B"],
@@ -212,6 +210,18 @@ def test_generation_keeps_side_by_side_sheets_apart(iterations):
     for label, rect in [("A", a), ("B", b)]:
         assert_hausdorff(m["V"], rows(m, "triangle", label), lambda P: to_rect(P, rect),
                          rect_samples(rect), eps)
+
+
+def test_close_volumes_keep_their_own_borders():
+    """Two boxes half an eps apart: each region's boundary stays within eps of its own box."""
+    eps = EPS_REL * np.linalg.norm([2, 1, 1])  # inputs' bbox about [0,2]x[0,1]x[0,1]
+    A, B = ((0, 0, 0), (1, 1, 1)), ((1 + 0.5 * eps, 0, 0), (2, 1, 1))
+    m = wm.simwild({"input": ["a", "b"], "input_names": ["A", "B"], "skip_simplify": True,
+                    "eps_rel": EPS_REL},
+                   {"a": box(*A), "b": box(*B)})[0]["mesh"]
+    for label, lo_hi in [("A", A), ("B", B)]:
+        F = boundary(rows(m, "tetrahedron", label))
+        assert len(F) and to_box_surface(m["V"][F].reshape(-1, 3), *lo_hi).max() <= eps
 
 
 def test_generation_refuses_surface_inputs_in_2d(tmp_path):
@@ -346,15 +356,15 @@ def test_offset_grows_a_shell_around_a_tagged_sheet():
     assert len(rows(r, "tetrahedron", "red")) == len(rows(m, "tetrahedron", "red"))
 
 
-def test_reader_refuses_more_than_16_face_tags():
-    """A face tag is one bit of a face's 16-bit input set."""
+def test_reader_refuses_more_than_64_face_tags():
+    """A face tag is one bit of a face's 64-bit input set."""
     m = tagged_grid()
     tri = m["cells"]["triangle"]
     n = len(tri["connectivity"])
-    member = np.zeros((n, 17), np.uint8)
-    member[np.arange(n), np.arange(n) % 17] = 1
-    tri["attributes"]["tags"] = {"values": member, "labels": [f"t{k}" for k in range(17)]}
-    with pytest.raises(Exception, match="At most 16 face tags, not 17"):
+    member = np.zeros((n, 65), np.uint8)
+    member[np.arange(n), np.arange(n) % 65] = 1
+    tri["attributes"]["tags"] = {"values": member, "labels": [f"t{k}" for k in range(65)]}
+    with pytest.raises(Exception, match="At most 64 face tags, not 65"):
         wm.simwild({"operation": "remeshing", "input": ["m"], "max_iterations": 0}, {"m": m})
 
 

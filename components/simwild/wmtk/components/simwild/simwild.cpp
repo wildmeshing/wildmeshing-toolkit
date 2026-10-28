@@ -229,6 +229,7 @@ void run_3D(
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.m_F_envelope_labels = input_data.F_envelope_labels;
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");

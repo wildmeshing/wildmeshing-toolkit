@@ -295,9 +295,13 @@ InputData read_mesh(
     auto name = [&](size_t i) {
         return i < input_names.size() ? input_names[i] : "tag_" + std::to_string(i);
     };
+    // Each input's label bit, as the mesh's faces will carry it: a surface input's face-tag
+    // column, a volume input's tet tag after the face tags.
+    std::vector<int64_t> input_bit(is_volume.size(), -1);
     if (!has_surface) {
         input_data.T_input_tag = T_tags;
         for (int i = 0; i < T_tags.cols(); ++i) input_data.tag_names.push_back(name(i));
+        for (size_t i = 0; i < input_bit.size(); ++i) input_bit[i] = int64_t(i);
     } else {
         // A volume input keeps its column of tet tags; a surface input's column (its winding
         // number means nothing for an open surface) is dropped, and the embedded faces it tiles
@@ -310,6 +314,13 @@ InputData read_mesh(
             } else {
                 surface_column[i] = int(input_data.face_tag_names.size());
                 input_data.face_tag_names.push_back(name(i));
+            }
+        }
+        for (size_t i = 0; i < is_volume.size(); ++i) {
+            if (surface_column[i] >= 0) {
+                input_bit[i] = surface_column[i];
+            } else {
+                input_bit[i] = int64_t(input_data.face_tag_names.size()) + volume_column[i];
             }
         }
         input_data.T_input_tag.resize(T_tags.rows(), input_data.tag_names.size());
@@ -342,6 +353,21 @@ InputData read_mesh(
                 sum += facing[rows[k]][j];
             }
             if (sum < 0) std::swap(input_data.F_tagged(k, 1), input_data.F_tagged(k, 2));
+        }
+    }
+
+    {
+        const auto& F_input = image_mesh.F_input();
+        // Only where every envelope triangle's input is known; else the mesh's faces serve.
+        if (F_input.size() == size_t(input_data.F_envelope.rows())) {
+            input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+            for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
+                const size_t in = F_input[r];
+                if (in < input_bit.size() && input_bit[in] >= 0 &&
+                    input_bit[in] < SurfaceTagAttributes::max_inputs) {
+                    input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+                }
+            }
         }
     }
 

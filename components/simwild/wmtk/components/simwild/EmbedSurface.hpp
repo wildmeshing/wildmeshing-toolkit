@@ -148,6 +148,8 @@ public:
         return m_F_tags_surface_orientation;
     }
     const MatrixXi& F_surface() const { return m_F_surface; }
+    /// Per row of F_surface(): the input it came from, SIZE_MAX for none.
+    const std::vector<size_t>& F_input() const { return m_F_input; }
 
     /**
      * @brief Write surface as read from image.

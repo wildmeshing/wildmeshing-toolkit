@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/SurfaceTagAttributes.h>
 #include <algorithm>
 #include <array>
 #include <set>
@@ -111,15 +112,20 @@ void collect_face_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<std
     int64_t n = 0;
     for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
     std::vector<std::array<int64_t, 3>> faces;
-    std::vector<uint16_t> sets;
+    std::vector<InputSet> sets;
+    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
+                              ? ~InputSet(0)
+                              : (InputSet(1) << names.size()) - 1;
     for (const auto& f : mesh.get_faces()) {
         const auto& attr = mesh.m_face_attribute[f.fid(mesh)];
-        if (attr.input_set() == 0) continue;
+        // Bits past the names are not face tags -- simwild's region labels -- and are not written.
+        const InputSet set = attr.input_set() & mask;
+        if (set == 0) continue;
         auto vids = mesh.get_face_vids(f);
         std::sort(vids.begin(), vids.end());
         if (attr.orientation_along(vids) < 0) std::swap(vids[1], vids[2]);
         faces.push_back({{row[vids[0]], row[vids[1]], row[vids[2]]}});
-        sets.push_back(attr.input_set());
+        sets.push_back(set);
     }
     auto& block = outputs.at("mesh").cells[CellType::Triangle];
     block.connectivity.resize(faces.size(), 3);
