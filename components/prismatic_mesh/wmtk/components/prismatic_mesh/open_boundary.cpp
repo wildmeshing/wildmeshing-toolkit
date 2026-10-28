@@ -96,7 +96,11 @@ OpenBoundaryStatistics handle_open_boundaries(PrismaticMeshInput& input)
         if (input_vertices.empty() || input_vertices.size() + offset_count != 4) continue;
         const size_t distinct = offset_parents.size();
         bool unmark = (offset_count == 2 || offset_count == 3) && distinct == 1;
-        if (offset_count == 3 && distinct == 2) {
+        if (offset_count == 2 && distinct == 1) {
+            // A boundary endpoint does not make the lower input edge a boundary edge.
+            const Edge in = edge_key(input_vertices[0], input_vertices[1]);
+            unmark = boundary_edges.count(in) != 0;
+        } else if (offset_count == 3 && distinct == 2) {
             const Edge mapped = edge_key(*offset_parents.begin(), *offset_parents.rbegin());
             const bool input_edge = face_counts.count(mapped) || is_volume_edge(input, mapped);
             unmark = !input_edge || boundary_edges.count(mapped);
