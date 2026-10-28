@@ -38,8 +38,8 @@ def box(lo, hi):
                      (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], BOX_F)
 
 
-def square(n=4):
-    x0, x1, y0, y1, z = SQUARE
+def square(n=4, rect=SQUARE):
+    x0, x1, y0, y1, z = rect
     V = [(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * j / n, z) for j in range(n + 1) for i in range(n + 1)]
     k = lambda i, j: j * (n + 1) + i
     F = [f for j in range(n) for i in range(n)
@@ -193,6 +193,35 @@ def test_generation_keeps_surface_inputs_as_tagged_faces(iterations):
     assert_hausdorff(m["V"], rows(m, "triangle", "yellow"), to_rect, rect_samples(), EPS)
 
 
+@pytest.mark.xfail(strict=True, reason=(
+    "simwild holds tagged faces to one union envelope, not each tag's own, so a collapse by the "
+    "seam can move an A face onto B (0.125 from A, eps 0.029; even max_iterations 0 runs a final "
+    "collapse pass) or unite an A and a B face into one on both. Per-tag envelopes fix it."))
+@pytest.mark.parametrize("iterations", [0, 80])
+def test_generation_keeps_side_by_side_sheets_apart(iterations):
+    """Two sheets in one plane sharing an edge are one coplanar group. A face's inputs are those
+    of the triangles it overlaps, not of the group: on the group's, all faces carried both. Each
+    tagged face lies within eps of every sheet it carries."""
+    a, b = (1.5, 2.0, 0.1, 0.9, 0.5), (2.0, 2.5, 0.1, 0.9, 0.5)
+    inputs = {"cube": INPUTS["cube"], "a": square(rect=a), "b": square(rect=b)}
+    m = wm.simwild({"input": ["cube", "a", "b"], "input_names": ["red", "A", "B"],
+                    "input_type": ["volume", "surface", "surface"], "skip_simplify": True,
+                    "eps_rel": EPS_REL, "max_iterations": iterations}, inputs)[0]["mesh"]
+    assert len(rows(m, "triangle", "A")) and len(rows(m, "triangle", "B"))
+    eps = EPS_REL * np.linalg.norm([2.5, 1, 1])  # inputs' bbox [0,2.5]x[0,1]x[0,1]
+    for label, rect in [("A", a), ("B", b)]:
+        assert_hausdorff(m["V"], rows(m, "triangle", label), lambda P: to_rect(P, rect),
+                         rect_samples(rect), eps)
+
+
+def test_generation_refuses_surface_inputs_in_2d(tmp_path):
+    path = tmp_path / "loop.obj"
+    path.write_text("v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nl 1 2 3 4 1\n")
+    with pytest.raises(Exception, match="3D only"):
+        wm.simwild({"input": ["c"], "input_type": ["surface"], "dimension": "2"},
+                   {"c": wm.read_mesh(str(path))})
+
+
 def normals(V, F):
     V, F = np.asarray(V), np.asarray(F)
     return np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
@@ -315,3 +344,30 @@ def test_offset_grows_a_shell_around_a_tagged_sheet():
     assert len(yellow) and all(count.get(tuple(sorted(f)), 0) == 2 for f in yellow)
     assert len(rows(r, "triangle", "blue")) == 32
     assert len(rows(r, "tetrahedron", "red")) == len(rows(m, "tetrahedron", "red"))
+
+
+def test_reader_refuses_more_than_16_face_tags():
+    """A face tag is one bit of a face's 16-bit input set."""
+    m = tagged_grid()
+    tri = m["cells"]["triangle"]
+    n = len(tri["connectivity"])
+    member = np.zeros((n, 17), np.uint8)
+    member[np.arange(n), np.arange(n) % 17] = 1
+    tri["attributes"]["tags"] = {"values": member, "labels": [f"t{k}" for k in range(17)]}
+    with pytest.raises(Exception, match="At most 16 face tags, not 17"):
+        wm.simwild({"operation": "remeshing", "input": ["m"], "max_iterations": 0}, {"m": m})
+
+
+def test_offset_refuses_a_face_tag_with_optimize_offset():
+    """The optimization does not hold face tags yet, so it refuses rather than losing them."""
+    with pytest.raises(Exception, match="needs optimize_offset false"):
+        wm.topological_offset({"input": "m", "offset_selection": "yellow",
+                               "offset_output_tags": ["shell"], "target_distance": 0.1,
+                               "optimize_offset": True}, {"m": tagged_grid()})
+
+
+def test_manifold_extraction_refuses_tagged_faces():
+    """It would drop them silently, so it refuses them until it carries them."""
+    with pytest.raises(Exception, match="does not take tagged faces"):
+        wm.manifold_extraction({"input": "m", "tag_selection": "red", "fill_tags": []},
+                               {"m": tagged_grid()})
