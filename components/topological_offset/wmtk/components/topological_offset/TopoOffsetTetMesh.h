@@ -1956,7 +1956,8 @@ public:
      * tracked face: m_envelope when it is held (face_is_held()), else nothing.
      */
     std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids) const override
+        const std::array<size_t, 3>& vids,
+        const FaceAttributes& /*attr*/) const override
     {
         const auto found = try_tuple_from_face(vids);
         if (!found) return m_envelope; // not reached: every caller asks about an existing face
@@ -2038,7 +2039,7 @@ public:
     {
         return smoothing_envelope(vid);
     }
-    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
     {
         return smoothing_envelope(vid);
     }
@@ -2047,6 +2048,15 @@ public:
         if (vertex_is_held(vid)) return m_envelope;
         if (m_tetwild_pass && m_vertex_extra[vid].m_is_on_offset) return m_offset_envelope;
         return nullptr;
+    }
+    /// The smoother holds every tracked face at a held vertex to that one envelope, whatever the
+    /// face: the per-vertex answer above, not the base's per-face one.
+    std::shared_ptr<Envelope> smoothing_containment_envelope(
+        const size_t vid,
+        const std::array<size_t, 3>& /*face*/,
+        const FaceAttributes& /*attr*/) const override
+    {
+        return smoothing_containment_envelope(vid);
     }
 
     /**

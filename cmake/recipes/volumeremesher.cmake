@@ -145,11 +145,22 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # ip_error, when the vertices do not span a volume. Our delaunay3D checks that before calling
 # it (spans_a_volume, src/wmtk/utils/Delaunay.cpp). No output changes: all 50 registered
 # configs are byte-identical to #34. fast-envelope #12 pins the same NFG (fenvelope.cmake).
+#
+# Then #36 (7af2cc6): place_virtual_constraints skipped the last half-edge in sorted order
+# (`he < num_half_edges - 1`), so when that half-edge was a boundary edge of the input, and not
+# already an edge of the background, it got no virtual constraint: the cells along it were not
+# split, and faces on the input's plane straddled the edge and were tracked as input surface.
+# On a flat square of 2 triangles, 54 of the 408 tracked faces reached past its edge, up to 4.9
+# eps; on a cube cut by a tilted open sheet, after simplification, up to 19.7 eps. VolumeRemesher
+# had fixed this bound in 2023 (0a1d5ca, f12f9b4); its re-import in 29390c9 brought it back. Of
+# 15 tetwild configs (the 12 registered + Thingi10K 101954, 103197, 1017012), 13 are
+# byte-identical; thingi_100827 and features change (each gains exactly that one virtual
+# constraint) and still pass their checks.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 8d5aac6e80654a6e3b1ad931e3c2705b7dec2871
+    GIT_TAG 7af2cc6296370cc1b02093f6019b95e02247454b
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

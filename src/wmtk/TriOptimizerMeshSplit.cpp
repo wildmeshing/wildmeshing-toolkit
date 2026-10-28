@@ -335,15 +335,18 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // envelope on Thingi10K 243014, while the end-of-run Hausdorff check still reported
         // "inside the envelope (as expected)" --- that check samples by AREA and cannot see
         // violations that live on vanishingly small elements.
+        //
+        // Checked with the parent's attributes, which the halves get below: their own slots are
+        // not written yet.
         if (cache.old_e_attrs.m_is_surface_fs) {
-            if (surface_segment_is_outside(v1_id, v_id)) {
+            if (surface_segment_is_outside(v1_id, v_id, cache.old_e_attrs)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
                     v1_id,
                     v2_id);
                 return false;
             }
-            if (surface_segment_is_outside(v_id, v2_id)) {
+            if (surface_segment_is_outside(v_id, v2_id, cache.old_e_attrs)) {
                 logger().error(
                     "split of ({},{}) produced a surface segment outside the envelope",
                     v1_id,
