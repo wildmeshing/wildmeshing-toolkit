@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
