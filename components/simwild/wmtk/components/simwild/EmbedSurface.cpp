@@ -126,6 +126,7 @@ void embed_surface(
     opts.check_orientation = perform_sanity_checks;
     opts.check_surface_provenance = perform_sanity_checks;
     wmtk::utils::EmbedTrianglesProvenance prov;
+    prov.want_face_triangles = F_on_surface_inputs != nullptr;
     wmtk::utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -171,63 +172,28 @@ void embed_surface(
         return;
     }
 
-    // Which input surface each output surface face came from.
-    //
-    // The arrangement answers per coplanar group, so first collapse the per-triangle
-    // labels into per-group ones. A group normally holds triangles of a single input;
-    // it holds several only where two inputs are exactly coplanar and edge-adjacent,
-    // and then the face genuinely belongs to both -- which is the case the geometric
-    // look-up this replaces could not distinguish.
-    std::vector<std::vector<size_t>> group_inputs(
-        prov.face_groups.empty() ? 0
-                                 : 1 + std::max_element(
-                                           prov.face_groups.begin(),
-                                           prov.face_groups.end(),
-                                           [](const auto& a, const auto& b) { return a[1] < b[1]; })
-                                           ->at(1));
-    for (size_t t = 0; t < prov.triangle_group.size(); ++t) {
-        const uint32_t g = prov.triangle_group[t];
-        if (g == std::numeric_limits<uint32_t>::max() || g >= group_inputs.size()) {
-            continue; // degenerate triangle, or a group no output face lies on
-        }
-        const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
-        if (in == std::numeric_limits<size_t>::max()) {
+    // Which input surface each output surface face came from: the inputs of the triangles it
+    // overlaps with positive area (EmbedTrianglesProvenance::face_triangles). Not those of its
+    // coplanar group: a group spans several inputs wherever they are exactly coplanar and
+    // edge-adjacent -- two sheets side by side, the tops of two touching boxes -- and every face
+    // of the group would then claim all of them. Several inputs only where they overlap.
+    F_on_surface_inputs->assign(n_face_on_input, {});
+    size_t row = 0;
+    for (size_t i = 0; i < polygon_faces.size(); ++i) {
+        if (!polygon_faces_on_input[i]) {
             continue;
         }
-        auto& v = group_inputs[g];
-        if (std::find(v.begin(), v.end(), in) == v.end()) {
-            v.push_back(in);
+        auto& inputs = (*F_on_surface_inputs)[row++];
+        for (const uint32_t t : prov.face_triangles[i]) {
+            const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
+            if (in != std::numeric_limits<size_t>::max() &&
+                std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
+                inputs.push_back(in);
+            }
         }
+        std::sort(inputs.begin(), inputs.end());
     }
-    for (auto& v : group_inputs) {
-        std::sort(v.begin(), v.end());
-    }
-
-    // prov.face_groups is sorted by facet, and F_on_surface keeps the facets in that same
-    // order, so one walk fills both.
-    F_on_surface_inputs->assign(n_face_on_input, {});
-    {
-        size_t row = 0;
-        size_t p = 0;
-        for (size_t i = 0; i < polygon_faces.size(); ++i) {
-            if (!polygon_faces_on_input[i]) {
-                continue;
-            }
-            auto& inputs = (*F_on_surface_inputs)[row++];
-            while (p < prov.face_groups.size() && prov.face_groups[p][0] < i) {
-                ++p;
-            }
-            for (; p < prov.face_groups.size() && prov.face_groups[p][0] == i; ++p) {
-                for (const size_t in : group_inputs[prov.face_groups[p][1]]) {
-                    if (std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
-                        inputs.push_back(in);
-                    }
-                }
-            }
-            std::sort(inputs.begin(), inputs.end());
-        }
-        assert(row == n_face_on_input);
-    }
+    assert(row == n_face_on_input);
 }
 
 

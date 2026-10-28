@@ -194,7 +194,6 @@ public:
 
     ////// Attributes related
 
-    void write_msh(std::string file, const bool write_envelope = true);
 
 public:
     void simplify();

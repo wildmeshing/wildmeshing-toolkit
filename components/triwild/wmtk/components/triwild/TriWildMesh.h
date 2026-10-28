@@ -140,7 +140,6 @@ public:
      */
     size_t refine_sizing_around_worst(double max_energy) override;
 
-    void write_msh_groups(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path, MeshMap* output = nullptr) const;
 

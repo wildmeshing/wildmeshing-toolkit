@@ -332,6 +332,78 @@ TEST_CASE("MSH physical groups keep their file order", "[mesh_data][io]")
     REQUIRE(tags.labels == labels);
     REQUIRE(tags.integers() == DataMatrix<int64_t>::Ones(1, 3));
 }
+TEST_CASE("MSH field metadata stays out of the interpolation-scheme tag", "[mesh_data][io]")
+{
+    // gmsh reads a data header's second string tag as an interpolation scheme name and refuses
+    // the file when no such scheme exists.
+    const auto m = example();
+    auto spec = io::to_msh(m);
+    REQUIRE(!(spec.node_data.empty() && spec.element_data.empty()));
+    for (auto* data : {&spec.node_data, &spec.element_data})
+        for (const auto& d : *data) {
+            REQUIRE(d.header.string_tags.size() == 3);
+            REQUIRE(d.header.string_tags[1].empty());
+            REQUIRE(d.header.string_tags[2].rfind("wmtk:", 0) == 0);
+        }
+    equal(m, io::from_msh(spec));
+    // Files written before the move carry the metadata as the second tag.
+    for (auto* data : {&spec.node_data, &spec.element_data})
+        for (auto& d : *data)
+            d.header.string_tags = {d.header.string_tags[0], d.header.string_tags[2]};
+    equal(m, io::from_msh(spec));
+}
+namespace {
+MeshData two_tets(const DataMatrix<uint8_t>& member, const std::vector<std::string>& labels)
+{
+    MeshData mesh;
+    mesh.V.resize(5, 3);
+    mesh.V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
+    auto& tets = mesh.cells[CellType::Tetrahedron];
+    tets.connectivity.resize(2, 4);
+    tets.connectivity << 0, 1, 2, 3, 1, 2, 3, 4;
+    tets.attributes["tags"] = {member, labels};
+    return mesh;
+}
+} // namespace
+TEST_CASE("MSH physical groups are exactly the labels a mesh carries", "[mesh_data][io]")
+{
+    // The IO infers nothing from an untagged row: components label their background.
+    DataMatrix<uint8_t> member(2, 1);
+    member << 1, 0;
+    auto mesh = two_tets(member, {"body"});
+    auto spec = io::to_msh(mesh);
+    REQUIRE(spec.physical_groups.size() == 1);
+    REQUIRE(spec.physical_groups[0].name == "body");
+    equal(mesh, io::from_msh(spec));
+    auto groups_only = spec;
+    groups_only.element_data.clear();
+    const auto loaded = io::from_msh(groups_only);
+    REQUIRE(
+        loaded.cell(CellType::Tetrahedron).attributes.at("tags").integers() ==
+        member.cast<int64_t>());
+    // An explicit ambient label is a group like any other.
+    auto labelled = two_tets(DataMatrix<uint8_t>::Identity(2, 2).eval(), {"body", "ambient"});
+    REQUIRE(io::to_msh(labelled).physical_groups.size() == 2);
+    // A mesh without tags gets no groups at all.
+    mesh.cells[CellType::Tetrahedron].attributes.erase("tags");
+    REQUIRE(io::to_msh(mesh).physical_groups.empty());
+}
+TEST_CASE("MSH field headers do not grow with the labels", "[mesh_data][io]")
+{
+    // gmsh reads each string tag into a fixed buffer, so each column's header names only its
+    // own label.
+    std::vector<std::string> labels;
+    for (int i = 0; i < 30; ++i) labels.push_back("region_" + std::to_string(i));
+    const auto mesh = two_tets(DataMatrix<uint8_t>::Ones(2, 30).eval(), labels);
+    const auto spec = io::to_msh(mesh);
+    REQUIRE(spec.element_data.size() == labels.size());
+    for (const auto& d : spec.element_data) {
+        const auto meta = nlohmann::json::parse(d.header.string_tags[2].substr(5));
+        REQUIRE(!meta.contains("labels"));
+        REQUIRE(meta.at("label") == labels[meta.at("column").get<size_t>()]);
+    }
+    equal(mesh, io::from_msh(spec));
+}
 TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
 {
     MeshData mesh;
@@ -346,6 +418,28 @@ TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
     REQUIRE(std::isnan(result(0, 0)));
     REQUIRE(result(1, 0) == field(1, 0));
     REQUIRE(result(2, 0) == field(2, 0));
+    // gmsh reads each string tag into a fixed buffer, so the header must not grow with the
+    // values: it is the same as for a finite field.
+    auto finite = mesh;
+    finite.vertex_attributes["diagnostic"].values = DataMatrix<double>::Zero(3, 1).eval();
+    const auto spec = io::to_msh(mesh);
+    REQUIRE(
+        spec.node_data[0].header.string_tags == io::to_msh(finite).node_data[0].header.string_tags);
+    // Older files store a non-finite value as 0 and list it in the metadata.
+    auto old = spec;
+    auto& header = old.node_data[0].header.string_tags[2];
+    auto meta = nlohmann::json::parse(header.substr(5));
+    for (auto& e : old.node_data[0].entries) {
+        const double v = e.data[0];
+        if (std::isfinite(v)) continue;
+        meta["special"][std::to_string(e.tag)] = std::isnan(v) ? "nan" : v > 0 ? "inf" : "-inf";
+        e.data[0] = 0;
+    }
+    header = "wmtk:" + meta.dump();
+    const auto back = io::from_msh(old).vertex_attributes.at("diagnostic").doubles();
+    REQUIRE(std::isnan(back(0, 0)));
+    REQUIRE(back(1, 0) == field(1, 0));
+    REQUIRE(back(2, 0) == field(2, 0));
 }
 TEST_CASE("Mesh I/O retains coincident cell multiplicity and orientation", "[mesh_data][io]")
 {

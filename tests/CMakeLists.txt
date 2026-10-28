@@ -8,6 +8,7 @@ include(Catch)
 set(TEST_SOURCES
     2d_tests.cpp
     test_delaunay.cpp
+    test_embed_triangles.cpp
     test_envelope.cpp
     test_geom.cpp
     test_io.cpp
@@ -89,7 +90,7 @@ if(TARGET wildmeshing AND Python_EXECUTABLE)
     if(WMTK_PYTHON_NUMPY_RESULT EQUAL 0)
         add_test(
             NAME python_memory_io
-            COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>"
+            COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
                     "${Python_EXECUTABLE}" -m unittest discover
                     -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_memory_io.py")
     else()

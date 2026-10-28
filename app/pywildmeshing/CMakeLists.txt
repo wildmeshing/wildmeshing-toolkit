@@ -10,16 +10,25 @@ if(NOT MSVC)
     target_compile_options(wildmeshing PUBLIC -fPIC)
 endif(NOT MSVC)
 
-set_target_properties(wildmeshing PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+# The module is wildmeshing._core. The build tree mirrors the Python package, so that
+# PYTHONPATH=<build>/bin imports the same `wildmeshing` package a wheel installs.
+set(WMTK_PYTHON_PACKAGE_DIR "${CMAKE_BINARY_DIR}/bin/wildmeshing")
+set_target_properties(wildmeshing PROPERTIES
+    OUTPUT_NAME _core
+    LIBRARY_OUTPUT_DIRECTORY "${WMTK_PYTHON_PACKAGE_DIR}")
+add_custom_target(wildmeshing_python_sources
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../python/wildmeshing" "${WMTK_PYTHON_PACKAGE_DIR}")
+add_dependencies(wildmeshing wildmeshing_python_sources)
 
 include(GNUInstallDirs)
 if(DEFINED SKBUILD)
-    install(TARGETS wildmeshing LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}" COMPONENT python_bindings)
+    install(TARGETS wildmeshing LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}/wildmeshing" COMPONENT python_bindings)
 
     if(WIN32 AND TARGET gmp::gmp)
         install(
             IMPORTED_RUNTIME_ARTIFACTS gmp::gmp
-            RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}"
+            RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}/wildmeshing"
             COMPONENT python_bindings
         )
     endif()

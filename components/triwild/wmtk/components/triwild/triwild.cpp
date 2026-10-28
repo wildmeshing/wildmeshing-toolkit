@@ -1,5 +1,6 @@
 #include "triwild.hpp"
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 #include <wmtk/utils/Preallocation.hpp>
@@ -881,7 +882,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     if (json_params["write_vtu"]) {
         mesh.write_vtu(output_path);
     }
-    mesh.write_msh_groups(output_path + ".msh");
 
     // The tracked curves and feature anchors, as an edge mesh with point records -- the 2D
     // counterpart of tetwild's _features.obj, from the same pre-filter collections. Only
@@ -914,7 +914,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
-    if (component_io.memory()) {
+    // One result for both routes: returned from memory calls, written as the .msh otherwise.
+    {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
@@ -930,6 +931,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             [&](const auto& t) -> const auto& { return mesh.m_face_attribute[t.fid(mesh)].tags; });
         component_io.result.first["envelope"] =
             io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+        if (!component_io.memory())
+            io::write_mesh(output_path + ".msh", component_io.result.first.at("mesh"));
     }
     logger().info("======= finish =========");
 }

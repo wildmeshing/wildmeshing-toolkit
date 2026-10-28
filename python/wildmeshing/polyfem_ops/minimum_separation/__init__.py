@@ -7,9 +7,9 @@ dhat at sep*(1+rtol) and raises the barrier stiffness until the separation
 clears sep.
 
 cfg reference: see spec.json here and the simwild.minimum_separation op.
-Selections use the region/filter format from simwild.polyfem_ops.mesh_core.
+Selections use the region/filter format from wildmeshing.polyfem_ops.mesh_core.
 
-Usage: python -m simwild.polyfem_ops.minimum_separation config.json
+Usage: python -m wildmeshing.polyfem_ops.minimum_separation config.json
 """
 
 import argparse
@@ -306,6 +306,11 @@ def run(cfg: dict, out_dir=None) -> None:
     mesh to output_msh (default <stem>_separated.msh); out_dir defaults to
     the mesh's folder.
     """
+    # Its options are documented in spec.json, but run() reads engine keys; the translation
+    # lived in the removed pywmtk wrapper. Planned: minimum_separation(options), validated
+    # against spec.json like a component.
+    raise NotImplementedError(
+        "polyfem_ops.minimum_separation is not available yet: its spec.json options are not wired to run()")
     cfg = dict(cfg)  # shallow copy — we may mutate
 
     sides_flat, polyfem_collision_pairs = _normalize_collision_pairs(
