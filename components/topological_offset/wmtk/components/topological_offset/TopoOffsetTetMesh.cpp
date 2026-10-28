@@ -2812,6 +2812,74 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         logger().info("Write {}", path + "_off.vtu");
     }
 
+    // stencil points (ported 2026-10-28 from spenbert/offsets-surface-error b185ec9ca5, Spencer:
+    // "port the stencil file"): the _stencil file, a point cloud of one vertex cell per stencil
+    // point of every offset face (offset_surface_faces() order, interior_face_stencil() at
+    // stencil_order: the points the "surface" rule's face term, its O* settle test and every face
+    // measure read; interior, so no point is shared between faces). Point data, NaN where the
+    // field cannot measure:
+    //   stencil_error         r^2, r = relative_residual() = (d - target_distance) /
+    //                         target_distance on the union field.
+    //   error_over_bound      (d - target_distance)^2 / front_conv^2; at or above 1 the point is
+    //                         out of the tolerance.
+    //   signed_error          r: negative inside the level set, positive beyond it.
+    //   distance_over_target  1 + r = d / target_distance.
+    //   sq_error              (d - target_distance)^2, a squared length: its max over the file is
+    //                         O*, the "surface" rule's settle metric (stencil_max_sq_error()).
+    //   face                  the point's face, its index in offset_surface_faces().
+    //   point                 its index in the face's stencil.
+    // Not written without an offset potential or with no offset face.
+    if (m_offset_potential) {
+        const std::vector<std::array<size_t, 3>> sfaces = offset_surface_faces();
+        const auto& stencil = interior_face_stencil(m_offset_params.stencil_order);
+        const int ns = int(stencil.size());
+        const int n = int(sfaces.size()) * ns;
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double target = m_offset_params.target_distance;
+        const double conv2 = m_offset_params.front_conv * m_offset_params.front_conv;
+        fr.S = MatrixXd::Zero(n, 3);
+        fr.S_cells = MatrixXi::Zero(n, 1);
+        for (VectorXd* x :
+             {&fr.s_err,
+              &fr.s_over,
+              &fr.s_signed,
+              &fr.s_dist_ratio,
+              &fr.s_sq,
+              &fr.s_face,
+              &fr.s_point}) {
+            *x = VectorXd::Constant(n, nan);
+        }
+        diagnostic_parallel_for(
+            sfaces.size(),
+            kDiagnosticChunk,
+            [&](const size_t b, const size_t e) {
+                for (size_t f = b; f < e; ++f) {
+                    const Vector3d& p0 = VA[sfaces[f][0]].m_posf;
+                    const Vector3d& p1 = VA[sfaces[f][1]].m_posf;
+                    const Vector3d& p2 = VA[sfaces[f][2]].m_posf;
+                    for (int k = 0; k < ns; ++k) {
+                        const auto& w = stencil[size_t(k)];
+                        const int i = int(f) * ns + k;
+                        const Vector3d q = w[0] * p0 + w[1] * p1 + w[2] * p2;
+                        fr.S.row(i) = q;
+                        fr.S_cells(i, 0) = i;
+                        fr.s_face[i] = double(f);
+                        fr.s_point[i] = double(k);
+                        // stencil_max_sq_error()'s own expression, so sq_error's max is O* exactly
+                        const double r = m_offset_potential->relative_residual(q);
+                        if (!std::isfinite(r)) continue;
+                        const double sq = (target * r) * (target * r);
+                        fr.s_signed[i] = r;
+                        fr.s_err[i] = r * r;
+                        fr.s_sq[i] = sq;
+                        fr.s_over[i] = sq / conv2;
+                        fr.s_dist_ratio[i] = 1. + r;
+                    }
+                }
+            });
+        if (n > 0) logger().info("Write {}", path + "_stencil.vtu");
+    }
+
     // The band-region map back exactly as the run left it (see the frame diagnostics above).
     if (region_map_refreshed) {
         m_cell_region.swap(saved_cell_region);
@@ -2886,6 +2954,20 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output)
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
         edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
+    }
+
+    // stencil points
+    if (fr.S.rows() > 0) {
+        io::DataWriter stencil_writer(output);
+        stencil_writer.add_field("stencil_error", fr.s_err);
+        stencil_writer.add_field("error_over_bound", fr.s_over);
+        stencil_writer.add_field("signed_error", fr.s_signed);
+        stencil_writer.add_field("distance_over_target", fr.s_dist_ratio);
+        stencil_writer.add_field("sq_error", fr.s_sq);
+        stencil_writer.add_field("face", fr.s_face);
+        stencil_writer.add_field("point", fr.s_point);
+        stencil_writer
+            .write_mesh(path + "_stencil.vtu", fr.S, fr.S_cells, paraviewo::CellType::Vertex);
     }
 }
 

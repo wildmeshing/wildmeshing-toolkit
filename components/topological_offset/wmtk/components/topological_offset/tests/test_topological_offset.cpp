@@ -2619,6 +2619,17 @@ bool frames_identical(const TopoOffsetTetMesh::VtuFrame& a, const TopoOffsetTetM
           &TopoOffsetTetMesh::VtuFrame::ring}) {
         ok = ok && same(a.*m, b.*m);
     }
+    ok = ok && same(a.S, b.S) && same(a.S_cells, b.S_cells);
+    for (const auto m :
+         {&TopoOffsetTetMesh::VtuFrame::s_err,
+          &TopoOffsetTetMesh::VtuFrame::s_over,
+          &TopoOffsetTetMesh::VtuFrame::s_signed,
+          &TopoOffsetTetMesh::VtuFrame::s_dist_ratio,
+          &TopoOffsetTetMesh::VtuFrame::s_sq,
+          &TopoOffsetTetMesh::VtuFrame::s_face,
+          &TopoOffsetTetMesh::VtuFrame::s_point}) {
+        ok = ok && same(a.*m, b.*m);
+    }
     return ok;
 }
 } // namespace
@@ -3860,6 +3871,27 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
     mesh->m_offset_params.settle_test = "bar";
     CHECK(mesh->settle_metric() == mesh->surface_integral_raw());
     mesh->m_offset_params.settle_test = "stall";
+
+    // The _stencil frame file (gather_vtu_frame()): one point per stencil point of every offset
+    // face, in offset_surface_faces() order; its sq_error's max is O* bit for bit, and its other
+    // fields are the same r read three ways.
+    {
+        const auto fr = mesh->gather_vtu_frame((out / "stencil_frame").string());
+        REQUIRE(fr.S.rows() == Eigen::Index(faces.size() * st.size()));
+        double mx = 0.;
+        const double conv2 = mesh->m_offset_params.front_conv * mesh->m_offset_params.front_conv;
+        for (Eigen::Index i = 0; i < fr.S.rows(); ++i) {
+            REQUIRE(std::isfinite(fr.s_sq[i]));
+            mx = std::max(mx, fr.s_sq[i]);
+            CHECK(fr.s_over[i] == Catch::Approx(fr.s_sq[i] / conv2).epsilon(1e-14));
+            CHECK(fr.s_err[i] == Catch::Approx(fr.s_signed[i] * fr.s_signed[i]).epsilon(1e-14));
+            CHECK(fr.s_dist_ratio[i] == Catch::Approx(1. + fr.s_signed[i]).epsilon(1e-14));
+            CHECK(fr.s_face[i] == double(i / Eigen::Index(st.size())));
+            CHECK(fr.s_point[i] == double(i % Eigen::Index(st.size())));
+        }
+        const double o = mesh->stencil_max_sq_error();
+        CHECK(std::memcmp(&mx, &o, sizeof(double)) == 0);
+    }
 
     double amips = 0.;
     for (const auto& t : mesh->get_tets()) {

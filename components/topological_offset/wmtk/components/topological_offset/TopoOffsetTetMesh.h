@@ -1421,7 +1421,7 @@ public:
     /// arrays are its own snapshot. A std::async future, so destroying it waits for the write: a
     /// run that throws still finishes the frame in flight.
     std::future<DebugTimeline> m_debug_frame_write;
-    /// DEBUG_output: rewrite <out>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
+    /// DEBUG_output: rewrite <out>{_main,_off,_surf,_edge,_front,_stencil}.pvd, a ParaView time
     /// series over the debug frames. Needed because ParaView only groups a file series when the
     /// index is immediately before the extension, which is false for every companion
     /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens. Static:
@@ -2823,6 +2823,11 @@ public:
         // the _off file's: per offset face, and the ring measure per vertex
         VectorXd f_err, f_len, f_inside, f_outside, f_fold, f_field_fold, f_field_angle, f_dihedral,
             f_fold_dihedral, ring;
+        // the _stencil file's: one point per stencil point of every offset face (S, a vertex
+        // cell each in S_cells), and its fields
+        MatrixXd S;
+        MatrixXi S_cells;
+        VectorXd s_err, s_over, s_signed, s_dist_ratio, s_sq, s_face, s_point;
     };
     /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
     /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
