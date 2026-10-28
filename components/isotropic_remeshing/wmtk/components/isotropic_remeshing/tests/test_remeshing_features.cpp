@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -208,7 +209,14 @@ TEST_CASE("features-fixed-vertices-survive-collapses", "[test_remeshing][feature
 
     // The curve rules refuse to remove a fixed vertex; the other way round is allowed.
     std::vector<IsotropicRemeshing::Tuple> new_tris;
-    const auto t = m.tuple_from_edge(centre, centre + 1, m.tuple_from_vertex(centre).fid(m));
+    // The edge to centre + 1, in a triangle that has it: not every triangle around the centre does.
+    std::optional<size_t> fid;
+    for (const auto& g : m.get_one_ring_tris_for_vertex(m.tuple_from_vertex(centre))) {
+        const auto vs = m.oriented_tri_vids(g);
+        if (std::find(vs.begin(), vs.end(), centre + 1) != vs.end()) fid = g.fid(m);
+    }
+    REQUIRE(fid.has_value());
+    const auto t = m.tuple_from_edge(centre, centre + 1, *fid);
     REQUIRE(t.vid(m) == centre);
     CHECK_FALSE(m.may_collapse_away(t));
     CHECK(m.may_collapse_away(t.switch_vertex(m)));
