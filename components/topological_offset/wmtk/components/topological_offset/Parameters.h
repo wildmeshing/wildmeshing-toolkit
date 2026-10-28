@@ -87,23 +87,27 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_collapse_changed_cells = true;
     /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
     /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
-    /// tri_energy = w AMIPS + the offset terms. See the spec.
-    double offset_amips_weight = 1.;
+    /// tri_energy = w AMIPS + the offset terms. See the spec. 100 since 2026-10-28 (1 before), as
+    /// the spec's default.
+    double offset_amips_weight = 100.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
-    bool front_pocket_split = false;
+    /// true by default since 2026-10-28, as the spec.
+    bool front_pocket_split = true;
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
-    /// and faces too, not only pinned cells.
-    bool front_spanned_split = false;
+    /// and faces too, not only pinned cells. true by default since 2026-10-28, as the spec.
+    bool front_spanned_split = true;
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains.
-    bool exit_no_folds = false;
+    /// true by default since 2026-10-28, as the spec.
+    bool exit_no_folds = true;
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
-    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default),
-    /// "one_sided", "one_sided_tips" or "one_sided_at_target".
-    std::string label_cleanup = "off";
+    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off",
+    /// "one_sided", "one_sided_tips", "one_sided_at_target" or "energy_decrease" (the default since
+    /// 2026-10-28, as the spec; it needs band_volume_rule "surface" and front_pocket_split).
+    std::string label_cleanup = "energy_decrease";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -189,7 +193,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// no band term; the offset term is a surface integral over the front, L /
     /// front_conv^2 (L the bounding box diagonal) sum over the offset faces of (A_f / |S|) sum over the interior stencil of
     /// (d - target_distance)^2 (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
-    std::string band_volume_rule = "corner_bound";
+    /// "surface" is the default since 2026-10-28 ("corner_bound" before), as the spec.
+    std::string band_volume_rule = "surface";
     /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
     /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
     /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall

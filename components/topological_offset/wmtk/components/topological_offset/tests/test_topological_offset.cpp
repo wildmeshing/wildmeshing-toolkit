@@ -1515,6 +1515,24 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     }
 }
 
+namespace {
+/// Parameters with the energy and loop keys as their defaults were before 2026-10-28, when the
+/// defaults became the "surface" rule, offset_amips_weight 100, label_cleanup "energy_decrease"
+/// and the pocket / spanned splits and exit_no_folds on: for the tests of the volume rules'
+/// band term ("corner_bound"), their swap and collapse rules and the split keys switched off.
+Parameters volume_rule_params()
+{
+    Parameters p;
+    p.band_volume_rule = "corner_bound";
+    p.offset_amips_weight = 1.;
+    p.label_cleanup = "off";
+    p.front_pocket_split = false;
+    p.front_spanned_split = false;
+    p.exit_no_folds = false;
+    return p;
+}
+} // namespace
+
 TEST_CASE("per-tet-energy", "[offset][3d]")
 {
     // tet_energy() against its definition computed by hand: (w / s^3) vol AMIPS^3 for every
@@ -1536,7 +1554,7 @@ TEST_CASE("per-tet-energy", "[offset][3d]")
              {1., 3.},
              {1., 100.},
              {Parameters().offset_amips_weight, 100.}}) {
-        Parameters param;
+        Parameters param = volume_rule_params();
         param.offset_amips_weight = w;
         param.stop_energy = s;
         const auto pot = plane_field();
@@ -1630,7 +1648,7 @@ TEST_CASE("smoothing-objective-is-the-ring-energy", "[offset][3d]")
                  {1., 3., true},
                  {Parameters().offset_amips_weight, 100., true}}) {
             if (plastic && fi != 0) continue; // fixture 1 is all band: nothing plastic
-            Parameters param;
+            Parameters param = volume_rule_params();
             param.offset_amips_weight = w;
             param.stop_energy = s;
             const auto pot = plane_field();
@@ -2067,7 +2085,7 @@ TEST_CASE("swap-candidate-record", "[offset][3d]")
             const std::vector<int>& labB,
             const int search,
             const std::function<void(TopoOffsetTetMesh&, const std::vector<size_t>&)>& before) {
-            Parameters pa, pb;
+            Parameters pa = volume_rule_params(), pb = volume_rule_params();
             auto A = energy_mesh(pa, V, TA, labA, pot);
             auto B = energy_mesh(pb, V, TB, labB, pot);
             std::vector<size_t> tids(TA.size());
@@ -2239,7 +2257,7 @@ TEST_CASE("swap-face-gate-on-energy", "[offset][3d]")
 
     for (const int x : {2, 0}) {
         INFO("label " << x);
-        Parameters pa, pb;
+        Parameters pa = volume_rule_params(), pb = volume_rule_params();
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, {x, x}, pot);
         auto B = energy_mesh(pb, V, TB, {x, x, x}, pot);
@@ -2313,7 +2331,8 @@ TEST_CASE("swap-44-case-search-on-energy", "[offset][3d]")
     for (const int x : {2, 0}) {
         INFO("label " << x);
         const std::vector<int> lab(4, x);
-        Parameters pa, p02, p13;
+        Parameters pa = volume_rule_params(), p02 = volume_rule_params(),
+                   p13 = volume_rule_params();
         pa.perform_sanity_checks = true;
         auto A = energy_mesh(pa, V, TA, lab, pot);
         auto B02 = energy_mesh(p02, V, T02, lab, pot);
@@ -2442,6 +2461,13 @@ Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
 {
     j["application"] = "topological_offset";
     j["input"] = "unused.msh";
+    // A volume rule asked for without a label clean-up: "off", as a config must say since
+    // 2026-10-28 (the default clean-up "energy_decrease" needs the "surface" rule).
+    if (j.contains("EXPERIMENTAL_band_volume_rule") &&
+        j["EXPERIMENTAL_band_volume_rule"] != "surface" &&
+        !j.contains("EXPERIMENTAL_label_cleanup")) {
+        j["EXPERIMENTAL_label_cleanup"] = "off";
+    }
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     jse::JSE spec_engine;
     spec_engine.strict = true;
@@ -3777,10 +3803,12 @@ TEST_CASE("pocket-split-six-edge-cell", "[offset][3d][pocket_split]")
 
 TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
 {
-    // With EXPERIMENTAL_front_pocket_split false (the default) the slot is a no-op, and so it is
-    // in a TetWild pass with the key on: the first fixture's pinned cell stays and the mesh is
-    // unchanged.
+    // With EXPERIMENTAL_front_pocket_split false (the default until 2026-10-28) the slot is a
+    // no-op, and so it is in a TetWild pass with the key on: the first fixture's pinned cell stays
+    // and the mesh is unchanged.
     Parameters param;
+    param.front_pocket_split = false;
+    param.front_spanned_split = false;
     auto mesh = pocket_mesh(param, {2, 0});
     REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
     REQUIRE(count_pinned(*mesh) == 1);
@@ -3811,6 +3839,7 @@ TEST_CASE("spanned-split-edge", "[offset][3d][pocket_split]")
     // (o, x, z, c) and (x, y, z, c), have c off the front. The pinned-cell split alone leaves it;
     // with the key, the slot splits (x, z), and the offset surface is the same set of faces.
     Parameters param;
+    param.front_spanned_split = false; // the key starts off (its default is true since 2026-10-28)
     auto mesh = pocket_mesh(param, {2, 0}, true);
     mesh->m_offset_params.front_pocket_split = true;
     REQUIRE(count_pinned(*mesh) == 0);
@@ -3907,11 +3936,13 @@ TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 
 TEST_CASE("surface-energy-keys", "[offset][3d]")
 {
-    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it:
-    // offset_amips_weight's default 1 under every rule (since 2026-10-28 it weights the AMIPS term
-    // alone, so it is the ratio of the two terms; a weight above 1 is accepted), a weight read
-    // through, the refusals (a negative weight, the spec's min; settle_stall_eps away from its
-    // default under another rule), stencil_order's default 5 and its min 1.
+    // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the defaults
+    // of 2026-10-28 (the "surface" rule, offset_amips_weight 100 under every rule -- under
+    // "surface" it weights the AMIPS term alone, the ratio of the two terms --, label_cleanup
+    // "energy_decrease", the pocket and spanned splits and exit_no_folds on, interleaved_smoothing
+    // off), a weight read through, the refusals (a negative weight, the spec's min;
+    // settle_stall_eps away from its default under another rule; the default clean-up under
+    // another rule unless the config turns it off), stencil_order's default 5 and its min 1.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3925,28 +3956,49 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.band_volume_rule == "corner_bound");
-    CHECK(by_default.offset_amips_weight == 1.);
+    CHECK(by_default.band_volume_rule == "surface");
+    CHECK(by_default.offset_amips_weight == 100.);
+    CHECK(by_default.label_cleanup == "energy_decrease");
+    CHECK(by_default.front_pocket_split);
+    CHECK(by_default.front_spanned_split);
+    CHECK(by_default.exit_no_folds);
+    CHECK_FALSE(by_default.interleaved_smoothing);
+    // the in-class defaults (a Parameters built without JSON) are the spec's
+    const Parameters in_class{};
+    CHECK(in_class.band_volume_rule == by_default.band_volume_rule);
+    CHECK(in_class.offset_amips_weight == by_default.offset_amips_weight);
+    CHECK(in_class.label_cleanup == by_default.label_cleanup);
+    CHECK(in_class.front_pocket_split == by_default.front_pocket_split);
+    CHECK(in_class.front_spanned_split == by_default.front_spanned_split);
+    CHECK(in_class.exit_no_folds == by_default.exit_no_folds);
+    CHECK(in_class.stencil_order == by_default.stencil_order);
     CHECK(by_default.stencil_order == 5);
     CHECK(by_default.settle_stall_eps == 0.1);
     const Parameters surface(injected({{"EXPERIMENTAL_band_volume_rule", "surface"}}));
     CHECK(surface.band_volume_rule == "surface");
-    CHECK(surface.offset_amips_weight == 1.);
+    CHECK(surface.offset_amips_weight == 100.);
     const Parameters weighted(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"},
          {"offset_amips_weight", 0.25},
          {"settle_stall_eps", 0.05}}));
     CHECK(weighted.offset_amips_weight == 0.25);
     CHECK(weighted.settle_stall_eps == 0.05);
-    const Parameters exact_w(injected({{"EXPERIMENTAL_band_volume_rule", "exact"}}));
-    CHECK(exact_w.offset_amips_weight == 1.);
+    // another rule: refused with the default clean-up, read with the clean-up off
+    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_band_volume_rule", "exact"}})});
+    const Parameters exact_w(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "exact"}, {"EXPERIMENTAL_label_cleanup", "off"}}));
+    CHECK(exact_w.offset_amips_weight == 100.);
     const Parameters heavy(
         injected({{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 10.}}));
     CHECK(heavy.offset_amips_weight == 10.);
     jse::JSE negative;
     negative.strict = true;
     CHECK_FALSE(negative.verify_json(with_app({{"offset_amips_weight", -0.5}}), spec));
-    CHECK_THROWS(Parameters{injected({{"settle_stall_eps", 0.2}})});
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_band_volume_rule", "exact"},
+             {"EXPERIMENTAL_label_cleanup", "off"},
+             {"settle_stall_eps", 0.2}})});
     jse::JSE strict;
     strict.strict = true;
     CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", 0}}), spec));
@@ -3962,7 +4014,11 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     const Parameters bar(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"}, {"EXPERIMENTAL_settle_test", "bar"}}));
     CHECK(bar.settle_test == "bar");
-    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_settle_test", "bar"}})});
+    CHECK_THROWS(
+        Parameters{injected(
+            {{"EXPERIMENTAL_band_volume_rule", "exact"},
+             {"EXPERIMENTAL_label_cleanup", "off"},
+             {"EXPERIMENTAL_settle_test", "bar"}})});
     // EXPERIMENTAL_label_cleanup "energy_decrease": read through under "surface" (with the pocket
     // split every clean-up mode needs), refused under another rule.
     const Parameters ed(injected(
@@ -3998,7 +4054,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
          {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "surface"}},
         g.V);
-    REQUIRE(param.offset_amips_weight == 1.);
+    REQUIRE(param.offset_amips_weight == 100.); // the default since 2026-10-28
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_surface_sums";
     const auto mesh = grid_offset_mesh(g, param, out);
@@ -4009,7 +4065,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
     CHECK(mesh->surface_term_weight() == Catch::Approx(mesh->m_offset_params.diag_l / (f * f)));
     mesh->m_offset_params.offset_amips_weight = 0.3;
     CHECK(mesh->surface_term_weight() == Catch::Approx(mesh->m_offset_params.diag_l / (f * f)));
-    mesh->m_offset_params.offset_amips_weight = 1.;
+    mesh->m_offset_params.offset_amips_weight = 100.;
 
     const auto faces = mesh->offset_surface_faces();
     REQUIRE(faces.size() > 10);
