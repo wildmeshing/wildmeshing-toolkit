@@ -12,21 +12,26 @@ using namespace wmtk;
 
 namespace {
 
-// Two unit squares at z = 0.25 side by side, A on [0,1]x[0,1] (triangles 0, 1) and B on
-// [1,2]x[0,1] (triangles 2, 3), sharing the edge x = 1. Exactly coplanar and edge-adjacent, so
+// Two squares at z = 0.25 side by side, A on [0,1]x[0,1] (triangles 0, 1) and B on
+// [1,1.5]x[0,1] (triangles 2, 3), sharing the edge x = 1. Exactly coplanar and edge-adjacent, so
 // the arrangement puts all four triangles in ONE coplanar group: the case where the group alone
-// cannot say which sheet a facet lies on. Both face +z.
+// cannot say which sheet a facet lies on. A faces +z; B faces +z or, with `b_up` false, -z.
 struct Sheets
 {
     std::vector<double> V;
     std::vector<uint32_t> F;
 };
 
-Sheets two_sheets()
+Sheets two_sheets(const bool b_up = true)
 {
     Sheets s;
-    s.V = {0, 0, 0.25, 1, 0, 0.25, 1, 1, 0.25, 0, 1, 0.25, 2, 0, 0.25, 2, 1, 0.25};
-    s.F = {0, 1, 2, 0, 2, 3, 1, 4, 5, 1, 5, 2};
+    s.V = {0, 0, 0.25, 1, 0, 0.25, 1, 1, 0.25, 0, 1, 0.25, 1.5, 0, 0.25, 1.5, 1, 0.25};
+    s.F = {0, 1, 2, 0, 2, 3};
+    if (b_up) {
+        s.F.insert(s.F.end(), {1, 4, 5, 1, 5, 2});
+    } else {
+        s.F.insert(s.F.end(), {1, 5, 4, 1, 2, 5});
+    }
     return s;
 }
 
@@ -58,16 +63,22 @@ struct Embedded
     std::vector<bool> on_input, v_on_input;
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input;
+    std::vector<int8_t> orientation;
     utils::EmbedTrianglesProvenance prov;
 };
 
-Embedded embed(const Sheets& s, const bool want_face_triangles)
+Embedded embed(
+    const Sheets& s,
+    const bool want_face_triangles,
+    const std::vector<int>* triangle_input = nullptr)
 {
     std::vector<double> TV;
     std::vector<uint32_t> TT;
     background(TV, TT);
     Embedded e;
     e.prov.want_face_triangles = want_face_triangles;
+    utils::EmbedTrianglesOptions opts;
+    opts.triangle_input = triangle_input;
     utils::embed_triangles_in_tets(
         s.V,
         s.F,
@@ -79,8 +90,9 @@ Embedded embed(const Sheets& s, const bool want_face_triangles)
         e.v_on_input,
         e.tets,
         e.tet_face_on_input,
-        {},
-        &e.prov);
+        opts,
+        &e.prov,
+        &e.orientation);
     return e;
 }
 
@@ -123,4 +135,48 @@ TEST_CASE("embed-triangles-face-triangles", "[embed_triangles]")
     // Off by default: nothing is built unless asked.
     const Embedded off = embed(two_sheets(), false);
     CHECK(off.prov.face_triangles.empty());
+}
+
+TEST_CASE("embed-triangles-orientation-keeps-to-each-input", "[embed_triangles]")
+{
+    // B faces -z next to A facing +z, sharing an edge. Told which input each triangle is, the
+    // repair keeps to one input and each tet face on the input carries its own sheet's
+    // orientation. As one input, B is the patch's minority (half A's area) and is reversed to
+    // agree with A -- the single-input repair, unchanged.
+    static constexpr std::array<std::array<int, 3>, 4> local_faces = {
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 1, 3}}, {{1, 2, 3}}}}; // TetMesh::m_local_faces
+    const std::vector<int> two_inputs = {0, 0, 1, 1};
+    for (const bool b_up : {true, false}) {
+        for (const bool told : {true, false}) {
+            CAPTURE(b_up, told);
+            const Embedded e = embed(two_sheets(b_up), false, told ? &two_inputs : nullptr);
+            size_t n_a = 0, n_b = 0, wrong_a = 0, wrong_b = 0;
+            for (size_t t = 0; t < e.tets.size(); ++t) {
+                for (int k = 0; k < 4; ++k) {
+                    if (!e.tet_face_on_input[4 * t + k]) continue;
+                    std::array<size_t, 3> f;
+                    for (int j = 0; j < 3; ++j) f[j] = e.tets[t][local_faces[k][j]];
+                    std::sort(f.begin(), f.end());
+                    const Vector3d a = to_double(e.v[f[0]]), b = to_double(e.v[f[1]]),
+                                   c = to_double(e.v[f[2]]);
+                    const double nz = (b - a).cross(c - a)[2];
+                    const int o = e.orientation[4 * t + k];
+                    const bool side_a = (a[0] + b[0] + c[0]) / 3 < 1;
+                    const int want = side_a || b_up || !told ? 1 : -1; // the normal is want * +z
+                    const bool right = o * nz * want > 0;
+                    if (side_a) {
+                        ++n_a;
+                        wrong_a += !right;
+                    } else {
+                        ++n_b;
+                        wrong_b += !right;
+                    }
+                }
+            }
+            CHECK(n_a > 0);
+            CHECK(n_b > 0);
+            CHECK(wrong_a == 0);
+            CHECK(wrong_b == 0);
+        }
+    }
 }

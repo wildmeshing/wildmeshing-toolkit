@@ -24,6 +24,11 @@ struct EmbedTrianglesOptions
     bool check_surface_provenance = false;
     /// Threads for the parts that run in parallel (so far the tracked surface's orientation).
     int num_threads = 1;
+    /// Optional, per input triangle (indexing `triangle_indices`): the input it belongs to,
+    /// negative for none. With it the orientation repair keeps to one input -- a facet is linked
+    /// only to facets on the same inputs -- so an input facing the other way next to another is
+    /// not reversed to agree with it. Without it all triangles are one input, as before.
+    const std::vector<int>* triangle_input = nullptr;
 };
 
 /**

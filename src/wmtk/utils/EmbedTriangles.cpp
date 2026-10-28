@@ -305,11 +305,18 @@ std::vector<int> facet_orientations(
  * touching solids cancel) are not part of the oriented surface, and those of larger magnitude
  * (coincident sheets) are left as computed and end a patch. fTetWild orients its tracked
  * surface the same way: from the input, then a BFS per patch.
+ *
+ * With `facet_input` (per facet, an id of the inputs it lies on), facets are linked only to
+ * facets on the same inputs, so a patch never spans two inputs: two inputs facing opposite ways
+ * across an edge are both kept, where one patch would reverse the smaller to agree with the
+ * larger (measured: two coplanar squares side by side, one facing each way, the second came out
+ * facing like the first). Within one input the repair is unchanged.
  */
 OrientationRepair orient_facet_patches(
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::array<size_t, 3>>& facets,
-    std::vector<int>& orientation)
+    std::vector<int>& orientation,
+    const std::vector<int>* facet_input = nullptr)
 {
     assert(v_rational.size() < size_t(UINT32_MAX));
     constexpr uint32_t not_unit = UINT32_MAX;
@@ -351,7 +358,9 @@ OrientationRepair orient_facet_patches(
     for (size_t s = 0; s < half_edges.size();) {
         size_t e = s + 1;
         while (e < half_edges.size() && half_edges[e].key == half_edges[s].key) ++e;
-        if (e - s == 2 && half_edges[s].elem != not_unit && half_edges[s + 1].elem != not_unit) {
+        if (e - s == 2 && half_edges[s].elem != not_unit && half_edges[s + 1].elem != not_unit &&
+            (facet_input == nullptr || (*facet_input)[unit[half_edges[s].elem]] ==
+                                           (*facet_input)[unit[half_edges[s + 1].elem]])) {
             links.push_back(
                 {half_edges[s].elem,
                  half_edges[s + 1].elem,
@@ -752,21 +761,38 @@ void embed_triangles_in_tets(
             [](const FaceKey& a, const FaceKey& b) { return a.first < b.first; });
     };
 
+    // The orientation repair keeps to one input when the caller says which input each triangle
+    // belongs to (EmbedTrianglesOptions::triangle_input). That needs each facet's triangles, so
+    // the provenance is built for it even when the caller asked for none.
+    const bool keep_to_inputs = tet_face_orientation != nullptr && opts.triangle_input != nullptr;
+    EmbedTrianglesProvenance own_provenance;
+    EmbedTrianglesProvenance* prov =
+        provenance != nullptr ? provenance : (keep_to_inputs ? &own_provenance : nullptr);
     polygon_faces_on_input.assign(polygon_faces.size(), false);
-    if (provenance != nullptr) {
-        provenance->triangle_group = vr_tri_group;
-        provenance->face_groups.reserve(on_input_faces.size());
+    if (prov != nullptr) {
+        prov->triangle_group = vr_tri_group;
+        prov->face_groups.reserve(on_input_faces.size());
     }
     for (size_t i = 0; i < polygon_faces.size(); ++i) {
         const auto [lo, hi] = groups_of(polygon_faces[i]);
         polygon_faces_on_input[i] = lo != hi;
-        if (provenance != nullptr) {
+        if (prov != nullptr) {
             for (auto it = lo; it != hi; ++it) {
-                provenance->face_groups.push_back({uint32_t(i), it->second});
+                prov->face_groups.push_back({uint32_t(i), it->second});
             }
         }
     }
     logger().info("done");
+
+    // The vertex compaction below renumbers vertices but keeps the facets in place, so this is
+    // the same answer before it as after.
+    std::vector<std::vector<uint32_t>> face_triangles;
+    if (prov != nullptr && (prov->want_face_triangles || keep_to_inputs)) {
+        logger().info("input triangles of the facets...");
+        face_triangles =
+            facet_triangles(tri_vrt_coord, triangle_indices, v_rational, polygon_faces, *prov);
+        logger().info("done");
+    }
 
     // Per facet: the input's orientation on it, against the facet's ascending vertex order --
     // see facet_orientations -- then made consistent patch by patch.
@@ -785,8 +811,29 @@ void embed_triangles_in_tets(
             groups_of,
             opts.num_threads,
             n_straddling);
-        const OrientationRepair rep =
-            orient_facet_patches(v_rational, polygon_faces, facet_orientation);
+        // Per facet, an id of the inputs it lies on: the same id, the same inputs.
+        std::vector<int> facet_input;
+        if (keep_to_inputs) {
+            std::map<std::vector<int>, int> id;
+            std::vector<int> inputs;
+            facet_input.assign(polygon_faces.size(), -1);
+            for (size_t f = 0; f < polygon_faces.size(); ++f) {
+                inputs.clear();
+                for (const uint32_t t : face_triangles[f]) {
+                    if (t < opts.triangle_input->size() && (*opts.triangle_input)[t] >= 0) {
+                        inputs.push_back((*opts.triangle_input)[t]);
+                    }
+                }
+                std::sort(inputs.begin(), inputs.end());
+                inputs.erase(std::unique(inputs.begin(), inputs.end()), inputs.end());
+                facet_input[f] = id.emplace(inputs, int(id.size())).first->second;
+            }
+        }
+        const OrientationRepair rep = orient_facet_patches(
+            v_rational,
+            polygon_faces,
+            facet_orientation,
+            keep_to_inputs ? &facet_input : nullptr);
         if (n_straddling > 0 || rep.n_turned > 0 || rep.n_non_orientable > 0) {
             logger().info(
                 "tracked surface: the input is not consistently oriented -- {} facets straddle a "
@@ -1042,14 +1089,7 @@ void embed_triangles_in_tets(
     }
 
     if (provenance != nullptr && provenance->want_face_triangles) {
-        logger().info("input triangles of the facets...");
-        provenance->face_triangles = facet_triangles(
-            tri_vrt_coord,
-            triangle_indices,
-            v_rational,
-            polygon_faces,
-            *provenance);
-        logger().info("done");
+        provenance->face_triangles = std::move(face_triangles);
     }
 
     // final sanity check: every published tet must be positively

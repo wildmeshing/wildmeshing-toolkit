@@ -455,7 +455,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         E,
         per_input ? &E_sources : nullptr,
         &E_orientation,
-        free_points.empty() ? nullptr : &point_map);
+        free_points.empty() ? nullptr : &point_map,
+        per_input ? &E_simp_input : nullptr); // the orientation repair keeps to one input
     // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
     // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
     // several inputs in 3D -- and then the edge is held to all of them. Counted.

@@ -135,6 +135,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     opts.check_orientation = m_params.perform_sanity_checks;
     opts.check_surface_provenance = m_params.perform_sanity_checks;
     opts.num_threads = NUM_THREADS;
+    opts.triangle_input = face_input; // the orientation repair keeps to one input
 
     // Marshal the feature inputs into the remesher's flat arrays, and check the domain: the
     // features AND their forcing-triangle apexes -- which stick out by up to 0.1x the edge

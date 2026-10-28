@@ -48,6 +48,10 @@ namespace wmtk::utils {
  *             again in the output; exact duplicates in V map to the same output row. -1
  *             only if the remesher dropped the point, which it does not do for points --
  *             the entry exists so a caller can assert that rather than assume it.
+ * @param E_input optional: for each row of E, the input it belongs to, negative for none. With
+ *             it the repair of E_out_orientation keeps to one input -- edges are linked only to
+ *             edges on the same inputs -- so two input curves meeting end to end in opposite
+ *             directions are both kept. Without it all edges are one input, as before.
  */
 void embed_segments(
     const MatrixXd& V,
@@ -58,7 +62,8 @@ void embed_segments(
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources = nullptr,
     std::vector<int>* E_out_orientation = nullptr,
-    std::vector<int>* point_map = nullptr);
+    std::vector<int>* point_map = nullptr,
+    const std::vector<int>* E_input = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.
