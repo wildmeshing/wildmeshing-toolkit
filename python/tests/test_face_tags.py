@@ -25,6 +25,7 @@ BOX_F = [(0, 3, 2), (0, 2, 1), (4, 5, 6), (4, 6, 7), (0, 1, 5), (0, 5, 4),
 SQUARE = (1.5, 2.3, 0.1, 0.9, 0.5)  # x0, x1, y0, y1, z
 GREEN = ((3, 0, 0), (4, 1, 1))
 EPS_REL = 1e-2
+MAX_INPUTS = 64  # SurfaceTagAttributes::max_inputs, the bits of wmtk::InputSet
 EPS = EPS_REL * np.linalg.norm([4, 1, 1])  # inputs' bbox [0,4]x[0,1]x[0,1]
 
 
@@ -356,15 +357,16 @@ def test_offset_grows_a_shell_around_a_tagged_sheet():
     assert len(rows(r, "tetrahedron", "red")) == len(rows(m, "tetrahedron", "red"))
 
 
-def test_reader_refuses_more_than_64_face_tags():
-    """A face tag is one bit of a face's 64-bit input set."""
+def test_reader_refuses_more_face_tags_than_input_set_bits():
+    """A face tag is one bit of a face's input set, MAX_INPUTS bits."""
     m = tagged_grid()
     tri = m["cells"]["triangle"]
     n = len(tri["connectivity"])
-    member = np.zeros((n, 65), np.uint8)
-    member[np.arange(n), np.arange(n) % 65] = 1
-    tri["attributes"]["tags"] = {"values": member, "labels": [f"t{k}" for k in range(65)]}
-    with pytest.raises(Exception, match="At most 64 face tags, not 65"):
+    k = MAX_INPUTS + 1
+    member = np.zeros((n, k), np.uint8)
+    member[np.arange(n), np.arange(n) % k] = 1
+    tri["attributes"]["tags"] = {"values": member, "labels": [f"t{j}" for j in range(k)]}
+    with pytest.raises(Exception, match=f"At most {MAX_INPUTS} face tags, not {k}"):
         wm.simwild({"operation": "remeshing", "input": ["m"], "max_iterations": 0}, {"m": m})
 
 

@@ -16,7 +16,8 @@ namespace wmtk {
  * `m_is_bbox_fs` is the bbox side the simplex lies on, or -1 for none: 0/1 = x min/max,
  * 2/3 = y min/max, 4/5 = z min/max. Tagging it is what keeps the bounding box from collapsing.
  */
-/// An input set (SurfaceTagAttributes::input_set()): bit i for input i, 64 inputs at most.
+/// An input set (SurfaceTagAttributes::input_set()): bit i for input i. Its width is the input
+/// limit (SurfaceTagAttributes::max_inputs) and the face record's size: change it here only.
 using InputSet = uint64_t;
 
 class SurfaceTagAttributes
@@ -32,7 +33,8 @@ class SurfaceTagAttributes
     // to 1017 MB (+1.1%), the simplification's per-face input id included. 64 bits rather than 16
     // so that simwild can give every label its own bit -- each tet tag's region as well as each
     // face tag -- and hold every surface face to its own labels' envelopes: segmented images
-    // carry more than 16 labels. That is 6 bytes more per face record.
+    // carry more than 16 labels. That is 6 bytes more per face record: on the same
+    // 46024, one input, serial, peak RSS 1001 MB on main (3 bytes) and 1007 MB here (11 bytes).
 public:
     // Bitfields cannot take default member initializers before C++20.
     SurfaceTagAttributes()
@@ -95,8 +97,8 @@ public:
     static constexpr int max_orientation = 15;
 
     /**
-     * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. 64 inputs at
-     * most (max_inputs).
+     * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. At most
+     * max_inputs, the width of InputSet.
      *
      * The invariant it carries: a tracked simplex stays within eps of EVERY input in its set --
      * not merely of the union of all inputs, which is what one envelope around everything
@@ -117,15 +119,16 @@ public:
     InputSet input_set() const
     {
         InputSet s = 0;
-        for (int i = 0; i < 8; ++i) s |= InputSet(m_input_set[i]) << (8 * i);
+        for (size_t i = 0; i < sizeof(InputSet); ++i) s |= InputSet(m_input_set[i]) << (8 * i);
         return s;
     }
     void set_input_set(InputSet s)
     {
-        for (int i = 0; i < 8; ++i) m_input_set[i] = uint8_t(s >> (8 * i));
+        for (size_t i = 0; i < sizeof(InputSet); ++i) m_input_set[i] = uint8_t(s >> (8 * i));
     }
-    static constexpr int max_inputs = 64;
-    uint8_t m_input_set[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    /// One input per bit of InputSet: the width is set there, and only there.
+    static constexpr int max_inputs = int(8 * sizeof(InputSet));
+    uint8_t m_input_set[sizeof(InputSet)] = {};
 
     /// +1 if `v` is an even permutation of its ascending sort, -1 if odd. N is 2 or 3.
     template <size_t N>
@@ -178,6 +181,8 @@ public:
     }
 };
 
-static_assert(sizeof(SurfaceTagAttributes) == 11, "keep the surface tags byte-sized");
+static_assert(
+    sizeof(SurfaceTagAttributes) == 3 + sizeof(InputSet),
+    "keep the surface tags byte-sized");
 
 } // namespace wmtk

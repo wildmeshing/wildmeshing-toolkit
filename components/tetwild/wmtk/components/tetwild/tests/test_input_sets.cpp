@@ -204,12 +204,12 @@ TEST_CASE("input-set-merge", "[tetwild][input_sets]")
     a.m_is_surface_fs = true;
     a.set_input_set(0b0101);
     b.m_is_surface_fs = true;
-    b.set_input_set(InputSet(1) << 63);
+    b.set_input_set(InputSet(1) << (SurfaceTagAttributes::max_inputs - 1));
     a.merge(b);
-    CHECK(a.input_set() == ((InputSet(1) << 63) | 0b0101));
+    CHECK(a.input_set() == ((InputSet(1) << (SurfaceTagAttributes::max_inputs - 1)) | 0b0101));
     a.reset();
     CHECK(a.input_set() == 0);
-    CHECK(sizeof(FaceAttributes) == 11);
+    CHECK(sizeof(FaceAttributes) == 3 + sizeof(InputSet));
 }
 
 TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")
