@@ -240,11 +240,14 @@ public:
     /**
      * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
      *
-     * A single union bool, deliberately, mirroring how the tracked surface is one
-     * m_is_surface_fs for every input file and sheet. Which curve an edge belongs to is not
-     * carried through the optimization anywhere in this codebase; identity questions are
-     * answered at the boundaries -- provenance at insertion, combinatorial and geometric
-     * audits at the end.
+     * A single union bool: which curve an edge belongs to is not carried through the
+     * optimization, and the edges are held by one tube around all the curves
+     * (m_feature_envelope). Tracked faces are different: each carries its input set
+     * (SurfaceTagAttributes::input_set()) through every operation and is held to its own
+     * inputs' envelopes, because one envelope around every input let a solid's boundary ride a
+     * sheet crossing it -- measured, 12 faces up to 3.61 eps off the solid -- and an audit at the
+     * end can find that but not prevent it. Curves are expected to follow the faces once two of
+     * them close together can be measured drifting the same way.
      */
     struct FeatureEdgeAttributes
     {
