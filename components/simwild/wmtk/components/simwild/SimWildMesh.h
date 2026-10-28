@@ -62,6 +62,8 @@ public:
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
+    /// Names of the face tags: bit i of a face's input set is m_face_tag_names[i].
+    std::vector<std::string> m_face_tag_names;
 
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// simwild-only fields (tags, quality/sizing fields, the operation name).
@@ -267,14 +269,26 @@ public:
         const MatrixXr& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& F_tagged = MatrixXi(),
+        const MatrixSi& F_tags = MatrixSi(),
+        const std::vector<std::string>& face_tag_names = {});
     void init_from_image(
         const MatrixXd& V,
         const MatrixXi& T,
         const MatrixSi& T_tags,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXi& F_tagged = MatrixXi(),
+        const MatrixSi& F_tags = MatrixSi(),
+        const std::vector<std::string>& face_tag_names = {});
 
     void init_surfaces_and_boundaries();
+    /// Tracks the faces F_tagged (rows of T's vertices, as read_mesh_data gives them) as surface,
+    /// with input set bit j where F_tags has a 1 in column j. Throws on a row that is no face.
+    void init_face_tags(
+        const MatrixXi& F_tagged,
+        const MatrixSi& F_tags,
+        const std::vector<std::string>& face_tag_names);
 
 
     /**

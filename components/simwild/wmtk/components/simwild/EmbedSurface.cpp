@@ -463,7 +463,10 @@ void EmbedSurface::remove_duplicates(const double eps)
     F_surf_from_vector(f);
 }
 
-bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_winding_number)
+bool EmbedSurface::embed_surface(
+    const bool flood_fill,
+    const bool tag_from_winding_number,
+    const bool provenance)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -518,7 +521,7 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         m_F_on_surface,
         m_perform_sanity_checks,
         m_F_input,
-        tag_from_winding_number ? nullptr : &m_F_tags_surface);
+        tag_from_winding_number && !provenance ? nullptr : &m_F_tags_surface);
 
     if (m_perform_sanity_checks) {
         // check that all tets contain valid vertex indices and no duplicates

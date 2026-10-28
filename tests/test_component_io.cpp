@@ -183,29 +183,66 @@ TEST_CASE("SimWild accepts tagged arrays in both dimensions", "[component_io]")
     check(result);
     REQUIRE(result.first.at("mesh").cells.begin()->second.attributes.count("tags"));
 }
-TEST_CASE("Tagged meshes use an embedded envelope block", "[component_io]")
+TEST_CASE("Tagged meshes read a triangle block as tagged faces", "[component_io]")
 {
-    // A tagged tet plus an envelope triangle on two extra vertices, as read_mesh returns a
-    // simwild .msh written with write_envelope.
+    // A tagged tet plus one of its faces tagged `sheet`. Only rows labelled EnvelopeSurface,
+    // simwild's envelope group, are an envelope.
     auto data = tet();
     add_tags(data, CellType::Tetrahedron);
-    data.V.conservativeResize(6, 3);
-    data.V.bottomRows(2) << 5, 5, 5, 6, 5, 5;
-    auto& envelope = data.cells[CellType::Triangle];
-    envelope.connectivity.resize(1, 3);
-    envelope.connectivity << 4, 5, 0;
-    envelope.attributes["tags"] = {DataMatrix<uint8_t>::Ones(1, 1).eval(), {"EnvelopeSurface"}};
+    auto& faces = data.cells[CellType::Triangle];
+    faces.connectivity.resize(1, 3);
+    faces.connectivity << 1, 2, 3;
+    faces.attributes["tags"] = {DataMatrix<uint8_t>::Ones(1, 1).eval(), {"sheet"}};
     const auto input = simwild::read_mesh_data(data);
     REQUIRE(input.V_input.rows() == 4);
-    REQUIRE(input.V_input.colwise().maxCoeff().maxCoeff() == 1);
-    REQUIRE(input.V_envelope.rows() == 3);
-    REQUIRE(input.F_envelope.rows() == 1);
-    REQUIRE(input.envelope_name == "EnvelopeSurface");
+    REQUIRE(input.F_tagged.rows() == 1);
+    REQUIRE(input.face_tag_names == std::vector<std::string>{"sheet"});
+    REQUIRE(input.V_envelope.rows() == 0);
     const auto separate = triangle();
-    REQUIRE_THROWS(simwild::read_mesh_data(data, &separate));
-    data.cells[CellType::Edge].connectivity.resize(1, 2);
-    data.cells[CellType::Edge].connectivity << 0, 1;
-    REQUIRE_THROWS(simwild::read_mesh_data(data));
+    const auto both = simwild::read_mesh_data(data, &separate);
+    REQUIRE(both.F_tagged.rows() == 1);
+    REQUIRE(both.V_envelope.rows() == 3);
+    SECTION("rows labelled EnvelopeSurface, on vertices of their own, are the envelope")
+    {
+        data.V.conservativeResize(6, 3);
+        data.V.bottomRows(2) << 5, 5, 5, 6, 5, 5;
+        faces.connectivity.conservativeResize(2, 3);
+        faces.connectivity.row(1) << 4, 5, 0;
+        DataMatrix<uint8_t> member(2, 2);
+        member << 1, 0, 0, 1;
+        faces.attributes["tags"] = {member, {"sheet", "EnvelopeSurface"}};
+        const auto split = simwild::read_mesh_data(data);
+        REQUIRE(split.V_input.rows() == 4);
+        REQUIRE(split.F_tagged.rows() == 1);
+        REQUIRE(split.face_tag_names == std::vector<std::string>{"sheet"});
+        REQUIRE(split.V_envelope.rows() == 3);
+        REQUIRE(split.F_envelope.rows() == 1);
+        REQUIRE(split.envelope_name == "EnvelopeSurface");
+        REQUIRE_THROWS(simwild::read_mesh_data(data, &separate));
+    }
+    SECTION("a face label that is also a tet label")
+    {
+        faces.attributes["tags"].labels = {"tag_0"};
+        REQUIRE_THROWS(simwild::read_mesh_data(data));
+    }
+    SECTION("a face on a vertex no tet has")
+    {
+        data.V.conservativeResize(5, 3);
+        data.V.row(4) << 5, 5, 5;
+        faces.connectivity << 1, 2, 4;
+        REQUIRE_THROWS(simwild::read_mesh_data(data));
+    }
+    SECTION("a triangle block without tags")
+    {
+        faces.attributes.clear();
+        REQUIRE_THROWS(simwild::read_mesh_data(data));
+    }
+    SECTION("an edge block in a tet mesh")
+    {
+        data.cells[CellType::Edge].connectivity.resize(1, 2);
+        data.cells[CellType::Edge].connectivity << 0, 1;
+        REQUIRE_THROWS(simwild::read_mesh_data(data));
+    }
 }
 TEST_CASE("SimWild checks a forced dimension against memory inputs", "[component_io]")
 {

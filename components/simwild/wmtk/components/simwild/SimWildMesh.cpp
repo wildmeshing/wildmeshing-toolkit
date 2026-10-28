@@ -220,7 +220,8 @@ void SimWildMesh::update_attributes()
                 opposite.has_value() &&
                 m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
 
-            if (is_interface) {
+            // A tagged face stays surface wherever it lies.
+            if (is_interface || m_face_attribute[fid].input_set() != 0) {
                 for (const size_t vid : get_face_vids(face)) {
                     m_vertex_attribute[vid].m_is_on_surface = true;
                 }
@@ -296,6 +297,11 @@ bool SimWildMesh::check_interface_faces_tagged(const bool verbose) const
         const size_t tid = face.tid(*this);
         const size_t fid = face.fid(*this);
         const bool marked = m_face_attribute[fid].m_is_surface_fs;
+        // A tagged face is surface by its tag, not by the tets around it.
+        if (marked && m_face_attribute[fid].input_set() != 0) {
+            num_surface++;
+            continue;
+        }
         const auto opposite = face.switch_tetrahedron(*this);
 
         if (!opposite.has_value()) {
@@ -484,7 +490,6 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
 }
-
 
 
 bool SimWildMesh::all_rounded() const

@@ -116,8 +116,13 @@ public:
      * @param tag_from_winding_number Decide each cell's tags by evaluating the winding
      * number of every input at its centroid (the default), rather than by propagating them
      * across the arrangement's own surface provenance. See tag_from_provenance.
+     * @param provenance Also record which inputs tile each surface face (F_tags_surface()),
+     * which the provenance tagging records anyway.
      */
-    bool embed_surface(const bool flood_fill = false, const bool tag_from_winding_number = true);
+    bool embed_surface(
+        const bool flood_fill = false,
+        const bool tag_from_winding_number = true,
+        const bool provenance = false);
 
     /**
      * @brief Remove unreferenced vertices.
@@ -130,6 +135,8 @@ public:
     const MatrixXi& T_emb() const { return m_T_emb; }
     const MatrixSi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
+    /// Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.
+    const std::vector<std::vector<size_t>>& F_tags_surface() const { return m_F_tags_surface; }
     const MatrixXi& F_surface() const { return m_F_surface; }
 
     /**
