@@ -179,9 +179,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_crossings</b> =
 <tr class="separator:ae13c81135ff8ac2ab6a5f94855bc59d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc94e63b088170974d6a66cdf2413ede" id="r_acc94e63b088170974d6a66cdf2413ede"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#acc94e63b088170974d6a66cdf2413ede">front_spanned_split</a> = false</td></tr>
 <tr class="separator:acc94e63b088170974d6a66cdf2413ede"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6b06579e164d7960a0061e1c7597b3c" id="r_af6b06579e164d7960a0061e1c7597b3c"><td class="memItemLeft" align="right" valign="top"><a id="af6b06579e164d7960a0061e1c7597b3c" name="af6b06579e164d7960a0061e1c7597b3c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>exit_no_folds</b> = false</td></tr>
-<tr class="memdesc:af6b06579e164d7960a0061e1c7597b3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains. <br /></td></tr>
+<tr class="memitem:af6b06579e164d7960a0061e1c7597b3c" id="r_af6b06579e164d7960a0061e1c7597b3c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c">exit_no_folds</a> = false</td></tr>
 <tr class="separator:af6b06579e164d7960a0061e1c7597b3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a133c419af9dbb9a03376482a10e7e505" id="r_a133c419af9dbb9a03376482a10e7e505"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a133c419af9dbb9a03376482a10e7e505">label_cleanup</a> = &quot;off&quot;</td></tr>
 <tr class="separator:a133c419af9dbb9a03376482a10e7e505"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -532,6 +530,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="af6b06579e164d7960a0061e1c7597b3c" name="af6b06579e164d7960a0061e1c7597b3c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6b06579e164d7960a0061e1c7597b3c">&#9670;&#160;</a></span>exit_no_folds</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::exit_no_folds = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a foldover face (front_face_field_angle() over foldover_angle) remains. </p>
+
+</div>
+</div>
 <a id="a46773b650a7a252469d6a278cf8fde09" name="a46773b650a7a252469d6a278cf8fde09"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46773b650a7a252469d6a278cf8fde09">&#9670;&#160;</a></span>foldover_angle</h2>
 
@@ -543,7 +556,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>3D: a front face is a foldover when the angle between its normal, out of the band, and the field's normal (grad d at its centroid) exceeds this many degrees (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">TopoOffsetTetMesh::front_face_field_angle()</a>): the debug frames' per-face field_angle_foldover and the end-of-run [foldover] count. See the spec doc. </p>
+<p>3D: a front face is a foldover when the angle between its normal, out of the band, and the field's normal (grad d at its centroid) exceeds this many degrees (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b88a5bd6272a6dcd46a3d2f360c4342" title="The foldover measure of front face (a, b, c): the angle, in degrees, between its unit normal,...">TopoOffsetTetMesh::front_face_field_angle()</a>): the debug frames' per-face field_angle_foldover and the end-of-run [foldover] count, and which real folds hold the exit under EXPERIMENTAL_exit_no_folds. See the spec doc. </p>
 
 </div>
 </div>
