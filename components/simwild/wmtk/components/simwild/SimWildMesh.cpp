@@ -486,7 +486,6 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
 }
 
 
-
 bool SimWildMesh::all_rounded() const
 {
     size_t cnt_round = 0;

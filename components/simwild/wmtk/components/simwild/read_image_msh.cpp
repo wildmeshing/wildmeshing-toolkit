@@ -133,15 +133,17 @@ InputData read_image_msh(const std::string& path)
     // A 2D file without physical groups may carry label images instead: integer cell fields
     // tag_<k> whose value v > 0 puts a cell in region v of image k (img_to_msh_2d.py writes
     // these). Regions are numbered across the images in k order and named tag_0, tag_1, ...
-    const auto top = mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron
-                                                             : CellType::Triangle;
+    const auto top =
+        mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
     if (auto block = mesh.cells.find(top);
         block != mesh.cells.end() && !block->second.attributes.count("tags")) {
         std::map<int, DataMatrix<double>> images;
         for (const auto& [name, a] : block->second.attributes)
             if (name.rfind("tag_", 0) == 0) images[std::stoi(name.substr(4))] = a.doubles();
         if (!images.empty() && top == CellType::Tetrahedron)
-            log_and_throw_error("{}: 3D label images (tag_<k> cell fields) are not supported", path);
+            log_and_throw_error(
+                "{}: 3D label images (tag_<k> cell fields) are not supported",
+                path);
         std::vector<std::string> labels;
         std::vector<std::pair<int, int>> columns; // (image, value) per region
         for (const auto& [k, img] : images)

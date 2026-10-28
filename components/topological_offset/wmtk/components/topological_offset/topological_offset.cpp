@@ -162,7 +162,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             logger().warn("Empty input complex. Output mesh is same as the input.");
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
-                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 
@@ -394,7 +396,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             logger().warn("Empty input complex. Output mesh is same as the input.");
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
-                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 
