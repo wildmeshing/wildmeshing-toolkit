@@ -527,7 +527,7 @@ bool IsotropicRemeshing::smooth_before(const Tuple& t)
     const size_t d = feature_degree(t.vid(*this));
     if (d != 0 && d != 2) return false; // a curve's end, or a junction of curves
     // A curve vertex whose two curve edges share a triangle would flatten it, sliding along the
-    // curve. remove_feature_ears() leaves none unless no swap or collapse could remove it.
+    // curve. remove_feature_ears() leaves none unless no swap, collapse or split could remove it.
     if (d == 2 && is_feature_ear_tip(t)) return false;
     return true;
 }
@@ -604,12 +604,23 @@ size_t IsotropicRemeshing::remove_feature_ears()
             // loses the corner, and the triangle with it.
             const double la = (vertex_attrs.at(a).pos - vertex_attrs.at(b).pos).norm();
             const double lc = (vertex_attrs.at(c).pos - vertex_attrs.at(b).pos).norm();
+            bool collapsed = false;
             for (const size_t target :
                  la <= lc ? std::array<size_t, 2>{{a, c}} : std::array<size_t, 2>{{c, a}}) {
                 if (collapse_edge(tuple_from_edge(b, target, f), new_tris)) {
                     ++removed;
+                    collapsed = true;
                     break;
                 }
+            }
+            // Else, b inside a curve, split the base at its midpoint: b gets two triangles on
+            // this side, the new vertex is on no curve, and nothing moves, so nothing folds. That
+            // is where the curve zigzags -- the triangle across the base holds the curve's next
+            // edge, so the swap would make the next ear -- and moving b onto a or c turns a
+            // triangle over. A junction's corner stays: smoothing does not move a junction.
+            if (!collapsed && feature_degree(b) == 2 &&
+                split_edge(tuple_from_edge(a, c, f), new_tris)) {
+                ++removed;
             }
             break;
         }

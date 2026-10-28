@@ -96,10 +96,13 @@ public:
      * on one side, and smoothing b along the curve would flatten it. Swapping the edge (a, c)
      * gives b two triangles there; where that is not possible -- (a, c) is a curve or the
      * boundary, or the swap would make a new ear or turn a triangle over -- b collapses along
-     * the curve and the corner goes. Where a curve zigzags, removing one ear can make the next,
-     * so call it until it removes none. No other swap or collapse makes an ear, but the input
-     * can hold them. A triangle with curves (or the boundary) all round is a region of its own,
-     * not an ear, and stays. Serial; returns the number removed.
+     * the curve and the corner goes. Where it cannot either -- the moved b would turn a triangle
+     * over -- (a, c) is split at its midpoint, which gives b two triangles there and moves
+     * nothing; at a junction, which smoothing does not move, the corner stays. Where a curve
+     * zigzags, removing one ear can make the next, so call it until it removes none. No other
+     * swap or collapse makes an ear, but the input can hold them. A triangle with curves (or the
+     * boundary) all round is a region of its own, not an ear, and stays. Serial; returns the
+     * number removed.
      */
     size_t remove_feature_ears();
     /// Whether `v` is on a curve and one triangle holds both of its curve edges.
