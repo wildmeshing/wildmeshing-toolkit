@@ -1022,16 +1022,43 @@ private:
 const std::vector<std::array<double, 3>>& interior_face_stencil(int order);
 
 /**
+ * @brief The 3D face stencil of order k >= 1 under EXPERIMENTAL_stencil_type "fem": the nodes of
+ * the degree-k Lagrange triangle, the barycentric weights of the lattice (i, j, l) / k with
+ * i + j + l = k, i, j, l >= 0 -- (k + 1) (k + 2) / 2 points: order 1 the three corners, order 2
+ * the corners and the edge midpoints, order 3 the corners, two points per edge and the centroid
+ * (3, 6, 10, 15, 21 for k = 1..5). Corners and edge points are shared with the neighbouring
+ * faces. Empty for k < 1. Weighted by fem_face_stencil_weights(), not equally.
+ */
+const std::vector<std::array<double, 3>>& fem_face_stencil(int order);
+
+/**
+ * @brief The lumped area weights of fem_face_stencil(order), in its order, as fractions of the
+ * face's area (they sum to 1): the composite trapezoid rule on the face cut into k^2 congruent
+ * sub-triangles whose corners are the stencil's points, so a point's weight is the number of
+ * sub-triangles touching it over 3 k^2 -- 1 / (3 k^2) at a corner, 1 / k^2 at an edge point,
+ * 2 / k^2 inside (order 1: 1/3 each). All positive and exact for affine functions, so the sum over
+ * the front's faces of A_f sum_p w_p f(x_p) converges to the surface integral of f as the
+ * spacing h / k goes to 0, at second order -- under mesh refinement and under a higher order alike
+ * (2026-10-28, Spencer: "the lumped thing ... where the area weights are split up properly").
+ * A point a corner or an edge shares gathers its weight from every face holding it: one third
+ * of the area of the sub-triangles around it, the lumped mass of the k-refined front.
+ */
+const std::vector<double>& fem_face_stencil_weights(int order);
+
+/**
  * @brief EXPERIMENTAL_band_volume_rule "surface": a vertex's part of the offset term, the vertex x
  * moving, over its live offset faces (x, q1, q2):
  *
  *     S(x) = W sum_f A_f(x) m_f(x),   m_f = (1 / |S|) sum over the stencil points q_k of r(q_k)^2,
  *
  * r = (d - delta) / delta the potential's relative_residual(), q_k = w_k0 x + w_k1 q1 + w_k2 q2
- * (interior_face_stencil()), A_f = |N| / 2 with N = (q1 - x) x (q2 - x) affine in x, and W the
+ * (interior_face_stencil() or fem_face_stencil()), A_f = |N| / 2 with N = (q1 - x) x (q2 - x)
+ * affine in x, and W the
  * term's weight (L / front_conv_frac()^2, L the bounding box diagonal,
  * TopoOffsetTetMesh::surface_term_weight()). So W A_f m_f = L (A_f / |S|) sum
- * (d(q_k) - delta)^2 / front_conv^2, the spec's weighted O(f).
+ * (d(q_k) - delta)^2 / front_conv^2, the spec's weighted O(f). Under the FEM stencil the mean
+ * is weighted by the points' lumped area weights mu_k (fem_face_stencil_weights()): m_f = sum_k
+ * mu_k r(q_k)^2, and every 1 / |S| below reads mu_k.
  * Exact derivatives: grad m = (2 / |S|) sum r w_k0 grad r(q_k), hess m = (2 / |S|) sum w_k0^2
  * (grad r grad r^T + r hess r); grad (A m) = A grad m + m grad A, hess (A m) = A hess m +
  * grad A grad m^T + grad m grad A^T + m hess A. A face of zero area contributes 0 and no area
@@ -1054,6 +1081,17 @@ public:
         std::vector<Face> faces,
         int stencil_order,
         double weight);
+    /// The same on a given stencil (barycentric weights, the first on the moving vertex):
+    /// interior_face_stencil() or fem_face_stencil(), as EXPERIMENTAL_stencil_type picks, with
+    /// the points' area weights `point_weights` (fractions of the face's area, in the stencil's
+    /// order: fem_face_stencil_weights()), or nullptr for the plain mean. Both held by reference
+    /// or pointer, so they must outlive the object (those functions' tables do).
+    SurfaceOffsetError3D(
+        std::shared_ptr<const OffsetPotential3D> pot,
+        std::vector<Face> faces,
+        const std::vector<std::array<double, 3>>& stencil,
+        const std::vector<double>* point_weights,
+        double weight);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -1065,10 +1103,12 @@ public:
     void solution_changed(const TVector& new_x) override {}
 
     /// W A_f m_f of the triangle (a, b, c), its first corner taking the stencil's first weight:
-    /// the shared value arithmetic (+inf where a sample is not finite).
+    /// the shared value arithmetic (+inf where a sample is not finite). m_f the plain mean over
+    /// the stencil, or with `point_weights` (not null) sum_k point_weights[k] r_k^2.
     static double face_value(
         const OffsetPotential3D& pot,
         const std::vector<std::array<double, 3>>& stencil,
+        const std::vector<double>* point_weights,
         double weight,
         const Eigen::Vector3d& a,
         const Eigen::Vector3d& b,
@@ -1080,6 +1120,8 @@ private:
     std::shared_ptr<const OffsetPotential3D> m_pot;
     std::vector<Face> m_faces;
     const std::vector<std::array<double, 3>>& m_stencil;
+    /// The points' area weights (fem_face_stencil_weights()); null for the plain mean.
+    const std::vector<double>* m_point_weights = nullptr;
     double m_weight;
 };
 

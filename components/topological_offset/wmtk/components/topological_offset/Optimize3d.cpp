@@ -219,6 +219,10 @@ double TopoOffsetTetMesh::face_offset_term(
     double sum = 0.;
     size_t n = 0;
     bool unmeasurable = false;
+    // EXPERIMENTAL_stencil_type "fem": the mean weighted by the points' lumped area weights
+    // (face_stencil_weights(), in for_each_face_sample()'s order); "interior": the plain mean.
+    const std::vector<double>* mu = face_stencil_weights();
+    double wsum = 0.;
     for_each_face_sample(pa, pb, pc, [&](const Vector3d& q, double, double, double) {
         if (unmeasurable) return;
         const double r = pot.relative_residual(q);
@@ -226,6 +230,7 @@ double TopoOffsetTetMesh::face_offset_term(
             unmeasurable = true;
             return;
         }
+        if (mu) wsum += (*mu)[n] * (r * r);
         sum += r * r;
         ++n;
     });
@@ -234,7 +239,7 @@ double TopoOffsetTetMesh::face_offset_term(
     if (unmeasurable || n == 0) return -1.;
     if (!(m_offset_params.front_conv_frac() > 0.)) return std::numeric_limits<double>::infinity();
     const double dn = double(n);
-    return offset_term_weight() * (sum / dn);
+    return offset_term_weight() * (mu ? wsum : sum / dn);
 }
 
 double TopoOffsetTetMesh::face_offset_term(const size_t a, const size_t b, const size_t c) const
@@ -4352,7 +4357,8 @@ double TopoOffsetTetMesh::surface_face_term(const size_t a, const size_t b, cons
     const auto& VA = std::as_const(m_vertex_attribute);
     return SurfaceOffsetError3D::face_value(
         *m_offset_potential,
-        interior_face_stencil(m_offset_params.stencil_order),
+        face_stencil(),
+        face_stencil_weights(),
         surface_term_weight(),
         VA[v[0]].m_posf,
         VA[v[1]].m_posf,
@@ -4400,7 +4406,8 @@ double TopoOffsetTetMesh::surface_integral_raw() const
     // r^2 = A_f mean (d - delta)^2, r = (d - delta) / delta; delta the running loop's
     // target_distance. Per face on the mesh's threads, summed serially in face order.
     if (!m_offset_potential) return 0.;
-    const auto& stencil = interior_face_stencil(m_offset_params.stencil_order);
+    const auto& stencil = face_stencil();
+    const std::vector<double>* point_weights = face_stencil_weights();
     const double delta = m_offset_params.target_distance;
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
     std::vector<double> e(faces.size(), 0.);
@@ -4410,6 +4417,7 @@ double TopoOffsetTetMesh::surface_integral_raw() const
             e[k] = SurfaceOffsetError3D::face_value(
                 *m_offset_potential,
                 stencil,
+                point_weights,
                 delta * delta,
                 VA[faces[k][0]].m_posf,
                 VA[faces[k][1]].m_posf,
@@ -4428,7 +4436,7 @@ double TopoOffsetTetMesh::stencil_max_sq_error() const
     // target_level(), is 1: the euclidean field's value is d / delta). Per face on the mesh's
     // threads, the max taken over the faces afterwards (a max does not depend on the order).
     if (!m_offset_potential) return 0.;
-    const auto& stencil = interior_face_stencil(m_offset_params.stencil_order);
+    const auto& stencil = face_stencil();
     const double delta = m_offset_params.target_distance;
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
     std::vector<double> e(faces.size(), 0.);
@@ -5735,11 +5743,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     logger().info(
         "\tLOOP: TetWild's operation groups with the front placed inside their "
         "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
-        "relative error over a stencil_order {} stencil ({} points per face) against front_conv "
-        "{:.6g} ({:.6g} x the configured target_distance)",
+        "relative error over a stencil_order {} stencil ({} points per face, "
+        "EXPERIMENTAL_stencil_type {}) against front_conv {:.6g} ({:.6g} x the configured "
+        "target_distance)",
         m_front_gradient_reference,
         m_offset_params.stencil_order,
         stencil_points_per_face(),
+        m_offset_params.stencil_type,
         m_offset_params.front_conv,
         m_offset_params.front_conv_rel);
     logger().info(

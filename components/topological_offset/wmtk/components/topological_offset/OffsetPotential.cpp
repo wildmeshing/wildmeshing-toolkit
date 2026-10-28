@@ -1755,7 +1755,71 @@ std::vector<std::array<double, 3>> build_interior_face_stencil(const int k)
     }
     return w;
 }
+
+std::vector<std::array<double, 3>> build_fem_face_stencil(const int k)
+{
+    std::vector<std::array<double, 3>> w;
+    if (k < 1) return w;
+    const double dk = double(k);
+    for (int i = k; i >= 0; --i) {
+        for (int j = k - i; j >= 0; --j) {
+            const int l = k - i - j;
+            w.push_back({{double(i) / dk, double(j) / dk, double(l) / dk}});
+        }
+    }
+    return w;
+}
 } // namespace
+
+const std::vector<std::array<double, 3>>& fem_face_stencil(const int order)
+{
+    // As interior_face_stencil(): a table for the common orders, built once; beyond it per thread.
+    static const std::array<std::vector<std::array<double, 3>>, 12> table = [] {
+        std::array<std::vector<std::array<double, 3>>, 12> t;
+        for (int k = 0; k < 12; ++k) t[size_t(k)] = build_fem_face_stencil(k);
+        return t;
+    }();
+    if (order >= 0 && order < 12) return table[size_t(order)];
+    thread_local std::map<int, std::vector<std::array<double, 3>>> more;
+    auto it = more.find(order);
+    if (it == more.end()) it = more.emplace(order, build_fem_face_stencil(order)).first;
+    return it->second;
+}
+
+namespace {
+std::vector<double> build_fem_face_stencil_weights(const int k)
+{
+    // See the declaration: per point of build_fem_face_stencil(k), in its order, the sub-triangles
+    // touching it over 3 k^2 -- 1 at a corner (two zero coordinates), 3 at an edge point (one), 6
+    // inside (none).
+    std::vector<double> w;
+    if (k < 1) return w;
+    const double s = 1. / (3. * double(k) * double(k));
+    for (int i = k; i >= 0; --i) {
+        for (int j = k - i; j >= 0; --j) {
+            const int l = k - i - j;
+            const int zeros = int(i == 0) + int(j == 0) + int(l == 0);
+            w.push_back((zeros == 2 ? 1. : zeros == 1 ? 3. : 6.) * s);
+        }
+    }
+    return w;
+}
+} // namespace
+
+const std::vector<double>& fem_face_stencil_weights(const int order)
+{
+    // As fem_face_stencil(): a table for the common orders, built once; beyond it per thread.
+    static const std::array<std::vector<double>, 12> table = [] {
+        std::array<std::vector<double>, 12> t;
+        for (int k = 0; k < 12; ++k) t[size_t(k)] = build_fem_face_stencil_weights(k);
+        return t;
+    }();
+    if (order >= 0 && order < 12) return table[size_t(order)];
+    thread_local std::map<int, std::vector<double>> more;
+    auto it = more.find(order);
+    if (it == more.end()) it = more.emplace(order, build_fem_face_stencil_weights(order)).first;
+    return it->second;
+}
 
 const std::vector<std::array<double, 3>>& interior_face_stencil(const int order)
 {
@@ -1776,19 +1840,26 @@ const std::vector<std::array<double, 3>>& interior_face_stencil(const int order)
 double SurfaceOffsetError3D::face_value(
     const OffsetPotential3D& pot,
     const std::vector<std::array<double, 3>>& stencil,
+    const std::vector<double>* point_weights,
     const double weight,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
     const Eigen::Vector3d& c)
 {
-    // See the class doc: W times the area times the mean of r^2 over the interior stencil.
+    // See the class doc: W times the area times the mean of r^2 over the stencil, plain or
+    // weighted by the points' area weights.
     if (stencil.empty()) return 0.;
     double m = 0.;
     const double ns = double(stencil.size());
-    for (const auto& w : stencil) {
+    for (size_t k = 0; k < stencil.size(); ++k) {
+        const auto& w = stencil[k];
         const double r = pot.relative_residual(w[0] * a + w[1] * b + w[2] * c);
         if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-        m += r * r / ns;
+        if (point_weights) {
+            m += (*point_weights)[k] * (r * r);
+        } else {
+            m += r * r / ns;
+        }
     }
     return weight * (0.5 * (b - a).cross(c - a).norm() * m);
 }
@@ -1801,6 +1872,19 @@ SurfaceOffsetError3D::SurfaceOffsetError3D(
     : m_pot(std::move(pot))
     , m_faces(std::move(faces))
     , m_stencil(interior_face_stencil(stencil_order))
+    , m_weight(weight)
+{}
+
+SurfaceOffsetError3D::SurfaceOffsetError3D(
+    std::shared_ptr<const OffsetPotential3D> pot,
+    std::vector<Face> faces,
+    const std::vector<std::array<double, 3>>& stencil,
+    const std::vector<double>* point_weights,
+    const double weight)
+    : m_pot(std::move(pot))
+    , m_faces(std::move(faces))
+    , m_stencil(stencil)
+    , m_point_weights(point_weights)
     , m_weight(weight)
 {}
 
@@ -1821,17 +1905,24 @@ double SurfaceOffsetError3D::eval(
         double m = 0.;
         Eigen::Vector3d gm = Eigen::Vector3d::Zero();
         Eigen::Matrix3d Hm = Eigen::Matrix3d::Zero();
-        for (const auto& w : m_stencil) {
+        for (size_t k = 0; k < m_stencil.size(); ++k) {
+            const auto& w = m_stencil[k];
             const Eigen::Vector3d q = w[0] * x + w[1] * f.q1 + w[2] * f.q2;
             const double r = m_pot->relative_residual(q);
             if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
-            m += r * r / ns;
+            // the plain mean's arithmetic kept as it was (1 / |S|), the weighted one mu_k
+            if (m_point_weights) {
+                m += (*m_point_weights)[k] * (r * r);
+            } else {
+                m += r * r / ns;
+            }
             if (need < 1) continue;
+            const double c2 = m_point_weights ? 2. * (*m_point_weights)[k] : 2. / ns;
             const Eigen::Vector3d gr = w[0] * m_pot->gradient(q) / m_pot->target_level();
-            gm += (2. / ns) * r * gr;
+            gm += c2 * r * gr;
             if (need < 2) continue;
-            Hm += (2. / ns) * (gr * gr.transpose() +
-                               (r * w[0] * w[0] / m_pot->target_level()) * m_pot->hessian(q));
+            Hm += c2 * (gr * gr.transpose() +
+                        (r * w[0] * w[0] / m_pot->target_level()) * m_pot->hessian(q));
         }
         const Eigen::Vector3d N = (f.q1 - x).cross(f.q2 - x);
         const double nn = N.norm();
@@ -1863,7 +1954,7 @@ double SurfaceOffsetError3D::value(const TVector& xv)
     // TopoOffsetTetMesh::surface_face_term() sees the same numbers up to the summation order.
     double e = 0.;
     for (const Face& f : m_faces) {
-        e += face_value(*m_pot, m_stencil, m_weight, xv.head<3>(), f.q1, f.q2);
+        e += face_value(*m_pot, m_stencil, m_point_weights, m_weight, xv.head<3>(), f.q1, f.q2);
     }
     return e;
 }

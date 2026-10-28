@@ -332,7 +332,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
                 std::make_shared<SurfaceOffsetError3D>(
                     m_offset_potential,
                     std::move(fs),
-                    m_offset_params.stencil_order,
+                    face_stencil(),
+                    face_stencil_weights(),
                     surface_term_weight()));
         }
         return sum;

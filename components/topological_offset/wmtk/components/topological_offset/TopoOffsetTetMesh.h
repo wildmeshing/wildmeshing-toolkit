@@ -1026,13 +1026,13 @@ public:
      * @name EXPERIMENTAL_band_volume_rule "surface" (2026-10-27, Spencer's HackMD "Global surface
      * integral", revised the same day; offset weight 1 since 2026-10-28): E = (w / s^3) sum_t V_t
      * A(t)^3 + L / front_conv^2
-     * sum over the front's faces of O(f), L the bounding box diagonal, O(f) = (A_f / |S|) sum over the interior stencil points x_i
-     * (interior_face_stencil(), stencil_order) of (d(x_i) - delta)^2. No cell carries an offset
-     * term (cell_energy()); every rule adds the faces it changes beside its cells' sums: a collapse
-     * the offset faces through its two ends before against the survivor's after, a flip of the
-     * offset surface its two faces out and two in, a split the faces on the edge against the new
-     * vertex's, a smoothing move the faces through the vertex. A face outside those is unchanged
-     * by the operation and left out of both sides.
+     * sum over the front's faces of O(f), L the bounding box diagonal, O(f) = (A_f / |S|) sum over the stencil points x_i
+     * (face_stencil(): stencil_order, EXPERIMENTAL_stencil_type) of (d(x_i) - delta)^2. No cell
+     * carries an offset term (cell_energy()); every rule adds the faces it changes beside its
+     * cells' sums: a collapse the offset faces through its two ends before against the survivor's
+     * after, a flip of the offset surface its two faces out and two in, a split the faces on the
+     * edge against the new vertex's, a smoothing move the faces through the vertex. A face outside
+     * those is unchanged by the operation and left out of both sides.
      * @{
      */
     bool surface_energy() const { return m_offset_params.band_volume_rule == "surface"; }
@@ -1052,7 +1052,7 @@ public:
     /// ... over every live offset face.
     double surface_term_total() const;
     /// O*, the settle test's metric under "surface" (HackMD "settlement option 2"): the max over
-    /// every live offset face's stencil points (interior_face_stencil(), stencil_order) of
+    /// every live offset face's stencil points (face_stencil(), stencil_order) of
     /// (d - delta)^2, a squared length; +inf when a point is unmeasurable, 0 without a front or
     /// a potential.
     double stencil_max_sq_error() const;
@@ -2285,13 +2285,34 @@ public:
 
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
-    /// How many points for_each_face_sample() visits at the configured order: k (k + 1) / 2, the
-    /// interior lattice of interior_face_stencil() (1, 3, 6, 10, 15 for k = 1..5); 0 below order
-    /// 1. Kept in step with for_each_face_sample() by the unit test `stencil-order-point-counts`.
+    /// THE face stencil at the configured stencil_order, as EXPERIMENTAL_stencil_type picks:
+    /// interior_face_stencil() under "interior" (the default), fem_face_stencil() under "fem".
+    /// Every 3D reader of the face stencil goes through it.
+    const std::vector<std::array<double, 3>>& face_stencil() const
+    {
+        return m_offset_params.stencil_type == "fem"
+                   ? fem_face_stencil(m_offset_params.stencil_order)
+                   : interior_face_stencil(m_offset_params.stencil_order);
+    }
+    /// The points' area weights beside face_stencil(), in its order, as fractions of the face's
+    /// area: fem_face_stencil_weights() (lumped, the composite trapezoid rule) under "fem"; null
+    /// under "interior", whose readers take the plain mean (the arithmetic they always had).
+    const std::vector<double>* face_stencil_weights() const
+    {
+        return m_offset_params.stencil_type == "fem"
+                   ? &fem_face_stencil_weights(m_offset_params.stencil_order)
+                   : nullptr;
+    }
+    /// How many points for_each_face_sample() visits at the configured order: k (k + 1) / 2 under
+    /// "interior", the interior lattice of interior_face_stencil() (1, 3, 6, 10, 15 for k =
+    /// 1..5); (k + 1) (k + 2) / 2 under "fem" (3, 6, 10, 15, 21); 0 below order 1. Kept in step
+    /// with for_each_face_sample() by the unit tests `stencil-order-point-counts` and
+    /// `fem-face-stencil`.
     int stencil_points_per_face() const
     {
         const int k = m_offset_params.stencil_order;
         if (k < 1) return 0;
+        if (m_offset_params.stencil_type == "fem") return (k + 1) * (k + 2) / 2;
         return k * (k + 1) / 2;
     }
 
@@ -2342,7 +2363,9 @@ public:
      * (Spencer: the surface integral's stencil, "all stencil points must be internal to each
      * face") the interior lattice of interior_face_stencil(), (i, j, l) / (k + 2) with i, j, l >=
      * 1, k (k + 1) / 2 points -- 1 (the centroid), 3, 6, 10, 15 for k = 1..5. No point on an edge
-     * or a corner, so no point is shared between faces. Nothing below order 1.
+     * or a corner, so no point is shared between faces. Nothing below order 1. Under
+     * EXPERIMENTAL_stencil_type "fem" (2026-10-28) the degree-k Lagrange nodes instead
+     * (fem_face_stencil(), through face_stencil()): corners and edge points included, so shared.
      *
      * Before it the stencil held the corners (order 0 the corners alone, order k the vertices of
      * the face subdivided k-1 times plus the sub-triangles' centroids), so the face measure
@@ -2358,7 +2381,7 @@ public:
         const Vector3d& p2,
         Visit&& visit) const
     {
-        for (const auto& w : interior_face_stencil(m_offset_params.stencil_order)) {
+        for (const auto& w : face_stencil()) {
             const Vector3d q(w[0] * p0 + w[1] * p1 + w[2] * p2);
             visit(q, w[0], w[1], w[2]);
         }

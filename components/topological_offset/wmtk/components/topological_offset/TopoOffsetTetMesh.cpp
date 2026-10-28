@@ -2814,10 +2814,11 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
 
     // stencil points (ported 2026-10-28 from spenbert/offsets-surface-error b185ec9ca5, Spencer:
     // "port the stencil file"): the _stencil file, a point cloud of one vertex cell per stencil
-    // point of every offset face (offset_surface_faces() order, interior_face_stencil() at
-    // stencil_order: the points the "surface" rule's face term, its O* settle test and every face
-    // measure read; interior, so no point is shared between faces). Point data, NaN where the
-    // field cannot measure:
+    // point of every offset face (offset_surface_faces() order, face_stencil() at stencil_order:
+    // the points the "surface" rule's face term, its O* settle test and every face measure read;
+    // under EXPERIMENTAL_stencil_type "interior" no point is shared between faces, under "fem" a
+    // corner or edge point appears once per face holding it). Point data, NaN where the field
+    // cannot measure:
     //   stencil_error         r^2, r = relative_residual() = (d - target_distance) /
     //                         target_distance on the union field.
     //   error_over_bound      (d - target_distance)^2 / front_conv^2; at or above 1 the point is
@@ -2831,7 +2832,7 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     // Not written without an offset potential or with no offset face.
     if (m_offset_potential) {
         const std::vector<std::array<size_t, 3>> sfaces = offset_surface_faces();
-        const auto& stencil = interior_face_stencil(m_offset_params.stencil_order);
+        const auto& stencil = face_stencil();
         const int ns = int(stencil.size());
         const int n = int(sfaces.size()) * ns;
         const double nan = std::numeric_limits<double>::quiet_NaN();
