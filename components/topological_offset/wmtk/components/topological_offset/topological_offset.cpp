@@ -227,7 +227,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     bad_tris_str += (" " + std::to_string(t.fid(mesh)));
                 }
             }
-            // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
             log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
 
@@ -241,7 +240,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             if (mesh.offset_is_manifold()) {
                 logger().info("Offset region manifold check passed.");
             } else {
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
         }
@@ -456,7 +454,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                         bad_tets_str += (" " + std::to_string(t.tid(mesh)));
                     }
                 }
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
 
@@ -471,7 +468,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 if (mesh.offset_is_manifold()) {
                     logger().info("Offset region manifold check passed.");
                 } else {
-                    // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                     log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
                 }
             }
@@ -544,7 +540,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                         bad_tets_str += (" " + std::to_string(t.tid(mesh)));
                     }
                 }
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
         }
