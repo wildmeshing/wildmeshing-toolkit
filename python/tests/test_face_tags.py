@@ -193,6 +193,42 @@ def test_generation_keeps_surface_inputs_as_tagged_faces(iterations):
     assert_hausdorff(m["V"], rows(m, "triangle", "yellow"), to_rect, rect_samples(), EPS)
 
 
+def normals(V, F):
+    V, F = np.asarray(V), np.asarray(F)
+    return np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
+
+
+def flipped(mesh):
+    return tri_mesh(mesh["V"], np.asarray(mesh["cells"]["triangle"]["connectivity"])[:, [0, 2, 1]])
+
+
+@pytest.mark.parametrize("iterations", [0, 80])
+@pytest.mark.parametrize("flip", [False, True])
+def test_generation_orients_tagged_faces_like_their_inputs(iterations, flip):
+    """Each tagged face points as its input does: yellow along the square's normal, green out of
+    or into the box as its triangles do, and the other way with both inputs flipped. The
+    remesher's own vertex order carries no orientation."""
+    inputs = dict(INPUTS)
+    if flip:
+        inputs["box"], inputs["square"] = flipped(inputs["box"]), flipped(inputs["square"])
+    m = wm.simwild({**GEN, "max_iterations": iterations}, inputs)[0]["mesh"]
+    V = np.asarray(m["V"])
+
+    sq = inputs["square"]
+    want = set(np.sign(normals(sq["V"], sq["cells"]["triangle"]["connectivity"])[:, 2]))
+    F = rows(m, "triangle", "yellow")
+    assert len(want) == 1 and len(F) > 0
+    assert set(np.sign(normals(V, F)[:, 2])) == want
+
+    center = (np.array(GREEN[0]) + np.array(GREEN[1])) / 2
+    BV = np.asarray(inputs["box"]["V"])
+    BF = np.asarray(inputs["box"]["cells"]["triangle"]["connectivity"])
+    want = set(np.sign(np.einsum("ij,ij->i", normals(BV, BF), BV[BF].mean(1) - center)))
+    F = rows(m, "triangle", "green")
+    assert len(want) == 1 and len(F) > 0
+    assert set(np.sign(np.einsum("ij,ij->i", normals(V, F), V[F].mean(1) - center))) == want
+
+
 # ---------------------------------------------------------------- steps 1, 3, 4: a tagged tet mesh
 # Built by hand, so these do not depend on generation: [0,2]^3 in 8^3 cube cells of 6 tets,
 # red the corner cell [0,0.25]^3, and two open sheets in one triangle block: yellow on z = 1

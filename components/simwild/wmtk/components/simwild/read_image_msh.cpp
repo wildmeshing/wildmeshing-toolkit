@@ -328,10 +328,20 @@ InputData read_mesh(
                 }
         input_data.F_tagged.resize(rows.size(), 3);
         input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        // A face points as its surface inputs do: the sum of their directions on it, opposite
+        // coincident sheets cancelling (SurfaceTagAttributes::m_orientation). The remesher's
+        // vertex order carries none; a face whose sum is 0 keeps it, as the writer does.
+        const auto& facing = image_mesh.F_tags_surface_orientation();
         for (size_t k = 0; k < rows.size(); ++k) {
             input_data.F_tagged.row(k) = F.row(rows[k]);
-            for (const size_t in : tiles[rows[k]])
-                if (surface_column[in] >= 0) input_data.F_tags.coeffRef(k, surface_column[in]) = 1;
+            int sum = 0;
+            for (size_t j = 0; j < tiles[rows[k]].size(); ++j) {
+                const size_t in = tiles[rows[k]][j];
+                if (surface_column[in] < 0) continue;
+                input_data.F_tags.coeffRef(k, surface_column[in]) = 1;
+                sum += facing[rows[k]][j];
+            }
+            if (sum < 0) std::swap(input_data.F_tagged(k, 1), input_data.F_tagged(k, 2));
         }
     }
 
