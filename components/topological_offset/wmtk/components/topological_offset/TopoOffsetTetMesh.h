@@ -179,6 +179,13 @@ public:
     /// offset_selection naming it makes the sheet the complex and the band grows on both of its
     /// sides. The 2D twin is m_curve_tag.
     int64_t m_sheet_tag = -1;
+    /// Face tags, read from the input's tagged faces: bit j of a face's input set is
+    /// m_face_tag_names[j]. Each name is also a tag id (m_face_tag_bit: id -> bit) so that
+    /// offset_selection can name it, but not a tet tag: the ids lie past m_tags_count.
+    std::vector<std::string> m_face_tag_names;
+    std::map<int64_t, int> m_face_tag_bit;
+    /// Whether `tag` names an open sheet: the envelope surface group or a face tag.
+    bool is_sheet_tag(int64_t tag) const { return tag == m_sheet_tag || m_face_tag_bit.count(tag); }
     /// The surface group as loaded, kept because the classification below is redone on demand.
     MatrixXd m_sheet_V;
     MatrixXi m_sheet_F;
@@ -2685,7 +2692,10 @@ public:
         const MatrixXd& V_env,
         const MatrixXi F_env,
         const std::vector<std::string>& tag_names,
-        const std::string& sheet_name = "");
+        const std::string& sheet_name = "",
+        const MatrixXi& F_tagged = MatrixXi(),
+        const MatrixSi& F_tags = MatrixSi(),
+        const std::vector<std::string>& face_tag_names = {});
 
     /// check that the ambient tag does not overlap with any other tags
     bool ambient_assert();

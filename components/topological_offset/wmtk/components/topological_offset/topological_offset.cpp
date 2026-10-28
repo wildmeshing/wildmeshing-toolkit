@@ -162,7 +162,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             logger().warn("Empty input complex. Output mesh is same as the input.");
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
-                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 
@@ -382,7 +384,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names,
-            input_data.envelope_name);
+            input_data.envelope_name,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
 
         // label input complex
         mesh.m_offset_params.offset_selection =
@@ -394,7 +399,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             logger().warn("Empty input complex. Output mesh is same as the input.");
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
-                io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 

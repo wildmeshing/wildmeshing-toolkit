@@ -102,7 +102,10 @@ void TopoOffsetTetMesh::init_from_image(
     const MatrixXd& V_env,
     const MatrixXi F_env,
     const std::vector<std::string>& tag_names,
-    const std::string& sheet_name)
+    const std::string& sheet_name,
+    const MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -167,6 +170,30 @@ void TopoOffsetTetMesh::init_from_image(
         m_tags_count++;
     }
 
+    // Face tags: selectable by name, carried on the faces' input sets (which every operation
+    // carries), and no tet tag, so their ids come after every tet tag and m_tags_count stays.
+    m_face_tag_names = face_tag_names;
+    for (size_t j = 0; j < face_tag_names.size(); ++j) {
+        if (m_tag_name_to_id.count(face_tag_names[j]))
+            log_and_throw_error("Face tag {} is also a tet tag", face_tag_names[j]);
+        const int64_t id = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[id] = face_tag_names[j];
+        m_tag_name_to_id[face_tag_names[j]] = id;
+        m_face_tag_bit[id] = int(j);
+    }
+    for (Eigen::Index r = 0; r < F_tagged.rows(); ++r) {
+        const std::array<size_t, 3> vids = {
+            {size_t(F_tagged(r, 0)), size_t(F_tagged(r, 1)), size_t(F_tagged(r, 2))}};
+        const auto face = try_tuple_from_face(vids);
+        if (!face) log_and_throw_error("Tagged face {} is not a face of the tet mesh", r);
+        uint16_t set = 0;
+        for (Eigen::Index j = 0; j < F_tags.cols(); ++j)
+            if (F_tags.coeff(r, j) != 0) set |= uint16_t(1u << j);
+        auto& attr = m_face_attribute[std::get<1>(*face)];
+        attr.set_input_set(attr.input_set() | set);
+        attr.set_orientation_along(vids, 1);
+    }
+
     // collect int ids for offset output
     for (const std::string& name : m_offset_params.offset_output_tag) {
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
@@ -219,7 +246,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         if (t_opp) {
             const auto& tag0 = m_tet_attribute[ff.tid()].tag;
             const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tag;
-            if (tag0 == tag1 && !on_sheet) continue;
+            if (tag0 == tag1 && !on_sheet && m_face_attribute[fid].input_set() == 0) continue;
         }
         m_face_attribute[fid].m_is_surface_fs = true;
         ++n_faces_tracked;
@@ -493,9 +520,21 @@ void TopoOffsetTetMesh::label_input_complex()
     if (single_body) {
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
-        if (m_single_tag == m_sheet_tag) {
+        if (is_sheet_tag(m_single_tag)) {
             // The sheet is the complex: its faces, their edges and vertices, no tets. The band
             // then grows on both sides of it. offset_in / offset_out have no meaning for it.
+            const auto bit = m_face_tag_bit.find(m_single_tag);
+            if (bit != m_face_tag_bit.end()) {
+                // A face tag: its faces exactly, by their input set.
+                if (m_offset_params.optimize_offset)
+                    log_and_throw_error(
+                        "Offsetting the face tag {} needs optimize_offset false; the "
+                        "optimization does not hold face tags yet",
+                        m_tag_id_to_name[m_single_tag]);
+                for (const Tuple& f : get_faces())
+                    m_face_extra[f.fid(*this)].on_sheet =
+                        (m_face_attribute[f.fid(*this)].input_set() >> bit->second) & 1;
+            }
             size_t n = 0;
             for (const Tuple& f : get_faces()) {
                 const size_t f_id = f.fid(*this);
@@ -1736,7 +1775,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
         // when the complex is a body's cells (offset_out) or the cells outside a body (offset_in).
-        if (!m_singlebody || m_single_tag == m_sheet_tag ||
+        if (!m_singlebody || is_sheet_tag(m_single_tag) ||
             m_offset_params.offset_in == m_offset_params.offset_out) {
             log_and_throw_error(
                 "repulsion_rounds: supported for a single body offset inward or outward only "
