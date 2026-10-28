@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,12 @@ struct VolumeMapStats
     size_t real_pairs = 0, fallback_pairs = 0;
     /// Collapses mapped through the decomposition that splits chords.
     size_t decompositions = 0;
+    /// Operations whose map is a bijection of the volume that does not keep the tracked surface:
+    /// a face the surface map's cells map lies inside a patch, not on its boundary -- at the
+    /// boundary of an open sheet, where both sides of the surface are one side of the patch, or
+    /// where no pair keeping the surface could be built (a weld), and one pair over the whole
+    /// operation maps it.
+    size_t surface_not_kept = 0;
     /// Points that ended in a tet of another region, which a bijection of each region never
     /// does; points whose op map failed.
     size_t region_changed = 0, through_failed = 0;
@@ -73,6 +80,9 @@ public:
     const history::VolumeHistory& history() const { return m_volume; }
     /// The region of a tag set, if the history has it.
     std::optional<uint32_t> region_of(std::vector<int64_t> tags) const;
+    /// The region of a tet a mesh file lists in the groups `names` -- the tags' names
+    /// (VolumeHistory::tag_names), "ambient" for a tet with none -- if the history has it.
+    std::optional<uint32_t> region_of_groups(const std::set<std::string>& names) const;
     const SurfaceMap& surface_map() const { return m_surface; }
     const VolumeMapStats& stats() const { return m_stats; }
     /// Builds every operation's map, for the stats.

@@ -168,3 +168,92 @@ TEST_CASE("tracking-example-tetwild", "[tetwild][tracking]" + release_only)
     CHECK(i == pts.size());
     CHECK(same == pts.size());
 }
+
+TEST_CASE("tracking-example-tetwild-volume", "[tetwild][tracking]" + release_only)
+{
+    const fs::path dir = fs::current_path() / "tracking_example_tetwild_volume";
+    fs::create_directories(dir);
+    const fs::path input = fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj";
+    const fs::path output = dir / "sphere";
+
+    // 1. Run tetwild with the surface history and the volume history: the whole volume is
+    // tracked, from <output>_history_input.msh, where the optimization starts, to
+    // <output>_history_output.msh, the mesh before the filter; <output>_final.msh is the part
+    // the filter keeps.
+    tetwild::tetwild({
+        {"application", "tetwild"},
+        {"input", {input.string()}},
+        {"output", output.string()},
+        {"history_output", output.string() + ".wmtkhist"},
+        {"volume_history_output", output.string() + ".wmtkvol"},
+        {"filter", "input"},
+        {"preserve_topology", true},
+        {"max_iterations", 3},
+        {"write_vtu", false},
+    });
+    const auto load = [&](const std::string& end) {
+        return tracking::VolumeTracking::load(
+            output.string() + ".wmtkhist",
+            output.string() + ".wmtkvol",
+            output.string() + "_history_input.msh",
+            output.string() + end);
+    };
+    const tracking::VolumeTracking tracking = load("_history_output.msh");
+    const auto& in = tracking.input_mesh();
+    const auto& out = tracking.output_mesh();
+    const auto position = [](const tracking::TetMeshData& m, const tracking::TetPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += p.bary[k] * m.vertices[m.tets[p.tet][k]];
+        return x;
+    };
+
+    // 2. Points near the sphere (radius 0.7), inside and out: every one lands in the mesh before
+    // the filter and comes back; the sphere's surface stays the sphere's, so a point inside
+    // stays inside.
+    std::mt19937 rng(3);
+    std::uniform_real_distribution<double> u(0, 1);
+    std::vector<tracking::TetPoint> pts;
+    while (pts.size() < 2000) {
+        tracking::TetPoint p{rng() % in.tets.size()};
+        const double r = position(in, p).norm();
+        if (r < 0.5 || r > 0.85) continue;
+        p.bary = Eigen::Vector4d(u(rng), u(rng), u(rng), u(rng));
+        p.bary /= p.bary.sum();
+        pts.push_back(p);
+    }
+    const auto there = tracking.to_output(pts);
+    const auto back = tracking.to_input(there);
+    CHECK(tracking.map().stats().failed == 0);
+    CHECK(tracking.map().stats().surface_not_kept == 0);
+    size_t moved = 0;
+    double round_trip = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].tet != tracking::kNoId);
+        REQUIRE(back[i].tet != tracking::kNoId);
+        moved += (position(out, there[i]) - position(in, pts[i])).norm() > 0;
+        round_trip = std::max(round_trip, (position(in, back[i]) - position(in, pts[i])).norm());
+    }
+    CHECK(moved > pts.size() / 10);
+    CHECK(round_trip < 1e-6); // rounding, as in tracking-example-simwild-volume
+
+    // 3. Against the filtered output: the points well inside the sphere have a tet there, those
+    // well outside none (in between, the sphere's facets decide).
+    const tracking::VolumeTracking kept = load("_final.msh");
+    const auto in_final = kept.to_output(pts);
+    size_t inside = 0, inside_found = 0, outside = 0, outside_found = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        const double r = position(in, pts[i]).norm();
+        const bool found = in_final[i].tet != tracking::kNoId;
+        if (r < 0.6) {
+            ++inside;
+            inside_found += found;
+        } else if (r > 0.75) {
+            ++outside;
+            outside_found += found;
+        }
+    }
+    CHECK(inside > 0);
+    CHECK(inside_found == inside);
+    CHECK(outside > 0);
+    CHECK(outside_found == 0);
+}

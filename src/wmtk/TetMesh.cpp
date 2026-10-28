@@ -989,6 +989,7 @@ void TetMesh::consolidate_mesh()
         v_cnt++;
     }
     if (m_surface_history) m_surface_history->renumber(map_v_ids);
+    if (m_volume_history) m_volume_history->renumber(map_v_ids);
     auto t_cnt = 0;
     std::vector<size_t> map_t_ids(tet_capacity(), -1);
     for (auto i = 0; i < tet_capacity(); i++) {

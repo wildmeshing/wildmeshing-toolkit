@@ -354,11 +354,21 @@ public:
     std::unique_ptr<VolumeMap::OpMap> build()
     {
         m_op = std::make_unique<VolumeMap::OpMap>();
-        switch (m_e.op) {
-        case history::VolumeOp::collapse: build_collapse(); break;
-        case history::VolumeOp::smooth: build_move(); break;
-        default: build_swap(); break;
+        try {
+            switch (m_e.op) {
+            case history::VolumeOp::collapse: build_collapse(); break;
+            case history::VolumeOp::smooth: build_move(); break;
+            default: build_swap(); break;
+            }
+        } catch (const Fail& f) {
+            // Where the surface cannot be kept (the boundary of an open sheet, a weld), the volume
+            // still can: one pair over the whole operation, every face of it kept.
+            m_op = std::make_unique<VolumeMap::OpMap>();
+            if (!volume_only()) throw;
+            ++m_stats.surface_not_kept;
+            return std::move(m_op);
         }
+        if (!keeps_surface()) ++m_stats.surface_not_kept;
         return std::move(m_op);
     }
 
@@ -583,8 +593,10 @@ private:
         if (kind == "unsplit") return {&p2, &p2};
         return {&real_b, &real_a};
     }
+    /// Every region, to add_decomposition().
+    static constexpr uint32_t kAll = uint32_t(-1);
     /// Adds a decomposition's pairs of region r (the first time each), regions followed through
-    /// the steps.
+    /// the steps; r = kAll: all of them.
     void add_decomposition(
         const Decomposition& d,
         const uint32_t r,
@@ -607,14 +619,83 @@ private:
                     break;
                 }
             }
-            if (!rp) throw Fail("decomposition: a step in no known region");
-            for (const Tet& t : p.after) region.emplace(sorted(t), *rp);
-            if (*rp != r || added[k]) continue;
+            if (!rp && r != kAll) throw Fail("decomposition: a step in no known region");
+            if (rp) {
+                for (const Tet& t : p.after) region.emplace(sorted(t), *rp);
+            }
+            if ((r != kAll && *rp != r) || added[k]) continue;
             added[k] = 1;
             const auto [Pb, Pa] = state_positions(p.kind, real_b, real_a, p1, p2);
             const bool has_cap = !p.cap_before.empty() || !p.cap_after.empty();
             add(prefix + p.kind, p.before, p.after, p.fixed, *Pb, *Pa, has_cap ? cap : no_cap());
         }
+    }
+
+    /// Drops the pairs added so far: the operation goes through a decomposition as a whole.
+    void drop_pairs()
+    {
+        for (const auto& p : m_op->pairs) {
+            if (dynamic_cast<const RadialPair*>(p.get())) {
+                --(p->real ? m_stats.real_pairs : m_stats.fallback_pairs);
+            }
+        }
+        m_op->pairs.clear();
+    }
+    /// Whether every tracked face the surface map's cells map before the operation is on the
+    /// boundary of a patch a pair maps (it, or a piece of it a split made): else the map does not
+    /// keep the surface there.
+    bool keeps_surface() const
+    {
+        for (const Tri& f : cap_faces(false)) {
+            bool found = false;
+            for (const auto& p : m_op->pairs) {
+                const auto* rp = dynamic_cast<const RadialPair*>(p.get());
+                if (!rp) continue;
+                for (const Tri& g : rp->Sb->faces()) {
+                    int common = 0, virtual_corners = 0;
+                    for (const Vid v : g) {
+                        common += contains(f, v);
+                        virtual_corners += v >= m_n;
+                    }
+                    found = found || common == 3 || (common == 2 && virtual_corners == 1);
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+    /// One pair over all the tets the operation changes, every face of the patch kept: a
+    /// bijection of the volume that leaves the tracked surface to the radial map. The removed
+    /// vertex's whole star for a collapse (its boundary, the link, stays), the swap's tets, the
+    /// moved vertex's star.
+    bool volume_only()
+    {
+        Tets B, A;
+        if (m_e.op == history::VolumeOp::collapse) {
+            const Vid i = m_e.op_vertices[0], j = m_e.op_vertices[1];
+            B = with_vertex(m_K, i);
+            const auto c = collapse(B, i, j);
+            if (!c) return false;
+            A = *c;
+        } else if (m_e.op == history::VolumeOp::smooth) {
+            B = A = with_vertex(m_K, m_e.op_vertices[0]);
+        } else {
+            const std::set<Tet> kb = keys(m_K), ka = keys(m_A);
+            for (const Tet& t : m_K) {
+                if (!ka.count(sorted(t))) B.push_back(t);
+            }
+            for (const Tet& t : m_A) {
+                if (!kb.count(sorted(t))) A.push_back(t);
+            }
+        }
+        const auto p = make_pair("volume only", B, A, {}, {});
+        if (!p) return false;
+        try {
+            add("volume only", B, A, p->fixed, m_Pb, m_Pa, no_cap());
+        } catch (const Fail&) {
+            return false;
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------ collapse
@@ -646,7 +727,16 @@ private:
         std::optional<Decomposition> dec;
         std::vector<char> added;
         Positions p1, p2;
-        for (const Tets& M : sides(m_K, i, m_surf_b)) {
+        const std::vector<Tets> i_sides = sides(m_K, i, m_surf_b);
+        // Each side in a region of its own, as between simwild's tags: a side the decomposition
+        // maps takes its region's steps. Else (one region all round, as in tetwild) a side that
+        // needs it sends the whole collapse through it.
+        std::set<uint32_t> side_regions;
+        for (const Tets& M : i_sides) {
+            if (const auto r = region_of(M)) side_regions.insert(*r);
+        }
+        const bool distinct = side_regions.size() == i_sides.size();
+        for (const Tets& M : i_sides) {
             const auto r = region_of(M);
             if (!r) throw Fail("collapse: a side in no region");
             const std::set<Tet> km = keys(M);
@@ -715,6 +805,11 @@ private:
                 std::tie(p1, p2) = virtual_states(*dec, Pb, j);
                 added.assign(dec->pairs.size(), 0);
                 ++m_stats.decompositions;
+            }
+            if (!distinct) {
+                drop_pairs();
+                add_decomposition(*dec, kAll, added, Pb, Pa, p1, p2, cell);
+                return;
             }
             add_decomposition(*dec, *r, added, Pb, Pa, p1, p2, cell);
         }
@@ -837,24 +932,33 @@ private:
         for (const Tet& t : m_A) {
             if (!kb.count(sorted(t))) added.push_back(t);
         }
-        std::set<uint32_t> regions;
-        for (const Tet& t : removed) regions.insert(m_region.at(sorted(t)));
-        for (const Tet& t : added) regions.insert(m_region.at(sorted(t)));
+        // The sides of the tracked surface the swap changes: its tets before (after) joined
+        // across faces that are not tracked, each side before matched with the side after that
+        // keeps the same untracked faces.
+        const std::vector<Tets> before_sides = side_groups(removed, m_surf_b);
+        const std::vector<Tets> after_sides = side_groups(added, m_surf_a);
+        std::vector<std::pair<Tets, Tets>> sides;
+        bool matched = before_sides.size() == after_sides.size();
+        for (const Tets& gb : before_sides) {
+            const auto Bb = boundary(gb);
+            bool found = false;
+            for (const Tets& ga : after_sides) {
+                const auto Ba = boundary(ga);
+                if (Bb && Ba && minus(*Bb, m_surf_b) == minus(*Ba, m_surf_a)) {
+                    sides.emplace_back(gb, ga);
+                    found = true;
+                    break;
+                }
+            }
+            matched = matched && found;
+        }
+        std::set<uint32_t> side_regions;
+        for (const auto& [gb, ga] : sides) side_regions.insert(m_region.at(sorted(gb[0])));
+        const bool distinct = matched && side_regions.size() == sides.size();
         const Positions &Pb = m_Pb, &Pa = m_Pa;
-        bool have_dec = false;
-        Decomposition dec;
-        std::vector<char> dec_added;
-        Positions pos, p1, p2;
-        CapFn dec_cap;
-        std::shared_ptr<SplitPair> split_all;
-        for (const uint32_t r : regions) {
-            Tets Tb, Ta;
-            for (const Tet& t : removed) {
-                if (m_region.at(sorted(t)) == r) Tb.push_back(t);
-            }
-            for (const Tet& t : added) {
-                if (m_region.at(sorted(t)) == r) Ta.push_back(t);
-            }
+        std::vector<size_t> undone;
+        for (size_t k = 0; matched && k < sides.size(); ++k) {
+            const auto& [Tb, Ta] = sides[k];
             if (const auto p = make_pair("swap side", Tb, Ta, m_surf_b, m_surf_a)) {
                 if (real_ok(Tb, Ta, Pb, Pa)) {
                     try {
@@ -864,19 +968,34 @@ private:
                     }
                 }
             }
-            if (!have_dec) {
-                swap_decomposition(removed, Pb, dec, pos, p1, p2, dec_cap, split_all);
-                dec_added.assign(dec.pairs.size(), 0);
-                have_dec = true;
-                ++m_stats.decompositions;
-            }
+            undone.push_back(k);
+        }
+        if (matched && undone.empty()) return;
+        Decomposition dec;
+        Positions pos, p1, p2;
+        CapFn dec_cap;
+        std::shared_ptr<SplitPair> split_all;
+        swap_decomposition(removed, Pb, dec, pos, p1, p2, dec_cap, split_all);
+        std::vector<char> dec_added(dec.pairs.size(), 0);
+        ++m_stats.decompositions;
+        if (!distinct) {
+            // one region on both sides (tetwild), or sides that do not match: the whole swap
+            drop_pairs();
+            split_all->kind = "swap split";
+            m_op->pairs.push_back(std::make_unique<SplitPair>(*split_all));
+            add_decomposition(dec, kAll, dec_added, pos, Pa, p1, p2, dec_cap, "swap ");
+            return;
+        }
+        for (const size_t k : undone) {
+            const Tets& Tb = sides[k].first;
+            const uint32_t r = m_region.at(sorted(Tb[0]));
             auto sp = std::make_unique<SplitPair>();
             sp->kind = "swap split";
             sp->common = split_all->common;
             sp->m = split_all->m;
             for (const Tet& t : Tb) {
-                const Tet k = sorted(t);
-                sp->removed[k] = split_all->removed.at(k);
+                const Tet key = sorted(t);
+                sp->removed[key] = split_all->removed.at(key);
                 for (const auto& [sk, st] : split_all->split) {
                     std::set<Vid> a(st.begin(), st.end());
                     a.erase(sp->m);
@@ -1121,6 +1240,21 @@ std::optional<uint32_t> VolumeMap::region_of(std::vector<int64_t> tags) const
     const auto it = std::find(R.begin(), R.end(), tags);
     if (it == R.end()) return std::nullopt;
     return uint32_t(it - R.begin());
+}
+
+std::optional<uint32_t> VolumeMap::region_of_groups(const std::set<std::string>& names) const
+{
+    if (names == std::set<std::string>{"ambient"}) return region_of({});
+    std::vector<int64_t> tags;
+    for (const std::string& n : names) {
+        const auto it = std::find_if(
+            m_volume.tag_names.begin(),
+            m_volume.tag_names.end(),
+            [&n](const auto& kv) { return kv.second == n; });
+        if (it == m_volume.tag_names.end()) return std::nullopt;
+        tags.push_back(it->first);
+    }
+    return region_of(tags);
 }
 
 std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const

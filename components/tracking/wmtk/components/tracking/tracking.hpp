@@ -2,6 +2,8 @@
 
 #include "CurveMap.hpp"
 #include "SurfaceMap.hpp"
+#include "VolumeMap.hpp"
+#include "volume_io.hpp"
 
 #include <wmtk/history/History.hpp>
 
@@ -13,6 +15,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -230,6 +233,54 @@ private:
 /// A map's warnings as a report holds them: each count by its name, and their total.
 nlohmann::json warnings_report(const MapWarnings& w);
 nlohmann::json warnings_report(const CurveMapWarnings& w);
+
+/// A point of a tet mesh file: one of its tets -- each tet once, in the order the file first
+/// lists it -- and barycentric coordinates with respect to its corners in file order.
+struct TetPoint
+{
+    uint64_t tet = kNoId;
+    Eigen::Vector4d bary = Eigen::Vector4d::Constant(0.25);
+};
+
+/**
+ * @brief The map of a tet mesh's volume between the mesh its volume history starts from and the
+ * one it ends at, in the terms of their files: Tracking's counterpart for the volume (simwild,
+ * tetwild with volume_history_output).
+ *
+ * Built from the surface and volume histories the application saved (see VolumeMap for how),
+ * and the two meshes, to name points by: the one the history starts from, which the
+ * application writes as <output>_history_input.msh, and the one it ends at -- simwild's
+ * <output>.msh; for tetwild, the mesh before its filter, of which <output>.msh holds the part
+ * kept. A point keeps its region: where it lands on a face between two, it is named by a tet of
+ * its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
+ * (kNoId).
+ */
+class VolumeTracking
+{
+public:
+    static VolumeTracking load(
+        const std::string& surface_history,
+        const std::string& volume_history,
+        const std::string& input_mesh,
+        const std::string& output_mesh);
+
+    /// Points of the input mesh to the output mesh.
+    std::vector<TetPoint> to_output(const std::vector<TetPoint>& points) const;
+    /// Points of the output mesh to the input mesh, the inverse map.
+    std::vector<TetPoint> to_input(const std::vector<TetPoint>& points) const;
+
+    const VolumeMap& map() const { return m_map; }
+    const TetMeshData& input_mesh() const { return m_in; }
+    const TetMeshData& output_mesh() const { return m_out; }
+
+private:
+    VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out);
+    std::vector<TetPoint> map_points(const std::vector<TetPoint>& points, bool forward) const;
+
+    VolumeMap m_map;
+    TetMeshData m_in, m_out;
+    std::unique_ptr<TetLocator> m_in_locator, m_out_locator;
+};
 
 /// The tracking application: maps points, transfers fields and reports on a tracking file
 /// (tracking_spec.json).

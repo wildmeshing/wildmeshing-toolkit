@@ -22,16 +22,19 @@ struct TetMeshData
 };
 TetMeshData read_tet_msh(const std::string& path);
 
-/// Point location in a tet mesh: the tet holding a point (the one whose smallest barycentric
-/// coordinate is largest among those near it), by a grid over the tets' boxes.
+/// Point location in a tet mesh, by a grid over the tets' boxes: the tet holding a point, exactly
+/// (volume::locate_in's rules), or one it is out of by a rounding.
 class TetLocator
 {
 public:
     explicit TetLocator(const TetMeshData& m);
     /// The tet and the point's barycentric coordinates in it; tet -1 if no tet is near.
     std::pair<int64_t, Eigen::Vector4d> locate(const Eigen::Vector3d& p) const;
-    /// Whether a tet in group set `group` holds p, its faces included, to rounding (barycentric
-    /// coordinates down to -1e-9): a point on a face between two regions is in both.
+    /// locate(), preferring a tet in group set `group` among those holding p to a rounding (a
+    /// point on a face between two regions); any tet if none of the group does.
+    std::pair<int64_t, Eigen::Vector4d> locate(const Eigen::Vector3d& p, uint32_t group) const;
+    /// Whether a tet in group set `group` holds p, its faces included, to a rounding: a point
+    /// on a face between two regions is in both.
     bool in_group(const Eigen::Vector3d& p, uint32_t group) const;
 
 private:

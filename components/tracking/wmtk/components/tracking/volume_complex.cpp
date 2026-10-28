@@ -219,6 +219,23 @@ std::vector<Tets> sides(const Tets& T_all, const Vid c, const Faces& surf)
     return out;
 }
 
+std::vector<Tets> side_groups(const Tets& T, const Faces& surf)
+{
+    std::map<Tri, std::vector<size_t>> ft;
+    for (size_t k = 0; k < T.size(); ++k) {
+        for (const Tri& f : faces_of(T[k])) ft[f].push_back(k);
+    }
+    Roots roots(T.size());
+    for (const auto& [f, ks] : ft) {
+        if (ks.size() == 2 && !surf.count(f)) roots.join(ks[0], ks[1]);
+    }
+    std::map<size_t, Tets> groups;
+    for (size_t k = 0; k < T.size(); ++k) groups[roots.find(k)].push_back(T[k]);
+    std::vector<Tets> out;
+    for (auto& [g, ts] : groups) out.push_back(std::move(ts));
+    return out;
+}
+
 Faces surf_after(const Faces& surf, const Vid i, const Vid j)
 {
     Faces out;

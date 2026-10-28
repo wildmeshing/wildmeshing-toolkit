@@ -101,44 +101,75 @@ TetLocator::TetLocator(const TetMeshData& m)
 
 std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(const Eigen::Vector3d& p) const
 {
+    return locate(p, uint32_t(-1));
+}
+
+std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
+    const Eigen::Vector3d& p,
+    const uint32_t group) const
+{
     int64_t c[3];
     for (int k = 0; k < 3; ++k) {
         c[k] = int64_t(std::floor((p[k] - m_lo[k]) / m_h));
         if (c[k] < 0 || c[k] >= m_n[k]) return {-1, Eigen::Vector4d::Zero()};
     }
-    double best = -std::numeric_limits<double>::infinity();
-    std::pair<int64_t, Eigen::Vector4d> out{-1, Eigen::Vector4d::Zero()};
+    // Exact containment, as the volume map locates its points (volume::locate_in): the tets
+    // holding p, else those it is out of by a rounding; of the group first, if given.
+    const auto& V = m_mesh.vertices;
+    std::vector<uint32_t> holding, near;
     for (const uint32_t t : m_cells[size_t((c[0] * m_n[1] + c[1]) * m_n[2] + c[2])]) {
         const auto& T = m_mesh.tets[t];
-        const auto& V = m_mesh.vertices;
-        const Eigen::Vector4d b = volume::barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]);
-        if (volume::inside(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]])) return {int64_t(t), b};
-        if (b.minCoeff() > best) {
-            best = b.minCoeff();
-            out = {int64_t(t), b};
+        Eigen::Vector3d lo = V[T[0]], hi = lo;
+        for (int k = 1; k < 4; ++k) {
+            lo = lo.cwiseMin(V[T[k]]);
+            hi = hi.cwiseMax(V[T[k]]);
+        }
+        const double eps = 1e-9 * (hi - lo).norm();
+        if (((p.array() < lo.array() - eps) || (p.array() > hi.array() + eps)).any()) continue;
+        const auto o = volume::outside_of(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]);
+        if (o.faces == 0) {
+            holding.push_back(t);
+        } else if (o.distance <= eps) {
+            near.push_back(t);
         }
     }
-    if (best < -1e-6) return {-1, Eigen::Vector4d::Zero()};
-    return out;
+    const auto coordinates = [&](const uint32_t t, const bool exact) {
+        const auto& T = m_mesh.tets[t];
+        Eigen::Vector4d b = exact ? volume::exact_barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]])
+                                  : volume::barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]);
+        if (!exact && !(b.minCoeff() >= -1e-9 && b.maxCoeff() <= 1 + 1e-9)) {
+            b = volume::exact_barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]);
+        }
+        return b;
+    };
+    const auto clamped = [](Eigen::Vector4d b) {
+        b = b.cwiseMax(0.);
+        return Eigen::Vector4d(b / b.sum());
+    };
+    for (const bool own : {true, false}) {
+        for (const uint32_t t : holding) {
+            if (own && m_mesh.groups[t] != group) continue;
+            return {int64_t(t), clamped(coordinates(t, false))};
+        }
+        std::pair<int64_t, Eigen::Vector4d> best{-1, Eigen::Vector4d::Zero()};
+        double best_min = -std::numeric_limits<double>::infinity();
+        for (const uint32_t t : near) {
+            if (own && m_mesh.groups[t] != group) continue;
+            const Eigen::Vector4d b = coordinates(t, true);
+            if (b.minCoeff() > best_min) {
+                best_min = b.minCoeff();
+                best = {int64_t(t), b};
+            }
+        }
+        if (best.first >= 0) return {best.first, clamped(best.second)};
+    }
+    return {-1, Eigen::Vector4d::Zero()};
 }
 
 bool TetLocator::in_group(const Eigen::Vector3d& p, const uint32_t group) const
 {
-    int64_t c[3];
-    for (int k = 0; k < 3; ++k) {
-        c[k] = int64_t(std::floor((p[k] - m_lo[k]) / m_h));
-        if (c[k] < 0 || c[k] >= m_n[k]) return false;
-    }
-    for (const uint32_t t : m_cells[size_t((c[0] * m_n[1] + c[1]) * m_n[2] + c[2])]) {
-        if (m_mesh.groups[t] != group) continue;
-        const auto& T = m_mesh.tets[t];
-        const auto& V = m_mesh.vertices;
-        if (volume::inside(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]) ||
-            volume::barycentric(p, V[T[0]], V[T[1]], V[T[2]], V[T[3]]).minCoeff() >= -1e-9) {
-            return true;
-        }
-    }
-    return false;
+    const auto [t, b] = locate(p, group);
+    return t >= 0 && m_mesh.groups[size_t(t)] == group;
 }
 
 } // namespace wmtk::components::tracking

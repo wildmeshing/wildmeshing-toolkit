@@ -916,21 +916,17 @@ void TetOptimizerMesh::record_volume_history()
         start_volume_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
 }
 
-void TetOptimizerMesh::save_volume_history(const std::string& path)
+void TetOptimizerMesh::save_volume_history(
+    const std::string& path,
+    const std::map<int64_t, std::string>& tag_names)
 {
     if (!m_recorded_volume) return;
     stop_volume_history();
-    history::VolumeHistory h = m_recorded_volume->history();
-    h.surface_edit_offset = m_surface_edit_offset;
-    h.save(path);
-    size_t tets = 0;
-    for (const auto& e : h.edits) tets += e.tets.size();
+    m_recorded_volume->save(path, m_surface_edit_offset, tag_names);
     logger().info(
-        "volume history: {} operations that changed the tracked surface, {} tets around them, "
-        "{} regions -- saved to {}",
-        h.edits.size(),
-        tets,
-        h.regions.size(),
+        "volume history: {} operations that changed the tracked surface, {:.1f} MB -- saved to {}",
+        m_recorded_volume->size(),
+        double(m_recorded_volume->bytes()) / 1e6,
         path);
     m_recorded_volume.reset();
 }

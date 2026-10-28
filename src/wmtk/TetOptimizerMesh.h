@@ -590,8 +590,11 @@ public:
     /// at m_posf. The surface history must be recording.
     void record_volume_history();
     /// Stop recording the volume and save it to `path`, its edits indexed as in the surface
-    /// history finish_surface_history() returned. Nothing if not recording.
-    void save_volume_history(const std::string& path);
+    /// history finish_surface_history() returned, with the names of the tags (tet_tags()) the mesh
+    /// files give them. Nothing if not recording.
+    void save_volume_history(
+        const std::string& path,
+        const std::map<int64_t, std::string>& tag_names = {});
 
     /// A tracked face by its corners' positions, sorted.
     using PositionKey = std::array<std::array<double, 3>, 3>;

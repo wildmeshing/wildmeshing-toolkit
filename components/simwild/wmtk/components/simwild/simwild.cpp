@@ -323,7 +323,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
             input_data.has_input_history ? &input_data.input_history : nullptr)) {
         component_io.save_history(*h, history_output);
     }
-    mesh.save_volume_history(volume_history_output);
+    mesh.save_volume_history(volume_history_output, mesh.m_tag_id_to_name);
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written

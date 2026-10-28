@@ -946,6 +946,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
+    // The whole volume around it too, its own choice: the map of the volume starts at the tet
+    // mesh written here, and ends at the mesh before the filter (<output>_history_output.msh).
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (!record_history) {
+            log_and_throw_error(
+                "volume_history_output needs history_output (and not "
+                "use_legacy_code): the volume history follows the surface's");
+        }
+        mesh_new.output_mesh(output_path + "_history_input.msh");
+        mesh_new.record_volume_history();
+    }
 
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
@@ -1072,6 +1084,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
     }
 
+    // The mesh the volume history ends at: all of it, before the filter drops a part.
+    if (!volume_history_output.empty()) mesh_new.output_mesh(output_path + "_history_output.msh");
+
     // ////winding number
     if (filter_option == "input") {
         mesh_new.filter_with_input_surface_winding_number();
@@ -1087,6 +1102,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (const auto h = mesh_new.finish_surface_history(&input_history)) {
         component_io.save_history(*h, history_output);
     }
+    mesh_new.save_volume_history(volume_history_output);
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins

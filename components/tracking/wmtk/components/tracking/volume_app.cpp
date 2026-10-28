@@ -1,9 +1,11 @@
 #include "volume_app.hpp"
 
 #include "VolumeMap.hpp"
+#include "tracking.hpp"
 #include "volume_io.hpp"
 
 #include <wmtk/utils/getRSS.h>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -14,6 +16,7 @@
 #include <fstream>
 #include <map>
 #include <random>
+#include <set>
 #include <sstream>
 
 namespace wmtk::components::tracking {
@@ -47,6 +50,12 @@ void log_stats(const VolumeMap& map)
         s.fallback_pairs,
         s.decompositions);
     for (const auto& [why, n] : s.failures) logger().warn("  {} operation(s): {}", n, why);
+    if (s.surface_not_kept > 0) {
+        logger().warn(
+            "{} operation(s) mapped as a bijection of the volume that does not keep the tracked "
+            "surface (the boundary of an open sheet, a weld)",
+            s.surface_not_kept);
+    }
     if (s.region_changed + s.through_failed > 0) {
         logger().warn(
             "points that changed region: {}; through an operation with no map: {}",
@@ -111,6 +120,25 @@ void volume_info(
         }
     }
     face_tets = {};
+    // One region all round (tetwild): near the tracked surface where the volume history
+    // starts -- the vertices at the surface history's positions there.
+    bool any_interface =
+        std::any_of(on_surface.begin(), on_surface.end(), [](char c) { return c; });
+    if (!any_interface) {
+        history::Replay r(h);
+        for (uint64_t k = 0; k < map.history().surface_edit_offset && k < h.edits.size(); ++k) {
+            r.apply(h.edits[k]);
+        }
+        std::set<std::array<double, 3>> surface;
+        for (uint64_t v = 0; v < r.vertices().size(); ++v) {
+            if (r.vertex_alive()[v])
+                surface.insert({{r.vertices()[v][0], r.vertices()[v][1], r.vertices()[v][2]}});
+        }
+        for (size_t v = 0; v < in.vertices.size(); ++v) {
+            const auto& x = in.vertices[v];
+            on_surface[v] = surface.count({{x[0], x[1], x[2]}}) > 0;
+        }
+    }
     std::vector<size_t> near;
     std::vector<double> vol;
     for (size_t t = 0; t < in.tets.size(); ++t) {
@@ -122,7 +150,7 @@ void volume_info(
         vol.push_back(
             std::abs((P[T[1]] - P[T[0]]).dot((P[T[2]] - P[T[0]]).cross(P[T[3]] - P[T[0]]))));
     }
-    if (near.empty()) log_and_throw_error("{} has no faces between two regions", tet_mesh);
+    if (near.empty()) log_and_throw_error("{} has no tracked surface to sample near", tet_mesh);
     Eigen::Vector3d lo = in.vertices[0], hi = lo;
     for (const auto& v : in.vertices) {
         lo = lo.cwiseMin(v);
@@ -214,26 +242,69 @@ void map_volume_points(
     const std::filesystem::path& root)
 {
     using wmtk::utils::resolve_path;
-    const VolumeMap map = load_map(h, json_params, root);
     const std::string points_path = resolve_path(root, json_params["points"]).string();
     const std::string output_points = json_params["output_points"];
     if (output_points.empty()) log_and_throw_error("map_volume: output_points is required");
     std::ifstream in(points_path);
     if (!in) log_and_throw_error("Could not read {}", points_path);
-    std::vector<VolumePoint> pts;
+    std::vector<std::vector<double>> rows;
     std::string line;
     while (std::getline(in, line)) {
         line = line.substr(0, line.find('#'));
         std::istringstream ss(line);
-        Eigen::Vector3d p;
-        if (!(ss >> p[0] >> p[1] >> p[2])) continue;
-        pts.push_back({p, VolumePoint::kAnyRegion});
+        std::vector<double> row;
+        for (double x; ss >> x;) row.push_back(x);
+        if (row.empty()) continue;
+        if (row.size() != 3 && row.size() != 5) {
+            log_and_throw_error("{}: `x y z` or `tet b0 b1 b2 b3` per line", points_path);
+        }
+        rows.push_back(std::move(row));
     }
     const bool forward = json_params["direction"] == "to_output";
-    const auto there = forward ? map.to_output(pts) : map.to_input(pts);
     std::ofstream out(output_points);
     if (!out) log_and_throw_error("Could not write {}", output_points);
     out.precision(17);
+    const std::string tet_mesh = json_params["tet_mesh"];
+    const std::string output_tet_mesh = json_params["output_tet_mesh"];
+    if (!rows.empty() && rows[0].size() == 5) {
+        // tets of the meshes: tet_mesh the history starts from, output_tet_mesh it ends at
+        if (tet_mesh.empty() || output_tet_mesh.empty()) {
+            log_and_throw_error("map_volume: tet points need tet_mesh and output_tet_mesh");
+        }
+        const std::string vh = json_params["volume_history"];
+        const VolumeTracking tracking = VolumeTracking::load(
+            resolve_path(root, json_params["history"]).string(),
+            resolve_path(root, vh).string(),
+            resolve_path(root, tet_mesh).string(),
+            resolve_path(root, output_tet_mesh).string());
+        std::vector<TetPoint> pts;
+        for (const auto& r : rows) {
+            if (r.size() != 5) log_and_throw_error("{}: mixed point kinds", points_path);
+            pts.push_back(
+                {r[0] < 0 ? kNoId : uint64_t(r[0]), Eigen::Vector4d(r[1], r[2], r[3], r[4])});
+        }
+        size_t lost = 0;
+        for (const TetPoint& p : forward ? tracking.to_output(pts) : tracking.to_input(pts)) {
+            lost += p.tet == kNoId;
+            out << (p.tet == kNoId ? std::string("-1") : std::to_string(p.tet));
+            for (int k = 0; k < 4; ++k) out << " " << p.bary[k];
+            out << "\n";
+        }
+        log_stats(tracking.map());
+        logger().info(
+            "{} points mapped, {} with no tet, written to {}",
+            pts.size(),
+            lost,
+            output_points);
+        return;
+    }
+    const VolumeMap map = load_map(h, json_params, root);
+    std::vector<VolumePoint> pts;
+    for (const auto& r : rows) {
+        if (r.size() != 3) log_and_throw_error("{}: mixed point kinds", points_path);
+        pts.push_back({Eigen::Vector3d(r[0], r[1], r[2]), VolumePoint::kAnyRegion});
+    }
+    const auto there = forward ? map.to_output(pts) : map.to_input(pts);
     for (const VolumePoint& p : there) {
         out << p.position[0] << " " << p.position[1] << " " << p.position[2];
         if (p.region != VolumePoint::kAnyRegion) {

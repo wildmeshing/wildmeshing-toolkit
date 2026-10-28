@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -39,8 +40,10 @@ struct VolumeEdit
     /// The surface history's edits the operation made: [first_edit, first_edit + n_edits).
     uint64_t first_edit = 0;
     uint64_t n_edits = 0;
-    /// Per local vertex: its position before the operation, and its vertex on the tracked
-    /// surface before and after it (kNoVertex: off the surface).
+    /// Per local vertex: the vertex it is, an id that lasts the whole history (what a file
+    /// writes a position against once, while it does not change); its position before the
+    /// operation, and its vertex on the tracked surface before and after it (kNoVertex: off it).
+    std::vector<uint64_t> vertices;
     std::vector<Eigen::Vector3d> positions;
     std::vector<uint64_t> surface_before, surface_after;
     /// The vertices the operation moved, and where to.
@@ -72,6 +75,9 @@ struct VolumeHistory
 {
     /// The regions, each the set of tags of its tets, sorted.
     std::vector<std::vector<int64_t>> regions;
+    /// The application's names of the tags, where it has them: how the tet mesh files it
+    /// writes name their groups (simwild: a physical group per tag, the untagged tets "ambient").
+    std::map<int64_t, std::string> tag_names;
     /// In the order of the surface edits they made.
     std::vector<VolumeEdit> edits;
     /// The surface history file these edits index into, and the offset of the recorder's first
@@ -86,11 +92,17 @@ struct VolumeHistory
  * @brief Records a VolumeHistory alongside a TrackedSurfaceRecorder. An operation captures the
  * tets around it before it changes the mesh and at its commit point (TetMesh does both), and
  * commits them here with the range of surface edits its surface commit made; one that made none
- * is not recorded. Commits may come concurrently; they are ordered by surface edit when saved.
+ * is not recorded. Commits may come concurrently: they are kept, encoded, in the order they
+ * come, and ordered by surface edit when read. The mesh's vertices get ids of their own here,
+ * which a consolidation (renumber) does not change, so a vertex's position is written again only
+ * when it moved.
  */
 class VolumeRecorder
 {
 public:
+    VolumeRecorder();
+    ~VolumeRecorder();
+
     /// The tets around an operation, by mesh vertex ids, with their tags; each vertex's
     /// position and surface vertex (kNoVertex: none).
     struct Capture
@@ -108,16 +120,33 @@ public:
         const Capture& before,
         const Capture& after);
 
-    /// Not synchronised: read once the mesh is done. Sorted by surface edit.
+    /// The mesh renumbered its vertices: old_to_new[v], size_t(-1) for a vertex gone.
+    void renumber(const std::vector<size_t>& old_to_new);
+
+    /// What was recorded, decoded, sorted by surface edit.
     VolumeHistory history() const;
-    /// Bytes recorded so far, roughly: what the saved file will take.
-    size_t size_estimate() const;
+    /// Saves what was recorded, with the given offset of the surface edits and tag names.
+    void save(
+        const std::string& path,
+        uint64_t surface_edit_offset,
+        const std::map<int64_t, std::string>& tag_names) const;
+    /// The edits recorded, and the bytes they take.
+    size_t size() const;
+    size_t bytes() const;
 
 private:
     uint32_t region_of(const std::vector<int64_t>& tags);
 
     mutable std::mutex m_mutex;
-    VolumeHistory m_history;
+    std::vector<std::vector<int64_t>> m_regions;
+    /// Mesh vertex -> the recorder's id of it.
+    std::vector<uint64_t> m_id_of;
+    uint64_t m_next_id = 0;
+    /// The edits, encoded in the order they came (see VolumeHistory.cpp).
+    std::vector<uint8_t> m_bytes;
+    size_t m_count = 0;
+    struct Encoder;
+    std::unique_ptr<Encoder> m_encoder;
 };
 
 } // namespace wmtk::history

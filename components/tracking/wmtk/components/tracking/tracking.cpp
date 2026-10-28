@@ -295,4 +295,73 @@ nlohmann::json warnings_report(const CurveMapWarnings& w)
         {"replaced", w.replaced}};
 }
 
+VolumeTracking::VolumeTracking(VolumeMap map, TetMeshData in, TetMeshData out)
+    : m_map(std::move(map))
+    , m_in(std::move(in))
+    , m_out(std::move(out))
+{
+    m_in_locator = std::make_unique<TetLocator>(m_in);
+    m_out_locator = std::make_unique<TetLocator>(m_out);
+}
+
+VolumeTracking VolumeTracking::load(
+    const std::string& surface_history,
+    const std::string& volume_history,
+    const std::string& input_mesh,
+    const std::string& output_mesh)
+{
+    return VolumeTracking(
+        VolumeMap(
+            history::SurfaceHistory::load(surface_history),
+            history::VolumeHistory::load(volume_history)),
+        read_tet_msh(input_mesh),
+        read_tet_msh(output_mesh));
+}
+
+std::vector<TetPoint> VolumeTracking::to_output(const std::vector<TetPoint>& points) const
+{
+    return map_points(points, true);
+}
+
+std::vector<TetPoint> VolumeTracking::to_input(const std::vector<TetPoint>& points) const
+{
+    return map_points(points, false);
+}
+
+std::vector<TetPoint> VolumeTracking::map_points(
+    const std::vector<TetPoint>& points,
+    const bool forward) const
+{
+    const TetMeshData& from = forward ? m_in : m_out;
+    const TetMeshData& to = forward ? m_out : m_in;
+    const TetLocator& locate = forward ? *m_out_locator : *m_in_locator;
+    std::vector<VolumePoint> pts(points.size());
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (points[i].tet >= from.tets.size()) continue;
+        const auto& t = from.tets[points[i].tet];
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += points[i].bary[k] * from.vertices[t[k]];
+        pts[i].position = x;
+        // its region, by the names of the groups the file lists its tet in; else the region
+        // of the tet the map finds it in
+        const auto r = m_map.region_of_groups(from.group_sets[from.groups[points[i].tet]]);
+        if (r) pts[i].region = *r;
+    }
+    const auto there = forward ? m_map.to_output(pts) : m_map.to_input(pts);
+    std::vector<TetPoint> out(points.size());
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (points[i].tet >= from.tets.size()) continue;
+        // a tet of the point's own region (by the names of its groups), else any holding it
+        const auto& groups = from.group_sets[from.groups[points[i].tet]];
+        const auto g = std::find(to.group_sets.begin(), to.group_sets.end(), groups);
+        const auto [t, b] =
+            g != to.group_sets.end()
+                ? locate.locate(there[i].position, uint32_t(g - to.group_sets.begin()))
+                : locate.locate(there[i].position);
+        if (t < 0) continue;
+        out[i] = {uint64_t(t), b};
+    }
+    return out;
+}
+
 } // namespace wmtk::components::tracking

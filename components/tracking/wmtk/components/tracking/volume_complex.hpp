@@ -41,6 +41,9 @@ std::optional<std::vector<Vid>> disk_cycle(const Faces& F);
 std::optional<Tets> collapse(const Tets& T, Vid a, Vid b);
 /// The tets of T at c, grouped across the faces at c that are not in `surf`.
 std::vector<Tets> sides(const Tets& T, Vid c, const Faces& surf);
+/// The tets of T grouped across the faces two of them share that are not in `surf`: the sides
+/// of the tracked surface among them.
+std::vector<Tets> side_groups(const Tets& T, const Faces& surf);
 /// `surf` after collapsing (i, j) into j.
 Faces surf_after(const Faces& surf, Vid i, Vid j);
 
