@@ -237,15 +237,15 @@ public:
      * Each gets the first of these that is allowed: a collapse of its shortest edge, either way;
      * a swap of one of its edges, longest first; a move of one of its vertices, or else of one of
      * the triangles around it -- one off the curves within its tangent plane, one inside a curve
-     * along it -- to where the smallest angle of its star is largest. Allowed means the curve rules, the envelopes and the fixed
-     * vertices hold, as everywhere, and the operation raises the smallest angle of the triangles
-     * it leaves over that of the triangles around the one repaired (of its star, for a move).
-     * In place of the fold check, which judges against the operation's own triangles and which a
-     * fold already there confuses, it may not leave more triangles facing against the input next
-     * to them -- the input triangles within half their size plus the envelope, of the same face
-     * fields where set_face_fields() gave some -- than there were; one that leaves fewer is
-     * allowed even if no angle improves. Rounds until one repairs nothing, 10 at most. Serial;
-     * returns the number of repairs.
+     * along it -- to where the smallest angle of its star is largest. Allowed means the curve
+     * rules, the envelopes and the fixed vertices hold, as everywhere, and the operation raises the
+     * smallest angle of the triangles it leaves over that of the triangles around the one repaired
+     * (of its star, for a move). In place of the fold check, which judges against the operation's
+     * own triangles and which a fold already there confuses, it may not leave more triangles facing
+     * against the input next to them -- the input triangles within half their size plus the
+     * envelope, of the same face fields where set_face_fields() gave some -- than there were; one
+     * that leaves fewer is allowed even if no angle improves. Rounds until one repairs nothing, 10
+     * at most. Serial; returns the number of repairs.
      */
     size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
