@@ -54,7 +54,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& feature_points, // optional feature points
     utils::EmbedFeaturesResult* features_out, // out: where the features ended up
     const std::vector<int>* face_input, // optional: per input face, the input it came from
-    std::vector<uint16_t>* facet_input_set) // out, with face_input: per facet, its inputs
+    std::vector<InputSet>* facet_input_set) // out, with face_input: per facet, its inputs
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
     if (!feature_edges.empty() || !feature_points.empty()) {
@@ -227,12 +227,12 @@ void TetWildMesh::insertion_by_volumeremesher(
     // outside an envelope of their set, and the first split pass did not end. Several inputs
     // only where they overlap.
     if (want_inputs) {
-        const auto several = [](uint16_t s) { return (s & (s - 1)) != 0; };
+        const auto several = [](InputSet s) { return (s & (s - 1)) != 0; };
         facet_input_set->assign(polygon_faces.size(), 0);
         for (size_t f = 0; f < polygon_faces.size(); ++f) {
             for (const uint32_t t : provenance.face_triangles[f]) {
                 const int in = t < face_input->size() ? (*face_input)[t] : -1;
-                if (in >= 0) (*facet_input_set)[f] |= uint16_t(1u << in);
+                if (in >= 0) (*facet_input_set)[f] |= InputSet(1) << in;
             }
         }
         const size_t n_tracked = facet_input_set->size() -
@@ -288,7 +288,7 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
     const std::vector<Vector3d>* feature_anchors,
-    const std::vector<uint16_t>* facet_input_set)
+    const std::vector<InputSet>* facet_input_set)
 {
     // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
     // attributes along with everything else. Only when features exist: with the flag off the
@@ -351,7 +351,7 @@ void TetWildMesh::init_from_Volumeremesher(
         }
     } else {
         assert(facet_input_set->size() == facets.size());
-        std::vector<std::pair<std::array<size_t, 3>, uint16_t>> set_of;
+        std::vector<std::pair<std::array<size_t, 3>, InputSet>> set_of;
         for (size_t f = 0; f < facets.size(); ++f) {
             if ((*facet_input_set)[f] == 0) continue;
             std::array<size_t, 3> key = facets[f];
@@ -364,7 +364,7 @@ void TetWildMesh::init_from_Volumeremesher(
             std::array<size_t, 3> key = get_face_vids(tuple_from_face(i / 4, int(i % 4)));
             std::sort(key.begin(), key.end());
             const auto it =
-                std::lower_bound(set_of.begin(), set_of.end(), std::make_pair(key, uint16_t(0)));
+                std::lower_bound(set_of.begin(), set_of.end(), std::make_pair(key, InputSet(0)));
             if (it == set_of.end() || it->first != key) {
                 log_and_throw_error("tracked face {} has no input set: no facet names it", key);
             }

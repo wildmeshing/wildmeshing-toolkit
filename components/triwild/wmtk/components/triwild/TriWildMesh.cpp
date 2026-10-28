@@ -50,7 +50,7 @@ void TriWildMesh::init_mesh(
     const std::vector<int>* E_orientation,
     const std::vector<size_t>& free_point_vids,
     const std::vector<int>* E_env_input,
-    const std::vector<uint16_t>* E_input_set)
+    const std::vector<InputSet>* E_input_set)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -750,7 +750,7 @@ std::shared_ptr<Envelope> TriWildMesh::smoothing_energy_envelope(const size_t vi
     if (m_input_envelopes.empty()) return m_envelope;
     // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
     // inputs, and keeps the union's pull.
-    uint16_t set = 0;
+    InputSet set = 0;
     const auto& EA = std::as_const(m_edge_attribute);
     // Named, not iterated as a temporary: edges() returns a reference into the collection, which
     // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first

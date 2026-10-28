@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -7,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <utility>
 #include <vector>
 
@@ -153,11 +155,13 @@ public:
     /// no triangle). Not while the operations run: it drops the intersections built so far.
     void set(std::vector<std::shared_ptr<Envelope>> members)
     {
-        if (members.size() > 16) {
+        if (members.size() > size_t(SurfaceTagAttributes::max_inputs)) {
             log_and_throw_error(
-                "{} inputs; a tracked simplex records its inputs in 16 bits, so at most 16 are "
+                "{} inputs; a tracked simplex records its inputs in {} bits, so at most {} are "
                 "supported",
-                members.size());
+                members.size(),
+                SurfaceTagAttributes::max_inputs,
+                SurfaceTagAttributes::max_inputs);
         }
         m_members = std::move(members);
         m_intersections.clear();
@@ -167,16 +171,23 @@ public:
     bool empty() const { return m_members.empty(); }
     const std::shared_ptr<Envelope>& member(size_t i) const { return m_members[i]; }
 
-    std::shared_ptr<Envelope> containment(const uint16_t set) const
+    std::shared_ptr<Envelope> containment(const InputSet set) const
     {
         check(set);
         if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
-        std::lock_guard<std::mutex> lock(m_mutex);
+        // Read-mostly: a set's intersection is built once, then every check only looks it up,
+        // concurrently. An exclusive lock on every lookup serialized the operations' threads.
+        {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            const auto it = m_intersections.find(set);
+            if (it != m_intersections.end()) return it->second;
+        }
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
         std::shared_ptr<Envelope>& e = m_intersections[set];
         if (!e) {
             std::vector<std::shared_ptr<Envelope>> members;
             for (size_t i = 0; i < m_members.size(); ++i) {
-                if (set & (1u << i)) members.push_back(m_members[i]);
+                if (set & (InputSet(1) << i)) members.push_back(m_members[i]);
             }
             e = std::make_shared<IntersectionEnvelope>(std::move(members));
         }
@@ -185,14 +196,14 @@ public:
 
     /// The member of `set` farthest from `p` (Vector2d or Vector3d). Ties go to the lower input.
     template <typename Point>
-    std::shared_ptr<Envelope> pull(const uint16_t set, const Point& p) const
+    std::shared_ptr<Envelope> pull(const InputSet set, const Point& p) const
     {
         check(set);
         if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
         std::shared_ptr<Envelope> best;
         double worst = -1.;
         for (size_t i = 0; i < m_members.size(); ++i) {
-            if (!(set & (1u << i))) continue;
+            if (!(set & (InputSet(1) << i))) continue;
             const double d2 = m_members[i]->squared_distance(p);
             if (d2 > worst) {
                 worst = d2;
@@ -203,31 +214,32 @@ public:
     }
 
 private:
-    void check(const uint16_t set) const
+    void check(const InputSet set) const
     {
         if (set == 0) {
             log_and_throw_error(
                 "a tracked simplex has an empty input set: the insertion or an operation did "
                 "not carry it");
         }
-        if (set >> m_members.size()) {
+        if (m_members.size() < size_t(SurfaceTagAttributes::max_inputs) &&
+            (set >> m_members.size())) {
             log_and_throw_error(
                 "input set {:#x} names an input beyond the {} that have envelopes",
                 set,
                 m_members.size());
         }
     }
-    static size_t lowest_bit(const uint16_t set)
+    static size_t lowest_bit(const InputSet set)
     {
         size_t i = 0;
-        while (!(set & (1u << i))) ++i;
+        while (!(set & (InputSet(1) << i))) ++i;
         return i;
     }
 
     std::vector<std::shared_ptr<Envelope>> m_members;
     /// Built on first use, under the mutex: the operations ask concurrently.
-    mutable std::map<uint16_t, std::shared_ptr<Envelope>> m_intersections;
-    mutable std::mutex m_mutex;
+    mutable std::map<InputSet, std::shared_ptr<Envelope>> m_intersections;
+    mutable std::shared_mutex m_mutex;
 };
 
 } // namespace wmtk

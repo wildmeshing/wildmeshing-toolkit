@@ -186,9 +186,9 @@ void TopoOffsetTetMesh::init_from_image(
             {size_t(F_tagged(r, 0)), size_t(F_tagged(r, 1)), size_t(F_tagged(r, 2))}};
         const auto face = try_tuple_from_face(vids);
         if (!face) log_and_throw_error("Tagged face {} is not a face of the tet mesh", r);
-        uint16_t set = 0;
+        InputSet set = 0;
         for (Eigen::Index j = 0; j < F_tags.cols(); ++j)
-            if (F_tags.coeff(r, j) != 0) set |= uint16_t(1u << j);
+            if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
         auto& attr = m_face_attribute[std::get<1>(*face)];
         attr.set_input_set(attr.input_set() | set);
         attr.set_orientation_along(vids, 1);

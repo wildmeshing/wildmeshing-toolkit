@@ -228,7 +228,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         MatrixXd V;
         MatrixXi F;
         component_io.triangles(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
-        // Each tracked face records the inputs it covers in 16 bits (see
+        // Each tracked face records the inputs it covers in max_inputs bits (see
         // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
         // own inputs. Refused here, before any work, rather than answered by the union.
         if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
@@ -738,7 +738,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // Exact arrangement of the simplified surface against a Delaunay background
     // mesh; the remesher's own tets are used directly, so no Steiner points.
     utils::EmbedFeaturesResult features_out;
-    std::vector<uint16_t> facet_input_set; // per facet, with several inputs only
+    std::vector<InputSet> facet_input_set; // per facet, with several inputs only
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -845,7 +845,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     std::vector<std::array<size_t, 4>>().swap(tets);
     std::vector<bool>().swap(tet_face_on_input_surface);
     std::vector<int8_t>().swap(tet_face_orientation);
-    std::vector<uint16_t>().swap(facet_input_set);
+    std::vector<InputSet>().swap(facet_input_set);
     std::vector<Eigen::Vector3d>().swap(vsimp);
     std::vector<std::array<size_t, 3>>().swap(fsimp);
     std::vector<int>().swap(fsimp_input);

@@ -419,7 +419,7 @@ public:
         const std::vector<Vector3d>& feature_points = {},
         utils::EmbedFeaturesResult* features_out = nullptr,
         const std::vector<int>* face_input = nullptr,
-        std::vector<uint16_t>* facet_input_set = nullptr);
+        std::vector<InputSet>* facet_input_set = nullptr);
 
     /**
      * `features` tags the feature-edge tilings on the initial mesh; passing it registers
@@ -438,7 +438,7 @@ public:
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
         const std::vector<Vector3d>* feature_anchors = nullptr,
-        const std::vector<uint16_t>* facet_input_set = nullptr);
+        const std::vector<InputSet>* facet_input_set = nullptr);
 
     void init_from_file(std::string input_dir);
 

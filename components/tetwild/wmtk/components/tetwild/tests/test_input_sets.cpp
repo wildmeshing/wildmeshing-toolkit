@@ -94,7 +94,7 @@ FaceAttributes& face(TetWildMesh& mesh, size_t x, size_t y, size_t z)
     return mesh.m_face_attribute[fid];
 }
 
-void set_tracked(TetWildMesh& mesh, size_t x, size_t y, size_t z, uint16_t set)
+void set_tracked(TetWildMesh& mesh, size_t x, size_t y, size_t z, InputSet set)
 {
     FaceAttributes& a = face(mesh, x, y, z);
     a.m_is_surface_fs = true;
@@ -204,12 +204,12 @@ TEST_CASE("input-set-merge", "[tetwild][input_sets]")
     a.m_is_surface_fs = true;
     a.set_input_set(0b0101);
     b.m_is_surface_fs = true;
-    b.set_input_set(uint16_t(1u << 15));
+    b.set_input_set(InputSet(1) << 63);
     a.merge(b);
-    CHECK(a.input_set() == ((1u << 15) | 0b0101));
+    CHECK(a.input_set() == ((InputSet(1) << 63) | 0b0101));
     a.reset();
     CHECK(a.input_set() == 0);
-    CHECK(sizeof(FaceAttributes) == 5);
+    CHECK(sizeof(FaceAttributes) == 11);
 }
 
 TEST_CASE("input-set-split-copies", "[tetwild][input_sets]")
@@ -374,7 +374,7 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
     std::vector<int8_t> tet_face_orientation;
-    std::vector<uint16_t> facet_input_set;
+    std::vector<InputSet> facet_input_set;
     {
         TetWildMesh mesh_insertion(params, union_env, 0);
         mesh_insertion.insertion_by_volumeremesher(
@@ -413,7 +413,7 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
             const FaceAttributes& a = mesh.m_face_attribute[t.fid(mesh)];
             if (!a.m_is_surface_fs) continue;
             ++n_tracked;
-            const uint16_t s = a.input_set();
+            const InputSet s = a.input_set();
             if (s == 0 || s > 3) {
                 ++n_empty;
                 continue;
@@ -425,7 +425,7 @@ TEST_CASE("input-sets-cube-and-crossing-sheet", "[tetwild][input_sets]")
                  mesh.m_vertex_attribute[vs[1]].m_posf,
                  mesh.m_vertex_attribute[vs[2]].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (1u << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
+                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
                     ++n_outside;
                 }
             }
@@ -499,7 +499,7 @@ TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]")
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
     std::vector<int8_t> tet_face_orientation;
-    std::vector<uint16_t> facet_input_set;
+    std::vector<InputSet> facet_input_set;
     {
         TetWildMesh mesh_insertion(params, union_env, 0);
         mesh_insertion.insertion_by_volumeremesher(
@@ -536,14 +536,14 @@ TEST_CASE("input-sets-touching-boxes", "[tetwild][input_sets]")
         for (const auto& t : mesh.get_faces()) {
             const FaceAttributes& a = mesh.m_face_attribute[t.fid(mesh)];
             if (!a.m_is_surface_fs) continue;
-            const uint16_t s = a.input_set();
+            const InputSet s = a.input_set();
             const auto vs = mesh.get_face_vids(t);
             const std::array<Vector3d, 3> tri{
                 {mesh.m_vertex_attribute[vs[0]].m_posf,
                  mesh.m_vertex_attribute[vs[1]].m_posf,
                  mesh.m_vertex_attribute[vs[2]].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (1u << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
+                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(tri)) {
                     ++n_outside;
                 }
             }

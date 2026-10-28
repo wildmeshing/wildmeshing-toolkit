@@ -16,17 +16,23 @@ namespace wmtk {
  * `m_is_bbox_fs` is the bbox side the simplex lies on, or -1 for none: 0/1 = x min/max,
  * 2/3 = y min/max, 4/5 = z min/max. Tagging it is what keeps the bounding box from collapsing.
  */
+/// An input set (SurfaceTagAttributes::input_set()): bit i for input i, 64 inputs at most.
+using InputSet = uint64_t;
+
 class SurfaceTagAttributes
 {
-    // Five bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
-    // orientation count that is +-1 or 0 almost everywhere, a 16-bit input set -- but as int the
+    // Eleven bytes. The values are tiny -- a flag, a bbox side in [-1, 5], a class in {0, 1}, an
+    // orientation count that is +-1 or 0 almost everywhere, a 64-bit input set -- but as int the
     // struct was 12 bytes, and the 3D meshes carry four of these per tet slot (the 2D ones three
     // per triangle slot) in storage preallocated several times over: on the largest tetwild
     // inputs that alone was most of a gigabyte. The class and the orientation share a byte as
     // bitfields; both are int8_t so every compiler packs them together. The input set took it
     // from 3 to 5 bytes, 8 more per tet slot: on Thingi10K 46024, the largest tetwild input of
     // the challenging set (156k tets after insertion, two iterations), peak RSS went from 1006
-    // to 1017 MB (+1.1%), the simplification's per-face input id included.
+    // to 1017 MB (+1.1%), the simplification's per-face input id included. 64 bits rather than 16
+    // so that simwild can give every label its own bit -- each tet tag's region as well as each
+    // face tag -- and hold every surface face to its own labels' envelopes: segmented images
+    // carry more than 16 labels. That is 6 bytes more per face record.
 public:
     // Bitfields cannot take default member initializers before C++20.
     SurfaceTagAttributes()
@@ -89,8 +95,8 @@ public:
     static constexpr int max_orientation = 15;
 
     /**
-     * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. 16 inputs at
-     * most.
+     * @brief The INPUT SET: which inputs this simplex covers, bit i for input i. 64 inputs at
+     * most (max_inputs).
      *
      * The invariant it carries: a tracked simplex stays within eps of EVERY input in its set --
      * not merely of the union of all inputs, which is what one envelope around everything
@@ -105,18 +111,21 @@ public:
      * application never set it, which then answers containment without it. The operations carry
      * it like every other field here: a split's halves copy it, merge() -- the faces a collapse
      * makes one -- takes the union, and a surface flip gives both new simplices the union of the
-     * two it replaces. Two bytes rather than one uint16_t so the struct keeps alignment 1: five
-     * bytes, not six.
+     * two it replaces. Bytes rather than one uint64_t so the struct keeps alignment 1: eleven
+     * bytes, not sixteen.
      */
-    uint16_t input_set() const { return uint16_t(m_input_set_lo | (m_input_set_hi << 8)); }
-    void set_input_set(uint16_t s)
+    InputSet input_set() const
     {
-        m_input_set_lo = uint8_t(s & 0xff);
-        m_input_set_hi = uint8_t(s >> 8);
+        InputSet s = 0;
+        for (int i = 0; i < 8; ++i) s |= InputSet(m_input_set[i]) << (8 * i);
+        return s;
     }
-    static constexpr int max_inputs = 16;
-    uint8_t m_input_set_lo = 0;
-    uint8_t m_input_set_hi = 0;
+    void set_input_set(InputSet s)
+    {
+        for (int i = 0; i < 8; ++i) m_input_set[i] = uint8_t(s >> (8 * i));
+    }
+    static constexpr int max_inputs = 64;
+    uint8_t m_input_set[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
     /// +1 if `v` is an even permutation of its ascending sort, -1 if odd. N is 2 or 3.
     template <size_t N>
@@ -169,6 +178,6 @@ public:
     }
 };
 
-static_assert(sizeof(SurfaceTagAttributes) == 5, "keep the surface tags byte-sized");
+static_assert(sizeof(SurfaceTagAttributes) == 11, "keep the surface tags byte-sized");
 
 } // namespace wmtk

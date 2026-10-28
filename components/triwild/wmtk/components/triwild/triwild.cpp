@@ -272,7 +272,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         component_io.memory() ? &component_io : nullptr);
     // Which input each segment of the union came from (read_input_curves concatenates them in
     // order), carried through the simplification and the arrangement so each tracked segment
-    // is held to its own inputs' envelopes. 16 inputs at most: see
+    // is held to its own inputs' envelopes. max_inputs inputs at most: see
     // SurfaceTagAttributes::input_set().
     if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
         log_and_throw_error(
@@ -460,15 +460,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // Each constraint edge's input set: the inputs of the segments it tiles. Several only where
     // segments of different inputs overlap -- the 2D counterpart of a coplanar group spanning
     // several inputs in 3D -- and then the edge is held to all of them. Counted.
-    std::vector<uint16_t> E_input_set;
+    std::vector<InputSet> E_input_set;
     if (per_input) {
         E_input_set.assign(E.rows(), 0);
         size_t n_several = 0;
         for (int i = 0; i < E.rows(); ++i) {
             for (const int src : E_sources[i]) {
-                E_input_set[i] |= uint16_t(1u << E_simp_input[src]);
+                E_input_set[i] |= InputSet(1) << E_simp_input[src];
             }
-            const uint16_t set = E_input_set[i];
+            const InputSet set = E_input_set[i];
             if ((set & (set - 1)) != 0) ++n_several;
         }
         logger().info(
@@ -610,7 +610,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     E.resize(0, 0);
     std::vector<Vector2r>().swap(V_rational);
     std::vector<int>().swap(E_orientation);
-    std::vector<uint16_t>().swap(E_input_set);
+    std::vector<InputSet>().swap(E_input_set);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.

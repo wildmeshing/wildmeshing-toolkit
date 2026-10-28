@@ -46,7 +46,7 @@ std::vector<Vector2d> fan_points()
 
 /// The fan with (x,v1) tracked as input set `s1` and (x,v2) as `s2`, every face's quality high
 /// so no operation is refused on quality, and m_envelope loose.
-void build_fan(TriWildMesh& mesh, uint16_t s1, uint16_t s2)
+void build_fan(TriWildMesh& mesh, InputSet s1, InputSet s2)
 {
     const auto p = fan_points();
     mesh.init(
@@ -63,7 +63,7 @@ void build_fan(TriWildMesh& mesh, uint16_t s1, uint16_t s2)
     }
     for (const size_t i : {X, V1, V2}) mesh.m_vertex_attribute[i].m_is_on_surface = true;
     for (size_t f = 0; f < 4; ++f) mesh.m_face_attribute[f].m_quality = 1e40;
-    for (const auto& [v, s] : {std::pair<size_t, uint16_t>{V1, s1}, {V2, s2}}) {
+    for (const auto& [v, s] : {std::pair<size_t, InputSet>{V1, s1}, {V2, s2}}) {
         auto& a = mesh.m_edge_attribute[std::get<1>(mesh.tuple_from_edge({{X, v}}))];
         a.m_is_surface_fs = true;
         a.set_input_set(s);
@@ -185,9 +185,9 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
     std::vector<std::vector<int>> sources;
     std::vector<int> orientation;
     utils::embed_segments(V, E, Vo, Vr, F, Eo, &sources, &orientation);
-    std::vector<uint16_t> e_set(Eo.rows(), 0);
+    std::vector<InputSet> e_set(Eo.rows(), 0);
     for (int i = 0; i < Eo.rows(); ++i) {
-        for (const int s : sources[i]) e_set[i] |= uint16_t(1u << e_input[s]);
+        for (const int s : sources[i]) e_set[i] |= InputSet(1) << e_input[s];
     }
 
     TriWildMesh mesh(params, params.eps, 0);
@@ -201,7 +201,7 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
             const EdgeAttributes& a = mesh.m_edge_attribute[t.eid(mesh)];
             if (!a.m_is_surface_fs) continue;
             ++n_tracked;
-            const uint16_t s = a.input_set();
+            const InputSet s = a.input_set();
             if (s == 0 || s > 3) {
                 ++n_empty;
                 continue;
@@ -211,7 +211,7 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
                 {mesh.m_vertex_attribute[t.vid(mesh)].m_posf,
                  mesh.m_vertex_attribute[t.switch_vertex(mesh).vid(mesh)].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (1u << k)) && mesh.m_input_envelopes.member(k)->is_outside(seg)) {
+                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(seg)) {
                     ++n_outside;
                 }
             }

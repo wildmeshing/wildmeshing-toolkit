@@ -145,7 +145,7 @@ public:
         const std::vector<int>* E_orientation = nullptr,
         const std::vector<size_t>& free_point_vids = {},
         const std::vector<int>* E_env_input = nullptr,
-        const std::vector<uint16_t>* E_input_set = nullptr);
+        const std::vector<InputSet>* E_input_set = nullptr);
 
     void init_surfaces_and_boundaries();
 

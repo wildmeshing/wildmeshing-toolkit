@@ -86,7 +86,7 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
     // strays from most. A vertex flagged on the surface with no tracked face left (a stale
     // flag) has no inputs, and keeps the union's pull.
-    uint16_t set = 0;
+    InputSet set = 0;
     const auto& FA = std::as_const(m_face_attribute);
     // Named, not iterated as a temporary: faces() returns a reference into the collection, which
     // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
