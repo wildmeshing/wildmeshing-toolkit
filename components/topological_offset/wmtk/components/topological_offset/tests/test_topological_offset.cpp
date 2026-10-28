@@ -1099,6 +1099,7 @@ TEST_CASE("stencil-order-point-counts", "[offset]")
     // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
     // criterion's own reporting, the loop is what actually visits the points.
     Parameters param;
+    param.stencil_type = "interior"; // the interior lattice ("fem" is the default since 2026-10-28)
     TopoOffsetTetMesh mesh(param, 0);
 
     const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
@@ -1176,7 +1177,7 @@ TEST_CASE("fem-face-stencil", "[offset][3d]")
     // k, i + j + l = k -- (k + 1) (k + 2) / 2 points: order 1 the corners, order 2 the corners and
     // the edge midpoints, order 3 the corners, two points per edge (1/3, 2/3) and the centroid --
     // and the mesh's face stencil, for_each_face_sample() and stencil_points_per_face() following
-    // the key ("interior" left as the default).
+    // the key ("fem" the default since 2026-10-28).
     using W3 = std::array<long long, 3>;
     const auto key = [](const std::array<double, 3>& w, const int k) {
         return W3{{llround(w[0] * k), llround(w[1] * k), llround(w[2] * k)}};
@@ -1269,10 +1270,11 @@ TEST_CASE("fem-face-stencil", "[offset][3d]")
     }
 
     // The mesh follows the key: the same points through face_stencil() and for_each_face_sample(),
-    // the count through stencil_points_per_face(); "interior" by default, with no weights.
+    // the count through stencil_points_per_face(); "fem" by default, "interior" with no weights.
     Parameters param;
     TopoOffsetTetMesh mesh(param, 0);
-    CHECK(mesh.m_offset_params.stencil_type == "interior");
+    CHECK(mesh.m_offset_params.stencil_type == "fem"); // the default since 2026-10-28
+    mesh.m_offset_params.stencil_type = "interior";
     mesh.m_offset_params.stencil_order = 3;
     CHECK(&mesh.face_stencil() == &interior_face_stencil(3));
     CHECK(mesh.face_stencil_weights() == nullptr);
@@ -1467,6 +1469,7 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
     // definition computed by hand from the stencil for_each_face_sample() visits, at stencil
     // orders 1 (the centroid), 2 and 5, on three faces placed above and below the level set.
     Parameters param;
+    param.stencil_type = "interior"; // first the interior stencil, then "fem" (the default) below
     param.target_distance = kEnergyDelta;
     param.front_conv = kEnergyConv;
     TopoOffsetTetMesh mesh(param, 0);
@@ -4002,11 +4005,12 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     jse::JSE strict;
     strict.strict = true;
     CHECK_FALSE(strict.verify_json(with_app({{"stencil_order", 0}}), spec));
-    // EXPERIMENTAL_stencil_type: "interior" by default, "fem" read through, anything else refused
-    // by the spec's options.
-    CHECK(by_default.stencil_type == "interior");
-    const Parameters fem(injected({{"EXPERIMENTAL_stencil_type", "fem"}}));
-    CHECK(fem.stencil_type == "fem");
+    // EXPERIMENTAL_stencil_type: "fem" by default (since 2026-10-28), "interior" read through,
+    // anything else refused by the spec's options.
+    CHECK(by_default.stencil_type == "fem");
+    CHECK(Parameters{}.stencil_type == by_default.stencil_type);
+    const Parameters interior(injected({{"EXPERIMENTAL_stencil_type", "interior"}}));
+    CHECK(interior.stencil_type == "interior");
     CHECK_FALSE(strict.verify_json(with_app({{"EXPERIMENTAL_stencil_type", "lagrange"}}), spec));
     // EXPERIMENTAL_settle_test: "stall" by default, "bar" read through under "surface", refused
     // under another rule, and settle_stall_eps refused beside "bar".

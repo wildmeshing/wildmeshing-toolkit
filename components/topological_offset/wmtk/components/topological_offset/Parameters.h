@@ -137,12 +137,13 @@ struct Parameters : public wmtk::OptimizerParameters
     // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::for_each_edge_sample.
     int stencil_order = 5; // the spec's default
     /// EXPERIMENTAL_stencil_type (3D, 2026-10-28): which points stencil_order's face stencil
-    /// holds. "interior" (the default): interior_face_stencil(), (i, j, l) / (k + 2), i, j, l >=
-    /// 1. "fem": fem_face_stencil(), the degree-k Lagrange nodes (i, j, l) / k, i, j, l >= 0
+    /// holds. "interior": interior_face_stencil(), (i, j, l) / (k + 2), i, j, l >= 1. "fem" (the
+    /// default since 2026-10-28, as the spec): fem_face_stencil(), the degree-k Lagrange nodes
+    /// (i, j, l) / k, i, j, l >= 0
     /// (order 1 the corners, 2 + the edge midpoints, 3 + two per edge and the centroid), weighted
     /// by their lumped area weights (fem_face_stencil_weights()). See the spec doc. 2D does not
     /// read it.
-    std::string stencil_type = "interior";
+    std::string stencil_type = "fem";
     /// Which measure the loop exits on and refines by, in 3D and in 2D; see the
     /// spec. "vertex_ring" (the default): at each front vertex the RING MEASURE, the root mean
     /// square of the face measures (face_offset_term()) of its incident offset faces -- in 2D

@@ -2286,7 +2286,8 @@ public:
     /// Samples per offset face; see offset_face_samples().
     int stencil_order() const { return m_offset_params.stencil_order; }
     /// THE face stencil at the configured stencil_order, as EXPERIMENTAL_stencil_type picks:
-    /// interior_face_stencil() under "interior" (the default), fem_face_stencil() under "fem".
+    /// interior_face_stencil() under "interior", fem_face_stencil() under "fem" (the default since
+    /// 2026-10-28).
     /// Every 3D reader of the face stencil goes through it.
     const std::vector<std::array<double, 3>>& face_stencil() const
     {
