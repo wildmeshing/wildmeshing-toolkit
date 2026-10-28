@@ -480,6 +480,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
          "is_false_surface",
          "order",
          "input_distance",
+         "distance_over_target",
          "front_error_bars",
          "band_force_n",
          "amips_force_n",

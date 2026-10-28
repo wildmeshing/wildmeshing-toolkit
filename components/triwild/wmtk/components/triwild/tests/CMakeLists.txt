@@ -16,6 +16,7 @@ set(SRC_FILES
     test_coarsen_pass.cpp
     test_orientation_2d.cpp
     test_colored_smoothing.cpp
+    test_input_sets_2d.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

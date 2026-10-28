@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -51,7 +52,9 @@ void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& feature_edge_vertices, // optional feature-edge vertices
     const std::vector<std::array<size_t, 2>>& feature_edges, // optional feature edges
     const std::vector<Vector3d>& feature_points, // optional feature points
-    utils::EmbedFeaturesResult* features_out) // out: where the features ended up
+    utils::EmbedFeaturesResult* features_out, // out: where the features ended up
+    const std::vector<int>* face_input, // optional: per input face, the input it came from
+    std::vector<uint16_t>* facet_input_set) // out, with face_input: per facet, its inputs
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
     if (!feature_edges.empty() || !feature_points.empty()) {
@@ -196,6 +199,8 @@ void TetWildMesh::insertion_by_volumeremesher(
         }
     }
 
+    const bool want_inputs = face_input != nullptr && facet_input_set != nullptr;
+    utils::EmbedTrianglesProvenance provenance;
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -208,10 +213,47 @@ void TetWildMesh::insertion_by_volumeremesher(
         tets_after,
         tet_face_on_input_surface,
         opts,
-        nullptr,
+        want_inputs ? &provenance : nullptr,
         tet_face_orientation,
         has_features ? &vr_features : nullptr,
         has_features ? features_out : nullptr);
+
+    // Each facet's input set: the inputs of the triangles of every coplanar group it tiles. A
+    // group spans the triangles of SEVERAL inputs only where those inputs meet exactly coplanar
+    // along an edge; a facet of such a group then gets all of them, and is held to all of them
+    // -- what the provenance says, though the facet need not lie on each one's own triangles.
+    // Counted, since that is the one case where the set may claim more than the geometry.
+    if (want_inputs) {
+        const std::vector<uint32_t>& tri_group = provenance.triangle_group;
+        size_t n_groups = 0;
+        for (const uint32_t g : tri_group) {
+            if (g == std::numeric_limits<uint32_t>::max()) continue;
+            n_groups = std::max<size_t>(n_groups, size_t(g) + 1);
+        }
+        std::vector<uint16_t> group_set(n_groups, 0);
+        for (size_t t = 0; t < tri_group.size(); ++t) {
+            const int in = t < face_input->size() ? (*face_input)[t] : -1;
+            if (tri_group[t] == std::numeric_limits<uint32_t>::max() || in < 0) continue;
+            group_set[tri_group[t]] |= uint16_t(1u << in);
+        }
+        const auto several = [](uint16_t s) { return (s & (s - 1)) != 0; };
+        facet_input_set->assign(polygon_faces.size(), 0);
+        for (const auto& [facet, g] : provenance.face_groups) {
+            (*facet_input_set)[facet] |= group_set[g];
+        }
+        const size_t n_mixed_groups = std::count_if(group_set.begin(), group_set.end(), several);
+        const size_t n_tracked = facet_input_set->size() -
+                                 std::count(facet_input_set->begin(), facet_input_set->end(), 0);
+        const size_t n_multi_facets =
+            std::count_if(facet_input_set->begin(), facet_input_set->end(), several);
+        logger().info(
+            "input sets: {} tracked facets, {} with several inputs; {} of {} coplanar groups "
+            "span several inputs",
+            n_tracked,
+            n_multi_facets,
+            n_mixed_groups,
+            n_groups);
+    }
 
 
     // TODO this is a sanity check, but it is checked all the time for now, until insertion is
@@ -255,7 +297,8 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& tet_face_on_input_surface,
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
-    const std::vector<Vector3d>* feature_anchors)
+    const std::vector<Vector3d>* feature_anchors,
+    const std::vector<uint16_t>* facet_input_set)
 {
     // Turn on feature tracking BEFORE init so the connectivity init sizes the edge
     // attributes along with everything else. Only when features exist: with the flag off the
@@ -309,6 +352,34 @@ void TetWildMesh::init_from_Volumeremesher(
 
     for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
         m_face_attribute[i].m_is_surface_fs = tet_face_on_input_surface[i];
+    }
+    // Each tracked face's input set, in every slot of the face like the orientation below. One
+    // input: input 0 for all. Several: the facet's, found by vertex set.
+    if (facet_input_set == nullptr) {
+        for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
+            if (tet_face_on_input_surface[i]) m_face_attribute[i].set_input_set(1);
+        }
+    } else {
+        assert(facet_input_set->size() == facets.size());
+        std::vector<std::pair<std::array<size_t, 3>, uint16_t>> set_of;
+        for (size_t f = 0; f < facets.size(); ++f) {
+            if ((*facet_input_set)[f] == 0) continue;
+            std::array<size_t, 3> key = facets[f];
+            std::sort(key.begin(), key.end());
+            set_of.emplace_back(key, (*facet_input_set)[f]);
+        }
+        std::sort(set_of.begin(), set_of.end());
+        for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
+            if (!tet_face_on_input_surface[i]) continue;
+            std::array<size_t, 3> key = get_face_vids(tuple_from_face(i / 4, int(i % 4)));
+            std::sort(key.begin(), key.end());
+            const auto it =
+                std::lower_bound(set_of.begin(), set_of.end(), std::make_pair(key, uint16_t(0)));
+            if (it == set_of.end() || it->first != key) {
+                log_and_throw_error("tracked face {} has no input set: no facet names it", key);
+            }
+            m_face_attribute[i].set_input_set(it->second);
+        }
     }
     // The input's orientation on the tracked faces: every slot holds the value for its face,
     // so whichever one ends up canonical is right.
