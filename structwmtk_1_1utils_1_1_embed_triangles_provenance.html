@@ -91,6 +91,12 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a78cb370e8ad161290e47923140de4435"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac4b3b16d2f3921e1a95a208a1e22c64" id="r_aac4b3b16d2f3921e1a95a208a1e22c64"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aac4b3b16d2f3921e1a95a208a1e22c64">triangle_group</a></td></tr>
 <tr class="separator:aac4b3b16d2f3921e1a95a208a1e22c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a6142d9c1f56242615adbf5c7c19b2b" id="r_a9a6142d9c1f56242615adbf5c7c19b2b"><td class="memItemLeft" align="right" valign="top"><a id="a9a6142d9c1f56242615adbf5c7c19b2b" name="a9a6142d9c1f56242615adbf5c7c19b2b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>want_face_triangles</b> = false</td></tr>
+<tr class="memdesc:a9a6142d9c1f56242615adbf5c7c19b2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set to have face_triangles filled. <br /></td></tr>
+<tr class="separator:a9a6142d9c1f56242615adbf5c7c19b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45c47c5605c7b8d80ffa808ed661ee17" id="r_a45c47c5605c7b8d80ffa808ed661ee17"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#a45c47c5605c7b8d80ffa808ed661ee17">face_triangles</a></td></tr>
+<tr class="separator:a45c47c5605c7b8d80ffa808ed661ee17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Which input triangles each output surface face came from. </p>
@@ -109,6 +115,21 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>(facet, coplanar group) pairs, sorted, indexing <code>polygon_faces</code>. Only facets on the input surface appear, and a facet where two exactly-coplanar groups meet appears once per group. </p>
+
+</div>
+</div>
+<a id="a45c47c5605c7b8d80ffa808ed661ee17" name="a45c47c5605c7b8d80ffa808ed661ee17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45c47c5605c7b8d80ffa808ed661ee17">&#9670;&#160;</a></span>face_triangles</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::vector&lt;uint32_t&gt; &gt; wmtk::utils::EmbedTrianglesProvenance::face_triangles</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per facet (indexing <code>polygon_faces</code>): the input triangles it lies in, exactly &ndash; every one, where input triangles overlap; none for a facet off the input. </p>
 
 </div>
 </div>
