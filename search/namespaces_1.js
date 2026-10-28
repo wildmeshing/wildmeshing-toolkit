@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['failure_5freport_0',['failure_report',['../namespacefailure__report.html',1,'']]]
+  ['make_5fdisk2d_0',['make_disk2d',['../namespacemake__disk2d.html',1,'']]]
 ];
