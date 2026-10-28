@@ -378,7 +378,9 @@ TEST_CASE("MSH physical groups are exactly the labels a mesh carries", "[mesh_da
     auto groups_only = spec;
     groups_only.element_data.clear();
     const auto loaded = io::from_msh(groups_only);
-    REQUIRE(loaded.cell(CellType::Tetrahedron).attributes.at("tags").integers() == member.cast<int64_t>());
+    REQUIRE(
+        loaded.cell(CellType::Tetrahedron).attributes.at("tags").integers() ==
+        member.cast<int64_t>());
     // An explicit ambient label is a group like any other.
     auto labelled = two_tets(DataMatrix<uint8_t>::Identity(2, 2).eval(), {"body", "ambient"});
     REQUIRE(io::to_msh(labelled).physical_groups.size() == 2);
@@ -421,7 +423,8 @@ TEST_CASE("Undefined floating diagnostics round trip", "[mesh_data][io]")
     auto finite = mesh;
     finite.vertex_attributes["diagnostic"].values = DataMatrix<double>::Zero(3, 1).eval();
     const auto spec = io::to_msh(mesh);
-    REQUIRE(spec.node_data[0].header.string_tags == io::to_msh(finite).node_data[0].header.string_tags);
+    REQUIRE(
+        spec.node_data[0].header.string_tags == io::to_msh(finite).node_data[0].header.string_tags);
     // Older files store a non-finite value as 0 and list it in the metadata.
     auto old = spec;
     auto& header = old.node_data[0].header.string_tags[2];
