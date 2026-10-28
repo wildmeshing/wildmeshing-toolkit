@@ -1392,7 +1392,11 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+    // Except in coarsening (the final TetWild pass, since 2026-10-28): the front is held in its
+    // envelope there, and collapse_after_connectivity() keeps a collapse only if every stencil
+    // point of the survivor's offset faces stays within front_conv. The bare coarsening sweeps
+    // (no length gate, no such guard) still leave the front alone.
+    if (!m_collapse_limit_length && !m_coarsen_mode && VE[v1_id].m_is_on_offset) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
 
@@ -1476,16 +1480,46 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
         }
         if (cv.tie) ++m_plastic_tie_collapse;
     }
-    // Coarsening keeps an absolute bar besides, because it runs after the loop and trades
-    // elements for nothing but the promise that the result is still good. As in 2D.
-    if (m_coarsen_mode && m_offset_potential) {
-        double after = 0.;
-        for (const Tuple& f : offset_surface_faces_live_at(v2_id)) {
-            after = std::max(after, face_criterion_rel(f));
+    // THE COARSENING GUARD (the final TetWild pass's coarsen_mesh(); Spencer, 2026-10-28: "the
+    // collapse guard should be that both the max global amips and max offset error (across
+    // stencil points) stay below their thresholds"). Over what the collapse changed -- it moves
+    // no vertex, and coarsen_local_smoothing_passes is 0 by default, so the survivor's ring is
+    // every reshaped cell and its offset faces every changed face -- every cell's AMIPS stays
+    // under stop_energy and every stencil point (face_stencil()) of the offset faces stays within
+    // front_conv, (d - delta)^2 < front_conv^2 on the union field, none unmeasurable. Both strict.
+    // The engine's own coarsening test (the region's max quality_rel() may not rise) then reads
+    // the clamped quality_rel() override and never refuses what this keeps.
+    if (m_coarsen_mode) {
+        const double stop = m_params.stop_energy;
+        for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+            const double a3 = get_quality(tuple_from_tet(tid));
+            if (!(a3 < MAX_ENERGY) || !(std::cbrt(a3) < stop)) {
+                ++m_coarsen_reject_amips;
+                return false;
+            }
         }
-        if (after > 1.0) {
-            ++iter_cnt_collapse_offset_reject;
-            return false;
+        if (m_offset_potential) {
+            const auto& stencil = face_stencil();
+            const double delta = m_offset_params.target_distance;
+            const double fc2 = m_offset_params.front_conv * m_offset_params.front_conv;
+            const auto& VA = std::as_const(m_vertex_attribute);
+            const bool over =
+                for_each_live_offset_face_at(v2_id, [&](const std::array<size_t, 3>& f, size_t) {
+                    const Vector3d& p0 = VA[f[0]].m_posf;
+                    const Vector3d& p1 = VA[f[1]].m_posf;
+                    const Vector3d& p2 = VA[f[2]].m_posf;
+                    for (const auto& w : stencil) {
+                        const double r = m_offset_potential->relative_residual(
+                            w[0] * p0 + w[1] * p1 + w[2] * p2);
+                        if (!std::isfinite(r) || !((delta * r) * (delta * r) < fc2)) return true;
+                    }
+                    return false;
+                });
+            if (over) {
+                ++iter_cnt_collapse_offset_reject;
+                ++m_coarsen_reject_offset;
+                return false;
+            }
         }
     }
     return true;
@@ -3897,36 +3931,6 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::distance_deviation_split() c
     return s;
 }
 
-double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
-{
-    // cell_quality stores AMIPS^3 and stop_energy is a bar on AMIPS, so the cube root is not
-    // optional.
-    return std::cbrt(cell_quality(tid)) / std::max(m_params.stop_energy, 1e-16);
-}
-
-double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
-{
-    double q = cell_quality_rel(f.tid(*this));
-    if (const auto opp = f.switch_tetrahedron(*this)) {
-        q = std::max(q, cell_quality_rel(opp->tid(*this)));
-    }
-    return q;
-}
-
-double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
-{
-    // The max of the face's AMIPS over stop_energy and, on a live offset face, the root of its
-    // face_offset_term() -- the loop's own face measure, in units of the bar. Sorted corners, as
-    // tet_energy() reads the term. An unmeasurable face fails.
-    const double score = amips_rel_at_face(f);
-    if (!face_is_offset_surface_live(f)) return score;
-    std::array<size_t, 3> v = get_face_vids(f);
-    std::sort(v.begin(), v.end());
-    const double term = face_offset_term(v[0], v[1], v[2]);
-    if (!(term >= 0.)) return std::numeric_limits<double>::infinity();
-    return std::max(score, std::sqrt(term));
-}
-
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
 {
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
@@ -6236,7 +6240,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                     amips,
                     m_params.stop_energy);
                 m_round = it + 2;
-                const double final_amips = tetwild_pass("final pass", a_iters);
+                const double final_amips = tetwild_pass("final pass", a_iters, true);
                 m_quality_max_amips = final_amips;
                 m_quality_converged = final_amips < m_params.stop_energy;
                 logger().log(
@@ -6249,6 +6253,28 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
                 // this mesh.
                 if (m_offset_params.debug_output && !remote_frames()) {
                     write_optimization_debug_output(fmt::format("end_{}F", it + 2));
+                }
+            } else if (m_params.coarsen_pass) {
+                // No final pass is needed, and the coarsening runs anyway (Spencer, 2026-10-28:
+                // "coarsening happens regardless of whether the final tetwild pass is done"): the
+                // final pass's setup and guard, coarsen_mesh() alone.
+                logger().info(
+                    "======== final coarsening, the front held in its envelope (no final pass: "
+                    "max AMIPS {:.6g} < stop_energy {}) ========",
+                    amips,
+                    m_params.stop_energy);
+                m_round = it + 2;
+                const double after = tetwild_pass("final coarsening", 0, true);
+                m_quality_max_amips = after;
+                m_quality_converged = after < m_params.stop_energy;
+                logger().log(
+                    m_quality_converged ? spdlog::level::info : spdlog::level::warn,
+                    "\t[final coarsening] max element quality {:.4} (stop {:.4}) -> {}",
+                    after,
+                    optimization_stop_metric(),
+                    m_quality_converged ? "ok" : "OVER: the run does not converge");
+                if (m_offset_params.debug_output && !remote_frames()) {
+                    write_optimization_debug_output(fmt::format("end_{}C", it + 2));
                 }
             }
             return true;
@@ -6267,7 +6293,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     return false;
 }
 
-double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
+double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, const bool coarsen)
 {
     // The final envelopes -- the front's envelope, and m_envelope widened to every region boundary
     // as placement left them (build_final_envelopes()). TetWild's own rules (m_op_rules: the
@@ -6285,7 +6311,38 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its)
     if (remote_frames()) {
         write_debug_frame(fmt::format("{}r{}F_start", m_frame_prefix, m_round));
     }
-    mesh_improvement(max_its);
+    // The coarsening pass at mesh_improvement()'s end (coarsen_mesh()) runs only where the caller
+    // asks for it -- the final pass -- and coarsen_pass allows it; the construction pass never
+    // coarsens. Its collapses are judged by collapse_after_connectivity()'s coarsening guard.
+    const bool coarsen_was = m_params.coarsen_pass;
+    m_params.coarsen_pass = coarsen && coarsen_was;
+    m_coarsen_reject_amips = 0;
+    m_coarsen_reject_offset = 0;
+    if (max_its > 0) {
+        mesh_improvement(max_its);
+    } else {
+        // No iterations (the loop converged under stop_energy, so there is no final pass): the
+        // coarsening alone, on the vertex partition mesh_improvement() would have computed first.
+        compute_vertex_partition_morton();
+        coarsen_mesh();
+    }
+    if (m_params.coarsen_pass) {
+        const double o_star = stencil_max_sq_error();
+        const double fc = m_offset_params.front_conv;
+        logger().info(
+            "\t[coarsening] {}: {} collapses accepted | refused {} for a cell at or over "
+            "stop_energy {}, {} for a stencil point at or beyond front_conv {:.6g} | after: max "
+            "stencil-point |d - delta| {:.4g} ({:.4g} bars)",
+            what,
+            m_coarsen_stats.accepted,
+            m_coarsen_reject_amips.load(),
+            m_params.stop_energy,
+            m_coarsen_reject_offset.load(),
+            fc,
+            std::sqrt(o_star),
+            fc > 0. ? std::sqrt(o_star) / fc : 0.);
+    }
+    m_params.coarsen_pass = coarsen_was;
     logger().info(
         "\t[split order] {}: waited {} | committed off the longest edge {}",
         what,

@@ -361,8 +361,14 @@ public:
     /// smoothed like any held vertex), TetWild's own rules for the operations and the smoother
     /// (m_tetwild_pass, m_op_rules), mesh_improvement(max_its), everything put back and the band regions
     /// re-derived. Returns the max AMIPS after it. The final pass and
-    /// optimize_construction_pass() both run it; `what` names it in the log.
-    double tetwild_pass(const char* what, int max_its);
+    /// optimize_construction_pass() both run it; `what` names it in the log. `coarsen` (the final
+    /// pass's): mesh_improvement()'s closing coarsening pass (coarsen_mesh()) runs, if coarsen_pass
+    /// allows it, its collapses kept only where every reshaped cell stays under stop_energy and
+    /// every changed stencil point within front_conv (collapse_after_connectivity()); one
+    /// [coarsening] line logs it. max_its 0: no iterations and no bare sweeps, the coarsening
+    /// alone -- the "final coarsening" the loop runs when it converges at the final target with
+    /// max AMIPS already under stop_energy (no final pass).
+    double tetwild_pass(const char* what, int max_its, bool coarsen = false);
     /**
      * @brief optimize_construction: TetWild on the mesh as constructed, before the loop (and
      * before an init_optimize loop). Called by optimize_offset() after the "construction" frame.
@@ -2660,15 +2666,19 @@ public:
     /// demolished the band, and the sizing field cannot refuse a collapse.
     bool optimization_bare_coarsen_passes() const override { return tetwild_rules(); }
 
-    /// Max of the two normalized criteria on this face: AMIPS over stop_energy for the cells it
-    /// separates, and on a live offset face the root of face_offset_term() (the face's RMS
-    /// relative error over its stencil in units of the bar; +inf if unmeasurable). > 1 means it
-    /// fails at least one. The coarsen-mode collapse accept reads it.
-    double face_criterion_rel(const Tuple& f) const;
-    /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel().
-    double cell_quality_rel(const size_t tid) const;
-    /// ... and the worst of the (up to two) cells a face separates.
-    double amips_rel_at_face(const Tuple& f) const;
+    /// The engine's coarsening region test (the region's max quality_rel() may not rise) on a
+    /// clamped scale: AMIPS over stop_energy, but never below 1, so every cell under stop_energy
+    /// reads the same 1. With collapse_after_connectivity()'s coarsening guard (every reshaped
+    /// cell under stop_energy) the region's max after a kept collapse is 1, never above its max
+    /// before: the threshold is the rule, not "no rise" (Spencer, 2026-10-28). In 3D only the
+    /// coarsening reads quality_rel().
+    double quality_rel(const size_t tid) const override
+    {
+        return std::max(1., std::cbrt(cell_quality(tid)) / m_params.stop_energy);
+    }
+    /// The coarsening guard's refusals in the running TetWild pass (collapse_after_connectivity()):
+    /// a reshaped cell at or over stop_energy, a stencil point at or beyond front_conv.
+    std::atomic<size_t> m_coarsen_reject_amips{0}, m_coarsen_reject_offset{0};
 
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see

@@ -4189,6 +4189,151 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
     }
 }
 
+TEST_CASE("final-coarsening-guard", "[offset][3d]")
+{
+    // The final TetWild pass's coarsening (coarsen_mesh(), since 2026-10-28): a coarsening
+    // collapse is kept only if every cell around the survivor stays under stop_energy and every
+    // stencil point of the survivor's offset faces within front_conv, (d - delta)^2 <
+    // front_conv^2. On the 5 x 5 x 5 grid constructed at 0.2 under the defaults, set up as
+    // tetwild_pass() sets it up (the final envelopes, TetWild's rules, no plastic medium), edges
+    // are tried as single coarsening collapses (coarsen_collapse_edge()) under three pairs of
+    // bounds: (a) both wide -- collapses kept, front vertices among them (the bare sweeps' front
+    // refusal does not apply in coarsening), and after each the guard holds at the survivor;
+    // (b) stop_energy 1, under every cell's AMIPS (3 at the least) -- nothing kept, every refusal
+    // the AMIPS half's; (c) front_conv 1e-12 -- no kept collapse leaves an offset face at its
+    // survivor, refusals by the offset half.
+    const GridInput g = grid_input(5);
+    // The mesh holds its Parameters by reference: each lives as long as the test.
+    std::vector<std::unique_ptr<Parameters>> params;
+    const auto build = [&](const char* name) {
+        params.push_back(
+            std::make_unique<Parameters>(construction_params(
+                {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+                g.V)));
+        auto mesh =
+            grid_offset_mesh(g, *params.back(), std::filesystem::temp_directory_path() / name);
+        mesh->build_final_envelopes();
+        mesh->m_tetwild_pass = true;
+        mesh->m_op_rules = TopoOffsetTetMesh::OpRules::TetWild;
+        mesh->m_plastic_active = false;
+        for (const auto& t : mesh->get_tets()) {
+            mesh->m_tet_attribute[t.tid(*mesh)].m_quality = mesh->get_quality(t);
+        }
+        return mesh;
+    };
+    struct Outcome
+    {
+        size_t kept = 0, kept_front = 0, kept_with_offset_face = 0, guard_broken = 0;
+    };
+    const auto coarsen = [](TopoOffsetTetMesh& mesh,
+                            const double stop,
+                            const double fc,
+                            const size_t max_kept,
+                            const bool front_only) {
+        mesh.m_params.stop_energy = stop;
+        mesh.m_offset_params.front_conv = fc;
+        mesh.m_coarsen_reject_amips = 0;
+        mesh.m_coarsen_reject_offset = 0;
+        const double delta = mesh.m_offset_params.target_distance;
+        Outcome o;
+        bool progress = true;
+        while (progress && o.kept < max_kept) {
+            progress = false;
+            for (const auto& e : mesh.get_edges()) {
+                const size_t v1 = e.vid(mesh), v2 = e.switch_vertex(mesh).vid(mesh);
+                const bool front = mesh.m_vertex_extra[v1].m_is_on_offset;
+                if (front_only && !front) continue;
+                std::vector<TetMesh::Tuple> nt;
+                if (!mesh.coarsen_collapse_edge(e, nt)) continue;
+                ++o.kept;
+                if (front) ++o.kept_front;
+                for (const size_t tid : mesh.get_one_ring_tids_for_vertex(v2)) {
+                    if (!(std::cbrt(mesh.get_quality(mesh.tuple_from_tet(tid))) < stop)) {
+                        ++o.guard_broken;
+                    }
+                }
+                std::vector<std::array<size_t, 3>> faces;
+                mesh.live_offset_faces_at(v2, faces);
+                for (const auto& f : faces) {
+                    for (const auto& w : mesh.face_stencil()) {
+                        const Vector3d q = w[0] * mesh.m_vertex_attribute[f[0]].m_posf +
+                                           w[1] * mesh.m_vertex_attribute[f[1]].m_posf +
+                                           w[2] * mesh.m_vertex_attribute[f[2]].m_posf;
+                        const double r = mesh.m_offset_potential->relative_residual(q);
+                        if (!((delta * r) * (delta * r) < fc * fc)) ++o.guard_broken;
+                    }
+                }
+                if (!faces.empty()) ++o.kept_with_offset_face;
+                progress = true;
+                break;
+            }
+        }
+        return o;
+    };
+
+    {
+        auto mesh = build("wmtk_offset_coarsen_wide");
+        const Outcome o = coarsen(*mesh, 1e12, 1e6, 40, false);
+        const Outcome f = coarsen(*mesh, 1e12, 1e6, 20, true); // front vertices as v1
+        INFO("kept " << o.kept << ", then " << f.kept << " with a front v1");
+        CHECK(o.kept > 0);
+        CHECK(f.kept > 0);
+        CHECK(f.kept == f.kept_front);
+        CHECK(o.guard_broken == 0);
+        CHECK(f.guard_broken == 0);
+        CHECK(mesh->check_mesh_connectivity_validity());
+    }
+    {
+        auto mesh = build("wmtk_offset_coarsen_amips");
+        const size_t n_tets = mesh->get_tets().size();
+        const Outcome o = coarsen(*mesh, 1., 1e6, 40, false);
+        CHECK(o.kept == 0);
+        CHECK(mesh->get_tets().size() == n_tets);
+        CHECK(mesh->m_coarsen_reject_amips.load() > 0);
+        CHECK(mesh->m_coarsen_reject_offset.load() == 0);
+    }
+    {
+        auto mesh = build("wmtk_offset_coarsen_offset");
+        const Outcome o = coarsen(*mesh, 1e12, 1e-12, 20, true);
+        INFO("kept " << o.kept);
+        CHECK(o.kept_with_offset_face == 0);
+        CHECK(o.guard_broken == 0);
+        CHECK(mesh->m_coarsen_reject_offset.load() > 0);
+    }
+    // (d) The final coarsening alone (tetwild_pass(what, 0, true): no iterations, the loop's
+    // setup put back afterwards), at wide bounds on a mesh as the loop leaves it: collapses are
+    // kept, the cell count falls, the pass's state is undone; with coarsen_pass off it does
+    // nothing.
+    {
+        params.push_back(
+            std::make_unique<Parameters>(construction_params(
+                {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+                g.V)));
+        params.back()->stop_energy = 1e12;
+        params.back()->front_conv = 1e6;
+        auto mesh = grid_offset_mesh(
+            g,
+            *params.back(),
+            std::filesystem::temp_directory_path() / "wmtk_offset_coarsen_alone");
+        for (const auto& t : mesh->get_tets()) {
+            mesh->m_tet_attribute[t.tid(*mesh)].m_quality = mesh->get_quality(t);
+        }
+        REQUIRE(mesh->m_params.coarsen_pass); // the spec's default
+        const size_t n0 = mesh->get_tets().size();
+        mesh->m_params.coarsen_pass = false;
+        mesh->tetwild_pass("test coarsening", 0, true);
+        CHECK(mesh->get_tets().size() == n0);
+        mesh->m_params.coarsen_pass = true;
+        mesh->tetwild_pass("test coarsening", 0, true);
+        CHECK(mesh->m_coarsen_stats.accepted > 0);
+        CHECK(mesh->get_tets().size() < n0);
+        CHECK_FALSE(mesh->m_tetwild_pass);
+        CHECK(mesh->m_op_rules == TopoOffsetTetMesh::OpRules::Loop);
+        CHECK(mesh->m_params.coarsen_pass);
+        CHECK(mesh->check_mesh_connectivity_validity());
+    }
+}
+
 TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]")
 {
     // EXPERIMENTAL_label_cleanup "energy_decrease" on a 5 x 5 x 5 grid constructed at 0.2 under
