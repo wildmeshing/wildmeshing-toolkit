@@ -229,6 +229,7 @@ void run_3D(
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.m_F_envelope_labels = input_data.F_envelope_labels;
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -236,14 +237,20 @@ void run_3D(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
             input_data.V_input_r,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -319,6 +326,7 @@ void run_3D(
             CellType::Tetrahedron,
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
+        io::collect_face_tags(mesh, component_io.result.first, mesh.m_face_tag_names);
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);

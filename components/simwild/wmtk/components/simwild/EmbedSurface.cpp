@@ -73,7 +73,8 @@ void embed_surface(
     MatrixXi& F_on_surface,
     const bool perform_sanity_checks,
     const std::vector<size_t>& F_input,
-    std::vector<std::vector<size_t>>* F_on_surface_inputs)
+    std::vector<std::vector<size_t>>* F_on_surface_inputs,
+    std::vector<std::vector<int>>* F_on_surface_orientations)
 {
     // old output
     std::vector<std::array<size_t, 3>> facets_after;
@@ -177,21 +178,56 @@ void embed_surface(
     // coplanar group: a group spans several inputs wherever they are exactly coplanar and
     // edge-adjacent -- two sheets side by side, the tops of two touching boxes -- and every face
     // of the group would then claim all of them. Several inputs only where they overlap.
+    //
+    // And each input's direction on the face, against the face's vertex order: +1 along, -1
+    // against, 0 where that input's own triangles there face both ways -- a sheet counts once,
+    // as in the orientation count (SurfaceTagAttributes::m_orientation). The face's vertex order
+    // is the remesher's, which carries no orientation of its own.
     F_on_surface_inputs->assign(n_face_on_input, {});
+    if (F_on_surface_orientations != nullptr)
+        F_on_surface_orientations->assign(n_face_on_input, {});
     size_t row = 0;
     for (size_t i = 0; i < polygon_faces.size(); ++i) {
         if (!polygon_faces_on_input[i]) {
             continue;
         }
-        auto& inputs = (*F_on_surface_inputs)[row++];
+        const auto& f = polygon_faces[i];
+        const Vector3d fa = to_double(v_rational[f[0]]);
+        const Vector3d normal =
+            (to_double(v_rational[f[1]]) - fa).cross(to_double(v_rational[f[2]]) - fa);
+        auto& inputs = (*F_on_surface_inputs)[row];
+        std::vector<std::array<bool, 2>> facing; // per input: seen along, seen against
         for (const uint32_t t : prov.face_triangles[i]) {
             const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
-            if (in != std::numeric_limits<size_t>::max() &&
-                std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
-                inputs.push_back(in);
+            if (in == std::numeric_limits<size_t>::max()) {
+                continue;
             }
+            auto it = std::find(inputs.begin(), inputs.end(), in);
+            if (it == inputs.end()) {
+                inputs.push_back(in);
+                facing.push_back({{false, false}});
+                it = inputs.end() - 1;
+            }
+            const Vector3d q0 = V_surface.row(F_surface(t, 0)).transpose();
+            const Vector3d n_t = (Vector3d(V_surface.row(F_surface(t, 1))) - q0)
+                                     .cross(Vector3d(V_surface.row(F_surface(t, 2))) - q0);
+            facing[it - inputs.begin()][n_t.dot(normal) > 0 ? 0 : 1] = true;
         }
-        std::sort(inputs.begin(), inputs.end());
+        std::vector<size_t> order(inputs.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+            return inputs[a] < inputs[b];
+        });
+        std::vector<size_t> sorted(inputs.size());
+        std::vector<int> o(inputs.size());
+        for (size_t k = 0; k < order.size(); ++k) {
+            sorted[k] = inputs[order[k]];
+            const auto& [along, against] = facing[order[k]];
+            o[k] = along == against ? 0 : (along ? 1 : -1);
+        }
+        inputs = std::move(sorted);
+        if (F_on_surface_orientations != nullptr) (*F_on_surface_orientations)[row] = std::move(o);
+        ++row;
     }
     assert(row == n_face_on_input);
 }
@@ -429,7 +465,10 @@ void EmbedSurface::remove_duplicates(const double eps)
     F_surf_from_vector(f);
 }
 
-bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_winding_number)
+bool EmbedSurface::embed_surface(
+    const bool flood_fill,
+    const bool tag_from_winding_number,
+    const bool provenance)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -484,7 +523,8 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         m_F_on_surface,
         m_perform_sanity_checks,
         m_F_input,
-        tag_from_winding_number ? nullptr : &m_F_tags_surface);
+        tag_from_winding_number && !provenance ? nullptr : &m_F_tags_surface,
+        &m_F_tags_surface_orientation);
 
     if (m_perform_sanity_checks) {
         // check that all tets contain valid vertex indices and no duplicates

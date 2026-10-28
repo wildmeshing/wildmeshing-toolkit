@@ -126,8 +126,8 @@ public:
      * Four containment queries are VIRTUAL -- the 3D triangle, the 3D point, the 2D segment and
      * the 2D point -- so a containment-only composite over several envelopes can answer them.
      * They are exactly what the 3D and the 2D containment paths ask. The 3D segment query is
-     * not virtual. See the composites in components/topological_offset/.../TagEnvelopes.hpp,
-     * and the invariant stated there: a composite must never reach the NON-virtual queries,
+     * not virtual. See the composites in wmtk/envelope/CompositeEnvelopes.hpp, and the
+     * invariant stated there: a composite must never reach the NON-virtual queries,
      * whose BVH it does not have.
      */
     virtual bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;

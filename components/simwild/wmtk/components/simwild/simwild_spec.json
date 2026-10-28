@@ -9,6 +9,7 @@
       "dimension",
       "output",
       "input_names",
+      "input_type",
       "input_transform",
       "input_dir",
       "skip_simplify",
@@ -114,6 +115,18 @@
     "pointer": "/input_names/*",
     "type": "string",
     "doc": "Name for one input mesh."
+  },
+  {
+    "pointer": "/input_type",
+    "type": "list",
+    "doc": "One entry per input, saying what its tag marks. 'volume': the input encloses a volume, and the tets inside it get its name as a tag. 'surface': the input stays a surface, and the embedded faces on it get its name as a face tag. Empty (the default): every input is a volume. 3D surface inputs only.",
+    "default": []
+  },
+  {
+    "pointer": "/input_type/*",
+    "type": "string",
+    "options": ["volume", "surface"],
+    "doc": "What that input's tag marks: the tets it encloses, or the faces on it."
   },
   {
     "pointer": "/operation",

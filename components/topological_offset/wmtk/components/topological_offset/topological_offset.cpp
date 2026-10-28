@@ -384,7 +384,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names,
-            input_data.envelope_name);
+            input_data.envelope_name,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
 
         // label input complex
         mesh.m_offset_params.offset_selection =

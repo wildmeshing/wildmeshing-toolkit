@@ -48,6 +48,9 @@ void delaunay_box_mesh(
  * output surface face: the inputs of the triangles it overlaps, from the arrangement's own
  * provenance. Usually one; more only where inputs overlap, which is exactly the case a
  * geometric look-up cannot tell apart.
+ * @param[out] F_on_surface_orientations Parallel to F_on_surface_inputs: each listed input's
+ * direction on the face, against the row's vertex order -- +1 along, -1 against, 0 where that
+ * input's triangles there face both ways. Filled with F_on_surface_inputs.
  */
 void embed_surface(
     const MatrixXd& V_surface,
@@ -59,7 +62,8 @@ void embed_surface(
     MatrixXi& F_on_surface,
     const bool perform_sanity_checks = false,
     const std::vector<size_t>& F_input = {},
-    std::vector<std::vector<size_t>>* F_on_surface_inputs = nullptr);
+    std::vector<std::vector<size_t>>* F_on_surface_inputs = nullptr,
+    std::vector<std::vector<int>>* F_on_surface_orientations = nullptr);
 
 /**
  * A class for reading an image and converting it into a tet mesh.
@@ -116,8 +120,13 @@ public:
      * @param tag_from_winding_number Decide each cell's tags by evaluating the winding
      * number of every input at its centroid (the default), rather than by propagating them
      * across the arrangement's own surface provenance. See tag_from_provenance.
+     * @param provenance Also record which inputs tile each surface face (F_tags_surface()),
+     * which the provenance tagging records anyway.
      */
-    bool embed_surface(const bool flood_fill = false, const bool tag_from_winding_number = true);
+    bool embed_surface(
+        const bool flood_fill = false,
+        const bool tag_from_winding_number = true,
+        const bool provenance = false);
 
     /**
      * @brief Remove unreferenced vertices.
@@ -130,7 +139,17 @@ public:
     const MatrixXi& T_emb() const { return m_T_emb; }
     const MatrixSi& T_tags() const { return m_T_tags; }
     const MatrixXi& F_on_surface() const { return m_F_on_surface; }
+    /// Per row of F_on_surface(): the inputs tiling it. Empty unless embed_surface recorded it.
+    const std::vector<std::vector<size_t>>& F_tags_surface() const { return m_F_tags_surface; }
+    /// Parallel to F_tags_surface(): each input's direction on the row, +1 along its vertex
+    /// order, -1 against, 0 where its triangles face both ways.
+    const std::vector<std::vector<int>>& F_tags_surface_orientation() const
+    {
+        return m_F_tags_surface_orientation;
+    }
     const MatrixXi& F_surface() const { return m_F_surface; }
+    /// Per row of F_surface(): the input it came from, SIZE_MAX for none.
+    const std::vector<size_t>& F_input() const { return m_F_input; }
 
     /**
      * @brief Write surface as read from image.
@@ -203,6 +222,8 @@ private:
     // per row of m_F_on_surface: which inputs tile it, from the arrangement's provenance.
     // Only filled when the provenance tagging is asked for.
     std::vector<std::vector<size_t>> m_F_tags_surface;
+    // parallel to m_F_tags_surface: each input's direction on the row (+1, -1, or 0).
+    std::vector<std::vector<int>> m_F_tags_surface_orientation;
 
     std::vector<size_t> modified_nonmanifold_v;
 

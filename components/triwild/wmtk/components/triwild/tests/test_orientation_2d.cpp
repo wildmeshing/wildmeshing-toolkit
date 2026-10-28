@@ -210,3 +210,46 @@ TEST_CASE("orientation-2d-square-with-a-repeated-edge", "[triwild][orientation]"
     l.e.push_back(l.e[0]);
     check_case("square with a repeated edge", l, 1, false);
 }
+
+TEST_CASE("orientation-2d-inputs-meeting-end-to-end", "[triwild][orientation]")
+{
+    // Input 0 runs (0,0) -> (1,0), input 1 runs (3,0) -> (1,0): two curves meeting end to end in
+    // opposite directions. Told which input each segment is, the repair keeps to one input and
+    // both keep their own direction. As one input they are one curve, and the shorter, input 0,
+    // is reversed to agree with the longer -- the single-input repair, unchanged.
+    MatrixXd V(3, 2);
+    V << 0, 0, 1, 0, 3, 0;
+    MatrixXi E(2, 2);
+    E << 0, 1, 2, 1;
+    const std::vector<int> E_input = {0, 1};
+    for (const bool told : {true, false}) {
+        CAPTURE(told);
+        MatrixXd Vo;
+        std::vector<Vector2r> Vr;
+        MatrixXi F, Eo;
+        std::vector<int> orientation;
+        utils::embed_segments(
+            V,
+            E,
+            Vo,
+            Vr,
+            F,
+            Eo,
+            nullptr,
+            &orientation,
+            nullptr,
+            told ? &E_input : nullptr);
+        size_t n0 = 0, n1 = 0, wrong = 0;
+        for (int i = 0; i < Eo.rows(); ++i) {
+            // The edge's direction along +x, as the input runs it.
+            const double dx = orientation[i] * (Vo(Eo(i, 1), 0) - Vo(Eo(i, 0), 0));
+            const bool on_0 = Vo(Eo(i, 0), 0) + Vo(Eo(i, 1), 0) < 2;
+            const double want = on_0 && told ? 1 : -1;
+            (on_0 ? n0 : n1)++;
+            wrong += dx * want <= 0;
+        }
+        CHECK(n0 > 0);
+        CHECK(n1 > 0);
+        CHECK(wrong == 0);
+    }
+}
