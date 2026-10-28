@@ -18,7 +18,7 @@ The JSON `input` and `output` paths are relative to the JSON file's directory. E
   "iterations": 5,
   "keep_background_mesh": false,
   "prism_dominant": true,
-  "min_tet_volume": 1e-12,
+  "min_tet_volume": 0,
   "smoothing_max_backtracks": 40
 }
 ```
@@ -226,8 +226,9 @@ trimming does not remove the junction neighborhood. This also protects higher-va
 shell junctions. It is a local preservation rule, not a proof that every target normal is valid.
 
 The type `tau^n_m` counts offset vertices (`n`) and their distinct input identifiers (`m`).
-The pass unmarks `tau^2_1` and `tau^3_1`, and unmarks `tau^3_2` unless its distinct labels
-map to an existing input edge outside the open boundary. `tau^1_1` and `tau^3_3` are preserved.
+The pass unmarks `tau^2_1` only when the edge between its two input vertices is on the open
+boundary, and unmarks `tau^3_1`. It unmarks `tau^3_2` unless its distinct labels map to an
+existing input edge outside the open boundary. `tau^1_1` and `tau^3_3` are preserved.
 A `tau^2_2` is unmarked only when its offset label set matches its two input vertices and
 that input edge is open. Decisions use the initial boundary and candidate sets, with resolved
 correspondence rows preserving the meaning of noncontiguous source IDs.
@@ -302,8 +303,9 @@ vertex move, making a segment between valid endpoints safe as well.
 
 New or modified shell tetrahedra produced by an accepted operation require the **signed** volume
 `det(p1-p0,p2-p0,p3-p0)/6` to be strictly greater than `min_tet_volume`
-(default 1e-12, finite and nonnegative). The units are coordinate
-units cubed; this is an absolute volume floor, not a normalized shape-quality metric.
+(default 0, finite and nonnegative). Zero requires strict positivity without an
+absolute size cutoff. An explicitly positive floor has coordinate units cubed;
+it is not a normalized shape-quality metric.
 GMP rational arithmetic evaluates the comparison exactly on the stored double coordinates,
 including the threshold. This is an operation acceptance condition, not a global mesh minimum:
 existing positive cells at or below the floor may remain in the band or background and do not

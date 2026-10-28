@@ -45,9 +45,9 @@ void delaunay_box_mesh(
  * @param F_input Which input surface each row of F_surface came from, or SIZE_MAX for a row
  * that belongs to none. Pass empty to skip the provenance below.
  * @param[out] F_on_surface_inputs Parallel to F_on_surface: the input surfaces tiling each
- * output surface face, from the arrangement's own triangle provenance. Usually one; more
- * where two inputs meet coplanarly, which is exactly the case a geometric look-up cannot
- * tell apart.
+ * output surface face: the inputs of the triangles it overlaps, from the arrangement's own
+ * provenance. Usually one; more only where inputs overlap, which is exactly the case a
+ * geometric look-up cannot tell apart.
  */
 void embed_surface(
     const MatrixXd& V_surface,
