@@ -38,6 +38,14 @@ Eigen::Vector3d at(
     return p.bary[0] * V[S[p.segment][0]] + p.bary[1] * V[S[p.segment][1]];
 }
 
+/// A number in [0, 1) from the generator alone: mt19937 gives the same numbers everywhere, but
+/// std::uniform_real_distribution does not -- libstdc++ and libc++ draw them differently -- and
+/// the points mapped here must not depend on the standard library.
+double uniform(std::mt19937& rng)
+{
+    return double(rng()) / 4294967296.0;
+}
+
 std::vector<CurvePoint> random_points(const CurveMap& map, const bool on_input, const int n)
 {
     const auto& alive = on_input ? map.input_segment_alive() : map.output_segment_alive();
@@ -46,10 +54,9 @@ std::vector<CurvePoint> random_points(const CurveMap& map, const bool on_input, 
         if (alive[f]) live.push_back(f);
     }
     std::mt19937 rng(7);
-    std::uniform_real_distribution<double> u(0, 1);
     std::vector<CurvePoint> pts;
     for (int i = 0; i < n; ++i) {
-        const double t = u(rng);
+        const double t = uniform(rng);
         pts.push_back({live[rng() % live.size()], Eigen::Vector2d(1 - t, t)});
     }
     return pts;

@@ -84,6 +84,14 @@ nlohmann::json parameters_of(const ComponentResult& r)
     return nlohmann::json::parse(history_of(r).metadata);
 }
 
+/// A number in [0, 1) from the generator alone: mt19937 gives the same numbers everywhere, but
+/// std::uniform_real_distribution does not -- libstdc++ and libc++ draw them differently -- and
+/// the points mapped here must not depend on the standard library.
+double uniform(std::mt19937& rng)
+{
+    return double(rng()) / 4294967296.0;
+}
+
 using Ends = std::array<std::array<double, 2>, 2>;
 /// An edge by its ends' positions, the smaller first.
 Ends ends_of(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
@@ -151,10 +159,9 @@ Mapped check_history(const ComponentResult& r, const size_t n_segments)
 
     // Random points on the input, to the output and back.
     std::mt19937 rng(5);
-    std::uniform_real_distribution<double> u(0, 1);
     std::vector<tracking::InputCurvePoint> pts;
     for (int i = 0; i < 1000; ++i) {
-        const double x = u(rng);
+        const double x = uniform(rng);
         pts.push_back({uint64_t(rng() % n_segments), Eigen::Vector2d(1 - x, x)});
     }
     const auto there = t.to_output(pts);

@@ -123,12 +123,12 @@ TEST_CASE("tracking-example-triwild", "[triwild][tracking]")
     const double mean_length = length / double(tracking.output_segments().size());
 
     // 3. Map points on the input -- a segment of the input files and barycentric coordinates --
-    // to the output, and back.
+    // to the output, and back. (The coordinates are the generator's own numbers, the same
+    // everywhere; std::uniform_real_distribution's differ between standard libraries.)
     std::mt19937 rng(3);
-    std::uniform_real_distribution<double> u(0, 1);
     std::vector<InputCurvePoint> pts;
     for (int i = 0; i < 500; ++i) {
-        const double t = u(rng);
+        const double t = double(rng()) / 4294967296.0;
         pts.push_back({uint64_t(rng() % segments.size()), Eigen::Vector2d(1 - t, t)});
     }
     const std::vector<OutputCurvePoint> there = tracking.to_output(pts);
