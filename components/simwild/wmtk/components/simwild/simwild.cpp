@@ -281,8 +281,10 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     const std::string history_output = json_params["history_output"];
     if (!history_output.empty()) {
         // The tet mesh the history starts from, tags and all: for a surface input that is the
-        // embedding, which no file holds otherwise.
-        io::write_mesh(params.output_path + "_history_input.msh", tagged_outputs().at("mesh"));
+        // embedding, which no file holds otherwise. Next to the output, so not on the memory
+        // route, which has none.
+        if (!component_io.memory())
+            io::write_mesh(params.output_path + "_history_input.msh", tagged_outputs().at("mesh"));
         // A surface input: from the files, through the arrangement, to here.
         mesh.m_insertion_sources = std::move(input_data.facet_sources);
         mesh.record_surface_history(json_params.dump());

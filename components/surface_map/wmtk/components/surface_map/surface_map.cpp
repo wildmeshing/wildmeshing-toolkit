@@ -262,6 +262,13 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
             const auto& in_json = app["input"];
             for (const auto& p : in_json.is_array() ? in_json : nlohmann::json::array({in_json})) {
                 inputs.push_back(resolve_path(app_root, std::string(p)).string());
+                // A history recorded on the memory route names the input meshes, not files.
+                if (!std::filesystem::exists(inputs.back())) {
+                    log_and_throw_error(
+                        "{} names the input {}, which is not a file here; give one",
+                        history_path,
+                        inputs.back());
+                }
             }
         }
         const std::string input = nlohmann::json(inputs).dump();

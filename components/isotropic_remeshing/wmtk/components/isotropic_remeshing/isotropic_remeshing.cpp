@@ -171,6 +171,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const std::string history_output = json_params["history_output"];
     const std::vector<std::string> feature_fields = json_params["feature_fields"];
+    // The fields are read from the .msh file the input names; a memory input carries none.
+    if (component_io.memory() && !feature_fields.empty()) {
+        throw std::runtime_error(
+            "isotropic_remeshing: feature_fields reads per-face fields from the input .msh file, "
+            "which the memory route does not have");
+    }
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
