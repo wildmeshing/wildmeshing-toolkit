@@ -46,6 +46,18 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
         mesh.set_sizing_field(json_params["sizing_field"]);
         mesh.set_quality_field(json_params["quality_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
+        if constexpr (std::is_same_v<MeshT, SimWildMesh>) {
+            // The order-2 guarantee, audited: every edge still carrying the input's order-2 tag
+            // lies in its tube (tag_order2_edges()). Edges the operations made order-2 carry no
+            // tag and are not counted.
+            const size_t n_out =
+                mesh.tagged_edges_outside(SimWildMesh::FeatureEdgeAttributes::order2);
+            if (n_out > 0) {
+                logger().warn("{} order-2 edges outside their tube", n_out);
+            } else {
+                logger().info("order-2 edges outside their tube: 0");
+            }
+        }
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
         std::vector<CellTag> fill_holes_tags;

@@ -1144,6 +1144,76 @@ bool TetOptimizerMesh::vertex_has_tagged_edge(const size_t vid) const
     return false;
 }
 
+bool TetOptimizerMesh::vertex_has_edge_of_kind(
+    const size_t vid,
+    const FeatureEdgeAttributes::Kind k) const
+{
+    if (!m_track_feature_edges) return false;
+    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
+        const Tuple e = tuple_from_edge({{vid, u}});
+        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].has(k)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+size_t TetOptimizerMesh::tag_order2_edges(const double eps, const bool exact)
+{
+    // Tracked faces per edge, each face visited once, at the tet that owns it, and each edge
+    // counted under its own id: the mesh is at its largest here, so nothing is materialised.
+    std::vector<int> n_faces(6 * tet_capacity(), 0);
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        if (!tuple_from_tet(t).is_valid(*this)) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t, j);
+            if (f.fid(*this) != 4 * t + j) continue; // a lower tet owns this face
+            if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+            ++n_faces[f.eid(*this)];
+            ++n_faces[f.switch_edge(*this).eid(*this)];
+            ++n_faces[f.switch_vertex(*this).switch_edge(*this).eid(*this)];
+        }
+    }
+    std::vector<size_t> eids;
+    std::vector<Eigen::Vector2i> edges;
+    for (size_t t = 0; t < tet_capacity(); ++t) {
+        if (!tuple_from_tet(t).is_valid(*this)) continue;
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(t, j);
+            const size_t eid = e.eid(*this);
+            if (eid != 6 * t + j) continue; // a lower tet owns this edge
+            if (n_faces[eid] == 0 || n_faces[eid] == 2) continue;
+            eids.push_back(eid);
+            edges.emplace_back(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        }
+    }
+    if (eids.empty()) return 0;
+
+    enable_feature_edge_tracking();
+    for (const size_t eid : eids) m_feature_edge_attribute[eid].add(FeatureEdgeAttributes::order2);
+
+    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) v_posf[i] = m_vertex_attribute[i].m_posf;
+    m_order2_edge_envelope = std::make_shared<Envelope>(exact);
+    m_order2_edge_envelope->init(v_posf, edges, eps);
+    return eids.size();
+}
+
+size_t TetOptimizerMesh::tagged_edges_outside(const FeatureEdgeAttributes::Kind k) const
+{
+    const Envelope* env = tagged_edge_envelope(k);
+    if (!m_track_feature_edges || !env) return 0;
+    size_t n = 0;
+    for (const Tuple& e : get_edges()) {
+        if (!m_feature_edge_attribute[e.eid(*this)].has(k)) continue;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        n += env->is_outside(
+            std::array<Eigen::Vector3d, 2>{
+                {m_vertex_attribute[a].m_posf, m_vertex_attribute[b].m_posf}});
+    }
+    return n;
+}
+
 size_t TetOptimizerMesh::substructure_order_of_edge(const std::array<size_t, 2>& vids) const
 {
     size_t order = TetMesh::substructure_order_of_edge(vids);

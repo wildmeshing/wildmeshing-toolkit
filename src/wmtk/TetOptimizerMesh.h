@@ -346,6 +346,33 @@ public:
     bool vertex_has_feature_edge(size_t vid) const;
     /// Does any edge incident to `vid` carry a tag, of any kind? Derived like the above.
     bool vertex_has_tagged_edge(size_t vid) const;
+    /// Does any edge incident to `vid` carry kind `k`? False while edge tracking is off.
+    bool vertex_has_edge_of_kind(size_t vid, FeatureEdgeAttributes::Kind k) const;
+
+    /**
+     * @brief Tag the input's order-2 edges with the order2 kind and build their tube,
+     * m_order2_edge_envelope, of half-width `eps`. Returns the number of edges tagged.
+     *
+     * An order-2 edge has 1 tracked face (an open boundary) or 3 and more (a non-manifold
+     * edge): it is where a sheet ends. The one-sided surface envelope cannot see a sheet
+     * shortening there -- a rim sliding inward keeps every face on its sheet -- so these edges
+     * need a tube of their own, and they need it whether or not topology is preserved: keeping
+     * them in place is a geometric guarantee, separate from the topological one. Measured on
+     * simwild, whose smoothing had no boundary check: an open square inside a cube lost 3 of its
+     * 4 corners, its rim 7.4 tube radii off at the default eps and 14.8 at eps_rel 1e-3, the
+     * same 0.038 at every eps. Tagged, the edges get every check the feature kind has: the
+     * collapse guard, the smoothing containment, the swap refusal, the link condition's orders.
+     *
+     * Call once after init, with the tracked faces final. Membership is decided here, from the
+     * tracked-face counts, and only carried afterwards: an edge the operations make order-2 is
+     * not the input's and is not held. Turns edge tracking on only when there is such an edge,
+     * since tracking costs every operation its cache (see enable_feature_edge_tracking()).
+     */
+    size_t tag_order2_edges(double eps, bool exact);
+    /// The audit of that guarantee: how many edges carrying kind `k` lie outside its tube now.
+    /// Zero after every run unless an operation lets a tagged edge out; 0 when tracking is off
+    /// or the kind has no tube.
+    size_t tagged_edges_outside(FeatureEdgeAttributes::Kind k) const;
 
     // Substructure widening for the link condition (preserve_topology): a tagged edge, of any
     // kind, is order-2 substructure, a vertex with two incident tagged edges is on a curve

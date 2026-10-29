@@ -128,10 +128,6 @@ public:
 
     bool m_collapse_check_quality = true;
 
-    // for open boundary
-    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
-    std::shared_ptr<Envelope> m_order_2_edge_envelope;
-
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const override;
 
@@ -278,11 +274,6 @@ protected:
 
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
-    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
-    bool collapse_after_connectivity(
-        size_t v1,
-        size_t v2,
-        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
@@ -365,16 +356,6 @@ public:
     size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
-    /**
-     * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open
-     * boundary.
-     *
-     * The envelope for the open boundary uses a hack: A boundary edge is represented as a
-     * degenerate triangle, e.g., (v0,v1,v0). That way, the standard triangle envelope code can be
-     * used.
-     *
-     */
-    void find_order_2_edges();
     /**
      * @brief Checks if an edge COULD be an open boundary edge.
      *

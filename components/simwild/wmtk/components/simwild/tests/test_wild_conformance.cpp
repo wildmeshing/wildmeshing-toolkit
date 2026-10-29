@@ -844,7 +844,7 @@ TEST_CASE(
     sim.m_vertex_attribute[0].m_order = 3;
     tet.m_order2_envelope = feature;
     sim.m_envelope = surface;
-    sim.m_order_2_edge_envelope = feature;
+    sim.m_order2_edge_envelope = feature;
 
     CHECK(tet.smoothing_energy_envelope(0) == feature);
     CHECK(sim.smoothing_energy_envelope(0) == tet.smoothing_energy_envelope(0));

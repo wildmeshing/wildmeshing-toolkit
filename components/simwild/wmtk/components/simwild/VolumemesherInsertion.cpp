@@ -446,59 +446,21 @@ void SimWildMesh::init_surfaces_and_boundaries()
     for_each_vertex(
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 
-    if (m_params.preserve_topology) {
-        // track open boundaries
-        find_order_2_edges();
-
-        int open_boundary_cnt = 0;
-        for (const Tuple& e : get_edges()) {
-            if (is_order_2_edge(e)) {
-                open_boundary_cnt++;
-            }
-        }
-        logger().info("#open boundary edges: {}", open_boundary_cnt);
-    }
-}
-
-void SimWildMesh::find_order_2_edges()
-{
-    // for open boundary envelope
-    std::vector<Eigen::Vector3d> v_posf(vert_capacity());
-    std::vector<Eigen::Vector2i> order_2_edges;
-
-    for (size_t i = 0; i < vert_capacity(); i++) {
-        v_posf[i] = m_vertex_attribute[i].m_posf;
-    }
-
-    const auto edges = get_edges();
-    for (const Tuple& e : edges) {
-        const size_t v1 = e.vid(*this);
-        const size_t v2 = e.switch_vertex(*this).vid(*this);
-        if (is_order_2_edge({{v1, v2}})) {
-            order_2_edges.emplace_back(v1, v2);
-        }
-    }
-
-    logger().info("order 2 edge num: {}", order_2_edges.size());
-
-    if (order_2_edges.size() == 0) {
-        return;
-    }
-
-    // init open boundary envelope
+    // The order-2 edges (open boundaries, non-manifold edges) are tagged and held by the base's
+    // tube, with or without preserve_topology: keeping them in place is a geometric guarantee,
+    // separate from the topological one (see tag_order2_edges()). Until 2026-10 they were held
+    // only under preserve_topology, and only in collapses: smoothing walked an open square's
+    // corners along its rim.
     //
-    // Follows the surface envelope's predicate: same input, same epsilon, so there is no
-    // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
-    // curves. It was hard-wired to sampled only because the exact envelope could not be built
-    // from edges until fast-envelope #6.
-    m_order_2_edge_envelope = std::make_shared<Envelope>(m_envelope && m_envelope->use_exact);
-    // A FRACTION of eps here, deliberately, where the surface envelope uses all of it:
+    // The tube follows the surface envelope's predicate: same input, same epsilon, so there is
+    // no reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
+    // curves. A FRACTION of eps, deliberately, where the surface envelope uses all of it:
     // widening a boundary-curve envelope buys no unblocking and costs elements. See
     // /order2_envelope_ratio in the spec for the measurement.
-    m_order_2_edge_envelope->init(
-        v_posf,
-        order_2_edges,
-        m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio);
+    const size_t n_order2 = tag_order2_edges(
+        m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio,
+        m_envelope && m_envelope->use_exact);
+    logger().info("order-2 edges tagged: {}", n_order2);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const
