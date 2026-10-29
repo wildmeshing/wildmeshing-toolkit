@@ -1526,10 +1526,10 @@ TEST_CASE("face-term-is-the-stencil-mean", "[offset][3d]")
 }
 
 namespace {
-/// Parameters with the energy and loop keys as their defaults were before 2026-10-28, when the
-/// defaults became the "surface" rule, offset_amips_weight 100, label_cleanup "energy_decrease"
-/// and the pocket / spanned splits and exit_no_folds on: for the tests of the volume rules'
-/// band term ("corner_bound"), their swap and collapse rules and the split keys switched off.
+/// Parameters with the energy and loop keys as their defaults were before 2026-10-28 (since then
+/// the pocket / spanned splits and exit_no_folds are on, and the rule, the weight and the label
+/// clean-up have moved): for the tests of the volume rules' band term ("corner_bound"), their swap
+/// and collapse rules and the split keys switched off.
 Parameters volume_rule_params()
 {
     Parameters p;
@@ -2471,8 +2471,8 @@ Parameters construction_params(nlohmann::json j, const Eigen::MatrixXd& V)
 {
     j["application"] = "topological_offset";
     j["input"] = "unused.msh";
-    // A volume rule asked for without a label clean-up: "off", as a config must say since
-    // 2026-10-28 (the default clean-up "energy_decrease" needs the "surface" rule).
+    // A rule asked for without a label clean-up: "off" (the tests of a rule's terms and operation
+    // rules do not want the default clean-up "one_sided_at_target", which corner_bound refuses).
     if (j.contains("EXPERIMENTAL_band_volume_rule") &&
         j["EXPERIMENTAL_band_volume_rule"] != "surface" &&
         !j.contains("EXPERIMENTAL_label_cleanup")) {
@@ -3951,12 +3951,11 @@ TEST_CASE("surface-offset-error-3d", "[offset][3d]")
 TEST_CASE("surface-energy-keys", "[offset][3d]")
 {
     // EXPERIMENTAL_band_volume_rule "surface" through the spec, as the app reads it: the defaults
-    // of 2026-10-28 (the "surface" rule, offset_amips_weight 100 under every rule -- under
-    // "surface" it weights the AMIPS term alone, the ratio of the two terms --, label_cleanup
-    // "energy_decrease", the pocket and spanned splits and exit_no_folds on, interleaved_smoothing
-    // off), a weight read through, the refusals (a negative weight, the spec's min;
-    // settle_stall_eps away from its default under another rule; the default clean-up under
-    // another rule unless the config turns it off), stencil_order's default 5 and its min 1.
+    // of 2026-10-29 (the "exact" rule, offset_amips_weight 1, label_cleanup "one_sided_at_target",
+    // the pocket and spanned splits and exit_no_folds on, interleaved_smoothing off), a weight
+    // read through, the refusals (a negative weight, the spec's min; settle_stall_eps away from
+    // its default under another rule; "energy_decrease" under another rule; a "one_sided" clean-up
+    // under "corner_bound"), stencil_order's default 5 and its min 1.
     const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
     const auto with_app = [](nlohmann::json j) {
         j["application"] = "topological_offset";
@@ -3970,9 +3969,9 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
         return spec_engine.inject_defaults(with_app(j), spec);
     };
     const Parameters by_default(injected(nlohmann::json::object()));
-    CHECK(by_default.band_volume_rule == "surface");
-    CHECK(by_default.offset_amips_weight == 100.);
-    CHECK(by_default.label_cleanup == "energy_decrease");
+    CHECK(by_default.band_volume_rule == "exact");
+    CHECK(by_default.offset_amips_weight == 1.);
+    CHECK(by_default.label_cleanup == "one_sided_at_target");
     CHECK(by_default.front_pocket_split);
     CHECK(by_default.front_spanned_split);
     CHECK(by_default.exit_no_folds);
@@ -3990,18 +3989,22 @@ TEST_CASE("surface-energy-keys", "[offset][3d]")
     CHECK(by_default.settle_stall_eps == 0.1);
     const Parameters surface(injected({{"EXPERIMENTAL_band_volume_rule", "surface"}}));
     CHECK(surface.band_volume_rule == "surface");
-    CHECK(surface.offset_amips_weight == 100.);
+    CHECK(surface.offset_amips_weight == 1.);
+    CHECK(surface.label_cleanup == "one_sided_at_target");
     const Parameters weighted(injected(
         {{"EXPERIMENTAL_band_volume_rule", "surface"},
          {"offset_amips_weight", 0.25},
          {"settle_stall_eps", 0.05}}));
     CHECK(weighted.offset_amips_weight == 0.25);
     CHECK(weighted.settle_stall_eps == 0.05);
-    // another rule: refused with the default clean-up, read with the clean-up off
-    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_band_volume_rule", "exact"}})});
-    const Parameters exact_w(injected(
-        {{"EXPERIMENTAL_band_volume_rule", "exact"}, {"EXPERIMENTAL_label_cleanup", "off"}}));
-    CHECK(exact_w.offset_amips_weight == 100.);
+    // "corner_bound": refused with the default clean-up (no exact integral to read d through),
+    // read with the clean-up off
+    CHECK_THROWS(Parameters{injected({{"EXPERIMENTAL_band_volume_rule", "corner_bound"}})});
+    const Parameters corner(injected(
+        {{"EXPERIMENTAL_band_volume_rule", "corner_bound"},
+         {"EXPERIMENTAL_label_cleanup", "off"}}));
+    CHECK(corner.band_volume_rule == "corner_bound");
+    CHECK(corner.offset_amips_weight == 1.);
     const Parameters heavy(
         injected({{"EXPERIMENTAL_band_volume_rule", "surface"}, {"offset_amips_weight", 10.}}));
     CHECK(heavy.offset_amips_weight == 10.);
@@ -4071,7 +4074,7 @@ TEST_CASE("surface-energy-sums", "[offset][3d]")
          {"target_distance", 0.2},
          {"EXPERIMENTAL_band_volume_rule", "surface"}},
         g.V);
-    REQUIRE(param.offset_amips_weight == 100.); // the default since 2026-10-28
+    REQUIRE(param.offset_amips_weight == 1.); // the default since 2026-10-29
     const std::filesystem::path out =
         std::filesystem::temp_directory_path() / "wmtk_offset_surface_sums";
     const auto mesh = grid_offset_mesh(g, param, out);

@@ -87,9 +87,9 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_collapse_changed_cells = true;
     /// The weight w of AMIPS in the per-cell energy: in 3D the energy's AMIPS term,
     /// (w / stop_energy^3) vol AMIPS^3 (TopoOffsetTetMesh::cell_energy()); in 2D
-    /// tri_energy = w AMIPS + the offset terms. See the spec. 100 since 2026-10-28 (1 before), as
-    /// the spec's default.
-    double offset_amips_weight = 100.;
+    /// tri_energy = w AMIPS + the offset terms. See the spec. 1, as the spec's default (100 on
+    /// 2026-10-28, with the "surface" rule's defaults; 1 again with "exact" since 2026-10-29).
+    double offset_amips_weight = 1.;
     /// Log-only: per pass, the front vertices whose ring measure crosses the bar (see the spec).
     bool debug_crossings = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
@@ -106,9 +106,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
     /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off",
-    /// "one_sided", "one_sided_tips", "one_sided_at_target" or "energy_decrease" (the default since
-    /// 2026-10-28, as the spec; it needs band_volume_rule "surface" and front_pocket_split).
-    std::string label_cleanup = "energy_decrease";
+    /// "one_sided", "one_sided_tips", "one_sided_at_target" (the default since 2026-10-29, as the
+    /// spec; it needs front_pocket_split) or "energy_decrease" (the default on 2026-10-28; it needs
+    /// band_volume_rule "surface").
+    std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -192,8 +193,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// no band term; the offset term is a surface integral over the front, L /
     /// front_conv^2 (L the bounding box diagonal) sum over the offset faces of (A_f / |S|) sum over the interior stencil of
     /// (d - target_distance)^2 (TopoOffsetTetMesh::surface_face_term()). See the spec doc.
-    /// "surface" is the default since 2026-10-28 ("corner_bound" before), as the spec.
-    std::string band_volume_rule = "surface";
+    /// "exact" is the default since 2026-10-29, as the spec ("surface" on 2026-10-28,
+    /// "corner_bound" before).
+    std::string band_volume_rule = "exact";
     /// EXPERIMENTAL_band_volume_rule "surface" only: the settle test's stall threshold. O* = the
     /// max over the front's stencil points of (d - target_distance)^2; a turn is settled when O*
     /// < front_conv^2 or O*_prev - O* <= settle_stall_eps (O* - front_conv^2) -- TetWild's stall
@@ -558,6 +560,20 @@ struct Parameters : public wmtk::OptimizerParameters
                 "EXPERIMENTAL_label_cleanup \"energy_decrease\" needs "
                 "EXPERIMENTAL_band_volume_rule \"surface\" (this config has \"{}\")",
                 band_volume_rule);
+        }
+        // The "one_sided" modes read d through the exact band integral, which
+        // init_offset_potential() builds under the "exact", "front_flux" and "surface" rules,
+        // EXPERIMENTAL_settle_mark "max" or DEBUG_output: refused here rather than at the first
+        // clean-up, now that "one_sided_at_target" is the default (2026-10-29).
+        if (label_cleanup != "off" && label_cleanup != "energy_decrease" &&
+            band_volume_rule == "corner_bound" && !(settle_refinement && settle_mark == "max") &&
+            !debug_output) {
+            log_and_throw_error(
+                "EXPERIMENTAL_label_cleanup \"{}\" reads the distance through the exact band "
+                "integral, which EXPERIMENTAL_band_volume_rule \"corner_bound\" does not build: "
+                "set "
+                "the clean-up \"off\", or another rule",
+                label_cleanup);
         }
         // The clean-up runs in loop_group()'s EXPERIMENTAL_front_pocket_split path, between the
         // operation passes and the condition-1 splits before the first smoothing pass; the other
