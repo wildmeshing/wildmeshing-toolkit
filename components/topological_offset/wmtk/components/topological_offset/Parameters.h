@@ -93,18 +93,18 @@ struct Parameters : public wmtk::OptimizerParameters
     bool debug_crossings = false;
     /// EXPERIMENTAL_front_pocket_split (see the spec): before every smoothing pass of the loop,
     /// split every pinned cell until none is left (TopoOffsetTetMesh::front_pocket_split()).
-    bool front_pocket_split = false;
+    bool front_pocket_split = true;
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
     /// and faces too, not only pinned cells.
-    bool front_spanned_split = false;
+    bool front_spanned_split = true;
     /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a
     /// foldover face (front_face_field_angle() over foldover_angle) remains.
-    bool exit_no_folds = false;
+    bool exit_no_folds = true;
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
-    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off" (the default),
-    /// "one_sided", "one_sided_tips" or "one_sided_at_target".
-    std::string label_cleanup = "off";
+    /// flip keeps both labels' topology (TopoOffsetTetMesh::label_cleanup()). "off", "one_sided",
+    /// "one_sided_tips" or "one_sided_at_target" (the default).
+    std::string label_cleanup = "one_sided_at_target";
     /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
     /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
     /// behind a travelling front. false: the survivor's own.
@@ -115,7 +115,7 @@ struct Parameters : public wmtk::OptimizerParameters
     bool use_rest_pose = false;
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
-    int max_rounds = 40;
+    int max_rounds = 30;
     // Sampling density of THE measure -- both the criterion's and the energy's, in 2D and 3D --
     // and of the residual diagnostics that share the lattice. Order k puts these points on a
     // face (3D):
@@ -173,9 +173,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// it changes, strictly falls -- judged right after the split, before any smoothing.
     bool split_energy_gate = false;
     /// EXPERIMENTAL (2026-10-12), 3D. The band term b(t) of a band cell in the energy
-    /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound" (the default): vol times the min
-    /// over all input triangles P of the corner mean of (d_P - delta) / delta, an upper bound on
-    /// the cell's part of int_B (d - delta) / delta dV that no split raises. "exact": J_t / delta,
+    /// (TopoOffsetTetMesh::band_cell_term()). "corner_bound": vol times the min over all input
+    /// triangles P of the corner mean of (d_P - delta) / delta, an upper bound on the cell's part
+    /// of int_B (d - delta) / delta dV that no split raises. "exact" (the default): J_t / delta,
     /// J_t = int_t (d - delta) dV in closed form (ExactBandIntegral); an upper bound only on its
     /// rule-(a) pieces. "front_flux": the operations as "exact", the front smoother's band term in
     /// the front form (flux of a field G with div G = d - delta through the band's boundary faces
@@ -187,7 +187,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// by Reynolds' transport theorem over the band's boundary faces, or the ring cells' where a
     /// curved bisector crosses one), and its move is accepted on it, halved up to 4 times.
     /// See the spec doc and TopoOffsetTetMesh, EXACT SWEPT CHANGE.
-    std::string band_volume_rule = "corner_bound";
+    std::string band_volume_rule = "exact";
     /// EXPERIMENTAL (2026-10-09), 3D. Refinement and exit wait for the front to settle: a
     /// turn is settled when the offset energy (E without its AMIPS term) fell by less than the bar
     /// energy

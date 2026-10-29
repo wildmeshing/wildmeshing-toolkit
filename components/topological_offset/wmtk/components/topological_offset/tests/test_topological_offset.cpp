@@ -3179,14 +3179,14 @@ TEST_CASE("optimize-construction-key", "[offset][3d]")
 TEST_CASE("front-conv-rel-of-target", "[offset][3d]")
 {
     // front_conv_rel is a fraction of target_distance since 2026-10-21 (Parameters::init()): the
-    // default 0.025, a value read through, an absolute front_conv with its fraction derived, and
+    // default 0.1, a value read through, an absolute front_conv with its fraction derived, and
     // the refusal of a bar coarser than the offset. The box's diagonal is 13, so a bar read
     // against it would come out 26 times the target-relative one here.
     Eigen::MatrixXd V(2, 3);
     V << 0, 0, 0, 3, 4, 12;
     const Parameters by_default = construction_params({{"target_distance", 0.5}}, V);
-    CHECK(by_default.front_conv_rel == 0.025);
-    CHECK(by_default.front_conv == 0.025 * 0.5);
+    CHECK(by_default.front_conv_rel == 0.1);
+    CHECK(by_default.front_conv == 0.1 * 0.5);
     const Parameters rel =
         construction_params({{"target_distance_rel", 0.02}, {"front_conv_rel", 0.1}}, V);
     CHECK(rel.target_distance == Catch::Approx(0.26));
@@ -3750,10 +3750,10 @@ TEST_CASE("pocket-split-six-edge-cell", "[offset][3d][pocket_split]")
 
 TEST_CASE("pocket-split-key-off", "[offset][3d][pocket_split]")
 {
-    // With EXPERIMENTAL_front_pocket_split false (the default) the slot is a no-op, and so it is
-    // in a TetWild pass with the key on: the first fixture's pinned cell stays and the mesh is
-    // unchanged.
+    // With EXPERIMENTAL_front_pocket_split false the slot is a no-op, and so it is in a TetWild
+    // pass with the key on: the first fixture's pinned cell stays and the mesh is unchanged.
     Parameters param;
+    param.front_pocket_split = false;
     auto mesh = pocket_mesh(param, {2, 0});
     REQUIRE_FALSE(mesh->m_offset_params.front_pocket_split);
     REQUIRE(count_pinned(*mesh) == 1);
