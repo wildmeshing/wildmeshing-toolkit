@@ -93,8 +93,9 @@ public:
      * A vertex on two feature edges is on a curve; one with one, or with three or more, ends a
      * curve or joins several, and stays where it is. A split of a feature edge leaves two
      * feature halves. A curve vertex collapses only along its curve, onto the survivor's
-     * position; a vertex off every curve collapses as before, onto the survivor's position if
-     * that one is on a curve. A feature edge is never swapped, and a curve vertex is smoothed
+     * position -- with set_feature_envelope(), onto the midpoint unless the survivor stays put;
+     * a vertex off every curve collapses as before, onto the survivor's position if that one is
+     * on a curve. A feature edge is never swapped, and a curve vertex is smoothed
      * along its curve only. No swap or collapse makes a triangle holding two curve edges, and
      * remove_feature_ears() removes the ones the input has.
      *
