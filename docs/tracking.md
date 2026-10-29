@@ -36,7 +36,8 @@ On the memory route (`name(options, meshes)`, see `docs/in-memory-io.md`) no fil
 any non-empty `history_output` records the history, and the report returns it as `history`, the
 bytes of the file the file route writes (bytes in Python). `history::write_history` /
 `wm.write_history` save them as that file. simwild also returns the mesh its history starts from
-as the output mesh `history_input`.
+as the output mesh `history_input`. tetwild and simwild can track the volume around the surface
+too, with `volume_history_output`: see *Volumes*.
 
 Map points with the `tracking` application of the same `wmtk_app` binary:
 
@@ -97,7 +98,8 @@ or from its file:
 
 ```python
 outputs, report = wm.isotropic_remeshing({"input": "in", "history_output": "x"}, {"in": mesh})
-t = wm.Tracking(report["history"])          # smoothing="flatten", scaffold="box"; or .load(path)
+t = wm.Tracking(report["history"])          # smoothing="flatten", scaffold="box",
+                                            # collapse_patch="both_stars"; or .load(path)
 ids, bary = t.to_output(faces, bary)        # int64 (n,), float64 (n, 3) -> the output's
 faces, bary = t.to_input(ids, bary)         # and back
 ids, bary, warnings = t.to_output(faces, bary, warnings=True)  # what this call found
@@ -120,7 +122,8 @@ c.feature_points()                          # int64 (p, 2): input vertex, output
 - **Threads.** Building the map releases the GIL and holds the lock component calls hold, as it
   logs through their logger; mapping releases the GIL and writes nothing, so several threads
   may map through one object. A damaged history raises `RuntimeError`; a curve history given to
-  `Tracking` (or the reverse) raises `ValueError`, naming the other class.
+  `Tracking` (or the reverse), or a volume history to either, raises `ValueError`, naming the
+  other class.
 
 Worked examples, one per application, are unit tests:
 - `components/tracking/wmtk/components/tracking/tests/test_tracking.cpp` (isotropic)
@@ -138,8 +141,9 @@ On the memory route the applications record the same history, from the meshes th
 as from their files, and return it as bytes, curves as surfaces. `tracking(options, meshes)`
 takes the history as bytes: it runs `info` on a surface or a curve history and returns its
 report, `transfer` on a surface, and `features` on curves, whose report holds the feature points
-(`feature_points`, pairs of an input and an output vertex, `-1` for none); `map`, whose points
-are text files, throws there: `Tracking` and `CurveTracking` map points in memory. The tests
+(`feature_points`, pairs of an input and an output vertex, `-1` for none), and `volume` on a
+volume history's bytes (see *Volumes*); `map` and `map_volume`, whose points are text files,
+throw there: `Tracking`, `CurveTracking` and `VolumeTracking` map points in memory. The tests
 `tracking-memory-route` (isotropic) and `tracking-memory-route-triwild` (curves) run both.
 
 Remapping attributes:
@@ -591,9 +595,157 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
   On the memory route (`tracking(options, meshes)`) `history` is the bytes of a history,
-  never a file name; `info`, `transfer` and `features` run, `map` is refused. `transfer` needs `input`, a
-  key of `meshes`, and returns the output surface as `mesh` (`mesh_from_surface`), and with
-  `tet_mesh`, another key, that mesh with the fields as `tet_mesh` (`add_surface`).
+  never a file name; `info`, `transfer`, `features` and `volume` run, `map` and `map_volume`
+  are refused. `transfer` needs `input`, a key of `meshes`, and returns the output surface as
+  `mesh` (`mesh_from_surface`), and with `tet_mesh`, another key, that mesh with the fields as
+  `tet_mesh` (`add_surface`).
+
+## Volumes
+
+A tet mesh's tracked surface splits its volume into regions, and the surface history maps only
+the surface. With `volume_history_output` (and `history_output`, which it follows), tetwild and
+simwild in 3D also record the volume around it, and the `tracking` component maps each region
+onto itself -- a point inside stays inside -- between the tet mesh the history starts from and
+the one it ends at.
+
+- **Where it starts and ends.**
+  - simwild: regions are the tets with the same tags. From `<output>_history_input.msh` to
+    `<output>.msh`; on the memory route the output meshes `history_input` and `mesh`.
+  - tetwild: one region, the tracked surface kept on itself. From `<output>_history_input.msh`
+    to `<output>_history_output.msh`, the whole mesh before the filter; on the memory route the
+    output meshes `history_input` and `history_output`. `<output>_final.msh` (`mesh`) is the
+    part the filter keeps: a point of the part dropped has no tet there.
+  - Refused: without `history_output`; with tetwild's `use_legacy_code`, which rebuilds the
+    mesh; with `coarsen_pass` and `coarsen_local_smoothing_passes` above 0, whose collapses
+    smooth a ball of vertices the history does not see; simwild in 2D.
+- **The history** (`history::VolumeHistory`, `src/wmtk/history/VolumeHistory.{hpp,cpp}`). One
+  edit per operation that changed the tracked surface -- collapse, the four swaps, smoothing --
+  with the tets around it before and after, their regions (sets of tags), their vertices'
+  positions and surface vertices, and the range of surface edits it made. Every other operation
+  leaves each region where it is in space, and needs no record.
+  - **Recording.** `TetMesh::start_volume_history(position)` (`TetOptimizerMesh`'s
+    `record_volume_history`) starts a `history::VolumeRecorder` next to the surface's. Each
+    operation captures the tets at its vertices before it changes the mesh and at its commit
+    point, and commits them with the surface edits its surface commit returned; one that made
+    none is dropped. Commits may come from several threads. Vertices get ids of their own,
+    which a consolidation does not change, so a position is written again only when it moved,
+    and a collapse's tets after are derived from its tets before.
+  - **Finishing.** `finish_volume_history(tag_names)` returns the bytes of the file, which
+    `ComponentIO::save_volume_history` writes on the file route and returns as
+    `report["volume_history"]` on the memory route. simwild names the tags as its mesh files
+    label them (`io::collect_tags`), so a tet's groups give its region.
+  - **The file.** `"WMTKVOLH"`, version 2, in the varints and doubles of `BinaryIO.hpp` (the
+    layout is in `VolumeHistory.cpp`), with the key of its surface history: its number of edits
+    and a hash of them (`surface_key`), which the map checks. `read_history` and
+    `write_history` take it as they take a surface's (`is_volume_history`); `to_bytes()` /
+    `from_bytes()`, `save()` / `load()`. A damaged file throws: every edit is checked as read.
+- **The map** (`VolumeMap`, `VolumeMap.{hpp,cpp}`, with `volume_complex` and
+  `volume_geometry`). Per operation and region, pairs of patches, before and after, each
+  embedded star-shaped -- its real geometry when it is, else a fallback (`spherical`, then a
+  convex `bowl` or `convex` realization) -- and a point carried along the ray from one centre
+  to the boundary, across by the boundary map (the identity on the faces the operation keeps,
+  the surface map's local map, `CollapsePatch::removed_star`, on the tracked faces it changes)
+  and back in from the other centre, as far in as it was. Both sides of the surface use the
+  same surface map, so they agree on it. The kinds of pair (`op_kinds`):
+  - collapses: `small` (a side alone), `single` (both ends' stars), `vanishing side` (a side
+    whose tets all hold the survivor), `interior j->i` and `move i` (a surface vertex collapsed
+    into one off the surface, mapped the other way round), and through a decomposition where a
+    side has a chord (`split`, `refined-a`, `unsplit`: the chord split at a virtual vertex, the
+    collapse, the virtual vertex collapsed back) -- with one region all round, the whole
+    collapse goes through it;
+  - swaps: `swap side`, and `swap split` (a 3-2 flip on the surface as an exact split and a
+    collapse);
+  - moves: `move`, one embedding for both sides;
+  - `volume only`: where no pair keeps the surface -- the boundary of an open sheet, a weld --
+    one pair over the whole operation keeps the volume a bijection, and the surface is not kept
+    there (`surface_not_kept`); a point may then change region, and is in its new one from then
+    on.
+  - **Lazily, and kept.** An operation's map is built when points first go through it, and
+    kept for later calls up to `VolumeMapOptions::cache_bytes` (256 MB; 0 keeps none). The
+    points are found in an operation's tets through a grid over the operations' boxes. On
+    tetwild's 1047980 (about 12,000 operations), 20,000 points take 3.0 s in one call, 4.0 s in
+    20 calls of 1,000, and 0.55 s in 200 calls of one.
+  - **Stats** (`VolumeMapStats`, `stats_report()`): maps built and failed, with the reasons,
+    pairs on real geometry and on fallbacks, decompositions, `surface_not_kept`,
+    `inverted_ops` (see below), points that changed region or went through a failed map, and
+    the maps kept.
+  - **Threads.** The const queries may run on several threads at once: the operations built
+    and kept, and the stats, are kept under a mutex, and the maps built outside it.
+  - **No point.** A position that is not a number is passed by, as it is.
+  - **Size.** The volume history takes several times the room of the surface history: on
+    tetwild's 1017020 33.5 MB, on 101954 3.0 MB.
+- **`VolumeTracking`** (`tracking.hpp`), the user-facing wrapper:
+
+  ```cpp
+  const auto v = tracking::VolumeTracking::load(
+      "out.wmtkhist", "out.wmtkvol", "out_history_input.msh", "out_history_output.msh");
+  std::vector<tracking::TetPoint> pts = {{tet, {b0, b1, b2, b3}}};  // a row of the mesh's tets
+  auto there = v.to_output(pts);   // a tet of the output mesh of the point's own region; kNoId none
+  auto xyz = v.map_positions(positions, true);   // VolumePoint: position, region
+  // in memory: VolumeTracking(surface, volume, input_mesh, output_mesh), or (surface, volume)
+  // alone, which maps positions only
+  ```
+
+  A tet point is a row of the mesh's tets, as `io::read_mesh` (`wm.read_mesh`) and the memory
+  route give them, and barycentric coordinates in its corners' order. A point keeps its region:
+  where it lands on a face between two, it is named by a tet of its own. Copies and moves share
+  the map and the meshes.
+- **Python** (`wm.VolumeTracking`):
+
+  ```python
+  v = wm.VolumeTracking(report["history"], report["volume_history"],
+                        outputs["history_input"], outputs["history_output"])  # cache_bytes=...
+  tets, bary = v.to_output(tets, bary)  # int64 (n,), float64 (n, 4); -1 and NaN for no tet
+  tets, bary = v.to_input(tets, bary)
+  xyz, region = v.map_positions(xyz, direction="to_output", regions=None)  # -1: no operation took it
+  v.has_meshes, v.regions, v.tag_names, v.stats
+  p = wm.VolumeTracking(report["history"], report["volume_history"])   # positions only
+  f = wm.VolumeTracking.load(surface_path, volume_path, input_mesh_path, output_mesh_path)
+  ```
+
+  The conventions are `wm.Tracking`'s: `TypeError` and `ValueError` for dtypes and shapes,
+  `ValueError` for a history of the other kind in either place, `RuntimeError` for damaged
+  bytes or a volume history recorded with another surface history; arrays converted under the
+  GIL, which building and mapping release; one object may be shared by threads.
+- **The app.** `volume` builds the map from `volume_history` and checks it on `samples` points
+  near the tracked surface of `tet_mesh`: how far they move, the conformal distortion and
+  det J of the map there, whether they end in their region of `output_tet_mesh`, and the round
+  trip; the report holds it, on both routes (on the memory route the volume history is bytes
+  and the meshes are keys of the call's). Without `tet_mesh` it builds every operation's map.
+  `map_volume` (file route only) maps a file of points, `x y z` or `tet b0 b1 b2 b3`.
+- **Known limitations.**
+  - **Round trips on coarse inputs.** The history holds positions in doubles, the exact ones
+    rounded -- tetwild's and simwild's vertices not rounded yet after the insertion. At those
+    positions some tets of an operation can be flat or turned the other way round, though they
+    are not in the exact positions; the tets there overlap, a position is in two, and a point
+    mapped there and back can come back off by up to the size of the tets around.
+    `inverted_ops` counts such operations, and `volume` warns. On an icosahedron split once
+    (42 vertices) 61 of about 2,200 operations have one, and 17 of 3,000 points come back off,
+    the worst by 1.3% of the diagonal; on a unit cube, 176 and 1.7%; on an icosphere of 162
+    vertices none, and every point comes back to 1e-16. `tetwild-volume-coarse-round-trip`
+    pins it. Mapping by exact positions would need them in the history. Rarer: a fallback
+    embedding's centre next to a boundary apex (`apex_centre`) can be within 1e-17 of the
+    patch from a face plane, and that pair's radial map then loses points too; taking another
+    embedding there made `tracking-example-simwild-volume`'s round trip worse, so it is not
+    done.
+  - **Operations with no map.** Over 200 runs of `volume-ops`'s random operations (25,000 to
+    31,000 operations in all), 6 to 14 operations have no map, in 1.5 to 3.5% of the runs,
+    with the envelope at one cube or two, the sheet's boundary held or not: a 4-4 surface swap no split and collapse makes (about
+    half), a collapse whose surface map flattens both stars where no pair over both stars
+    embeds and the removed star collapsed is no ball, so no volume-only pair either, and a
+    decomposition step with a changed boundary face that is not tracked. Their points keep
+    their place (`failed`, `through_failed`). A looser envelope does not change the rate. The
+    applications' runs in the tests have none.
+  - **det J along intersection curves.** simwild's insertion leaves slivers along the curves
+    where surfaces meet, some of them flat or inverted at the recorded positions. A Jacobian
+    by finite differences there leaves the sliver at once, and is not positive at a few in a
+    thousand to 2% of the points that move (4 of 1,185 on two crossing icospheres, all in
+    slivers); the tests check orientation away from slivers.
+- **Tests.** `test_volume_map.cpp` (the file and its damage, bytes, pairing, the locator, the
+  cache, threads, the memory route's `volume`), `test_volume_ops.cpp` (each kind of pair on a
+  jittered grid recorded by hand, deciding on exact shapes so a seed's run is the same on every
+  platform), the whole runs in `test_tetwild_tracking.cpp` and `test_simwild_tracking.cpp`
+  (Release only), and the `Volume` tests of `tests/python/test_tracking.py`.
 
 ## Extending tracking to another application
 
@@ -883,4 +1035,7 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | tetwild recording | `components/tetwild/.../tetwild.cpp`, `VolumemesherInsertion.cpp` |
 | simwild recording | `components/simwild/.../simwild.cpp`, `EmbedSurface.cpp`, `read_image_msh.cpp`, `SimWildMesh.cpp` |
 | triwild recording | `components/triwild/.../triwild.cpp` |
-| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp` |
+| volume history, recorder, shared binary encoding | `src/wmtk/history/VolumeHistory.{hpp,cpp}`, `BinaryIO.hpp`; TetMesh's `start_volume_history` and captures in `TetMesh.cpp` |
+| volume map, its patches and geometry, VolumeTracking | `components/tracking/.../VolumeMap.{hpp,cpp}`, `volume_complex.{hpp,cpp}`, `volume_geometry.{hpp,cpp}`, `volume_io.{hpp,cpp}`, `tracking.hpp`; the app's `volume_app.cpp` |
+| Python classes | `app/pywildmeshing/tracking_bindings.cpp`; tests in `tests/python/test_tracking.py` |
+| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`, `test_volume_map.cpp`, `test_volume_ops.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp` |

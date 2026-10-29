@@ -255,9 +255,11 @@ struct TetPoint
  * and the two meshes, to name points by: the one the history starts from, which the
  * application writes as <output>_history_input.msh, and the one it ends at -- simwild's
  * <output>.msh; for tetwild, the mesh before its filter, <output>_history_output.msh, of which
- * <output>_final.msh holds the part kept (a point of the part dropped has no tet there). A point
- * keeps its region: where it lands on a face between two, it is named by a tet of
- * its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
+ * <output>_final.msh holds the part kept (a point of the part dropped has no tet there). On the
+ * memory route the histories are the bytes of report["history"] and report["volume_history"],
+ * and the meshes the output meshes history_input, and mesh (simwild) or history_output
+ * (tetwild). A point keeps its region: where it lands on a face between two, it is named by a
+ * tet of its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
  * (kNoId), as does one that is no point: of a tet the mesh does not have, or with coordinates
  * that are not numbers. Without the meshes, it maps positions (map_positions()).
  *
