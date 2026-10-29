@@ -114,8 +114,9 @@ TEST_CASE(
         for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
             if (map.output_face_alive()[f]) pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
         }
+        surface_map::MapWarnings back_warnings;
         const auto there = map.to_input(pts);
-        const auto back = map.to_output(there);
+        const auto back = map.to_output(there, &back_warnings);
         size_t lost = 0, wrong_file = 0;
         double err = 0;
         for (size_t i = 0; i < pts.size(); ++i) {
@@ -140,7 +141,7 @@ TEST_CASE(
             CHECK(lost == 0);
             CHECK(wrong_file == 0);
             CHECK(w.total() == 0);
-            CHECK(map.map_warnings().total() == 0);
+            CHECK(back_warnings.total() == 0);
             CHECK(err < 1e-8);
         } else {
             CHECK(100 * (lost + wrong_file) <= pts.size());
@@ -171,14 +172,15 @@ TEST_CASE("tetwild-surface-history-octocat", "[tetwild][history][.]")
     for (uint64_t f = 0; f < map.output_faces().size(); ++f) {
         if (map.output_face_alive()[f]) pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
     }
-    const auto back = map.to_output(map.to_input(pts));
+    surface_map::MapWarnings back_warnings;
+    const auto back = map.to_output(map.to_input(pts), &back_warnings);
     double err = 0;
     for (size_t i = 0; i < pts.size(); ++i) {
         REQUIRE(back[i].face == pts[i].face);
         err = std::max(err, (back[i].bary - pts[i].bary).cwiseAbs().maxCoeff());
     }
     CHECK(map.build_warnings().total() == 0);
-    CHECK(map.map_warnings().total() == 0);
+    CHECK(back_warnings.total() == 0);
     CHECK(err < 1e-8);
 }
 

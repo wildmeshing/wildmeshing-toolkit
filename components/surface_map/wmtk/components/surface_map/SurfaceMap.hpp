@@ -92,17 +92,20 @@ class SurfaceMap
 public:
     explicit SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions& options = {});
 
-    /// Points on the last state, mapped onto the first.
-    std::vector<SurfacePoint> to_input(std::vector<SurfacePoint> points) const;
-    /// Points on the first state, mapped onto the last.
-    std::vector<SurfacePoint> to_output(std::vector<SurfacePoint> points) const;
+    /// Points on the last state, mapped onto the first. `warnings`, if given, gets what this call
+    /// found. The map is not changed: any number of threads may map through it at once.
+    std::vector<SurfacePoint> to_input(
+        std::vector<SurfacePoint> points,
+        MapWarnings* warnings = nullptr) const;
+    /// Points on the first state, mapped onto the last; see to_input.
+    std::vector<SurfacePoint> to_output(
+        std::vector<SurfacePoint> points,
+        MapWarnings* warnings = nullptr) const;
 
     /// What building the map found.
     const MapWarnings& build_warnings() const { return m_build_warnings; }
     /// The edits (indices into the history) whose local map raised a build warning.
     const std::vector<size_t>& warned_edits() const { return m_warned_edits; }
-    /// What the last to_input() / to_output() found.
-    const MapWarnings& map_warnings() const { return m_map_warnings; }
 
     /// The complex at the start and at the end, every slot, as the history holds them.
     const std::vector<Eigen::Vector3d>& input_vertices() const { return m_in_vertices; }
@@ -166,12 +169,12 @@ private:
         std::vector<uint64_t> born;
     };
 
-    std::vector<SurfacePoint> map(std::vector<SurfacePoint> points, bool forward) const;
+    std::vector<SurfacePoint>
+    map(std::vector<SurfacePoint> points, bool forward, MapWarnings* warnings) const;
 
     std::vector<Step> m_steps;
     MapWarnings m_build_warnings;
     std::vector<size_t> m_warned_edits;
-    mutable MapWarnings m_map_warnings;
     std::array<size_t, 16> m_cells_by_kind = {};
     size_t m_curve_collapses = 0;
     size_t m_kept_moves = 0;

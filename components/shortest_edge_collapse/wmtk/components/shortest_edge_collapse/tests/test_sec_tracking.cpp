@@ -90,8 +90,9 @@ TEST_CASE("tracking-example-shortest-edge-collapse", "[shortest-edge-collapse][t
         }
         pts.push_back({uint64_t(rng() % F_in.rows()), Eigen::Vector3d(1 - a - b, a, b)});
     }
-    const std::vector<OutputPoint> there = tracking.to_output(pts);
-    const std::vector<InputPoint> back = tracking.to_input(there);
+    surface_map::MapWarnings to_output_warnings, to_input_warnings;
+    const std::vector<OutputPoint> there = tracking.to_output(pts, &to_output_warnings);
+    const std::vector<InputPoint> back = tracking.to_input(there, &to_input_warnings);
     const double edge = mean_edge(V_out, F_out);
     double round_trip = 0, moved = 0;
     for (size_t i = 0; i < pts.size(); ++i) {
@@ -106,7 +107,8 @@ TEST_CASE("tracking-example-shortest-edge-collapse", "[shortest-edge-collapse][t
     }
     CHECK(round_trip < 1e-8);
     CHECK(moved < 2 * edge);
-    CHECK(tracking.map().map_warnings().total() == 0);
+    CHECK(to_output_warnings.total() == 0);
+    CHECK(to_input_warnings.total() == 0);
 
     // 4. The same from the command line, as the wmtk binary runs it: a file of points, one
     // `face b0 b1 b2` per line, mapped by the surface_map application.

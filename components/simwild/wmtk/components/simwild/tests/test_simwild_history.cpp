@@ -181,7 +181,8 @@ void check_tags(
             pts.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
             from.push_back(f);
         }
-        const auto back = map.to_input(pts);
+        surface_map::MapWarnings back_warnings;
+        const auto back = map.to_input(pts, &back_warnings);
         size_t lost = 0, wrong = 0;
         for (size_t i = 0; i < back.size(); ++i) {
             if (back[i].face >= map.input_faces().size() || !map.input_face_alive()[back[i].face] ||
@@ -198,7 +199,7 @@ void check_tags(
             "build warnings " << w.total() << " (not a disk " << w.not_a_disk << ", flat "
                               << w.flat_triangle << ", inverted " << w.inverted << ", merged "
                               << w.merged_faces << ", replaced " << w.replaced << "), "
-                              << map.map_warnings().unlocated << " unlocated; " << lost << " lost, "
+                              << back_warnings.unlocated << " unlocated; " << lost << " lost, "
                               << wrong << " on the wrong interface, of " << back.size());
         // A serial run is the same on every platform, and its map is held exact. A parallel one,
         // whose operations the schedule orders, may lose or misplace one face in a hundred.

@@ -119,6 +119,7 @@ void map_points(
     if (!out) log_and_throw_error("Could not write {}", output_points);
     out.precision(17);
     size_t lost = 0, total = 0;
+    MapWarnings warnings;
     timer.start();
     if (forward) {
         std::vector<InputPoint> pts;
@@ -126,7 +127,7 @@ void map_points(
             pts.push_back({id_of(r[0]), Eigen::Vector3d(r[1], r[2], r[3])});
         }
         total = pts.size();
-        for (const OutputPoint& p : tracking.to_output(pts)) {
+        for (const OutputPoint& p : tracking.to_output(pts, &warnings)) {
             const bool none =
                 tracking.output_by_vertices() ? p.vertices[0] == kNoId : p.face == kNoId;
             lost += none;
@@ -151,7 +152,7 @@ void map_points(
             pts.push_back(p);
         }
         total = pts.size();
-        for (const InputPoint& p : tracking.to_input(pts)) {
+        for (const InputPoint& p : tracking.to_input(pts, &warnings)) {
             lost += p.face == kNoId;
             out << id_text(p.face) << " " << p.bary[0] << " " << p.bary[1] << " " << p.bary[2]
                 << "\n";
@@ -164,7 +165,7 @@ void map_points(
         timer.getElapsedTimeInSec(),
         lost,
         output_points);
-    log_warnings("mapping", tracking.map().map_warnings());
+    log_warnings("mapping", warnings);
 }
 
 void run(nlohmann::json json_params, io::ComponentIO& component_io)
@@ -283,8 +284,9 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 why);
         }
         timer.start();
-        const SurfaceData out = transfer_fields(map, in);
-        log_warnings("output centroids to the input", map.map_warnings());
+        MapWarnings warnings;
+        const SurfaceData out = transfer_fields(map, in, &warnings);
+        log_warnings("output centroids to the input", warnings);
         write_surface_msh(output, out);
         const std::string tet_mesh = json_params["tet_mesh"];
         const std::string output_tet_mesh = json_params["output_tet_mesh"];
@@ -382,12 +384,13 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (map.output_face_alive()[f]) centroids.push_back({f, Eigen::Vector3d::Constant(1. / 3)});
     }
     timer.start();
-    const auto in = map.to_input(centroids);
-    log_warnings("output centroids to the input", map.map_warnings());
-    report["to_input_warnings"] = warnings_report(map.map_warnings());
-    const auto back = map.to_output(in);
-    log_warnings("and back to the output", map.map_warnings());
-    report["to_output_warnings"] = warnings_report(map.map_warnings());
+    MapWarnings to_input_warnings, to_output_warnings;
+    const auto in = map.to_input(centroids, &to_input_warnings);
+    log_warnings("output centroids to the input", to_input_warnings);
+    report["to_input_warnings"] = warnings_report(to_input_warnings);
+    const auto back = map.to_output(in, &to_output_warnings);
+    log_warnings("and back to the output", to_output_warnings);
+    report["to_output_warnings"] = warnings_report(to_output_warnings);
     double max_err = 0;
     size_t lost = 0;
     for (size_t i = 0; i < centroids.size(); ++i) {

@@ -1040,19 +1040,26 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     m_out_features = r.feature_edges();
 }
 
-std::vector<SurfacePoint> SurfaceMap::to_input(std::vector<SurfacePoint> points) const
+std::vector<SurfacePoint> SurfaceMap::to_input(
+    std::vector<SurfacePoint> points,
+    MapWarnings* warnings) const
 {
-    return map(std::move(points), false);
+    return map(std::move(points), false, warnings);
 }
 
-std::vector<SurfacePoint> SurfaceMap::to_output(std::vector<SurfacePoint> points) const
+std::vector<SurfacePoint> SurfaceMap::to_output(
+    std::vector<SurfacePoint> points,
+    MapWarnings* warnings) const
 {
-    return map(std::move(points), true);
+    return map(std::move(points), true, warnings);
 }
 
-std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward) const
+std::vector<SurfacePoint>
+SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* warnings) const
 {
-    m_map_warnings = {};
+    // Counted for this call alone: the map itself is never written, so several threads may map
+    // through it at once.
+    MapWarnings w;
     std::unordered_map<uint64_t, std::vector<size_t>> on_face;
     // A point must start on a live face of its side: any other id would be carried along by
     // whichever face a later edit gives that slot.
@@ -1062,7 +1069,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
             on_face[pts[i].face].push_back(i);
         } else {
             pts[i].face = kNone;
-            ++m_map_warnings.unlocated;
+            ++w.unlocated;
         }
     }
     std::vector<std::pair<uint64_t, size_t>> landed;
@@ -1073,7 +1080,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
             std::unordered_map<uint64_t, std::vector<size_t>> renamed;
             for (auto& [f, on] : on_face) {
                 const uint64_t g = f < ids.size() ? ids[f] : kNone;
-                if (g == kNone) m_map_warnings.unlocated += on.size();
+                if (g == kNone) w.unlocated += on.size();
                 for (const size_t i : on) pts[i].face = g;
                 if (g != kNone) renamed[g] = std::move(on);
             }
@@ -1091,7 +1098,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
             for (auto& [f, on] : on_face) {
                 for (const size_t i : on) {
                     if (f >= candidates.size() || candidates[f].empty()) {
-                        ++m_map_warnings.unlocated;
+                        ++w.unlocated;
                         pts[i].face = kNone;
                         continue;
                     }
@@ -1109,7 +1116,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
                             best_l = l;
                         }
                     }
-                    if (!(best >= -1e-9)) ++m_map_warnings.unlocated;
+                    if (!(best >= -1e-9)) ++w.unlocated;
                     best_l = best_l.cwiseMax(0.);
                     best_l = best_l.sum() > 0 ? Eigen::Vector3d(best_l / best_l.sum())
                                               : Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
@@ -1162,7 +1169,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
                             }
                         }
                         if (!(best >= -1e-9)) {
-                            ++m_map_warnings.unlocated;
+                            ++w.unlocated;
                             best_l = best_l.cwiseMax(0.);
                             if (best_l.sum() > 0) {
                                 best_l /= best_l.sum();
@@ -1184,7 +1191,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
         for (const uint64_t f : forward ? s.dead : s.born) {
             const auto it = on_face.find(f);
             if (it == on_face.end()) continue;
-            m_map_warnings.unlocated += it->second.size();
+            w.unlocated += it->second.size();
             for (const size_t i : it->second) pts[i].face = kNone;
             on_face.erase(it);
         }
@@ -1196,6 +1203,7 @@ std::vector<SurfacePoint> SurfaceMap::map(std::vector<SurfacePoint> pts, const b
     } else {
         for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) visit(*it);
     }
+    if (warnings) *warnings = w;
     return pts;
 }
 

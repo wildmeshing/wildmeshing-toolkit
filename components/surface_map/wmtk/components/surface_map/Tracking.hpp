@@ -51,7 +51,8 @@ struct OutputPoint
  *
  * Built from the history alone; see SurfaceMap for how. A point that cannot be mapped -- an
  * input triangle the application dropped, a tracked face the output does not have -- comes back
- * with no face (kNoId), and map().map_warnings() counts it.
+ * with no face (kNoId), and the warnings of the call count it. Mapping never changes the object:
+ * several threads may map through one at once.
  */
 class Tracking
 {
@@ -63,11 +64,16 @@ public:
     /// Whether output points are named by vertex triplets (a tet output) rather than triangles.
     bool output_by_vertices() const { return !m_output_ids.empty(); }
 
-    /// Input points to the output.
-    std::vector<OutputPoint> to_output(const std::vector<InputPoint>& points) const;
+    /// Input points to the output. `warnings`, if given, gets where this call found the map not
+    /// a bijection (SurfaceMap::to_output).
+    std::vector<OutputPoint> to_output(
+        const std::vector<InputPoint>& points,
+        MapWarnings* warnings = nullptr) const;
     /// Output points to the input, the inverse map. A tet output's point may list the face's
     /// three vertices in any order, its barycentric coordinates following them.
-    std::vector<InputPoint> to_input(const std::vector<OutputPoint>& points) const;
+    std::vector<InputPoint> to_input(
+        const std::vector<OutputPoint>& points,
+        MapWarnings* warnings = nullptr) const;
 
     /// The output's tracked surface: for a tet output, its tracked faces by the output's vertex
     /// ids, the triplets an OutputPoint may name; for a surface output, its triangles, by index.

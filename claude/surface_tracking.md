@@ -347,7 +347,9 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - **`relabel`:** a renumbering.
   - **`embed`:** location in space among the sources.
   - **`replace_faces`:** faces with nowhere to go.
-- **Warnings.** `build_warnings()` and `map_warnings()` say where the map is not a bijection:
+- **Warnings.** `build_warnings()`, and the `MapWarnings` a `to_input` / `to_output` call fills
+  when given one, say where the map is not a bijection. A call's warnings are its own: mapping
+  never writes to the map, so several threads may map through one at once:
   - `not_a_disk`: a patch that cannot be flattened, mapped by relabelling -- or a side a
     collapse removes whole, whose points then have no image;
   - `flat_triangle`;

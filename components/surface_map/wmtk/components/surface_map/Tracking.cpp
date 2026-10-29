@@ -33,12 +33,14 @@ std::vector<std::array<uint64_t, 3>> Tracking::output_triangles() const
     return out;
 }
 
-std::vector<OutputPoint> Tracking::to_output(const std::vector<InputPoint>& points) const
+std::vector<OutputPoint> Tracking::to_output(
+    const std::vector<InputPoint>& points,
+    MapWarnings* warnings) const
 {
     std::vector<SurfacePoint> pts;
     pts.reserve(points.size());
     for (const InputPoint& p : points) pts.push_back({p.face, p.bary});
-    const std::vector<SurfacePoint> mapped = m_map.to_output(std::move(pts));
+    const std::vector<SurfacePoint> mapped = m_map.to_output(std::move(pts), warnings);
     const auto& faces = m_map.output_faces();
     const auto& alive = m_map.output_face_alive();
     std::vector<OutputPoint> out(mapped.size());
@@ -58,7 +60,9 @@ std::vector<OutputPoint> Tracking::to_output(const std::vector<InputPoint>& poin
     return out;
 }
 
-std::vector<InputPoint> Tracking::to_input(const std::vector<OutputPoint>& points) const
+std::vector<InputPoint> Tracking::to_input(
+    const std::vector<OutputPoint>& points,
+    MapWarnings* warnings) const
 {
     const auto& faces = m_map.output_faces();
     const auto& alive = m_map.output_face_alive();
@@ -100,7 +104,7 @@ std::vector<InputPoint> Tracking::to_input(const std::vector<OutputPoint>& point
         }
         pts[i] = {it->second, b};
     }
-    const std::vector<SurfacePoint> mapped = m_map.to_input(std::move(pts));
+    const std::vector<SurfacePoint> mapped = m_map.to_input(std::move(pts), warnings);
     std::vector<InputPoint> out(mapped.size());
     for (size_t i = 0; i < mapped.size(); ++i) {
         if (mapped[i].face < m_map.input_faces().size()) out[i] = {mapped[i].face, mapped[i].bary};

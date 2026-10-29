@@ -37,7 +37,7 @@ bool matches_input(const SurfaceMap& map, const SurfaceData& input, std::string&
     return true;
 }
 
-SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input)
+SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input, MapWarnings* warnings)
 {
     // The output's live faces, by rank; for each, its centroid and a point just inside it at
     // each corner, mapped to the input.
@@ -55,7 +55,7 @@ SurfaceData transfer_fields(const SurfaceMap& map, const SurfaceData& input)
             pts.push_back({f, b});
         }
     }
-    const std::vector<SurfacePoint> src = map.to_input(pts);
+    const std::vector<SurfacePoint> src = map.to_input(pts, warnings);
 
     // The vertices the live faces use, numbered by rank, as a consolidation numbers them.
     SurfaceData out;

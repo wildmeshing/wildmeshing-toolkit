@@ -20,6 +20,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <thread>
 
 using namespace wmtk;
 using namespace wmtk::components;
@@ -93,14 +94,15 @@ double round_trip(
     const auto& V = from_input ? map.input_vertices() : map.output_vertices();
     const auto& F = from_input ? map.input_faces() : map.output_faces();
     const auto& other_alive = from_input ? map.output_face_alive() : map.input_face_alive();
-    const auto there = from_input ? map.to_output(pts) : map.to_input(pts);
-    warnings = map.map_warnings().total();
+    surface_map::MapWarnings w;
+    const auto there = from_input ? map.to_output(pts, &w) : map.to_input(pts, &w);
+    warnings = w.total();
     for (const auto& p : there) {
         REQUIRE(p.face < other_alive.size());
         REQUIRE(other_alive[p.face]);
     }
-    const auto back = from_input ? map.to_input(there) : map.to_output(there);
-    warnings += map.map_warnings().total();
+    const auto back = from_input ? map.to_input(there, &w) : map.to_output(there, &w);
+    warnings += w.total();
     double err = 0;
     for (size_t i = 0; i < pts.size(); ++i) {
         REQUIRE(back[i].face < F.size());
@@ -197,8 +199,9 @@ TEST_CASE("surface-map-transfer-face-labels", "[surface_map]")
     INFO(why);
     REQUIRE(surface_map::matches_input(map, reread, why));
 
-    const surface_map::SurfaceData out = surface_map::transfer_fields(map, reread);
-    CHECK(map.map_warnings().total() == 0);
+    surface_map::MapWarnings warnings;
+    const surface_map::SurfaceData out = surface_map::transfer_fields(map, reread, &warnings);
+    CHECK(warnings.total() == 0);
     REQUIRE(out.face_fields.at("side").size() == out.faces.size());
     const auto longest_edge = [](const surface_map::SurfaceData& s) {
         double h = 0;
@@ -338,8 +341,9 @@ TEST_CASE("surface-map-conforming-labels", "[surface_map]")
             pts.push_back({f, Eigen::Vector3d(0.1, 0.8, 0.1)});
             pts.push_back({f, Eigen::Vector3d(0.1, 0.1, 0.8)});
         }
-        const auto src = map.to_input(pts);
-        CHECK(map.map_warnings().total() == 0);
+        surface_map::MapWarnings warnings;
+        const auto src = map.to_input(pts, &warnings);
+        CHECK(warnings.total() == 0);
         size_t mixed = 0;
         for (size_t i = 0; i < out_faces.size(); ++i) {
             const auto label = [&](size_t k) {
@@ -592,8 +596,9 @@ TEST_CASE("surface-map-transfer-uv", "[surface_map]")
         const SurfaceMap map(rec->history());
         CHECK(map.build_warnings().total() == 0);
 
-        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in);
-        CHECK(map.map_warnings().total() == 0);
+        surface_map::MapWarnings warnings;
+        const surface_map::SurfaceData out = surface_map::transfer_fields(map, in, &warnings);
+        CHECK(warnings.total() == 0);
         const auto& ouv = out.corner_fields.at("uv");
         REQUIRE(ouv.size() == out.faces.size());
 
@@ -668,7 +673,8 @@ TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
     const SurfaceMap map(h);
     REQUIRE(map.output_face_alive() == std::vector<uint8_t>{0, 0, 0, 1});
     const auto pts = sample(map.input_face_alive(), 10, 3);
-    const auto there = map.to_output(pts);
+    surface_map::MapWarnings warnings;
+    const auto there = map.to_output(pts, &warnings);
     size_t lost = 0;
     for (size_t i = 0; i < pts.size(); ++i) {
         if (pts[i].face == 1 || pts[i].face == 2) {
@@ -678,7 +684,7 @@ TEST_CASE("surface-map-collapse-removes-a-side", "[surface_map]")
             CHECK(there[i].face == 3);
         }
     }
-    CHECK(map.map_warnings().unlocated == lost);
+    CHECK(warnings.unlocated == lost);
 
     // Back from the output, every point lands on the side that survived.
     for (const auto& p : map.to_input(sample(map.output_face_alive(), 10, 4))) {
@@ -723,9 +729,11 @@ TEST_CASE("surface-map-embed-on-a-sliver", "[surface_map]")
         }
         pts.push_back({0, Eigen::Vector3d(1 - a - b, a, b)});
     }
-    const auto there = map.to_input(pts);
-    const auto back = map.to_output(there);
-    CHECK(map.map_warnings().total() == 0);
+    surface_map::MapWarnings to_input_warnings, to_output_warnings;
+    const auto there = map.to_input(pts, &to_input_warnings);
+    const auto back = map.to_output(there, &to_output_warnings);
+    CHECK(to_input_warnings.total() == 0);
+    CHECK(to_output_warnings.total() == 0);
     double err = 0;
     for (size_t i = 0; i < pts.size(); ++i) {
         REQUIRE(there[i].face == 0);
@@ -796,16 +804,57 @@ TEST_CASE("surface-map-points-on-faces-that-are-not-there", "[surface_map]")
     REQUIRE(map.output_face_alive() == std::vector<uint8_t>{1, 1});
     const Eigen::Vector3d b(0.2, 0.3, 0.5);
 
-    const auto there = map.to_output({{0, b}, {1, b}, {7, b}});
+    surface_map::MapWarnings warnings;
+    const auto there = map.to_output({{0, b}, {1, b}, {7, b}}, &warnings);
     CHECK(there[0].face < 2);
     CHECK(there[1].face >= map.output_faces().size());
     CHECK(there[2].face >= map.output_faces().size());
-    CHECK(map.map_warnings().unlocated == 2);
+    CHECK(warnings.unlocated == 2);
 
-    const auto back = map.to_input({{1, b}, {2, b}});
+    const auto back = map.to_input({{1, b}, {2, b}}, &warnings);
     CHECK(back[0].face == 0);
     CHECK(back[1].face >= map.input_faces().size());
-    CHECK(map.map_warnings().unlocated == 1);
+    CHECK(warnings.unlocated == 1);
+}
+
+TEST_CASE("surface-map-maps-from-several-threads", "[surface_map]")
+{
+    // Mapping does not write to the map: threads mapping through one at once each get their own
+    // points and their own warnings, those a call alone gets. Every thread's batch has as many
+    // points on faces the input does not have as its number, each one unlocated.
+    const auto h = remesh("sphere.obj", 0, 0.6, 2);
+    const SurfaceMap map(h);
+    const auto pts = sample(map.input_face_alive(), 1, 4);
+    std::vector<std::vector<SurfacePoint>> batches(8, pts);
+    for (size_t t = 0; t < batches.size(); ++t) {
+        for (size_t k = 0; k < t; ++k) {
+            batches[t].push_back({map.input_faces().size() + k, Eigen::Vector3d::Constant(1. / 3)});
+        }
+    }
+    const auto serial = map.to_output(pts);
+    std::vector<std::vector<SurfacePoint>> there(batches.size());
+    std::vector<surface_map::MapWarnings> warnings(batches.size());
+    {
+        std::vector<std::thread> threads;
+        for (size_t t = 0; t < batches.size(); ++t) {
+            threads.emplace_back([&, t] {
+                for (int repeat = 0; repeat < 3; ++repeat) {
+                    there[t] = map.to_output(batches[t], &warnings[t]);
+                }
+            });
+        }
+        for (auto& t : threads) t.join();
+    }
+    for (size_t t = 0; t < batches.size(); ++t) {
+        INFO("thread " << t);
+        CHECK(warnings[t].unlocated == t);
+        CHECK(warnings[t].total() == t);
+        REQUIRE(there[t].size() == pts.size() + t);
+        for (size_t i = 0; i < pts.size(); ++i) {
+            CHECK(there[t][i].face == serial[i].face);
+            CHECK(there[t][i].bary == serial[i].bary);
+        }
+    }
 }
 
 TEST_CASE("surface-map-smoothing", "[surface_map]")

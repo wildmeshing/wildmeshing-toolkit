@@ -79,8 +79,9 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     REQUIRE(!tracking.output_by_vertices()); // a surface output names its own triangles
     REQUIRE(tracking.input_faces().size() == size_t(F_in.rows()));
     const std::vector<InputPoint> pts = random_points(F_in.rows(), 500, 7);
-    const std::vector<OutputPoint> there = tracking.to_output(pts);
-    const std::vector<InputPoint> back = tracking.to_input(there);
+    surface_map::MapWarnings to_output_warnings, to_input_warnings;
+    const std::vector<OutputPoint> there = tracking.to_output(pts, &to_output_warnings);
+    const std::vector<InputPoint> back = tracking.to_input(there, &to_input_warnings);
 
     double mean_edge = 0;
     for (Eigen::Index f = 0; f < F_in.rows(); ++f) {
@@ -103,7 +104,8 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     }
     CHECK(round_trip < 1e-8);
     CHECK(moved < 2 * mean_edge);
-    CHECK(tracking.map().map_warnings().total() == 0);
+    CHECK(to_output_warnings.total() == 0);
+    CHECK(to_input_warnings.total() == 0);
 
     // 3. Remap an attribute of your own: per vertex on the input, wanted per vertex on the
     // output. Each output vertex is a point of an output triangle at one corner; map it to the
