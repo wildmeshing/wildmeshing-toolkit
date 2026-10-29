@@ -363,8 +363,8 @@ public:
     /// re-derived. Returns the max AMIPS after it. The final pass and
     /// optimize_construction_pass() both run it; `what` names it in the log. `coarsen` (the final
     /// pass's): mesh_improvement()'s closing coarsening pass (coarsen_mesh()) runs, if coarsen_pass
-    /// allows it, its collapses kept only where neither the max AMIPS over the changed cells nor
-    /// the offset face term over the changed faces rises (collapse_after_connectivity()); one
+    /// allows it, its collapses kept only where the max AMIPS over the changed cells does not rise
+    /// and the changed faces pass the offset half (collapse_after_connectivity()); one
     /// [coarsening] line logs it. max_its 0: no iterations and no bare sweeps, the coarsening
     /// alone -- the "final coarsening" the loop runs when it converges at the final target with
     /// max AMIPS already under stop_energy (no final pass).
@@ -1056,6 +1056,10 @@ public:
     /// (d - delta)^2, a squared length; +inf when a point is unmeasurable, 0 without a front or
     /// a potential.
     double stencil_max_sq_error() const;
+    /// The max over face f's stencil points (face_stencil()) of (d - delta)^2, +inf when a point is
+    /// unmeasurable, 0 without a potential: one face's share of O* (stencil_max_sq_error() is its
+    /// max over the front), and EXPERIMENTAL_settle_mark "stencil"'s test.
+    double face_stencil_max_sq(const std::array<size_t, 3>& f) const;
     /// O_g = int over the front of (d - delta)^2 dS by the faces' stencils, sum_f (A_f / |S|)
     /// sum_k (d(x_k) - delta)^2: the face term without its weight, a squared length times an
     /// area; EXPERIMENTAL_settle_test "bar"'s metric. +inf where a point is unmeasurable.
@@ -2662,7 +2666,9 @@ public:
         return std::max(1., std::cbrt(cell_quality(tid)) / m_params.stop_energy);
     }
     /// The coarsening guard's refusals in the running TetWild pass (collapse_after_connectivity()):
-    /// the max AMIPS over the changed cells rose, the offset face term over the changed faces rose.
+    /// the max AMIPS over the changed cells rose; the offset face term over the changed faces rose
+    /// (under EXPERIMENTAL_settle_mark "stencil": a stencil point of the new faces at or beyond
+    /// front_conv, their max above the removed faces').
     std::atomic<size_t> m_coarsen_reject_amips{0}, m_coarsen_reject_offset{0};
     /// The coarsening guard's before-half (collapse_before_vertex(), coarsen_mesh()'s collapses
     /// only), read back by collapse_after_connectivity(): the largest get_quality() (AMIPS^3) over

@@ -1418,9 +1418,10 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
     // Except in coarsening (the final TetWild pass, since 2026-10-28): the front is held in its
-    // envelope there, and collapse_after_connectivity() keeps a collapse only if the offset face
-    // term over the faces it changes does not rise. The bare coarsening sweeps (no length gate,
-    // no such guard) still leave the front alone.
+    // envelope there, and collapse_after_connectivity() holds the faces a collapse changes to
+    // the offset error (its face term, or its stencil points under EXPERIMENTAL_settle_mark
+    // "stencil"). The bare coarsening sweeps (no length gate, no such guard) still leave the
+    // front alone.
     if (!m_collapse_limit_length && !m_coarsen_mode && VE[v1_id].m_is_on_offset) {
         return collapse_reject(CollapseReject::app_front_unlimited);
     }
@@ -1513,14 +1514,20 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     //   AMIPS: the max of get_quality() (AMIPS^3, the same order as AMIPS) over the cells it
     //     reshaped -- the survivor's ring less v2's untouched cells -- may not exceed the max over
     //     v1's old ring (the cells it reshaped or removed). A tie passes.
-    //   offset: the face term (surface_face_term(), W A_f sum_k mu_k r_k^2, the stencil's
-    //     integral of (d - delta)^2 up to the constant W) summed over the offset faces through
-    //     the survivor that were not there before may not exceed the sum over the faces through
-    //     v1 or v2 before that are gone now. A face in both lists has the same corners at the
-    //     same places and drops out of both sides. A tie passes; an unmeasurable face after
-    //     (+inf) refuses.
-    // No thresholds: a collapse may leave a cell over stop_energy or a stencil point beyond
-    // front_conv, provided neither quantity rises.
+    //   offset, over the offset faces through the survivor that were not there before (after)
+    //     and the faces through v1 or v2 before that are gone now (before); a face in both lists
+    //     has the same corners at the same places and drops out of both sides; an unmeasurable
+    //     face after (+inf) refuses:
+    //     - EXPERIMENTAL_settle_mark "stencil" (Spencer, 2026-10-28: "the max squared error across
+    //       stencil points does not increase to above front_conv^2 ... so long as all stencil
+    //       points are still under the tol, the collapse is fine"): the max over the after faces'
+    //       stencil points of (d - delta)^2 (face_stencil_max_sq()) is under front_conv^2, or no
+    //       larger than that max over the before faces. The exit tolerance of that mode, kept.
+    //     - otherwise: the face term (surface_face_term(), W A_f sum_k mu_k r_k^2, the stencil's
+    //       integral of (d - delta)^2 up to the constant W) summed over the after faces may not
+    //       exceed the sum over the before faces. A tie passes.
+    // No AMIPS threshold: a collapse may leave a cell over stop_energy provided the max over the
+    // cells it changed does not rise.
     if (m_coarsen_mode) {
         const CoarsenCollapse& cc = m_coarsen_collapse.local();
         double amips3_after = 0.;
@@ -1537,21 +1544,32 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
             live_offset_faces_at(v2_id, after);
             wmtk::vector_unique(after);
             const auto& before = cc.faces_before;
+            const bool stencil_max = m_offset_params.settle_mark == "stencil";
+            // A sum of face terms, or under "stencil" a max of face_stencil_max_sq().
+            const auto face_value = [&](const std::array<size_t, 3>& f) {
+                return stencil_max ? face_stencil_max_sq(f) : surface_face_term(f[0], f[1], f[2]);
+            };
+            const auto fold = [stencil_max](double& acc, const double x) {
+                acc = stencil_max ? std::max(acc, x) : acc + x;
+            };
             double s_before = 0., s_after = 0.;
             size_t i = 0, j = 0;
             while (i < before.size() || j < after.size()) {
                 if (j == after.size() || (i < before.size() && before[i] < after[j])) {
-                    s_before += surface_face_term(before[i][0], before[i][1], before[i][2]);
+                    fold(s_before, face_value(before[i]));
                     ++i;
                 } else if (i == before.size() || after[j] < before[i]) {
-                    s_after += surface_face_term(after[j][0], after[j][1], after[j][2]);
+                    fold(s_after, face_value(after[j]));
                     ++j;
                 } else {
                     ++i;
                     ++j;
                 }
             }
-            if (!std::isfinite(s_after) || !(s_after <= s_before)) {
+            const double fc2 = m_offset_params.front_conv * m_offset_params.front_conv;
+            const bool offset_ok =
+                stencil_max ? s_after < fc2 || s_after <= s_before : s_after <= s_before;
+            if (!std::isfinite(s_after) || !offset_ok) {
                 ++iter_cnt_collapse_offset_reject;
                 ++m_coarsen_reject_offset;
                 return false;
@@ -3464,6 +3482,9 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
     const bool edge_mode = m_offset_params.settle_mark == "vertex_edge";
     const bool split_mode = m_offset_params.settle_mark == "vertex_split";
     const bool vertex_mode = m_offset_params.settle_mark == "vertex" || edge_mode || split_mode;
+    const bool stencil_mode = m_offset_params.settle_mark == "stencil";
+    size_t n_over_stencil = 0;
+    double max_stencil = 0.;
     size_t n_front_edges = 0, n_edge_over = 0, n_edge_floor = 0;
     size_t n_off_faces = 0, n_off_centroid = 0;
     double max_edge = 0., max_face = 0.;
@@ -3492,14 +3513,14 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                                               p[0],
                                               p[1],
                                               p[2]);
-            const double outside =
-                (m_band_exact && !rms_mode && !vertex_mode ? m_band_exact->max_distance(p)
-                                                           : min_max_corner_distance(
-                                                                 *m_input_complex_envelope,
-                                                                 m_input_complex_pad,
-                                                                 p.data(),
-                                                                 3)) -
-                delta;
+            const double outside = (m_band_exact && !rms_mode && !vertex_mode && !stencil_mode
+                                        ? m_band_exact->max_distance(p)
+                                        : min_max_corner_distance(
+                                              *m_input_complex_envelope,
+                                              m_input_complex_pad,
+                                              p.data(),
+                                              3)) -
+                                   delta;
             max_inside = std::max(max_inside, inside / eps);
             max_outside = std::max(max_outside, outside / eps);
             const bool over_max = std::max(inside, outside) > eps;
@@ -3528,7 +3549,19 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
             max_rms = std::max(max_rms, std::sqrt(std::max(q, 0.)) / eps);
             n_over_max += over_max;
             n_over_rms += over_rms;
-            if (vertex_mode || !(rms_mode ? over_rms : over_max)) continue;
+            // EXPERIMENTAL_settle_mark "stencil": a point of f's stencil (face_stencil()) at or
+            // beyond front_conv, (d - delta)^2 >= front_conv^2, or unmeasurable -- f's share of
+            // O*, so no face is marked exactly when O* < front_conv^2.
+            bool over_stencil = false;
+            if (stencil_mode) {
+                const double m = face_stencil_max_sq(f);
+                max_stencil = std::max(max_stencil, std::sqrt(m) / eps);
+                over_stencil = !(m < eps * eps);
+                n_over_stencil += over_stencil;
+            }
+            if (vertex_mode || !(stencil_mode ? over_stencil : rms_mode ? over_rms : over_max)) {
+                continue;
+            }
             ++n_marked;
             bool at_floor = true;
             for (const size_t v : f) {
@@ -3722,8 +3755,8 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         settled ? fmt::format(
                       " | marked {} {} of {} by the {} test (max test: {} faces over, max "
                       "inside {:.4} bars, max outside {:.4} bars; rms test: {} faces over, max "
-                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}), {}, {} marked "
-                      "{} at the sizing floor {:.4g}{}",
+                      "{:.4} bars; vertex test: {} vertices over, max {:.4} bars{}{}), {}, {} "
+                      "marked {} at the sizing floor {:.4g}{}",
                       n_marked,
                       vertex_mode ? "vertices" : "faces",
                       vertex_mode ? fmt::format("{} front vertices", n_front_vertices)
@@ -3744,6 +3777,11 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
                                 n_gap_cells,
                                 max_gap)
                           : std::string(),
+                      stencil_mode ? fmt::format(
+                                         "; stencil test: {} faces over, max {:.4} bars",
+                                         n_over_stencil,
+                                         max_stencil)
+                                   : std::string(),
                       refine_now ? fmt::format("halved {} vertices", n_halved)
                                  : std::string("no halving (this loop does not refine)"),
                       n_floor,
@@ -4466,32 +4504,31 @@ double TopoOffsetTetMesh::stencil_max_sq_error() const
     // target_level(), is 1: the euclidean field's value is d / delta). Per face on the mesh's
     // threads, the max taken over the faces afterwards (a max does not depend on the order).
     if (!m_offset_potential) return 0.;
-    const auto& stencil = face_stencil();
-    const double delta = m_offset_params.target_distance;
     const std::vector<std::array<size_t, 3>> faces = offset_surface_faces();
     std::vector<double> e(faces.size(), 0.);
-    const auto& VA = std::as_const(m_vertex_attribute);
     diagnostic_parallel_for(faces.size(), kDiagnosticChunk, [&](const size_t b, const size_t en) {
-        for (size_t k = b; k < en; ++k) {
-            const Vector3d& p0 = VA[faces[k][0]].m_posf;
-            const Vector3d& p1 = VA[faces[k][1]].m_posf;
-            const Vector3d& p2 = VA[faces[k][2]].m_posf;
-            double m = 0.;
-            for (const auto& w : stencil) {
-                const double r =
-                    m_offset_potential->relative_residual(w[0] * p0 + w[1] * p1 + w[2] * p2);
-                if (!std::isfinite(r)) {
-                    m = std::numeric_limits<double>::infinity();
-                    break;
-                }
-                m = std::max(m, (delta * r) * (delta * r));
-            }
-            e[k] = m;
-        }
+        for (size_t k = b; k < en; ++k) e[k] = face_stencil_max_sq(faces[k]);
     });
     double o = 0.;
     for (const double x : e) o = std::max(o, x);
     return o;
+}
+
+double TopoOffsetTetMesh::face_stencil_max_sq(const std::array<size_t, 3>& f) const
+{
+    if (!m_offset_potential) return 0.;
+    const double delta = m_offset_params.target_distance;
+    const auto& VA = std::as_const(m_vertex_attribute);
+    const Vector3d& p0 = VA[f[0]].m_posf;
+    const Vector3d& p1 = VA[f[1]].m_posf;
+    const Vector3d& p2 = VA[f[2]].m_posf;
+    double m = 0.;
+    for (const auto& w : face_stencil()) {
+        const double r = m_offset_potential->relative_residual(w[0] * p0 + w[1] * p1 + w[2] * p2);
+        if (!std::isfinite(r)) return std::numeric_limits<double>::infinity();
+        m = std::max(m, (delta * r) * (delta * r));
+    }
+    return m;
 }
 
 void TopoOffsetTetMesh::live_offset_faces_at(
@@ -6358,13 +6395,16 @@ double TopoOffsetTetMesh::tetwild_pass(const char* what, const int max_its, cons
         const auto bars = [fc](const double o) { return fc > 0. ? std::sqrt(o) / fc : 0.; };
         logger().info(
             "\t[coarsening] {}: {} collapses accepted | refused {} for raising the max AMIPS of "
-            "the cells they change, {} for raising the offset face term of the faces they "
-            "change | max stencil-point |d - delta| at the pass's start {:.4g}, after {:.4g} "
-            "({:.4g} -> {:.4g} bars, front_conv {:.6g})",
+            "the cells they change, {} for {} | max stencil-point |d - delta| at the pass's "
+            "start {:.4g}, after {:.4g} ({:.4g} -> {:.4g} bars, front_conv {:.6g})",
             what,
             m_coarsen_stats.accepted,
             m_coarsen_reject_amips.load(),
             m_coarsen_reject_offset.load(),
+            m_offset_params.settle_mark == "stencil"
+                ? "a stencil point of the faces they make at or beyond front_conv, above the max "
+                  "of the faces they remove (EXPERIMENTAL_settle_mark \"stencil\")"
+                : "raising the offset face term of the faces they change",
             std::sqrt(o_star_before),
             std::sqrt(o_star),
             bars(o_star_before),

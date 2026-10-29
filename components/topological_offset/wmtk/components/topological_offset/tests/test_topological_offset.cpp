@@ -4205,18 +4205,28 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
     // boundary); a face listed before and after drops out of both sums. Per try: a kept collapse
     // was predicted to pass both halves and leaves exactly the predicted faces at v2; a refusal
     // by the AMIPS half was predicted to raise the max; one by the offset half to keep the max
-    // and raise the sum. Some kept collapses change offset faces (a v1 off the front merged into
-    // a front v2); on this grid every front v1 that reaches the guard is refused, by either half.
-    // Run (a) at the defaults and (b) at stop_energy 1 and front_conv 1e-12, under which the old
-    // threshold guard (every cell under stop_energy, every stencil point within front_conv)
-    // refused every collapse: the same collapses are kept and refused at both.
+    // and fail its offset test. The offset test, under the default settle_mark: the sum of the
+    // face terms rises; under EXPERIMENTAL_settle_mark "stencil": the max over the new faces'
+    // stencil points of (d - delta)^2 (read point by point off the potential here) is at or over
+    // front_conv^2 and above that max over the removed faces. Some kept collapses change offset
+    // faces (a v1 off the front merged into a front v2); under the sum, on this grid, every front
+    // v1 that reaches the guard is refused, by either half. Sum: (a) at the defaults and (b) at
+    // stop_energy 1 and front_conv 1e-12, under which the old threshold guard (every cell under
+    // stop_energy, every stencil point within front_conv) refused every collapse: the same
+    // collapses are kept and refused at both. "stencil": (c) front_conv 1e6, every point under
+    // it: the offset half refuses nothing (front v1 collapses that pass the guard are still
+    // refused after it on this grid, by the engine's later checks); (d) front_conv 1e-12,
+    // none under it: refusals by the offset half (a rise of the max); (e) the defaults.
     const GridInput g = grid_input(5);
     // The mesh holds its Parameters by reference: each lives as long as the test.
     std::vector<std::unique_ptr<Parameters>> params;
-    const auto build = [&](const char* name) {
+    const auto build = [&](const char* name, const char* mark) {
         params.push_back(
             std::make_unique<Parameters>(construction_params(
-                {{"offset_selection", "tag_0"}, {"num_threads", 0}, {"target_distance", 0.2}},
+                {{"offset_selection", "tag_0"},
+                 {"num_threads", 0},
+                 {"target_distance", 0.2},
+                 {"EXPERIMENTAL_settle_mark", mark}},
                 g.V)));
         auto mesh =
             grid_offset_mesh(g, *params.back(), std::filesystem::temp_directory_path() / name);
@@ -4282,14 +4292,39 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
         mesh.live_offset_faces_at(v2, f2);
         std::set<Face> before(f1.begin(), f1.end());
         before.insert(f2.begin(), f2.end());
+        const bool stencil = mesh.m_offset_params.settle_mark == "stencil";
+        const double delta = mesh.m_offset_params.target_distance;
+        const auto stencil_max = [&](const Face& f) {
+            double m = 0.;
+            for (const auto& w : mesh.face_stencil()) {
+                Vector3d q = Vector3d::Zero();
+                for (int j = 0; j < 3; ++j) {
+                    q += w[size_t(j)] * mesh.m_vertex_attribute[f[size_t(j)]].m_posf;
+                }
+                const double r = mesh.m_offset_potential->relative_residual(q);
+                m = std::isfinite(r) ? std::max(m, (delta * r) * (delta * r))
+                                     : std::numeric_limits<double>::infinity();
+            }
+            return m;
+        };
         double s_before = 0., s_after = 0.;
         for (const Face& f : before) {
-            if (!p.after.count(f)) s_before += mesh.surface_face_term(f[0], f[1], f[2]);
+            if (p.after.count(f)) continue;
+            if (stencil)
+                s_before = std::max(s_before, stencil_max(f));
+            else
+                s_before += mesh.surface_face_term(f[0], f[1], f[2]);
         }
         for (const Face& f : p.after) {
-            if (!before.count(f)) s_after += mesh.surface_face_term(f[0], f[1], f[2]);
+            if (before.count(f)) continue;
+            if (stencil)
+                s_after = std::max(s_after, stencil_max(f));
+            else
+                s_after += mesh.surface_face_term(f[0], f[1], f[2]);
         }
-        p.offset_ok = std::isfinite(s_after) && s_after <= s_before;
+        const double fc = mesh.m_offset_params.front_conv;
+        p.offset_ok = std::isfinite(s_after) &&
+                      (stencil ? s_after < fc * fc || s_after <= s_before : s_after <= s_before);
         return p;
     };
     struct Tally
@@ -4345,8 +4380,8 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
         }
         return t;
     };
-    const auto run = [&](const char* name, const double stop, const double fc) {
-        auto mesh = build(name);
+    const auto run = [&](const char* name, const char* mark, const double stop, const double fc) {
+        auto mesh = build(name, mark);
         if (stop > 0.) mesh->m_params.stop_energy = stop;
         if (fc > 0.) mesh->m_offset_params.front_conv = fc;
         const Tally o = sweep(*mesh, false, 40);
@@ -4360,18 +4395,23 @@ TEST_CASE("final-coarsening-guard", "[offset][3d]")
         CHECK(o.kept > 0);
         CHECK(o.kept_faces_changed > 0);
         CHECK(o.refused_amips > 0);
-        CHECK(o.refused_offset > 0);
         CHECK(f.refused_amips > 0);
-        CHECK(f.refused_offset > 0);
         CHECK(o.wrong + f.wrong == 0);
         CHECK(o.face_mismatch + f.face_mismatch == 0);
         CHECK(mesh->check_mesh_connectivity_validity());
         return std::make_pair(o, f);
     };
-    const auto wide = run("wmtk_offset_coarsen_defaults", 0., 0.);
-    const auto tight = run("wmtk_offset_coarsen_tight", 1., 1e-12);
+    const auto wide = run("wmtk_offset_coarsen_defaults", "vertex_edge", 0., 0.);
+    const auto tight = run("wmtk_offset_coarsen_tight", "vertex_edge", 1., 1e-12);
+    CHECK(wide.first.refused_offset > 0);
+    CHECK(wide.second.refused_offset > 0);
     CHECK(wide.first == tight.first);
     CHECK(wide.second == tight.second);
+    const auto st_open = run("wmtk_offset_coarsen_stencil_open", "stencil", 0., 1e6);
+    CHECK(st_open.first.refused_offset + st_open.second.refused_offset == 0);
+    const auto st_tight = run("wmtk_offset_coarsen_stencil_tight", "stencil", 0., 1e-12);
+    CHECK(st_tight.first.refused_offset + st_tight.second.refused_offset > 0);
+    run("wmtk_offset_coarsen_stencil_defaults", "stencil", 0., 0.);
     // (d) The final coarsening alone (tetwild_pass(what, 0, true): no iterations, the loop's
     // setup put back afterwards), at wide bounds on a mesh as the loop leaves it: collapses are
     // kept, the cell count falls, the pass's state is undone; with coarsen_pass off it does
@@ -4473,4 +4513,145 @@ TEST_CASE("label-cleanup-energy-decrease", "[offset][3d]")
     mesh->label_cleanup("test again");
     const double e2 = mesh->global_energy();
     CHECK(std::memcmp(&e1, &e2, sizeof(double)) == 0);
+}
+
+TEST_CASE("settle-mark-stencil", "[offset][3d]")
+{
+    // EXPERIMENTAL_settle_mark "stencil" (2026-10-28): on a settled turn a front face with a point
+    // of its offset stencil at or beyond front_conv, (d - delta)^2 >= front_conv^2, has its corners
+    // halved and holds the exit, so the loop exits only with every stencil point within front_conv.
+    // On the 5 x 5 x 5 grid constructed at 0.2 (the default FEM stencil, order 5), the per-face max
+    // of (d - delta)^2 is computed here point by point from the potential; O* is its max. One turn
+    // of the settle test (e_prev = O*, so the turn settles) is run with front_conv set (a) just
+    // above sqrt(O*): exit, nothing halved; (b) just below: no exit, the corners of exactly the
+    // faces at the max halved; (c) at the median face: no exit, every corner of a face over
+    // halved; refine_now false: the same verdicts, nothing halved. (d) The default "vertex_edge"
+    // at (b)'s front_conv, where every front vertex is within it: exit -- the stencil points it
+    // does not test are over.
+    {
+        const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
+        jse::JSE spec_engine;
+        spec_engine.strict = true;
+        nlohmann::json j = {
+            {"application", "topological_offset"},
+            {"input", "unused.msh"},
+            {"EXPERIMENTAL_settle_mark", "stencil"}};
+        REQUIRE(spec_engine.verify_json(j, spec));
+        nlohmann::json in = spec_engine.inject_defaults(j, spec);
+        CHECK(Parameters(in).settle_mark == "stencil");
+        j["EXPERIMENTAL_settle_mark"] = "stencils";
+        CHECK_FALSE(spec_engine.verify_json(j, spec));
+        in["EXPERIMENTAL_settle_mark"] = "stencils";
+        CHECK_THROWS(Parameters{in});
+    }
+    const GridInput g = grid_input(5);
+    std::vector<std::unique_ptr<Parameters>> params;
+    const auto build = [&](const char* mark, const char* name) {
+        params.push_back(
+            std::make_unique<Parameters>(construction_params(
+                {{"offset_selection", "tag_0"},
+                 {"num_threads", 0},
+                 {"target_distance", 0.2},
+                 {"EXPERIMENTAL_settle_mark", mark}},
+                g.V)));
+        return grid_offset_mesh(g, *params.back(), std::filesystem::temp_directory_path() / name);
+    };
+    auto mesh = build("stencil", "wmtk_offset_settle_stencil");
+    REQUIRE(mesh->m_offset_params.settle_mark == "stencil");
+    REQUIRE(mesh->m_offset_params.stencil_type == "fem");
+    const double delta = mesh->m_offset_params.target_distance;
+    const auto faces = mesh->offset_surface_faces();
+    REQUIRE(!faces.empty());
+    std::vector<double> m(faces.size(), 0.);
+    for (size_t k = 0; k < faces.size(); ++k) {
+        for (const auto& w : mesh->face_stencil()) {
+            Vector3d q = Vector3d::Zero();
+            for (int j = 0; j < 3; ++j) {
+                q += w[size_t(j)] * mesh->m_vertex_attribute[faces[k][size_t(j)]].m_posf;
+            }
+            const double r = mesh->m_offset_potential->relative_residual(q);
+            REQUIRE(std::isfinite(r));
+            m[k] = std::max(m[k], (delta * r) * (delta * r));
+        }
+        CHECK(mesh->face_stencil_max_sq(faces[k]) == m[k]);
+    }
+    const double o_star = *std::max_element(m.begin(), m.end());
+    CHECK(mesh->stencil_max_sq_error() == o_star);
+    REQUIRE(o_star > 0.);
+
+    const size_t nv = mesh->vert_capacity();
+    std::vector<double> s0(nv);
+    for (size_t v = 0; v < nv; ++v) s0[v] = mesh->m_vertex_attribute[v].m_sizing_scalar;
+    const double s_floor = std::max(
+        mesh->m_offset_params.min_sizing_scalar,
+        mesh->m_offset_params.min_edge_length / mesh->m_params.l);
+    struct Turn
+    {
+        bool exit = false;
+        size_t lowered = 0, corners_not_halved = 0, corners = 0;
+    };
+    const auto turn = [&](TopoOffsetTetMesh& me, const double fc, const bool refine) {
+        me.m_offset_params.front_conv = fc;
+        double e_prev = me.settle_metric();
+        Turn t;
+        t.exit = me.settle_refinement_turn(1, e_prev, refine);
+        std::set<size_t> corners;
+        for (size_t k = 0; k < faces.size(); ++k) {
+            if (!(m[k] < fc * fc)) corners.insert(faces[k].begin(), faces[k].end());
+        }
+        t.corners = corners.size();
+        for (size_t v = 0; v < nv; ++v) {
+            double& s = me.m_vertex_attribute[v].m_sizing_scalar;
+            if (s < s0[v]) ++t.lowered;
+            if (corners.count(v) && !(s <= std::max(0.5 * s0[v], s_floor))) ++t.corners_not_halved;
+            s = s0[v]; // put back for the next turn
+        }
+        return t;
+    };
+    {
+        const Turn a = turn(*mesh, std::sqrt(o_star) * (1. + 1e-6), true);
+        CHECK(a.exit);
+        CHECK(a.corners == 0);
+        CHECK(a.lowered == 0);
+    }
+    const double fc_b = std::sqrt(o_star) * (1. - 1e-6);
+    {
+        const Turn b = turn(*mesh, fc_b, true);
+        INFO("corners of the faces at the max " << b.corners << ", lowered " << b.lowered);
+        CHECK_FALSE(b.exit);
+        CHECK(b.corners >= 3);
+        CHECK(b.corners_not_halved == 0);
+        CHECK(b.lowered >= b.corners);
+        const Turn b0 = turn(*mesh, fc_b, false);
+        CHECK_FALSE(b0.exit);
+        CHECK(b0.lowered == 0);
+    }
+    {
+        std::vector<double> sorted = m;
+        std::sort(sorted.begin(), sorted.end());
+        const double fc_c = std::sqrt(sorted[sorted.size() / 2]);
+        REQUIRE(fc_c > 0.);
+        const Turn c = turn(*mesh, fc_c, true);
+        INFO("corners of the faces over " << c.corners << ", lowered " << c.lowered);
+        CHECK_FALSE(c.exit);
+        CHECK(c.corners > 3);
+        CHECK(c.corners_not_halved == 0);
+        CHECK(c.lowered >= c.corners);
+    }
+    {
+        auto def = build("vertex_edge", "wmtk_offset_settle_vertex_edge");
+        double worst_vertex = 0.;
+        std::set<size_t> front;
+        for (const auto& f : faces) front.insert(f.begin(), f.end());
+        for (const size_t v : front) {
+            const double r =
+                def->m_offset_potential->relative_residual(def->m_vertex_attribute[v].m_posf);
+            worst_vertex = std::max(worst_vertex, std::abs(delta * r));
+        }
+        INFO("worst front vertex " << worst_vertex << ", front_conv " << fc_b);
+        REQUIRE(worst_vertex < fc_b);
+        def->m_offset_params.front_conv = fc_b;
+        double e_prev = def->settle_metric();
+        CHECK(def->settle_refinement_turn(1, e_prev, false));
+    }
 }

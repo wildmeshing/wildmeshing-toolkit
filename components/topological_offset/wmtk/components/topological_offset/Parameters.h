@@ -279,7 +279,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// exceeds its bar energy, X_f = (1/2 delta) int_f (d - delta)^2 cos(theta) dA >
     /// front_conv^2 area(f) / (2 delta), i.e. the mean over f of (d - delta)^2 cos(theta) exceeds
     /// front_conv^2 (theta between the face's normal, out of the band, and grad d; signed), by the
-    /// 3-edge-midpoint rule. See the spec doc.
+    /// 3-edge-midpoint rule. "stencil" (2026-10-28): a face with a point of its offset stencil
+    /// (stencil_order, EXPERIMENTAL_stencil_type) at or beyond front_conv, (d - target_distance)^2
+    /// >= front_conv^2, or unmeasurable, has its corners' sizing halved; the exit needs none, i.e.
+    /// every stencil point within front_conv. See the spec doc.
     std::string settle_mark = "vertex_edge";
     std::string output_path; // no extension
     bool save_vtu;
@@ -476,10 +479,11 @@ struct Parameters : public wmtk::OptimizerParameters
         allow_mult_comp = json_params["TESTING_allow_mult_comp"];
         settle_mark = json_params["EXPERIMENTAL_settle_mark"];
         if (settle_mark != "max" && settle_mark != "rms" && settle_mark != "vertex" &&
-            settle_mark != "vertex_edge" && settle_mark != "vertex_split") {
+            settle_mark != "vertex_edge" && settle_mark != "vertex_split" &&
+            settle_mark != "stencil") {
             log_and_throw_error(
-                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"vertex_edge\" or "
-                "\"vertex_split\", not \"{}\"",
+                "EXPERIMENTAL_settle_mark is \"max\", \"rms\", \"vertex\", \"vertex_edge\", "
+                "\"vertex_split\" or \"stencil\", not \"{}\"",
                 settle_mark);
         }
         output_path = json_params["output"];
