@@ -180,6 +180,14 @@ std::optional<StarPatch> StarPatch::make(const Tets& T, const Positions& P)
     return S;
 }
 
+size_t StarPatch::bytes() const
+{
+    return sizeof(*this) + m_T.capacity() * sizeof(Tet) +
+           (m_P.capacity() + normals.capacity() + corners.capacity()) * sizeof(Eigen::Vector3d) +
+           (m_F.capacity() + m_Fo.capacity()) * sizeof(Tri) +
+           m_index.capacity() * sizeof(m_index[0]);
+}
+
 std::optional<Vid> StarPatch::boundary_apex() const
 {
     const auto c = common_vertex(m_T);

@@ -31,8 +31,8 @@ struct VolumePoint
 /// What building and using a volume map found.
 struct VolumeMapStats
 {
-    /// Operations whose map was built (each is built when points need it, and dropped once
-    /// they went through).
+    /// Operations whose map was built (each is built when points first need it, and kept for
+    /// the next while VolumeMapOptions::cache_bytes has room).
     size_t built = 0;
     /// Operations whose map could not be built: their points keep their place, which is not a
     /// bijection of the region there. With the reason, by count.
@@ -51,6 +51,18 @@ struct VolumeMapStats
     /// Points that ended in a tet of another region, which a bijection of each region never
     /// does; points whose op map failed.
     size_t region_changed = 0, through_failed = 0;
+    /// The operations' maps kept for later calls (VolumeMapOptions::cache_bytes), and about the
+    /// bytes they take, now.
+    size_t kept = 0, kept_bytes = 0;
+};
+
+/// How a VolumeMap keeps what it builds.
+struct VolumeMapOptions
+{
+    /// The operations' maps are built when points first go through them, and kept, for the
+    /// points of later calls, up to about this many bytes in all; past it, those used longest
+    /// ago are dropped, to be built again if needed. 0 keeps none past the call that built it.
+    size_t cache_bytes = size_t(256) << 20;
 };
 
 /**
@@ -67,14 +79,18 @@ struct VolumeMapStats
  * whose side has a chord goes through a decomposition (split, collapse, unsplit), a swap that
  * cannot be one pair through an exact split and a collapse.
  *
- * The const queries -- to_output(), to_input(), build_all(), stats() -- may be called on one map
- * from several threads at once: what they share, the operations built and the stats, is kept
- * under a mutex, and each call counts its points' stats apart and adds them at its end.
+ * The const queries -- to_output(), to_input(), build_all(), op_kinds(), stats() -- may be
+ * called on one map from several threads at once: what they share, the operations built and
+ * kept and the stats, is kept under a mutex, and each call counts its points' stats apart and
+ * adds them at its end.
  */
 class VolumeMap
 {
 public:
-    VolumeMap(const history::SurfaceHistory& surface, history::VolumeHistory volume);
+    VolumeMap(
+        const history::SurfaceHistory& surface,
+        history::VolumeHistory volume,
+        const VolumeMapOptions& options = {});
     ~VolumeMap();
     VolumeMap(VolumeMap&&) noexcept;
 
@@ -94,6 +110,9 @@ public:
     VolumeMapStats stats() const;
     /// Builds every operation's map, for the stats.
     void build_all() const;
+    /// The kinds of the patch pairs operation k's map is made of ("single", "move", "swap
+    /// side", a decomposition's steps, ...); none if it cannot be built. For tests and reports.
+    std::vector<std::string> op_kinds(size_t k) const;
 
     /// One operation's map, and its tracked faces before and after (in VolumeMap.cpp).
     struct OpMap;
@@ -101,16 +120,19 @@ public:
 
 private:
     std::vector<VolumePoint> map(std::vector<VolumePoint> points, bool forward) const;
-    /// Operation k's map; nothing if it cannot be built. The stats count each operation once,
-    /// however often it is built.
-    std::unique_ptr<OpMap> op(size_t k) const;
+    /// Operation k's map, from the cache or built; nothing if it cannot be built. The stats
+    /// count each operation once, however often it is built.
+    std::shared_ptr<const OpMap> op(size_t k) const;
 
     history::VolumeHistory m_volume;
+    VolumeMapOptions m_options;
     SurfaceMap m_surface;
-    /// Per volume edit: its tracked faces before and after.
+    /// Per volume edit: its tracked faces before and after, and the box of its positions,
+    /// before and after it, which a point must be in to be in its tets.
     std::vector<std::unique_ptr<Faces>> m_faces;
+    std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> m_boxes;
     /// What the const queries share (VolumeMap.cpp): which operations were built and which
-    /// failed, and the stats, with the mutex they are kept under.
+    /// failed, the maps kept, and the stats, with the mutex they are kept under.
     struct Shared;
     std::unique_ptr<Shared> m_shared;
 };

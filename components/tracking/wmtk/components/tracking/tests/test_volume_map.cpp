@@ -614,6 +614,37 @@ TEST_CASE("volume-map-threads", "[volume_map]")
     CHECK(st.through_failed == (forward + backward) * (1 + n_threads * calls));
 }
 
+TEST_CASE("volume-map-cache", "[volume_map]")
+{
+    // The maps built are kept for later calls up to the cache's bytes, the least recently used
+    // dropped past them, and a map maps the same whatever it keeps.
+    const history::SurfaceHistory h = square_history();
+    const history::VolumeHistory v = square_volume(h);
+    std::vector<VolumePoint> pts;
+    for (const auto& t : v.edits[0].tets) {
+        VolumePoint p;
+        p.position.setZero();
+        for (int k = 0; k < 4; ++k) p.position += 0.25 * v.edits[0].positions[t[k]];
+        pts.push_back(p);
+    }
+    const VolumeMap kept(h, v);
+    const auto want = kept.to_output(pts);
+    CHECK(kept.stats().kept == 1);
+    CHECK(kept.stats().kept_bytes > 0);
+    for (const size_t bytes : {size_t(0), size_t(1), kept.stats().kept_bytes}) {
+        VolumeMapOptions o;
+        o.cache_bytes = bytes;
+        const VolumeMap map(h, v, o);
+        for (int call = 0; call < 3; ++call) {
+            const auto there = map.to_output(pts);
+            for (size_t i = 0; i < pts.size(); ++i) CHECK(there[i].position == want[i].position);
+        }
+        CHECK(map.stats().built == 1);
+        CHECK(map.stats().kept == (bytes >= kept.stats().kept_bytes ? 1 : 0));
+    }
+    CHECK(kept.op_kinds(0) == std::vector<std::string>{"move", "move"});
+}
+
 TEST_CASE("volume-map-non-finite", "[volume_map]")
 {
     // A point that is not a number is passed by, whatever else is mapped with it: a rational of a

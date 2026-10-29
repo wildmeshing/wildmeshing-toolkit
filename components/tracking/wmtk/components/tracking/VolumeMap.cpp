@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <list>
 #include <mutex>
 #include <set>
 #include <stdexcept>
@@ -121,6 +122,8 @@ struct VolumeMap::OpMap
         virtual bool has(const Tet& t, bool forward) const = 0;
         /// Maps a point, its tet (any vertex order) and barycentric coordinates in that order.
         virtual void map(Tet& t, Eigen::Vector4d& b, bool forward) const = 0;
+        /// About the memory it holds, in bytes.
+        virtual size_t bytes() const = 0;
         std::string kind;
         bool real = true;
     };
@@ -128,6 +131,15 @@ struct VolumeMap::OpMap
     /// A real vertex after the operation -> its name in the pairs' complex after (a collapse
     /// mapped the other way round).
     std::map<Vid, Vid> rename;
+    /// About the memory it holds, in bytes, and what it shares among its pairs (the cell
+    /// index of the cap maps).
+    size_t bytes() const
+    {
+        size_t n = sizeof(*this) + shared_bytes + rename.size() * 48;
+        for (const auto& p : pairs) n += p->bytes();
+        return n;
+    }
+    size_t shared_bytes = 0;
 
     /// Whether a pair mapped the point.
     bool apply(Tet& t, Eigen::Vector4d& b, const bool forward) const
@@ -199,6 +211,11 @@ struct RadialPair : Pair
         t = S2.tets()[loc.tet];
         b = loc.b;
     }
+    size_t bytes() const override
+    {
+        // a std::set node: the face and about four pointers
+        return sizeof(*this) + Sb->bytes() + (Sa != Sb ? Sa->bytes() : 0) + fixed.size() * 48;
+    }
 };
 
 /// An edge or face split at a point m of it, which changes nothing in space: done on barycentric
@@ -252,6 +269,10 @@ struct SplitPair : Pair
         for (int k = 0; k < 4; ++k) b[k] = nb[nt[k]];
         t = nt;
     }
+    size_t bytes() const override
+    {
+        return sizeof(*this) + (removed.size() + split.size()) * 64 + common.size() * sizeof(Vid);
+    }
 };
 
 /// The surface map's local maps of an operation, by face.
@@ -271,6 +292,11 @@ struct CellIndex
                 index[1][cells[c]->after[p].fid].emplace_back(c, p);
             }
         }
+    }
+    size_t bytes() const
+    {
+        return sizeof(*this) + cells.capacity() * sizeof(cells[0]) +
+               (index[0].size() + index[1].size()) * 80;
     }
     std::set<uint64_t> fids(const int side) const
     {
@@ -368,9 +394,11 @@ public:
             m_op = std::make_unique<VolumeMap::OpMap>();
             if (!volume_only()) throw;
             ++m_stats.surface_not_kept;
+            m_op->shared_bytes = m_cell_index->bytes();
             return std::move(m_op);
         }
         if (!keeps_surface()) ++m_stats.surface_not_kept;
+        m_op->shared_bytes = m_cell_index->bytes();
         return std::move(m_op);
     }
 
@@ -1195,11 +1223,25 @@ struct VolumeMap::Shared
     std::mutex mutex;
     /// Per operation: 0 not built yet, 1 built, 2 failed.
     std::vector<char> built;
+    /// The maps kept, the most recently used first, and the bytes they take.
+    struct Kept
+    {
+        std::shared_ptr<const OpMap> map;
+        size_t bytes;
+        std::list<size_t>::iterator at;
+    };
+    std::unordered_map<size_t, Kept> kept;
+    std::list<size_t> recent;
+    size_t bytes = 0;
     VolumeMapStats stats;
 };
 
-VolumeMap::VolumeMap(const history::SurfaceHistory& surface, history::VolumeHistory volume)
+VolumeMap::VolumeMap(
+    const history::SurfaceHistory& surface,
+    history::VolumeHistory volume,
+    const VolumeMapOptions& options)
     : m_volume(std::move(volume))
+    , m_options(options)
     , m_surface(surface, volume_options())
     , m_shared(std::make_unique<Shared>())
 {
@@ -1286,6 +1328,17 @@ VolumeMap::VolumeMap(const history::SurfaceHistory& surface, history::VolumeHist
             fs->shrink_to_fit();
         }
         m_faces.push_back(std::move(f));
+        Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+        Eigen::Vector3d hi = -lo;
+        for (const auto& x : e.positions) {
+            lo = lo.cwiseMin(x);
+            hi = hi.cwiseMax(x);
+        }
+        for (const auto& [v, x] : e.moved) {
+            lo = lo.cwiseMin(x);
+            hi = hi.cwiseMax(x);
+        }
+        m_boxes.emplace_back(lo, hi);
     }
     m_shared->built.assign(m_volume.edits.size(), 0);
 }
@@ -1318,11 +1371,16 @@ std::optional<uint32_t> VolumeMap::region_of_groups(const std::set<std::string>&
     return region_of(tags);
 }
 
-std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const
+std::shared_ptr<const VolumeMap::OpMap> VolumeMap::op(const size_t k) const
 {
+    Shared& sh = *m_shared;
     {
-        std::lock_guard<std::mutex> lock(m_shared->mutex);
-        if (m_shared->built[k] == 2) return nullptr;
+        std::lock_guard<std::mutex> lock(sh.mutex);
+        if (sh.built[k] == 2) return nullptr;
+        if (const auto it = sh.kept.find(k); it != sh.kept.end()) {
+            sh.recent.splice(sh.recent.begin(), sh.recent, it->second.at);
+            return it->second.map;
+        }
     }
     const auto& e = m_volume.edits[k];
     std::vector<const SurfaceMap::Cell*> cells;
@@ -1333,7 +1391,7 @@ std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const
     }
     // Built outside the lock, which only the stats of its first build are added under.
     VolumeMapStats stats;
-    std::unique_ptr<OpMap> om;
+    std::shared_ptr<const OpMap> om;
     std::string why;
     try {
         om = Builder(e, *m_faces[k], std::move(cells), stats).build();
@@ -1343,22 +1401,35 @@ std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const
         // what the history's checks let through: no reason to stop the other operations
         why = std::string("its data does not fit together: ") + x.what();
     }
-    std::lock_guard<std::mutex> lock(m_shared->mutex);
-    char& built = m_shared->built[k];
-    if (om) {
-        if (built == 0) {
-            ++stats.built;
-            add(m_shared->stats, stats);
-            built = 1;
+    std::lock_guard<std::mutex> lock(sh.mutex);
+    char& built = sh.built[k];
+    if (!om) {
+        if (built != 2) {
+            ++sh.stats.failed;
+            ++sh.stats.failures[why];
+            built = 2;
         }
-        return om;
+        return nullptr;
     }
-    if (built != 2) {
-        ++m_shared->stats.failed;
-        ++m_shared->stats.failures[why];
-        built = 2;
+    if (built == 0) {
+        ++stats.built;
+        add(sh.stats, stats);
+        built = 1;
     }
-    return nullptr;
+    // kept, unless another thread built it meanwhile; the least recently used go past the cap
+    if (m_options.cache_bytes > 0 && !sh.kept.count(k)) {
+        sh.recent.push_front(k);
+        const size_t n = om->bytes();
+        sh.kept[k] = {om, n, sh.recent.begin()};
+        sh.bytes += n;
+        while (sh.bytes > m_options.cache_bytes && !sh.recent.empty()) {
+            const auto it = sh.kept.find(sh.recent.back());
+            sh.bytes -= it->second.bytes;
+            sh.kept.erase(it);
+            sh.recent.pop_back();
+        }
+    }
+    return om;
 }
 
 void VolumeMap::build_all() const
@@ -1366,10 +1437,22 @@ void VolumeMap::build_all() const
     for (size_t k = 0; k < m_volume.edits.size(); ++k) op(k);
 }
 
+std::vector<std::string> VolumeMap::op_kinds(const size_t k) const
+{
+    std::vector<std::string> out;
+    if (const auto om = op(k)) {
+        for (const auto& p : om->pairs) out.push_back(p->kind);
+    }
+    return out;
+}
+
 VolumeMapStats VolumeMap::stats() const
 {
     std::lock_guard<std::mutex> lock(m_shared->mutex);
-    return m_shared->stats;
+    VolumeMapStats s = m_shared->stats;
+    s.kept = m_shared->kept.size();
+    s.kept_bytes = m_shared->bytes;
+    return s;
 }
 
 std::vector<VolumePoint> VolumeMap::to_output(std::vector<VolumePoint> points) const
@@ -1430,24 +1513,8 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
     const size_t n_edits = m_volume.edits.size();
     for (size_t step = 0; step < n_edits; ++step) {
         const size_t k = forward ? step : n_edits - 1 - step;
-        const auto& e = m_volume.edits[k];
-        std::vector<uint32_t> regions_after;
-        const Tets tets_after = e.tets_after(&regions_after);
-        const Positions P_after = e.positions_after();
-        const Tets& T1 = forward ? e.tets : tets_after;
-        const std::vector<uint32_t>& R1 = forward ? e.regions : regions_after;
-        const Positions& X1 = forward ? e.positions : P_after;
-        const Tets& T2 = forward ? tets_after : e.tets;
-        const std::vector<uint32_t>& R2 = forward ? regions_after : e.regions;
-        const Positions& X2 = forward ? P_after : e.positions;
-        Eigen::Vector3d blo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-        Eigen::Vector3d bhi = -blo;
-        for (const Tet& t : T1) {
-            for (const Vid v : t) {
-                blo = blo.cwiseMin(X1[v]);
-                bhi = bhi.cwiseMax(X1[v]);
-            }
-        }
+        // the points in the box of its positions, before and after
+        const auto& [blo, bhi] = m_boxes[k];
         const auto k0 = key(blo), k1 = key(bhi);
         std::vector<size_t> cand;
         for (int64_t a = k0[0]; a <= k1[0]; ++a) {
@@ -1465,9 +1532,20 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
             }
         }
         if (cand.empty()) continue;
+        // its tets after it, only for an operation some point may be in
+        const auto& e = m_volume.edits[k];
+        std::vector<uint32_t> regions_after;
+        const Tets tets_after = e.tets_after(&regions_after);
+        const Positions P_after = e.positions_after();
+        const Tets& T1 = forward ? e.tets : tets_after;
+        const std::vector<uint32_t>& R1 = forward ? e.regions : regions_after;
+        const Positions& X1 = forward ? e.positions : P_after;
+        const Tets& T2 = forward ? tets_after : e.tets;
+        const std::vector<uint32_t>& R2 = forward ? regions_after : e.regions;
+        const Positions& X2 = forward ? P_after : e.positions;
         std::map<Tet, uint32_t> region_after;
         for (size_t t = 0; t < T2.size(); ++t) region_after[sorted(T2[t])] = R2[t];
-        std::unique_ptr<OpMap> om;
+        std::shared_ptr<const OpMap> om;
         bool tried = false;
         for (const size_t n : cand) {
             // the tet of the point's region holding it

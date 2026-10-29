@@ -51,6 +51,7 @@ void log_stats(const VolumeMap& map)
         s.fallback_pairs,
         s.decompositions);
     for (const auto& [why, n] : s.failures) logger().warn("  {} operation(s): {}", n, why);
+    logger().info("operation maps kept for later calls: {}, {:.1f} MB", s.kept, s.kept_bytes / 1e6);
     if (s.surface_not_kept > 0) {
         logger().warn(
             "{} operation(s) mapped as a bijection of the volume that does not keep the tracked "

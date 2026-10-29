@@ -164,6 +164,8 @@ public:
     Located locate(const Eigen::Vector3d& y) const;
     /// The index in tets() of a tet given by its vertices, any order.
     std::optional<size_t> index_of(const Tet& t) const;
+    /// About the memory it holds, in bytes.
+    size_t bytes() const;
 
     /// The outward normal and a corner of each face (the plane is n.(x - a) = 0).
     std::vector<Eigen::Vector3d> normals, corners;
