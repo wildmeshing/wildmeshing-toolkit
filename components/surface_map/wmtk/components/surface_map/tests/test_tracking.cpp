@@ -6,6 +6,7 @@
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/surface_map/Tracking.hpp>
 #include <wmtk/components/surface_map/surface_map.hpp>
+#include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
@@ -161,4 +162,52 @@ TEST_CASE("tracking-example-isotropic", "[surface_map][tracking]")
     }
     CHECK(i == pts.size());
     CHECK(same == pts.size());
+}
+
+TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
+{
+    // The memory route: an application records its history from the mesh it is given, to a file
+    // still, and surface_map's info reports on it, the report returned rather than logged only.
+    const fs::path dir = fs::current_path() / "tracking_memory_route";
+    fs::create_directories(dir);
+    const fs::path tracking_file = dir / "sphere.wmtkhist";
+    const wmtk::MeshMap meshes{
+        {"sphere",
+         wmtk::io::read_mesh((fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string())}};
+    const wmtk::ComponentResult remeshed = isotropic_remeshing::isotropic_remeshing(
+        {{"input", "sphere"},
+         {"history_output", tracking_file.string()},
+         {"length_rel", 0.08},
+         {"max_iterations", 3}},
+        meshes);
+
+    // The history starts at the mesh given, as the meshes hold it, and ends at the mesh returned.
+    const Tracking tracking = Tracking::load(tracking_file.string());
+    CHECK(
+        tracking.input_faces().size() ==
+        size_t(meshes.at("sphere").cell(wmtk::CellType::Triangle).connectivity.rows()));
+    const auto& F_out = remeshed.first.at("mesh").cell(wmtk::CellType::Triangle).connectivity;
+    const auto triangles = tracking.output_triangles();
+    REQUIRE(triangles.size() == size_t(F_out.rows()));
+    for (Eigen::Index f = 0; f < F_out.rows(); ++f) {
+        for (int k = 0; k < 3; ++k) CHECK(triangles[f][k] == uint64_t(F_out(f, k)));
+    }
+
+    const auto [none, report] =
+        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "info"}}, {});
+    CHECK(none.empty());
+    CHECK(report.at("edits").get<size_t>() > 0);
+    CHECK(report.at("build_warnings").at("total") == 0);
+    CHECK(report.at("round_trip_lost") == 0);
+    CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-8);
+
+    // map and transfer read and write files: refused on the memory route.
+    CHECK_THROWS_AS(
+        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "map"}}, {}),
+        std::runtime_error);
+    CHECK_THROWS_AS(
+        surface_map::surface_map(
+            {{"history", tracking_file.string()}, {"operation", "transfer"}},
+            {}),
+        std::runtime_error);
 }

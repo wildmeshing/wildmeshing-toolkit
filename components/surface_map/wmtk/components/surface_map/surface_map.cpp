@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <wmtk/history/SurfaceHistory.hpp>
+#include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -20,6 +21,18 @@
 namespace wmtk::components::surface_map {
 
 namespace {
+
+nlohmann::json warnings_report(const MapWarnings& w)
+{
+    return {
+        {"total", w.total()},
+        {"not_a_disk", w.not_a_disk},
+        {"flat_triangle", w.flat_triangle},
+        {"inverted", w.inverted},
+        {"merged_faces", w.merged_faces},
+        {"unlocated", w.unlocated},
+        {"replaced", w.replaced}};
+}
 
 void log_warnings(const char* what, const MapWarnings& w)
 {
@@ -154,10 +167,9 @@ void map_points(
     log_warnings("mapping", tracking.map().map_warnings());
 }
 
-} // namespace
-
-void surface_map(nlohmann::json json_params)
+void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
+    component_io.prepare(json_params, "surface_map");
     using wmtk::utils::resolve_path;
     {
         const auto spec = jse::embed::wmtk_surface_map_spec::surface_map_spec::spec();
@@ -166,6 +178,13 @@ void surface_map(nlohmann::json json_params)
             log_and_throw_error(spec_engine.log2str());
         }
         json_params = spec_engine.inject_defaults(json_params, spec);
+    }
+    // The history is a file on both routes; map and transfer read and write files too (points,
+    // the input surface, the transferred meshes), which have no in-memory form yet.
+    if (component_io.memory() && json_params["operation"] != "info") {
+        throw std::runtime_error(
+            "surface_map: operation " + json_params["operation"].get<std::string>() +
+            " reads and writes files; on the memory route only info is supported");
     }
     const std::filesystem::path root = json_params["input_dir"];
     {
@@ -193,6 +212,7 @@ void surface_map(nlohmann::json json_params)
 
     timer.start();
     const SurfaceMap map(h, options_of(json_params));
+    const double build_time = timer.getElapsedTimeInSec();
     const auto& cells = map.cells_by_kind();
     logger().info(
         "map built in {:.3}s: {} edge splits, {} face splits, {} collapses, {} swaps, {} "
@@ -285,6 +305,20 @@ void surface_map(nlohmann::json json_params)
         return;
     }
 
+    nlohmann::json report;
+    report["edits"] = h.edits.size();
+    report["build_time_sec"] = build_time;
+    report["edge_splits"] = cells[size_t(history::EditKind::split_edge)];
+    report["face_splits"] = cells[size_t(history::EditKind::split_face)];
+    report["collapses"] = cells[size_t(history::EditKind::collapse_edge)];
+    report["swaps"] = cells[size_t(history::EditKind::swap_edge)];
+    report["consolidations"] = cells[size_t(history::EditKind::consolidate)];
+    report["curve_collapses"] = map.curve_collapses();
+    report["vertex_moves"] = cells[size_t(history::EditKind::move_vertices)] + map.kept_moves();
+    report["kept_moves"] = map.kept_moves();
+    report["folded_cells"] = map.folded_cells();
+    report["build_warnings"] = warnings_report(map.build_warnings());
+
     // info: the shape of the output's triangles, by how many feature edges they have.
     {
         const auto& V = map.output_vertices();
@@ -307,6 +341,7 @@ void surface_map(nlohmann::json json_params)
             min_angles[std::min(n_feature, 2)].push_back(a_min);
         }
         const char* what[3] = {"no feature edge", "one feature edge", "two or more"};
+        const char* key[3] = {"no_feature_edge", "one_feature_edge", "two_or_more"};
         for (int c = 0; c < 3; ++c) {
             auto& a = min_angles[c];
             if (a.empty()) continue;
@@ -314,6 +349,13 @@ void surface_map(nlohmann::json json_params)
             const auto below = [&a](double t) {
                 return size_t(std::lower_bound(a.begin(), a.end(), t) - a.begin());
             };
+            report["output_faces"][key[c]] = {
+                {"faces", a.size()},
+                {"min_angle", a.front()},
+                {"min_angle_1st_percentile", a[a.size() / 100]},
+                {"below_1_deg", below(1)},
+                {"below_5_deg", below(5)},
+                {"below_10_deg", below(10)}};
             logger().info(
                 "output faces with {}: {} -- min angle {:.3g} deg, 1st percentile {:.3g}, below "
                 "1 deg {}, below 5 deg {}, below 10 deg {}",
@@ -335,8 +377,10 @@ void surface_map(nlohmann::json json_params)
     timer.start();
     const auto in = map.to_input(centroids);
     log_warnings("output centroids to the input", map.map_warnings());
+    report["to_input_warnings"] = warnings_report(map.map_warnings());
     const auto back = map.to_output(in);
     log_warnings("and back to the output", map.map_warnings());
+    report["to_output_warnings"] = warnings_report(map.map_warnings());
     double max_err = 0;
     size_t lost = 0;
     for (size_t i = 0; i < centroids.size(); ++i) {
@@ -356,6 +400,9 @@ void surface_map(nlohmann::json json_params)
         timer.getElapsedTimeInSec(),
         max_err,
         lost);
+    report["centroids"] = centroids.size();
+    report["round_trip_max_displacement"] = max_err;
+    report["round_trip_lost"] = lost;
 
     // How far the map moves points: each output centroid from its preimage on the input, in 3D,
     // against the output's mean edge length.
@@ -386,7 +433,27 @@ void surface_map(nlohmann::json json_params)
             drift[drift.size() * 99 / 100] / mean_edge,
             drift.back() / mean_edge,
             mean_edge);
+        report["drift"] = {
+            {"mean", mean / mean_edge},
+            {"p99", drift[drift.size() * 99 / 100] / mean_edge},
+            {"max", drift.back() / mean_edge},
+            {"mean_edge", mean_edge}};
     }
+    component_io.result.second = std::move(report);
+}
+
+} // namespace
+
+void surface_map(nlohmann::json json_params)
+{
+    io::ComponentIO context;
+    run(std::move(json_params), context);
+}
+ComponentResult surface_map(nlohmann::json json_params, const MeshMap& meshes)
+{
+    io::ComponentIO context(&meshes);
+    run(std::move(json_params), context);
+    return std::move(context.result);
 }
 
 } // namespace wmtk::components::surface_map
