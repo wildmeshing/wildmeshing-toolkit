@@ -1,10 +1,5 @@
 #include <pybind11/pybind11.h>
 
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/stl.h>
-#include <pybind11_json/pybind11_json.hpp>
-
 #include <nlohmann/json.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -36,8 +31,6 @@ void wmtk_wrapper(const py::dict& obj)
 
     // make sure input file contains the application name
     if (!j.contains("application")) {
-        logger().info("App not found");
-        std::cerr << "Application not found" << std::endl;
         log_and_throw_error("JSON input file must contain entry `application`.");
     }
 
