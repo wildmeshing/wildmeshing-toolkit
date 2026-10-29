@@ -1,5 +1,7 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -611,5 +613,70 @@ TEST_CASE("cleanup-repairs-thin-and-folded-triangles", "[test_remeshing][feature
         // The curve, its ids and the fixed vertices hold, and it stays on y = 4.
         check_curve_on_grid(m);
         for (const auto& e : m.feature_edges()) CHECK(m.vertex_attrs[e[0]].pos.y() == 4);
+    }
+}
+
+TEST_CASE("features-history-replays-to-the-output", "[test_remeshing][features][history]")
+{
+    // The passes this adds edit the mesh through the recorded operations only -- the cleanup's
+    // collapses, swaps and moves (its trial positions are put back before the move runs), the
+    // collapses turned around for a fixed vertex, the swaps by quality -- so with all of them on,
+    // the history still replays to the output, ids and positions exact, and carries the curves
+    // to the output's feature edges. The mesh of the cleanup test: thin triangles at the curve
+    // and a fold.
+    CurveOnGrid c;
+    c.V[3 * 9 + 5] = Eigen::Vector3d(3.1, 4.05, 0);
+    c.V[6 * 9 + 6] = Eigen::Vector3d(7.3, 6.2, 0);
+    for (const int threads : {0, 4}) {
+        INFO("threads " << threads);
+        IsotropicRemeshing m(c.V, threads);
+        m.set_swap_quality(true);
+        m.set_limit_collapse_length(true);
+        m.set_cleanup_angle(30);
+        m.create_mesh(c.V.size(), c.F, {}, true, 0.1);
+        m.set_feature_edges(c.edges, c.ids);
+        m.set_fixed_vertices(c.fixed);
+        m.set_feature_envelope(0.1);
+        // As isotropic_remeshing() starts it: the feature edges are the snapshot's features.
+        const auto rec = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        for (const auto& e : m.feature_edges()) rec->history().features.push_back({{e[0], e[1]}});
+        // The input's thin and folded triangles first, so that the cleanup has work whatever the
+        // passes leave.
+        CHECK(m.cleanup_triangles(30) > 0);
+        REQUIRE(m.uniform_remeshing(0.6, 2));
+        m.consolidate_mesh();
+        m.stop_history();
+        REQUIRE(m.check_mesh_connectivity_validity());
+        check_curve_on_grid(m);
+
+        const history::SurfaceHistory& h = rec->history();
+        std::map<history::EditKind, size_t> kinds;
+        for (const auto& e : h.edits) ++kinds[e.kind];
+        CHECK(kinds[history::EditKind::split_edge] > 0);
+        CHECK(kinds[history::EditKind::collapse_edge] > 0);
+        CHECK(kinds[history::EditKind::swap_edge] > 0);
+        CHECK(kinds[history::EditKind::move_vertices] > 0);
+
+        history::Replay r(h);
+        r.apply_all(h);
+        const auto out_v = m.get_vertices();
+        const auto out_f = m.get_faces();
+        REQUIRE(r.vertices().size() == out_v.size());
+        REQUIRE(r.faces().size() == out_f.size());
+        size_t bad_v = 0, bad_f = 0;
+        for (const auto& t : out_v) {
+            const size_t v = t.vid(m);
+            if (r.vertices()[v] != m.vertex_attrs.at(v).pos) ++bad_v;
+        }
+        for (const auto& t : out_f) {
+            const auto a = m.oriented_tri_vids(t.fid(m));
+            const auto& b = r.faces()[t.fid(m)];
+            if (a[0] != b[0] || a[1] != b[1] || a[2] != b[2]) ++bad_f;
+        }
+        CHECK(bad_v == 0);
+        CHECK(bad_f == 0);
+        std::set<std::array<uint64_t, 2>> features;
+        for (const auto& e : m.feature_edges()) features.insert({{e[0], e[1]}});
+        CHECK(r.features() == features);
     }
 }
