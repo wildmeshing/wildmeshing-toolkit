@@ -11,6 +11,7 @@
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -203,21 +204,57 @@ TEST_CASE("tracking-memory-route", "[surface_map][tracking]")
         for (int k = 0; k < 3; ++k) CHECK(triangles[f][k] == uint64_t(F_out(f, k)));
     }
 
+    // surface_map on the memory route takes the bytes.
+    const nlohmann::json history = nlohmann::json::binary(bytes);
     const auto [none, report] =
-        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "info"}}, {});
+        surface_map::surface_map({{"history", history}, {"operation", "info"}}, {});
     CHECK(none.empty());
     CHECK(report.at("edits").get<size_t>() > 0);
     CHECK(report.at("build_warnings").at("total") == 0);
     CHECK(report.at("round_trip_lost") == 0);
     CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-8);
 
-    // map and transfer read and write files: refused on the memory route.
-    CHECK_THROWS_AS(
-        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "map"}}, {}),
-        std::runtime_error);
-    CHECK_THROWS_AS(
-        surface_map::surface_map(
-            {{"history", tracking_file.string()}, {"operation", "transfer"}},
-            {}),
-        std::runtime_error);
+    // transfer: the fields of the mesh given -- uv per corner, a label per face -- onto the
+    // output, returned as a mesh; nothing written.
+    wmtk::MeshMap labelled = meshes;
+    auto& t = labelled.at("sphere").cells.at(wmtk::CellType::Triangle);
+    REQUIRE(t.attributes.at("uv").cols() == 6);
+    wmtk::DataMatrix<int64_t> label(t.connectivity.rows(), 1);
+    for (Eigen::Index f = 0; f < label.rows(); ++f) label(f, 0) = f % 5;
+    t.attributes["label"].values = label;
+    const auto [carried, transfer_report] = surface_map::surface_map(
+        {{"history", history},
+         {"operation", "transfer"},
+         {"input", "sphere"},
+         {"output_obj", (dir / "must_not_exist.obj").string()}},
+        labelled);
+    CHECK(!fs::exists(dir / "must_not_exist.obj"));
+    REQUIRE(carried.count("mesh"));
+    const auto& out = carried.at("mesh").cell(wmtk::CellType::Triangle);
+    CHECK(out.connectivity == F_out);
+    CHECK(out.attributes.at("uv").cols() == 6);
+    CHECK(out.attributes.at("label").values.index() == 1);
+    const auto from = out.attributes.at("input_face").integers();
+    const auto labels = out.attributes.at("label").integers();
+    for (Eigen::Index f = 0; f < from.rows(); ++f) {
+        REQUIRE(from(f, 0) >= 0);
+        CHECK(labels(f, 0) == from(f, 0) % 5);
+    }
+    CHECK(transfer_report.at("to_input_warnings").at("total") == 0);
+
+    // What the memory route refuses: a file name for the history, which it never resolves;
+    // a transfer without the mesh it starts from; map, whose points are text files.
+    CHECK_THROWS_WITH(
+        surface_map::surface_map({{"history", tracking_file.string()}, {"operation", "info"}}, {}),
+        Catch::Matchers::ContainsSubstring("not a file name"));
+    CHECK_THROWS_WITH(
+        surface_map::surface_map({{"history", history}, {"operation", "transfer"}}, labelled),
+        Catch::Matchers::ContainsSubstring("needs input"));
+    CHECK_THROWS_WITH(
+        surface_map::surface_map({{"history", history}, {"operation", "map"}}, {}),
+        Catch::Matchers::ContainsSubstring("only info and transfer"));
+    // And the file route refuses bytes for a file.
+    CHECK_THROWS_WITH(
+        surface_map::surface_map({{"application", "surface_map"}, {"history", history}}),
+        Catch::Matchers::ContainsSubstring("history is a file on the file route"));
 }

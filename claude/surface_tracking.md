@@ -396,6 +396,11 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
+  On the memory route (`surface_map(options, meshes)`) `history` is the bytes of a history,
+  never a file name; `info` and `transfer` run, `map` is refused. `transfer` needs `input`, a
+  key of `meshes`, and returns the output surface as `mesh` (`mesh_from_surface`), and with
+  `tet_mesh`, another key, that mesh with the fields as `tet_mesh` (`add_surface`).
+
 ## Extending tracking to another application
 
 ### On a TriMesh

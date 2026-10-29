@@ -188,6 +188,23 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "surface_map");
     using wmtk::utils::resolve_path;
+    // On the memory route the history is the bytes of one, a producer's report["history"],
+    // never a file name; the spec describes the file route's option, a path.
+    std::vector<uint8_t> history_bytes;
+    if (json_params.contains("history") && json_params["history"].is_binary()) {
+        if (!component_io.memory()) {
+            throw std::runtime_error(
+                "surface_map: history is a file on the file route; the bytes of one are taken "
+                "on the memory route");
+        }
+        history_bytes = json_params["history"].get_binary();
+        json_params["history"] = "";
+    } else if (component_io.memory() && json_params.contains("history")) {
+        throw std::runtime_error(
+            "surface_map: on the memory route history is the bytes of a history -- a "
+            "component's report[\"history\"], or history::read_history / wm.read_history of a "
+            "file -- not a file name");
+    }
     {
         const auto spec = jse::embed::wmtk_surface_map_spec::surface_map_spec::spec();
         jse::JSE spec_engine;
@@ -196,12 +213,16 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
         json_params = spec_engine.inject_defaults(json_params, spec);
     }
-    // The history is a file on both routes; map and transfer read and write files too (points,
-    // the input surface, the transferred meshes), which have no in-memory form yet.
-    if (component_io.memory() && json_params["operation"] != "info") {
-        throw std::runtime_error(
-            "surface_map: operation " + json_params["operation"].get<std::string>() +
-            " reads and writes files; on the memory route only info is supported");
+    if (component_io.memory()) {
+        // map reads and writes text files of points; in memory, map points through Tracking.
+        if (json_params["operation"] == "map") {
+            throw std::runtime_error(
+                "surface_map: operation map reads and writes files of points; on the memory "
+                "route only info and transfer are supported");
+        }
+        // The memory route writes no files: the meshes come back in the result.
+        json_params["output_obj"] = "";
+        json_params["output_tet_mesh"] = "";
     }
     const std::filesystem::path root = json_params["input_dir"];
     {
@@ -212,10 +233,14 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
-    const std::string history_path = resolve_path(root, json_params["history"]).string();
+    const std::string history_path = component_io.memory()
+                                         ? std::string("the history given")
+                                         : resolve_path(root, json_params["history"]).string();
     igl::Timer timer;
     timer.start();
-    const history::SurfaceHistory h = history::SurfaceHistory::load(history_path);
+    const history::SurfaceHistory h = component_io.memory()
+                                          ? history::SurfaceHistory::from_bytes(history_bytes)
+                                          : history::SurfaceHistory::load(history_path);
     logger().info(
         "loaded {} edits from {} in {:.3}s",
         h.edits.size(),
@@ -264,33 +289,48 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     if (json_params["operation"] == "transfer") {
-        // The input: as given, or the files the history's application read, from its parameters.
-        std::vector<std::string> inputs;
-        if (!std::string(json_params["input"]).empty()) {
-            inputs.push_back(resolve_path(root, json_params["input"]).string());
-        } else {
-            const auto app = nlohmann::json::parse(h.metadata, nullptr, false);
-            if (app.is_discarded() || !app.contains("input")) {
-                log_and_throw_error("{} names no input; give one", history_path);
+        const std::string input_name = json_params["input"];
+        std::string input;
+        SurfaceData in;
+        if (component_io.memory()) {
+            // The memory route never resolves a name as a file: the input is a mesh given.
+            if (input_name.empty()) {
+                throw std::runtime_error(
+                    "surface_map: a transfer on the memory route needs input, the mesh the "
+                    "history starts from");
             }
-            const std::filesystem::path app_root =
-                app.contains("input_dir") ? std::filesystem::path(std::string(app["input_dir"]))
-                                          : std::filesystem::path();
-            const auto& in_json = app["input"];
-            for (const auto& p : in_json.is_array() ? in_json : nlohmann::json::array({in_json})) {
-                inputs.push_back(resolve_path(app_root, std::string(p)).string());
-                // A history recorded on the memory route names the input meshes, not files.
-                if (!std::filesystem::exists(inputs.back())) {
-                    log_and_throw_error(
-                        "{} names the input {}, which is not a file here; give one",
-                        history_path,
-                        inputs.back());
+            input = "input " + input_name;
+            in = surface_from_mesh(component_io.mesh(input_name), input, true);
+        } else {
+            // The input: as given, or the files the history's application read, from its
+            // parameters.
+            std::vector<std::string> inputs;
+            if (!input_name.empty()) {
+                inputs.push_back(resolve_path(root, input_name).string());
+            } else {
+                const auto app = nlohmann::json::parse(h.metadata, nullptr, false);
+                if (app.is_discarded() || !app.contains("input")) {
+                    log_and_throw_error("{} names no input; give one", history_path);
+                }
+                const std::filesystem::path app_root =
+                    app.contains("input_dir") ? std::filesystem::path(std::string(app["input_dir"]))
+                                              : std::filesystem::path();
+                const auto& in_json = app["input"];
+                for (const auto& p :
+                     in_json.is_array() ? in_json : nlohmann::json::array({in_json})) {
+                    inputs.push_back(resolve_path(app_root, std::string(p)).string());
+                    // A history recorded on the memory route names the input meshes, not files.
+                    if (!std::filesystem::exists(inputs.back())) {
+                        log_and_throw_error(
+                            "{} names the input {}, which is not a file here; give one",
+                            history_path,
+                            inputs.back());
+                    }
                 }
             }
+            input = nlohmann::json(inputs).dump();
+            in = read_surface(inputs);
         }
-        const std::string input = nlohmann::json(inputs).dump();
-        const std::string output = json_params["output"];
-        const SurfaceData in = read_surface(inputs);
         std::string why;
         if (!matches_input(map, in, why)) {
             log_and_throw_error(
@@ -303,11 +343,16 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         MapWarnings warnings;
         const SurfaceData out = transfer_fields(map, in, &warnings);
         log_warnings("output centroids to the input", warnings);
-        write_surface_msh(output, out);
+        const std::string output = json_params["output"];
+        if (component_io.memory()) {
+            component_io.result.first["mesh"] = mesh_from_surface(out);
+        } else {
+            write_surface_msh(output, out);
+        }
         const std::string tet_mesh = json_params["tet_mesh"];
         const std::string output_tet_mesh = json_params["output_tet_mesh"];
         if (!tet_mesh.empty()) {
-            if (output_tet_mesh.empty())
+            if (output_tet_mesh.empty() && !component_io.memory())
                 log_and_throw_error("tet_mesh given without output_tet_mesh");
             // The surface's vertices by the tet mesh's own ids, which the history saved.
             if (h.output_vertex_ids.empty()) {
@@ -315,28 +360,46 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     "tet_mesh: {} ends at a surface output, not at a tet mesh's tracked surface",
                     history_path);
             }
-            write_surface_into_msh(
-                resolve_path(root, tet_mesh).string(),
-                output_tet_mesh,
-                out,
-                output_rows(map, h.output_vertex_ids));
-            logger().info(
-                "fields written onto the tracked surface of {}: {}",
-                tet_mesh,
-                output_tet_mesh);
+            const auto rows = output_rows(map, h.output_vertex_ids);
+            if (component_io.memory()) {
+                MeshData with_fields = component_io.mesh(tet_mesh);
+                add_surface(with_fields, out, rows, "tet_mesh " + tet_mesh);
+                component_io.result.first["tet_mesh"] = std::move(with_fields);
+            } else {
+                write_surface_into_msh(
+                    resolve_path(root, tet_mesh).string(),
+                    output_tet_mesh,
+                    out,
+                    rows);
+                logger().info(
+                    "fields written onto the tracked surface of {}: {}",
+                    tet_mesh,
+                    output_tet_mesh);
+            }
         }
         const std::string output_obj = json_params["output_obj"];
         if (!output_obj.empty()) {
             write_surface_obj(output_obj, out, json_params["uv_field"], json_params["texture"]);
             logger().info("textured output written to {}", output_obj);
         }
+        std::vector<std::string> fields;
+        for (const auto* f : {&out.face_fields, &out.corner_fields}) {
+            for (const auto& [name, field] : *f) fields.push_back(name);
+        }
         logger().info(
-            "{} field(s) carried from {} faces onto {} in {:.3}s; written to {}",
-            out.face_fields.size() + out.corner_fields.size(),
+            "{} field(s) carried from {} faces onto {} in {:.3}s{}",
+            fields.size(),
             in.faces.size(),
             out.faces.size(),
             timer.getElapsedTimeInSec(),
-            output);
+            component_io.memory() ? std::string() : "; written to " + output);
+        component_io.result.second = {
+            {"build_time_sec", build_time},
+            {"build_warnings", warnings_report(map.build_warnings())},
+            {"input_faces", in.faces.size()},
+            {"output_faces", out.faces.size()},
+            {"fields", fields},
+            {"to_input_warnings", warnings_report(warnings)}};
         return;
     }
 

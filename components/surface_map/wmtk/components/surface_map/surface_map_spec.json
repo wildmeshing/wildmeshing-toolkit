@@ -36,13 +36,13 @@
   {
     "pointer": "/history",
     "type": "string",
-    "doc": "A surface history, as saved by an application's history_output: the map is rebuilt from it."
+    "doc": "A surface history, recorded by an application's history_output, from which the map is rebuilt: on the file route the file it wrote, on the memory route the bytes it returned in its report as history (a JSON binary value, bytes in Python; wm.read_history reads them from a file). The memory route never takes a file name here."
   },
   {
     "pointer": "/input",
     "type": "string",
     "default": "",
-    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to."
+    "doc": "transfer: the surface the history starts from -- the same triangles in the same order: a gmsh file, as io::read_mesh (wm.read_mesh) reads it, whose triangle fields are carried onto the output -- per face (labels), or per corner (uv and normal, three values per corner, corner after corner: texture coordinates) -- or a triangle mesh of another format, as read, with none. Empty: the input files of the application that recorded the history, from its parameters. Every output face gets input_face too, the input face its centroid maps to. On the memory route: the key of the mesh the history starts from, which a transfer needs; the output surface is returned as mesh."
   },
   {
     "pointer": "/output",
@@ -54,7 +54,7 @@
     "pointer": "/output_obj",
     "type": "string",
     "default": "",
-    "doc": "transfer: also write the output as a textured Wavefront OBJ, with uv_field as its texture coordinates and a material mapping `texture`. Empty: not written."
+    "doc": "transfer: also write the output as a textured Wavefront OBJ, with uv_field as its texture coordinates and a material mapping `texture`. Empty: not written. Not on the memory route, which writes no files."
   },
   {
     "pointer": "/uv_field",
@@ -83,7 +83,7 @@
       "map"
     ],
     "default": "info",
-    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back. transfer: carry every per-face field of `input` onto the output surface and write it to `output`. map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`."
+    "doc": "info: build the map and report what it holds, where it stops being a bijection, and how far the output's face centroids move when mapped to the input and back. transfer: carry every field of `input`'s triangles onto the output surface and write it to `output` (on the memory route: return it as mesh). map: map the points of the file `points` to the output (direction to_output) or back to the input (to_input), and write them to `output_points`; file route only."
   },
   {
     "pointer": "/log_file",
@@ -101,7 +101,7 @@
     "pointer": "/output_tet_mesh",
     "type": "string",
     "default": "",
-    "doc": "transfer: where to write tet_mesh with the fields on its tracked surface."
+    "doc": "transfer: where to write tet_mesh with the fields on its tracked surface. On the memory route tet_mesh is the key of a mesh, and the result is returned as tet_mesh; nothing is written."
   },
   {
     "pointer": "/points",

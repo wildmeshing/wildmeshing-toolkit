@@ -216,7 +216,13 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
         inputs.emplace(key, mesh_data(dictionary(meshes[py::str(key)], "MeshData")));
     };
     for (const auto* role :
-         {"input", "input_edges", "input_points", "surface_mesh", "uv_mesh", "envelope"}) {
+         {"input",
+          "input_edges",
+          "input_points",
+          "surface_mesh",
+          "uv_mesh",
+          "envelope",
+          "tet_mesh"}) {
         const auto it = options.find(role);
         if (it == options.end() || it->is_null()) continue;
         if (it->is_array())

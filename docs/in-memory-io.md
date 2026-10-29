@@ -129,6 +129,7 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
+| `surface_map` (`transfer`) | `input`; optional `tet_mesh` | The triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
@@ -192,6 +193,17 @@ C++. On the memory route the history starts at the meshes given and ends at the 
 `history::read_history(path)` reads them back, as `io::write_mesh` and `io::read_mesh` do for a
 mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
 mesh.
+
+`surface_map` takes the bytes as `history` on the memory route, where a string is refused, as
+every memory call refuses to take a name for a file. `info` returns its report. `transfer` needs
+`input`, the mesh the history starts from -- the history's own parameters name meshes of an
+earlier call, or files, neither of which the memory route reads -- and returns the output
+surface as `mesh`, the carried fields as triangle attributes, per face or, for `uv` and
+`normal`, three values per corner (`uv`: six columns), with `input_face` (Int64), the input face
+each output face comes from. With `tet_mesh`, the tet mesh the history ends at, it also returns
+that mesh as `tet_mesh` with the fields on the rows of its triangle block: a tracked face already
+there (a face tag) on its row, any other on a row added after them. `map`, whose points are text
+files, is refused on the memory route.
 
 In Python the history is `bytes`: the bindings return a report's binary values as `bytes`, and
 pass `bytes` in the options as binary values (pybind11_json alone would make them base64 text).
