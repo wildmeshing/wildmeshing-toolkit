@@ -343,6 +343,11 @@ bool IsotropicRemeshing::cleanup_move(const size_t v, const double floor)
 
 size_t IsotropicRemeshing::cleanup_triangles(const double degrees)
 {
+    if (m_input_area.empty()) {
+        log_and_throw_error(
+            "cleanup_triangles: call set_cleanup_angle() before create_mesh(), which then keeps "
+            "the input the repairs compare against");
+    }
     m_cleaning = true;
     size_t repaired = 0;
     std::vector<Tuple> new_tris;

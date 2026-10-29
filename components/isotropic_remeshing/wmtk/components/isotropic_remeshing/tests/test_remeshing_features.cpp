@@ -698,6 +698,18 @@ size_t slab_flips(const IsotropicRemeshing& m, const double t)
 }
 } // namespace
 
+TEST_CASE("cleanup-needs-the-angle-before-create-mesh", "[test_remeshing][features]")
+{
+    // The repairs compare against the input's area vectors, which create_mesh() keeps only
+    // after set_cleanup_angle(): without them they would read past the end.
+    const CurveOnGrid c;
+    IsotropicRemeshing m(c.V, 0);
+    m.create_mesh(c.V.size(), c.F);
+    CHECK_THROWS(m.cleanup_triangles(30));
+    m.set_cleanup_angle(30); // too late
+    CHECK_THROWS(m.cleanup_triangles(30));
+}
+
 TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]")
 {
     // A slab thinner than a triangle is wide: the input next to a triangle of the top holds the

@@ -254,7 +254,8 @@ public:
      * where set_face_fields() gave some -- than there were is allowed too, even if no angle
      * improves. Only there: where two sheets of the input are closer than that, a thin wall, the
      * far one cancels the near one, and the input's orientation is noise. Rounds until one repairs
-     * nothing, 10 at most. Serial; returns the number of repairs.
+     * nothing, 10 at most. Serial; returns the number of repairs. Throws unless set_cleanup_angle()
+     * came before create_mesh().
      */
     size_t cleanup_triangles(double degrees);
     /// The operations set_check_inversions() refused, since the mesh was made.
