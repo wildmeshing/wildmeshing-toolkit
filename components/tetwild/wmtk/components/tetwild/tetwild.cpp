@@ -948,6 +948,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
     // The whole volume around it too, its own choice: the map of the volume starts at the tet
     // mesh written here, and ends at the mesh before the filter (<output>_history_output.msh).
+    // Both are files next to the output, so not on the memory route, which has none: there the
+    // volume history is recorded all the same, and maps points by their positions.
     const std::string volume_history_output = json_params["volume_history_output"];
     if (!volume_history_output.empty()) {
         if (!record_history) {
@@ -955,7 +957,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 "volume_history_output needs history_output (and not "
                 "use_legacy_code): the volume history follows the surface's");
         }
-        mesh_new.output_mesh(output_path + "_history_input.msh");
+        if (!component_io.memory()) mesh_new.output_mesh(output_path + "_history_input.msh");
         mesh_new.record_volume_history();
     }
 
@@ -1085,7 +1087,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     }
 
     // The mesh the volume history ends at: all of it, before the filter drops a part.
-    if (!volume_history_output.empty()) mesh_new.output_mesh(output_path + "_history_output.msh");
+    if (!volume_history_output.empty() && !component_io.memory()) {
+        mesh_new.output_mesh(output_path + "_history_output.msh");
+    }
 
     // ////winding number
     if (filter_option == "input") {

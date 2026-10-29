@@ -440,7 +440,7 @@
     "pointer": "/volume_history_output",
     "type": "string",
     "default": "",
-    "doc": "3D only, with history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the volume, region by region (a region: the tets with the same tags), from <output>_history_input.msh to the output. It takes many times the room of the surface history. Empty: no recording."
+    "doc": "3D only, with history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the volume, region by region (a region: the tets with the same tags), from <output>_history_input.msh (not on the memory route, which has no output file: there the volume history maps points by their positions) to the output. It takes many times the room of the surface history. Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",
