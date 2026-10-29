@@ -14,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -295,6 +296,56 @@ TEST_CASE("tracking-simwild-2d-refuses-history", "[simwild][tracking]")
     CHECK(!fs::exists("recorded"));
 }
 
+namespace {
+
+/// How many of `pts` (at most the first 500 whose tets are not slivers) the map moves, and at
+/// how many of those it keeps orientation: det J > 0, J by finite differences of
+/// map_positions(), each of the four points in the region of the tet it is in (a step can
+/// cross into another). In a sliver -- the insertion leaves some flat ones along the curves
+/// where surfaces meet -- a step leaves the tet at once, and J says nothing of it.
+std::pair<size_t, size_t> orientation_kept(
+    const wmtk::components::tracking::VolumeTracking& tracking,
+    const std::vector<wmtk::components::tracking::TetPoint>& pts)
+{
+    namespace tr = wmtk::components::tracking;
+    const tr::TetMeshData& in = tracking.input_mesh();
+    Eigen::Vector3d lo = in.vertices[0], hi = lo;
+    for (const auto& v : in.vertices) {
+        lo = lo.cwiseMin(v);
+        hi = hi.cwiseMax(v);
+    }
+    const double h = 1e-9 * (hi - lo).norm();
+    std::vector<Eigen::Vector3d> xyz;
+    for (size_t i = 0; i < pts.size() && xyz.size() < 4 * 500; ++i) {
+        const auto& t = in.tets[pts[i].tet];
+        const auto& V = in.vertices;
+        double l2 = 0;
+        for (int a = 0; a < 4; ++a) {
+            for (int b = a + 1; b < 4; ++b) l2 += (V[t[a]] - V[t[b]]).squaredNorm() / 6;
+        }
+        const double volume =
+            std::abs((V[t[1]] - V[t[0]]).dot((V[t[2]] - V[t[0]]).cross(V[t[3]] - V[t[0]])));
+        if (volume < 1e-2 * std::pow(l2, 1.5)) continue; // a sliver
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 4; ++k) x += pts[i].bary[k] * V[t[k]];
+        for (int k = 0; k < 4; ++k) {
+            xyz.push_back(k == 0 ? x : Eigen::Vector3d(x + h * Eigen::Vector3d::Unit(k - 1)));
+        }
+    }
+    const auto y = tracking.map_positions(xyz, true);
+    size_t moved = 0, kept = 0;
+    for (size_t i = 0; 4 * i < y.size(); ++i) {
+        if (y[4 * i].position == xyz[4 * i]) continue;
+        ++moved;
+        Eigen::Matrix3d J;
+        for (int k = 0; k < 3; ++k) J.col(k) = (y[4 * i + k + 1].position - y[4 * i].position) / h;
+        kept += J.determinant() > 0;
+    }
+    return {moved, kept};
+}
+
+} // namespace
+
 TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_only)
 {
     const fs::path dir = fs::current_path() / "tracking_example_simwild_volume";
@@ -374,4 +425,8 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
     // Rounding, through local maps whose rays can graze a face of a sliver: more than the
     // surface's, far less than any map that is not a bijection would miss by.
     CHECK(round_trip < 1e-6);
+    // A round trip the identity passes too: the points that move keep their orientation.
+    const auto [moving, kept_orientation] = orientation_kept(tracking, pts);
+    CHECK(moving > 0);
+    CHECK(kept_orientation == moving);
 }
