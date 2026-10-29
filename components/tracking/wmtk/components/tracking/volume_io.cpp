@@ -70,12 +70,22 @@ TetMeshData read_tet_msh(const std::string& path)
 TetLocator::TetLocator(const TetMeshData& m)
     : m_mesh(m)
 {
-    m_lo = m.vertices[0];
+    if (m.tets.empty()) return;
+    m_lo = m.vertices[m.tets[0][0]];
     Eigen::Vector3d hi = m_lo;
-    for (const auto& v : m.vertices) {
-        m_lo = m_lo.cwiseMin(v);
-        hi = hi.cwiseMax(v);
+    double largest = 0;
+    for (const auto& t : m.tets) {
+        Eigen::Vector3d a = m.vertices[t[0]], b = a;
+        for (int k = 1; k < 4; ++k) {
+            a = a.cwiseMin(m.vertices[t[k]]);
+            b = b.cwiseMax(m.vertices[t[k]]);
+        }
+        m_lo = m_lo.cwiseMin(a);
+        hi = hi.cwiseMax(b);
+        largest = std::max(largest, (b - a).norm());
     }
+    // the farthest a point can be from a tet it is a rounding off (locate())
+    m_eps = 1e-9 * largest;
     const double cells = std::max(1., std::cbrt(double(m.tets.size()) / 4));
     m_h = std::max((hi - m_lo).maxCoeff() / cells, 1e-300);
     for (int k = 0; k < 3; ++k) m_n[k] = std::max<int64_t>(1, int64_t((hi[k] - m_lo[k]) / m_h) + 1);
@@ -109,18 +119,35 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
     const Eigen::Vector3d& p,
     const uint32_t group) const
 {
-    if (!p.allFinite()) return {-1, Eigen::Vector4d::Zero()};
-    int64_t c[3];
+    if (!p.allFinite() || m_cells.empty()) return {-1, Eigen::Vector4d::Zero()};
+    // The cells within a rounding of p: a tet holding p is in p's own, but one p is a rounding
+    // off may be in the next -- or, for p just outside the mesh's box, in the one inside.
+    int64_t lo[3], hi[3];
     for (int k = 0; k < 3; ++k) {
-        const double x = std::floor((p[k] - m_lo[k]) / m_h);
-        if (!(x >= 0 && x < double(m_n[k]))) return {-1, Eigen::Vector4d::Zero()};
-        c[k] = int64_t(x);
+        const double a = std::floor((p[k] - m_eps - m_lo[k]) / m_h);
+        const double b = std::floor((p[k] + m_eps - m_lo[k]) / m_h);
+        if (!(b >= 0 && a < double(m_n[k]))) return {-1, Eigen::Vector4d::Zero()};
+        lo[k] = int64_t(std::max(a, 0.));
+        hi[k] = int64_t(std::min(b, double(m_n[k] - 1)));
+    }
+    std::vector<uint32_t> candidates;
+    for (int64_t x = lo[0]; x <= hi[0]; ++x) {
+        for (int64_t y = lo[1]; y <= hi[1]; ++y) {
+            for (int64_t z = lo[2]; z <= hi[2]; ++z) {
+                const auto& c = m_cells[size_t((x * m_n[1] + y) * m_n[2] + z)];
+                candidates.insert(candidates.end(), c.begin(), c.end());
+            }
+        }
+    }
+    if (lo[0] != hi[0] || lo[1] != hi[1] || lo[2] != hi[2]) {
+        std::sort(candidates.begin(), candidates.end());
+        candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
     }
     // Exact containment, as the volume map locates its points (volume::locate_in): the tets
     // holding p, else those it is out of by a rounding; of the group first, if given.
     const auto& V = m_mesh.vertices;
     std::vector<uint32_t> holding, within_rounding;
-    for (const uint32_t t : m_cells[size_t((c[0] * m_n[1] + c[1]) * m_n[2] + c[2])]) {
+    for (const uint32_t t : candidates) {
         const auto& T = m_mesh.tets[t];
         Eigen::Vector3d lo = V[T[0]], hi = lo;
         for (int k = 1; k < 4; ++k) {

@@ -24,7 +24,8 @@ struct TetMeshData
 TetMeshData read_tet_msh(const std::string& path);
 
 /// Point location in a tet mesh, by a grid over the tets' boxes: the tet holding a point, exactly
-/// (volume::locate_in's rules), or one it is out of by a rounding.
+/// (volume::locate_in's rules), or one it is out of by a rounding -- across a side of the grid's
+/// cells, or of the mesh's box, too.
 class TetLocator
 {
 public:
@@ -41,8 +42,10 @@ public:
 
 private:
     const TetMeshData& m_mesh;
-    Eigen::Vector3d m_lo;
+    Eigen::Vector3d m_lo = Eigen::Vector3d::Zero();
     double m_h = 1;
+    /// A rounding of the largest tet: the farthest a point is from a tet it is a rounding off.
+    double m_eps = 0;
     std::array<int64_t, 3> m_n = {{1, 1, 1}};
     std::vector<std::vector<uint32_t>> m_cells;
 };

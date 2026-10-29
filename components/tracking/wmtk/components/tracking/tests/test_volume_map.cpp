@@ -488,6 +488,95 @@ TEST_CASE("volume-map-non-finite", "[volume_map]")
     CHECK(locator.locate(Eigen::Vector3d(0.1, 1e300, 0.1)).first == -1);
 }
 
+namespace {
+
+/// n^3 cubes of side 1/n, six tets each (Kuhn), every one the right way round, in the group
+/// set {} -- or, with `split`, those with x > 1/2 in {"right"}.
+TetMeshData kuhn_cube(const int n, const bool split = false)
+{
+    TetMeshData m;
+    const auto id = [n](int x, int y, int z) { return uint64_t((x * (n + 1) + y) * (n + 1) + z); };
+    for (int x = 0; x <= n; ++x) {
+        for (int y = 0; y <= n; ++y) {
+            for (int z = 0; z <= n; ++z) m.vertices.emplace_back(x, y, z);
+        }
+    }
+    for (auto& v : m.vertices) v /= n;
+    const int perms[6][3] = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
+    m.group_sets = split ? std::vector<std::set<std::string>>{{}, {"right"}}
+                         : std::vector<std::set<std::string>>{{}};
+    for (int x = 0; x < n; ++x) {
+        for (int y = 0; y < n; ++y) {
+            for (int z = 0; z < n; ++z) {
+                for (const auto& p : perms) {
+                    int c[3] = {x, y, z};
+                    std::array<uint64_t, 4> t;
+                    t[0] = id(c[0], c[1], c[2]);
+                    for (int k = 0; k < 3; ++k) {
+                        ++c[p[k]];
+                        t[k + 1] = id(c[0], c[1], c[2]);
+                    }
+                    const auto& V = m.vertices;
+                    if (volume::orient(V[t[0]], V[t[1]], V[t[2]], V[t[3]]) < 0) {
+                        std::swap(t[2], t[3]);
+                    }
+                    m.tets.push_back(t);
+                    m.groups.push_back(split && 2 * x >= n ? 1 : 0);
+                }
+            }
+        }
+    }
+    return m;
+}
+
+} // namespace
+
+TEST_CASE("volume-tet-locator", "[volume_map]")
+{
+    const TetMeshData m = kuhn_cube(5, true);
+    const TetLocator locator(m);
+    std::mt19937 rng(11);
+    const auto u = [&rng]() { return double(rng() % 100000) / 100000; };
+    // On the box's faces, and a rounding out of them: every one has a tet, its coordinates
+    // putting it back to a rounding.
+    size_t found = 0, n = 0, back = 0;
+    for (int i = 0; i < 3000; ++i) {
+        const int axis = int(rng() % 3), side = int(rng() % 2);
+        Eigen::Vector3d p(u(), u(), u());
+        p[axis] = side;
+        for (const int ulps : {0, 1, 4}) {
+            Eigen::Vector3d q = p;
+            for (int k = 0; k < ulps; ++k) q[axis] = std::nextafter(q[axis], side ? 2. : -1.);
+            const auto [t, b] = locator.locate(q);
+            ++n;
+            if (t < 0) continue;
+            ++found;
+            Eigen::Vector3d x = Eigen::Vector3d::Zero();
+            for (int k = 0; k < 4; ++k) x += b[k] * m.vertices[m.tets[size_t(t)][k]];
+            back += (x - q).norm() < 1e-12;
+        }
+    }
+    CHECK(found == n);
+    CHECK(back == n);
+    // Farther out, nothing.
+    CHECK(locator.locate(Eigen::Vector3d(0.5, 0.5, 1 + 1e-6)).first == -1);
+    CHECK(locator.locate(Eigen::Vector3d(-1e-6, 0.5, 0.5)).first == -1);
+    // A point on the face between the groups is in both, and found in the one asked for.
+    for (int i = 0; i < 200; ++i) {
+        const Eigen::Vector3d p(0.6, u(), u());
+        for (const uint32_t g : {0u, 1u}) {
+            const auto [t, b] = locator.locate(p, g);
+            REQUIRE(t >= 0);
+            CHECK(m.groups[size_t(t)] == g);
+            CHECK(locator.in_group(p, g));
+        }
+    }
+    CHECK_FALSE(locator.in_group(Eigen::Vector3d(0.1, 0.5, 0.5), 1));
+    // A mesh with no tets has none to find.
+    const TetMeshData empty;
+    CHECK(TetLocator(empty).locate(Eigen::Vector3d::Zero()).first == -1);
+}
+
 TEST_CASE("volume-chebyshev", "[volume_map]")
 {
     // The unit cube's faces: the farthest point from all of them is its centre, at 1/2.
