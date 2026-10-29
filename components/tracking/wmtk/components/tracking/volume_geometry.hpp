@@ -40,7 +40,7 @@ Eigen::Vector4d barycentric(
     const Eigen::Vector3d& c,
     const Eigen::Vector3d& d);
 /// barycentric(), exactly (rational volume ratios), rounded once: for a nearly flat tet, whose
-/// coordinates in doubles are only right as a whole.
+/// coordinates in doubles are only right as a whole. -inf for a point that is not a number.
 Eigen::Vector4d exact_barycentric(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
@@ -64,8 +64,9 @@ Outside outside_of(
 /// exactly; else, of those p is outside of by a rounding (its distance to each face plane it is
 /// outside of below 1e-9 of the tet's size), the one whose smallest exact barycentric
 /// coordinate is largest; nothing if p is farther out of them all. With p's coordinates in it,
-/// clamped to it, and that smallest coordinate before clamping (0 if held exactly). Coordinates that doubles get wrong -- outside the tet
-/// for a point in it, as in a nearly flat tet -- are computed exactly.
+/// clamped to it, and that smallest coordinate before clamping (0 if held exactly); nothing for
+/// a point that is not a number. Coordinates that doubles get wrong -- outside the tet for a
+/// point in it, as in a nearly flat tet -- are computed exactly.
 struct Location
 {
     size_t tet;
@@ -76,6 +77,7 @@ template <typename Accept>
 std::optional<Location>
 locate_in(const Tets& T, const Positions& X, const Eigen::Vector3d& p, const Accept& accept)
 {
+    if (!p.allFinite()) return std::nullopt;
     std::vector<size_t> within_rounding;
     for (size_t k = 0; k < T.size(); ++k) {
         if (!accept(k)) continue;

@@ -1338,9 +1338,12 @@ std::vector<VolumePoint> VolumeMap::to_input(std::vector<VolumePoint> points) co
 std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool forward) const
 {
     if (pts.empty()) return pts;
-    // a uniform grid over the points, to find those in an operation's tets
-    Eigen::Vector3d lo = pts[0].position, hi = lo;
+    // a uniform grid over the points, to find those in an operation's tets; a point that is
+    // not a number is in none
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Eigen::Vector3d hi = -lo;
     for (const auto& p : pts) {
+        if (!p.position.allFinite()) continue;
         lo = lo.cwiseMin(p.position);
         hi = hi.cwiseMax(p.position);
     }
@@ -1365,7 +1368,9 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
              int64_t(std::floor((x[2] - lo[2]) / h))}};
     };
     std::unordered_map<std::array<int64_t, 3>, std::vector<size_t>, KeyHash> grid;
-    for (size_t n = 0; n < pts.size(); ++n) grid[key(pts[n].position)].push_back(n);
+    for (size_t n = 0; n < pts.size(); ++n) {
+        if (pts[n].position.allFinite()) grid[key(pts[n].position)].push_back(n);
+    }
     const auto move_point = [&](const size_t n, const Eigen::Vector3d& to) {
         auto& cell = grid[key(pts[n].position)];
         cell.erase(std::find(cell.begin(), cell.end(), n));

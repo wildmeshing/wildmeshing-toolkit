@@ -109,10 +109,12 @@ std::pair<int64_t, Eigen::Vector4d> TetLocator::locate(
     const Eigen::Vector3d& p,
     const uint32_t group) const
 {
+    if (!p.allFinite()) return {-1, Eigen::Vector4d::Zero()};
     int64_t c[3];
     for (int k = 0; k < 3; ++k) {
-        c[k] = int64_t(std::floor((p[k] - m_lo[k]) / m_h));
-        if (c[k] < 0 || c[k] >= m_n[k]) return {-1, Eigen::Vector4d::Zero()};
+        const double x = std::floor((p[k] - m_lo[k]) / m_h);
+        if (!(x >= 0 && x < double(m_n[k]))) return {-1, Eigen::Vector4d::Zero()};
+        c[k] = int64_t(x);
     }
     // Exact containment, as the volume map locates its points (volume::locate_in): the tets
     // holding p, else those it is out of by a rounding; of the group first, if given.

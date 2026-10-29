@@ -253,7 +253,8 @@ struct TetPoint
  * <output>.msh; for tetwild, the mesh before its filter, of which <output>.msh holds the part
  * kept. A point keeps its region: where it lands on a face between two, it is named by a tet of
  * its own. One with no tet to land in -- outside the mesh given -- comes back with no tet
- * (kNoId).
+ * (kNoId), as does one that is no point: of a tet the mesh does not have, or with coordinates
+ * that are not numbers.
  */
 class VolumeTracking
 {

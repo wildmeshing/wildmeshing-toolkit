@@ -88,6 +88,10 @@ Eigen::Vector4d exact_barycentric(
     const Eigen::Vector3d& c,
     const Eigen::Vector3d& d)
 {
+    // a rational of a NaN or an infinity is a floating point exception in GMP
+    if (!(p.allFinite() && a.allFinite() && b.allFinite() && c.allFinite() && d.allFinite())) {
+        return Eigen::Vector4d::Constant(-std::numeric_limits<double>::infinity());
+    }
     using Q = wmtk::Rational;
     using V = std::array<Q, 3>;
     const auto q = [](const Eigen::Vector3d& x) { return V{{Q(x[0]), Q(x[1]), Q(x[2])}}; };

@@ -1,5 +1,6 @@
 #include <wmtk/components/tracking/VolumeMap.hpp>
 #include <wmtk/components/tracking/volume_geometry.hpp>
+#include <wmtk/components/tracking/volume_io.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -439,6 +440,52 @@ TEST_CASE("volume-map-pairing", "[volume_map]")
     std::filesystem::remove(path);
     REQUIRE(w.surface);
     CHECK(*w.surface == history::surface_key(h));
+}
+
+TEST_CASE("volume-map-non-finite", "[volume_map]")
+{
+    // A point that is not a number is passed by, whatever else is mapped with it: a rational of a
+    // NaN or an infinity is a floating point exception in GMP.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const Eigen::Vector3d a(0, 0, 0), b(1, 0, 0), c(0, 1, 0), d(0, 0, 1);
+    CHECK_FALSE(volume::exact_barycentric(Eigen::Vector3d(nan, 0, 0), a, b, c, d).allFinite());
+    CHECK_FALSE(volume::exact_barycentric(Eigen::Vector3d(0, inf, 0), a, b, c, d).allFinite());
+    CHECK_FALSE(volume::exact_barycentric(a, Eigen::Vector3d(nan, 0, 0), b, c, d).allFinite());
+    const volume::Tets T = {{{0, 1, 2, 3}}};
+    const volume::Positions X = {a, b, c, d};
+    const auto any = [](size_t) { return true; };
+    CHECK_FALSE(volume::locate_in(T, X, Eigen::Vector3d(nan, 0.1, 0.1), any));
+    CHECK(volume::locate_in(T, X, Eigen::Vector3d(0.1, 0.1, 0.1), any));
+
+    const history::SurfaceHistory h = square_history();
+    const VolumeMap map(h, square_volume(h));
+    std::vector<VolumePoint> pts = {
+        {Eigen::Vector3d(0.5, 0.4, 0.3), 1},
+        {Eigen::Vector3d(nan, 0.4, 0.3), 1},
+        {Eigen::Vector3d(0.5, inf, -inf), 1},
+        {},
+        {Eigen::Vector3d(0.5, 0.4, -0.3), 0}};
+    for (const bool forward : {true, false}) {
+        const auto out = forward ? map.to_output(pts) : map.to_input(pts);
+        REQUIRE(out.size() == pts.size());
+        CHECK(out[0].position.allFinite());
+        CHECK(std::isnan(out[1].position[0]));
+        CHECK(std::isinf(out[2].position[1]));
+        CHECK(std::isnan(out[3].position[2]));
+        CHECK(out[4].position.allFinite());
+    }
+
+    TetMeshData m;
+    m.vertices = {a, b, c, d};
+    m.tets = {{{0, 1, 2, 3}}};
+    m.groups = {0};
+    m.group_sets = {{}};
+    const TetLocator locator(m);
+    CHECK(locator.locate(Eigen::Vector3d(0.1, 0.1, 0.1)).first == 0);
+    CHECK(locator.locate(Eigen::Vector3d(nan, 0.1, 0.1)).first == -1);
+    CHECK(locator.locate(Eigen::Vector3d(0.1, inf, 0.1)).first == -1);
+    CHECK(locator.locate(Eigen::Vector3d(0.1, 1e300, 0.1)).first == -1);
 }
 
 TEST_CASE("volume-chebyshev", "[volume_map]")

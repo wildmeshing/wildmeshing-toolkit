@@ -29,7 +29,8 @@ class TetLocator
 {
 public:
     explicit TetLocator(const TetMeshData& m);
-    /// The tet and the point's barycentric coordinates in it; tet -1 if no tet is near.
+    /// The tet and the point's barycentric coordinates in it; tet -1 if no tet is near, or p is
+    /// not a number.
     std::pair<int64_t, Eigen::Vector4d> locate(const Eigen::Vector3d& p) const;
     /// locate(), preferring a tet in group set `group` among those holding p to a rounding (a
     /// point on a face between two regions); any tet if none of the group does.

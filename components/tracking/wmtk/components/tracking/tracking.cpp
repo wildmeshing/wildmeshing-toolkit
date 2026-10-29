@@ -335,9 +335,14 @@ std::vector<TetPoint> VolumeTracking::map_points(
     const TetMeshData& from = forward ? m_in : m_out;
     const TetMeshData& to = forward ? m_out : m_in;
     const TetLocator& locate = forward ? *m_out_locator : *m_in_locator;
+    // A point of no tet, or with coordinates that are not numbers, is left without a position,
+    // which the map passes by, and comes back with no tet.
+    const auto valid = [&](const TetPoint& p) {
+        return p.tet < from.tets.size() && p.bary.allFinite();
+    };
     std::vector<VolumePoint> pts(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
-        if (points[i].tet >= from.tets.size()) continue;
+        if (!valid(points[i])) continue;
         const auto& t = from.tets[points[i].tet];
         Eigen::Vector3d x = Eigen::Vector3d::Zero();
         for (int k = 0; k < 4; ++k) x += points[i].bary[k] * from.vertices[t[k]];
@@ -350,7 +355,7 @@ std::vector<TetPoint> VolumeTracking::map_points(
     const auto there = forward ? m_map.to_output(pts) : m_map.to_input(pts);
     std::vector<TetPoint> out(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
-        if (points[i].tet >= from.tets.size()) continue;
+        if (!valid(points[i])) continue;
         // a tet of the point's own region (by the names of its groups), else any holding it
         const auto& groups = from.group_sets[from.groups[points[i].tet]];
         const auto g = std::find(to.group_sets.begin(), to.group_sets.end(), groups);

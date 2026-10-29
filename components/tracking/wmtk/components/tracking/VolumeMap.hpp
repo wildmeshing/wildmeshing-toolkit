@@ -6,6 +6,7 @@
 
 #include <Eigen/Core>
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -18,11 +19,12 @@ namespace wmtk::components::tracking {
 /// A point of a tet mesh: where it is, and its region, an index into the volume history's
 /// regions (VolumeHistory::regions, each a set of tags) -- or kAnyRegion: the region of the tet
 /// holding it, where an operation's tets first do (a point on a surface between two regions
-/// then goes either way).
+/// then goes either way). A position that is not a number (the default) is no point: a map
+/// leaves it as it is.
 struct VolumePoint
 {
     static constexpr uint32_t kAnyRegion = uint32_t(-1);
-    Eigen::Vector3d position;
+    Eigen::Vector3d position = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     uint32_t region = kAnyRegion;
 };
 
