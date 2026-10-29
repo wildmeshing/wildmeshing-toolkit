@@ -8,6 +8,7 @@
 #include <wmtk/components/triwild/TriWildMesh.h>
 #include <wmtk/components/triwild/triwild.hpp>
 #include <wmtk/envelope/CompositeEnvelopes.hpp>
+#include <wmtk/history/Replay.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -356,4 +357,30 @@ TEST_CASE("triwild-filter-keeps-tracked-edges", "[triwild][input_sets]")
         CHECK(expected.size() < tracked.size());
         CHECK(got == expected);
     }
+}
+
+TEST_CASE("curve-history-finishes-on-a-consolidated-mesh", "[triwild][tracking]")
+{
+    // A curve history names the output's points by the mesh's vertex ids, the output's rows only
+    // once the mesh is consolidated: finishing it before refuses, after gives the history.
+    Parameters params = make_params();
+    TriWildMesh mesh(params, 1e-2, 0);
+    build_fan(mesh, 0b01, 0b10);
+    mesh.m_input_envelopes.set({loose_fan_envelope(), loose_fan_envelope()});
+    mesh.record_curve_history("{}");
+    REQUIRE(collapse_v1_into_v2(mesh));
+    CHECK_THROWS(mesh.finish_curve_history());
+    mesh.consolidate_mesh();
+    const auto h = mesh.finish_curve_history();
+    REQUIRE(h);
+    // The two tracked edges became one, and its ends are vertex rows of the mesh.
+    history::CurveReplay r(*h);
+    r.apply_all(*h);
+    size_t segments = 0;
+    for (uint64_t f = 0; f < r.faces().size(); ++f) {
+        if (!r.face_alive()[f]) continue;
+        ++segments;
+        for (const uint64_t v : r.faces()[f]) CHECK(h->output_vertex_ids[v] < mesh.vert_capacity());
+    }
+    CHECK(segments == 1);
 }

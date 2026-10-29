@@ -771,7 +771,8 @@ public:
      * the history returned is that, then the insertion -- each tracked edge on the input segments
      * it lies on, from record_curve_history's sources -- then the recorded one, so it maps the
      * input files to the output. The output names a point on the curves by two of its vertices,
-     * numbered as they are now: the mesh must be written as it is here.
+     * numbered as they are now: the mesh must be written as it is here, consolidated -- which
+     * this checks, throwing otherwise.
      */
     std::optional<history::CurveHistory> finish_curve_history(
         const history::CurveHistory* input = nullptr);

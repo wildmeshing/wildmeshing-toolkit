@@ -680,6 +680,15 @@ std::optional<history::CurveHistory> TriOptimizerMesh::finish_curve_history(
     const history::CurveHistory* input)
 {
     if (!m_recorded_curves) return std::nullopt;
+    // output_vertex_ids are the mesh's vertex ids, which are the output's rows only once the mesh
+    // is consolidated: with a slot left by a removed vertex, they would name the wrong vertices.
+    if (get_vertices().size() != vert_capacity()) {
+        log_and_throw_error(
+            "curve history: the mesh has {} vertex slots for {} vertices; consolidate it before "
+            "finishing the history, whose output ids are its vertex rows",
+            vert_capacity(),
+            get_vertices().size());
+    }
     if (const size_t drift = resync_curve_history(tracked_edges())) {
         logger().warn("curve history: {} tracked edges changed outside the operations", drift);
     }
