@@ -292,3 +292,54 @@ TEST_CASE("tracking-memory-route", "[tracking]")
     CHECK(fs::exists(dir / "mapped.txt"));
     CHECK(!fs::exists(fs::current_path() / "mapped.txt"));
 }
+
+TEST_CASE("tracking-info-counts-a-lost-point-once", "[tracking]")
+{
+    // info maps the output's face centroids (segment midpoints) to the input and back. One on a
+    // face a replace_faces added has no preimage: it is lost, and counted once, on the way in --
+    // not again on the way back, where it is no point at all.
+    using wmtk::history::EditKind;
+    const auto info = [](const std::vector<uint8_t>& bytes) {
+        return tracking::tracking(
+                   {{"history", nlohmann::json::binary(bytes)}, {"operation", "info"}},
+                   {})
+            .second;
+    };
+    const auto check = [](const nlohmann::json& report) {
+        CHECK(report.at("round_trip_lost") == 1);
+        CHECK(report.at("to_input_warnings").at("total") == 1);
+        CHECK(report.at("to_output_warnings").at("total") == 0);
+        CHECK(report.at("round_trip_max_displacement").get<double>() < 1e-12);
+    };
+    SECTION("a surface")
+    {
+        // A square of two triangles; the second is replaced by a face with its corners.
+        wmtk::history::SurfaceHistory h;
+        h.vertices = {
+            Eigen::Vector3d(0, 0, 0),
+            Eigen::Vector3d(1, 0, 0),
+            Eigen::Vector3d(1, 1, 0),
+            Eigen::Vector3d(0, 1, 0)};
+        h.vertex_alive.assign(4, 1);
+        h.faces = {{{0, 1, 2}}, {{0, 2, 3}}};
+        h.face_alive.assign(2, 1);
+        h.edits.push_back({EditKind::replace_faces, {0, 2, 3}, {1, 2}, {}});
+        const nlohmann::json report = info(h.to_bytes());
+        CHECK(report.at("centroids") == 2);
+        check(report);
+    }
+    SECTION("curves")
+    {
+        // A polyline 0-1-2; its second segment is replaced by one with its ends.
+        wmtk::history::CurveHistory h;
+        h.vertices = {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(2, 0, 0)};
+        h.vertex_alive.assign(3, 1);
+        h.faces = {{{0, 1}}, {{1, 2}}};
+        h.face_alive.assign(2, 1);
+        h.features = {{{0}}, {{2}}};
+        h.edits.push_back({EditKind::replace_faces, {1, 2}, {1, 2}, {}});
+        const nlohmann::json report = info(h.to_bytes());
+        CHECK(report.at("midpoints") == 2);
+        check(report);
+    }
+}

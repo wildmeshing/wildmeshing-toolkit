@@ -395,22 +395,32 @@ nlohmann::json curves(
     const auto in = map.to_input(midpoints, &to_input_warnings);
     log_warnings("output midpoints to the input", to_input_warnings);
     report["to_input_warnings"] = warnings_report(to_input_warnings);
-    const auto back = map.to_output(in, &to_output_warnings);
+    // Back to the output, the midpoints that reached the input: one that did not is lost, and
+    // counted once, in to_input's warnings.
+    std::vector<size_t> reached;
+    std::vector<CurvePoint> found;
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i].segment >= map.input_segments().size()) continue;
+        reached.push_back(i);
+        found.push_back(in[i]);
+    }
+    const auto back = map.to_output(found, &to_output_warnings);
     log_warnings("and back to the output", to_output_warnings);
     report["to_output_warnings"] = warnings_report(to_output_warnings);
     double max_err = 0;
-    size_t lost = 0;
+    size_t lost = midpoints.size() - found.size();
     std::vector<double> drift;
-    for (size_t i = 0; i < midpoints.size(); ++i) {
-        if (back[i].segment >= S.size()) {
+    for (size_t k = 0; k < found.size(); ++k) {
+        const size_t i = reached[k];
+        drift.push_back((position(midpoints[i], V, S) -
+                         position(found[k], map.input_vertices(), map.input_segments()))
+                            .norm());
+        if (back[k].segment >= S.size()) {
             ++lost;
             continue;
         }
         max_err =
-            std::max(max_err, (position(back[i], V, S) - position(midpoints[i], V, S)).norm());
-        drift.push_back((position(midpoints[i], V, S) -
-                         position(in[i], map.input_vertices(), map.input_segments()))
-                            .norm());
+            std::max(max_err, (position(back[k], V, S) - position(midpoints[i], V, S)).norm());
     }
     logger().info(
         "{} output midpoints mapped to the input and back in {:.3}s: max displacement {:.3g}, {} "
@@ -767,17 +777,27 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const auto in = map.to_input(centroids, &to_input_warnings);
     log_warnings("output centroids to the input", to_input_warnings);
     report["to_input_warnings"] = warnings_report(to_input_warnings);
-    const auto back = map.to_output(in, &to_output_warnings);
+    // Back to the output, the centroids that reached the input: one that did not is lost, and
+    // counted once, in to_input's warnings.
+    std::vector<size_t> reached;
+    std::vector<SurfacePoint> found;
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i].face >= map.input_faces().size()) continue;
+        reached.push_back(i);
+        found.push_back(in[i]);
+    }
+    const auto back = map.to_output(found, &to_output_warnings);
     log_warnings("and back to the output", to_output_warnings);
     report["to_output_warnings"] = warnings_report(to_output_warnings);
     double max_err = 0;
-    size_t lost = 0;
-    for (size_t i = 0; i < centroids.size(); ++i) {
-        if (back[i].face >= map.output_faces().size()) {
+    size_t lost = centroids.size() - found.size();
+    for (size_t k = 0; k < found.size(); ++k) {
+        if (back[k].face >= map.output_faces().size()) {
             ++lost;
             continue;
         }
-        const double err = (position(back[i], map.output_vertices(), map.output_faces()) -
+        const size_t i = reached[k];
+        const double err = (position(back[k], map.output_vertices(), map.output_faces()) -
                             position(centroids[i], map.output_vertices(), map.output_faces()))
                                .norm();
         max_err = std::max(max_err, err);
