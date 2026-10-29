@@ -5,6 +5,7 @@
 #include <igl/Timer.h>
 #include <jse/jse.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/InputHistory.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
@@ -67,10 +68,22 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     double target_abs = json_params["target_abs"];
 
+    const std::string history_output = json_params["history_output"];
+
     const double remove_duplicate_eps = 1e-5;
     MatrixXd V;
     MatrixXi F;
-    component_io.triangles(input_path, V, F, remove_duplicate_eps);
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    io::ReadProvenance read;
+    component_io.triangles(
+        std::vector<std::string>{input_path},
+        V,
+        F,
+        remove_duplicate_eps,
+        -1,
+        nullptr,
+        history_output.empty() ? nullptr : &read);
 
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
@@ -103,9 +116,24 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         target_abs = verts.size() * target_rel;
     }
 
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        history->history().metadata = component_io.history_metadata(json_params);
+    }
+
     const double runtime = run_qslim_collapse(input_path, target_abs, output, m);
     m.consolidate_mesh();
     if (!output.empty()) m.write_triangle_mesh(output);
+
+    if (history) {
+        // The file as read, the weld, then the simplification: the input file to the output file,
+        // which is written in the history's last numbering.
+        m.stop_history();
+        component_io.save_history(
+            history::from_input(read, verts, history->history()),
+            history_output);
+    }
     logger().info("After #V = {}, #F = {}", m.vert_capacity(), m.tri_capacity());
 
     if (json_params["throw_on_fail"]) {
@@ -142,7 +170,7 @@ ComponentResult qslim(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::qslim

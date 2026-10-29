@@ -84,8 +84,8 @@
     {
         "pointer": "/min_tet_volume",
         "type": "float",
-        "default": 1e-12,
-        "doc": "Nonnegative acceptance floor for new or modified shell tetrahedra, candidate pyramid decompositions and new background pyramid cavity cones, in coordinate units cubed. Background optimization and unchanged background tets only require strictly positive volume. Existing positive cells below the floor may be retained; they do not terminate the pipeline."
+        "default": 0,
+        "doc": "Optional nonnegative signed-volume floor for new or modified shell tetrahedra, candidate pyramid decompositions and new background pyramid cavity cones. The default zero requires strictly positive volume using exact predicates, without a coordinate-scale-dependent cutoff. Background optimization and unchanged background tets also require strictly positive volume."
     },
     {
         "pointer": "/smoothing_max_backtracks",

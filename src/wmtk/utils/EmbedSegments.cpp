@@ -112,9 +112,15 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
  * Make the oriented curves consistent patch by patch, each keeping the direction most of its
  * length has -- the 2D counterpart of orient_facet_patches in EmbedTriangles.cpp, which see.
  * The edges of orientation +-1 are linked at every vertex exactly two of them share and no
- * other edge of nonzero orientation touches.
+ * other edge of nonzero orientation touches. With `edge_input` (per edge, an id of the inputs it
+ * lies on), only edges on the same inputs are linked, so two input curves meeting end to end in
+ * opposite directions are both kept.
  */
-void orient_curve_patches(const MatrixXd& V_out, const MatrixXi& E_out, std::vector<int>& o)
+void orient_curve_patches(
+    const MatrixXd& V_out,
+    const MatrixXi& E_out,
+    std::vector<int>& o,
+    const std::vector<int>* edge_input = nullptr)
 {
     constexpr uint32_t not_unit = UINT32_MAX;
     std::vector<uint32_t> unit; // edge of each element
@@ -143,7 +149,9 @@ void orient_curve_patches(const MatrixXd& V_out, const MatrixXi& E_out, std::vec
     for (size_t s = 0; s < ends.size();) {
         size_t e = s + 1;
         while (e < ends.size() && ends[e].v == ends[s].v) ++e;
-        if (e - s == 2 && ends[s].elem != not_unit && ends[s + 1].elem != not_unit) {
+        if (e - s == 2 && ends[s].elem != not_unit && ends[s + 1].elem != not_unit &&
+            (edge_input == nullptr ||
+             (*edge_input)[unit[ends[s].elem]] == (*edge_input)[unit[ends[s + 1].elem]])) {
             links.push_back({ends[s].elem, ends[s + 1].elem, ends[s].leaves != ends[s + 1].leaves});
         }
         s = e;
@@ -176,7 +184,8 @@ void embed_segments(
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources,
     std::vector<int>* E_out_orientation,
-    std::vector<int>* point_map)
+    std::vector<int>* point_map,
+    const std::vector<int>* E_input)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -328,7 +337,30 @@ void embed_segments(
         }
     }
     if (E_out_orientation != nullptr) {
-        orient_curve_patches(V_out, E_out, *E_out_orientation);
+        // Per output edge, an id of the inputs of the segments it tiles: the same id, the same
+        // inputs. The repair then keeps to one input.
+        std::vector<int> edge_input;
+        if (E_input != nullptr) {
+            std::map<std::vector<int>, int> id;
+            std::vector<int> inputs;
+            edge_input.reserve(constrained_edges.size());
+            for (const auto& [edge, src] : constrained_edges) {
+                inputs.clear();
+                for (const int seg : src) {
+                    if (size_t(seg) < E_input->size() && (*E_input)[seg] >= 0) {
+                        inputs.push_back((*E_input)[seg]);
+                    }
+                }
+                std::sort(inputs.begin(), inputs.end());
+                inputs.erase(std::unique(inputs.begin(), inputs.end()), inputs.end());
+                edge_input.push_back(id.emplace(inputs, int(id.size())).first->second);
+            }
+        }
+        orient_curve_patches(
+            V_out,
+            E_out,
+            *E_out_orientation,
+            E_input != nullptr ? &edge_input : nullptr);
     }
 
     // Where did each input point end up? The remesher reports {triangle, vertex} per input
@@ -361,19 +393,39 @@ void read_input_curves(
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    io::ReadProvenance* provenance)
 {
     Vs_out.clear();
     Es_out.clear();
+    if (provenance != nullptr) *provenance = io::ReadProvenance();
 
     // read input edge meshes
+    int raw_vertices = 0, welded_vertices = 0, welded_edges = 0;
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
+        io::ReadProvenance read;
+        io::ReadProvenance* const as_read = provenance ? &read : nullptr;
         if (component_io)
-            component_io->edges(path, V, E, remove_duplicate_eps);
+            component_io->edges(path, V, E, remove_duplicate_eps, -1, as_read);
         else
-            io::read_edge_mesh(path, V, E, remove_duplicate_eps);
+            io::read_edge_mesh(path, V, E, remove_duplicate_eps, -1, as_read);
+        if (provenance != nullptr) {
+            // Concatenated as the network is below: each file's ids after the ones before.
+            auto& p = *provenance;
+            const auto offset = [](const int i, const int by) { return i < 0 ? -1 : i + by; };
+            const Eigen::Index nv = p.V.rows(), ne = p.cells.rows();
+            p.V.conservativeResize(nv + read.V.rows(), 2);
+            p.V.bottomRows(read.V.rows()) = read.V.leftCols(2);
+            p.cells.conservativeResize(ne + read.cells.rows(), 2);
+            p.cells.bottomRows(read.cells.rows()) = read.cells.array() + raw_vertices;
+            for (const int v : read.vertex_map) p.vertex_map.push_back(offset(v, welded_vertices));
+            for (const int e : read.cell_map) p.cell_map.push_back(offset(e, welded_edges));
+            raw_vertices += int(read.V.rows());
+            welded_vertices += int(V.rows());
+            welded_edges += int(E.rows());
+        }
         logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
         V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
         Vs_out.push_back(V);

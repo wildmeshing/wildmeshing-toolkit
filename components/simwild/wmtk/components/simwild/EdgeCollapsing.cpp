@@ -57,6 +57,7 @@ void SimWildMesh::simplify()
         m_envelope->use_exact = false;
     }
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
+    init_label_envelopes(m_sim_params.eps_simplify, m_envelope->use_exact);
 
     /**
      * Not checking the quality here can lead to horrible elements that take forever to fix in the
@@ -89,11 +90,13 @@ void SimWildMesh::simplify()
     m_envelope = nullptr;
     m_V_envelope.clear();
     m_F_envelope.clear();
+    m_F_envelope_labels.clear();
     if (V.size() > 0 && F.size() > 0) {
         init_envelope(V, F);
     } else {
         logger().warn("No surface faces left after simplification, skip re-building envelope");
     }
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
     logger().info("===== Simplification done =====");
 }
 

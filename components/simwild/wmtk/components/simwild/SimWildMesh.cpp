@@ -29,6 +29,7 @@
 #include <paraviewo/VTMWriter.hpp>
 #include <paraviewo/VTUWriter.hpp>
 
+#include <algorithm>
 #include <limits>
 
 #include "expression_parser/Parser.hpp"
@@ -186,6 +187,23 @@ std::tuple<double, double> SimWildMesh::optimization_quality_stats()
     return {breakdown.max_relative, breakdown.avg_relative};
 }
 
+std::array<size_t, 3> SimWildMesh::orient_tracked_face(
+    const std::array<size_t, 3>& f,
+    const std::vector<size_t>& tets) const
+{
+    if (tets.size() != 2) return TetOptimizerMesh::orient_tracked_face(f, tets);
+    const CellTag& a = m_tet_attribute.at(tets[0]).tags;
+    const CellTag& b = m_tet_attribute.at(tets[1]).tags;
+    if (a == b) return TetOptimizerMesh::orient_tracked_face(f, tets);
+    return face_out_of(a < b ? tets[0] : tets[1], f);
+}
+
+std::vector<int64_t> SimWildMesh::tet_tags(const size_t tid) const
+{
+    const CellTag& t = m_tet_attribute.at(tid).tags;
+    return {t.begin(), t.end()};
+}
+
 void SimWildMesh::update_attributes()
 {
     if (m_params.preserve_topology) {
@@ -220,7 +238,8 @@ void SimWildMesh::update_attributes()
                 opposite.has_value() &&
                 m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
 
-            if (is_interface) {
+            // A tagged face stays surface wherever it lies.
+            if (is_interface || (m_face_attribute[fid].input_set() & face_tag_mask()) != 0) {
                 for (const size_t vid : get_face_vids(face)) {
                     m_vertex_attribute[vid].m_is_on_surface = true;
                 }
@@ -296,6 +315,11 @@ bool SimWildMesh::check_interface_faces_tagged(const bool verbose) const
         const size_t tid = face.tid(*this);
         const size_t fid = face.fid(*this);
         const bool marked = m_face_attribute[fid].m_is_surface_fs;
+        // A tagged face is surface by its tag, not by the tets around it.
+        if (marked && (m_face_attribute[fid].input_set() & face_tag_mask()) != 0) {
+            num_surface++;
+            continue;
+        }
         const auto opposite = face.switch_tetrahedron(*this);
 
         if (!opposite.has_value()) {
@@ -454,6 +478,76 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
 }
 
 
+void SimWildMesh::init_label_envelopes(const double eps, const bool exact)
+{
+    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
+    // Each label from one source: the input triangles m_envelope is built around, when their
+    // labels are known and the label has any, else the mesh's faces carrying it.
+    std::vector<std::vector<std::array<Eigen::Vector3d, 3>>> buckets(max_bits);
+    if (m_F_envelope_labels.size() == m_F_envelope.size()) {
+        for (size_t r = 0; r < m_F_envelope.size(); ++r) {
+            const InputSet set = m_F_envelope_labels[r];
+            if (set == 0) continue;
+            const auto& f = m_F_envelope[r];
+            for (size_t b = 0; b < max_bits; ++b) {
+                if (set & (InputSet(1) << b)) {
+                    buckets[b].push_back(
+                        {{m_V_envelope[f[0]], m_V_envelope[f[1]], m_V_envelope[f[2]]}});
+                }
+            }
+        }
+    }
+    std::vector<bool> from_inputs(max_bits);
+    for (size_t b = 0; b < max_bits; ++b) from_inputs[b] = !buckets[b].empty();
+    for (const Tuple& f : get_faces()) {
+        const InputSet set = m_face_attribute[f.fid(*this)].input_set();
+        if (set == 0) continue;
+        const auto vs = get_face_vids(f);
+        for (size_t b = 0; b < max_bits; ++b) {
+            if ((set & (InputSet(1) << b)) && !from_inputs[b]) {
+                buckets[b].push_back(
+                    {{m_vertex_attribute[vs[0]].m_posf,
+                      m_vertex_attribute[vs[1]].m_posf,
+                      m_vertex_attribute[vs[2]].m_posf}});
+            }
+        }
+    }
+    size_t n = 0;
+    for (size_t b = 0; b < max_bits; ++b) {
+        if (!buckets[b].empty()) n = b + 1;
+    }
+    std::vector<std::shared_ptr<Envelope>> members;
+    for (size_t b = 0; b < n; ++b) {
+        if (buckets[b].empty()) {
+            members.push_back(nullptr); // no face, so nothing to hold
+            continue;
+        }
+        // The triangles as a soup: the envelope keeps a copy of what it is given, and coincident
+        // corners only cost memory, not correctness.
+        std::vector<Eigen::Vector3d> V_b;
+        std::vector<Eigen::Vector3i> F_b;
+        V_b.reserve(3 * buckets[b].size());
+        F_b.reserve(buckets[b].size());
+        for (const auto& t : buckets[b]) {
+            const int k = int(V_b.size());
+            V_b.insert(V_b.end(), t.begin(), t.end());
+            F_b.emplace_back(k, k + 1, k + 2);
+        }
+        auto env = std::make_shared<Envelope>(exact);
+        env->init(V_b, F_b, eps);
+        members.push_back(std::move(env));
+    }
+    m_input_envelopes.set(std::move(members));
+    if (n > 0) {
+        logger().info(
+            "label envelopes: {} face tags and {} tet tags, each surface face held to its own "
+            "(eps {:.6})",
+            m_face_tag_names.size(),
+            n > m_face_tag_names.size() ? n - m_face_tag_names.size() : 0,
+            eps);
+    }
+}
+
 void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
 {
     if (m_envelope) {
@@ -483,110 +577,6 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
-}
-
-
-void SimWildMesh::write_msh(std::string file, const bool write_envelope)
-{
-    if (!m_params.output_enabled) return;
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& vtx = get_vertices();
-    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
-        auto i = vtx[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-
-    const auto& tets = get_tets();
-
-    int64_t max_tag = -1;
-    for (const Tuple& t : tets) {
-        const size_t tid = t.tid(*this);
-        const auto& tags = m_tet_attribute[tid].tags;
-        if (tags.size() == 0) {
-            continue;
-        }
-        int64_t mt = *tags.rbegin();
-        max_tag = std::max(max_tag, mt);
-    }
-
-    if (m_tags_count < max_tag + 1) {
-        logger().warn(
-            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
-            max_tag,
-            m_tags_count);
-        m_tags_count = max_tag + 1;
-    }
-
-    std::vector<Tuple> tets_with_tag;
-    tets_with_tag.reserve(tets.size());
-
-    auto msh_add_tets = [&]() {
-        msh.add_tets(tets_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tet_vertices(tets_with_tag[k]);
-            std::array<size_t, 4> data;
-            for (int j = 0; j < 4; j++) {
-                data[j] = vs[j].vid(*this);
-            }
-            return data;
-        });
-    };
-
-    // ambient mesh (no non-zero tags)
-    for (const Tuple& t : tets) {
-        const size_t tid = t.tid(*this);
-        if (m_tet_attribute[tid].tags.empty()) {
-            tets_with_tag.push_back(t);
-        }
-    }
-    msh_add_tets();
-
-    msh.add_physical_group("ambient");
-
-    // add a group for each tag
-    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        tets_with_tag.clear();
-        for (const Tuple& t : tets) {
-            const size_t tid = t.tid(*this);
-            if (m_tet_attribute[tid].tags.count(tag_img)) {
-                tets_with_tag.push_back(t);
-            }
-        }
-
-        if (tets_with_tag.empty()) {
-            continue;
-        }
-
-        msh.add_empty_vertices(3);
-        msh_add_tets();
-
-        std::string group_name;
-        if (m_tag_id_to_name.count(tag_img)) {
-            group_name = m_tag_id_to_name[tag_img];
-        } else {
-            group_name = fmt::format("tag_{}", tag_img);
-            while (m_tag_name_to_id.count(group_name)) {
-                group_name += "_";
-            }
-            m_tag_name_to_id[group_name] = tag_img;
-            m_tag_id_to_name[tag_img] = group_name;
-            logger().warn(
-                "Tag {} does not have a name. Assigning the name {}.",
-                tag_img,
-                group_name);
-        }
-        msh.add_physical_group(group_name);
-    }
-
-    if (m_envelope && write_envelope) {
-        msh.add_face_vertices(m_V_envelope.size(), [this](size_t k) { return m_V_envelope[k]; });
-        msh.add_faces(m_F_envelope.size(), [this](size_t k) { return m_F_envelope[k]; });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    msh.save(file, true);
 }
 
 

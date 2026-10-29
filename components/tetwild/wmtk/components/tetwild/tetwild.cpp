@@ -11,6 +11,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
+#include <wmtk/history/History.hpp>
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
@@ -151,7 +152,6 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
-    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
@@ -172,6 +172,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
     params.colored_smoothing = json_params["colored_smoothing"];
+    params.check_surface_folds = json_params["check_surface_folds"];
 
     // Coarsening pass.
     params.coarsen_pass = json_params["coarsen_pass"];
@@ -187,6 +188,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
 
     params.preserve_topology = json_params["preserve_topology"];
+    // preserve_topology holds the input simplification to the link condition as well, so the
+    // surface handed to the arrangement has the input's topology.
+    const bool simplify_use_link_condition = params.preserve_topology;
+    if (json_params.contains("simplify_use_link_condition")) {
+        logger().warn(
+            "simplify_use_link_condition is gone: preserve_topology ({}) now sets the link "
+            "condition of the input simplification",
+            params.preserve_topology);
+    }
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
@@ -208,6 +218,32 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     params.skip_good_regions = json_params["skip_good_regions"];
     params.skip_good_regions_margin = json_params["skip_good_regions_margin"];
 
+    // Recording the tracked surface: from the input files as read, through the weld, the
+    // simplification and the insertion, to the output.
+    const std::string history_output = json_params["history_output"];
+    const bool record_history = !history_output.empty() && !json_params["use_legacy_code"];
+    if (!history_output.empty() && !record_history) {
+        logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
+    }
+    // The volume around it too, its own choice, recorded alongside from the insertion on (see
+    // below). It follows the surface history. And the coarsening pass's local smoothing moves a
+    // whole ball of vertices inside one collapse, of which the volume history, which records
+    // the stars of the edge's ends, sees none: refused, as use_legacy_code is.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (!record_history) {
+            log_and_throw_error(
+                "volume_history_output needs history_output (and not "
+                "use_legacy_code): the volume history follows the surface's");
+        }
+        if (params.coarsen_pass && params.coarsen_local_smoothing_passes > 0) {
+            log_and_throw_error(
+                "volume_history_output needs coarsen_local_smoothing_passes 0 with coarsen_pass: "
+                "the volume history does not see the vertices a coarsening collapse smooths");
+        }
+    }
+    history::SurfaceHistory input_history; // the files as read, welded, simplified
+
     std::vector<Eigen::Vector3d> verts;
     std::vector<std::array<size_t, 3>> tris;
     std::vector<int> tri_input; // the input each of `tris` came from
@@ -227,10 +263,48 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
-        component_io.triangles(input_paths, V, F, remove_duplicate_eps, -1, &tri_input);
+        io::ReadProvenance read;
+        component_io.triangles(
+            input_paths,
+            V,
+            F,
+            remove_duplicate_eps,
+            -1,
+            &tri_input,
+            record_history ? &read : nullptr);
+        // Each tracked face records the inputs it covers in max_inputs bits (see
+        // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
+        // own inputs. Refused here, before any work, rather than answered by the union.
+        if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+            log_and_throw_error(
+                "{} input surfaces; at most {} are supported",
+                input_paths.size(),
+                SurfaceTagAttributes::max_inputs);
+        }
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
+        if (record_history) {
+            // The files as they are, then the weld: each vertex renamed to the one it became.
+            auto& h = input_history;
+            for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+                h.vertices.push_back(read.V.row(v).transpose());
+            }
+            h.vertex_alive.assign(h.vertices.size(), 1);
+            for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
+                h.faces.push_back(
+                    {{uint64_t(read.cells(f, 0)),
+                      uint64_t(read.cells(f, 1)),
+                      uint64_t(read.cells(f, 2))}});
+            }
+            h.face_alive.assign(h.faces.size(), 1);
+            history::Edit weld{history::EditKind::relabel, {}, {}, {}};
+            for (const int n : read.vertex_map) {
+                weld.v.push_back(n < 0 ? history::kNoVertex : uint64_t(n));
+            }
+            for (uint64_t v = 0; v < verts.size(); ++v) weld.moves.push_back({v, verts[v]});
+            h.edits.push_back(std::move(weld));
+        }
     }
     // Feature inputs: an edge mesh to force into the tetrahedralization as tet edges, and
     // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
@@ -433,7 +507,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tris,
         modified_nonmanifold_v,
         simplify_eps,
-        simplify_boundary_eps);
+        simplify_boundary_eps,
+        tri_input);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
@@ -475,15 +550,26 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // warn that it "still preserves topology", which neither has been true of.)
         if (!params.preserve_topology) {
             logger().info(
-                "simplification may change the surface topology (link condition {}, open "
+                "simplification may change the surface topology (link condition off, open "
                 "boundary {})",
-                simplify_use_link_condition ? "on" : "off",
                 simplify_boundary_eps > 0 ? "in a tube" : "frozen");
+        }
+        std::shared_ptr<history::Recorder> simplification;
+        if (record_history) {
+            simplification = surf_mesh.start_history(
+                [&surf_mesh](size_t v) { return surf_mesh.vertex_attrs.at(v).pos; });
         }
         surf_mesh.collapse_shortest(0);
 
         surf_mesh.m_envelope.use_exact = saved_use_exact;
         surf_mesh.consolidate_mesh();
+        if (simplification) {
+            surf_mesh.stop_history();
+            if (!history::append(input_history, simplification->history())) {
+                log_and_throw_error(
+                    "history_output: the simplification does not start at the input");
+            }
+        }
         if (!surf_mesh.check_mesh_connectivity_validity()) {
             log_and_throw_error("Simplification produced an invalid mesh connectivity.");
         }
@@ -506,12 +592,17 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         vsimp[i] = surf_mesh.vertex_attrs[i].pos;
     }
 
+    // Which input each simplified face came from: the arrangement's provenance names input
+    // triangles, and the tracked faces it tiles them with are held to their inputs' envelopes.
+    // -1 for a slot no face fills.
+    std::vector<int> fsimp_input(fsimp.size(), -1);
     for (auto& t : surf_mesh.get_faces()) {
         auto i = t.fid(surf_mesh);
         auto vs = surf_mesh.oriented_tri_vertices(t);
         for (int j = 0; j < 3; j++) {
             fsimp[i][j] = vs[j].vid(surf_mesh);
         }
+        fsimp_input[i] = surf_mesh.face_attrs[i].input;
     }
     surf_mesh_owner.reset(); // `surf_mesh` dangles from here on; nothing below may use it
     t_simplify = phase_timer.getElapsedTime(); // surface simplification done
@@ -593,6 +684,49 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             memory_envelope = io::geometry_data(env_V, env_F, CellType::Triangle);
     }
 
+    // One envelope per input, around the same surface as tet_envelope and at the same eps, with
+    // the same predicate: what each tracked face is held to, through its input set
+    // (TetWildMesh::surface_envelope_for_face). tet_envelope stays the union for the uses that
+    // need one -- the collapse's point prefilter, the order-2 and feature fallbacks, the
+    // finalization. With one input the member would BE tet_envelope, so none is built and every
+    // face is held to tet_envelope exactly as before.
+    std::vector<std::shared_ptr<wmtk::Envelope>> input_envelopes;
+    if (input_paths.size() > 1) {
+        const std::vector<Eigen::Vector3d>& src_V = env_around_simplified ? vsimp : verts;
+        const std::vector<std::array<size_t, 3>>& src_F = env_around_simplified ? fsimp : tris;
+        const std::vector<int>& src_input = env_around_simplified ? fsimp_input : tri_input;
+        for (size_t k = 0; k < input_paths.size(); ++k) {
+            // This input's triangles over its own vertices only: an envelope keeps a copy of
+            // the vertices it is given.
+            std::vector<int64_t> local(src_V.size(), -1);
+            std::vector<Eigen::Vector3d> V_k;
+            std::vector<Eigen::Vector3i> F_k;
+            for (size_t i = 0; i < src_F.size(); ++i) {
+                if (src_input[i] != int(k)) continue;
+                Eigen::Vector3i f;
+                for (int j = 0; j < 3; ++j) {
+                    int64_t& l = local[src_F[i][j]];
+                    if (l < 0) {
+                        l = int64_t(V_k.size());
+                        V_k.push_back(src_V[src_F[i][j]]);
+                    }
+                    f[j] = int(l);
+                }
+                F_k.push_back(f);
+            }
+            if (F_k.empty()) {
+                input_envelopes.push_back(nullptr); // no triangle, so no face to hold
+                continue;
+            }
+            auto env = std::make_shared<wmtk::Envelope>(!use_sample_envelope);
+            env->init(V_k, F_k, opt_eps);
+            input_envelopes.push_back(std::move(env));
+        }
+        logger().info(
+            "per-input envelopes: {} inputs, each tracked face held to the envelopes of its own",
+            input_envelopes.size());
+    }
+
     // params.eps is deliberately NOT narrowed to match.
     //
     // It looks like it should be -- the veto now uses opt_eps -- but params.eps also sets
@@ -616,6 +750,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
             "The output has no containment guarantee and is for diagnosis only.");
         tet_envelope->disabled = true;
+        for (const auto& env : input_envelopes) {
+            if (env) env->disabled = true;
+        }
     }
 
     // The background mesh exists only to be cut by the insertion; held by pointer so it can be
@@ -677,6 +814,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // Exact arrangement of the simplified surface against a Delaunay background
     // mesh; the remesher's own tets are used directly, so no Steiner points.
     utils::EmbedFeaturesResult features_out;
+    std::vector<InputSet> facet_input_set; // per facet, with several inputs only
+    std::vector<std::vector<uint32_t>> facet_sources;
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -689,7 +828,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         feature_edge_vertices,
         feature_edges,
         feature_points,
-        &features_out);
+        &features_out,
+        input_envelopes.empty() ? nullptr : &fsimp_input,
+        input_envelopes.empty() ? nullptr : &facet_input_set,
+        record_history ? &facet_sources : nullptr);
 
     if (!feature_edges.empty() || !feature_points.empty()) {
         size_t tiling_edges = 0;
@@ -715,6 +857,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
+    // Where each facet on the input lies there, by the positions its corners will have.
+    for (size_t i = 0; i < facet_sources.size(); ++i) {
+        if (facet_sources[i].empty()) continue;
+        const auto& f = facets[i];
+        mesh_new.m_insertion_sources.emplace_back(
+            TetWildMesh::position_key(
+                to_double(v_rational[f[0]]),
+                to_double(v_rational[f[1]]),
+                to_double(v_rational[f[2]])),
+            std::move(facet_sources[i]));
+    }
+    facet_sources = {};
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
     const bool has_features = !feature_edges.empty() || !feature_points.empty();
@@ -742,7 +896,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tet_face_on_input_surface,
         &tet_face_orientation,
         has_features ? &features_out : nullptr,
-        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr);
+        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr,
+        input_envelopes.empty() ? nullptr : &facet_input_set);
+    mesh_new.m_input_envelopes.set(std::move(input_envelopes));
 
     // The oriented tracked surface is an integer 2-chain whose boundary the operations preserve:
     // empty for a closed input, on the input's open boundary otherwise. Cheap to state, and the
@@ -779,8 +935,10 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     std::vector<std::array<size_t, 4>>().swap(tets);
     std::vector<bool>().swap(tet_face_on_input_surface);
     std::vector<int8_t>().swap(tet_face_orientation);
+    std::vector<InputSet>().swap(facet_input_set);
     std::vector<Eigen::Vector3d>().swap(vsimp);
     std::vector<std::array<size_t, 3>>().swap(fsimp);
+    std::vector<int>().swap(fsimp_input);
 
     double insertion_time = insertion_timer.getElapsedTime();
 
@@ -802,6 +960,22 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // mesh_new.output_init_tetmesh("tetmesh_before_opt.txt");
 
     mesh_new.consolidate_mesh();
+
+    // From here on the tracked surface is recorded, starting where the insertion left it.
+    if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
+    // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
+    // written here, and ends at the mesh before the filter (<output>_history_output.msh). Both
+    // are files next to the output; on the memory route, which has none, the output meshes
+    // history_input and history_output.
+    MeshMap history_meshes;
+    if (!volume_history_output.empty()) {
+        if (component_io.memory()) {
+            history_meshes["mesh_history_input.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_input.msh");
+        }
+        mesh_new.record_volume_history();
+    }
 
     // mesh_new.output_mesh(output_path + "after_insertion.msh");
 
@@ -928,6 +1102,16 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         }
     }
 
+    // The mesh the volume history ends at: all of it, before the filter drops a part. Both
+    // routes consolidate it here, so they record the same histories.
+    if (!volume_history_output.empty()) {
+        if (component_io.memory()) {
+            history_meshes["mesh_history_output.msh"] = mesh_new.tet_mesh_data();
+        } else {
+            mesh_new.output_mesh(output_path + "_history_output.msh");
+        }
+    }
+
     // ////winding number
     if (filter_option == "input") {
         mesh_new.filter_with_input_surface_winding_number();
@@ -939,6 +1123,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
     mesh_new.consolidate_mesh();
+    // A filter removes the tracked faces of the tets it drops, which no operation maps.
+    if (const auto h = mesh_new.finish_surface_history(&input_history)) {
+        component_io.save_history(*h, history_output);
+    }
+    if (const auto vh = mesh_new.finish_volume_history()) {
+        component_io.save_volume_history(*vh, volume_history_output);
+    }
 
     t_finalize = phase_timer.getElapsedTime(); // winding/flood/filter done
     phase_timer.start(); // output (surface extraction) begins
@@ -1337,6 +1528,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         mesh_new.save_paraview("mesh", false, &raw);
         io::compact_slot_outputs(mesh_new, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
+        component_io.result.first.merge(io::named_outputs(std::move(history_meshes)));
         if (features_present)
             component_io.result.first["features"] =
                 io::feature_data(hybrid_curve_segs, hybrid_anchor_pts);
@@ -1364,6 +1556,6 @@ ComponentResult tetwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 } // namespace wmtk::components::tetwild

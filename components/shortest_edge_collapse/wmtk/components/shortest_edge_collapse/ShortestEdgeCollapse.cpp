@@ -23,6 +23,7 @@ ShortestEdgeCollapse::ShortestEdgeCollapse(
     // Envelope::set_max_threads.
     m_envelope.set_max_threads(NUM_THREADS);
     p_vertex_attrs = &vertex_attrs;
+    p_face_attrs = &face_attrs;
 
     vertex_attrs.resize(_m_vertex_positions.size());
 
@@ -45,9 +46,19 @@ void ShortestEdgeCollapse::create_mesh(
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
     double eps,
-    double boundary_eps)
+    double boundary_eps,
+    const std::vector<int>& tri_input)
 {
     wmtk::TriMesh::init(n_vertices, tris);
+    if (!tri_input.empty()) {
+        if (tri_input.size() != tris.size()) {
+            log_and_throw_error(
+                "create_mesh: tri_input has {} entries for {} triangles",
+                tri_input.size(),
+                tris.size());
+        }
+        for (size_t i = 0; i < tris.size(); ++i) face_attrs[i].input = tri_input[i];
+    }
 
     if (eps > 0) {
         std::vector<Eigen::Vector3d> V(n_vertices);
@@ -165,8 +176,8 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
     // TriMesh::collapse_edge_before is the classical link condition, applied only when
-    // set_use_link_condition() left it on. tetwild sets it from simplify_use_link_condition,
-    // off by default, and the simplification then may change the surface topology, including
+    // set_use_link_condition() left it on. tetwild sets it from preserve_topology, off by
+    // default, and the simplification then may change the surface topology, including
     // creating non-manifold edges and vertices.
     if (!TriMesh::collapse_edge_before(t)) return false;
 

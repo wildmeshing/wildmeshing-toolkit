@@ -196,7 +196,9 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         // split_after_vertex(), which the base calls above. Never re-derive them from the tags:
         // a band filled with a tag used elsewhere would relabel that other region as offset.
         ++iter_cnt_split;
-        if (m_vertex_extra[t.vid(*this)].m_is_on_offset) ++iter_cnt_split_offset;
+        if (m_vertex_extra[t.switch_vertex(*this).vid(*this)].m_is_on_offset) {
+            ++iter_cnt_split_offset;
+        }
         return true;
     }
     return marching_split_edge_after(t);
@@ -209,7 +211,10 @@ bool TopoOffsetTriMesh::marching_split_edge_after(const Tuple& t)
     } // why do we need this?
 
     auto& cache = edge_split_cache.local();
-    size_t v_id = get_vertices().size() - 1;
+    // The new vertex is the far end of the returned tuple. Not the last vertex: a slot is only
+    // the last one until another thread splits, and get_vertices() skips removed slots, so its
+    // size undercounts once a collapse has run without a consolidate in between.
+    const size_t v_id = t.switch_vertex(*this).vid(*this);
     // std::vector<size_t> opp_vids;
     // for (const auto& pair : cache.opp_v_fattr) {
     //     opp_vids.push_back(pair.first);
@@ -303,7 +308,9 @@ bool TopoOffsetTriMesh::split_face_after(const Tuple& t)
     }
 
     auto& cache = face_split_cache.local();
-    size_t v_id = get_vertices().size() - 1;
+    // The returned tuple sits on an edge of the original face, so the new vertex is across the
+    // other edge at its vertex. See marching_split_edge_after() for why not the last vertex.
+    const size_t v_id = t.switch_edge(*this).switch_vertex(*this).vid(*this);
     m_vertex_extra[v_id] = cache.new_v_extra;
     set_vertex_position(v_id, cache.new_v_pos);
 

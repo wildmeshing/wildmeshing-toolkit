@@ -7,6 +7,7 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -18,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -560,9 +562,19 @@ public:
     {
         return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
     }
-    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
+    /**
+     * The containment is asked per tracked segment `edge` (attributes `attr`) at the moved
+     * vertex: by default the segment's own, surface_envelope_for_edge() -- what every
+     * operation's check takes. The 2D twin of TetOptimizerMesh::smoothing_containment_envelope,
+     * and per segment for the same reason: segments at one vertex can belong to different
+     * inputs. Null skips the segment.
+     */
+    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(
+        const size_t /*vid*/,
+        const std::array<size_t, 2>& edge,
+        const EdgeAttributes& attr) const
     {
-        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+        return surface_envelope_for_edge(edge, attr);
     }
 
     /**
@@ -738,6 +750,38 @@ protected:
 
 public:
     bool is_edge_on_surface(const Tuple& loc) const;
+    /// For a curve history (TriMesh::start_curve_history): the tracked curves are the surface
+    /// edges, and their feature points the vertices that carry one (enable_feature_point_tracking).
+    bool is_tracked_edge(const Tuple& e) const override { return is_edge_on_surface(e); }
+    std::vector<size_t> tracked_feature_points() const override;
+
+    /// The input segments a tracked edge lies on, by the edge's vertices (smaller first): what an
+    /// insertion gives, for a curve history to start from the input.
+    using CurveSources = std::map<std::array<size_t, 2>, std::vector<uint64_t>>;
+    /// Start recording the tracked curves (TriMesh::start_curve_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along, and where each tracked edge
+    /// lies on the input.
+    void record_curve_history(const std::string& metadata, const CurveSources& sources = {});
+    /**
+     * @brief Check the recorded curves against the tracked edges, stop recording, log what the
+     * history holds and return it, for the application to save (io::ComponentIO::save_history).
+     * None if not recording.
+     *
+     * With `input`, the history of the input the mesh was made from (read, welded, simplified):
+     * the history returned is that, then the insertion -- each tracked edge on the input segments
+     * it lies on, from record_curve_history's sources -- then the recorded one, so it maps the
+     * input files to the output. The output names a point on the curves by two of its vertices,
+     * numbered as they are now: the mesh must be written as it is here, consolidated -- which
+     * this checks, throwing otherwise.
+     */
+    std::optional<history::CurveHistory> finish_curve_history(
+        const history::CurveHistory* input = nullptr);
+
+private:
+    std::shared_ptr<history::TrackedCurveRecorder> m_recorded_curves;
+    std::vector<std::vector<uint64_t>> m_recorded_curve_sources;
+
+public:
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
     bool is_edge_on_bbox(const Tuple& loc) const;
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
@@ -760,28 +804,34 @@ public:
     }
 
     /**
-     * @brief Envelope the tracked-surface segment `vids` must stay inside.
+     * @brief Envelope the tracked-surface segment `vids` must stay inside, given the attributes
+     * `attr` it carries -- or, for a segment an operation is creating, the ones the operation is
+     * about to write there.
      *
      * The 2D counterpart of wmtk::TetOptimizerMesh::surface_envelope_for_face. Null means this
      * segment carries no containment requirement, and every containment check on it is skipped.
-     * Both applications that track a single surface keep one envelope for it, so the default
-     * answers with that; an application tracking more than one (see
-     * SurfaceTagAttributes::m_surface_class) overrides this to answer per class.
+     * The default answers with the one envelope; triwild answers with the envelopes of the
+     * segment's input set (SurfaceTagAttributes::input_set()), and an application tracking more
+     * than one surface (see SurfaceTagAttributes::m_surface_class) answers per class.
      *
      * Keyed on the vertex ids rather than the eid because every caller is a topological
-     * operation asking about segments it is ABOUT to create or has just created.
+     * operation asking about segments it is ABOUT to create or has just created; the attributes
+     * come from the caller for the same reason (see the 3D twin).
      */
     virtual std::shared_ptr<Envelope> surface_envelope_for_edge(
-        const std::array<size_t, 2>& vids) const
+        const std::array<size_t, 2>& vids,
+        const EdgeAttributes& attr) const
     {
         return m_envelope;
     }
 
-    /// Whether the tracked-surface segment (a,b) is outside its containment envelope. False
-    /// when it has none. Every surface containment check in the operations goes through here.
-    bool surface_segment_is_outside(const size_t a, const size_t b) const
+    /// Whether the tracked-surface segment (a,b) with attributes `attr` (see
+    /// surface_envelope_for_edge()) is outside its containment envelope. False when it has none.
+    /// Every surface containment check in the operations goes through here.
+    bool surface_segment_is_outside(const size_t a, const size_t b, const EdgeAttributes& attr)
+        const
     {
-        const std::shared_ptr<Envelope> env = surface_envelope_for_edge({{a, b}});
+        const std::shared_ptr<Envelope> env = surface_envelope_for_edge({{a, b}}, attr);
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside(std::array<Vector2d, 2>{{VA[a].m_posf, VA[b].m_posf}});
@@ -818,7 +868,10 @@ protected:
         double max_energy = 0.;
         double edge_length = 0.;
         std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        std::vector<std::array<size_t, 2>> surface_edges;
+        /// The tracked edges (v1,x) the collapse moves, as (v2,x), each with the attributes it
+        /// will carry -- its own, or the merged ones of changed_edges where it becomes one edge
+        /// with (v2,x) -- for the containment check, which runs before they are written.
+        std::vector<std::pair<std::array<size_t, 2>, EdgeAttributes>> surface_edges;
         /// Oriented edges (v1,y) the collapse renames in place to (v2,y), as {v2,y} with the
         /// orientation measured along that order -- see the 3D counterpart.
         std::vector<std::pair<std::array<size_t, 2>, int>> renamed_orientations;

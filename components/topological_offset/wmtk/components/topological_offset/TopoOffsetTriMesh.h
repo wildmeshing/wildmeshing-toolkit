@@ -12,13 +12,13 @@
 #include <mutex>
 #include <set>
 #include <wmtk/MeshData.hpp>
+#include <wmtk/envelope/CompositeEnvelopes.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
-#include "TagEnvelopes.hpp"
 
 using CellTag = std::set<int64_t>;
 
@@ -1219,8 +1219,8 @@ public:
      * tag's tube or by the intersection of several at a junction.
      *
      * Reports per-endpoint distance to each real member tube. A multi-bit mask dispatches an
-     * IntersectionEnvelope, which must never be asked squared_distance (TagEnvelopes.hpp: its BVH
-     * is null), so the members are walked individually instead of querying the composite.
+     * IntersectionEnvelope, which must never be asked squared_distance (CompositeEnvelopes.hpp:
+     * its BVH is null), so the members are walked individually instead of querying the composite.
      *
      * Call it at construction as well as inside the loop: an edge already outside before any
      * operation runs is a construction defect, a different bug. Diagnostic only.
@@ -1330,7 +1330,8 @@ public:
      * Null means "no containment requirement", which the base handles by skipping the check.
      */
     std::shared_ptr<Envelope> surface_envelope_for_edge(
-        const std::array<size_t, 2>& vids) const override
+        const std::array<size_t, 2>& vids,
+        const EdgeAttributes& /*attr*/) const override
     {
         // Boundary geometry first: a segment on any tag-region boundary may not
         // drift out of that boundary's tube, and one on several boundaries -- a junction -- is
@@ -1457,9 +1458,18 @@ public:
     /// the offset boundary, so the smoother asks for the region tubes alone. The operations hold
     /// the offset boundary to its tube through surface_envelope_for_edge() in the final pass; see
     /// containment_for(). As in 3D.
-    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const override
+    std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
     {
         return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
+    }
+    /// The smoother holds every tracked segment at the vertex to that one envelope, whatever the
+    /// segment: the per-vertex answer above, not the base's per-segment one.
+    std::shared_ptr<Envelope> smoothing_containment_envelope(
+        const size_t vid,
+        const std::array<size_t, 2>& /*edge*/,
+        const EdgeAttributes& /*attr*/) const override
+    {
+        return smoothing_containment_envelope(vid);
     }
 
     /**
@@ -2382,7 +2392,6 @@ public:
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path, MeshMap* output = nullptr);
     // void write_msh(const std::string& file);
-    void write_msh_groups(const std::string& file);
     //// output stuff
 
 private:

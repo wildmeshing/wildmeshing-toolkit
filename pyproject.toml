@@ -13,6 +13,10 @@ license = { file = "LICENSE" }
 authors = [{ name = "WildMeshingToolkit" }]
 urls = { GitHub = "https://github.com/wildmeshing/wildmeshing-toolkit/" }
 
+[project.optional-dependencies]
+# The PolyFEM-backed operations, wildmeshing.polyfem_ops.
+polyfem = ["gmsh", "scipy", "h5py"]
+
 [tool.cibuildwheel]
 # # Build CPython wheels.
 build = ["cp*-*"]
@@ -26,7 +30,7 @@ skip = ["*-win32", "*-win_arm64", "*-*linux_i686", "pp*", "*-musllinux*"]
 # need no external test data. The full data-driven integration suite is run separately
 # in the `test_wheels` CI job (see .github/workflows/wheels.yml).
 test-requires = "pytest"
-test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py"
+test-command = "pytest {project}/tests/python/test_smoke.py {project}/tests/python/test_memory_io.py {project}/tests/python/test_tracking.py"
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y gmp-devel"
@@ -77,3 +81,11 @@ cmake.args = [
   "-DWMTK_APP_INTERIOR_TET_OPT=OFF",
 ]
 install.components = ["python_bindings"]
+# The pure-Python part of the package; the compiled module is installed into it as _core.
+wheel.packages = ["python/wildmeshing"]
+
+# Build the module the wheel installs (and what it links), not the default `all`: that also builds
+# wmtk_app and topological_offset's developer-only wmtk_offset_field module, neither of which is
+# installed, and wmtk_offset_field does not link with GCC 15 (Ubuntu 26.04), which failed the
+# whole `pip install`.
+build.targets = ["wildmeshing"]

@@ -1,5 +1,6 @@
 #include "simwild.hpp"
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
@@ -208,10 +209,7 @@ double optimization_envelope_eps(const Parameters& params, bool is_3d)
 
 } // namespace
 
-void run_3D(
-    const nlohmann::json& json_params,
-    const InputData& input_data,
-    io::ComponentIO& component_io)
+void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
@@ -228,6 +226,7 @@ void run_3D(
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
+        mesh.m_F_envelope_labels = input_data.F_envelope_labels;
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");
@@ -235,14 +234,20 @@ void run_3D(
             input_data.V_input,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     } else {
         logger().warn("Use RATIONAL input for TetWild");
         mesh.init_from_image(
             input_data.V_input_r,
             input_data.T_input,
             input_data.T_input_tag,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
     }
 
     auto write_unique_vtu = [&params, &mesh]() {
@@ -256,6 +261,48 @@ void run_3D(
 
     write_unique_vtu();
 
+    // The tagged tet mesh as the output .msh holds it: tets, their tags, the face tags.
+    auto tagged_outputs = [&mesh]() {
+        MeshMap raw;
+        mesh.write_vtu("mesh", &raw);
+        io::compact_slot_outputs(mesh, raw);
+        MeshMap outputs = io::named_outputs(std::move(raw));
+        io::collect_tags(
+            mesh,
+            outputs,
+            CellType::Tetrahedron,
+            mesh.get_tets(),
+            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
+        io::collect_face_tags(mesh, outputs, mesh.m_face_tag_names);
+        return outputs;
+    };
+
+    // From here on the tracked surface -- the interfaces of the tags the input gave -- is recorded.
+    const std::string history_output = json_params["history_output"];
+    MeshMap history_input;
+    if (!history_output.empty()) {
+        // The tet mesh the history starts from, tags and all: for a surface input that is the
+        // embedding, which no file holds otherwise. Next to the output on the file route; on the
+        // memory route, the output mesh history_input.
+        MeshData start = tagged_outputs().at("mesh");
+        if (component_io.memory())
+            history_input = io::named_outputs({{"mesh_history_input.msh", std::move(start)}});
+        else
+            io::write_mesh(params.output_path + "_history_input.msh", start);
+        // A surface input: from the files, through the arrangement, to here.
+        mesh.m_insertion_sources = std::move(input_data.facet_sources);
+        mesh.record_surface_history(component_io.history_metadata(json_params));
+    }
+    // The volume around the tracked surface: its own choice, as it takes far more room.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (history_output.empty()) {
+            log_and_throw_error(
+                "volume_history_output needs history_output: the volume history "
+                "follows the surface's");
+        }
+        mesh.record_volume_history();
+    }
 
     if (params.operation == "remeshing" && params.preserve_topology && !params.skip_simplify) {
         // collapse for getting the right edge length
@@ -269,6 +316,13 @@ void run_3D(
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
+
+    // The tag operations change tags only, and leave the surface flags to the next run: the
+    // history ends where the flags are.
+    if (const auto h = mesh.finish_surface_history(
+            input_data.has_input_history ? &input_data.input_history : nullptr)) {
+        component_io.save_history(*h, history_output);
+    }
 
     // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
     // for an un-rounded vertex that double is not the vertex's real position, so the written
@@ -306,23 +360,33 @@ void run_3D(
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
-    write_unique_vtu();
-    if (component_io.memory()) {
-        MeshMap raw;
-        mesh.write_vtu("mesh", &raw);
-        io::compact_slot_outputs(mesh, raw);
-        component_io.result.first = io::named_outputs(std::move(raw));
-        io::collect_tags(
-            mesh,
-            component_io.result.first,
-            CellType::Tetrahedron,
-            mesh.get_tets(),
-            [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tags; });
+    // One result for both routes: returned from memory calls, written as the .msh otherwise.
+    {
+        component_io.result.first = tagged_outputs();
+        component_io.result.first.merge(history_input);
+        // The volume history names the tags as the tet meshes' groups do -- the labels
+        // io::collect_tags gives them, not the names, which may repeat or be "ambient" -- so
+        // a tet's groups give its region.
+        if (!volume_history_output.empty()) {
+            const auto& labels = component_io.result.first.at("mesh")
+                                     .cells.at(CellType::Tetrahedron)
+                                     .attributes.at("tags")
+                                     .labels;
+            std::map<int64_t, std::string> tag_labels;
+            for (size_t j = 0; j < mesh.m_tags_count && j < labels.size(); ++j) {
+                tag_labels[int64_t(j)] = labels[j];
+            }
+            if (const auto vh = mesh.finish_volume_history(tag_labels)) {
+                component_io.save_volume_history(*vh, volume_history_output);
+            }
+        }
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_F_envelope, CellType::Triangle);
+        if (!component_io.memory())
+            io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
     }
+    write_unique_vtu();
     if (params.write_vtu) {
         mesh.write_surface(params.output_path + "_surface.obj");
     }
@@ -333,6 +397,12 @@ void run_2D(
     const InputData& input_data,
     io::ComponentIO& component_io)
 {
+    // A 2D mesh's interfaces are curves, which a surface history does not describe.
+    if (!std::string(json_params["history_output"]).empty()) {
+        log_and_throw_error(
+            "history_output: simwild records a surface history in 3D only, and this input is "
+            "2D");
+    }
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
     params.init(input_data.V_input.colwise().minCoeff(), input_data.V_input.colwise().maxCoeff());
@@ -415,7 +485,8 @@ void run_2D(
         }
     }
 
-    if (component_io.memory()) {
+    // One result for both routes: returned from memory calls, written as the .msh otherwise.
+    {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
         io::compact_slot_outputs(mesh, raw);
@@ -429,9 +500,10 @@ void run_2D(
         if (!mesh.m_V_envelope.empty())
             component_io.result.first["envelope"] =
                 io::geometry_data(mesh.m_V_envelope, mesh.m_E_envelope, CellType::Edge);
+        if (!component_io.memory())
+            io::write_mesh(params.output_path + ".msh", component_io.result.first.at("mesh"));
     }
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
 
@@ -521,7 +593,7 @@ ComponentResult simwild(nlohmann::json json_params, const MeshMap& meshes)
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::simwild

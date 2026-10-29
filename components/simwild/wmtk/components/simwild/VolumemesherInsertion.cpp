@@ -11,7 +11,10 @@ void SimWildMesh::init_from_image(
     const MatrixXr& V,
     const MatrixXi& T,
     const MatrixSi& T_tags,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -58,6 +61,7 @@ void SimWildMesh::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
+    init_face_tags(F_tagged, F_tags, face_tag_names);
     init_surfaces_and_boundaries();
 
     if (m_params.preserve_topology) {
@@ -202,7 +206,10 @@ void SimWildMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& T,
     const MatrixSi& T_tags,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names)
 {
     assert(V.cols() == 3);
     assert(T.cols() == 4);
@@ -258,6 +265,7 @@ void SimWildMesh::init_from_image(
         m_tag_name_to_id[tag_names[i]] = i;
     }
 
+    init_face_tags(F_tagged, F_tags, face_tag_names);
     init_surfaces_and_boundaries();
 
     if (m_params.preserve_topology) {
@@ -267,6 +275,26 @@ void SimWildMesh::init_from_image(
     // init qualities
     for_each_tetra(
         [this](const Tuple& t) { m_tet_attribute[t.tid(*this)].m_quality = get_quality(t); });
+}
+
+void SimWildMesh::init_face_tags(
+    const MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names)
+{
+    m_face_tag_names = face_tag_names;
+    for (Eigen::Index r = 0; r < F_tagged.rows(); ++r) {
+        const std::array<size_t, 3> vids = {
+            {size_t(F_tagged(r, 0)), size_t(F_tagged(r, 1)), size_t(F_tagged(r, 2))}};
+        const auto face = try_tuple_from_face(vids);
+        if (!face) log_and_throw_error("Tagged face {} is not a face of the tet mesh", r);
+        InputSet set = 0;
+        for (Eigen::Index j = 0; j < F_tags.cols(); ++j)
+            if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+        auto& attr = m_face_attribute[std::get<1>(*face)];
+        attr.set_input_set(attr.input_set() | set);
+        attr.set_orientation_along(vids, 1);
+    }
 }
 
 void SimWildMesh::init_surfaces_and_boundaries()
@@ -279,20 +307,38 @@ void SimWildMesh::init_surfaces_and_boundaries()
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
+        // A tagged face is surface wherever it lies; any other face only between unlike tags.
         const auto t_opp = ff.switch_tetrahedron();
-        if (!t_opp) {
+        const bool border =
+            t_opp && m_tet_attribute[ff.tid()].tags != m_tet_attribute[t_opp.value().tid()].tags;
+        if ((m_face_attribute[ff.fid()].input_set() & face_tag_mask()) == 0 && !border) {
             continue;
         }
 
-        {
+        m_face_attribute[ff.fid()].m_is_surface_fs = 1;
+        if (border) {
+            // The tags on one side and not the other: the regions this face bounds.
             const auto& tag0 = m_tet_attribute[ff.tid()].tags;
             const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tags;
-            if (tag0 == tag1) {
-                continue;
+            InputSet set = m_face_attribute[ff.fid()].input_set();
+            for (const auto* tags : {&tag0, &tag1}) {
+                const auto* other = tags == &tag0 ? &tag1 : &tag0;
+                for (const int64_t t : *tags) {
+                    if (other->count(t)) continue;
+                    const size_t bit = m_face_tag_names.size() + size_t(t);
+                    if (bit >= size_t(SurfaceTagAttributes::max_inputs)) {
+                        log_and_throw_error(
+                            "{} face tags and tet tag {}: each label is one bit of a face's input "
+                            "set, so face tags and tet tags together are at most {}",
+                            m_face_tag_names.size(),
+                            t,
+                            SurfaceTagAttributes::max_inputs);
+                    }
+                    set |= InputSet(1) << bit;
+                }
             }
+            m_face_attribute[ff.fid()].set_input_set(set);
         }
-
-        m_face_attribute[ff.fid()].m_is_surface_fs = 1;
 
         const size_t v1 = ff.vid();
         const size_t v2 = ff.switch_vertex().vid();
@@ -323,6 +369,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
+        m_F_envelope_labels.clear();
         reinit_envelope();
     } else if (m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike triwild's: the answer is not an
@@ -357,9 +404,12 @@ void SimWildMesh::init_surfaces_and_boundaries()
             }
             m_V_envelope = tempV;
             m_F_envelope = tempF;
+            m_F_envelope_labels.clear();
             reinit_envelope();
         }
     }
+
+    init_label_envelopes(m_envelope_eps, !m_sim_params.use_sample_envelope);
 
     // track bounding box
     for (size_t i = 0; i < faces.size(); i++) {

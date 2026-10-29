@@ -471,8 +471,11 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     } // why do we need this?
 
     auto& cache = face_split_cache.local();
-    // size_t v_id = t.vid(*this);
-    size_t v_id = vertex_size() - 1;
+    // The returned tuple sits on the edge from an original vertex to the new one. Not
+    // vertex_size() - 1: that counts the unremoved vertices, which undercounts once a collapse
+    // has run without a consolidate in between, and a slot is only the last one until another
+    // thread splits.
+    const size_t v_id = t.switch_vertex(*this).vid(*this);
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
     size_t v3_id = cache.v3_id;
@@ -602,7 +605,8 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 
     auto& cache = tet_split_cache.local();
     int tet_label = cache.tet.label;
-    size_t v_id = vertex_size() - 1;
+    // As in split_face_after().
+    const size_t v_id = t.switch_vertex(*this).vid(*this);
 
     // new vertex
     set_vertex_position(

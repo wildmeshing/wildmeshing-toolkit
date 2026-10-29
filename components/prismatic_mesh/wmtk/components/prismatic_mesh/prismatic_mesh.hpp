@@ -45,7 +45,7 @@ struct OptimizationOptions
     int iterations = 5;
     // Floor for new/modified shell tets and background pyramid reconstruction cones.
     // Background optimization and unchanged background tets only require positive volume.
-    double min_tet_volume = 1e-12; // absolute signed volume, in coordinate units cubed
+    double min_tet_volume = 0; // strictly positive signed volume; optional absolute floor
     int smoothing_max_backtracks = 40; // try alpha=1, then halve at most this many times
     bool keep_background_mesh = false; // include exterior tets in optimization validity checks
     JacobianSmoothingOptions jacobian_smoothing;

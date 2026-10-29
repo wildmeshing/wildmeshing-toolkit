@@ -2,8 +2,13 @@
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <spdlog/sinks/ostream_sink.h>
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/predicates.hpp>
+
+#include <sstream>
 
 using namespace wmtk;
 using namespace components::isotropic_remeshing;
@@ -75,6 +80,8 @@ TEST_CASE("test_swap", "[test_remeshing]")
     IsotropicRemeshing m(v);
     std::vector<size_t> modified_v;
     m.create_mesh(V.rows(), tri, modified_v, 0);
+    // Swaps any edge, whether its quad is convex or not: this tests the connectivity.
+    m.set_check_inversions(false);
     int v_invariant = m.get_vertices().size();
     int e_invariant = m.get_edges().size();
     REQUIRE(m.check_mesh_connectivity_validity());
@@ -258,4 +265,178 @@ TEST_CASE("operation orient", "[test_remeshing]")
     }
 
     m.write_triangle_mesh("old_orient.obj");
+}
+
+namespace {
+/// Triangles of a mesh in the plane z = 0 that are clockwise, or flat.
+size_t not_counter_clockwise(const IsotropicRemeshing& m)
+{
+    size_t n = 0;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        const auto p = [&](int k) { return Eigen::Vector2d(m.vertex_attrs[vs[k]].pos.head<2>()); };
+        if (wmtk::utils::predicates::orient2d(p(0), p(1), p(2)) !=
+            wmtk::utils::predicates::Orientation::POSITIVE) {
+            ++n;
+        }
+    }
+    return n;
+}
+} // namespace
+
+TEST_CASE("inversion-check-refuses-smoothing-that-folds", "[test_remeshing]")
+{
+    // A star with a long spike: the average of its link is out along the spike, past where the
+    // vertex can still see the two edges next to it, so tangential smoothing turns those over.
+    const std::vector<Eigen::Vector3d> v = {
+        {0, 0, 0},
+        {6, -0.1, 0},
+        {6, 0.1, 0},
+        {0.2, 0.2, 0},
+        {-1, 1, 0},
+        {-1, -1, 0},
+        {0.2, -0.2, 0}};
+    const std::vector<std::array<size_t, 3>> tris =
+        {{{0, 1, 2}}, {{0, 2, 3}}, {{0, 3, 4}}, {{0, 4, 5}}, {{0, 5, 6}}, {{0, 6, 1}}};
+    for (const bool check : {false, true}) {
+        INFO("check " << check);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris, {}, true); // the link is the boundary, frozen
+        m.set_check_inversions(check);
+        REQUIRE(not_counter_clockwise(m) == 0);
+        m.smooth_all_vertices();
+        if (check) {
+            CHECK(m.vertex_attrs[0].pos == Eigen::Vector3d::Zero());
+            CHECK(m.refused_inversions() > 0);
+            CHECK(not_counter_clockwise(m) == 0);
+        } else {
+            CHECK(m.vertex_attrs[0].pos.x() > 1);
+            CHECK(not_counter_clockwise(m) > 0);
+        }
+    }
+}
+
+TEST_CASE("inversion-check-refuses-swap-that-folds", "[test_remeshing]")
+{
+    // Two triangles on the edge (0, 1) making a quad that is not convex at 1: the other diagonal
+    // (2, 3) runs outside it, and one of the two triangles it makes is turned over.
+    const std::vector<Eigen::Vector3d> v = {{0, 0, 0}, {2, 0, 0}, {1, 1, 0}, {3, -0.1, 0}};
+    const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}};
+    for (const bool check : {false, true}) {
+        INFO("check " << check);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris, {}, false);
+        m.set_check_inversions(check);
+        REQUIRE(not_counter_clockwise(m) == 0);
+        std::vector<TriMesh::Tuple> new_tris;
+        const bool swapped = m.swap_edge(m.tuple_from_edge(0, 1, 0), new_tris);
+        CHECK(swapped == !check);
+        CHECK(m.refused_inversions() == (check ? 1 : 0));
+        CHECK((not_counter_clockwise(m) > 0) == !check);
+    }
+}
+
+TEST_CASE("limit-collapse-length", "[test_remeshing]")
+{
+    // A grid of unit squares whose edges are all under 4/5 of the target: every collapse is
+    // wanted, and many leave longer edges than the split threshold, 4/3 of the target.
+    const int n = 10;
+    std::vector<Eigen::Vector3d> v;
+    std::vector<std::array<size_t, 3>> tris;
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) v.emplace_back(i, j, 0);
+    }
+    const auto id = [](int i, int j) { return size_t(i * (n + 1) + j); };
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            tris.push_back({{id(i, j), id(i + 1, j), id(i + 1, j + 1)}});
+            tris.push_back({{id(i, j), id(i + 1, j + 1), id(i, j + 1)}});
+        }
+    }
+    const double L = 1.8;
+    for (const bool limit : {false, true}) {
+        INFO("limit " << limit);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris);
+        m.set_limit_collapse_length(limit);
+        m.collapse_remeshing(L);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        double longest = 0;
+        for (const auto& e : m.get_edges()) {
+            longest = std::max(
+                longest,
+                (m.vertex_attrs[e.vid(m)].pos - m.vertex_attrs[e.switch_vertex(m).vid(m)].pos)
+                    .norm());
+        }
+        CHECK(m.get_vertices().size() < v.size());
+        CHECK((longest <= 4. / 3. * L) == limit);
+    }
+}
+
+TEST_CASE("swap-quality-swaps-a-flat-pair", "[test_remeshing]")
+{
+    // Two flat triangles on a long edge (0, 1). Swapping it for (2, 3) makes two far better
+    // shaped ones, but all four vertices are on the boundary and the swap moves one of valence
+    // from 0 and 1 to 2 and 3, which the valence criterion counts as no gain. The quality swaps.
+    const std::vector<Eigen::Vector3d> v = {{0, 0, 0}, {4, 0, 0}, {2, 0.2, 0}, {2, -0.2, 0}};
+    const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}};
+    for (const bool quality : {false, true}) {
+        INFO("quality " << quality);
+        IsotropicRemeshing m(v, 0);
+        m.create_mesh(v.size(), tris, {}, false);
+        m.set_swap_quality(quality);
+        const auto t = m.tuple_from_edge(0, 1, 0);
+        CHECK(m.compute_vertex_valence(t) == 0);
+        CHECK(m.compute_swap_quality(t) > 1);
+        m.swap_remeshing();
+        REQUIRE(m.check_mesh_connectivity_validity());
+        size_t across = 0; // faces holding the edge (2, 3)
+        for (const auto& f : m.get_faces()) {
+            const auto vs = m.oriented_tri_vids(f);
+            across += std::count(vs.begin(), vs.end(), 2) && std::count(vs.begin(), vs.end(), 3);
+        }
+        CHECK(across == (quality ? 2 : 0));
+        CHECK(not_counter_clockwise(m) == 0);
+    }
+}
+
+namespace {
+/// Refuses the split of the edge (0, 1), as the envelope may refuse one.
+class RefusingSplit : public IsotropicRemeshing
+{
+public:
+    using IsotropicRemeshing::IsotropicRemeshing;
+    bool split_edge_before(const Tuple& t) override
+    {
+        const size_t a = t.vid(*this), b = t.switch_vertex(*this).vid(*this);
+        if (std::min(a, b) == 0 && std::max(a, b) == 1) return false;
+        return IsotropicRemeshing::split_edge_before(t);
+    }
+};
+} // namespace
+
+TEST_CASE("split-rounds-stop-where-a-split-is-refused", "[test_remeshing]")
+{
+    // An edge far over the split threshold whose split is refused: the triangles on it keep a
+    // side over the threshold, splitting that one makes the next, and the rounds would never run
+    // out. The pass stops after 64 of them, and says so.
+    const std::vector<Eigen::Vector3d> v = {{0, 0, 0}, {10, 0, 0}, {5, 1, 0}, {5, -1, 0}};
+    const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{1, 0, 3}}};
+    RefusingSplit m(v, 0);
+    m.create_mesh(v.size(), tris, {}, false);
+    std::ostringstream log;
+    const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log);
+    wmtk::logger().sinks().push_back(sink);
+    m.split_remeshing(1);
+    wmtk::logger().sinks().pop_back();
+    CHECK(log.str().find("split: stopped after 64 rounds") != std::string::npos);
+    REQUIRE(m.check_mesh_connectivity_validity());
+    CHECK(not_counter_clockwise(m) == 0);
+    // The edge is still there, with its two triangles.
+    size_t on_it = 0;
+    for (const auto& f : m.get_faces()) {
+        const auto vs = m.oriented_tri_vids(f);
+        on_it += std::count(vs.begin(), vs.end(), 0) && std::count(vs.begin(), vs.end(), 1);
+    }
+    CHECK(on_it == 2);
 }

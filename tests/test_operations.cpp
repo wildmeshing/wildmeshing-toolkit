@@ -1,6 +1,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/AMIPS.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <wmtk/OperationDryRun.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/examples/TetMesh_examples.hpp>
@@ -117,6 +118,63 @@ TEST_CASE("edge_collapsing", "[tuple_operation]")
     REQUIRE(mesh.collapse_edge(new_edge[1], dummy));
     for (const auto& e : new_edge) REQUIRE_FALSE(e.is_valid(mesh));
     REQUIRE(mesh.check_mesh_connectivity_validity());
+}
+
+TEST_CASE("consolidate_resets_freed_attribute_slots_tet", "[tuple_operation]")
+{
+    // The 3D twin of the 2D test: the slots past the live range consolidate_mesh() leaves are the
+    // next ones operations are handed, so they must not keep the records compacted out of them.
+    struct Tag
+    {
+        int64_t tag = 0;
+    };
+    class TaggedMesh : public TetMesh
+    {
+    public:
+        AttributeCollection<Tag> vertex_attrs;
+        AttributeCollection<Tag> edge_attrs;
+        AttributeCollection<Tag> face_attrs;
+        AttributeCollection<Tag> tet_attrs;
+        TaggedMesh()
+        {
+            p_vertex_attrs = &vertex_attrs;
+            p_edge_attrs = &edge_attrs;
+            p_face_attrs = &face_attrs;
+            p_tet_attrs = &tet_attrs;
+        }
+    };
+
+    TaggedMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
+    std::vector<TetMesh::Tuple> new_edge, dummy;
+    REQUIRE(mesh.split_edge(mesh.tuple_from_face(0, 0), new_edge));
+    REQUIRE(mesh.collapse_edge(new_edge[1], dummy));
+
+    for (size_t i = 0; i < mesh.vert_capacity(); ++i) mesh.vertex_attrs[i].tag = 1;
+    for (size_t i = 0; i < 6 * mesh.tet_capacity(); ++i) mesh.edge_attrs[i].tag = 1;
+    for (size_t i = 0; i < 4 * mesh.tet_capacity(); ++i) mesh.face_attrs[i].tag = 1;
+    for (size_t i = 0; i < mesh.tet_capacity(); ++i) mesh.tet_attrs[i].tag = 1;
+
+    const size_t n_verts = mesh.get_vertices().size();
+    const size_t n_tets = mesh.get_tets().size();
+    REQUIRE(n_verts < mesh.vert_capacity());
+    REQUIRE(n_tets < mesh.tet_capacity());
+    mesh.consolidate_mesh();
+    REQUIRE(mesh.vert_capacity() == n_verts);
+    REQUIRE(mesh.tet_capacity() == n_tets);
+
+    for (size_t i = 0; i < mesh.vertex_attrs.size(); ++i) {
+        CHECK(mesh.vertex_attrs[i].tag == (i < mesh.vert_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.edge_attrs.size(); ++i) {
+        CHECK(mesh.edge_attrs[i].tag == (i < 6 * mesh.tet_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.face_attrs.size(); ++i) {
+        CHECK(mesh.face_attrs[i].tag == (i < 4 * mesh.tet_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.tet_attrs.size(); ++i) {
+        CHECK(mesh.tet_attrs[i].tag == (i < mesh.tet_capacity() ? 1 : 0));
+    }
 }
 
 TEST_CASE("edge_collapsing_invalid", "[tuple_operation]")
@@ -698,4 +756,27 @@ TEST_CASE("dry runs change nothing and refuse only what the operation refuses", 
         CHECK(m->count(K::swap_32, E::screened) == 1);
         CHECK(m->count(K::swap_32, E::committed) == 0);
     }
+}
+
+TEST_CASE("tet_operations_without_history_hooks_refuse_to_record", "[TetMesh][tuple_operation]")
+{
+    // split_face, split_tet and insert_point report nothing to a surface history: while one is
+    // recording they throw instead of losing the surface, and run as before once it stops.
+    using namespace wmtk::utils::examples::tet;
+    using Tuple = TetMesh::Tuple;
+    TetMeshVT VT = single_tet();
+    TetMesh m;
+    m.init(VT.T);
+    const Tuple t = m.tuple_from_vids(0, 1, 2, 3);
+    std::vector<Tuple> new_tets;
+    m.start_surface_history([](size_t) { return Eigen::Vector3d::Zero().eval(); });
+    CHECK_THROWS_WITH(m.split_face(t, new_tets), Catch::Matchers::ContainsSubstring("split_face"));
+    CHECK_THROWS_WITH(m.split_tet(t, new_tets), Catch::Matchers::ContainsSubstring("split_tet"));
+    CHECK_THROWS_WITH(
+        m.insert_point(t, new_tets),
+        Catch::Matchers::ContainsSubstring("insert_point"));
+    CHECK(m.get_tets().size() == 1);
+    m.stop_surface_history();
+    CHECK(m.split_tet(t, new_tets));
+    CHECK(m.get_tets().size() == 4);
 }

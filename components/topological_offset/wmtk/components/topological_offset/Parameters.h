@@ -99,8 +99,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// EXPERIMENTAL_front_spanned_split (see the spec): front_pocket_split() splits spanned edges
     /// and faces too, not only pinned cells. true by default since 2026-10-28, as the spec.
     bool front_spanned_split = true;
-    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold remains.
-    /// true by default since 2026-10-28, as the spec.
+    /// EXPERIMENTAL_exit_no_folds (see the spec): the loop does not exit while a real fold with a
+    /// foldover face (front_face_field_angle() over foldover_angle) remains. true by default since
+    /// 2026-10-28, as the spec.
     bool exit_no_folds = true;
     /// EXPERIMENTAL_label_cleanup (see the spec), 3D: after each operation group's operation
     /// passes, cells on the wrong side of the level set flip between band and non-band where the
@@ -256,7 +257,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// 3D: a front face is a foldover when the angle between its normal, out of the band, and
     /// the field's normal (grad d at its centroid) exceeds this many degrees
     /// (TopoOffsetTetMesh::front_face_field_angle()): the debug frames' per-face
-    /// field_angle_foldover and the end-of-run [foldover] count. See the spec doc.
+    /// field_angle_foldover and the end-of-run [foldover] count, and which real folds hold the
+    /// exit under EXPERIMENTAL_exit_no_folds. See the spec doc.
     double foldover_angle = 30.;
     /// DEBUG (2026-10-20), 3D: debug frames for a remote machine short on space -- overrides
     /// DEBUG_output (sets it, so every debug computation runs) and writes only the constructed

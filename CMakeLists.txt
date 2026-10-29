@@ -184,24 +184,6 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 
     # components (automatically added to the app and integration tests)
     add_subdirectory(components)
-
-    # Geogram is a shared IPC dependency on some platforms. Bundle it beside the Python
-    # extension and use a relative loader path instead of pip's temporary install prefix.
-    if(WMTK_PYBIND AND DEFINED SKBUILD AND TARGET geogram)
-        get_target_property(WMTK_GEOGRAM_TYPE geogram TYPE)
-        if(WMTK_GEOGRAM_TYPE STREQUAL "SHARED_LIBRARY")
-            if(APPLE)
-                set_target_properties(geogram PROPERTIES INSTALL_NAME_DIR "@rpath")
-                set_property(TARGET wildmeshing APPEND PROPERTY INSTALL_RPATH "@loader_path")
-            elseif(UNIX)
-                set_property(TARGET wildmeshing APPEND PROPERTY INSTALL_RPATH "$ORIGIN")
-            endif()
-            install(TARGETS geogram
-                LIBRARY DESTINATION "${SKBUILD_PLATLIB_DIR}" COMPONENT python_bindings
-                RUNTIME DESTINATION "${SKBUILD_PLATLIB_DIR}" COMPONENT python_bindings
-            )
-        endif()
-    endif()
 endif()
 
 if(WMTK_BUILD_DOCS)

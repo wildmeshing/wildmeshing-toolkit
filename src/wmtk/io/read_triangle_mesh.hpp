@@ -1,15 +1,21 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/io/ReadProvenance.hpp>
 
 namespace wmtk::io {
 
+/**
+ * @param provenance If not null, receives V and F as given and where their vertices and faces
+ * went.
+ */
 void clean_triangle_mesh(
     MatrixXd& V,
     MatrixXi& F,
     double tol_rel = -1,
     double tol_abs = -1,
-    std::vector<int>* face_tags = nullptr);
+    std::vector<int>* face_tags = nullptr,
+    ReadProvenance* provenance = nullptr);
 
 /**
  * @brief Reads a triangle mesh from a file.
@@ -44,6 +50,8 @@ void read_triangle_mesh(
  *
  * @param face_input If not null, receives for every face of F the index into `paths` of the file
  * it was read from, kept in step with the cleaning (which removes degenerate faces).
+ * @param provenance If not null, receives the meshes as read, concatenated, and where their
+ * vertices and faces went.
  */
 void read_triangle_mesh(
     const std::vector<std::string>& paths,
@@ -51,6 +59,7 @@ void read_triangle_mesh(
     Eigen::MatrixXi& F,
     double tol_rel = 2e-4,
     double tol_abs = -1,
-    std::vector<int>* face_input = nullptr);
+    std::vector<int>* face_input = nullptr,
+    ReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::io

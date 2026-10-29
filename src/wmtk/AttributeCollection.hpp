@@ -24,6 +24,12 @@ public:
     virtual ~AbstractAttributeContainer() = default;
     virtual void move(size_t from, size_t to) {};
     virtual void resize(size_t) = 0;
+    /// Resets every entry from `first` to the end of the storage to a default-constructed value.
+    /// consolidate_mesh() calls it on the spare region past the compacted live range: move()
+    /// leaves its source intact, so without this those slots would still hold the records
+    /// compacted out of them, and the next operation handed one would inherit a dead simplex's
+    /// attributes.
+    virtual void reset_from(size_t first) = 0;
     virtual void clear() = 0;
     virtual void rollback() = 0;
     virtual void begin_protect() = 0;
@@ -51,6 +57,10 @@ struct AttributeCollection : public AbstractAttributeContainer
     void resize(size_t s) override
     {
         if (s > m_attributes.size()) m_attributes.resize(s);
+    }
+    void reset_from(size_t first) override
+    {
+        for (size_t i = first; i < m_attributes.size(); ++i) m_attributes[i] = T{};
     }
     void clear() override { m_attributes.clear(); }
 
@@ -148,6 +158,10 @@ public:
     void resize(size_t s) override
     {
         for (auto* c : m_children) c->resize(s);
+    }
+    void reset_from(size_t first) override
+    {
+        for (auto* c : m_children) c->reset_from(first);
     }
     void clear() override
     {

@@ -1,12 +1,15 @@
 #include "read_image_msh.hpp"
 
+#include <wmtk/SurfaceTagAttributes.h>
+#include <algorithm>
+#include <filesystem>
+#include <map>
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/EmbedCurves.hpp>
 #include <wmtk/components/simwild/EmbedSurface.hpp>
-#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 namespace wmtk::components::simwild {
@@ -121,297 +124,49 @@ void positive_orientation_2D(const MatrixXd& V, MatrixXi& F)
 
 InputData read_image_msh(const std::string& path)
 {
-    InputData input_data;
-
-    MshData msh;
     if (!std::filesystem::exists(path)) {
         log_and_throw_error("File {} does not exist.", path);
     }
-    msh.load(path);
-
-    std::optional<mshio::PhysicalGroup> ph_vol = msh.get_physical_group_by_name("ImageVolume");
-    std::optional<mshio::PhysicalGroup> ph_env = msh.get_physical_group_by_name("EnvelopeSurface");
-
-    const bool has_tets = msh.get_num_tets() != 0;
-    const bool has_faces = msh.get_num_faces() != 0;
-
-    const auto ph_groups = msh.get_physical_groups();
-
-    if (!ph_groups.empty() && !(ph_vol && ph_env)) {
-        logger().info("Reading input from pyhsical groups.");
-
-        std::vector<MatrixXd> Vs;
-        std::vector<MatrixXi> Fs;
-        std::vector<std::string> tag_names;
-
-        MatrixXd V_envelope;
-        MatrixXi F_envelope;
-        for (const mshio::PhysicalGroup& ph : msh.get_physical_groups()) {
-            MatrixXd V;
-            MatrixXi F;
-            msh.get_VF(ph, V, F);
-            // The name goes with the FACES, in the non-envelope branch below. It used to be
-            // pushed here for every group, envelope included, while Vs/Fs skip the envelope --
-            // so whenever the envelope group is not last in file order (gmsh sorts physicals
-            // dim-first, putting a dim-1 EnvelopeSurface first), every region's name shifted
-            // by one and the last region's name vanished (c_shape.msh, 2026-08-31: shape_c's
-            // faces reported as a second 'ambient', offset_selection 'shape_c' unresolvable).
-            if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
-                // this must be the envelope surface
-                if (V_envelope.size() != 0) {
-                    log_and_throw_error("Multiple `envelope` groups found in {}", path);
-                }
-                input_data.V_envelope = V;
-                input_data.F_envelope = F;
-                input_data.envelope_name = ph.name;
-            } else {
-                tag_names.push_back(ph.name);
-                Vs.push_back(V);
-                Fs.push_back(F);
-            }
-        }
-
-        // combine all vertices
-        if (Vs.empty()) {
-            log_and_throw_error("No vertices found in {}", path);
-        }
-        auto& V = input_data.V_input;
-        for (const auto& VV : Vs) {
-            if (VV.rows() == 0) {
-                continue;
-            }
-            const size_t n = V.rows();
-            V.conservativeResize(n + VV.rows(), VV.cols());
-            V.block(n, 0, VV.rows(), V.cols()) = VV;
-        }
-
-        // combine all tets
-        if (has_tets) {
-            if (Fs.empty()) {
-                log_and_throw_error("No tets found in {}", path);
-            }
-            std::map<simplex::Tet, size_t> tet_ids;
-            std::vector<Vector4i> tets;
-
-            for (const auto& TT : Fs) {
-                for (size_t i = 0; i < TT.rows(); ++i) {
-                    const Vector4i& t = TT.row(i);
-                    const simplex::Tet s(t[0], t[1], t[2], t[3]);
-                    if (tet_ids.count(s) == 0) {
-                        tet_ids[s] = tets.size();
-                        tets.push_back(t);
-                    }
-                }
-            }
-
-            auto& T = input_data.T_input;
-            T.resize(tets.size(), 4);
-            for (size_t i = 0; i < tets.size(); ++i) {
-                T.row(i) = tets[i];
-            }
-
-            // tags
-            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
-            // assume Fs[0] are ambient faces
-            for (size_t i = 1; i < Fs.size(); ++i) {
-                for (size_t j = 0; j < Fs[i].rows(); ++j) {
-                    const Vector4i& t = Fs[i].row(j);
-                    const simplex::Tet s(t[0], t[1], t[2], t[3]);
-                    const size_t tid = tet_ids[s];
-                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
-                }
-                input_data.tag_names.push_back(tag_names[i]);
-            }
-        } else {
-            auto& Vi = input_data.V_input;
-            Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
-            auto& Ve = input_data.V_envelope;
-            if (Ve.size() > 0) {
-                Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
-            }
-
-            if (Fs.empty()) {
-                log_and_throw_error("No faces found in {}", path);
-            }
-            std::map<simplex::Face, size_t> tet_ids;
-            std::vector<Vector3i> tets;
-
-            for (const auto& TT : Fs) {
-                for (size_t i = 0; i < TT.rows(); ++i) {
-                    const Vector3i& t = TT.row(i);
-                    const simplex::Face s(t[0], t[1], t[2]);
-                    if (tet_ids.count(s) == 0) {
-                        tet_ids[s] = tets.size();
-                        tets.push_back(t);
-                    }
-                }
-            }
-
-            auto& T = input_data.T_input;
-            T.resize(tets.size(), 3);
-            for (size_t i = 0; i < tets.size(); ++i) {
-                T.row(i) = tets[i];
-            }
-
-            // tags
-            input_data.T_input_tag.resize(input_data.T_input.rows(), Fs.size() - 1);
-            // assume Fs[0] are ambient faces
-            for (size_t i = 1; i < Fs.size(); ++i) {
-                for (size_t j = 0; j < Fs[i].rows(); ++j) {
-                    const Vector3i& t = Fs[i].row(j);
-                    const simplex::Face s(t[0], t[1], t[2]);
-                    const size_t tid = tet_ids[s];
-                    input_data.T_input_tag.coeffRef(tid, i - 1) = 1;
-                }
-                input_data.tag_names.push_back(tag_names[i]);
-            }
-        }
-
-        return input_data;
-    }
-
-    if (ph_vol && ph_env) {
-        logger().info("Found ImageVolume and EnvelopeSurface.");
-
-        if (ph_vol.value().dim != 3 && ph_vol.value().dim != 2) {
+    // The .msh route reads through the shared reader, so a file and the mesh it holds give the
+    // components the same input. As it always has, it takes the geometry and the region
+    // membership only: other fields in a file (diagnostics, older per-tag scalars such as
+    // tag_0) are not inputs.
+    MeshData mesh = io::read_mesh(path);
+    // A 2D file without physical groups may carry label images instead: integer cell fields
+    // tag_<k> whose value v > 0 puts a cell in region v of image k (img_to_msh_2d.py writes
+    // these). Regions are numbered across the images in k order and named tag_0, tag_1, ...
+    const auto top =
+        mesh.cells.count(CellType::Tetrahedron) ? CellType::Tetrahedron : CellType::Triangle;
+    if (auto block = mesh.cells.find(top);
+        block != mesh.cells.end() && !block->second.attributes.count("tags")) {
+        std::map<int, DataMatrix<double>> images;
+        for (const auto& [name, a] : block->second.attributes)
+            if (name.rfind("tag_", 0) == 0) images[std::stoi(name.substr(4))] = a.doubles();
+        if (!images.empty() && top == CellType::Tetrahedron)
             log_and_throw_error(
-                "Unexpected dimension {} of pysical group {}",
-                ph_vol.value().dim,
-                ph_vol.value().name);
-        }
-        if (ph_env.value().dim != 2 && ph_env.value().dim != 1) {
-            log_and_throw_error(
-                "Unexpected dimension {} of pysical group {}",
-                ph_env.value().dim,
-                ph_env.value().name);
-        }
-
-        if (has_faces && !has_tets) {
-            logger().info("Read 2D input.");
-            msh.get_VF(2, ph_vol.value().tag, input_data.V_input, input_data.T_input);
-            msh.get_VF(1, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
-            input_data.envelope_name = ph_env.value().name;
-            auto& Vi = input_data.V_input;
-            Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
-            auto& Ve = input_data.V_envelope;
-            Ve = Ve.block(0, 0, Ve.rows(), 2).eval();
-        } else {
-            logger().info("Read 3D input.");
-            msh.get_VF(3, ph_vol.value().tag, input_data.V_input, input_data.T_input);
-            msh.get_VF(2, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
-        }
-
-    } else {
-        // only read volume directly from .msh and ignore other entities
-        logger().info( //
-            "Could not find pysical groups ImageVolume and EnvelopeSurface. Reading only "
-            "tet data (in 2D face data) from MSH.");
-
-        if (has_faces && !has_tets) {
-            logger().info("Read 2D input.");
-            input_data.V_input.resize(msh.get_num_face_vertices(), 2);
-            input_data.T_input.resize(msh.get_num_faces(), 3);
-            msh.extract_face_vertices([&input_data](size_t i, double x, double y, double z) {
-                input_data.V_input.row(i) << x, y;
-                if (z != 0) {
-                    logger().warn("Ignoring non-zero z component of MSH for 2D input. z = {}", z);
-                }
-            });
-            msh.extract_faces([&input_data](size_t i, size_t v0, size_t v1, size_t v2) {
-                input_data.T_input.row(i) << (int)v0, (int)v1, (int)v2;
-            });
-
-            positive_orientation_2D(input_data.V_input, input_data.T_input);
-        } else if (has_tets) {
-            logger().info("Read 3D input.");
-            input_data.V_input.resize(msh.get_num_tet_vertices(), 3);
-            input_data.T_input.resize(msh.get_num_tets(), 4);
-            msh.extract_tet_vertices([&input_data](size_t i, double x, double y, double z) {
-                input_data.V_input.row(i) << x, y, z;
-            });
-            msh.extract_tets([&input_data](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-                input_data.T_input.row(i) << (int)v0, (int)v1, (int)v2, (int)v3;
-            });
-
-            positive_orientation_3D(input_data.V_input, input_data.T_input);
-        } else {
-            log_and_throw_error("Input has neither 2D nor 3D input");
+                "{}: 3D label images (tag_<k> cell fields) are not supported",
+                path);
+        std::vector<std::string> labels;
+        std::vector<std::pair<int, int>> columns; // (image, value) per region
+        for (const auto& [k, img] : images)
+            for (int v = 1; v <= int(img.maxCoeff()); ++v) {
+                columns.emplace_back(k, v);
+                labels.push_back("tag_" + std::to_string(labels.size()));
+            }
+        if (!images.empty()) {
+            const auto rows = block->second.connectivity.rows();
+            DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(rows, columns.size());
+            for (Eigen::Index i = 0; i < rows; ++i)
+                for (size_t j = 0; j < columns.size(); ++j)
+                    member(i, j) = int(images.at(columns[j].first)(i, 0)) == columns[j].second;
+            block->second.attributes["tags"] = {std::move(member), std::move(labels)};
         }
     }
-
-    if (input_data.T_input.cols() == 4) {
-        log_and_throw_error("This code was not used for a long time and is probably outdated");
-        int tets_tags_count = 0;
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
-            if (attr_name.substr(0, 4) == "tag_") {
-                ++tets_tags_count;
-            }
-        }
-
-        input_data.T_input_tag.resize(input_data.T_input.rows(), tets_tags_count);
-        for (const std::string& attr_name : msh.get_tet_attribute_names()) {
-            if (attr_name.substr(0, 4) != "tag_") {
-                continue;
-            }
-            const int tag_id = std::stoi(attr_name.substr(4));
-            msh.extract_tet_attribute(
-                attr_name,
-                [&input_data, &tag_id](size_t i, std::vector<double> val) {
-                    assert(val.size() == 1);
-                    input_data.T_input_tag.coeffRef(i, tag_id) = val[0];
-                });
-        }
-    } else {
-        assert(input_data.T_input.cols() == 3);
-        int tets_tags_count = 0;
-        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
-            if (attr_name.substr(0, 4) == "tag_") {
-                ++tets_tags_count;
-            }
-        }
-        MatrixXi input_tags;
-        input_tags.resize(input_data.T_input.rows(), tets_tags_count);
-        for (const std::string& attr_name : msh.get_all_element_attribute_names()) {
-            if (attr_name.substr(0, 4) != "tag_") {
-                continue;
-            }
-            const int tag_id = std::stoi(attr_name.substr(4));
-            msh.extract_face_attribute(
-                attr_name,
-                [&tag_id, &input_tags](size_t i, std::vector<double> val) {
-                    assert(val.size() == 1);
-                    input_tags(i, tag_id) = val[0];
-                });
-        }
-
-        // convert input tags to "binary"
-        MatrixXi input_tags_bin;
-        for (int j = 0; j < input_tags.cols(); ++j) {
-            VectorXi img = input_tags.col(j);
-            int max_id = img.maxCoeff();
-            MatrixXi img_bin;
-            img_bin.resize(img.rows(), max_id);
-            img_bin.setZero();
-            for (int i = 0; i < img.size(); ++i) {
-                if (img[i] == 0) {
-                    continue;
-                }
-                img_bin(i, img[i] - 1) = 1;
-            }
-            // input_data.T_input_tag.conservativeResize()
-            auto& Ti = input_tags_bin;
-            int nc = Ti.cols();
-            Ti.conservativeResize(img_bin.rows(), Ti.cols() + img_bin.cols());
-            Ti.block(0, nc, img_bin.rows(), img_bin.cols()) = img_bin;
-        }
-
-        input_data.T_input_tag = input_tags_bin.sparseView();
-        for (int j = 0; j < input_tags_bin.cols(); ++j) {
-            input_data.tag_names.push_back("tag_" + std::to_string(j));
-        }
-    }
-
-    return input_data;
+    mesh.vertex_attributes.clear();
+    for (auto& [type, cells] : mesh.cells)
+        for (auto it = cells.attributes.begin(); it != cells.attributes.end();)
+            it = it->first == "tags" ? std::next(it) : cells.attributes.erase(it);
+    return read_mesh_data(mesh);
 }
 
 InputData read_mesh(
@@ -439,10 +194,29 @@ InputData read_mesh(
     const bool simplify_boundary_envelope = json_params["simplify_boundary_envelope"];
     const double order2_envelope_ratio = json_params["order2_envelope_ratio"];
     const std::vector<std::string> input_names = json_params["input_names"];
+    // Which inputs enclose a volume (tet tags) and which stay surfaces (face tags).
+    const std::vector<std::string> input_type = json_params["input_type"];
+    std::vector<bool> is_volume(input_paths.size(), true);
+    if (!input_type.empty()) {
+        if (input_type.size() != input_paths.size())
+            log_and_throw_error(
+                "input_type needs one entry per input: {} entries for {} inputs",
+                input_type.size(),
+                input_paths.size());
+        for (size_t i = 0; i < input_type.size(); ++i) is_volume[i] = input_type[i] == "volume";
+    }
+    const bool has_surface = std::count(is_volume.begin(), is_volume.end(), false) > 0;
+    if (has_surface && split_connected_components)
+        log_and_throw_error(
+            "Surface inputs (input_type surface) need split_connected_components off");
+    if (has_surface && !tag_from_winding_number)
+        log_and_throw_error("Surface inputs (input_type surface) need tag_from_winding_number");
 
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     const double tol_rel = remove_duplicate_eps;
     const double tol_abs = -1;
+
+    const bool record_history = !std::string(json_params["history_output"]).empty();
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(
@@ -451,7 +225,8 @@ InputData read_mesh(
         tol_rel,
         tol_abs,
         split_connected_components,
-        component_io);
+        component_io,
+        record_history);
     image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
@@ -505,7 +280,8 @@ InputData read_mesh(
     input_data.V_envelope = image_mesh.V_surface();
     input_data.F_envelope = image_mesh.F_surface();
 
-    const bool all_rounded = image_mesh.embed_surface(preserve_topology, tag_from_winding_number);
+    const bool all_rounded =
+        image_mesh.embed_surface(preserve_topology, tag_from_winding_number, has_surface);
     image_mesh.consolidate();
 
     if (debug_output) {
@@ -517,15 +293,89 @@ InputData read_mesh(
         input_data.V_input_r = image_mesh.V_emb_r();
     }
     input_data.T_input = image_mesh.T_emb();
-    input_data.T_input_tag = image_mesh.T_tags();
-    // create generic tag names first
-    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
-        input_data.tag_names.push_back("tag_" + std::to_string(i));
+    if (record_history) {
+        input_data.has_input_history = true;
+        input_data.input_history = image_mesh.input_history();
+        input_data.facet_sources = std::move(image_mesh.facet_sources());
     }
-    // use provided tag names if possible
-    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
-        if (i < input_names.size()) {
-            input_data.tag_names[i] = input_names[i];
+    const auto& T_tags = image_mesh.T_tags();
+    // An input's name, or tag_<i> without one.
+    auto name = [&](size_t i) {
+        return i < input_names.size() ? input_names[i] : "tag_" + std::to_string(i);
+    };
+    // Each input's label bit, as the mesh's faces will carry it: a surface input's face-tag
+    // column, a volume input's tet tag after the face tags.
+    std::vector<int64_t> input_bit(is_volume.size(), -1);
+    if (!has_surface) {
+        input_data.T_input_tag = T_tags;
+        for (int i = 0; i < T_tags.cols(); ++i) input_data.tag_names.push_back(name(i));
+        for (size_t i = 0; i < input_bit.size(); ++i) input_bit[i] = int64_t(i);
+    } else {
+        // A volume input keeps its column of tet tags; a surface input's column (its winding
+        // number means nothing for an open surface) is dropped, and the embedded faces it tiles
+        // get its name as a face tag instead.
+        std::vector<int> volume_column(is_volume.size(), -1), surface_column(is_volume.size(), -1);
+        for (size_t i = 0; i < is_volume.size(); ++i) {
+            if (is_volume[i]) {
+                volume_column[i] = int(input_data.tag_names.size());
+                input_data.tag_names.push_back(name(i));
+            } else {
+                surface_column[i] = int(input_data.face_tag_names.size());
+                input_data.face_tag_names.push_back(name(i));
+            }
+        }
+        for (size_t i = 0; i < is_volume.size(); ++i) {
+            if (surface_column[i] >= 0) {
+                input_bit[i] = surface_column[i];
+            } else {
+                input_bit[i] = int64_t(input_data.face_tag_names.size()) + volume_column[i];
+            }
+        }
+        input_data.T_input_tag.resize(T_tags.rows(), input_data.tag_names.size());
+        for (int k = 0; k < T_tags.outerSize(); ++k)
+            for (MatrixSi::InnerIterator it(T_tags, k); it; ++it)
+                if (it.value() != 0 && volume_column[it.col()] >= 0)
+                    input_data.T_input_tag.coeffRef(it.row(), volume_column[it.col()]) = 1;
+        const auto& F = image_mesh.F_on_surface();
+        const auto& tiles = image_mesh.F_tags_surface();
+        std::vector<int> rows;
+        for (int r = 0; r < F.rows(); ++r)
+            for (const size_t in : tiles[r])
+                if (surface_column[in] >= 0) {
+                    rows.push_back(r);
+                    break;
+                }
+        input_data.F_tagged.resize(rows.size(), 3);
+        input_data.F_tags.resize(rows.size(), input_data.face_tag_names.size());
+        // A face points as its surface inputs do: the sum of their directions on it, opposite
+        // coincident sheets cancelling (SurfaceTagAttributes::m_orientation). The remesher's
+        // vertex order carries none; a face whose sum is 0 keeps it, as the writer does.
+        const auto& facing = image_mesh.F_tags_surface_orientation();
+        for (size_t k = 0; k < rows.size(); ++k) {
+            input_data.F_tagged.row(k) = F.row(rows[k]);
+            int sum = 0;
+            for (size_t j = 0; j < tiles[rows[k]].size(); ++j) {
+                const size_t in = tiles[rows[k]][j];
+                if (surface_column[in] < 0) continue;
+                input_data.F_tags.coeffRef(k, surface_column[in]) = 1;
+                sum += facing[rows[k]][j];
+            }
+            if (sum < 0) std::swap(input_data.F_tagged(k, 1), input_data.F_tagged(k, 2));
+        }
+    }
+
+    {
+        const auto& F_input = image_mesh.F_input();
+        // Only where every envelope triangle's input is known; else the mesh's faces serve.
+        if (F_input.size() == size_t(input_data.F_envelope.rows())) {
+            input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+            for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
+                const size_t in = F_input[r];
+                if (in < input_bit.size() && input_bit[in] >= 0 &&
+                    input_bit[in] < SurfaceTagAttributes::max_inputs) {
+                    input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+                }
+            }
         }
     }
 
@@ -540,6 +390,11 @@ InputData read_curves(
     const nlohmann::json& json_params,
     const io::ComponentIO* component_io)
 {
+    {
+        const std::vector<std::string> input_type = json_params["input_type"];
+        if (std::count(input_type.begin(), input_type.end(), "surface"))
+            log_and_throw_error("Surface inputs (input_type surface) are 3D only");
+    }
     InputData input_data;
 
     std::vector<Matrix3d> input_transforms(input_paths.size());
@@ -754,22 +609,27 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         "settle_inside_bars",
         "settle_outside_bars",
         "chord_length"};
-    // A lower-dimensional block of the envelope's type is an embedded envelope, as a lower
-    // physical group is on the .msh route (simwild writes its envelope as `EnvelopeSurface`).
+    // The one lower-dimensional block allowed next to the top cells: in a tet mesh, triangles,
+    // which are tagged faces; in a triangle mesh, edges, which are an embedded envelope, as a
+    // lower physical group is on the .msh route.
     const auto envelope_type = type == CellType::Tetrahedron ? CellType::Triangle : CellType::Edge;
     for (const auto& [t, c] : mesh.cells) {
         if (t != type && t != envelope_type)
             throw std::runtime_error("Incompatible tagged mesh topology");
-        io::ComponentIO::attributes(
-            c.attributes,
-            fields,
-            t == type ? std::set<std::string>{"tags"} : std::set<std::string>{});
+        io::ComponentIO::attributes(c.attributes, fields, std::set<std::string>{});
     }
-    const auto embedded = mesh.cells.find(envelope_type);
-    const bool has_embedded = embedded != mesh.cells.end() && embedded->second.connectivity.rows();
+    const auto lower = mesh.cells.find(envelope_type);
+    const bool has_lower = lower != mesh.cells.end() && lower->second.connectivity.rows();
+    const bool has_embedded = has_lower && type == CellType::Triangle;
     if (has_embedded && envelope)
         throw std::runtime_error("Tagged mesh has an embedded envelope and an `envelope` input");
-    const auto& a = block.attributes.at("tags");
+    // Cells without a tag are the background; a mesh without a tags field is all background.
+    const auto found = block.attributes.find("tags");
+    const bool tagged = found != block.attributes.end();
+    const MeshAttribute untagged{
+        DataMatrix<uint8_t>::Zero(block.connectivity.rows(), 0).eval(),
+        {}};
+    const auto& a = tagged ? found->second : untagged;
     if (!std::holds_alternative<DataMatrix<uint8_t>>(a.values) ||
         a.labels.size() != size_t(a.cols()))
         throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
@@ -777,8 +637,8 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     if ((tags.array() > 1).any()) throw std::runtime_error("tags must be binary");
     InputData out;
     const int dim = type == CellType::Tetrahedron ? 3 : 2;
-    // The vertices of `cells` only, renumbered in order: the .msh route reads each group's own
-    // vertices, so an embedded envelope's vertices must not enter V_input (and its bbox).
+    // The vertices of `cells` only, renumbered in order, so an embedded envelope's vertices do
+    // not enter V_input (and its bbox).
     auto referenced = [&](const DataMatrix<int64_t>& cells, MatrixXd& V, MatrixXi& C) {
         std::vector<int> remap(mesh.V.rows(), -1);
         for (Eigen::Index i = 0; i < cells.size(); ++i) remap[cells.data()[i]] = 0;
@@ -790,8 +650,12 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             if (remap[v] >= 0) V.row(remap[v]) = mesh.V.row(v).head(dim);
         C = io::ComponentIO::indices(cells);
         for (Eigen::Index i = 0; i < C.size(); ++i) C.data()[i] = remap[C.data()[i]];
+        return remap;
     };
-    referenced(block.connectivity, out.V_input, out.T_input);
+    const auto remap = referenced(block.connectivity, out.V_input, out.T_input);
+    // A 2D input may come clockwise; it is turned around, as the .msh route always did for
+    // images. A counter-clockwise input is unchanged.
+    if (dim == 2) positive_orientation_2D(out.V_input, out.T_input);
     std::vector<int> columns;
     for (int j = 0; j < tags.cols(); ++j)
         if (a.labels[j] != "ambient" && a.labels[j] != "ImageVolume") {
@@ -802,6 +666,73 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     for (int i = 0; i < tags.rows(); ++i)
         for (size_t j = 0; j < columns.size(); ++j)
             if (tags(i, columns[j])) out.T_input_tag.coeffRef(i, j) = 1;
+    if (has_lower && type == CellType::Tetrahedron) {
+        // The triangle block. Rows labelled EnvelopeSurface, simwild's envelope group (a reserved
+        // name, like ambient), are the envelope; every other label is a face tag. A face tag is
+        // one bit of a face's input set, so at most max_inputs, and a label names a volume (tets)
+        // or a surface (faces), never both.
+        const auto& faces = lower->second;
+        const auto ft_it = faces.attributes.find("tags");
+        if (ft_it == faces.attributes.end())
+            throw std::runtime_error(
+                "A triangle block in a tet mesh holds tagged faces; it needs tags");
+        const auto& fa = ft_it->second;
+        if (!std::holds_alternative<DataMatrix<uint8_t>>(fa.values) ||
+            fa.labels.size() != size_t(fa.cols()))
+            throw std::runtime_error("tags must be a UInt8 membership matrix with column labels");
+        const auto& ft = std::get<DataMatrix<uint8_t>>(fa.values);
+        if ((ft.array() > 1).any()) throw std::runtime_error("tags must be binary");
+        if ((ft.cast<int>().rowwise().sum().array() == 0).any())
+            throw std::runtime_error("Every tagged face needs a tag");
+        std::vector<int> face_columns;
+        int envelope_column = -1;
+        for (int j = 0; j < ft.cols(); ++j) {
+            if (fa.labels[j] == "EnvelopeSurface") {
+                envelope_column = j;
+                continue;
+            }
+            if (std::count(a.labels.begin(), a.labels.end(), fa.labels[j]))
+                throw std::runtime_error("Tag " + fa.labels[j] + " names both tets and faces");
+            face_columns.push_back(j);
+            out.face_tag_names.push_back(fa.labels[j]);
+        }
+        if (face_columns.size() > size_t(SurfaceTagAttributes::max_inputs))
+            throw std::runtime_error(
+                fmt::format(
+                    "At most {} face tags, not {}",
+                    SurfaceTagAttributes::max_inputs,
+                    face_columns.size()));
+        std::vector<Eigen::Index> envelope_rows, face_rows;
+        for (Eigen::Index i = 0; i < ft.rows(); ++i) {
+            if (envelope_column >= 0 && ft(i, envelope_column)) envelope_rows.push_back(i);
+            for (const int j : face_columns)
+                if (ft(i, j)) {
+                    face_rows.push_back(i);
+                    break;
+                }
+        }
+        if (!envelope_rows.empty()) {
+            if (envelope)
+                throw std::runtime_error(
+                    "Tagged mesh has an embedded envelope and an `envelope` input");
+            DataMatrix<int64_t> cells(envelope_rows.size(), 3);
+            for (size_t k = 0; k < envelope_rows.size(); ++k)
+                cells.row(k) = faces.connectivity.row(envelope_rows[k]);
+            referenced(cells, out.V_envelope, out.F_envelope);
+            out.envelope_name = "EnvelopeSurface";
+        }
+        out.F_tagged.resize(face_rows.size(), 3);
+        out.F_tags.resize(face_rows.size(), face_columns.size());
+        for (size_t k = 0; k < face_rows.size(); ++k) {
+            for (int c = 0; c < 3; ++c) {
+                const int v = remap[faces.connectivity(face_rows[k], c)];
+                if (v < 0) throw std::runtime_error("A tagged face has a vertex no tet has");
+                out.F_tagged(k, c) = v;
+            }
+            for (size_t j = 0; j < face_columns.size(); ++j)
+                if (ft(face_rows[k], face_columns[j])) out.F_tags.coeffRef(k, j) = 1;
+        }
+    }
     if (envelope) {
         envelope->validate();
         io::ComponentIO::attributes(envelope->vertex_attributes, {});
@@ -815,9 +746,9 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         out.envelope_name = "EnvelopeSurface";
     }
     if (has_embedded) {
-        referenced(embedded->second.connectivity, out.V_envelope, out.F_envelope);
-        const auto tag = embedded->second.attributes.find("tags");
-        out.envelope_name = tag != embedded->second.attributes.end() && tag->second.cols() == 1 &&
+        referenced(lower->second.connectivity, out.V_envelope, out.F_envelope);
+        const auto tag = lower->second.attributes.find("tags");
+        out.envelope_name = tag != lower->second.attributes.end() && tag->second.cols() == 1 &&
                                     tag->second.labels.size() == 1
                                 ? tag->second.labels[0]
                                 : "EnvelopeSurface";

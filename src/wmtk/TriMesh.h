@@ -17,11 +17,14 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <vector>
+
+#include <wmtk/history/Fwd.hpp>
 
 namespace wmtk {
 
@@ -640,25 +643,57 @@ public:
     void consolidate_mesh();
 
     /**
+     * @brief Record every operation this mesh commits from now on (see wmtk/history).
+     *
+     * Snapshots the current complex and returns the recorder the edits go to. `position(v)`
+     * gives the position of vertex v. It is called at the snapshot, and then for every vertex an
+     * operation wrote, from inside that operation while its locks are held, so it must read
+     * through const attribute access. Recording changes nothing about what the operations do.
+     */
+    std::shared_ptr<history::Recorder> start_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording. The recorder keeps the edits it has.
+    void stop_history();
+
+    /**
+     * @brief Record every change to the tracked curves from now on (see
+     * wmtk/history/TrackedRecorder.hpp).
+     *
+     * The tracked curves are the edges is_tracked_edge() names, with the feature points
+     * tracked_feature_points() names. Snapshots them and returns the recorder. Every operation
+     * then reports the tracked edges around it at its commit point, a consolidation renumbers the
+     * recorder's vertices, and remove_tris_by_ids() resyncs it. `position(v)` gives vertex v's
+     * position: it is called at the snapshot, and then from inside an operation while its locks
+     * are held, so it must read through const attribute access. Recording changes nothing the
+     * operations do.
+     */
+    std::shared_ptr<history::TrackedCurveRecorder> start_curve_history(
+        std::function<Eigen::Vector3d(size_t)> position);
+    /// Stop recording curves. The recorder keeps what it has.
+    void stop_curve_history();
+    /// Brings the recorded curves in line with `edges`, every tracked edge, after a change outside
+    /// the operations. Returns how many segments it removed and added: 0 when nothing changed,
+    /// or when not recording.
+    size_t resync_curve_history(const std::vector<std::array<size_t, 2>>& edges);
+    /// Every tracked edge, each with its smaller vertex first.
+    std::vector<std::array<size_t, 2>> tracked_edges() const;
+    /// Whether edge `e` is on a tracked curve, for a curve history. None is, unless an
+    /// application says so. Called from inside an operation for the edges at the vertices it
+    /// holds, so it must read through const attribute access.
+    virtual bool is_tracked_edge(const Tuple& e) const { return false; }
+    /// The feature points of the tracked curves, for a curve history: vertices the operations
+    /// keep by the history's rules (a collapse of one renames it to the survivor). None, unless
+    /// an application says otherwise.
+    virtual std::vector<size_t> tracked_feature_points() const { return {}; }
+
+    /**
      * @brief Mark the given triangles, and any vertex left without an incident triangle,
      * as removed.
      *
      * The 2D counterpart of TetMesh::remove_tets_by_ids, used by the output filters to
      * drop the region outside the input. Call consolidate_mesh() afterwards to compact.
      */
-    void remove_tris_by_ids(const std::vector<size_t>& fids)
-    {
-        for (const size_t fid : fids) {
-            m_tri_connectivity[fid].m_is_removed = true;
-            for (int j = 0; j < 3; j++) {
-                vector_erase(m_vertex_connectivity[m_tri_connectivity[fid][j]].m_conn_tris, fid);
-            }
-        }
-        for (auto& v : m_vertex_connectivity) {
-            if (v.m_is_removed) continue;
-            if (v.m_conn_tris.empty()) v.m_is_removed = true;
-        }
-    }
+    void remove_tris_by_ids(const std::vector<size_t>& fids);
     /**
      * @brief a duplicate of Tuple::switch_vertex funciton
      */
@@ -1081,6 +1116,29 @@ public:
         if (p_edge_attrs) p_edge_attrs->rollback();
         if (p_face_attrs) p_face_attrs->rollback();
     }
+
+private:
+    std::shared_ptr<history::Recorder> m_history;
+    std::function<Eigen::Vector3d(size_t)> m_history_position;
+    /// Adds the position of every live vertex the operation wrote -- the vertex journal, so call
+    /// it before release_protect_attributes() -- and appends the edit, if recording.
+    void commit_history(history::Edit&& e);
+
+    std::shared_ptr<history::TrackedCurveRecorder> m_curve_history;
+    /// The tracked edges around the running operation, before it changed anything.
+    wmtk::threading::enumerable_thread_specific<std::vector<std::array<size_t, 2>>>
+        m_curve_history_before;
+    /// The tracked edges at the vertices `vs`, each with its smaller vertex first. Reads only the
+    /// triangles at those vertices, which an operation holding them may read.
+    std::vector<std::array<size_t, 2>> tracked_edges_around(const std::vector<size_t>& vs) const;
+    void curve_history_before(const std::vector<size_t>& vs);
+    /// Reports the operation to the curve recorder: the tracked edges at `vs_after` against those
+    /// curve_history_before() saw, and the vertices it wrote (the vertex journal, so call it
+    /// before release_protect_attributes()).
+    void curve_history_commit(
+        history::EditKind kind,
+        std::vector<size_t> v,
+        const std::vector<size_t>& vs_after);
 
     // Moved code from concurrent TriMesh
 

@@ -24,6 +24,7 @@ void collect_memory_output(
             CellType::Tetrahedron,
             mesh.get_tets(),
             [&](const auto& t) -> const auto& { return mesh.m_tet_attribute[t.tid(mesh)].tag; });
+        io::collect_face_tags(mesh, context.result.first, mesh.m_face_tag_names);
     } else {
         io::collect_tags(
             mesh,

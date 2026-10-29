@@ -448,6 +448,58 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
     }
 }
 
+TEST_CASE("consolidate_resets_freed_attribute_slots", "[test_2d_operation][TriMesh]")
+{
+    // consolidate_mesh() compacts the attributes by moving each live record down, which leaves
+    // the source intact. The slots past the new live range are the next ones operations are
+    // handed, so they must come back default-constructed, not holding the records moved out.
+    using namespace utils::examples::tri;
+    struct Tag
+    {
+        int64_t tag = 0;
+    };
+    class TaggedMesh : public TriMesh
+    {
+    public:
+        AttributeCollection<Tag> vertex_attrs;
+        AttributeCollection<Tag> edge_attrs;
+        AttributeCollection<Tag> face_attrs;
+        TaggedMesh()
+        {
+            p_vertex_attrs = &vertex_attrs;
+            p_edge_attrs = &edge_attrs;
+            p_face_attrs = &face_attrs;
+        }
+    };
+
+    TaggedMesh m;
+    m.init(edge_region().F);
+    std::vector<TriMesh::Tuple> dummy;
+    REQUIRE(m.collapse_edge(m.tuple_from_vids(4, 5, 1), dummy));
+
+    for (size_t i = 0; i < m.vert_capacity(); ++i) m.vertex_attrs[i].tag = 1;
+    for (size_t i = 0; i < 3 * m.tri_capacity(); ++i) m.edge_attrs[i].tag = 1;
+    for (size_t i = 0; i < m.tri_capacity(); ++i) m.face_attrs[i].tag = 1;
+
+    const size_t n_verts = m.get_vertices().size();
+    const size_t n_faces = m.get_faces().size();
+    REQUIRE(n_verts < m.vert_capacity());
+    REQUIRE(n_faces < m.tri_capacity());
+    m.consolidate_mesh();
+    REQUIRE(m.vert_capacity() == n_verts);
+    REQUIRE(m.tri_capacity() == n_faces);
+
+    for (size_t i = 0; i < m.vertex_attrs.size(); ++i) {
+        CHECK(m.vertex_attrs[i].tag == (i < m.vert_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < m.edge_attrs.size(); ++i) {
+        CHECK(m.edge_attrs[i].tag == (i < 3 * m.tri_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < m.face_attrs.size(); ++i) {
+        CHECK(m.face_attrs[i].tag == (i < m.tri_capacity() ? 1 : 0));
+    }
+}
+
 TEST_CASE("tuple_from_vertex_on_unconsolidated_mesh", "[test_2d_operation][TriMesh]")
 {
     // tuple_from_vertex used to read m_vertex_connectivity[vid][0] unconditionally.

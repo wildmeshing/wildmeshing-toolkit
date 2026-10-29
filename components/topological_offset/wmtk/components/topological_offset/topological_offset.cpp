@@ -9,6 +9,7 @@
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Preallocation.hpp>
@@ -159,10 +160,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            if (component_io.memory())
-                topological_offset::collect_memory_output(mesh, component_io);
-            else
-                mesh.write_msh_groups(output_filename.string());
+            topological_offset::collect_memory_output(mesh, component_io);
+            if (!component_io.memory())
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 
@@ -227,7 +229,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     bad_tris_str += (" " + std::to_string(t.fid(mesh)));
                 }
             }
-            // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
             log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
 
@@ -241,7 +242,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             if (mesh.offset_is_manifold()) {
                 logger().info("Offset region manifold check passed.");
             } else {
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
             }
         }
@@ -356,10 +356,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        if (component_io.memory())
-            topological_offset::collect_memory_output(mesh, component_io);
-        else
-            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
@@ -385,7 +384,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names,
-            input_data.envelope_name);
+            input_data.envelope_name,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names);
 
         // label input complex
         mesh.m_offset_params.offset_selection =
@@ -395,10 +397,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
-            if (component_io.memory())
-                topological_offset::collect_memory_output(mesh, component_io);
-            else
-                mesh.write_msh_groups(output_filename.string());
+            topological_offset::collect_memory_output(mesh, component_io);
+            if (!component_io.memory())
+                io::write_mesh(
+                    output_filename.string() + ".msh",
+                    component_io.result.first.at("mesh"));
             return;
         }
 
@@ -458,7 +461,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                         bad_tets_str += (" " + std::to_string(t.tid(mesh)));
                     }
                 }
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
 
@@ -473,7 +475,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 if (mesh.offset_is_manifold()) {
                     logger().info("Offset region manifold check passed.");
                 } else {
-                    // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                     log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
                 }
             }
@@ -546,7 +547,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                         bad_tets_str += (" " + std::to_string(t.tid(mesh)));
                     }
                 }
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
         }
@@ -605,10 +605,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // mesh.write_msh(output_filename.string()); // write .msh
-        if (component_io.memory())
-            topological_offset::collect_memory_output(mesh, component_io);
-        else
-            mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
+        topological_offset::collect_memory_output(mesh, component_io);
+        if (!component_io.memory())
+            io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }

@@ -2,7 +2,6 @@
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
-#include <wmtk/utils/io.hpp>
 #include "TopoOffsetTetMesh.h"
 
 // clang-format off
@@ -103,7 +102,10 @@ void TopoOffsetTetMesh::init_from_image(
     const MatrixXd& V_env,
     const MatrixXi F_env,
     const std::vector<std::string>& tag_names,
-    const std::string& sheet_name)
+    const std::string& sheet_name,
+    const MatrixXi& F_tagged,
+    const MatrixSi& F_tags,
+    const std::vector<std::string>& face_tag_names)
 {
     // assert dimensions
     assert(V.cols() == 3);
@@ -168,6 +170,30 @@ void TopoOffsetTetMesh::init_from_image(
         m_tags_count++;
     }
 
+    // Face tags: selectable by name, carried on the faces' input sets (which every operation
+    // carries), and no tet tag, so their ids come after every tet tag and m_tags_count stays.
+    m_face_tag_names = face_tag_names;
+    for (size_t j = 0; j < face_tag_names.size(); ++j) {
+        if (m_tag_name_to_id.count(face_tag_names[j]))
+            log_and_throw_error("Face tag {} is also a tet tag", face_tag_names[j]);
+        const int64_t id = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[id] = face_tag_names[j];
+        m_tag_name_to_id[face_tag_names[j]] = id;
+        m_face_tag_bit[id] = int(j);
+    }
+    for (Eigen::Index r = 0; r < F_tagged.rows(); ++r) {
+        const std::array<size_t, 3> vids = {
+            {size_t(F_tagged(r, 0)), size_t(F_tagged(r, 1)), size_t(F_tagged(r, 2))}};
+        const auto face = try_tuple_from_face(vids);
+        if (!face) log_and_throw_error("Tagged face {} is not a face of the tet mesh", r);
+        InputSet set = 0;
+        for (Eigen::Index j = 0; j < F_tags.cols(); ++j)
+            if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+        auto& attr = m_face_attribute[std::get<1>(*face)];
+        attr.set_input_set(attr.input_set() | set);
+        attr.set_orientation_along(vids, 1);
+    }
+
     // collect int ids for offset output
     for (const std::string& name : m_offset_params.offset_output_tag) {
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
@@ -220,7 +246,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         if (t_opp) {
             const auto& tag0 = m_tet_attribute[ff.tid()].tag;
             const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tag;
-            if (tag0 == tag1 && !on_sheet) continue;
+            if (tag0 == tag1 && !on_sheet && m_face_attribute[fid].input_set() == 0) continue;
         }
         m_face_attribute[fid].m_is_surface_fs = true;
         ++n_faces_tracked;
@@ -494,9 +520,21 @@ void TopoOffsetTetMesh::label_input_complex()
     if (single_body) {
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
-        if (m_single_tag == m_sheet_tag) {
+        if (is_sheet_tag(m_single_tag)) {
             // The sheet is the complex: its faces, their edges and vertices, no tets. The band
             // then grows on both sides of it. offset_in / offset_out have no meaning for it.
+            const auto bit = m_face_tag_bit.find(m_single_tag);
+            if (bit != m_face_tag_bit.end()) {
+                // A face tag: its faces exactly, by their input set.
+                if (m_offset_params.optimize_offset)
+                    log_and_throw_error(
+                        "Offsetting the face tag {} needs optimize_offset false; the "
+                        "optimization does not hold face tags yet",
+                        m_tag_id_to_name[m_single_tag]);
+                for (const Tuple& f : get_faces())
+                    m_face_extra[f.fid(*this)].on_sheet =
+                        (m_face_attribute[f.fid(*this)].input_set() >> bit->second) & 1;
+            }
             size_t n = 0;
             for (const Tuple& f : get_faces()) {
                 const size_t f_id = f.fid(*this);
@@ -1741,7 +1779,7 @@ void TopoOffsetTetMesh::repulsion_smoothing()
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the cells' labels, which is exact
         // when the complex is a body's cells (offset_out) or the cells outside a body (offset_in).
-        if (!m_singlebody || m_single_tag == m_sheet_tag ||
+        if (!m_singlebody || is_sheet_tag(m_single_tag) ||
             m_offset_params.offset_in == m_offset_params.offset_out) {
             log_and_throw_error(
                 "repulsion_rounds: supported for a single body offset inward or outward only "
@@ -3032,93 +3070,6 @@ void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) con
     writer->add_field("phi_residual_length", residual);
     writer->add_field("euclidean_distance", euclid);
     writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
-}
-
-void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
-{
-    if (!m_params.output_enabled) return;
-    logger().info("Write {}.msh, {} tags", file, m_tags_count);
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& tets = get_tets();
-
-    std::vector<Tuple> tets_with_tag;
-    tets_with_tag.reserve(tets.size());
-
-    // add vertices
-    const auto& verts = get_vertices();
-    msh.add_tet_vertices(verts.size(), [&](size_t k) {
-        auto i = verts[k].vid(*this);
-        return m_vertex_attribute[i].m_posf;
-    });
-    // save_offset_correspondence: attached to the block just added, as MshData requires. Valid as
-    // written because the run stopped at the construction, which removes no vertex, so
-    // consolidate_mesh() above kept every id the field holds. As in 2D.
-    if (m_offset_params.save_offset_correspondence) {
-        msh.add_tet_vertex_attribute<1>("corr_input_vid", [&](size_t k) {
-            return double(m_vertex_extra[verts[k].vid(*this)].m_corr_input_vid);
-        });
-    }
-
-    auto msh_add_tets = [&]() {
-        msh.add_tets(tets_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tet_vids(tets_with_tag[k]);
-            std::array<size_t, 4> data;
-            for (int j = 0; j < 4; j++) {
-                data[j] = vs[j];
-            }
-            return data;
-        });
-    };
-
-    // add ambient
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
-        if (m_tet_attribute[t_id].tag.count(0) != 0) {
-            tets_with_tag.push_back(t);
-        }
-    }
-    msh_add_tets();
-    msh.add_physical_group("ambient");
-
-    // group for each tag
-    for (int64_t tag_img = 1; tag_img < m_tags_count; tag_img++) {
-        tets_with_tag.clear();
-        for (const Tuple& t : tets) {
-            size_t t_id = t.tid(*this);
-            if (m_tet_attribute[t_id].tag.count(tag_img) != 0) {
-                tets_with_tag.push_back(t);
-            }
-        }
-
-        if (tets_with_tag.empty()) {
-            continue;
-        }
-
-        msh.add_empty_vertices(3);
-        msh_add_tets();
-
-        const std::string group_name = m_tag_id_to_name[tag_img];
-        msh.add_physical_group(group_name);
-    }
-
-    if (m_has_envelope) {
-        msh.add_face_vertices(m_V_envelope.rows(), [this](size_t k) {
-            return Vector3d(m_V_envelope.row(k));
-        });
-        msh.add_faces(m_F_envelope.rows(), [this](size_t k) {
-            const auto r = m_F_envelope.row(k);
-            return std::array<size_t, 3>{{size_t(r(0)), size_t(r(1)), size_t(r(2))}};
-        });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    // No node data unless save_offset_correspondence: the file has the same shape as simwild's
-    // output (node and element blocks per physical group, plus the retained envelope) and nothing
-    // else.
-    msh.save(file + ".msh", true);
 }
 
 } // namespace wmtk::components::topological_offset

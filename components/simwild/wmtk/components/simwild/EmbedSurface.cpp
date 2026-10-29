@@ -9,6 +9,7 @@
 #include <igl/tet_tet_adjacency.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/winding_number.h>
+#include <numeric>
 // igl must be included BEFORE VolumeRemesher
 #include <wmtk/utils/VolumeRemesher.hpp>
 // clang-format on
@@ -73,7 +74,9 @@ void embed_surface(
     MatrixXi& F_on_surface,
     const bool perform_sanity_checks,
     const std::vector<size_t>& F_input,
-    std::vector<std::vector<size_t>>* F_on_surface_inputs)
+    std::vector<std::vector<size_t>>* F_on_surface_inputs,
+    std::vector<std::vector<int>>* F_on_surface_orientations,
+    FacetSources* facet_sources)
 {
     // old output
     std::vector<std::array<size_t, 3>> facets_after;
@@ -126,6 +129,7 @@ void embed_surface(
     opts.check_orientation = perform_sanity_checks;
     opts.check_surface_provenance = perform_sanity_checks;
     wmtk::utils::EmbedTrianglesProvenance prov;
+    prov.want_face_triangles = F_on_surface_inputs != nullptr || facet_sources != nullptr;
     wmtk::utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -138,7 +142,23 @@ void embed_surface(
         tets_after,
         tet_face_on_input_surface,
         opts,
-        F_on_surface_inputs == nullptr ? nullptr : &prov);
+        F_on_surface_inputs == nullptr && facet_sources == nullptr ? nullptr : &prov);
+
+    if (facet_sources != nullptr) {
+        // By the positions the facet's corners have here and in the mesh made from this.
+        facet_sources->clear();
+        for (size_t i = 0; i < prov.face_triangles.size(); ++i) {
+            if (prov.face_triangles[i].empty()) continue;
+            PositionKey k;
+            for (int c = 0; c < 3; ++c) {
+                const Vector3d p = to_double(v_rational[polygon_faces[i][c]]);
+                k[c] = {{p[0], p[1], p[2]}};
+            }
+            std::sort(k.begin(), k.end());
+            // Copied: F_on_surface_inputs reads them below.
+            facet_sources->emplace_back(k, prov.face_triangles[i]);
+        }
+    }
 
     T_emb.resize(tets_after.size(), 4);
     for (int i = 0; i < tets_after.size(); ++i) {
@@ -171,63 +191,63 @@ void embed_surface(
         return;
     }
 
-    // Which input surface each output surface face came from.
+    // Which input surface each output surface face came from: the inputs of the triangles it
+    // overlaps with positive area (EmbedTrianglesProvenance::face_triangles). Not those of its
+    // coplanar group: a group spans several inputs wherever they are exactly coplanar and
+    // edge-adjacent -- two sheets side by side, the tops of two touching boxes -- and every face
+    // of the group would then claim all of them. Several inputs only where they overlap.
     //
-    // The arrangement answers per coplanar group, so first collapse the per-triangle
-    // labels into per-group ones. A group normally holds triangles of a single input;
-    // it holds several only where two inputs are exactly coplanar and edge-adjacent,
-    // and then the face genuinely belongs to both -- which is the case the geometric
-    // look-up this replaces could not distinguish.
-    std::vector<std::vector<size_t>> group_inputs(
-        prov.face_groups.empty() ? 0
-                                 : 1 + std::max_element(
-                                           prov.face_groups.begin(),
-                                           prov.face_groups.end(),
-                                           [](const auto& a, const auto& b) { return a[1] < b[1]; })
-                                           ->at(1));
-    for (size_t t = 0; t < prov.triangle_group.size(); ++t) {
-        const uint32_t g = prov.triangle_group[t];
-        if (g == std::numeric_limits<uint32_t>::max() || g >= group_inputs.size()) {
-            continue; // degenerate triangle, or a group no output face lies on
-        }
-        const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
-        if (in == std::numeric_limits<size_t>::max()) {
+    // And each input's direction on the face, against the face's vertex order: +1 along, -1
+    // against, 0 where that input's own triangles there face both ways -- a sheet counts once,
+    // as in the orientation count (SurfaceTagAttributes::m_orientation). The face's vertex order
+    // is the remesher's, which carries no orientation of its own.
+    F_on_surface_inputs->assign(n_face_on_input, {});
+    if (F_on_surface_orientations != nullptr)
+        F_on_surface_orientations->assign(n_face_on_input, {});
+    size_t row = 0;
+    for (size_t i = 0; i < polygon_faces.size(); ++i) {
+        if (!polygon_faces_on_input[i]) {
             continue;
         }
-        auto& v = group_inputs[g];
-        if (std::find(v.begin(), v.end(), in) == v.end()) {
-            v.push_back(in);
-        }
-    }
-    for (auto& v : group_inputs) {
-        std::sort(v.begin(), v.end());
-    }
-
-    // prov.face_groups is sorted by facet, and F_on_surface keeps the facets in that same
-    // order, so one walk fills both.
-    F_on_surface_inputs->assign(n_face_on_input, {});
-    {
-        size_t row = 0;
-        size_t p = 0;
-        for (size_t i = 0; i < polygon_faces.size(); ++i) {
-            if (!polygon_faces_on_input[i]) {
+        const auto& f = polygon_faces[i];
+        const Vector3d fa = to_double(v_rational[f[0]]);
+        const Vector3d normal =
+            (to_double(v_rational[f[1]]) - fa).cross(to_double(v_rational[f[2]]) - fa);
+        auto& inputs = (*F_on_surface_inputs)[row];
+        std::vector<std::array<bool, 2>> facing; // per input: seen along, seen against
+        for (const uint32_t t : prov.face_triangles[i]) {
+            const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
+            if (in == std::numeric_limits<size_t>::max()) {
                 continue;
             }
-            auto& inputs = (*F_on_surface_inputs)[row++];
-            while (p < prov.face_groups.size() && prov.face_groups[p][0] < i) {
-                ++p;
+            auto it = std::find(inputs.begin(), inputs.end(), in);
+            if (it == inputs.end()) {
+                inputs.push_back(in);
+                facing.push_back({{false, false}});
+                it = inputs.end() - 1;
             }
-            for (; p < prov.face_groups.size() && prov.face_groups[p][0] == i; ++p) {
-                for (const size_t in : group_inputs[prov.face_groups[p][1]]) {
-                    if (std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
-                        inputs.push_back(in);
-                    }
-                }
-            }
-            std::sort(inputs.begin(), inputs.end());
+            const Vector3d q0 = V_surface.row(F_surface(t, 0)).transpose();
+            const Vector3d n_t = (Vector3d(V_surface.row(F_surface(t, 1))) - q0)
+                                     .cross(Vector3d(V_surface.row(F_surface(t, 2))) - q0);
+            facing[it - inputs.begin()][n_t.dot(normal) > 0 ? 0 : 1] = true;
         }
-        assert(row == n_face_on_input);
+        std::vector<size_t> order(inputs.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+            return inputs[a] < inputs[b];
+        });
+        std::vector<size_t> sorted(inputs.size());
+        std::vector<int> o(inputs.size());
+        for (size_t k = 0; k < order.size(); ++k) {
+            sorted[k] = inputs[order[k]];
+            const auto& [along, against] = facing[order[k]];
+            o[k] = along == against ? 0 : (along ? 1 : -1);
+        }
+        inputs = std::move(sorted);
+        if (F_on_surface_orientations != nullptr) (*F_on_surface_orientations)[row] = std::move(o);
+        ++row;
     }
+    assert(row == n_face_on_input);
 }
 
 
@@ -245,7 +265,9 @@ void split_into_connected_components(
     const MatrixXd& V,
     const MatrixXi& F,
     std::vector<MatrixXd>& V_out,
-    std::vector<MatrixXi>& F_out)
+    std::vector<MatrixXi>& F_out,
+    std::vector<std::vector<int>>* faces_out = nullptr,
+    std::vector<Eigen::VectorXi>* vertex_maps_out = nullptr)
 {
     Eigen::SparseMatrix<int> A;
     igl::adjacency_matrix(F, A);
@@ -276,6 +298,8 @@ void split_into_connected_components(
 
         V_out.push_back(std::move(V_piece));
         F_out.push_back(std::move(F_piece));
+        if (faces_out) faces_out->push_back(faces);
+        if (vertex_maps_out) vertex_maps_out->push_back(std::move(_I));
     }
 }
 
@@ -287,9 +311,14 @@ EmbedSurface::EmbedSurface(
     const double tol_rel,
     const double tol_abs,
     const bool split_connected_components,
-    const io::ComponentIO* component_io)
+    const io::ComponentIO* component_io,
+    const bool record_history)
     : m_img_filenames(img_filenames)
+    , m_record_history(record_history)
 {
+    // With record_history: where each vertex and face of the files as read ends up in the
+    // concatenated surface, before its unreferenced vertices go.
+    std::vector<uint64_t> raw_vertex_to_soup, raw_face_to_soup;
     assert(img_filenames.size() == img_transform.size());
 
     // One entry per INPUT, which is one per file unless split_connected_components is on, in
@@ -307,10 +336,39 @@ EmbedSurface::EmbedSurface(
         }
         MatrixXd V_file;
         MatrixXi F_file;
-        if (component_io)
+        io::ReadProvenance read;
+        if (m_record_history) {
+            const std::vector<std::string> one{m_img_filenames[i]};
+            if (component_io)
+                component_io->triangles(one, V_file, F_file, tol_rel, tol_abs, nullptr, &read);
+            else
+                io::read_triangle_mesh(one, V_file, F_file, tol_rel, tol_abs, nullptr, &read);
+        } else if (component_io) {
             component_io->triangles(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
-        else
+        } else {
             io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
+        }
+        // With record_history: the file's vertices and faces as read, and the cleaned face
+        // each became (a face the weld leaves with a repeated vertex goes).
+        std::vector<int> clean_face;
+        const size_t raw_v0 = m_input_history.vertices.size();
+        if (m_record_history) {
+            auto& h = m_input_history;
+            for (Eigen::Index v = 0; v < read.V.rows(); ++v) {
+                h.vertices.push_back(read.V.row(v).transpose());
+            }
+            int kept = 0;
+            for (Eigen::Index f = 0; f < read.cells.rows(); ++f) {
+                h.faces.push_back(
+                    {{raw_v0 + uint64_t(read.cells(f, 0)),
+                      raw_v0 + uint64_t(read.cells(f, 1)),
+                      raw_v0 + uint64_t(read.cells(f, 2))}});
+                int c[3];
+                for (int k = 0; k < 3; ++k) c[k] = read.vertex_map[read.cells(f, k)];
+                const bool gone = c[0] == c[1] || c[1] == c[2] || c[0] == c[2];
+                clean_face.push_back(gone ? -1 : kept++);
+            }
+        }
 
         assert(V_file.cols() == 3);
         assert(F_file.cols() == 3);
@@ -326,15 +384,79 @@ EmbedSurface::EmbedSurface(
         // The pieces this file contributes: itself, or one per connected component.
         std::vector<MatrixXd> V_pieces;
         std::vector<MatrixXi> F_pieces;
+        std::vector<std::vector<int>> piece_faces;
+        std::vector<Eigen::VectorXi> piece_vertices;
         if (split_connected_components) {
-            split_into_connected_components(V_file, F_file, V_pieces, F_pieces);
+            split_into_connected_components(
+                V_file,
+                F_file,
+                V_pieces,
+                F_pieces,
+                &piece_faces,
+                &piece_vertices);
             logger().info(
                 "Input {} split into {} connected components",
                 m_img_filenames[i],
                 F_pieces.size());
         } else {
+            piece_faces.emplace_back(F_file.rows());
+            std::iota(piece_faces.back().begin(), piece_faces.back().end(), 0);
+            piece_vertices.push_back(
+                Eigen::VectorXi::LinSpaced(V_file.rows(), 0, int(V_file.rows()) - 1));
             V_pieces.push_back(std::move(V_file));
             F_pieces.push_back(std::move(F_file));
+        }
+
+        if (m_record_history) {
+            // Cleaned face -> (piece, row), cleaned vertex -> (piece, row), then the offsets
+            // the pieces will be concatenated at.
+            std::vector<std::pair<size_t, int>> face_at(clean_face.size(), {0, -1});
+            std::vector<std::pair<size_t, int>> vertex_at(read.vertex_map.size(), {0, -1});
+            std::vector<int> clean_face_index; // inverse of clean_face over the kept faces
+            for (size_t f = 0; f < clean_face.size(); ++f) {
+                if (clean_face[f] >= 0) clean_face_index.push_back(int(f));
+            }
+            std::vector<std::pair<size_t, int>> piece_of_clean_face(
+                clean_face_index.size(),
+                {0, -1});
+            std::vector<std::pair<size_t, int>> piece_of_clean_vertex;
+            for (size_t p = 0; p < piece_faces.size(); ++p) {
+                for (size_t k = 0; k < piece_faces[p].size(); ++k) {
+                    piece_of_clean_face[piece_faces[p][k]] = {p, int(k)};
+                }
+                if (piece_of_clean_vertex.size() < size_t(piece_vertices[p].size())) {
+                    piece_of_clean_vertex.resize(piece_vertices[p].size(), {0, -1});
+                }
+                for (Eigen::Index c = 0; c < piece_vertices[p].size(); ++c) {
+                    if (piece_vertices[p](c) >= 0)
+                        piece_of_clean_vertex[c] = {p, piece_vertices[p](c)};
+                }
+            }
+            std::vector<size_t> v_off(F_pieces.size()), f_off(F_pieces.size());
+            size_t nv = m_V_surface.rows(), nf = m_F_surface.rows();
+            for (size_t p = 0; p < F_pieces.size(); ++p) {
+                v_off[p] = nv;
+                f_off[p] = nf;
+                nv += V_pieces[p].rows();
+                nf += F_pieces[p].rows();
+            }
+            for (size_t r = 0; r < read.vertex_map.size(); ++r) {
+                const int c = read.vertex_map[r];
+                uint64_t soup = history::kNoVertex;
+                if (c >= 0 && size_t(c) < piece_of_clean_vertex.size() &&
+                    piece_of_clean_vertex[c].second >= 0) {
+                    soup = v_off[piece_of_clean_vertex[c].first] + piece_of_clean_vertex[c].second;
+                }
+                raw_vertex_to_soup.push_back(soup);
+            }
+            for (size_t f = 0; f < clean_face.size(); ++f) {
+                uint64_t soup = history::kNoVertex;
+                if (clean_face[f] >= 0) {
+                    const auto [p, k] = piece_of_clean_face[clean_face[f]];
+                    if (k >= 0) soup = f_off[p] + k;
+                }
+                raw_face_to_soup.push_back(soup);
+            }
         }
 
         for (size_t p = 0; p < F_pieces.size(); ++p) {
@@ -381,6 +503,22 @@ EmbedSurface::EmbedSurface(
 
     V_surf_from_vector(verts);
     F_surf_from_vector(tris);
+
+    if (m_record_history) {
+        // The files as read, then one relabel to the surface as concatenated: welded,
+        // transformed, split, with the unreferenced vertices gone.
+        auto& h = m_input_history;
+        h.vertex_alive.assign(h.vertices.size(), 1);
+        h.face_alive.assign(h.faces.size(), 1);
+        history::Edit e{history::EditKind::relabel, {}, raw_face_to_soup, {}};
+        for (const uint64_t soup : raw_vertex_to_soup) {
+            e.v.push_back(
+                soup == history::kNoVertex || _I(soup) < 0 ? history::kNoVertex
+                                                           : uint64_t(_I(soup)));
+        }
+        for (uint64_t v = 0; v < verts.size(); ++v) e.moves.push_back({v, verts[v]});
+        h.edits.push_back(std::move(e));
+    }
 }
 
 void EmbedSurface::simplify_surface(
@@ -399,6 +537,11 @@ void EmbedSurface::simplify_surface(
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, eps, boundary_eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
+    std::shared_ptr<history::Recorder> recorder;
+    if (m_record_history) {
+        recorder = surf_mesh.start_history(
+            [&surf_mesh](size_t v) { return surf_mesh.vertex_attrs.at(v).pos; });
+    }
     surf_mesh.collapse_shortest(0);
 
     // Which original row of m_F_surface each surviving triangle is. A collapse removes
@@ -414,6 +557,12 @@ void EmbedSurface::simplify_surface(
     std::sort(surviving_fids.begin(), surviving_fids.end());
 
     surf_mesh.consolidate_mesh();
+    if (recorder) {
+        surf_mesh.stop_history();
+        if (!history::append(m_input_history, recorder->history())) {
+            log_and_throw_error("history_output: the simplification does not start at the input");
+        }
+    }
     // surf_mesh.write_triangle_mesh("triangle_soup_coarse.off");
 
     //// get the simplified input
@@ -463,7 +612,10 @@ void EmbedSurface::remove_duplicates(const double eps)
     F_surf_from_vector(f);
 }
 
-bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_winding_number)
+bool EmbedSurface::embed_surface(
+    const bool flood_fill,
+    const bool tag_from_winding_number,
+    const bool provenance)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -518,7 +670,9 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         m_F_on_surface,
         m_perform_sanity_checks,
         m_F_input,
-        tag_from_winding_number ? nullptr : &m_F_tags_surface);
+        tag_from_winding_number && !provenance ? nullptr : &m_F_tags_surface,
+        &m_F_tags_surface_orientation,
+        m_record_history ? &m_facet_sources : nullptr);
 
     if (m_perform_sanity_checks) {
         // check that all tets contain valid vertex indices and no duplicates

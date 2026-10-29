@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <set>
@@ -304,11 +305,18 @@ std::vector<int> facet_orientations(
  * touching solids cancel) are not part of the oriented surface, and those of larger magnitude
  * (coincident sheets) are left as computed and end a patch. fTetWild orients its tracked
  * surface the same way: from the input, then a BFS per patch.
+ *
+ * With `facet_input` (per facet, an id of the inputs it lies on), facets are linked only to
+ * facets on the same inputs, so a patch never spans two inputs: two inputs facing opposite ways
+ * across an edge are both kept, where one patch would reverse the smaller to agree with the
+ * larger (measured: two coplanar squares side by side, one facing each way, the second came out
+ * facing like the first). Within one input the repair is unchanged.
  */
 OrientationRepair orient_facet_patches(
     const std::vector<Vector3r>& v_rational,
     const std::vector<std::array<size_t, 3>>& facets,
-    std::vector<int>& orientation)
+    std::vector<int>& orientation,
+    const std::vector<int>* facet_input = nullptr)
 {
     assert(v_rational.size() < size_t(UINT32_MAX));
     constexpr uint32_t not_unit = UINT32_MAX;
@@ -350,7 +358,9 @@ OrientationRepair orient_facet_patches(
     for (size_t s = 0; s < half_edges.size();) {
         size_t e = s + 1;
         while (e < half_edges.size() && half_edges[e].key == half_edges[s].key) ++e;
-        if (e - s == 2 && half_edges[s].elem != not_unit && half_edges[s + 1].elem != not_unit) {
+        if (e - s == 2 && half_edges[s].elem != not_unit && half_edges[s + 1].elem != not_unit &&
+            (facet_input == nullptr || (*facet_input)[unit[half_edges[s].elem]] ==
+                                           (*facet_input)[unit[half_edges[s + 1].elem]])) {
             links.push_back(
                 {half_edges[s].elem,
                  half_edges[s + 1].elem,
@@ -374,6 +384,163 @@ OrientationRepair orient_facet_patches(
         if (rep.turn[k]) orientation[unit[k]] = -orientation[unit[k]];
     }
     return rep;
+}
+
+// The input triangles each facet on the input lies on, exactly: those of its coplanar group it
+// overlaps with positive area. A group is cut as one region, its triangles' shared edges
+// ignored, so a facet may lie across several of them -- the map then finds which one holds a
+// point. A grid over the triangles' boxes gathers the candidates; a floating-point test settles
+// the clear cases, an exact one the rest.
+std::vector<std::vector<uint32_t>> facet_triangles(
+    const std::vector<double>& tri_vrt_coord,
+    const std::vector<uint32_t>& triangle_indices,
+    const std::vector<Vector3r>& v_rational,
+    const std::vector<std::array<size_t, 3>>& polygon_faces,
+    const EmbedTrianglesProvenance& prov)
+{
+    const size_t nt = triangle_indices.size() / 3;
+    const auto corner = [&](size_t t, int k) {
+        const size_t v = triangle_indices[3 * t + k];
+        return Vector3d(tri_vrt_coord[3 * v], tri_vrt_coord[3 * v + 1], tri_vrt_coord[3 * v + 2]);
+    };
+    const auto box_of = [](const std::array<Vector3d, 3>& p) {
+        return std::pair{p[0].cwiseMin(p[1]).cwiseMin(p[2]), p[0].cwiseMax(p[1]).cwiseMax(p[2])};
+    };
+    // The grid: cells about twice the mean triangle extent.
+    Vector3d lo = Vector3d::Constant(std::numeric_limits<double>::max()), hi = -lo;
+    double extent = 0;
+    std::vector<std::array<Vector3d, 3>> tris(nt);
+    for (size_t t = 0; t < nt; ++t) {
+        tris[t] = {{corner(t, 0), corner(t, 1), corner(t, 2)}};
+        const auto [a, b] = box_of(tris[t]);
+        lo = lo.cwiseMin(a);
+        hi = hi.cwiseMax(b);
+        extent += (b - a).maxCoeff();
+    }
+    std::vector<std::vector<uint32_t>> out(polygon_faces.size());
+    if (nt == 0) return out;
+    const double diag = (hi - lo).norm();
+    const double cell = std::max(2 * extent / double(nt), 1e-6 * diag) + 1e-300;
+    const double margin = 1e-9 * diag; // boxes only gather candidates; the test decides
+    const auto index = [&](const Vector3d& p) {
+        std::array<int64_t, 3> c;
+        for (int k = 0; k < 3; ++k) c[k] = int64_t(std::floor((p[k] - lo[k]) / cell));
+        return c;
+    };
+    const auto cells_of = [&](const Vector3d& a, const Vector3d& b) {
+        return std::pair{
+            index(a - Vector3d::Constant(margin)),
+            index(b + Vector3d::Constant(margin))};
+    };
+    const auto count = [](const std::array<int64_t, 3>& ia, const std::array<int64_t, 3>& ib) {
+        return (ib[0] - ia[0] + 1) * (ib[1] - ia[1] + 1) * (ib[2] - ia[2] + 1);
+    };
+    constexpr int64_t kMaxCells = 64;
+    std::map<std::array<int64_t, 3>, std::vector<uint32_t>> grid;
+    std::vector<uint32_t> large; // spanning too many cells: a candidate everywhere
+    std::map<uint32_t, std::vector<uint32_t>> group_tris;
+    for (size_t t = 0; t < nt; ++t) {
+        if (prov.triangle_group[t] == UINT32_MAX) continue;
+        group_tris[prov.triangle_group[t]].push_back(uint32_t(t));
+        const auto [a, b] = box_of(tris[t]);
+        const auto [ia, ib] = cells_of(a, b);
+        if (count(ia, ib) > kMaxCells) {
+            large.push_back(uint32_t(t));
+            continue;
+        }
+        for (int64_t x = ia[0]; x <= ib[0]; ++x) {
+            for (int64_t y = ia[1]; y <= ib[1]; ++y) {
+                for (int64_t z = ia[2]; z <= ib[2]; ++z) grid[{{x, y, z}}].push_back(uint32_t(t));
+            }
+        }
+    }
+
+    // Whether input triangle t and a facet in its plane (exact corners q, rounded qd) overlap
+    // with positive area: no edge of either has all of the other on its outer side or on it.
+    const auto overlaps = [&](size_t t,
+                              const std::array<Vector3r, 3>& q,
+                              const std::array<Vector3d, 3>& qd) {
+        const auto& p = tris[t];
+        const Vector3d n = (p[1] - p[0]).cross(p[2] - p[0]);
+        int drop = 0;
+        for (int k = 1; k < 3; ++k) {
+            if (std::abs(n[k]) > std::abs(n[drop])) drop = k;
+        }
+        const int u = (drop + 1) % 3, w = (drop + 2) % 3;
+        // The signs of the corners of each against each edge of the other, in doubles where
+        // the margin says they are sure.
+        const auto separated = [&](const auto& a, const auto& b, const auto& orient) {
+            for (int e = 0; e < 3; ++e) {
+                const int side = orient(a[e], a[(e + 1) % 3], a[(e + 2) % 3]);
+                bool all_out = true;
+                for (int k = 0; k < 3 && all_out; ++k) {
+                    all_out = orient(a[e], a[(e + 1) % 3], b[k]) * side <= 0;
+                }
+                if (all_out) return true;
+            }
+            return false;
+        };
+        double scale = 0;
+        for (int k = 0; k < 3; ++k) {
+            scale = std::max({scale, (p[k] - p[0]).squaredNorm(), (qd[k] - p[0]).squaredNorm()});
+        }
+        const double bound = 1e-12 * scale;
+        bool sure = true;
+        const auto orient_d = [&](const Vector3d& a, const Vector3d& b, const Vector3d& c) {
+            const double x = (b[u] - a[u]) * (c[w] - a[w]) - (b[w] - a[w]) * (c[u] - a[u]);
+            if (std::abs(x) <= bound) sure = false;
+            return x > 0 ? 1 : (x < 0 ? -1 : 0);
+        };
+        const bool apart = separated(p, qd, orient_d) || separated(qd, p, orient_d);
+        if (sure) return !apart;
+        const std::array<Vector3r, 3> pr = {
+            {to_rational(p[0]), to_rational(p[1]), to_rational(p[2])}};
+        const auto orient_r = [&](const Vector3r& a, const Vector3r& b, const Vector3r& c) {
+            return ((b[u] - a[u]) * (c[w] - a[w]) - (b[w] - a[w]) * (c[u] - a[u])).get_sign();
+        };
+        return !(separated(pr, q, orient_r) || separated(q, pr, orient_r));
+    };
+
+    std::vector<uint32_t> candidates;
+    for (const auto& [f, g] : prov.face_groups) {
+        const std::array<Vector3r, 3> q = {
+            {v_rational[polygon_faces[f][0]],
+             v_rational[polygon_faces[f][1]],
+             v_rational[polygon_faces[f][2]]}};
+        const std::array<Vector3d, 3> qd = {{to_double(q[0]), to_double(q[1]), to_double(q[2])}};
+        const auto [a, b] = box_of(qd);
+        const auto [ia, ib] = cells_of(a, b);
+        candidates.clear();
+        if (count(ia, ib) > kMaxCells) {
+            const auto it = group_tris.find(g);
+            if (it != group_tris.end()) candidates = it->second;
+        } else {
+            for (int64_t x = ia[0]; x <= ib[0]; ++x) {
+                for (int64_t y = ia[1]; y <= ib[1]; ++y) {
+                    for (int64_t z = ia[2]; z <= ib[2]; ++z) {
+                        const auto it = grid.find({{x, y, z}});
+                        if (it != grid.end()) {
+                            candidates.insert(
+                                candidates.end(),
+                                it->second.begin(),
+                                it->second.end());
+                        }
+                    }
+                }
+            }
+            candidates.insert(candidates.end(), large.begin(), large.end());
+        }
+        std::sort(candidates.begin(), candidates.end());
+        candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
+        for (const uint32_t t : candidates) {
+            if (prov.triangle_group[t] == g && overlaps(t, q, qd)) out[f].push_back(t);
+        }
+    }
+    for (auto& ts : out) {
+        std::sort(ts.begin(), ts.end());
+        ts.erase(std::unique(ts.begin(), ts.end()), ts.end());
+    }
+    return out;
 }
 
 } // namespace
@@ -594,21 +761,38 @@ void embed_triangles_in_tets(
             [](const FaceKey& a, const FaceKey& b) { return a.first < b.first; });
     };
 
+    // The orientation repair keeps to one input when the caller says which input each triangle
+    // belongs to (EmbedTrianglesOptions::triangle_input). That needs each facet's triangles, so
+    // the provenance is built for it even when the caller asked for none.
+    const bool keep_to_inputs = tet_face_orientation != nullptr && opts.triangle_input != nullptr;
+    EmbedTrianglesProvenance own_provenance;
+    EmbedTrianglesProvenance* prov =
+        provenance != nullptr ? provenance : (keep_to_inputs ? &own_provenance : nullptr);
     polygon_faces_on_input.assign(polygon_faces.size(), false);
-    if (provenance != nullptr) {
-        provenance->triangle_group = vr_tri_group;
-        provenance->face_groups.reserve(on_input_faces.size());
+    if (prov != nullptr) {
+        prov->triangle_group = vr_tri_group;
+        prov->face_groups.reserve(on_input_faces.size());
     }
     for (size_t i = 0; i < polygon_faces.size(); ++i) {
         const auto [lo, hi] = groups_of(polygon_faces[i]);
         polygon_faces_on_input[i] = lo != hi;
-        if (provenance != nullptr) {
+        if (prov != nullptr) {
             for (auto it = lo; it != hi; ++it) {
-                provenance->face_groups.push_back({uint32_t(i), it->second});
+                prov->face_groups.push_back({uint32_t(i), it->second});
             }
         }
     }
     logger().info("done");
+
+    // The vertex compaction below renumbers vertices but keeps the facets in place, so this is
+    // the same answer before it as after.
+    std::vector<std::vector<uint32_t>> face_triangles;
+    if (prov != nullptr && (prov->want_face_triangles || keep_to_inputs)) {
+        logger().info("input triangles of the facets...");
+        face_triangles =
+            facet_triangles(tri_vrt_coord, triangle_indices, v_rational, polygon_faces, *prov);
+        logger().info("done");
+    }
 
     // Per facet: the input's orientation on it, against the facet's ascending vertex order --
     // see facet_orientations -- then made consistent patch by patch.
@@ -627,8 +811,29 @@ void embed_triangles_in_tets(
             groups_of,
             opts.num_threads,
             n_straddling);
-        const OrientationRepair rep =
-            orient_facet_patches(v_rational, polygon_faces, facet_orientation);
+        // Per facet, an id of the inputs it lies on: the same id, the same inputs.
+        std::vector<int> facet_input;
+        if (keep_to_inputs) {
+            std::map<std::vector<int>, int> id;
+            std::vector<int> inputs;
+            facet_input.assign(polygon_faces.size(), -1);
+            for (size_t f = 0; f < polygon_faces.size(); ++f) {
+                inputs.clear();
+                for (const uint32_t t : face_triangles[f]) {
+                    if (t < opts.triangle_input->size() && (*opts.triangle_input)[t] >= 0) {
+                        inputs.push_back((*opts.triangle_input)[t]);
+                    }
+                }
+                std::sort(inputs.begin(), inputs.end());
+                inputs.erase(std::unique(inputs.begin(), inputs.end()), inputs.end());
+                facet_input[f] = id.emplace(inputs, int(id.size())).first->second;
+            }
+        }
+        const OrientationRepair rep = orient_facet_patches(
+            v_rational,
+            polygon_faces,
+            facet_orientation,
+            keep_to_inputs ? &facet_input : nullptr);
         if (n_straddling > 0 || rep.n_turned > 0 || rep.n_non_orientable > 0) {
             logger().info(
                 "tracked surface: the input is not consistently oriented -- {} facets straddle a "
@@ -881,6 +1086,10 @@ void embed_triangles_in_tets(
             o[4 * i + 2] = opp[2];
             o[4 * i + 3] = opp[0];
         }
+    }
+
+    if (provenance != nullptr && provenance->want_face_triangles) {
+        provenance->face_triangles = std::move(face_triangles);
     }
 
     // final sanity check: every published tet must be positively

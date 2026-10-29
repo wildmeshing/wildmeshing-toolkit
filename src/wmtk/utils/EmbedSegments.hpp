@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
 
 namespace wmtk::io {
 class ComponentIO;
@@ -48,6 +49,10 @@ namespace wmtk::utils {
  *             again in the output; exact duplicates in V map to the same output row. -1
  *             only if the remesher dropped the point, which it does not do for points --
  *             the entry exists so a caller can assert that rather than assume it.
+ * @param E_input optional: for each row of E, the input it belongs to, negative for none. With
+ *             it the repair of E_out_orientation keeps to one input -- edges are linked only to
+ *             edges on the same inputs -- so two input curves meeting end to end in opposite
+ *             directions are both kept. Without it all edges are one input, as before.
  */
 void embed_segments(
     const MatrixXd& V,
@@ -58,7 +63,8 @@ void embed_segments(
     MatrixXi& E_out,
     std::vector<std::vector<int>>* E_out_sources = nullptr,
     std::vector<int>* E_out_orientation = nullptr,
-    std::vector<int>* point_map = nullptr);
+    std::vector<int>* point_map = nullptr,
+    const std::vector<int>* E_input = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.
@@ -77,6 +83,10 @@ void embed_segments(
  * @param V_all, E_all       the concatenated segment network
  * @param Vs_out, Es_out     the per-input meshes as read, so the winding-number pass does
  *                           not have to re-read every file from disk
+ * @param component_io       optional: the memory route, whose input_paths name its meshes
+ * @param provenance         optional: the files (the meshes, on the memory route) as they hold
+ *                           the curves, concatenated in the same order, and where each vertex
+ *                           and segment went in V_all, E_all
  */
 void read_input_curves(
     const std::vector<std::string>& input_paths,
@@ -85,6 +95,7 @@ void read_input_curves(
     MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out,
-    const io::ComponentIO* component_io = nullptr);
+    const io::ComponentIO* component_io = nullptr,
+    io::ReadProvenance* provenance = nullptr);
 
 } // namespace wmtk::utils

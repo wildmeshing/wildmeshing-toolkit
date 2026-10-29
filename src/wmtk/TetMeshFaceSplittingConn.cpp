@@ -5,6 +5,11 @@ namespace wmtk {
 
 bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
 {
+    // It reports nothing to a surface history: recording through it would lose the surface.
+    if (m_surface_history) {
+        log_and_throw_error(
+            "TetMesh::split_face: no surface history hooks; it cannot run while one is recording");
+    }
     if (!split_face_before(t)) {
         return false;
     }

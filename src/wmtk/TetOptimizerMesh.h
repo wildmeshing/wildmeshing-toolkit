@@ -7,6 +7,8 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -22,6 +24,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -240,11 +243,14 @@ public:
     /**
      * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
      *
-     * A single union bool, deliberately, mirroring how the tracked surface is one
-     * m_is_surface_fs for every input file and sheet. Which curve an edge belongs to is not
-     * carried through the optimization anywhere in this codebase; identity questions are
-     * answered at the boundaries -- provenance at insertion, combinatorial and geometric
-     * audits at the end.
+     * A single union bool: which curve an edge belongs to is not carried through the
+     * optimization, and the edges are held by one tube around all the curves
+     * (m_feature_envelope). Tracked faces are different: each carries its input set
+     * (SurfaceTagAttributes::input_set()) through every operation and is held to its own
+     * inputs' envelopes, because one envelope around every input let a solid's boundary ride a
+     * sheet crossing it -- measured, 12 faces up to 3.61 eps off the solid -- and an audit at the
+     * end can find that but not prevent it. Curves are expected to follow the faces once two of
+     * them close together can be measured drifting the same way.
      */
     struct FeatureEdgeAttributes
     {
@@ -562,9 +568,90 @@ public:
      * a no-op.
      */
     virtual void update_attributes() {}
+    /// update_attributes(), then the change it made to the tracked surface, if recording one.
+    void update_attributes_and_history();
+
+    /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.
+    void record_surface_history(const std::string& metadata);
+    /**
+     * @brief Bring the recorded surface up to date with the tracked faces, stop recording, log
+     * what the history holds and return it, for the application to save (ComponentIO::
+     * save_history). None if not recording.
+     *
+     * With `input`, the history of the input the mesh was made from (read, welded, simplified):
+     * the history returned is that, then the insertion -- each tracked face on the input faces
+     * it lies on, from m_insertion_sources -- then the recorded one, so it maps the input files
+     * to the output.
+     */
+    std::optional<history::SurfaceHistory> finish_surface_history(
+        const history::SurfaceHistory* input = nullptr);
+
+    /// Start recording the volume around the tracked surface too (TetMesh::start_volume_history),
+    /// at m_posf. The surface history must be recording.
+    void record_volume_history();
+    /// Stop recording the volume, and return it as the bytes of its file
+    /// (history::VolumeRecorder::to_bytes; io::ComponentIO::save_volume_history saves them), its
+    /// edits indexed as in the surface history finish_surface_history() returned, with the names
+    /// of the tags (tet_tags()) the mesh files give them. Nothing if not recording.
+    std::optional<std::vector<uint8_t>> finish_volume_history(
+        const std::map<int64_t, std::string>& tag_names = {});
+
+    /// A tracked face by its corners' positions, sorted.
+    using PositionKey = std::array<std::array<double, 3>, 3>;
+    static PositionKey position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c);
+    /// Where the tracked faces lie on the input the mesh was made from: by position key, sorted,
+    /// the input triangles. Filled at insertion when a surface history is to start from the
+    /// input; record_surface_history takes it.
+    std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
+    /// The volume being recorded, kept past stop_surface_history() until finished; the offset of
+    /// the recorded surface edits in the surface history finish_surface_history() returned, and
+    /// that history's key, which the volume history keeps.
+    std::shared_ptr<history::VolumeRecorder> m_recorded_volume;
+    uint64_t m_surface_edit_offset = 0;
+    std::optional<history::SurfaceKey> m_finished_surface;
+
+    /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
+    bool is_tracked_face(size_t tid, int j) const override;
+    /// The input's orientation on the face (m_orientation), where insertion recorded one;
+    /// ascending vertex order where it did not.
+    using TetMesh::orient_tracked_face;
+    std::array<size_t, 3> orient_tracked_face(
+        const std::array<size_t, 3>& f,
+        const std::vector<size_t>& tets) const override;
+    /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
+    std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
+
+    /// m_params.check_surface_folds; see there.
+    bool checks_tracked_surface() const override { return m_params.check_surface_folds; }
+    void tracked_surface_before(const std::vector<size_t>& vs, bool all) override;
+    bool tracked_surface_after(const std::vector<size_t>& vs, bool all) override;
+    /// The operations check_surface_folds refused.
+    std::atomic<size_t> m_surface_fold_refusals = 0;
 
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
+    std::shared_ptr<history::TrackedSurfaceRecorder> m_recorded_surface;
+    /// What the tracked faces around an operation were before it, for check_surface_folds: their
+    /// area vectors summed, how many do not face along that, and the folds in the stars of their
+    /// vertices. `skip` where no vertex around it is on the surface.
+    struct SurfaceFolds
+    {
+        bool skip = true;
+        Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+        size_t against = 0;
+        size_t star_folds = 0;
+    };
+    wmtk::threading::enumerable_thread_specific<SurfaceFolds> m_surface_folds_before;
+    /// The tracked faces, oriented, their area vectors summed; and, over their vertices, the
+    /// faces of each one's tracked star not facing along that star's sum.
+    Eigen::Vector3d tracked_area_normal(const std::vector<std::array<size_t, 3>>& faces) const;
+    size_t tracked_not_facing(
+        const std::vector<std::array<size_t, 3>>& faces,
+        const Eigen::Vector3d& n) const;
+    size_t tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const;
+    /// The input triangles each face of the recorded surface's first state lies on.
+    std::vector<std::vector<uint64_t>> m_recorded_sources;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
@@ -620,29 +707,42 @@ public:
     int edge_incident_surface_face_count(const Tuple& e);
 
     /**
-     * @brief Envelope the tracked-surface triangle `vids` must stay inside.
+     * @brief Envelope the tracked-surface triangle `vids` must stay inside, given the
+     * attributes `attr` it carries -- or, for a triangle an operation is creating, the ones the
+     * operation is about to write there.
      *
      * Null means this triangle carries no containment requirement, and every containment check
-     * on it is skipped. Both applications that track a single surface keep one envelope for it,
-     * so the default answers with that; an application tracking more than one surface (see
-     * SurfaceTagAttributes::m_surface_class) overrides this to answer per class -- the offset
-     * boundary, for instance, is free to move and is checked against nothing.
+     * on it is skipped. The default answers with the one surface envelope; tetwild answers with
+     * the envelopes of the face's input set (SurfaceTagAttributes::input_set()), and an
+     * application tracking more than one surface (see SurfaceTagAttributes::m_surface_class)
+     * answers per class -- the offset boundary, for instance, is free to move and is checked
+     * against nothing.
      *
      * Keyed on the vertex ids rather than the fid because every caller is a topological
      * operation asking about the triangles it is ABOUT to create or has just created, where
-     * only the vids are known for certain.
+     * only the vids are known for certain. The attributes come from the caller for the same
+     * reason: a new triangle's own slot is written only after the check -- a collapse checks
+     * its faces before it writes their attributes back, a split before it writes its halves --
+     * and until then may hold a recycled face's. Every operation knows the face it is deriving
+     * the new one from, and passes what it will write.
      */
     virtual std::shared_ptr<Envelope> surface_envelope_for_face(
-        const std::array<size_t, 3>& vids) const
+        const std::array<size_t, 3>& vids,
+        const FaceAttributes& attr) const
     {
         return m_envelope;
     }
 
-    /// Whether the tracked-surface triangle (a,b,c) is outside its containment envelope. False
-    /// when it has none. Every surface containment check in the operations goes through here.
-    bool surface_triangle_is_outside(const size_t a, const size_t b, const size_t c) const
+    /// Whether the tracked-surface triangle (a,b,c) with attributes `attr` (see
+    /// surface_envelope_for_face()) is outside its containment envelope. False when it has none.
+    /// Every surface containment check in the operations goes through here.
+    bool surface_triangle_is_outside(
+        const size_t a,
+        const size_t b,
+        const size_t c,
+        const FaceAttributes& attr) const
     {
-        const std::shared_ptr<Envelope> env = surface_envelope_for_face({{a, b, c}});
+        const std::shared_ptr<Envelope> env = surface_envelope_for_face({{a, b, c}}, attr);
         if (!env) return false;
         const auto& VA = m_vertex_attribute;
         return env->is_outside({{VA[a].m_posf, VA[b].m_posf, VA[c].m_posf}});
@@ -767,12 +867,31 @@ public:
         override;
 
     /**
-     * @brief Envelope the resulting surface triangles are checked against.
+     * @brief Envelope the smoother checks tracked face `face` (attributes `attr`) at the moved
+     * vertex `vid` against; null skips the face.
      *
-     * The surface envelope is shared by both applications. A derived mesh may additionally
-     * select an order-2 feature envelope for the pull energy.
+     * By default the face's own containment, surface_envelope_for_face() -- the one every
+     * operation's check takes, so a move and an operation hold a face to the same set. It used
+     * to be ONE envelope per vertex for all its faces, which cannot be right once faces at one
+     * vertex belong to different inputs: a vertex where the solid's boundary meets a sheet
+     * crossing it would hold the solid's faces to the sheet's envelope too, or the reverse.
+     * topological_offset keeps its per-vertex answer by overriding this.
+     *
+     * The pull (smoothing_energy_envelope()) stays one real envelope per vertex: the pull calls
+     * the non-virtual Envelope queries, which a composite cannot answer.
      */
-    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const;
+    virtual std::shared_ptr<Envelope> smoothing_containment_envelope(
+        const size_t /*vid*/,
+        const std::array<size_t, 3>& face,
+        const FaceAttributes& attr) const
+    {
+        return surface_envelope_for_face(face, attr);
+    }
+    /**
+     * @brief Envelope a surface vertex is pulled toward while smoothing. A real envelope, never a
+     * composite (see smoothing_containment_envelope()). A derived mesh may select an order-2 or
+     * feature envelope here.
+     */
     virtual std::shared_ptr<Envelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
     /// Are all OPEN-BOUNDARY edges at `vid` inside the order-2 tube, at the current positions?
@@ -1226,7 +1345,10 @@ protected:
         double max_energy = 0.;
         double edge_length = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        std::vector<std::array<size_t, 3>> surface_faces;
+        /// The tracked faces (v1,x,y) the collapse moves, as (v2,x,y), each with the attributes
+        /// it will carry -- its own, or the merged ones of changed_faces where it becomes one
+        /// face with (v2,x,y) -- for the containment check, which runs before they are written.
+        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> surface_faces;
         /// Oriented faces (v1,x,y) the collapse renames in place to (v2,x,y), as {v2,x,y} with
         /// the orientation measured along that order. Their attribute stays in its slot, so
         /// without this the value would be read against the wrong vertex set.

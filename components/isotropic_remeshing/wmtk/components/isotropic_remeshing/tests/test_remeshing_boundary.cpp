@@ -244,3 +244,30 @@ TEST_CASE("remeshing-default-boundary-is-frozen", "[test_remeshing][boundary]")
     }
     CHECK(n_input_boundary == size_t(4 * (n - 1) + 4));
 }
+
+TEST_CASE("remeshing-split-vertex-starts-unfrozen", "[test_remeshing][boundary]")
+{
+    // Coarsen, then refine. consolidate_mesh() compacts the vertex attributes without clearing
+    // the slots it frees, so the refinement's splits are handed slots still holding the
+    // attributes of the vertices that used to live there -- frozen boundary vertices among
+    // them. Only the input's boundary may come out frozen.
+    const int n = 21;
+    const Patch p = make_patch(n, n);
+    IsotropicRemeshing m(p.v, 0);
+    m.create_mesh(p.v.size(), p.f, {}, true, 0, 0);
+    m.uniform_remeshing(0.25, 1);
+    // The coarsening has to free slots that once held boundary vertices for the refinement to
+    // reuse: the last row of the grid is all boundary.
+    REQUIRE(m.get_vertices().size() < p.v.size() - n);
+    m.uniform_remeshing(0.05, 1);
+    m.consolidate_mesh();
+    REQUIRE(m.check_mesh_connectivity_validity());
+
+    size_t n_frozen = 0;
+    for (const auto& v : m.get_vertices()) {
+        if (!m.vertex_attrs[v.vid(m)].freeze) continue;
+        ++n_frozen;
+        CHECK(outline(m.vertex_attrs[v.vid(m)].pos) <= 1e-12);
+    }
+    CHECK(n_frozen == size_t(4 * (n - 1)));
+}

@@ -66,7 +66,8 @@ jobs:
         run: |
           sudo apt-get update
           # python3-numpy: the system interpreter builds the Python module, and with NumPy
-          # ctest also runs its memory-interface tests (tests/python/test_memory_io.py).
+          # ctest also runs its memory-interface and tracking tests (tests/python/test_memory_io.py,
+          # tests/python/test_tracking.py).
           sudo apt-get -o Acquire::Retries=3 install ccache python3-numpy
           echo 'CACHE_PATH=~/.cache/ccache' >> "$GITHUB_ENV"
 

@@ -59,7 +59,6 @@ struct Parameters : public wmtk::OptimizerParameters
     bool simplify_use_sample_envelope = false;
     int NUM_THREADS = 0;
     bool write_vtu = false;
-    bool write_envelope = true;
 
 
     Parameters(const nlohmann::json& json_params)
@@ -70,7 +69,6 @@ struct Parameters : public wmtk::OptimizerParameters
         simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
         write_vtu = json_params["write_vtu"];
-        write_envelope = json_params["write_envelope"];
 
         epsr = json_params["eps_rel"];
         eps = json_params["eps"];
@@ -93,6 +91,7 @@ struct Parameters : public wmtk::OptimizerParameters
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
         colored_smoothing = json_params["colored_smoothing"];
+        check_surface_folds = json_params["check_surface_folds"];
 
         // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
         // 2D mesh and is inert on its 3D one.

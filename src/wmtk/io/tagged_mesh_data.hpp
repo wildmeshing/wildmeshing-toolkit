@@ -1,4 +1,7 @@
 #pragma once
+#include <wmtk/SurfaceTagAttributes.h>
+#include <algorithm>
+#include <array>
 #include <set>
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
@@ -85,10 +88,52 @@ void collect_tags(Mesh& mesh, MeshMap& outputs, CellType type, const TupleRange&
         block.attributes.erase(labels[j]);
         block.attributes.erase("tag_" + std::to_string(j));
     }
-    if (labels.empty()) {
-        labels = {"ambient"};
-        values = DataMatrix<uint8_t>::Ones(cells.size(), 1);
+    // Cells without a tag are the background the component built. They are labelled
+    // explicitly: the IO infers nothing from an empty row.
+    if (std::find(labels.begin(), labels.end(), "ambient") == labels.end()) {
+        const auto empty = (values.template cast<int>().rowwise().sum().array() == 0).eval();
+        if (labels.empty() || empty.any()) {
+            values.conservativeResize(Eigen::NoChange, values.cols() + 1);
+            values.col(values.cols() - 1) = empty.template cast<uint8_t>();
+            labels.push_back("ambient");
+        }
     }
     block.attributes["tags"] = {std::move(values), std::move(labels)};
+}
+// The faces whose input set is not empty, as the triangle block of outputs["mesh"]: rows of its
+// V (the vertices in get_vertices() order, as compact_slot_outputs leaves them), one tags
+// column per name (bit j of the input set is names[j]), each row oriented as the face's input
+// was. Nothing is written without names.
+template <typename Mesh>
+void collect_face_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<std::string>& names)
+{
+    if (names.empty()) return;
+    std::vector<int64_t> row(mesh.vert_capacity(), -1);
+    int64_t n = 0;
+    for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
+    std::vector<std::array<int64_t, 3>> faces;
+    std::vector<InputSet> sets;
+    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
+                              ? ~InputSet(0)
+                              : (InputSet(1) << names.size()) - 1;
+    for (const auto& f : mesh.get_faces()) {
+        const auto& attr = mesh.m_face_attribute[f.fid(mesh)];
+        // Bits past the names are not face tags -- simwild's region labels -- and are not written.
+        const InputSet set = attr.input_set() & mask;
+        if (set == 0) continue;
+        auto vids = mesh.get_face_vids(f);
+        std::sort(vids.begin(), vids.end());
+        if (attr.orientation_along(vids) < 0) std::swap(vids[1], vids[2]);
+        faces.push_back({{row[vids[0]], row[vids[1]], row[vids[2]]}});
+        sets.push_back(set);
+    }
+    auto& block = outputs.at("mesh").cells[CellType::Triangle];
+    block.connectivity.resize(faces.size(), 3);
+    DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(faces.size(), names.size());
+    for (size_t i = 0; i < faces.size(); ++i) {
+        for (int k = 0; k < 3; ++k) block.connectivity(i, k) = faces[i][k];
+        for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
+    }
+    block.attributes["tags"] = {std::move(member), names};
 }
 } // namespace wmtk::io

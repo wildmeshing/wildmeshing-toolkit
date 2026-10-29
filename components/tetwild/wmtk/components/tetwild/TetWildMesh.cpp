@@ -79,7 +79,24 @@ std::shared_ptr<Envelope> TetWildMesh::smoothing_energy_envelope(const size_t vi
     if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
         return m_order2_envelope;
     }
-    return m_envelope;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // Several inputs: toward the inputs of the vertex's own faces, one real envelope at a time
+    // -- the member of their union of input sets the vertex is farthest from, as
+    // topological_offset pulls a junction vertex. The containment check holds every face to its
+    // own set, so a vertex where the solid's boundary meets a sheet is pulled to whichever it
+    // strays from most. A vertex flagged on the surface with no tracked face left (a stale
+    // flag) has no inputs, and keeps the union's pull.
+    InputSet set = 0;
+    const auto& FA = std::as_const(m_face_attribute);
+    // Named, not iterated as a temporary: faces() returns a reference into the collection, which
+    // a range-for over get_surface_faces_for_vertex(vid).faces() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_faces_for_vertex(vid);
+    for (const simplex::Face& f : surf.faces()) {
+        set |= FA[std::get<1>(tuple_from_face(f.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
 }
 
 
@@ -759,6 +776,24 @@ void TetWildMesh::output_mesh(std::string file)
     msh.save(file, true);
 }
 
+MeshData TetWildMesh::tet_mesh_data()
+{
+    consolidate_mesh();
+    const auto& vtx = get_vertices();
+    const auto& tets = get_tets();
+    MeshData m;
+    m.V.resize(Eigen::Index(vtx.size()), 3);
+    for (size_t k = 0; k < vtx.size(); ++k) {
+        m.V.row(Eigen::Index(k)) = m_vertex_attribute[vtx[k].vid(*this)].m_posf;
+    }
+    auto& T = m.cells[CellType::Tetrahedron].connectivity;
+    T.resize(Eigen::Index(tets.size()), 4);
+    for (size_t k = 0; k < tets.size(); ++k) {
+        const auto vs = oriented_tet_vertices(tets[k]);
+        for (int j = 0; j < 4; ++j) T(Eigen::Index(k), j) = int64_t(vs[j].vid(*this));
+    }
+    return m;
+}
 
 bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
 {
@@ -1068,120 +1103,6 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
     }
 }
 
-void TetWildMesh::init_sizing_field()
-{
-    const double min_refine_scalar = m_params.l_min / m_params.l;
-
-    const double R = m_params.l * 1.8;
-
-    for (auto v : get_vertices()) {
-        // compute the distance between a vertex and its Ring surfaces
-        // one ring vertices
-        double min_uv_dist = 100000;
-        double hit_surface_flag = false;
-        for (auto u : get_one_ring_vertices_for_vertex(v)) {
-            if (!m_vertex_attribute[u.vid(*this)].m_is_on_surface) continue;
-            hit_surface_flag = true;
-            double uv_dist =
-                (m_vertex_attribute[v.vid(*this)].m_posf - m_vertex_attribute[u.vid(*this)].m_posf)
-                    .norm();
-            if (uv_dist < min_uv_dist) min_uv_dist = uv_dist;
-        }
-
-        if (!hit_surface_flag) continue;
-
-        // edges
-        double min_ev_dist = 100000;
-        auto tets = get_one_ring_tets_for_vertex(v);
-
-        for (auto t : tets) {
-            std::array<Tuple, 4> fs;
-            fs[0] = t;
-            fs[1] = t.switch_face(*this);
-            fs[2] = t.switch_edge(*this).switch_face(*this);
-            fs[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
-
-
-            for (int i = 0; i < 4; i++) {
-                const Tuple& f1 = fs[i];
-                auto f1vs = get_face_vertices(fs[i]);
-                if (m_vertex_attribute[f1vs[0].vid(*this)].m_is_on_surface &&
-                    m_vertex_attribute[f1vs[1].vid(*this)].m_is_on_surface &&
-                    m_vertex_attribute[f1vs[2].vid(*this)].m_is_on_surface) {
-                    if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
-                        auto vs = f1vs;
-                        double ev_dist1 = (m_vertex_attribute[vs[0].vid(*this)].m_posf -
-                                           m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .cross(
-                                                  m_vertex_attribute[vs[1].vid(*this)].m_posf -
-                                                  m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .norm() /
-                                          (m_vertex_attribute[vs[0].vid(*this)].m_posf -
-                                           m_vertex_attribute[vs[1].vid(*this)].m_posf)
-                                              .norm();
-
-                        double ev_dist2 = (m_vertex_attribute[vs[0].vid(*this)].m_posf -
-                                           m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .cross(
-                                                  m_vertex_attribute[vs[2].vid(*this)].m_posf -
-                                                  m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .norm() /
-                                          (m_vertex_attribute[vs[0].vid(*this)].m_posf -
-                                           m_vertex_attribute[vs[2].vid(*this)].m_posf)
-                                              .norm();
-                        double ev_dist3 = (m_vertex_attribute[vs[1].vid(*this)].m_posf -
-                                           m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .cross(
-                                                  m_vertex_attribute[vs[2].vid(*this)].m_posf -
-                                                  m_vertex_attribute[v.vid(*this)].m_posf)
-                                              .norm() /
-                                          (m_vertex_attribute[vs[1].vid(*this)].m_posf -
-                                           m_vertex_attribute[vs[2].vid(*this)].m_posf)
-                                              .norm();
-                        if (min_ev_dist < ev_dist1) min_ev_dist = ev_dist1;
-                        if (min_ev_dist < ev_dist2) min_ev_dist = ev_dist2;
-                        if (min_ev_dist < ev_dist3) min_ev_dist = ev_dist3;
-                    }
-                }
-            }
-        }
-
-        //if (min_dist < m_params.l / 2) continue;
-
-        // adjust sizing field
-        double min_dist = (min_uv_dist < min_ev_dist) ? min_uv_dist : min_ev_dist;
-        double refine_scalar = min_dist / m_params.l;
-
-        m_vertex_attribute[v.vid(*this)].m_sizing_scalar =
-            std::min(refine_scalar, m_vertex_attribute[v.vid(*this)].m_sizing_scalar);
-
-        std::vector<bool> visited(vert_capacity(), false);
-        std::queue<size_t> v_queue;
-
-        for (auto u : get_one_ring_vertices_for_vertex(v)) {
-            v_queue.push(u.vid(*this));
-        }
-
-        while (!v_queue.empty()) {
-            size_t vid = v_queue.front();
-            v_queue.pop();
-            if (visited[vid]) continue;
-            visited[vid] = 1;
-            double dist =
-                (m_vertex_attribute[vid].m_posf - m_vertex_attribute[v.vid(*this)].m_posf).norm();
-            if (dist > R) continue;
-            m_vertex_attribute[vid].m_sizing_scalar = std::min(
-                dist / R * (1 - refine_scalar) + refine_scalar,
-                m_vertex_attribute[v.vid(*this)].m_sizing_scalar);
-
-            auto vids = get_one_ring_vids_for_vertex(vid);
-            for (size_t n_vid : vids) {
-                if (visited[n_vid]) continue;
-                v_queue.push(n_vid);
-            }
-        }
-    }
-}
 
 TetWildMesh::ExportStruct TetWildMesh::export_mesh_data() const
 {

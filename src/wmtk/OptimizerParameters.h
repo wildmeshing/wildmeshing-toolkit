@@ -199,6 +199,17 @@ struct OptimizerParameters
      * single-queue order either way. Off: the locked partitioned pass.
      */
     bool colored_smoothing = true;
+    /**
+     * Refuse a collapse, swap or smoothing that folds the tracked surface over: one that leaves
+     * more tracked faces not facing along -- facing against, or flat to -- the surface it
+     * replaces (the tracked faces around it, their area vectors summed) or the surface it
+     * leaves, than there were, or more such faces in the stars of the surface vertices it
+     * touches, each against its own. Exact (orient3d); faces oriented as orient_tracked_face
+     * does. A fold the input has can be undone, but none is made. Splits move nothing and are
+     * not checked. Turns colored smoothing off: the check reads the stars of a vertex's
+     * neighbours, which two vertices of one class may share.
+     */
+    bool check_surface_folds = false;
     bool interleaved_smoothing = true;
     int interleaved_smoothing_passes = 1;
 

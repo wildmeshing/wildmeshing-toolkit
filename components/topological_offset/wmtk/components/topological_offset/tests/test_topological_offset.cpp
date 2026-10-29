@@ -22,7 +22,9 @@
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
+#include <wmtk/components/topological_offset/output_conversion.hpp>
 #include <wmtk/components/topological_offset/topological_offset.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -188,6 +190,11 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     const auto face = [&](size_t a, size_t b, size_t c) {
         return std::get<0>(mesh.tuple_from_face({{a, b, c}}));
     };
+    const auto envelope_of = [&](size_t a, size_t b, size_t c) {
+        return mesh.surface_envelope_for_face(
+            {{a, b, c}},
+            mesh.m_face_attribute[face(a, b, c).fid(mesh)]);
+    };
     for (const auto& f : mesh.get_faces()) {
         REQUIRE(mesh.m_face_attribute[f.fid(mesh)].m_is_surface_fs);
     }
@@ -198,8 +205,8 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     REQUIRE(mesh.face_is_held(face(0, 1, 2)));
     mesh.build_envelopes();
     REQUIRE(mesh.m_envelope != nullptr);
-    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == nullptr);
-    REQUIRE(mesh.surface_envelope_for_face({{0, 1, 2}}) == mesh.m_envelope);
+    REQUIRE(envelope_of(1, 2, 3) == nullptr);
+    REQUIRE(envelope_of(0, 1, 2) == mesh.m_envelope);
     const Eigen::Vector3d on_shared = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
     REQUIRE(mesh.m_envelope->is_outside(on_shared)); // the shared face is not in the envelope
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
@@ -210,7 +217,7 @@ TEST_CASE("held_faces_and_one_envelope", "[3d][envelope]")
     mesh.build_final_envelopes();
     mesh.m_tetwild_pass = true;
     REQUIRE(mesh.face_is_held(face(1, 2, 3)));
-    REQUIRE(mesh.surface_envelope_for_face({{1, 2, 3}}) == mesh.m_envelope);
+    REQUIRE(envelope_of(1, 2, 3) == mesh.m_envelope);
     for (size_t v = 0; v < 5; ++v) REQUIRE(mesh.vertex_is_held(v));
     REQUIRE(!mesh.m_envelope->is_outside(on_shared));
     REQUIRE(!mesh.m_envelope->is_outside(Eigen::Vector3d(V.row(0).transpose())));
@@ -2690,7 +2697,9 @@ TEST_CASE("save-offset-correspondence-3d", "[offset][3d][correspondence]")
         std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_3d";
     mesh.construct_offset(out);
     REQUIRE(mesh.m_marching_midpoint_splits == 0);
-    mesh.write_msh_groups(out.string());
+    io::ComponentIO context;
+    collect_memory_output(mesh, context);
+    io::write_mesh(out.string() + ".msh", context.result.first.at("mesh"));
     check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 3, [&](const Vector3d& p) {
         return mesh.input_complex_distance(p);
     });
@@ -3074,7 +3083,9 @@ TEST_CASE("save-offset-correspondence-2d", "[offset][2d][correspondence]")
         std::filesystem::temp_directory_path() / "wmtk_offset_correspondence_2d";
     mesh.construct_offset(out);
     REQUIRE(mesh.m_marching_midpoint_splits == 0);
-    mesh.write_msh_groups(out.string());
+    io::ComponentIO context;
+    collect_memory_output(mesh, context);
+    io::write_mesh(out.string() + ".msh", context.result.first.at("mesh"));
     check_correspondence_msh(out.string() + ".msh", mesh, P, n_before, 2, [&](const Vector3d& p) {
         REQUIRE(p.z() == 0.);
         return mesh.m_input_complex_bvh->dist(Vector2d(p.x(), p.y()));

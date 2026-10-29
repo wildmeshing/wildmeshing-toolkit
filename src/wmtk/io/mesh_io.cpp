@@ -289,9 +289,12 @@ MeshData from_msh(const mshio::MshSpec& s)
             require(
                 !d.header.string_tags.empty() && d.header.int_tags.size() >= 3,
                 "malformed data header");
+            // The metadata is the third string tag; files written before it moved there have it
+            // as the second.
             nlohmann::json meta = nlohmann::json::object();
-            if (d.header.string_tags.size() > 1 && d.header.string_tags[1].rfind("wmtk:", 0) == 0)
-                meta = nlohmann::json::parse(d.header.string_tags[1].substr(5));
+            for (size_t k = 1; k < d.header.string_tags.size() && k < 3; ++k)
+                if (d.header.string_tags[k].rfind("wmtk:", 0) == 0)
+                    meta = nlohmann::json::parse(d.header.string_tags[k].substr(5));
             const auto name = meta.value("name", d.header.string_tags[0]);
             const int width = meta.value("width", d.header.int_tags[1]),
                       col = meta.value("column", 0);
@@ -317,8 +320,10 @@ MeshData from_msh(const mshio::MshSpec& s)
                     f.first = DataMatrix<double>::Zero(n, width);
                     f.second = meta;
                 }
+                if (meta.contains("label")) f.second["labels"][col] = meta["label"];
                 require(f.first.cols() == width, "inconsistent field width");
                 for (size_t j = 0; j < e.data.size(); ++j) f.first(r, col + j) = e.data[j];
+                // Older files store a non-finite value as 0 and list it in the metadata.
                 if (meta.contains("special")) {
                     const auto key = std::to_string(e.tag);
                     if (meta["special"].contains(key)) {
@@ -377,23 +382,22 @@ mshio::MshSpec to_msh(const MeshData& mesh)
                     {"name", name},
                     {"width", values.cols()},
                     {"column", col},
-                    {"type", a.values.index()},
-                    {"labels", a.labels}};
-                for (size_t r = 0; r < tags.size(); ++r)
-                    if (!std::isfinite(values(r, col)))
-                        meta["special"][std::to_string(tags[r])] = std::isnan(values(r, col))
-                                                                       ? "nan"
-                                                                   : values(r, col) > 0 ? "inf"
-                                                                                        : "-inf";
+                    {"type", a.values.index()}};
+                // Each column names only itself, so the header does not grow with the labels.
+                if (!a.labels.empty()) meta["label"] = a.labels[col];
+                // gmsh reads the second string tag as an interpolation scheme name and refuses
+                // the file if no such scheme exists, so it stays empty and the metadata is third.
                 d.header.string_tags = {
                     values.cols() == 1 ? name : name + "_" + std::to_string(col),
+                    "",
                     "wmtk:" + meta.dump()};
                 d.header.real_tags = {0};
                 d.header.int_tags = {0, 1, int(tags.size())};
                 for (size_t r = 0; r < tags.size(); ++r) {
                     mshio::DataEntry e;
                     e.tag = tags[r];
-                    e.data = {std::isfinite(values(r, col)) ? values(r, col) : 0.0};
+                    // The file is binary, so non-finite values are stored as they are.
+                    e.data = {values(r, col)};
                     d.entries.push_back(std::move(e));
                 }
                 target.push_back(std::move(d));

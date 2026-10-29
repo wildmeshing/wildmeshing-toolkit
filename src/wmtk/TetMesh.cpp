@@ -1,6 +1,8 @@
 #include "TetMesh.h"
 
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/history/TrackedRecorder.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -9,6 +11,13 @@
 #include <vector>
 
 namespace wmtk {
+
+struct TetMesh::VolumeRecording
+{
+    std::shared_ptr<history::VolumeRecorder> recorder;
+    std::function<Eigen::Vector3d(size_t)> position;
+    wmtk::threading::enumerable_thread_specific<history::VolumeCapture> before;
+};
 
 // Atomically reserve `n` contiguous fresh tet slots from the preallocated storage.
 // Returns the first index of the block, or -1 if the reservation would exceed the
@@ -365,12 +374,23 @@ bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
     if (dry_run()) return true;
+    const bool check = checks_tracked_surface();
+    if (check) tracked_surface_before({loc0.vid(*this)}, false);
+    if (m_volume_history) volume_history_before({loc0.vid(*this)});
     start_protect_attributes();
-    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0));
+    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0)) &&
+                    (!check || tracked_surface_after({loc0.vid(*this)}, false));
     if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
     if (!ok) {
         rollback_protected_attributes();
         return false;
+    }
+    if (m_surface_history) {
+        const auto edits = surface_history_commit(history::EditKind::move_vertices, {}, {}, false);
+        if (m_volume_history) {
+            const size_t v = loc0.vid(*this);
+            volume_history_commit(history::VolumeOp::smooth, edits, {v}, {v});
+        }
     }
     release_protect_attributes();
 
@@ -976,6 +996,8 @@ void TetMesh::consolidate_mesh()
         map_v_ids[i] = v_cnt;
         v_cnt++;
     }
+    if (m_surface_history) m_surface_history->renumber(map_v_ids);
+    if (m_volume_history) m_volume_history->recorder->renumber(map_v_ids);
     auto t_cnt = 0;
     std::vector<size_t> map_t_ids(tet_capacity(), -1);
     for (auto i = 0; i < tet_capacity(); i++) {
@@ -1036,17 +1058,24 @@ void TetMesh::consolidate_mesh()
     m_tet_connectivity.resize(tcap);
     resize_vertex_mutex(vcap);
 
+    // Clear the spare region the compaction left behind as well: the slots past the live range
+    // still hold the records moved out of them, and the next operations are handed those slots
+    // as fresh.
     if (p_vertex_attrs) {
         p_vertex_attrs->resize(vcap);
+        p_vertex_attrs->reset_from(v_cnt);
     }
     if (p_edge_attrs) {
         p_edge_attrs->resize(6 * tcap);
+        p_edge_attrs->reset_from(6 * t_cnt);
     }
     if (p_face_attrs) {
         p_face_attrs->resize(4 * tcap);
+        p_face_attrs->reset_from(4 * t_cnt);
     }
     if (p_tet_attrs) {
         p_tet_attrs->resize(tcap);
+        p_tet_attrs->reset_from(t_cnt);
     }
 
     assert(check_mesh_connectivity_validity());
@@ -1639,6 +1668,247 @@ void TetMesh::for_each_vertex(const std::function<void(const TetMesh::Tuple&)>& 
             },
             NUM_THREADS);
     }
+}
+
+std::shared_ptr<history::TrackedSurfaceRecorder> TetMesh::start_surface_history(
+    std::function<Eigen::Vector3d(size_t)> position)
+{
+    m_surface_history = std::make_shared<history::TrackedSurfaceRecorder>(
+        tracked_faces(),
+        std::move(position),
+        [this](const std::array<size_t, 3>& f) { return orient_tracked_face(f); },
+        tracked_feature_edges());
+    return m_surface_history;
+}
+
+void TetMesh::stop_surface_history()
+{
+    m_surface_history.reset();
+    stop_volume_history();
+}
+
+std::shared_ptr<history::VolumeRecorder> TetMesh::start_volume_history(
+    std::function<Eigen::Vector3d(size_t)> position)
+{
+    if (!m_surface_history) {
+        log_and_throw_error("start_volume_history: the surface history is not being recorded");
+    }
+    m_volume_history = std::make_shared<VolumeRecording>();
+    m_volume_history->recorder = std::make_shared<history::VolumeRecorder>();
+    m_volume_history->position = std::move(position);
+    return m_volume_history->recorder;
+}
+
+void TetMesh::stop_volume_history()
+{
+    m_volume_history.reset();
+}
+
+size_t TetMesh::resync_surface_history()
+{
+    return m_surface_history ? m_surface_history->resync(tracked_faces()) : 0;
+}
+
+std::vector<std::array<size_t, 3>> TetMesh::tracked_faces() const
+{
+    std::vector<std::array<size_t, 3>> faces;
+    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
+        if (m_tet_connectivity[tid].m_is_removed) continue;
+        for (int j = 0; j < 4; ++j) {
+            if (!is_tracked_face(tid, j)) continue;
+            std::array<size_t, 3> f;
+            for (int k = 0; k < 3; ++k) f[k] = m_tet_connectivity[tid][m_local_faces[j][k]];
+            std::sort(f.begin(), f.end());
+            faces.push_back(f);
+        }
+    }
+    std::sort(faces.begin(), faces.end());
+    faces.erase(std::unique(faces.begin(), faces.end()), faces.end());
+    for (auto& f : faces) f = orient_tracked_face(f);
+    return faces;
+}
+
+std::array<size_t, 3> TetMesh::face_out_of(const size_t tid, const std::array<size_t, 3>& face)
+    const
+{
+    std::array<size_t, 3> want = face;
+    std::sort(want.begin(), want.end());
+    int j = 0;
+    for (; j < 4; ++j) {
+        std::array<size_t, 3> f;
+        for (int k = 0; k < 3; ++k) f[k] = m_tet_connectivity[tid][m_local_faces[j][k]];
+        std::sort(f.begin(), f.end());
+        if (f == want) break;
+    }
+    assert(j < 4);
+    // (t0, t1, t2) faces t3, inwards. A face with its apex after it is an even or an odd
+    // permutation of the tet's order, and faces in or out with it.
+    const auto& lf = m_local_faces[j];
+    const std::array<int, 4> order = {{lf[0], lf[1], lf[2], 6 - lf[0] - lf[1] - lf[2]}};
+    int inversions = 0;
+    for (int a = 0; a < 4; ++a) {
+        for (int b = a + 1; b < 4; ++b) inversions += order[a] > order[b];
+    }
+    std::array<size_t, 3> f;
+    for (int k = 0; k < 3; ++k) f[k] = m_tet_connectivity[tid][lf[k]];
+    if (inversions % 2 == 0) std::swap(f[1], f[2]);
+    return f;
+}
+
+std::vector<std::array<size_t, 3>> TetMesh::tracked_faces_around(
+    const std::vector<size_t>& vs,
+    const bool all) const
+{
+    struct Candidate
+    {
+        std::array<size_t, 3> face;
+        size_t tid;
+        int j;
+    };
+    std::vector<Candidate> candidates;
+    for (const size_t v : vs) {
+        for (const size_t tid : m_vertex_connectivity[v].m_conn_tets) {
+            for (int j = 0; j < 4; ++j) {
+                std::array<size_t, 3> f;
+                int among = 0;
+                for (int k = 0; k < 3; ++k) {
+                    f[k] = m_tet_connectivity[tid][m_local_faces[j][k]];
+                    among += std::find(vs.begin(), vs.end(), f[k]) != vs.end();
+                }
+                if (all ? among < 3 : among == 0) continue;
+                std::sort(f.begin(), f.end());
+                candidates.push_back({f, tid, j});
+            }
+        }
+    }
+    std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
+        return a.face < b.face;
+    });
+    std::vector<std::array<size_t, 3>> faces;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        if (i > 0 && candidates[i].face == candidates[i - 1].face) continue;
+        if (is_tracked_face(candidates[i].tid, candidates[i].j))
+            faces.push_back(candidates[i].face);
+    }
+    return faces;
+}
+
+size_t TetMesh::face_id_in(const std::array<size_t, 3>& f, const size_t tid) const
+{
+    std::array<int, 3> local;
+    for (int k = 0; k < 3; ++k) local[k] = m_tet_connectivity[tid].find(f[k]);
+    std::sort(local.begin(), local.end());
+    return 4 * tid + size_t(
+                         std::find(m_local_faces.begin(), m_local_faces.end(), local) -
+                         m_local_faces.begin());
+}
+
+std::vector<TetMesh::VertexFace> TetMesh::faces_at_vertex(const size_t v) const
+{
+    std::vector<std::tuple<std::array<size_t, 3>, size_t, int>> candidates;
+    for (const size_t tid : m_vertex_connectivity[v].m_conn_tets) {
+        for (int j = 0; j < 4; ++j) {
+            std::array<size_t, 3> f;
+            for (int k = 0; k < 3; ++k) f[k] = m_tet_connectivity[tid][m_local_faces[j][k]];
+            if (f[0] != v && f[1] != v && f[2] != v) continue;
+            std::sort(f.begin(), f.end());
+            candidates.emplace_back(f, tid, j);
+        }
+    }
+    // By face, then tet: each face's first is its lowest tet, whose local face names it.
+    std::sort(candidates.begin(), candidates.end());
+    std::vector<VertexFace> faces;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        const auto& [f, tid, j] = candidates[i];
+        if (i > 0 && f == std::get<0>(candidates[i - 1])) {
+            faces.back().tets.push_back(tid);
+            continue;
+        }
+        faces.push_back({f, 4 * tid + size_t(j), {tid}});
+    }
+    return faces;
+}
+
+void TetMesh::surface_history_before(const std::vector<size_t>& vs, const bool all)
+{
+    m_surface_history_before.local() = tracked_faces_around(vs, all);
+}
+
+std::array<size_t, 2> TetMesh::surface_history_commit(
+    const history::EditKind kind,
+    std::vector<size_t> v,
+    const std::vector<size_t>& vs_after,
+    const bool all)
+{
+    history::TrackedSurfaceRecorder::Change c;
+    c.kind = kind;
+    c.v = std::move(v);
+    if (kind != history::EditKind::move_vertices) {
+        c.before = std::move(m_surface_history_before.local());
+        c.after = tracked_faces_around(vs_after, all);
+    }
+    if (p_vertex_attrs) p_vertex_attrs->append_recorded(c.written);
+    return m_surface_history->commit(std::move(c));
+}
+
+history::VolumeCapture TetMesh::volume_capture(const std::vector<size_t>& vs) const
+{
+    history::VolumeCapture c;
+    std::vector<size_t> tids;
+    for (const size_t v : vs) {
+        const auto& ring = m_vertex_connectivity[v].m_conn_tets;
+        tids.insert(tids.end(), ring.begin(), ring.end());
+    }
+    std::sort(tids.begin(), tids.end());
+    tids.erase(std::unique(tids.begin(), tids.end()), tids.end());
+    for (const size_t tid : tids) {
+        const auto& t = m_tet_connectivity[tid];
+        c.tets.push_back({{t[0], t[1], t[2], t[3]}});
+        c.tags.push_back(tet_tags(tid));
+    }
+    c.vertices = vertices_of_tets(tids);
+    for (const size_t v : c.vertices) c.positions.push_back(m_volume_history->position(v));
+    c.surface = m_surface_history->vertex_ids(c.vertices);
+    return c;
+}
+
+void TetMesh::volume_history_before(const std::vector<size_t>& vs)
+{
+    m_volume_history->before.local() = volume_capture(vs);
+}
+
+void TetMesh::volume_history_commit(
+    const history::VolumeOp op,
+    const std::array<size_t, 2> surface_edits,
+    const std::vector<size_t>& op_vertices,
+    const std::vector<size_t>& vs_after)
+{
+    auto& before = m_volume_history->before.local();
+    if (surface_edits[1] > surface_edits[0]) {
+        m_volume_history->recorder
+            ->commit(op, surface_edits, op_vertices, before, volume_capture(vs_after));
+    }
+    before = {};
+}
+
+std::vector<size_t> TetMesh::tets_of_face(const std::array<size_t, 3>& f) const
+{
+    return set_intersection(
+        set_intersection(
+            m_vertex_connectivity[f[0]].m_conn_tets,
+            m_vertex_connectivity[f[1]].m_conn_tets),
+        m_vertex_connectivity[f[2]].m_conn_tets);
+}
+
+std::vector<size_t> TetMesh::vertices_of_tets(const std::vector<size_t>& tids) const
+{
+    std::vector<size_t> vs;
+    for (const size_t t : tids) {
+        for (int k = 0; k < 4; ++k) vs.push_back(m_tet_connectivity[t][k]);
+    }
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    return vs;
 }
 
 } // namespace wmtk

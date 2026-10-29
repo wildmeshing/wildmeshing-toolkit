@@ -2,6 +2,7 @@
 
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/History.hpp>
 
 #include <cstddef>
 
@@ -55,6 +56,12 @@ namespace wmtk::utils {
  *                   one, so this is exactly the surviving rows in ascending order -- which
  *                   is what lets a caller carry per-segment labels (which input curve a
  *                   segment came from) across the simplification.
+ * @param[out] collapses  optional: every collapse as a history edit on the rows of the V and E
+ *                   passed in (history::EditKind::collapse_edge, {drop, keep}, with keep's new
+ *                   position if it moved), in the order they were made. The compaction is not
+ *                   among them: surviving_vertices and surviving_edges describe it.
+ * @param[out] surviving_vertices  optional: for each row of the compacted V, its row in the V
+ *                   that was passed in.
  * @return the number of vertices removed
  */
 size_t simplify_segments(
@@ -62,6 +69,8 @@ size_t simplify_segments(
     MatrixXi& E,
     const Envelope& envelope,
     bool use_link_condition = true,
-    std::vector<int>* surviving_edges = nullptr);
+    std::vector<int>* surviving_edges = nullptr,
+    std::vector<history::Edit>* collapses = nullptr,
+    std::vector<int>* surviving_vertices = nullptr);
 
 } // namespace wmtk::utils

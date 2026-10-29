@@ -48,7 +48,9 @@ void TriWildMesh::init_mesh(
     const MatrixXd& V_env,
     const MatrixXi& E_env,
     const std::vector<int>* E_orientation,
-    const std::vector<size_t>& free_point_vids)
+    const std::vector<size_t>& free_point_vids,
+    const std::vector<int>* E_env_input,
+    const std::vector<InputSet>* E_input_set)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -172,8 +174,9 @@ void TriWildMesh::init_mesh(
             p2[1]);
     }
 
-    // mark edges as on surface if they are in E
+    // mark edges as on surface if they are in E, each with its input set (one input: input 0)
     assert(E_orientation == nullptr || E_orientation->size() == size_t(E.rows()));
+    assert(E_input_set == nullptr || E_input_set->size() == size_t(E.rows()));
     for (int i = 0; i < E.rows(); i++) {
         std::array<size_t, 2> vids = {{(size_t)E(i, 0), (size_t)E(i, 1)}};
         const auto [e, eid] = tuple_from_edge(vids);
@@ -181,6 +184,7 @@ void TriWildMesh::init_mesh(
             log_and_throw_error("Edge {} in E is not found in the mesh!", vids);
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
+        m_edge_attribute[eid].set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
         if (E_orientation != nullptr) {
             m_edge_attribute[eid].set_orientation_along(vids, (*E_orientation)[i]);
         }
@@ -289,6 +293,47 @@ void TriWildMesh::init_mesh(
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
+
+    // One envelope per input, around its own rows of the same curves, at the same eps and
+    // predicate: what each tracked segment is held to through its input set. With one input the
+    // member would BE m_envelope, so none is built.
+    if (E_env_input != nullptr) {
+        assert(E_env_input->size() == m_E_envelope.size());
+        const int n_inputs = 1 + *std::max_element(E_env_input->begin(), E_env_input->end());
+        std::vector<std::shared_ptr<Envelope>> members;
+        for (int k = 0; k < n_inputs; ++k) {
+            // This input's segments over its own vertices only: an envelope keeps a copy of
+            // the vertices it is given.
+            std::vector<int> local(m_V_envelope.size(), -1);
+            std::vector<Vector2d> V_k;
+            std::vector<Vector2i> E_k;
+            for (size_t i = 0; i < m_E_envelope.size(); ++i) {
+                if ((*E_env_input)[i] != k) continue;
+                Vector2i e;
+                for (int j = 0; j < 2; ++j) {
+                    int& l = local[m_E_envelope[i][j]];
+                    if (l < 0) {
+                        l = int(V_k.size());
+                        V_k.push_back(m_V_envelope[m_E_envelope[i][j]]);
+                    }
+                    e[j] = l;
+                }
+                E_k.push_back(e);
+            }
+            if (E_k.empty()) {
+                members.push_back(nullptr); // no segment, so no tracked segment to hold
+                continue;
+            }
+            auto env = std::make_shared<Envelope>(!m_tri_params.use_sample_envelope);
+            env->init(V_k, E_k, m_envelope_eps);
+            members.push_back(std::move(env));
+        }
+        m_input_envelopes.set(std::move(members));
+        logger().info(
+            "per-input envelopes: {} inputs, each tracked segment held to the envelopes of its "
+            "own",
+            m_input_envelopes.size());
+    }
 
     // Sanity check: All surface edges must be inside the envelope. Opt-in: see
     // Parameters::check_envelope_at_init for why it is not worth its cost by default.
@@ -447,114 +492,6 @@ size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
     return refined.size();
 }
 
-
-void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
-{
-    if (!m_params.output_enabled) return;
-    consolidate_mesh();
-
-    wmtk::MshData msh;
-
-    const auto& vtx = get_vertices();
-    msh.add_face_vertices(vtx.size(), [&](size_t k) {
-        auto i = vtx[k].vid(*this);
-        Vector2d p2 = m_vertex_attribute[i].m_posf;
-        return Vector3d(p2[0], p2[1], 0);
-    });
-
-    const auto& faces = get_faces();
-
-    int64_t max_tag = -1;
-    for (const Tuple& t : faces) {
-        const size_t fid = t.fid(*this);
-        const auto& tags = m_face_attribute[fid].tags;
-        if (tags.size() == 0) {
-            continue;
-        }
-        int64_t mt = *tags.rbegin();
-        max_tag = std::max(max_tag, mt);
-    }
-
-    if (m_tags_count < max_tag + 1) {
-        logger().warn(
-            "Max tag is {} but m_tags_count is {}. Adjusting m_tags_count.",
-            max_tag,
-            m_tags_count);
-        m_tags_count = max_tag + 1;
-    }
-
-    std::vector<Tuple> faces_with_tag;
-    faces_with_tag.reserve(faces.size());
-
-    auto msh_add_faces = [&]() {
-        msh.add_faces(faces_with_tag.size(), [&](size_t k) {
-            auto vs = oriented_tri_vids(faces_with_tag[k]);
-            std::array<size_t, 3> data;
-            for (int j = 0; j < 3; j++) {
-                data[j] = vs[j];
-            }
-            return data;
-        });
-    };
-
-    // ambient mesh (no non-zero tags)
-    for (const Tuple& t : faces) {
-        const size_t fid = t.fid(*this);
-        if (m_face_attribute[fid].tags.empty()) {
-            faces_with_tag.push_back(t);
-        }
-    }
-    msh_add_faces();
-
-    msh.add_physical_group("ambient");
-
-
-    // add a group for each tag
-    for (size_t tag_img = 0; tag_img < m_tags_count; ++tag_img) {
-        faces_with_tag.clear();
-        for (const Tuple& t : faces) {
-            const size_t fid = t.fid(*this);
-            if (m_face_attribute[fid].tags.count(tag_img)) {
-                faces_with_tag.push_back(t);
-            }
-        }
-
-        if (faces_with_tag.empty()) {
-            continue;
-        }
-
-        msh.add_empty_vertices(2);
-        msh_add_faces();
-
-        std::string group_name;
-        if (m_tag_id_to_name.count(tag_img)) {
-            group_name = m_tag_id_to_name[tag_img];
-        } else {
-            group_name = fmt::format("tag_{}", tag_img);
-            while (m_tag_name_to_id.count(group_name)) {
-                group_name += "_";
-            }
-            m_tag_name_to_id[group_name] = tag_img;
-            m_tag_id_to_name[tag_img] = group_name;
-            logger().warn(
-                "Tag {} does not have a name. Assigning the name {}.",
-                tag_img,
-                group_name);
-        }
-        msh.add_physical_group(group_name);
-    }
-
-    if (m_envelope && write_envelope) {
-        msh.add_edge_vertices(m_V_envelope.size(), [this](size_t k) {
-            return Vector3d(m_V_envelope[k][0], m_V_envelope[k][1], 0);
-        });
-        msh.add_edges(m_E_envelope.size(), [this](size_t k) { return m_E_envelope[k]; });
-        msh.add_physical_group("EnvelopeSurface");
-    }
-
-    logger().info("Write {}", file);
-    msh.save(file, true);
-}
 
 void TriWildMesh::compute_winding_numbers(
     const std::vector<MatrixXd>& Vs,
@@ -806,6 +743,25 @@ int TriWildMesh::flood_fill()
     return current_id;
 }
 
+
+std::shared_ptr<Envelope> TriWildMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    if (!m_vertex_attribute.at(vid).m_is_on_surface) return nullptr;
+    if (m_input_envelopes.empty()) return m_envelope;
+    // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
+    // inputs, and keeps the union's pull.
+    InputSet set = 0;
+    const auto& EA = std::as_const(m_edge_attribute);
+    // Named, not iterated as a temporary: edges() returns a reference into the collection, which
+    // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
+    // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
+    const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
+    for (const simplex::Edge& e : surf.edges()) {
+        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+    }
+    if (set == 0) return m_envelope;
+    return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
+}
 
 void TriWildMesh::write_vtu(const std::string& path, MeshMap* output) const
 {

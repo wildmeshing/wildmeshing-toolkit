@@ -24,6 +24,11 @@ struct EmbedTrianglesOptions
     bool check_surface_provenance = false;
     /// Threads for the parts that run in parallel (so far the tracked surface's orientation).
     int num_threads = 1;
+    /// Optional, per input triangle (indexing `triangle_indices`): the input it belongs to,
+    /// negative for none. With it the orientation repair keeps to one input -- a facet is linked
+    /// only to facets on the same inputs -- so an input facing the other way next to another is
+    /// not reversed to agree with it. Without it all triangles are one input, as before.
+    const std::vector<int>* triangle_input = nullptr;
 };
 
 /**
@@ -48,6 +53,11 @@ struct EmbedTrianglesProvenance
     /// Per input triangle (same indexing as `triangle_indices`): its coplanar group, or
     /// UINT32_MAX if it was degenerate and dropped before the arrangement.
     std::vector<uint32_t> triangle_group;
+    /// Set to have face_triangles filled.
+    bool want_face_triangles = false;
+    /// Per facet (indexing `polygon_faces`): the input triangles it lies in, exactly -- every one,
+    /// where input triangles overlap; none for a facet off the input.
+    std::vector<std::vector<uint32_t>> face_triangles;
 };
 
 /**

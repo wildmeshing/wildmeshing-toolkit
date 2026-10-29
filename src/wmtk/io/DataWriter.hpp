@@ -41,6 +41,16 @@ public:
         else
             file.add_cell_field(name, data);
     }
+    void add_integer_cell_field(const std::string& name, const DataMatrix<int64_t>& values)
+    {
+        if (output)
+            fields[name].values = values;
+        else {
+            MeshAttribute field;
+            field.values = values;
+            file.add_cell_field(name, field.doubles());
+        }
+    }
     bool write_mesh(
         const std::string& path,
         const Eigen::MatrixXd& V,
@@ -76,13 +86,17 @@ public:
                 block(block.rows() - 1, j) = c.vertices[j];
             rows[type].push_back(i);
         }
+        // Each block its rows of every cell field, in the field's own type.
         for (const auto& [type, indices] : rows)
-            for (const auto& [name, a] : fields) {
-                auto values = a.doubles();
-                DataMatrix<double> sub(indices.size(), values.cols());
-                for (size_t r = 0; r < indices.size(); ++r) sub.row(r) = values.row(indices[r]);
-                data.cells[type].attributes[name].values = std::move(sub);
-            }
+            for (const auto& [name, a] : fields)
+                data.cells[type].attributes[name].values = std::visit(
+                    [&indices](const auto& values) -> AttributeValues {
+                        std::decay_t<decltype(values)> sub(indices.size(), values.cols());
+                        for (size_t r = 0; r < indices.size(); ++r)
+                            sub.row(r) = values.row(indices[r]);
+                        return sub;
+                    },
+                    a.values);
         data.validate();
         output->insert_or_assign(path, std::move(data));
         // Like VTUWriter::write_mesh, which clears its fields after every write.
@@ -128,7 +142,10 @@ void compact_slot_outputs(const Mesh& mesh, MeshMap& outputs)
 }
 // The result key of each memory export. The exporters keep their legacy file naming,
 // <stem><suffix>.vtu, and the memory calls use the stem "mesh". An empty key drops an export
-// that the caller returns in another form.
+// that the caller returns in another form. The .msh among them are the meshes a history names
+// its points by: <output>_history_input.msh, simwild's and tetwild's, where the surface history
+// (and the volume history) starts, and tetwild's <output>_history_output.msh, the mesh before
+// its filter, where the volume history ends.
 using OutputKeys = std::map<std::string, std::string>;
 inline OutputKeys default_output_keys()
 {
@@ -138,7 +155,9 @@ inline OutputKeys default_output_keys()
         {"mesh_edge.vtu", "edges"},
         {"mesh_off.vtu", "offset"},
         {"mesh_front.vtu", "offset"},
-        {"mesh_offset_faces.vtu", "offset"}};
+        {"mesh_offset_faces.vtu", "offset"},
+        {"mesh_history_input.msh", "history_input"},
+        {"mesh_history_output.msh", "history_output"}};
 }
 // Rename the exports into public result keys. An export missing from `keys`, or two exports
 // with the same key, is an error rather than a silently dropped output.
