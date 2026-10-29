@@ -197,6 +197,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>num_smoothing_passes</
 <tr class="separator:af94f54e1f48f13d77c5ff0afba9f05a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d80c08f359fddbfeb2d5cda143cd0e" id="r_ab9d80c08f359fddbfeb2d5cda143cd0e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#ab9d80c08f359fddbfeb2d5cda143cd0e">colored_smoothing</a> = true</td></tr>
 <tr class="separator:ab9d80c08f359fddbfeb2d5cda143cd0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59ecd7a74243fadb7f8e6b76b64f6ffa" id="r_a59ecd7a74243fadb7f8e6b76b64f6ffa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a59ecd7a74243fadb7f8e6b76b64f6ffa">check_surface_folds</a> = false</td></tr>
+<tr class="separator:a59ecd7a74243fadb7f8e6b76b64f6ffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab856b34a5d06bc26ee01467578c2d912" id="r_ab856b34a5d06bc26ee01467578c2d912"><td class="memItemLeft" align="right" valign="top"><a id="ab856b34a5d06bc26ee01467578c2d912" name="ab856b34a5d06bc26ee01467578c2d912"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing</b> = true</td></tr>
 <tr class="separator:ab856b34a5d06bc26ee01467578c2d912"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -264,6 +266,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a59ecd7a74243fadb7f8e6b76b64f6ffa" name="a59ecd7a74243fadb7f8e6b76b64f6ffa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59ecd7a74243fadb7f8e6b76b64f6ffa">&#9670;&#160;</a></span>check_surface_folds</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::check_surface_folds = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Refuse a collapse, swap or smoothing that folds the tracked surface over: one that leaves more tracked faces not facing along &ndash; facing against, or flat to &ndash; the surface it replaces (the tracked faces around it, their area vectors summed) or the surface it leaves, than there were, or more such faces in the stars of the surface vertices it touches, each against its own. Exact (orient3d); faces oriented as orient_tracked_face does. A fold the input has can be undone, but none is made. Splits move nothing and are not checked. Turns colored smoothing off: the check reads the stars of a vertex's neighbours, which two vertices of one class may share. </p>
+
+</div>
+</div>
 <a id="a69fa78c2ef764cf8a35a91bc0cd169b1" name="a69fa78c2ef764cf8a35a91bc0cd169b1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a69fa78c2ef764cf8a35a91bc0cd169b1">&#9670;&#160;</a></span>coarsen_global_smoothing_passes</h2>
 

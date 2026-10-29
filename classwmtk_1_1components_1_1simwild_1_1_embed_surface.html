@@ -87,9 +87,17 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:adee9e2f2642d76728fe01b3dfd515640" id="r_adee9e2f2642d76728fe01b3dfd515640"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#adee9e2f2642d76728fe01b3dfd515640">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false, const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *component_io=nullptr)</td></tr>
-<tr class="memdesc:adee9e2f2642d76728fe01b3dfd515640"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
-<tr class="separator:adee9e2f2642d76728fe01b3dfd515640"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa54d0ed35d9446f655c4820f4e61c960" id="r_aa54d0ed35d9446f655c4820f4e61c960"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aa54d0ed35d9446f655c4820f4e61c960">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false, const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *component_io=nullptr, const bool record_history=false)</td></tr>
+<tr class="memdesc:aa54d0ed35d9446f655c4820f4e61c960"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
+<tr class="separator:aa54d0ed35d9446f655c4820f4e61c960"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaae1f554b776b3ed6be37378f7a308d" id="r_acaae1f554b776b3ed6be37378f7a308d"><td class="memItemLeft" align="right" valign="top"><a id="acaae1f554b776b3ed6be37378f7a308d" name="acaae1f554b776b3ed6be37378f7a308d"></a>
+const <a class="el" href="structwmtk_1_1history_1_1_surface_history.html">history::SurfaceHistory</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>input_history</b> () const</td></tr>
+<tr class="memdesc:acaae1f554b776b3ed6be37378f7a308d"><td class="mdescLeft">&#160;</td><td class="mdescRight">With record_history: the files as read, concatenated, then what became of them on the way to the arrangement &ndash; the weld, the transform, the split into components and the concatenation as one relabel, and the simplification's own edits. <br /></td></tr>
+<tr class="separator:acaae1f554b776b3ed6be37378f7a308d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a875bd09c2bac297aee9b4bf891e21f49" id="r_a875bd09c2bac297aee9b4bf891e21f49"><td class="memItemLeft" align="right" valign="top"><a id="a875bd09c2bac297aee9b4bf891e21f49" name="a875bd09c2bac297aee9b4bf891e21f49"></a>
+FacetSources &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>facet_sources</b> ()</td></tr>
+<tr class="memdesc:a875bd09c2bac297aee9b4bf891e21f49"><td class="mdescLeft">&#160;</td><td class="mdescRight">With record_history, once embedded: the input triangles each surface facet lies on. <br /></td></tr>
+<tr class="separator:a875bd09c2bac297aee9b4bf891e21f49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad090a61f3c05cd3c919321962e1f52e" id="r_aad090a61f3c05cd3c919321962e1f52e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aad090a61f3c05cd3c919321962e1f52e">simplify_surface</a> (const double eps, const bool use_exact, const int num_threads=0, const double boundary_eps=0)</td></tr>
 <tr class="memdesc:aad090a61f3c05cd3c919321962e1f52e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
 <tr class="separator:aad090a61f3c05cd3c919321962e1f52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,6 +201,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_from_winding_numb
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a1a11df722b0a0508183355046d89eb15" id="r_a1a11df722b0a0508183355046d89eb15"><td class="memItemLeft" align="right" valign="top"><a id="a1a11df722b0a0508183355046d89eb15" name="a1a11df722b0a0508183355046d89eb15"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_record_history</b> = false</td></tr>
+<tr class="separator:a1a11df722b0a0508183355046d89eb15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9a0bcbdd6909ca9e4683a669e7e021c" id="r_ac9a0bcbdd6909ca9e4683a669e7e021c"><td class="memItemLeft" align="right" valign="top"><a id="ac9a0bcbdd6909ca9e4683a669e7e021c" name="ac9a0bcbdd6909ca9e4683a669e7e021c"></a>
+<a class="el" href="structwmtk_1_1history_1_1_surface_history.html">history::SurfaceHistory</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_history</b></td></tr>
+<tr class="separator:ac9a0bcbdd6909ca9e4683a669e7e021c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa38a16bb1ba8d88e95113f60424d4631" id="r_aa38a16bb1ba8d88e95113f60424d4631"><td class="memItemLeft" align="right" valign="top"><a id="aa38a16bb1ba8d88e95113f60424d4631" name="aa38a16bb1ba8d88e95113f60424d4631"></a>
+FacetSources&#160;</td><td class="memItemRight" valign="bottom"><b>m_facet_sources</b></td></tr>
+<tr class="separator:aa38a16bb1ba8d88e95113f60424d4631"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08ee8d5a1cbcf4db31c4c6bd3cff1b8b" id="r_a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"><td class="memItemLeft" align="right" valign="top"><a id="a08ee8d5a1cbcf4db31c4c6bd3cff1b8b" name="a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_img_filenames</b></td></tr>
 <tr class="separator:a08ee8d5a1cbcf4db31c4c6bd3cff1b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -245,8 +262,8 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A class for reading an image and converting it into a tet mesh. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="adee9e2f2642d76728fe01b3dfd515640" name="adee9e2f2642d76728fe01b3dfd515640"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adee9e2f2642d76728fe01b3dfd515640">&#9670;&#160;</a></span>EmbedSurface()</h2>
+<a id="aa54d0ed35d9446f655c4820f4e61c960" name="aa54d0ed35d9446f655c4820f4e61c960"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa54d0ed35d9446f655c4820f4e61c960">&#9670;&#160;</a></span>EmbedSurface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -285,7 +302,13 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1io_1_1_component_i_o.html">io::ComponentIO</a> *&#160;</td>
-          <td class="paramname"><em>component_io</em> = <code>nullptr</code>&#160;</td>
+          <td class="paramname"><em>component_io</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>record_history</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

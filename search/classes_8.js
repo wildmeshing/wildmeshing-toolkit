@@ -5,7 +5,8 @@ var searchData=
   ['infocache_2',['InfoCache',['../structwmtk_1_1components_1_1qslim_1_1_q_slim_mesh_1_1_info_cache.html',1,'wmtk::components::qslim::QSlimMesh']]],
   ['inputdata_3',['InputData',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html',1,'wmtk::components::simwild']]],
   ['inputenvelopes_4',['InputEnvelopes',['../classwmtk_1_1_input_envelopes.html',1,'wmtk']]],
-  ['interiortetopt_5',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
-  ['intersectionenvelope_6',['IntersectionEnvelope',['../classwmtk_1_1_intersection_envelope.html',1,'wmtk']]],
-  ['isotropicremeshing_7',['IsotropicRemeshing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html',1,'wmtk::components::isotropic_remeshing']]]
+  ['inputpoint_5',['InputPoint',['../structwmtk_1_1components_1_1surface__map_1_1_input_point.html',1,'wmtk::components::surface_map']]],
+  ['interiortetopt_6',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
+  ['intersectionenvelope_7',['IntersectionEnvelope',['../classwmtk_1_1_intersection_envelope.html',1,'wmtk']]],
+  ['isotropicremeshing_8',['IsotropicRemeshing',['../classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html',1,'wmtk::components::isotropic_remeshing']]]
 ];

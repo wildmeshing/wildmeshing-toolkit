@@ -92,6 +92,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a98bcc7298749bc8a7df1419a241dcf83" id="r_a98bcc7298749bc8a7df1419a241dcf83"><td class="memItemLeft" align="right" valign="top"><a id="a98bcc7298749bc8a7df1419a241dcf83" name="a98bcc7298749bc8a7df1419a241dcf83"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>memory</b> () const</td></tr>
 <tr class="separator:a98bcc7298749bc8a7df1419a241dcf83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa991275a0509836ffed4c7dd553bbf56" id="r_aa991275a0509836ffed4c7dd553bbf56"><td class="memItemLeft" align="right" valign="top"><a id="aa991275a0509836ffed4c7dd553bbf56" name="aa991275a0509836ffed4c7dd553bbf56"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>save_history</b> (const <a class="el" href="structwmtk_1_1history_1_1_surface_history.html">history::SurfaceHistory</a> &amp;h, const std::string &amp;path)</td></tr>
+<tr class="separator:aa991275a0509836ffed4c7dd553bbf56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae99fff819aa15106f04f2dd1b230ea22" id="r_ae99fff819aa15106f04f2dd1b230ea22"><td class="memItemLeft" align="right" valign="top"><a id="ae99fff819aa15106f04f2dd1b230ea22" name="ae99fff819aa15106f04f2dd1b230ea22"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>history_metadata</b> (const nlohmann::json &amp;params) const</td></tr>
+<tr class="separator:ae99fff819aa15106f04f2dd1b230ea22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef5acf6be4d379eac99ba10f912191cd" id="r_aef5acf6be4d379eac99ba10f912191cd"><td class="memItemLeft" align="right" valign="top"><a id="aef5acf6be4d379eac99ba10f912191cd" name="aef5acf6be4d379eac99ba10f912191cd"></a>
+ComponentResult&#160;</td><td class="memItemRight" valign="bottom"><b>take_result</b> ()</td></tr>
+<tr class="separator:aef5acf6be4d379eac99ba10f912191cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af14bd8cccf4ad361fe51e1bb9423c73f" id="r_af14bd8cccf4ad361fe51e1bb9423c73f"><td class="memItemLeft" align="right" valign="top"><a id="af14bd8cccf4ad361fe51e1bb9423c73f" name="af14bd8cccf4ad361fe51e1bb9423c73f"></a>
 const <a class="el" href="structwmtk_1_1_mesh_data.html">MeshData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> (const std::string &amp;name) const</td></tr>
 <tr class="separator:af14bd8cccf4ad361fe51e1bb9423c73f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,9 +116,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>raw_triangles</b> (co
 <tr class="memitem:a735e91f82c3a2e0cb7b03e6bdcc23d32" id="r_a735e91f82c3a2e0cb7b03e6bdcc23d32"><td class="memItemLeft" align="right" valign="top"><a id="a735e91f82c3a2e0cb7b03e6bdcc23d32" name="a735e91f82c3a2e0cb7b03e6bdcc23d32"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;F, double rel=-1, double abs=-1) const</td></tr>
 <tr class="separator:a735e91f82c3a2e0cb7b03e6bdcc23d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a5ff4c893ca33c0fe2205bfb1c5015c" id="r_a0a5ff4c893ca33c0fe2205bfb1c5015c"><td class="memItemLeft" align="right" valign="top"><a id="a0a5ff4c893ca33c0fe2205bfb1c5015c" name="a0a5ff4c893ca33c0fe2205bfb1c5015c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::vector&lt; std::string &gt; &amp;names, MatrixXd &amp;V, MatrixXi &amp;F, double rel, double abs, std::vector&lt; int &gt; *provenance=nullptr) const</td></tr>
-<tr class="separator:a0a5ff4c893ca33c0fe2205bfb1c5015c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55d0db9e2e7246260fb7e6880ab42207" id="r_a55d0db9e2e7246260fb7e6880ab42207"><td class="memItemLeft" align="right" valign="top"><a id="a55d0db9e2e7246260fb7e6880ab42207" name="a55d0db9e2e7246260fb7e6880ab42207"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::vector&lt; std::string &gt; &amp;names, MatrixXd &amp;V, MatrixXi &amp;F, double rel, double abs, std::vector&lt; int &gt; *provenance=nullptr, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr) const</td></tr>
+<tr class="separator:a55d0db9e2e7246260fb7e6880ab42207"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accf922f08f0b6da44afc5de021e1b874" id="r_accf922f08f0b6da44afc5de021e1b874"><td class="memItemLeft" align="right" valign="top"><a id="accf922f08f0b6da44afc5de021e1b874" name="accf922f08f0b6da44afc5de021e1b874"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;E, double rel=-1, double abs=-1) const</td></tr>
 <tr class="separator:accf922f08f0b6da44afc5de021e1b874"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,6 +158,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:abd171e62f4ef08f680ecb42d147c9cf6" id="r_abd171e62f4ef08f680ecb42d147c9cf6"><td class="memItemLeft" align="right" valign="top"><a id="abd171e62f4ef08f680ecb42d147c9cf6" name="abd171e62f4ef08f680ecb42d147c9cf6"></a>
 <a class="el" href="classwmtk_1_1detail_1_1_component_logger_scope.html">detail::ComponentLoggerScope</a>&#160;</td><td class="memItemRight" valign="bottom"><b>logging</b></td></tr>
 <tr class="separator:abd171e62f4ef08f680ecb42d147c9cf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42a5158c29447c5f3338d83e85867550" id="r_a42a5158c29447c5f3338d83e85867550"><td class="memItemLeft" align="right" valign="top"><a id="a42a5158c29447c5f3338d83e85867550" name="a42a5158c29447c5f3338d83e85867550"></a>
+std::optional&lt; std::vector&lt; uint8_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>recorded_history</b></td></tr>
+<tr class="separator:a42a5158c29447c5f3338d83e85867550"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/io/<a class="el" href="_component_i_o_8hpp_source.html">ComponentIO.hpp</a></li>

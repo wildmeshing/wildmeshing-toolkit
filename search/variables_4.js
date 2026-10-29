@@ -6,13 +6,14 @@ var searchData=
   ['edge_5fvrt_5fcoord_3',['edge_vrt_coord',['../structwmtk_1_1utils_1_1_embed_features_input.html#ab5a8e131800abaae1fbae0cf1b572c0b',1,'wmtk::utils::EmbedFeaturesInput']]],
   ['edit_5foperation_5fmaps_4',['edit_operation_maps',['../structwmtk_1_1_execute_pass.html#aece7de4f87c75dd0ba113a39e9b18a04',1,'wmtk::ExecutePass']]],
   ['elems_5',['elems',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html#a6e63bcbd2a54f7720622ec5ac1673a52',1,'wmtk::components::topological_offset::ExactBandIntegral::Work']]],
-  ['empty_5fvol_6',['empty_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a20c7fd49f143b6dc709e4f4f9e3b71f6',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['envelope_7',['envelope',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a1d785e4d12bdfdfa9f5bfaae8613eac7',1,'wmtk::optimization::SmoothRejectCounters']]],
-  ['envelope_5fname_8',['envelope_name',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264',1,'wmtk::components::simwild::InputData']]],
-  ['eps2_9',['eps2',['../classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47',1,'wmtk::Envelope']]],
-  ['eps2_5fedge_10',['eps2_edge',['../classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d',1,'wmtk::Envelope']]],
-  ['exact_5fenvelope_11',['exact_envelope',['../classwmtk_1_1_envelope.html#a3b819a394e4be36ecf52a900d8a79a9b',1,'wmtk::Envelope']]],
-  ['exact_5fenvelope_5f2d_12',['exact_envelope_2d',['../classwmtk_1_1_envelope.html#a424353c86fb2be23fea23f15d02c5aa3',1,'wmtk::Envelope']]],
-  ['exact_5fvol_13',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
-  ['exit_5fno_5ffolds_14',['exit_no_folds',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c',1,'wmtk::components::topological_offset::Parameters']]]
+  ['embedding_6',['embedding',['../structwmtk_1_1components_1_1surface__map_1_1_surface_map_1_1_step.html#a78c033ac7668a34d26b78a17713d9efd',1,'wmtk::components::surface_map::SurfaceMap::Step']]],
+  ['empty_5fvol_7',['empty_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a20c7fd49f143b6dc709e4f4f9e3b71f6',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
+  ['envelope_8',['envelope',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a1d785e4d12bdfdfa9f5bfaae8613eac7',1,'wmtk::optimization::SmoothRejectCounters']]],
+  ['envelope_5fname_9',['envelope_name',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264',1,'wmtk::components::simwild::InputData']]],
+  ['eps2_10',['eps2',['../classwmtk_1_1_envelope.html#a6c242e84f2c28ecaae122147c31b4e47',1,'wmtk::Envelope']]],
+  ['eps2_5fedge_11',['eps2_edge',['../classwmtk_1_1_envelope.html#ad98dac6e590cbeb35b394d4cf12fd44d',1,'wmtk::Envelope']]],
+  ['exact_5fenvelope_12',['exact_envelope',['../classwmtk_1_1_envelope.html#a3b819a394e4be36ecf52a900d8a79a9b',1,'wmtk::Envelope']]],
+  ['exact_5fenvelope_5f2d_13',['exact_envelope_2d',['../classwmtk_1_1_envelope.html#a424353c86fb2be23fea23f15d02c5aa3',1,'wmtk::Envelope']]],
+  ['exact_5fvol_14',['exact_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#ad5408649dc1116c8ff8d6e6b6d20e60a',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
+  ['exit_5fno_5ffolds_15',['exit_no_folds',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af6b06579e164d7960a0061e1c7597b3c',1,'wmtk::components::topological_offset::Parameters']]]
 ];

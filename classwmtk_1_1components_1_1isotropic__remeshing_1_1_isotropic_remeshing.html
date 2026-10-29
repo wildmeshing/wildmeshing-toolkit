@@ -78,6 +78,8 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::components::isotropic_remeshing::IsotropicRemeshing Class Reference</div></div>
 </div><!--header-->
@@ -112,6 +114,37 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:ab10f456b1fe164af78a35ea6280d4203" id="r_ab10f456b1fe164af78a35ea6280d4203"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab10f456b1fe164af78a35ea6280d4203">set_feature_edges</a> (const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;edges)</td></tr>
+<tr class="memdesc:ab10f456b1fe164af78a35ea6280d4203"><td class="mdescLeft">&#160;</td><td class="mdescRight">Curves the remeshing keeps: label boundaries, say.  <br /></td></tr>
+<tr class="separator:ab10f456b1fe164af78a35ea6280d4203"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab910bca99c63f203a69a73ed563d61e6" id="r_ab910bca99c63f203a69a73ed563d61e6"><td class="memItemLeft" align="right" valign="top"><a id="ab910bca99c63f203a69a73ed563d61e6" name="ab910bca99c63f203a69a73ed563d61e6"></a>
+std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>feature_edges</b> () const</td></tr>
+<tr class="memdesc:ab910bca99c63f203a69a73ed563d61e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The feature edges, smaller vertex id first. <br /></td></tr>
+<tr class="separator:ab910bca99c63f203a69a73ed563d61e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84bfcfe7533ba0a00f82ebb9b7b563d9" id="r_a84bfcfe7533ba0a00f82ebb9b7b563d9"><td class="memItemLeft" align="right" valign="top"><a id="a84bfcfe7533ba0a00f82ebb9b7b563d9" name="a84bfcfe7533ba0a00f82ebb9b7b563d9"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_feature_edge</b> (size_t a, size_t b) const</td></tr>
+<tr class="separator:a84bfcfe7533ba0a00f82ebb9b7b563d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6127721f4d4bb590e9657817f4c8fb42" id="r_a6127721f4d4bb590e9657817f4c8fb42"><td class="memItemLeft" align="right" valign="top"><a id="a6127721f4d4bb590e9657817f4c8fb42" name="a6127721f4d4bb590e9657817f4c8fb42"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>feature_degree</b> (size_t v) const</td></tr>
+<tr class="separator:a6127721f4d4bb590e9657817f4c8fb42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adccc05cd224fa81064cf1d6de2b55986" id="r_adccc05cd224fa81064cf1d6de2b55986"><td class="memItemLeft" align="right" valign="top"><a id="adccc05cd224fa81064cf1d6de2b55986" name="adccc05cd224fa81064cf1d6de2b55986"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate_mesh</b> ()</td></tr>
+<tr class="memdesc:adccc05cd224fa81064cf1d6de2b55986"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">TriMesh::consolidate_mesh</a>, plus the renumbering of the feature edges. <br /></td></tr>
+<tr class="separator:adccc05cd224fa81064cf1d6de2b55986"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab224f8a6cc3c4afa84b7695572afae28" id="r_ab224f8a6cc3c4afa84b7695572afae28"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28">remove_feature_ears</a> ()</td></tr>
+<tr class="memdesc:ab224f8a6cc3c4afa84b7695572afae28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the triangles that hold two feature edges &ndash; "ears".  <br /></td></tr>
+<tr class="separator:ab224f8a6cc3c4afa84b7695572afae28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a126c90ced08ced47c488b9eaf5726f96" id="r_a126c90ced08ced47c488b9eaf5726f96"><td class="memItemLeft" align="right" valign="top"><a id="a126c90ced08ced47c488b9eaf5726f96" name="a126c90ced08ced47c488b9eaf5726f96"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_feature_ear_tip</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v) const</td></tr>
+<tr class="memdesc:a126c90ced08ced47c488b9eaf5726f96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <code>v</code> is on a curve and one triangle holds both of its curve edges. <br /></td></tr>
+<tr class="separator:a126c90ced08ced47c488b9eaf5726f96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad52457941592612d709a12c62436f5cd" id="r_ad52457941592612d709a12c62436f5cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd">set_check_inversions</a> (bool check)</td></tr>
+<tr class="memdesc:ad52457941592612d709a12c62436f5cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refuse a collapse, swap or smoothing that folds the surface over.  <br /></td></tr>
+<tr class="separator:ad52457941592612d709a12c62436f5cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab521ae6d09ffd462e7fe7b563c3435b8" id="r_ab521ae6d09ffd462e7fe7b563c3435b8"><td class="memItemLeft" align="right" valign="top"><a id="ab521ae6d09ffd462e7fe7b563c3435b8" name="ab521ae6d09ffd462e7fe7b563c3435b8"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>refused_inversions</b> () const</td></tr>
+<tr class="memdesc:ab521ae6d09ffd462e7fe7b563c3435b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The operations <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ad52457941592612d709a12c62436f5cd" title="Refuse a collapse, swap or smoothing that folds the surface over.">set_check_inversions()</a> refused, since the mesh was made. <br /></td></tr>
+<tr class="separator:ab521ae6d09ffd462e7fe7b563c3435b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a0a4b4e385799625111978e2b95f135" id="r_a0a0a4b4e385799625111978e2b95f135"><td class="memItemLeft" align="right" valign="top"><a id="a0a0a4b4e385799625111978e2b95f135" name="a0a0a4b4e385799625111978e2b95f135"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>IsotropicRemeshing</b> (std::vector&lt; Eigen::Vector3d &gt; _m_vertex_positions, int num_threads=1, bool use_exact=true)</td></tr>
 <tr class="separator:a0a0a4b4e385799625111978e2b95f135"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -285,6 +318,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots<
 <tr class="memitem:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a9939b4491bd9afc357468072368ab392"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">consolidate_mesh</a> ()</td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2fe8e5154680afc64adefa61a187cc5 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ab2fe8e5154680afc64adefa61a187cc5"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab2fe8e5154680afc64adefa61a187cc5">start_history</a> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memdesc:ab2fe8e5154680afc64adefa61a187cc5 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record every operation this mesh commits from now on (see wmtk/history).  <br /></td></tr>
+<tr class="separator:ab2fe8e5154680afc64adefa61a187cc5 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22fc598ae995fefe3df71d104c2ca565 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a22fc598ae995fefe3df71d104c2ca565"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_history</b> ()</td></tr>
+<tr class="memdesc:a22fc598ae995fefe3df71d104c2ca565 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording. The recorder keeps the edits it has. <br /></td></tr>
+<tr class="separator:a22fc598ae995fefe3df71d104c2ca565 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a90be1ec37c03c2ed25ee11d65784e627"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a90be1ec37c03c2ed25ee11d65784e627">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
 <tr class="memdesc:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
 <tr class="separator:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -522,6 +562,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_envelope</b> = 
 <tr class="memitem:a7a137738ce3b5115f4d10357f42390af" id="r_a7a137738ce3b5115f4d10357f42390af"><td class="memItemLeft" align="right" valign="top"><a id="a7a137738ce3b5115f4d10357f42390af" name="a7a137738ce3b5115f4d10357f42390af"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_attrs</b></td></tr>
 <tr class="separator:a7a137738ce3b5115f4d10357f42390af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb122cc6c91f9c0f7352a2f27418dbe8" id="r_afb122cc6c91f9c0f7352a2f27418dbe8"><td class="memItemLeft" align="right" valign="top"><a id="afb122cc6c91f9c0f7352a2f27418dbe8" name="afb122cc6c91f9c0f7352a2f27418dbe8"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_feature_attributes.html">FeatureAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>feature_attrs</b></td></tr>
+<tr class="memdesc:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read and written only while the mesh has feature edges. <br /></td></tr>
+<tr class="separator:afb122cc6c91f9c0f7352a2f27418dbe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a106d559136ac49fa21ecc754b549a089" id="r_a106d559136ac49fa21ecc754b549a089"><td class="memItemLeft" align="right" valign="top"><a id="a106d559136ac49fa21ecc754b549a089" name="a106d559136ac49fa21ecc754b549a089"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>retry_limit</b> = 10</td></tr>
 <tr class="separator:a106d559136ac49fa21ecc754b549a089"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -547,6 +591,44 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>retry_limit</b> = 10</
 <tr class="memitem:a84fa74eb2b0a35d205729459b55e70f0 inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a84fa74eb2b0a35d205729459b55e70f0"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</td></tr>
 <tr class="separator:a84fa74eb2b0a35d205729459b55e70f0 inherit pub_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a4e9f5ffacf247702cddde12174cfa5c7" id="r_a4e9f5ffacf247702cddde12174cfa5c7"><td class="memItemLeft" align="right" valign="top"><a id="a4e9f5ffacf247702cddde12174cfa5c7" name="a4e9f5ffacf247702cddde12174cfa5c7"></a>
+Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>area_normal</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
+<tr class="memdesc:a4e9f5ffacf247702cddde12174cfa5c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The area vectors of the triangles, summed (twice over). <br /></td></tr>
+<tr class="separator:a4e9f5ffacf247702cddde12174cfa5c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7584e5026fb6ac95d326e53aba6c657" id="r_ad7584e5026fb6ac95d326e53aba6c657"><td class="memItemLeft" align="right" valign="top"><a id="ad7584e5026fb6ac95d326e53aba6c657" name="ad7584e5026fb6ac95d326e53aba6c657"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>not_facing</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const Eigen::Vector3d &amp;n) const</td></tr>
+<tr class="memdesc:ad7584e5026fb6ac95d326e53aba6c657"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the triangles do not face along n. <br /></td></tr>
+<tr class="separator:ad7584e5026fb6ac95d326e53aba6c657"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb19b0cc382940cf20a201a634e62153" id="r_afb19b0cc382940cf20a201a634e62153"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#afb19b0cc382940cf20a201a634e62153">star_folds</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
+<tr class="separator:afb19b0cc382940cf20a201a634e62153"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36bc794e6885735b4d4d794a3427b05d" id="r_a36bc794e6885735b4d4d794a3427b05d"><td class="memItemLeft" align="right" valign="top"><a id="a36bc794e6885735b4d4d794a3427b05d" name="a36bc794e6885735b4d4d794a3427b05d"></a>
+<a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a>&#160;</td><td class="memItemRight" valign="bottom"><b>replaced</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) const</td></tr>
+<tr class="memdesc:a36bc794e6885735b4d4d794a3427b05d"><td class="mdescLeft">&#160;</td><td class="mdescRight">The triangles an operation is about to replace. <br /></td></tr>
+<tr class="separator:a36bc794e6885735b4d4d794a3427b05d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b996eefd539d3e0ab36f1e160828f30" id="r_a4b996eefd539d3e0ab36f1e160828f30"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#a4b996eefd539d3e0ab36f1e160828f30">folds</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris, const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;before)</td></tr>
+<tr class="separator:a4b996eefd539d3e0ab36f1e160828f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a9a2097c30bf3d48ef1bf7f1c1a157e02" id="r_a9a2097c30bf3d48ef1bf7f1c1a157e02"><td class="memItemLeft" align="right" valign="top"><a id="a9a2097c30bf3d48ef1bf7f1c1a157e02" name="a9a2097c30bf3d48ef1bf7f1c1a157e02"></a>
+<a class="el" href="classwmtk_1_1_attribute_container_group.html">wmtk::AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_group</b></td></tr>
+<tr class="separator:a9a2097c30bf3d48ef1bf7f1c1a157e02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa63691574457e022e8bd826babd9696e" id="r_aa63691574457e022e8bd826babd9696e"><td class="memItemLeft" align="right" valign="top"><a id="aa63691574457e022e8bd826babd9696e" name="aa63691574457e022e8bd826babd9696e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_features</b> = false</td></tr>
+<tr class="separator:aa63691574457e022e8bd826babd9696e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1b5ecfbe0c01e01e45bde6aded4112b" id="r_af1b5ecfbe0c01e01e45bde6aded4112b"><td class="memItemLeft" align="right" valign="top"><a id="af1b5ecfbe0c01e01e45bde6aded4112b" name="af1b5ecfbe0c01e01e45bde6aded4112b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_removing_ears</b> = false</td></tr>
+<tr class="memdesc:af1b5ecfbe0c01e01e45bde6aded4112b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set while <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28" title="Removes the triangles that hold two feature edges – &quot;ears&quot;.">remove_feature_ears()</a> runs (serially): its collapses may make an ear. <br /></td></tr>
+<tr class="separator:af1b5ecfbe0c01e01e45bde6aded4112b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47a4d867a02a62425b2047abfa983b1c" id="r_a47a4d867a02a62425b2047abfa983b1c"><td class="memItemLeft" align="right" valign="top"><a id="a47a4d867a02a62425b2047abfa983b1c" name="a47a4d867a02a62425b2047abfa983b1c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_check_inversions</b> = true</td></tr>
+<tr class="separator:a47a4d867a02a62425b2047abfa983b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab50d4296586b0c8cb7c43e2b9596a2ef" id="r_ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memItemLeft" align="right" valign="top"><a id="ab50d4296586b0c8cb7c43e2b9596a2ef" name="ab50d4296586b0c8cb7c43e2b9596a2ef"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_refused_inversions</b> = 0</td></tr>
+<tr class="separator:ab50d4296586b0c8cb7c43e2b9596a2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -729,6 +811,43 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="a4b996eefd539d3e0ab36f1e160828f30" name="a4b996eefd539d3e0ab36f1e160828f30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b996eefd539d3e0ab36f1e160828f30">&#9670;&#160;</a></span>folds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::isotropic_remeshing::IsotropicRemeshing::folds </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html">ReplacedSurface</a> &amp;&#160;</td>
+          <td class="paramname"><em>before</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the triangles an operation left fold the surface over more than the <code>before</code> they replaced. Counts a refusal. </p>
+
+</div>
+</div>
 <a id="a0414ebb2435b7e1b9a1bff1d16ba332e" name="a0414ebb2435b7e1b9a1bff1d16ba332e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0414ebb2435b7e1b9a1bff1d16ba332e">&#9670;&#160;</a></span>invariants()</h2>
 
@@ -763,6 +882,77 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <dl class="section return"><dt>Returns</dt><dd>true if the invairnats are not violated </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="ab224f8a6cc3c4afa84b7695572afae28" name="ab224f8a6cc3c4afa84b7695572afae28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab224f8a6cc3c4afa84b7695572afae28">&#9670;&#160;</a></span>remove_feature_ears()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::isotropic_remeshing::IsotropicRemeshing::remove_feature_ears </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Removes the triangles that hold two feature edges &ndash; "ears". </p>
+<p>Three consecutive curve vertices a, b, c that span a triangle leave b that triangle alone on one side, and smoothing b along the curve would flatten it. Swapping the edge (a, c) gives b two triangles there; where that is not possible &ndash; (a, c) is a curve or the boundary, or the swap would make a new ear or turn a triangle over &ndash; b collapses along the curve and the corner goes. Where it cannot either &ndash; the moved b would turn a triangle over &ndash; (a, c) is split at its midpoint, which gives b two triangles there and moves nothing; at a junction, which smoothing does not move, the corner stays. Where a curve zigzags, removing one ear can make the next, so call it until it removes none. No other swap or collapse makes an ear, but the input can hold them. A triangle with curves (or the boundary) all round is a region of its own, not an ear, and stays. Serial; returns the number removed. </p>
+
+</div>
+</div>
+<a id="ad52457941592612d709a12c62436f5cd" name="ad52457941592612d709a12c62436f5cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad52457941592612d709a12c62436f5cd">&#9670;&#160;</a></span>set_check_inversions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_check_inversions </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>check</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Refuse a collapse, swap or smoothing that folds the surface over. </p>
+<p>The triangles an operation changes or removes have a normal, their area vectors summed; the operation may leave no more triangles that do not face along it &ndash; face against it, or are flat &ndash; than there were, nor along the normal of the triangles it leaves. Nor may it leave more folds in the stars of the vertices it touches, each star against its own normal: what it changes is in its neighbours' stars too. So it makes no fold, and may undo one the input has. A triangle faces along a normal when the exact orient3d says so (see faces_along in the .cpp). A split moves no vertex and is not checked. On by default. </p>
+
+</div>
+</div>
+<a id="ab10f456b1fe164af78a35ea6280d4203" name="ab10f456b1fe164af78a35ea6280d4203"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab10f456b1fe164af78a35ea6280d4203">&#9670;&#160;</a></span>set_feature_edges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::isotropic_remeshing::IsotropicRemeshing::set_feature_edges </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edges</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Curves the remeshing keeps: label boundaries, say. </p>
+<p>A vertex on two feature edges is on a curve; one with one, or with three or more, ends a curve or joins several, and stays where it is. A split of a feature edge leaves two feature halves. A curve vertex collapses only along its curve, onto the survivor's position; a vertex off every curve collapses as before, onto the survivor's position if that one is on a curve. A feature edge is never swapped, and a curve vertex is smoothed along its curve only. No swap or collapse makes a triangle holding two curve edges, and <a class="el" href="classwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing.html#ab224f8a6cc3c4afa84b7695572afae28" title="Removes the triangles that hold two feature edges – &quot;ears&quot;.">remove_feature_ears()</a> removes the ones the input has.</p>
+<p>These are the rules <a class="el" href="classwmtk_1_1history_1_1_replay.html" title="A triangle complex driven by the edits of a SurfaceHistory.">wmtk::history::Replay</a> carries feature edges by, so a recorded history holds the curves at every step. </p>
 
 </div>
 </div>
@@ -911,6 +1101,33 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#abf13b037d7eabeec3de1d96043540928">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="afb19b0cc382940cf20a201a634e62153" name="afb19b0cc382940cf20a201a634e62153"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb19b0cc382940cf20a201a634e62153">&#9670;&#160;</a></span>star_folds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::isotropic_remeshing::IsotropicRemeshing::star_folds </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tris</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Over the vertices of the triangles, the triangles of each one's star that do not face along that star's area_normal. An operation may read these stars: one that changes a star holds its centre, which is in the one-ring of what this operation changes, and so held by it. </p>
 
 </div>
 </div>

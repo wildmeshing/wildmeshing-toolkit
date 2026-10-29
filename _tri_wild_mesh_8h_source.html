@@ -148,8 +148,8 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="comment">// nor 2 is a feature -- valence 1 is an open polyline&#39;s endpoint, valence &gt;= 3 a</span></div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="comment">// junction -- plus the input free points. Reading it off the arrangement rather than the</span></div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="comment">// raw input is deliberate: it is the network the optimizer actually starts from, so a</span></div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="comment">// junction the simplification was allowed to merge (which it may, with</span></div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="comment">// simplify_use_link_condition off) is correctly absent, and no provenance or</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="comment">// junction the simplification was allowed to merge (which it may, without</span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="comment">// preserve_topology) is correctly absent, and no provenance or</span></div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="comment">// position-matching plumbing is needed.</span></div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_class" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html">TriWildMesh</a>(<a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>&amp; _m_params, <span class="keywordtype">double</span> envelope_eps, <span class="keywordtype">int</span> _num_threads = 0)</div>

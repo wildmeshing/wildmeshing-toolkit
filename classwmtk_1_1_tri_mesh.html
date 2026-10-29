@@ -239,6 +239,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots<
 <tr class="memitem:a9939b4491bd9afc357468072368ab392" id="r_a9939b4491bd9afc357468072368ab392"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">consolidate_mesh</a> ()</td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2fe8e5154680afc64adefa61a187cc5" id="r_ab2fe8e5154680afc64adefa61a187cc5"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab2fe8e5154680afc64adefa61a187cc5">start_history</a> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memdesc:ab2fe8e5154680afc64adefa61a187cc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record every operation this mesh commits from now on (see wmtk/history).  <br /></td></tr>
+<tr class="separator:ab2fe8e5154680afc64adefa61a187cc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22fc598ae995fefe3df71d104c2ca565" id="r_a22fc598ae995fefe3df71d104c2ca565"><td class="memItemLeft" align="right" valign="top"><a id="a22fc598ae995fefe3df71d104c2ca565" name="a22fc598ae995fefe3df71d104c2ca565"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_history</b> ()</td></tr>
+<tr class="memdesc:a22fc598ae995fefe3df71d104c2ca565"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording. The recorder keeps the edits it has. <br /></td></tr>
+<tr class="separator:a22fc598ae995fefe3df71d104c2ca565"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90be1ec37c03c2ed25ee11d65784e627" id="r_a90be1ec37c03c2ed25ee11d65784e627"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a90be1ec37c03c2ed25ee11d65784e627">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
 <tr class="memdesc:a90be1ec37c03c2ed25ee11d65784e627"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
 <tr class="separator:a90be1ec37c03c2ed25ee11d65784e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -509,6 +516,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_capacity</
 <tr class="memitem:a30fbe4786afbf362d26131cf9bad91f2" id="r_a30fbe4786afbf362d26131cf9bad91f2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a30fbe4786afbf362d26131cf9bad91f2">get_next_empty_slot_v</a> ()</td></tr>
 <tr class="memdesc:a30fbe4786afbf362d26131cf9bad91f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next avaiblie global index for the vertex.  <br /></td></tr>
 <tr class="separator:a30fbe4786afbf362d26131cf9bad91f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f6364a3f9a0a3c0db81d69e65c50750" id="r_a1f6364a3f9a0a3c0db81d69e65c50750"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a1f6364a3f9a0a3c0db81d69e65c50750">commit_history</a> (<a class="el" href="structwmtk_1_1history_1_1_edit.html">history::Edit</a> &amp;&amp;e)</td></tr>
+<tr class="separator:a1f6364a3f9a0a3c0db81d69e65c50750"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0da6d2c873a318123efd93f1a40f532" id="r_af0da6d2c873a318123efd93f1a40f532"><td class="memItemLeft" align="right" valign="top"><a id="af0da6d2c873a318123efd93f1a40f532" name="af0da6d2c873a318123efd93f1a40f532"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="separator:af0da6d2c873a318123efd93f1a40f532"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -544,6 +553,12 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_fac
 <tr class="memitem:a49fe052d14ea52972f23f6ab3afa8df7" id="r_a49fe052d14ea52972f23f6ab3afa8df7"><td class="memItemLeft" align="right" valign="top"><a id="a49fe052d14ea52972f23f6ab3afa8df7" name="a49fe052d14ea52972f23f6ab3afa8df7"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_use_link_condition</b> = true</td></tr>
 <tr class="separator:a49fe052d14ea52972f23f6ab3afa8df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79516a5d31532929a3b3b916b814ff93" id="r_a79516a5d31532929a3b3b916b814ff93"><td class="memItemLeft" align="right" valign="top"><a id="a79516a5d31532929a3b3b916b814ff93" name="a79516a5d31532929a3b3b916b814ff93"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_history</b></td></tr>
+<tr class="separator:a79516a5d31532929a3b3b916b814ff93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfc8b14ffcac1fecff6f18eb42ad658d" id="r_abfc8b14ffcac1fecff6f18eb42ad658d"><td class="memItemLeft" align="right" valign="top"><a id="abfc8b14ffcac1fecff6f18eb42ad658d" name="abfc8b14ffcac1fecff6f18eb42ad658d"></a>
+std::function&lt; Eigen::Vector3d(size_t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_history_position</b></td></tr>
+<tr class="separator:abfc8b14ffcac1fecff6f18eb42ad658d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a852800c3ada3a82e38a4d955ff2e6794" id="r_a852800c3ada3a82e38a4d955ff2e6794"><td class="memItemLeft" align="right" valign="top"><a id="a852800c3ada3a82e38a4d955ff2e6794" name="a852800c3ada3a82e38a4d955ff2e6794"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html#a204d98a521bf730c6ddf2080a6aa416c">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:a852800c3ada3a82e38a4d955ff2e6794"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -894,6 +909,33 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 <p>collapse edge rollback </p>
+
+</div>
+</div>
+<a id="a1f6364a3f9a0a3c0db81d69e65c50750" name="a1f6364a3f9a0a3c0db81d69e65c50750"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f6364a3f9a0a3c0db81d69e65c50750">&#9670;&#160;</a></span>commit_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TriMesh::commit_history </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1history_1_1_edit.html">history::Edit</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>e</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Adds the position of every live vertex the operation wrote &ndash; the vertex journal, so call it before <a class="el" href="classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4" title="End the modification phase.">release_protect_attributes()</a> &ndash; and appends the edit, if recording. </p>
 
 </div>
 </div>
@@ -1988,6 +2030,27 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1d390ec515a74231442cf1e249e65f1e">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+
+</div>
+</div>
+<a id="ab2fe8e5154680afc64adefa61a187cc5" name="ab2fe8e5154680afc64adefa61a187cc5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2fe8e5154680afc64adefa61a187cc5">&#9670;&#160;</a></span>start_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt; TriMesh::start_history </td>
+          <td>(</td>
+          <td class="paramtype">std::function&lt; Eigen::Vector3d(size_t)&gt;&#160;</td>
+          <td class="paramname"><em>position</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Record every operation this mesh commits from now on (see wmtk/history). </p>
+<p>Snapshots the current complex and returns the recorder the edits go to. <code>position(v)</code> gives the position of vertex v. It is called at the snapshot, and then for every vertex an operation wrote, from inside that operation while its locks are held, so it must read through const attribute access. Recording changes nothing about what the operations do. </p>
 
 </div>
 </div>
