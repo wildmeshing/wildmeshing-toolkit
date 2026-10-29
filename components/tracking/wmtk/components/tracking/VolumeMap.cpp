@@ -131,6 +131,8 @@ struct VolumeMap::OpMap
     /// A real vertex after the operation -> its name in the pairs' complex after (a collapse
     /// mapped the other way round).
     std::map<Vid, Vid> rename;
+    /// Whether it keeps the tracked surface, so each region (VolumeMapStats::surface_not_kept).
+    bool keeps_surface = true;
     /// About the memory it holds, in bytes, and what it shares among its pairs (the cell
     /// index of the cap maps).
     size_t bytes() const
@@ -394,10 +396,14 @@ public:
             m_op = std::make_unique<VolumeMap::OpMap>();
             if (!volume_only()) throw;
             ++m_stats.surface_not_kept;
+            m_op->keeps_surface = false;
             m_op->shared_bytes = m_cell_index->bytes();
             return std::move(m_op);
         }
-        if (!keeps_surface()) ++m_stats.surface_not_kept;
+        if (!keeps_surface()) {
+            ++m_stats.surface_not_kept;
+            m_op->keeps_surface = false;
+        }
         m_op->shared_bytes = m_cell_index->bytes();
         return std::move(m_op);
     }
@@ -1594,7 +1600,12 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
                 ++seen.through_failed;
                 continue;
             }
-            if (it->second != pts[n].region) ++seen.region_changed;
+            if (it->second != pts[n].region) {
+                ++seen.region_changed;
+                // a map that does not keep the surface takes the point into another region:
+                // it is in that one now, for the operations that follow
+                if (!om->keeps_surface) pts[n].region = it->second;
+            }
             // in a tet no pair maps and whose corners stay: the point stays, exactly
             if (!mapped && t == t0 &&
                 std::all_of(t.begin(), t.end(), [&](Vid v) { return X1[v] == X2[v]; })) {

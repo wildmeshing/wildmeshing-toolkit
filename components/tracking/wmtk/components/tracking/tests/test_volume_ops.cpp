@@ -756,6 +756,32 @@ TEST_CASE("volume-ops", "[volume_map]")
     }
 }
 
+TEST_CASE("volume-ops-volume-only", "[volume_map]")
+{
+    // Surface vertices collapsed far, onto the box where the sheet's boundary is, which no pair
+    // keeping the surface maps: each such operation is mapped as a bijection of the volume
+    // alone ("volume only"). A point may change region there -- and is in its new region for
+    // the operations after -- but does not leave the volume nor lose its orientation, and comes
+    // back.
+    Scene sc = Scene::grid(4, 2, 1);
+    sc.envelope = std::numeric_limits<double>::infinity();
+    sc.start();
+    random_run(sc, 1, 3000, true);
+    const VolumeMap map(sc.surface_history(), sc.volume_history());
+    map.build_all();
+    CHECK(map.stats().failed == 0);
+    CHECK(map.stats().surface_not_kept > 0);
+    CHECK(kinds(map).count("volume only") > 0);
+    std::vector<size_t> all(sc.first().P.size());
+    for (size_t i = 0; i < all.size(); ++i) all[i] = i;
+    const Checked c = check_map(sc, map, all, 500);
+    CHECK(c.located == c.points);
+    CHECK(c.det_positive == c.points);
+    CHECK(c.moved > 0);
+    CHECK(c.round_trip < 1e-9);
+    CHECK(map.stats().region_changed > 0);
+}
+
 TEST_CASE("volume-ops-swap-decomposition", "[volume_map]")
 {
     // tetwild's 3-2 flip of a sliver on the surface, one region all round: the tracked faces

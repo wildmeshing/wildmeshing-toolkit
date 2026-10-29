@@ -49,7 +49,8 @@ struct VolumeMapStats
     /// operation maps it.
     size_t surface_not_kept = 0;
     /// Points that ended in a tet of another region, which a bijection of each region never
-    /// does; points whose op map failed.
+    /// does -- through a map that does not keep the surface, the point is in that region from
+    /// then on; points whose op map failed.
     size_t region_changed = 0, through_failed = 0;
     /// The operations' maps kept for later calls (VolumeMapOptions::cache_bytes), and about the
     /// bytes they take, now.
