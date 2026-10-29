@@ -727,6 +727,38 @@ TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]")
     }
 }
 
+TEST_CASE("cleanup-collapses-keep-the-length-limit", "[test_remeshing][features]")
+{
+    // A grid of unit squares with (4, 4) pulled almost onto (5, 4): thin triangles, whose short
+    // edge the repairs try to collapse first. Every edge the collapse leaves is about 1, over 4/3
+    // of the target 0.6, so once a collapse pass has set that target the repairs refuse it --
+    // with limit_collapse_length or without -- and mend the triangles another way. Without a
+    // target, they collapse it.
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    grid(8, V, F);
+    V[4 * 9 + 4] = Eigen::Vector3d(4.93, 4, 0);
+    for (const auto& [limit, target] :
+         {std::pair{false, false}, std::pair{false, true}, std::pair{true, true}}) {
+        INFO("limit " << limit << ", target " << target);
+        IsotropicRemeshing m(V, 0);
+        m.set_cleanup_angle(30);
+        m.create_mesh(V.size(), F);
+        if (target) {
+            // With the limit, the collapse pass refuses the collapse too.
+            m.set_limit_collapse_length(true);
+            m.collapse_remeshing(0.6);
+            REQUIRE(m.get_vertices().size() == V.size());
+        }
+        m.set_limit_collapse_length(limit);
+        REQUIRE(smallest_angle(m) < 5);
+        CHECK(m.cleanup_triangles(30) > 0);
+        REQUIRE(m.check_mesh_connectivity_validity());
+        CHECK(smallest_angle(m) > 20);
+        CHECK((m.get_vertices().size() == V.size()) == target);
+    }
+}
+
 TEST_CASE("features-history-replays-to-the-output", "[test_remeshing][features][history]")
 {
     // The passes this adds edit the mesh through the recorded operations only -- the cleanup's

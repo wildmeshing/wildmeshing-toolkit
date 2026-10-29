@@ -218,7 +218,8 @@ public:
      * @brief Refuse a collapse that leaves an edge longer than 4/3 of the target length -- the
      * split threshold -- as Botsch and Kobbelt's remeshing does. Off by default: a collapse is
      * then judged by the edge it removes alone, and those of the last iteration leave edges
-     * that no split comes after to cut.
+     * that no split comes after to cut. cleanup_triangles() holds its collapses to the same
+     * bound, on or off (see there).
      */
     void set_limit_collapse_length(bool limit) { m_limit_collapse_length = limit; }
     /**
@@ -242,8 +243,11 @@ public:
      * along it -- to where the smallest angle of its star is largest. Allowed means the curve
      * rules, the envelopes and the fixed vertices hold, as everywhere; the operation folds nothing
      * by the rule of the fold check (see set_check_inversions; on or off, the repairs keep it);
-     * and it raises the smallest angle of the triangles it leaves over that of the triangles
-     * around the one repaired (of its star, for a move). Where what it replaces folds already, the
+     * a collapse leaves no edge longer than 4/3 of the target of the last collapse_remeshing(),
+     * with set_limit_collapse_length() or without -- the repairs mend angles and are not to
+     * coarsen the mesh, and those after the last iteration have no split after them; and it
+     * raises the smallest angle of the triangles it leaves over that of the triangles around
+     * the one repaired (of its star, for a move). Where what it replaces folds already, the
      * fold check, which judges against those triangles, can count a repair of the fold as one
      * more: there an operation that leaves fewer triangles facing against the input next to them
      * -- the input triangles within half their size plus the envelope, of the same face fields

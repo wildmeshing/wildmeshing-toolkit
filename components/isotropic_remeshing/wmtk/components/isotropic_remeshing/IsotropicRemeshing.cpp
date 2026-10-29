@@ -854,9 +854,20 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     vertex_attrs[vid].partition_id = cache.partition_id;
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
 
+    // The repairs' collapses keep the limit whether it is on or not: see cleanup_triangles().
+    const auto too_long = [&]() {
+        if (!(m_limit_collapse_length || m_cleaning) || m_collapse_target <= 0) return false;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+            if ((vertex_attrs[e.vid(*this)].pos - p).norm() > 4. / 3. * m_collapse_target) {
+                return true;
+            }
+        }
+        return false;
+    };
     if (m_cleaning) {
-        // See cleanup_triangles(): the fold check, and where there is a fold the input's
-        // orientation.
+        // See cleanup_triangles(): the length limit, the fold check, and where there is a fold
+        // the input's orientation.
+        if (too_long()) return false;
         return cleanup_allows(
             get_one_ring_tris_for_vertex(t),
             cache.replaced,
@@ -866,14 +877,7 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     if (m_check_inversions && folds(get_one_ring_tris_for_vertex(t), cache.replaced)) {
         return false;
     }
-    if (m_limit_collapse_length && m_collapse_target > 0) {
-        for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
-            if ((vertex_attrs[e.vid(*this)].pos - p).norm() > 4. / 3. * m_collapse_target) {
-                return false;
-            }
-        }
-    }
-    return true;
+    return !too_long();
 }
 
 bool IsotropicRemeshing::split_edge_before(const Tuple& t)
