@@ -1,3 +1,4 @@
+#include <igl/read_triangle_mesh.h>
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/history/History.hpp>
@@ -708,6 +709,59 @@ TEST_CASE("cleanup-needs-the-angle-before-create-mesh", "[test_remeshing][featur
     CHECK_THROWS(m.cleanup_triangles(30));
     m.set_cleanup_angle(30); // too late
     CHECK_THROWS(m.cleanup_triangles(30));
+}
+
+TEST_CASE("output-format-leaves-the-mesh", "[test_remeshing][features]")
+{
+    // A slab labelled by the side each triangle faces, through feature_fields, with a vertex of
+    // the top pushed past its neighbour: a fold, where the repairs read the input's orientation,
+    // of the same labels only -- next to a thin wall it is noise otherwise. The .vtu output
+    // writes the labels and the .obj does not; the mesh is the same.
+    const TempDir dir;
+    std::vector<Eigen::Vector3d> V;
+    std::vector<std::array<size_t, 3>> F;
+    slab(4, 8, 0.1, 0, V, F);
+    V[1 * 9 + 3].x() += 0.65;
+    {
+        MshData msh;
+        msh.add_face_vertices(V.size(), [&](size_t i) { return V[i]; });
+        msh.add_faces(F.size(), [&](size_t i) { return F[i]; });
+        msh.add_face_attribute<1>("patch_id", [&](size_t i) {
+            const Eigen::Vector3d n = (V[F[i][1]] - V[F[i][0]]).cross(V[F[i][2]] - V[F[i][0]]);
+            Eigen::Index axis;
+            n.cwiseAbs().maxCoeff(&axis);
+            return double(2 * axis + (n[axis] > 0));
+        });
+        msh.save((dir.path / "in.msh").string());
+    }
+    std::map<std::string, nlohmann::json> reports;
+    for (const std::string ext : {"vtu", "obj"}) {
+        isotropic_remeshing(
+            {{"application", "isotropic_remeshing"},
+             {"input", "in.msh"},
+             {"input_dir", dir.path.string()},
+             {"output", (dir.path / ("out." + ext)).string()},
+             {"report", (dir.path / (ext + ".json")).string()},
+             {"feature_fields", {"patch_id"}},
+             {"length_abs", 0.6},
+             {"eps_rel", 0.001},
+             {"max_iterations", 2},
+             {"cleanup_angle", 35},
+             {"freeze_boundary", false}});
+        std::ifstream(dir.path / (ext + ".json")) >> reports[ext];
+        reports[ext].erase("time_sec");
+    }
+    CHECK(reports["vtu"] == reports["obj"]);
+    Eigen::MatrixXd OV;
+    Eigen::MatrixXi OF;
+    REQUIRE(igl::read_triangle_mesh((dir.path / "out.obj").string(), OV, OF));
+    const auto conn = vtu_array<int64_t>((dir.path / "out.vtu").string(), "connectivity");
+    REQUIRE(conn.size() == size_t(3 * OF.rows()));
+    size_t differ = 0;
+    for (Eigen::Index f = 0; f < OF.rows(); ++f) {
+        for (int k = 0; k < 3; ++k) differ += conn[3 * f + k] != OF(f, k);
+    }
+    CHECK(differ == 0);
 }
 
 TEST_CASE("cleanup-folds-nothing-on-a-thin-wall", "[test_remeshing][features]")

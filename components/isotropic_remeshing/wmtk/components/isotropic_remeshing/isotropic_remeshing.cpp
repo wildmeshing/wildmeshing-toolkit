@@ -512,7 +512,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 : ", with the boundaries of " + nlohmann::json(feature_fields).dump(),
             features.vertices.size());
     }
-    if (vtu_output && !fields.face_fields.empty()) m.set_face_fields(fields.face_values);
+    // Whatever the output: the repairs read them where there is a fold (see
+    // IsotropicRemeshing::cleanup_triangles), and the mesh may not depend on whether they are
+    // written.
+    if (!fields.face_fields.empty()) m.set_face_fields(fields.face_values);
 
     std::shared_ptr<history::Recorder> history;
     if (!history_output.empty()) {
