@@ -84,7 +84,8 @@ attributes never pass through Float64. Computation releases the Python GIL. Comp
 contracts and the shared readers' and writers' supported formats are the same as in C++.
 
 Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`,
-and those of surface tracking with `-p test_tracking.py`; they are also included in the wheel tests.
+and those of tracking -- histories and `wm.Tracking` / `wm.CurveTracking` -- with
+`-p test_tracking.py`; they are also included in the wheel tests.
 
 ## MeshData
 
@@ -129,7 +130,7 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
-| `tracking` (`transfer`) | `input`; optional `tet_mesh` | The triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
+| `tracking` | none for `info` and `features`; `transfer`: `input`, optional `tet_mesh` | The history as bytes (option `history`, not a mesh). `transfer`: the triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
@@ -196,21 +197,26 @@ another; the Python bindings release the GIL, but a second call still waits for 
 `num_threads` for parallelism within a call. Existing algorithm options, filtering,
 cleaning, and exact-arithmetic decisions are shared between the two routes.
 
-## Surface histories
+## Histories
 
 `isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild` and simwild in 3D record the
-history of their surface with `history_output`, from which `tracking` rebuilds the map
-between input and output. The file route saves it to that file. The memory route writes no file:
-any non-empty `history_output` turns the recording on, and the report returns the history as
-`history`, the bytes of the file the file route would write -- a `nlohmann::json` binary value in
-C++. On the memory route the history starts at the meshes given and ends at the meshes returned.
+history of their surface with `history_output`, and `triwild` the history of its curves, from
+which `tracking` rebuilds the map between input and output (see `docs/tracking.md`). The file
+route saves it to that file. The memory route writes no file: any non-empty `history_output`
+turns the recording on, and the report returns the history as `history`, the bytes of the file
+the file route would write -- a `nlohmann::json` binary value in C++. On the memory route the
+history starts at the meshes given and ends at the meshes returned.
 `history::write_history(path, bytes)` saves the bytes as that file, unchanged, and
 `history::read_history(path)` reads them back, as `io::write_mesh` and `io::read_mesh` do for a
-mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
-mesh.
+mesh; `history::SurfaceHistory::from_bytes` and `history::CurveHistory::from_bytes` load them,
+and `history::face_size(bytes)` says which they hold (3 corners a face, or 2). The history file
+is its own format, not a mesh.
 
 `tracking` takes the bytes as `history` on the memory route, where a string is refused, as
-every memory call refuses to take a name for a file. `info` returns its report. `transfer` needs
+every memory call refuses to take a name for a file. `info` returns its report, of a surface or
+of a curve history. `features`, on a curve history, returns its feature points in the report:
+`feature_points`, pairs of an input vertex and the output vertex it became, -1 for none (an
+Int64 array of two columns in NumPy). `transfer`, on a surface history, needs
 `input`, the mesh the history starts from -- the history's own parameters name meshes of an
 earlier call, or files, neither of which the memory route reads -- and returns the output
 surface as `mesh`, the carried fields as triangle attributes, per face or, for `uv` and
@@ -218,7 +224,9 @@ surface as `mesh`, the carried fields as triangle attributes, per face or, for `
 each output face comes from. With `tet_mesh`, the tet mesh the history ends at, it also returns
 that mesh as `tet_mesh` with the fields on the rows of its triangle block: a tracked face already
 there (a face tag) on its row, any other on a row added after them. `map`, whose points are text
-files, is refused on the memory route.
+files, is refused on the memory route: points are mapped in memory by `Tracking` and
+`CurveTracking` (`components/tracking/.../tracking.hpp`), in Python `wm.Tracking` and
+`wm.CurveTracking`.
 
 In Python the history is `bytes`: the bindings return a report's binary values as `bytes`, and
 pass `bytes` in the options as binary values (pybind11_json alone would make them base64 text).
@@ -229,7 +237,19 @@ outputs, report = wm.isotropic_remeshing(
     {"input": "surface", "history_output": "record"}, {"surface": surface})
 wm.write_history("remeshed.wmtkhist", report["history"])  # the file the file route writes
 history = wm.read_history("remeshed.wmtkhist")            # the same bytes
+
+t = wm.Tracking(history)                  # the map; wm.Tracking.load(path) from the file
+ids, bary = t.to_output(faces, bary)      # int64 (n,), float64 (n, 3): points on the input
+faces, bary = t.to_input(ids, bary)       # and back; -1 (and NaN) for a point with no image
 ```
+
+`wm.CurveTracking` does the same for a curve history: segments of the input curve files `(n,)`
+and coordinates `(n, 2)` to two vertices of the output mesh `(n, 2)`, and back, and
+`feature_points()`. Ids are `(n,)` faces or segments, or `(n, 3)` / `(n, 2)` vertices on a side
+named by a mesh's vertices (`output_by_vertices`, `input_by_vertices`); `warnings=True` adds the
+call's warnings as a third element. Building a map holds the process-wide lock, as its loading
+logs; mapping releases the GIL and changes nothing, so threads may share one object.
+`docs/tracking.md` has the details.
 
 ## Shared file utilities
 

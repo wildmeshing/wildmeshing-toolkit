@@ -1,10 +1,9 @@
 # Tracking: recording, mapping, extending
 
 Notes on the tracking framework added for BijectiveRemesh (arXiv 2605.30744): how it works, how
-to use it, how to bring it to another application, and how to check that it is right. Written
-from the implementation on the `danielepanozzo/surface-history` branch (surfaces) and
-`danielepanozzo/curve-tracking` (curves, triwild); file paths are relative to the repository
-root.
+to use it, how to bring it to another application, and how to check that it is right, for
+surfaces and for curves (triwild). File paths are relative to the repository root; the memory
+interface is in `docs/in-memory-io.md`.
 
 ## What it is for
 
@@ -140,8 +139,8 @@ as from their files, and return it as bytes, curves as surfaces. `tracking(optio
 takes the history as bytes: it runs `info` on a surface or a curve history and returns its
 report, `transfer` on a surface, and `features` on curves, whose report holds the feature points
 (`feature_points`, pairs of an input and an output vertex, `-1` for none); `map`, whose points
-are text files, throws there: `Tracking` and `CurveTracking` map points in memory. The tests `tracking-memory-route` (isotropic) and
-`tracking-memory-route-triwild` (curves) run both.
+are text files, throws there: `Tracking` and `CurveTracking` map points in memory. The tests
+`tracking-memory-route` (isotropic) and `tracking-memory-route-triwild` (curves) run both.
 
 Remapping attributes:
 - **Per face.** Map each output face's centroid `to_input` and take the input face's value.
