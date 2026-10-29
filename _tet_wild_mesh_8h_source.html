@@ -457,34 +457,31 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>    }</div>
 <div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>    <span class="keywordtype">void</span> optimization_sanity_checks_extra() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span> </div>
-<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>    <span class="comment">// initialize sizing field (for topology preservation)</span></div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>    <span class="keywordtype">void</span> init_sizing_field();</div>
-<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span> </div>
-<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span><span class="keyword">public</span>:</div>
-<div class="foldopen" id="foldopen00490" data-start="{" data-end="};">
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">  490</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a></div>
-<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>    {</div>
-<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>        <span class="comment">// tet mesh</span></div>
-<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>        MatrixXd V;</div>
-<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>        MatrixXi T;</div>
-<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>        <span class="comment">// tracked surface</span></div>
-<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>        MatrixXi F;</div>
-<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>        <span class="comment">// attributes; the ones the finalization did not compute (see m_has_parts and the</span></div>
-<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>        <span class="comment">// m_has_*_winding_number flags) hold their defaults: 0, and -1 for the part</span></div>
-<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>        VectorXd t_amips;</div>
-<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>        VectorXd t_winding_number_input;</div>
-<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>        VectorXd t_winding_number_tracked;</div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>        MatrixXd t_winding_number_per_input;</div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        VectorXi t_part;</div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>    };</div>
+<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span><span class="keyword">public</span>:</div>
+<div class="foldopen" id="foldopen00487" data-start="{" data-end="};">
+<div class="line"><a id="l00487" name="l00487"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">  487</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a></div>
+<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>    {</div>
+<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span>        <span class="comment">// tet mesh</span></div>
+<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span>        MatrixXd V;</div>
+<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>        MatrixXi T;</div>
+<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>        <span class="comment">// tracked surface</span></div>
+<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>        MatrixXi F;</div>
+<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>        <span class="comment">// attributes; the ones the finalization did not compute (see m_has_parts and the</span></div>
+<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>        <span class="comment">// m_has_*_winding_number flags) hold their defaults: 0, and -1 for the part</span></div>
+<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>        VectorXd t_amips;</div>
+<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>        VectorXd t_winding_number_input;</div>
+<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>        VectorXd t_winding_number_tracked;</div>
+<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>        MatrixXd t_winding_number_per_input;</div>
+<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>        VectorXi t_part;</div>
+<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>    };</div>
 </div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>    <span class="comment">// export functionality</span></div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a> export_mesh_data() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>};</div>
+<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>    <span class="comment">// export functionality</span></div>
+<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">ExportStruct</a> export_mesh_data() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>};</div>
 </div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span> </div>
-<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span> </div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
+<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span> </div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span> </div>
+<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
 <div class="ttc" id="aclasswmtk_1_1_attribute_container_group_html"><div class="ttname"><a href="classwmtk_1_1_attribute_container_group.html">wmtk::AttributeContainerGroup</a></div><div class="ttdoc">Several attribute collections for the same simplex type, behind one container.</div><div class="ttdef"><b>Definition</b> AttributeCollection.hpp:140</div></div>
 <div class="ttc" id="aclasswmtk_1_1_input_envelopes_html"><div class="ttname"><a href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a></div><div class="ttdoc">One envelope per input, and the containment and the pull of an INPUT SET (bit i = input i; see Surfac...</div><div class="ttdef"><b>Definition</b> CompositeEnvelopes.hpp:152</div></div>
 <div class="ttc" id="aclasswmtk_1_1_surface_tag_attributes_html"><div class="ttname"><a href="classwmtk_1_1_surface_tag_attributes.html">wmtk::SurfaceTagAttributes</a></div><div class="ttdef"><b>Definition</b> SurfaceTagAttributes.h:24</div></div>
@@ -511,7 +508,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="astructwmtk_1_1_attribute_collection_html"><div class="ttname"><a href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a></div><div class="ttdef"><b>Definition</b> AttributeCollection.hpp:40</div></div>
 <div class="ttc" id="astructwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes_html"><div class="ttname"><a href="structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html">wmtk::TetOptimizerMesh::VertexAttributes</a></div><div class="ttdef"><b>Definition</b> TetOptimizerMesh.h:51</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">wmtk::components::tetwild::Parameters</a></div><div class="ttdoc">The fields shared with triwild and simwild live in wmtk::OptimizerParameters.</div><div class="ttdef"><b>Definition</b> Parameters.h:8</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">wmtk::components::tetwild::TetWildMesh::ExportStruct</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:491</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html">wmtk::components::tetwild::TetWildMesh::ExportStruct</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:488</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_triangle_insertion_local_info_cache_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_triangle_insertion_local_info_cache.html">wmtk::components::tetwild::TetWildMesh::TriangleInsertionLocalInfoCache</a></div><div class="ttdef"><b>Definition</b> TetWildMesh.h:379</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html">wmtk::components::tetwild::TetWildMesh::VertexExtras</a></div><div class="ttdoc">tetwild's per-vertex additions to the shared VertexAttributes.</div><div class="ttdef"><b>Definition</b> TetWildMesh.h:77</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras_html_a7e97d9d2a3745a8f174cadcf3dbd0067"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html#a7e97d9d2a3745a8f174cadcf3dbd0067">wmtk::components::tetwild::TetWildMesh::VertexExtras::m_is_on_open_boundary</a></div><div class="ttdeci">bool m_is_on_open_boundary</div><div class="ttdef"><b>Definition</b> TetWildMesh.h:82</div></div>
