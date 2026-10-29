@@ -83,8 +83,8 @@ into subsequent memory calls. Connectivity is never truncated from floating poin
 attributes never pass through Float64. Computation releases the Python GIL. Component attribute
 contracts and the shared readers' and writers' supported formats are the same as in C++.
 
-Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`;
-they are also included in the wheel tests.
+Run the Python memory tests with `python -m unittest discover -s tests/python -p test_memory_io.py`,
+and those of surface tracking with `-p test_tracking.py`; they are also included in the wheel tests.
 
 ## MeshData
 
@@ -129,6 +129,7 @@ attributes" below) ignore the fields `io::read_mesh` attaches to plain geometry 
 | `manifold_extraction` | `input`; optional `envelope` | Tagged triangle/tet mesh |
 | `prismatic_mesh` | `input` | Tet construction mesh with `corr_input_vid` and cell region memberships |
 | `c1_simplification` | `surface_mesh`, `uv_mesh` | Surface triangle `dofs` (Float64, 36 columns), vertex `is_cone` (UInt8, 1 column); UV triangle geometry |
+| `surface_map` (`transfer`) | `input`; optional `tet_mesh` | The triangle surface the history starts from, whose triangle attributes it carries (`uv`, `normal` per corner, any other per face), no vertex attributes; the tet mesh the history ends at |
 
 For tagged inputs, `tags` on the top-dimensional cells names their regions, such as `tag_0`. A
 column labelled `ambient` is the background, as is a cell without a tag; a mesh without a `tags`
@@ -162,6 +163,8 @@ geometry under fixed keys:
 - Prismatic `export_input_and_shell` adds `input_and_shell` and its classified offset faces as
   `input_and_shell_offset`; with `prism_dominant`, the report adds that export's
   `input_and_shell_hybrid` report, as in its `_hybrid.json` file.
+- `history_input`: simwild's, with `history_output`, the tagged tet mesh its surface history
+  starts from (the file route's `<output>_history_input.msh`).
 
 For tetwild, triwild, simwild and topological_offset, `surface`, `edges` and `offset` share the
 `mesh` vertex rows: their connectivity indexes the same `V`, with the same vertex fields, so row
@@ -192,6 +195,41 @@ one process-wide lock for its whole duration, so calls from several threads run 
 another; the Python bindings release the GIL, but a second call still waits for the first. Use
 `num_threads` for parallelism within a call. Existing algorithm options, filtering,
 cleaning, and exact-arithmetic decisions are shared between the two routes.
+
+## Surface histories
+
+`isotropic_remeshing`, `qslim`, `shortest_edge_collapse`, `tetwild` and simwild in 3D record the
+history of their surface with `history_output`, from which `surface_map` rebuilds the map
+between input and output. The file route saves it to that file. The memory route writes no file:
+any non-empty `history_output` turns the recording on, and the report returns the history as
+`history`, the bytes of the file the file route would write -- a `nlohmann::json` binary value in
+C++. On the memory route the history starts at the meshes given and ends at the meshes returned.
+`history::write_history(path, bytes)` saves the bytes as that file, unchanged, and
+`history::read_history(path)` reads them back, as `io::write_mesh` and `io::read_mesh` do for a
+mesh; `history::SurfaceHistory::from_bytes` loads them. The history file is its own format, not a
+mesh.
+
+`surface_map` takes the bytes as `history` on the memory route, where a string is refused, as
+every memory call refuses to take a name for a file. `info` returns its report. `transfer` needs
+`input`, the mesh the history starts from -- the history's own parameters name meshes of an
+earlier call, or files, neither of which the memory route reads -- and returns the output
+surface as `mesh`, the carried fields as triangle attributes, per face or, for `uv` and
+`normal`, three values per corner (`uv`: six columns), with `input_face` (Int64), the input face
+each output face comes from. With `tet_mesh`, the tet mesh the history ends at, it also returns
+that mesh as `tet_mesh` with the fields on the rows of its triangle block: a tracked face already
+there (a face tag) on its row, any other on a row added after them. `map`, whose points are text
+files, is refused on the memory route.
+
+In Python the history is `bytes`: the bindings return a report's binary values as `bytes`, and
+pass `bytes` in the options as binary values (pybind11_json alone would make them base64 text).
+`wm.write_history(path, history)` and `wm.read_history(path)` are the two file functions:
+
+```python
+outputs, report = wm.isotropic_remeshing(
+    {"input": "surface", "history_output": "record"}, {"surface": surface})
+wm.write_history("remeshed.wmtkhist", report["history"])  # the file the file route writes
+history = wm.read_history("remeshed.wmtkhist")            # the same bytes
+```
 
 ## Shared file utilities
 

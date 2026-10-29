@@ -10,6 +10,7 @@ add_component_test(${COMPONENT_NAME})
 set(SRC_FILES
     test_remeshing.cpp
     test_remeshing_boundary.cpp
+    test_remeshing_history.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

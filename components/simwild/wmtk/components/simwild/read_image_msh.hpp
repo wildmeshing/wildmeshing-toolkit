@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -29,6 +30,14 @@ struct InputData
     std::vector<uint64_t> F_envelope_labels;
     /// Name of the physical group the envelope curves came from; empty when there was none.
     std::string envelope_name;
+
+    /// A surface input with a history to record (history_output): the files as read and what
+    /// became of them before the arrangement, and the input triangles each surface facet of the
+    /// embedding lies on, by its corners' positions sorted. Empty otherwise.
+    bool has_input_history = false;
+    history::SurfaceHistory input_history;
+    std::vector<std::pair<std::array<std::array<double, 3>, 3>, std::vector<uint32_t>>>
+        facet_sources;
 };
 
 /**

@@ -7,13 +7,100 @@
 
 #include <wmtk/utils/getRSS.h>
 #include <wmtk/Types.hpp>
+#include <wmtk/history/InputHistory.hpp>
+#include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
+#include <wmtk/utils/io.hpp>
 #include <wmtk/utils/resolve_path.hpp>
+
+#include <map>
 
 #include <isotropic_remeshing_spec.hpp>
 #include "IsotropicRemeshing.h"
 
 namespace wmtk::components::isotropic_remeshing {
+
+namespace {
+
+/// The edges between two faces that differ in any of `fields`, triangle fields of the mesh file
+/// `path` as io::read_mesh reads it, whose triangles are `tris` in row order. A per-corner field
+/// (io::read_mesh's uv and normal: three values per corner, corner after corner) differs across
+/// an edge where the two faces disagree on it at either end: a texture seam, say.
+std::vector<std::array<size_t, 2>> field_boundaries(
+    const std::string& path,
+    const std::vector<std::array<size_t, 3>>& tris,
+    const std::vector<std::string>& fields)
+{
+    MeshData mesh;
+    try {
+        mesh = io::read_mesh(path);
+    } catch (const std::exception& e) {
+        log_and_throw_error("feature_fields: could not read {}: {}", path, e.what());
+    }
+    const auto it = mesh.cells.find(CellType::Triangle);
+    const Eigen::Index n_faces = it == mesh.cells.end() ? 0 : it->second.connectivity.rows();
+    if (size_t(n_faces) != tris.size()) {
+        log_and_throw_error(
+            "feature_fields: reading {} dropped faces ({} of {} left), so its fields no longer "
+            "line up with the triangles",
+            path,
+            tris.size(),
+            n_faces);
+    }
+    std::vector<std::vector<double>> value(tris.size());
+    std::vector<std::array<std::vector<double>, 3>> corner_value(tris.size());
+    for (const std::string& name : fields) {
+        const auto a = it->second.attributes.find(name);
+        if (a == it->second.attributes.end()) {
+            log_and_throw_error("feature_fields: {} has no field {}", path, name);
+        }
+        const DataMatrix<double> values = a->second.doubles();
+        const bool corner = io::ComponentIO::reader_corner_attributes.count(name) > 0;
+        if (corner && values.cols() % 3 != 0) {
+            log_and_throw_error(
+                "feature_fields: {} in {} holds a value per corner, but has {} columns",
+                name,
+                path,
+                values.cols());
+        }
+        const Eigen::Index k = values.cols() / 3;
+        for (size_t f = 0; f < tris.size(); ++f) {
+            const double* row = values.row(f).data();
+            if (!corner) {
+                value[f].insert(value[f].end(), row, row + values.cols());
+                continue;
+            }
+            for (int c = 0; c < 3; ++c) {
+                corner_value[f][c].insert(corner_value[f][c].end(), row + c * k, row + (c + 1) * k);
+            }
+        }
+    }
+    const auto at = [&](size_t f, size_t v) -> const std::vector<double>& {
+        for (int c = 0; c < 3; ++c) {
+            if (tris[f][c] == v) return corner_value[f][c];
+        }
+        return corner_value[f][0];
+    };
+    std::map<std::array<size_t, 2>, std::vector<size_t>> edge_faces;
+    for (size_t f = 0; f < tris.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            size_t a = tris[f][k], b = tris[f][(k + 1) % 3];
+            if (a > b) std::swap(a, b);
+            edge_faces[{{a, b}}].push_back(f);
+        }
+    }
+    std::vector<std::array<size_t, 2>> edges;
+    for (const auto& [e, fs] : edge_faces) {
+        if (fs.size() != 2) continue;
+        const size_t f = fs[0], g = fs[1];
+        if (value[f] != value[g] || at(f, e[0]) != at(g, e[0]) || at(f, e[1]) != at(g, e[1])) {
+            edges.push_back(e);
+        }
+    }
+    return edges;
+}
+
+} // namespace
 
 double
 run_remeshing(std::string input, double len, std::string output, IsotropicRemeshing& m, int itrs)
@@ -79,7 +166,16 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const bool sample_envelope = json_params["use_sample_envelope"];
     const bool freeze_boundary = json_params["freeze_boundary"];
     const bool use_link_condition = json_params["use_link_condition"];
+    const bool check_inversions = json_params["check_inversions"];
     const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const std::string history_output = json_params["history_output"];
+    const std::vector<std::string> feature_fields = json_params["feature_fields"];
+    // The fields are read from the .msh file the input names; a memory input carries none.
+    if (component_io.memory() && !feature_fields.empty()) {
+        throw std::runtime_error(
+            "isotropic_remeshing: feature_fields reads per-face fields from the input .msh file, "
+            "which the memory route does not have");
+    }
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -87,10 +183,20 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     std::vector<std::array<size_t, 3>> tris;
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
+    // With a history: the file as read and the vertex of the mesh each of its vertices became,
+    // so that the history starts at the file itself.
+    wmtk::io::ReadProvenance read;
     {
         MatrixXd V;
         MatrixXi F;
-        component_io.triangles(input_path, V, F, remove_duplicate_eps);
+        component_io.triangles(
+            std::vector<std::string>{input_path},
+            V,
+            F,
+            remove_duplicate_eps,
+            -1,
+            nullptr,
+            history_output.empty() ? nullptr : &read);
         box_minmax.first = V.colwise().minCoeff();
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
@@ -109,6 +215,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
     m.set_use_link_condition(use_link_condition);
+    m.set_check_inversions(check_inversions);
     m.create_mesh(
         verts.size(),
         tris,
@@ -149,8 +256,36 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
     logger().info("absolute target length: {}", length_abs);
 
+    if (!feature_fields.empty()) {
+        m.set_feature_edges(field_boundaries(input_path, tris, feature_fields));
+        logger().info(
+            "{} feature edges: the boundaries of {}",
+            m.feature_edges().size(),
+            nlohmann::json(feature_fields).dump());
+    }
+
+    std::shared_ptr<history::Recorder> history;
+    if (!history_output.empty()) {
+        history = m.start_history([&m](size_t v) { return m.vertex_attrs.at(v).pos; });
+        history->history().metadata = component_io.history_metadata(json_params);
+        for (const auto& e : m.feature_edges()) {
+            history->history().feature_edges.push_back({{e[0], e[1]}});
+        }
+    }
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
+    if (check_inversions) {
+        logger().info("refused {} operations that would fold the surface", m.refused_inversions());
+    }
+
+    if (history) {
+        m.stop_history();
+        // The file as read, the weld to the mesh remeshed, then the remeshing: the history maps
+        // the input file to the output file.
+        component_io.save_history(
+            history::from_input(read, verts, history->history()),
+            history_output);
+    }
 
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid after remeshing!");
@@ -188,6 +323,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["nonmanifold_edges"] = out_nm_e;
         report["nonmanifold_vertices"] = out_nm_v;
         report["use_link_condition"] = use_link_condition;
+        report["check_inversions"] = check_inversions;
+        report["refused_inversions"] = m.refused_inversions();
         component_io.result.second = report;
         if (!component_io.memory()) {
             std::ofstream fout(report_file);
@@ -208,7 +345,7 @@ ComponentResult isotropic_remeshing(nlohmann::json json_params, const MeshMap& m
 {
     io::ComponentIO context(&meshes);
     run(std::move(json_params), context);
-    return std::move(context.result);
+    return context.take_result();
 }
 
 } // namespace wmtk::components::isotropic_remeshing

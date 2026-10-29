@@ -187,6 +187,17 @@ std::tuple<double, double> SimWildMesh::optimization_quality_stats()
     return {breakdown.max_relative, breakdown.avg_relative};
 }
 
+std::array<size_t, 3> SimWildMesh::orient_tracked_face(
+    const std::array<size_t, 3>& f,
+    const std::vector<size_t>& tets) const
+{
+    if (tets.size() != 2) return TetOptimizerMesh::orient_tracked_face(f, tets);
+    const CellTag& a = m_tet_attribute.at(tets[0]).tags;
+    const CellTag& b = m_tet_attribute.at(tets[1]).tags;
+    if (a == b) return TetOptimizerMesh::orient_tracked_face(f, tets);
+    return face_out_of(a < b ? tets[0] : tets[1], f);
+}
+
 void SimWildMesh::update_attributes()
 {
     if (m_params.preserve_topology) {

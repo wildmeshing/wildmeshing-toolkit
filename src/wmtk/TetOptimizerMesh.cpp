@@ -1,4 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
+#include <wmtk/history/TrackedSurface.hpp>
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/GeoUtils.h>
@@ -132,6 +133,11 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
     // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
+    if (m_params.check_surface_folds) {
+        logger().info(
+            "refused {} operations that would fold the tracked surface",
+            m_surface_fold_refusals.load());
+    }
 }
 
 std::tuple<double, double> TetOptimizerMesh::local_operations(
@@ -167,7 +173,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     };
 
     sanity_checks();
-    update_attributes();
+    update_attributes_and_history();
     size_t retry_count = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
         if (retry_count > 0) {
@@ -228,7 +234,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                     cnt_surface_swap_56.load());
             }
             sanity_checks();
-            update_attributes();
+            update_attributes_and_history();
         }
 
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
@@ -423,7 +429,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 
 bool TetOptimizerMesh::use_colored_smoothing() const
 {
-    return NUM_THREADS > 0 && m_params.colored_smoothing;
+    return NUM_THREADS > 0 && m_params.colored_smoothing && !m_params.check_surface_folds;
 }
 
 void TetOptimizerMesh::smooth_vertices_colored(
@@ -743,6 +749,239 @@ std::vector<std::array<size_t, 3>> TetOptimizerMesh::get_faces_by_condition(
     }
 
     return res;
+}
+
+std::vector<std::array<size_t, 2>> TetOptimizerMesh::tracked_feature_edges() const
+{
+    std::vector<std::array<size_t, 2>> out;
+    if (!m_track_feature_edges) return out;
+    for (const Tuple& e : get_edges()) {
+        if (!m_feature_edge_attribute.at(e.eid(*this)).m_is_feature_edge) continue;
+        const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+        // An edge of a tracked face: a tet at it with a tracked face holding both ends.
+        bool on_surface = false;
+        for (const size_t tid : get_one_ring_tids_for_vertex(a)) {
+            const auto vs = oriented_tet_vids(tid);
+            if (std::find(vs.begin(), vs.end(), b) == vs.end()) continue;
+            for (int j = 0; j < 4 && !on_surface; ++j) {
+                if (!is_tracked_face(tid, j)) continue;
+                int held = 0;
+                for (const auto& v : get_face_vertices(tuple_from_face(tid, j))) {
+                    held += v.vid(*this) == a || v.vid(*this) == b;
+                }
+                on_surface = held == 2;
+            }
+            if (on_surface) break;
+        }
+        if (on_surface) out.push_back({{std::min(a, b), std::max(a, b)}});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+Eigen::Vector3d TetOptimizerMesh::tracked_area_normal(
+    const std::vector<std::array<size_t, 3>>& faces) const
+{
+    Eigen::Vector3d n = Eigen::Vector3d::Zero();
+    for (const auto& f : faces) {
+        const auto t = orient_tracked_face(f);
+        const auto& p = m_vertex_attribute;
+        n += (p.at(t[1]).m_posf - p.at(t[0]).m_posf).cross(p.at(t[2]).m_posf - p.at(t[0]).m_posf);
+    }
+    return n;
+}
+
+size_t TetOptimizerMesh::tracked_not_facing(
+    const std::vector<std::array<size_t, 3>>& faces,
+    const Eigen::Vector3d& n) const
+{
+    size_t count = 0;
+    for (const auto& f : faces) {
+        const auto t = orient_tracked_face(f);
+        const auto& p = m_vertex_attribute;
+        if (!utils::predicates::faces_along(
+                p.at(t[0]).m_posf,
+                p.at(t[1]).m_posf,
+                p.at(t[2]).m_posf,
+                n)) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+size_t TetOptimizerMesh::tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const
+{
+    std::vector<size_t> vs;
+    for (const auto& f : faces) vs.insert(vs.end(), f.begin(), f.end());
+    std::sort(vs.begin(), vs.end());
+    vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+    size_t count = 0;
+    const auto& p = m_vertex_attribute;
+    std::vector<std::array<size_t, 3>> star;
+    for (const size_t v : vs) {
+        // The star from v's tets alone (faces_at_vertex): the operation holds v, not the
+        // corners across its star. Their positions are safe to read -- moving one would need v.
+        star.clear();
+        Eigen::Vector3d n = Eigen::Vector3d::Zero();
+        for (const VertexFace& vf : faces_at_vertex(v)) {
+            if (!m_face_attribute.at(vf.fid).m_is_surface_fs) continue;
+            const auto f = orient_tracked_face(vf.face, vf.tets);
+            n += (p.at(f[1]).m_posf - p.at(f[0]).m_posf)
+                     .cross(p.at(f[2]).m_posf - p.at(f[0]).m_posf);
+            star.push_back(f);
+        }
+        for (const auto& f : star) {
+            count += !utils::predicates::faces_along(
+                p.at(f[0]).m_posf,
+                p.at(f[1]).m_posf,
+                p.at(f[2]).m_posf,
+                n);
+        }
+    }
+    return count;
+}
+
+void TetOptimizerMesh::tracked_surface_before(const std::vector<size_t>& vs, const bool all)
+{
+    auto& before = m_surface_folds_before.local();
+    before.skip = std::none_of(vs.begin(), vs.end(), [this](size_t v) {
+        return m_vertex_attribute.at(v).m_is_on_surface;
+    });
+    if (before.skip) return;
+    const auto faces = tracked_faces_around(vs, all);
+    before.normal = tracked_area_normal(faces);
+    before.against = tracked_not_facing(faces, before.normal);
+    before.star_folds = tracked_star_folds(faces);
+}
+
+bool TetOptimizerMesh::tracked_surface_after(const std::vector<size_t>& vs, const bool all)
+{
+    const auto& before = m_surface_folds_before.local();
+    if (before.skip) return true;
+    const auto faces = tracked_faces_around(vs, all);
+    const size_t against = std::max(
+        tracked_not_facing(faces, before.normal),
+        tracked_not_facing(faces, tracked_area_normal(faces)));
+    if (against <= before.against && tracked_star_folds(faces) <= before.star_folds) return true;
+    ++m_surface_fold_refusals;
+    return false;
+}
+
+TetOptimizerMesh::PositionKey
+TetOptimizerMesh::position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c)
+{
+    PositionKey k = {{{{a[0], a[1], a[2]}}, {{b[0], b[1], b[2]}}, {{c[0], c[1], c[2]}}}};
+    std::sort(k.begin(), k.end());
+    return k;
+}
+
+void TetOptimizerMesh::record_surface_history(const std::string& metadata)
+{
+    m_recorded_surface =
+        start_surface_history([this](size_t v) { return m_vertex_attribute.at(v).m_posf; });
+    m_recorded_surface->history().metadata = metadata;
+    m_recorded_sources.clear();
+    if (m_insertion_sources.empty()) return;
+    // The insertion gave each facet the input triangles it lies in, by the positions its
+    // corners have here too: m_posf is the rounding of the same exact coordinates.
+    std::sort(m_insertion_sources.begin(), m_insertion_sources.end());
+    const auto& h = m_recorded_surface->history();
+    m_recorded_sources.resize(h.faces.size());
+    size_t missing = 0;
+    for (size_t f = 0; f < h.faces.size(); ++f) {
+        const auto& t = h.faces[f];
+        const PositionKey key = position_key(h.vertices[t[0]], h.vertices[t[1]], h.vertices[t[2]]);
+        const auto it = std::lower_bound(
+            m_insertion_sources.begin(),
+            m_insertion_sources.end(),
+            key,
+            [](const auto& entry, const PositionKey& k) { return entry.first < k; });
+        if (it == m_insertion_sources.end() || it->first != key) {
+            ++missing;
+            continue;
+        }
+        m_recorded_sources[f].assign(it->second.begin(), it->second.end());
+    }
+    if (missing > 0) {
+        logger().warn("surface history: {} tracked faces lie on no input triangle known", missing);
+    }
+    m_insertion_sources.clear();
+    m_insertion_sources.shrink_to_fit();
+}
+
+std::optional<history::SurfaceHistory> TetOptimizerMesh::finish_surface_history(
+    const history::SurfaceHistory* input)
+{
+    if (!m_recorded_surface) return std::nullopt;
+    if (const size_t drift = resync_surface_history()) {
+        logger().warn("surface history: {} tracked faces changed outside the operations", drift);
+    }
+    if (m_recorded_surface->feature_edges() != tracked_feature_edges()) {
+        logger().warn(
+            "surface history: the feature edges the history carried ({}) are not the mesh's ({})",
+            m_recorded_surface->feature_edges().size(),
+            tracked_feature_edges().size());
+    }
+    stop_surface_history();
+    // The output names a point on the tracked surface by the tet mesh's vertices, numbered as
+    // they are now: the applications write the mesh as it is here.
+    m_recorded_surface->history().output_vertex_ids = m_recorded_surface->mesh_vertex_ids();
+    const auto st = m_recorded_surface->stats();
+    logger().info(
+        "surface history: {} edits -- {} splits, {} collapses ({} welding two surface vertices), "
+        "{} swaps, {} moves; {} changes recorded as they are",
+        m_recorded_surface->history().edits.size(),
+        st.split,
+        st.collapse,
+        st.weld,
+        st.swap,
+        st.move,
+        st.replaced);
+    if (st.unknown > 0) {
+        logger().error("surface history: lost track of {} faces", st.unknown);
+    }
+    history::SurfaceHistory h;
+    if (input != nullptr) {
+        h = *input;
+        history::append_embedded(h, m_recorded_surface->history(), m_recorded_sources);
+        h.metadata = m_recorded_surface->history().metadata;
+        h.output_vertex_ids = m_recorded_surface->history().output_vertex_ids;
+    } else {
+        h = std::move(m_recorded_surface->history());
+    }
+    m_recorded_surface.reset();
+    m_recorded_sources.clear();
+    return h;
+}
+
+void TetOptimizerMesh::update_attributes_and_history()
+{
+    update_attributes();
+    if (const size_t changed = resync_surface_history()) {
+        logger().warn(
+            "surface history: update_attributes changed {} tracked faces outside the operations",
+            changed);
+    }
+}
+
+bool TetOptimizerMesh::is_tracked_face(const size_t tid, const int j) const
+{
+    return m_face_attribute.at(tuple_from_face(tid, j).fid(*this)).m_is_surface_fs;
+}
+
+std::array<size_t, 3> TetOptimizerMesh::orient_tracked_face(
+    const std::array<size_t, 3>& f,
+    const std::vector<size_t>& tets) const
+{
+    std::array<size_t, 3> a = f;
+    std::sort(a.begin(), a.end());
+    if (tets.empty()) return a;
+    // The face's id from its lowest tet, with nothing read of its corners' tets.
+    if (m_face_attribute.at(face_id_in(a, tets.front())).orientation_along(a) < 0) {
+        std::swap(a[1], a[2]);
+    }
+    return a;
 }
 
 bool TetOptimizerMesh::is_edge_on_surface(const Tuple& loc)

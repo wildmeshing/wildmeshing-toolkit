@@ -20,7 +20,7 @@ using namespace pybind11::literals;
 
 void wmtk_wrapper(const py::dict& obj)
 {
-    const nlohmann::json j = obj;
+    const nlohmann::json j = wmtk::python::options(obj);
 
     using namespace wmtk;
     std::map<std::string, std::function<void(nlohmann::json)>> components_map;
@@ -97,7 +97,10 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
         m.def(
             name.c_str(),
             [component](const py::dict& options, const py::dict& meshes) {
-                return wmtk::python::call_component(component, options, meshes);
+                return wmtk::python::call_component(
+                    component,
+                    wmtk::python::options(options),
+                    meshes);
             },
             "options"_a,
             "meshes"_a,
@@ -106,7 +109,7 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
         m.def(
             name.c_str(),
             [name, component = components_map.at(name)](const py::dict& options) {
-                nlohmann::json params = options;
+                nlohmann::json params = wmtk::python::options(options);
                 if (!params.contains("application")) params["application"] = name;
                 py::gil_scoped_release release;
                 component(std::move(params));
@@ -117,7 +120,7 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
     m.def(
         "wildmeshing",
         [memory_components](const py::dict& options, const py::dict& meshes) {
-            const nlohmann::json params = options;
+            const nlohmann::json params = wmtk::python::options(options);
             if (!params.contains("application"))
                 throw std::runtime_error("JSON input must contain entry `application`.");
             const auto name = params.at("application").get<std::string>();

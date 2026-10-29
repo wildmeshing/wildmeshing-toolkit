@@ -32,6 +32,7 @@ set(TEST_SOURCES
     test_ring_lock.cpp
     test_slot_allocation.cpp
     test_screening.cpp
+    test_history.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})
@@ -79,9 +80,9 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
 
 endif()
-# The NumPy memory-interface tests of the Python module, registered when the interpreter the
-# module was built for has NumPy (the Linux CI jobs install it). The wheel builds run the same
-# file through cibuildwheel.
+# The NumPy tests of the Python module -- the memory interface, and surface tracking through
+# it -- registered when the interpreter the module was built for has NumPy (the Linux CI jobs
+# install it). The wheel builds run the same files through cibuildwheel.
 if(TARGET wildmeshing AND Python_EXECUTABLE)
     execute_process(
         COMMAND "${Python_EXECUTABLE}" -c "import numpy"
@@ -93,7 +94,12 @@ if(TARGET wildmeshing AND Python_EXECUTABLE)
             COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
                     "${Python_EXECUTABLE}" -m unittest discover
                     -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_memory_io.py")
+        add_test(
+            NAME python_tracking
+            COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=$<TARGET_FILE_DIR:wildmeshing>/.."
+                    "${Python_EXECUTABLE}" -m unittest discover
+                    -s "${PROJECT_SOURCE_DIR}/tests/python" -p "test_tracking.py")
     else()
-        message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io is not registered")
+        message(STATUS "NumPy not found for ${Python_EXECUTABLE}: python_memory_io and python_tracking are not registered")
     endif()
 endif()

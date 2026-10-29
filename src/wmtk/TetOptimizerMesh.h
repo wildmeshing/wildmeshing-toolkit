@@ -7,6 +7,7 @@
 #include <wmtk/ExactPosition.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/history/SurfaceHistory.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -22,6 +23,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -565,9 +567,74 @@ public:
      * a no-op.
      */
     virtual void update_attributes() {}
+    /// update_attributes(), then the change it made to the tracked surface, if recording one.
+    void update_attributes_and_history();
+
+    /// Start recording the tracked surface (TetMesh::start_surface_history), at m_posf, with
+    /// `metadata` (the application's parameters, say) saved along. Takes m_insertion_sources.
+    void record_surface_history(const std::string& metadata);
+    /**
+     * @brief Bring the recorded surface up to date with the tracked faces, stop recording, log
+     * what the history holds and return it, for the application to save (ComponentIO::
+     * save_history). None if not recording.
+     *
+     * With `input`, the history of the input the mesh was made from (read, welded, simplified):
+     * the history returned is that, then the insertion -- each tracked face on the input faces
+     * it lies on, from m_insertion_sources -- then the recorded one, so it maps the input files
+     * to the output.
+     */
+    std::optional<history::SurfaceHistory> finish_surface_history(
+        const history::SurfaceHistory* input = nullptr);
+
+    /// A tracked face by its corners' positions, sorted.
+    using PositionKey = std::array<std::array<double, 3>, 3>;
+    static PositionKey position_key(const Vector3d& a, const Vector3d& b, const Vector3d& c);
+    /// Where the tracked faces lie on the input the mesh was made from: by position key, sorted,
+    /// the input triangles. Filled at insertion when a surface history is to start from the
+    /// input; record_surface_history takes it.
+    std::vector<std::pair<PositionKey, std::vector<uint32_t>>> m_insertion_sources;
+
+    /// The faces with m_is_surface_fs, for a surface history (TetMesh::start_surface_history).
+    bool is_tracked_face(size_t tid, int j) const override;
+    /// The input's orientation on the face (m_orientation), where insertion recorded one;
+    /// ascending vertex order where it did not.
+    using TetMesh::orient_tracked_face;
+    std::array<size_t, 3> orient_tracked_face(
+        const std::array<size_t, 3>& f,
+        const std::vector<size_t>& tets) const override;
+    /// The tagged feature edges (m_feature_edge_attribute) that are edges of tracked faces.
+    std::vector<std::array<size_t, 2>> tracked_feature_edges() const override;
+
+    /// m_params.check_surface_folds; see there.
+    bool checks_tracked_surface() const override { return m_params.check_surface_folds; }
+    void tracked_surface_before(const std::vector<size_t>& vs, bool all) override;
+    bool tracked_surface_after(const std::vector<size_t>& vs, bool all) override;
+    /// The operations check_surface_folds refused.
+    std::atomic<size_t> m_surface_fold_refusals = 0;
 
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
+    std::shared_ptr<history::TrackedSurfaceRecorder> m_recorded_surface;
+    /// What the tracked faces around an operation were before it, for check_surface_folds: their
+    /// area vectors summed, how many do not face along that, and the folds in the stars of their
+    /// vertices. `skip` where no vertex around it is on the surface.
+    struct SurfaceFolds
+    {
+        bool skip = true;
+        Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+        size_t against = 0;
+        size_t star_folds = 0;
+    };
+    wmtk::threading::enumerable_thread_specific<SurfaceFolds> m_surface_folds_before;
+    /// The tracked faces, oriented, their area vectors summed; and, over their vertices, the
+    /// faces of each one's tracked star not facing along that star's sum.
+    Eigen::Vector3d tracked_area_normal(const std::vector<std::array<size_t, 3>>& faces) const;
+    size_t tracked_not_facing(
+        const std::vector<std::array<size_t, 3>>& faces,
+        const Eigen::Vector3d& n) const;
+    size_t tracked_star_folds(const std::vector<std::array<size_t, 3>>& faces) const;
+    /// The input triangles each face of the recorded surface's first state lies on.
+    std::vector<std::vector<uint64_t>> m_recorded_sources;
     int m_debug_print_counter = 0;
     /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
     /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer

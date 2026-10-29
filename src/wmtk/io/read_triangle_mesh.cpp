@@ -1,5 +1,7 @@
 #include "read_triangle_mesh.hpp"
 
+#include "ComponentIO.hpp"
+#include "mesh_io.hpp"
 #include "read_stl.hpp"
 
 #include <igl/is_edge_manifold.h>
@@ -41,8 +43,13 @@ void clean_triangle_mesh(
     MatrixXi& F,
     double tol_rel,
     double tol_abs,
-    std::vector<int>* face_tags)
+    std::vector<int>* face_tags,
+    std::vector<int>* vertex_map)
 {
+    if (vertex_map) {
+        vertex_map->resize(V.rows());
+        for (int i = 0; i < int(V.rows()); ++i) (*vertex_map)[i] = i;
+    }
     assert(face_tags == nullptr || face_tags->size() == size_t(F.rows()));
     if (tol_abs >= 0 && tol_rel >= 0) {
         log_and_throw_error(
@@ -72,6 +79,9 @@ void clean_triangle_mesh(
             for (int j = 0; j < 3; ++j) {
                 F(i, j) = SVJ[F(i, j)];
             }
+        }
+        if (vertex_map) {
+            for (int& v : *vertex_map) v = SVJ[v];
         }
     }
 
@@ -113,6 +123,9 @@ void clean_triangle_mesh(
         MatrixXi temp_F = F;
         VectorXi I;
         igl::remove_unreferenced(temp_V, temp_F, V, F, I);
+        if (vertex_map) {
+            for (int& v : *vertex_map) v = I(v);
+        }
     }
 }
 
@@ -136,6 +149,24 @@ void read_one_triangle_mesh(const std::string& path, MatrixXd& V, MatrixXi& F)
     });
     if (ext == ".stl") {
         read_stl(path, V, F);
+        return;
+    }
+    if (ext == ".msh") {
+        // Through the toolkit's own reader, which keeps the file's row order: a face's index is
+        // its index in the file, which is what lets per-face data stored with them be matched up
+        // later. Every entity's triangles are read, in one block; other cells are left out.
+        MeshData data;
+        try {
+            data = read_mesh(path);
+        } catch (const std::exception& e) {
+            log_and_throw_error("Could not read mesh {}: {}", path, e.what());
+        }
+        const auto it = data.cells.find(CellType::Triangle);
+        if (it == data.cells.end() || it->second.connectivity.rows() == 0) {
+            log_and_throw_error("Could not read mesh {}: no triangles", path);
+        }
+        V = data.V;
+        F = ComponentIO::indices(it->second.connectivity);
         return;
     }
 
@@ -181,7 +212,8 @@ void read_triangle_mesh(
     Eigen::MatrixXi& F,
     double tol_rel,
     double tol_abs,
-    std::vector<int>* face_input)
+    std::vector<int>* face_input,
+    ReadProvenance* provenance)
 {
     V.resize(0, 3);
     F.resize(0, 3);
@@ -215,7 +247,17 @@ void read_triangle_mesh(
         if (face_input) face_input->resize(F.rows(), int(input));
     }
 
-    clean_triangle_mesh(V, F, tol_rel, tol_abs, face_input);
+    if (provenance) {
+        provenance->V = V;
+        provenance->F = F;
+    }
+    clean_triangle_mesh(
+        V,
+        F,
+        tol_rel,
+        tol_abs,
+        face_input,
+        provenance ? &provenance->vertex_map : nullptr);
 
     if (F.rows() == 0) {
         std::string joined;

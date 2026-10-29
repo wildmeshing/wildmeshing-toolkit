@@ -151,4 +151,21 @@ inline bool is_degenerate(
     return orient3d(v0, v1, v2, v3) == Orientation::COPLANAR;
 }
 
+/**
+ * @brief Whether the triangle (a, b, c) faces along n, exactly: n . ((b - a) x (c - a)) > 0.
+ *
+ * orient3d of the triangle and a point below it along n. Only that point is rounded, so n tilts
+ * by a rounding error -- harmless, n being a direction an operation chose -- and a flat triangle
+ * stays flat whatever n is. n is scaled to the coordinates to keep that error relative.
+ */
+inline bool faces_along(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector3d& n)
+{
+    const Eigen::Vector3d below = a - (1 + a.lpNorm<Eigen::Infinity>()) * n.normalized();
+    return orient3d(a, b, c, below) == Orientation::POSITIVE;
+}
+
 } // namespace wmtk::utils::predicates

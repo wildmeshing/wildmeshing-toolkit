@@ -42,6 +42,7 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "colored_smoothing",
+      "check_surface_folds",
       "coarsen_pass",
       "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
@@ -52,6 +53,7 @@
       "write_vtu",
       "log_file",
       "report",
+      "history_output",
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "allow_surface_swap",
@@ -398,6 +400,12 @@
     "doc": "Smoothing passes after each topology phase when interleaved_smoothing is enabled."
   },
   {
+    "pointer": "/check_surface_folds",
+    "type": "bool",
+    "default": false,
+    "doc": "Refuse a collapse, swap or smoothing that folds the tracked surface over: one that leaves more tracked faces facing against, or flat to, the surface it replaces (the tracked faces around it, their area vectors summed) or the surface it leaves than there were, or more such faces in the stars of the surface vertices it touches. Exact (orient3d). A fold the input has can be undone, but none is made. Splits are not checked: they move no vertex. Turns colored_smoothing off."
+  },
+  {
     "pointer": "/colored_smoothing",
     "type": "bool",
     "default": true,
@@ -420,6 +428,12 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/history_output",
+    "type": "string",
+    "default": "",
+    "doc": "3D only: a 2D run refuses it. Record every change to the tracked surface -- the interfaces between unlike tags -- from the mesh the input initialises to the output, and save the history here (see wmtk/history): the surface_map component rebuilds the map between the two from it. The mesh the history starts from is written next to the output as <output>_history_input.msh; on the memory route it is the output mesh history_input. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",
