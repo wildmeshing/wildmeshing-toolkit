@@ -1,6 +1,7 @@
-"""Tracking through the bindings: histories of surfaces and of curves as bytes on the memory
-route, as files on the file route, and wm.read_history / wm.write_history between the two; and
-the maps they describe, wm.Tracking and wm.CurveTracking, on NumPy arrays of points.
+"""Tracking through the bindings: histories of surfaces, of curves and of volumes as bytes on the
+memory route, as files on the file route, and wm.read_history / wm.write_history between the two;
+and the maps they describe, wm.Tracking, wm.CurveTracking and wm.VolumeTracking, on NumPy arrays
+of points.
 
 Also runnable with Python's standard-library unittest runner; NumPy only, synthetic meshes."""
 
@@ -39,6 +40,34 @@ def sphere(n_lat=8, n_lon=16):
             "cells": {"triangle": {"connectivity": np.array(F, dtype=np.int64)}}}
 
 
+def icosphere(level=2, radius=0.7, center=(0.0, 0.0, 0.0)):
+    """An icosphere: the icosahedron's faces split in four `level` times, outward oriented; 162
+    vertices and 320 triangles at level 2."""
+    t = (1 + 5 ** 0.5) / 2
+    V = [np.array(v, dtype=np.float64) for v in
+         [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t],
+          [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]]]
+    F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4],
+         [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8],
+         [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
+    for _ in range(level):
+        middle, finer = {}, []
+
+        def midpoint(a, b):
+            key = (min(a, b), max(a, b))
+            if key not in middle:
+                middle[key] = len(V)
+                V.append((V[a] + V[b]) / 2)
+            return middle[key]
+
+        for a, b, c in F:
+            ab, bc, ca = midpoint(a, b), midpoint(b, c), midpoint(c, a)
+            finer += [[a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]]
+        F = finer
+    V = np.array([radius * v / np.linalg.norm(v) for v in V]) + np.array(center)
+    return {"V": V, "cells": {"triangle": {"connectivity": np.array(F, dtype=np.int64)}}}
+
+
 def write_obj(path, mesh):
     with open(path, "w") as f:
         for v in mesh["V"]:
@@ -61,6 +90,9 @@ def curves(n=60, m=30):
 
 
 REMESH = {"length_rel": 0.2, "max_iterations": 2, "num_threads": 1}
+# A small tetwild run with a volume history: about a second.
+VOLUME = {"max_iterations": 3, "num_threads": 4, "write_vtu": False, "history_output": "x",
+          "volume_history_output": "y"}
 TRIWILD = {"input": ["circle", "wave"], "preserve_topology": True, "length_rel": 0.05,
            "max_iterations": 3, "num_threads": 1}
 
@@ -559,6 +591,267 @@ class Classes(unittest.TestCase):
             for got, expected in zip(results, serial):
                 for a, b in zip(got, expected):
                     np.testing.assert_array_equal(a, b)
+
+
+def tet_points(rng, mesh, n):
+    """n points of a tet mesh: rows of its tets and barycentric coordinates inside them, and
+    where they are."""
+    T = mesh["cells"]["tetrahedron"]["connectivity"]
+    tets = rng.integers(0, len(T), n)
+    bary = random_bary(rng, n, 4)
+    return tets, bary, at(mesh, tets, bary)
+
+
+def at(mesh, tets, bary):
+    """Where tet points are in a mesh."""
+    T = mesh["cells"]["tetrahedron"]["connectivity"]
+    return np.einsum("nk,nkd->nd", bary, mesh["V"][T[tets]])
+
+
+class Volume(unittest.TestCase):
+    """wm.VolumeTracking on the volume histories and meshes the memory route returns."""
+
+    @classmethod
+    def setUpClass(cls):
+        # tetwild: the whole volume, one region, from history_input to history_output, the mesh
+        # before the filter; its mesh is the part the filter keeps, inside the sphere.
+        cls.tets, report = wm.tetwild({**VOLUME, "input": "in", "filter": "input"},
+                                      {"in": icosphere()})
+        cls.surface, cls.volume = report["history"], report["volume_history"]
+        # simwild: two spheres that cross, four regions -- each sphere's inside, both, neither.
+        cls.regions, report = wm.simwild(
+            {**VOLUME, "input": ["a", "b"], "max_iterations": 2},
+            {"a": icosphere(), "b": icosphere(radius=0.5, center=(0.4, 0, 0))})
+        cls.regions_surface, cls.regions_volume = report["history"], report["volume_history"]
+
+    def setUp(self):
+        self.rng = np.random.default_rng(5)
+
+    def tracking(self, **options):
+        return wm.VolumeTracking(self.surface, self.volume, self.tets["history_input"],
+                                 self.tets["history_output"], **options)
+
+    def test_memory_route_returns_what_the_map_needs(self):
+        # The volume history's bytes next to the surface history's, and the two meshes it maps
+        # between; read_history and write_history move it to a file and back.
+        self.assertEqual(self.volume[:8], b"WMTKVOLH")
+        for key in ["mesh", "history_input", "history_output"]:
+            self.assertIn("tetrahedron", self.tets[key]["cells"])
+        self.assertIn("history_input", self.regions)
+        with tempfile.TemporaryDirectory(prefix="wmtk_python_volume_") as d:
+            wm.write_history(Path(d) / "v.wmtkvol", self.volume)
+            self.assertEqual(wm.read_history(Path(d) / "v.wmtkvol"), self.volume)
+
+    def test_round_trip(self):
+        t = self.tracking()
+        self.assertTrue(t.has_meshes)
+        self.assertEqual(t.regions, [[]])
+        self.assertEqual(t.tag_names, {})
+        start, end = self.tets["history_input"], self.tets["history_output"]
+        tets, bary, x = tet_points(self.rng, start, 2000)
+        out_tets, out_bary = t.to_output(tets, bary)
+        self.assertEqual(out_tets.dtype, np.int64)
+        self.assertEqual(out_tets.shape, (2000,))
+        self.assertEqual(out_bary.shape, (2000, 4))
+        self.assertTrue((out_tets >= 0).all())
+        y = at(end, out_tets, out_bary)
+        self.assertGreater(int((np.linalg.norm(y - x, axis=1) > 0).sum()), 100)
+        back_tets, back_bary = t.to_input(out_tets, out_bary)
+        self.assertTrue((back_tets >= 0).all())
+        np.testing.assert_allclose(at(start, back_tets, back_bary), x, atol=1e-9)
+        # Positions: the same map.
+        xyz, region = t.map_positions(x)
+        np.testing.assert_allclose(xyz, y, atol=1e-12)
+        self.assertTrue(set(region.tolist()) <= {-1, 0})
+        back, back_region = t.map_positions(xyz, direction="to_input", regions=region)
+        np.testing.assert_allclose(back, x, atol=1e-9)
+        np.testing.assert_array_equal(back_region, region)
+        stats = t.stats
+        self.assertGreater(stats["built"], 0)
+        self.assertEqual(stats["failed"], 0)
+        self.assertEqual(stats["region_changed"], 0)
+
+    def test_regions_kept(self):
+        # Each point lands in a tet of its own region -- the same tags -- and comes back.
+        start, end = self.regions["history_input"], self.regions["mesh"]
+        t = wm.VolumeTracking(self.regions_surface, self.regions_volume, start, end)
+        self.assertEqual(sorted(t.regions), [[], [0], [0, 1], [1]])
+        labels = start["cells"]["tetrahedron"]["attributes"]["tags"]["labels"]
+        self.assertEqual(sorted(t.tag_names.values()), sorted(labels[:2]))
+        tets, bary, x = tet_points(self.rng, start, 2000)
+        out_tets, out_bary = t.to_output(tets, bary)
+        self.assertTrue((out_tets >= 0).all())
+        tags = lambda mesh, rows: mesh["cells"]["tetrahedron"]["attributes"]["tags"]["values"][rows]
+        np.testing.assert_array_equal(tags(end, out_tets), tags(start, tets))
+        back_tets, back_bary = t.to_input(out_tets, out_bary)
+        np.testing.assert_array_equal(tags(start, back_tets), tags(start, tets))
+        np.testing.assert_allclose(at(start, back_tets, back_bary), x, atol=1e-6)
+        self.assertEqual(t.stats["region_changed"], 0)
+
+    def test_no_tet_and_not_a_number(self):
+        # -1 for no tet, and NaN coordinates: for no point given, and for a point outside the
+        # mesh it is mapped to -- tetwild's filtered mesh, the part inside the sphere.
+        t = wm.VolumeTracking(self.surface, self.volume, self.tets["history_input"],
+                              self.tets["mesh"])
+        start = self.tets["history_input"]
+        tets, bary, x = tet_points(self.rng, start, 3000)
+        r = np.linalg.norm(x, axis=1)
+        out_tets, out_bary = t.to_output(tets, bary)
+        self.assertTrue((out_tets[r < 0.6] >= 0).all())
+        self.assertTrue((out_tets[r > 0.75] == -1).all())
+        self.assertTrue(np.isnan(out_bary[out_tets < 0]).all())
+        self.assertFalse(np.isnan(out_bary[out_tets >= 0]).any())
+        n_tets = len(start["cells"]["tetrahedron"]["connectivity"])
+        given = np.array([-1, n_tets, 0, 0])
+        weights = np.full((4, 4), 0.25)
+        weights[3, 1] = np.nan
+        out_tets, out_bary = self.tracking().to_output(given, weights)
+        np.testing.assert_array_equal(out_tets < 0, [True, True, False, True])
+        self.assertTrue(np.isnan(out_bary[[0, 1, 3]]).all())
+        # A position that is not a number comes back as it is.
+        xyz, region = self.tracking().map_positions(np.array([[np.nan, 0, 0], [0.1, 0.2, 0.3]]))
+        self.assertTrue(np.isnan(xyz[0, 0]))
+        self.assertTrue(np.isfinite(xyz[1]).all())
+
+    def test_positions_without_meshes(self):
+        # The histories alone map positions as the map with the meshes does; tet points need
+        # the meshes.
+        alone = wm.VolumeTracking(self.surface, self.volume)
+        self.assertFalse(alone.has_meshes)
+        _, _, x = tet_points(self.rng, self.tets["history_input"], 1000)
+        for a, b in zip(alone.map_positions(x), self.tracking().map_positions(x)):
+            np.testing.assert_array_equal(a, b)
+        with self.assertRaisesRegex(ValueError, "without the meshes"):
+            alone.to_output(np.array([0]), np.full((1, 4), 0.25))
+        # Kept operation maps or none, the same map.
+        none = wm.VolumeTracking(self.surface, self.volume, cache_bytes=0)
+        for a, b in zip(none.map_positions(x), alone.map_positions(x)):
+            np.testing.assert_array_equal(a, b)
+        self.assertEqual(none.stats["kept"], 0)
+
+    def test_load_files_as_bytes(self):
+        # The file route's files load to the map the bytes and meshes of the same files build.
+        with tempfile.TemporaryDirectory(prefix="wmtk_python_volume_files_") as d:
+            d = Path(d)
+            write_obj(d / "in.obj", icosphere())
+            out = d / "out"
+            wm.tetwild({**VOLUME, "application": "tetwild", "input": [str(d / "in.obj")],
+                        "output": str(out), "history_output": str(out) + ".wmtkhist",
+                        "volume_history_output": str(out) + ".wmtkvol"})
+            files = [str(out) + ".wmtkhist", str(out) + ".wmtkvol",
+                     str(out) + "_history_input.msh", str(out) + "_history_output.msh"]
+            loaded = wm.VolumeTracking.load(*files)
+            built = wm.VolumeTracking(wm.read_history(files[0]), wm.read_history(files[1]),
+                                      wm.read_mesh(files[2]), wm.read_mesh(files[3]))
+            tets, bary, _ = tet_points(self.rng, wm.read_mesh(files[2]), 1000)
+            for a, b in zip(loaded.to_output(tets, bary), built.to_output(tets, bary)):
+                np.testing.assert_array_equal(a, b)
+            with self.assertRaisesRegex(ValueError, "volume history first|first, then"):
+                wm.VolumeTracking.load(files[1], files[0], files[2], files[3])
+            with self.assertRaises(RuntimeError):
+                wm.VolumeTracking.load(files[0], str(d / "missing.wmtkvol"), files[2], files[3])
+
+    def test_threads_map_through_one_object(self):
+        # Mapping releases the GIL and keeps what it builds under a lock: two threads mapping
+        # through one object get what one call alone gets.
+        t = self.tracking(cache_bytes=1 << 20)
+        batches = [tet_points(self.rng, self.tets["history_input"], 2000)[:2] for _ in range(2)]
+        serial = [self.tracking().to_output(*batch) for batch in batches]
+        results = [[], []]
+
+        def work(i):
+            for _ in range(4):
+                results[i].append(t.to_output(*batches[i]))
+
+        threads = [threading.Thread(target=work, args=(i,)) for i in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        for got, expected in zip(results, serial):
+            self.assertEqual(len(got), 4)
+            for call in got:
+                for a, b in zip(call, expected):
+                    np.testing.assert_array_equal(a, b)
+
+    def test_damaged_and_mismatched_histories_raise(self):
+        with self.assertRaises(RuntimeError):
+            wm.VolumeTracking(self.surface, self.volume[: len(self.volume) // 2])
+        with self.assertRaisesRegex(RuntimeError, "not a volume history"):
+            wm.VolumeTracking(self.surface, b"not a history at all")
+        rng = np.random.default_rng(2)
+        raised = 0
+        for _ in range(20):
+            damaged = bytearray(self.volume)
+            damaged[int(rng.integers(12, len(damaged)))] ^= int(rng.integers(1, 256))
+            try:
+                wm.VolumeTracking(self.surface, bytes(damaged)).map_positions(
+                    np.zeros((1, 3)))
+            except RuntimeError:
+                raised += 1
+        self.assertGreater(raised, 0)
+        # The other kind, or another run's surface history.
+        with self.assertRaisesRegex(ValueError, "first, then"):
+            wm.VolumeTracking(self.volume, self.surface)
+        with self.assertRaisesRegex(ValueError, "not a volume history"):
+            wm.VolumeTracking(self.surface, self.surface)
+        with self.assertRaisesRegex(RuntimeError, "surface history"):
+            wm.VolumeTracking(self.regions_surface, self.volume)
+        with self.assertRaisesRegex(ValueError, "VolumeTracking"):
+            wm.Tracking(self.volume)
+        with self.assertRaises(TypeError):
+            wm.VolumeTracking("history.wmtkhist", self.volume)
+
+    def test_wrong_shapes_and_dtypes_raise(self):
+        t = self.tracking()
+        tets, bary = np.array([0, 1]), np.full((2, 4), 0.25)
+        with self.assertRaises(TypeError):
+            t.to_output(tets.astype(np.float64), bary)
+        with self.assertRaises(TypeError):
+            t.to_output(tets, bary.astype(np.int64))
+        with self.assertRaisesRegex(ValueError, r"\(n,\)"):
+            t.to_output(np.zeros((2, 4), dtype=np.int64), bary)
+        with self.assertRaisesRegex(ValueError, r"\(n, 4\)"):
+            t.to_input(tets, np.full((2, 3), 1 / 3))
+        with self.assertRaisesRegex(ValueError, "-1 for none"):
+            t.to_output(np.array([0, -2]), bary)
+        with self.assertRaises(TypeError):
+            t.map_positions(np.zeros((2, 3), dtype=np.int64))
+        with self.assertRaisesRegex(ValueError, r"\(n, 3\)"):
+            t.map_positions(np.zeros((2, 2)))
+        with self.assertRaisesRegex(ValueError, "direction"):
+            t.map_positions(np.zeros((2, 3)), direction="sideways")
+        with self.assertRaisesRegex(ValueError, "regions"):
+            t.map_positions(np.zeros((2, 3)), regions=np.array([0, 1]))
+        with self.assertRaisesRegex(ValueError, "one per position"):
+            t.map_positions(np.zeros((2, 3)), regions=np.array([0]))
+        with self.assertRaisesRegex(ValueError, "cache_bytes"):
+            self.tracking(cache_bytes=-1)
+
+    def test_tracking_volume_on_the_memory_route(self):
+        # The tracking component's volume: on the bytes and the meshes of the call, its report.
+        tracking = getattr(wm, TRACKING)
+        options = {"history": self.surface, "volume_history": self.volume,
+                   "operation": "volume", "samples": 300}
+        outputs, report = tracking(
+            {**options, "tet_mesh": "start", "output_tet_mesh": "end"},
+            {"start": self.tets["history_input"], "end": self.tets["history_output"]})
+        self.assertEqual(outputs, {})
+        self.assertEqual(report["samples"], 300)
+        self.assertEqual(report["located"], 300)
+        self.assertEqual(report["regions_kept"], 300)
+        self.assertGreater(report["moved"], 0)
+        self.assertEqual(report["det_j"]["nonpositive"], 0)
+        self.assertLess(report["round_trip"]["max"], 1e-9)
+        self.assertEqual(report["stats"]["failed"], 0)
+        # Without the meshes, every operation's map is built.
+        _, built = tracking(options, {})
+        self.assertEqual(built["stats"]["built"], built["operations"])
+        # A file name for the volume history is refused, and map_volume altogether.
+        with self.assertRaisesRegex(RuntimeError, "not a file name"):
+            tracking({**options, "volume_history": "v.wmtkvol"}, {})
+        with self.assertRaisesRegex(RuntimeError, "VolumeTracking"):
+            tracking({**options, "operation": "map_volume"}, {})
 
 
 if __name__ == "__main__":
