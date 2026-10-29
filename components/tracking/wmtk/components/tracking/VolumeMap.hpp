@@ -66,6 +66,10 @@ struct VolumeMapStats
  * changes. Both sides of the surface use the same surface map, so they agree on it. A collapse
  * whose side has a chord goes through a decomposition (split, collapse, unsplit), a swap that
  * cannot be one pair through an exact split and a collapse.
+ *
+ * The const queries -- to_output(), to_input(), build_all(), stats() -- may be called on one map
+ * from several threads at once: what they share, the operations built and the stats, is kept
+ * under a mutex, and each call counts its points' stats apart and adds them at its end.
  */
 class VolumeMap
 {
@@ -86,7 +90,8 @@ public:
     /// (VolumeHistory::tag_names), "ambient" for a tet with none -- if the history has it.
     std::optional<uint32_t> region_of_groups(const std::set<std::string>& names) const;
     const SurfaceMap& surface_map() const { return m_surface; }
-    const VolumeMapStats& stats() const { return m_stats; }
+    /// What building and using the map found so far.
+    VolumeMapStats stats() const;
     /// Builds every operation's map, for the stats.
     void build_all() const;
 
@@ -96,16 +101,18 @@ public:
 
 private:
     std::vector<VolumePoint> map(std::vector<VolumePoint> points, bool forward) const;
-    /// Operation k's map; nothing if it cannot be built.
+    /// Operation k's map; nothing if it cannot be built. The stats count each operation once,
+    /// however often it is built.
     std::unique_ptr<OpMap> op(size_t k) const;
 
     history::VolumeHistory m_volume;
     SurfaceMap m_surface;
     /// Per volume edit: its tracked faces before and after.
     std::vector<std::unique_ptr<Faces>> m_faces;
-    /// Per operation: 0 not built yet, 1 built, 2 failed.
-    mutable std::vector<char> m_built;
-    mutable VolumeMapStats m_stats;
+    /// What the const queries share (VolumeMap.cpp): which operations were built and which
+    /// failed, and the stats, with the mutex they are kept under.
+    struct Shared;
+    std::unique_ptr<Shared> m_shared;
 };
 
 } // namespace wmtk::components::tracking

@@ -7,6 +7,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <atomic>
+#include <thread>
+
 #include <cmath>
 #include <cstring>
 #include <filesystem>
@@ -548,6 +551,67 @@ TEST_CASE("volume-tracking-moved", "[volume_map]")
     v.clear();
     maps_as_loaded(a);
     maps_as_loaded(c);
+}
+
+TEST_CASE("volume-map-threads", "[volume_map]")
+{
+    // One map, queried from several threads at once: each gets what one thread alone gets, and
+    // the stats count every point once. The second operation is a collapse whose tets do not
+    // fit it, so every point goes through a map that fails, which the stats count.
+    const history::SurfaceHistory h = square_history();
+    history::VolumeHistory v = square_volume(h);
+    history::VolumeEdit bad = v.edits[0];
+    bad.op = history::VolumeOp::collapse;
+    bad.first_edit = 2;
+    bad.positions = bad.positions_after();
+    bad.moved.clear();
+    bad.op_vertices = {0, 1};
+    bad.removed = {0};
+    v.edits.push_back(bad);
+    const VolumeMap map(h, v);
+    std::vector<VolumePoint> pts;
+    std::mt19937 rng(3);
+    for (int i = 0; i < 1000; ++i) {
+        const auto& t = v.edits[0].tets[rng() % 4];
+        Eigen::Vector4d b;
+        for (int k = 0; k < 4; ++k) b[k] = 1 + double(rng() % 100);
+        b /= b.sum();
+        VolumePoint p;
+        p.position.setZero();
+        for (int k = 0; k < 4; ++k) p.position += b[k] * v.edits[0].positions[t[k]];
+        pts.push_back(p);
+    }
+    const auto serial = map.to_output(pts);
+    const size_t forward = map.stats().through_failed;
+    REQUIRE(forward == pts.size());
+    map.to_input(serial);
+    const size_t backward = map.stats().through_failed - forward; // not those the collapse took
+    REQUIRE(backward > 0);
+    const int n_threads = 8, calls = 5;
+    std::vector<std::thread> threads;
+    std::atomic<size_t> different{0};
+    for (int t = 0; t < n_threads; ++t) {
+        threads.emplace_back([&]() {
+            for (int c = 0; c < calls; ++c) {
+                const auto there = map.to_output(pts);
+                const auto back = map.to_input(there);
+                for (size_t i = 0; i < pts.size(); ++i) {
+                    different += there[i].position != serial[i].position ||
+                                 there[i].region != serial[i].region;
+                }
+                map.build_all();
+                (void)map.stats();
+            }
+        });
+    }
+    for (auto& t : threads) t.join();
+    CHECK(different == 0);
+    const VolumeMapStats st = map.stats();
+    CHECK(st.built == 1);
+    CHECK(st.failed == 1);
+    REQUIRE(st.failures.size() == 1);
+    CHECK(st.failures.begin()->second == 1);
+    CHECK(st.through_failed == (forward + backward) * (1 + n_threads * calls));
 }
 
 TEST_CASE("volume-map-non-finite", "[volume_map]")

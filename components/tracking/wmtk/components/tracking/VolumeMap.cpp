@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <mutex>
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
@@ -1164,6 +1165,20 @@ private:
     std::unique_ptr<VolumeMap::OpMap> m_op;
 };
 
+/// Adds the counts of `from` to `to`.
+void add(VolumeMapStats& to, const VolumeMapStats& from)
+{
+    to.built += from.built;
+    to.failed += from.failed;
+    for (const auto& [why, n] : from.failures) to.failures[why] += n;
+    to.real_pairs += from.real_pairs;
+    to.fallback_pairs += from.fallback_pairs;
+    to.decompositions += from.decompositions;
+    to.surface_not_kept += from.surface_not_kept;
+    to.region_changed += from.region_changed;
+    to.through_failed += from.through_failed;
+}
+
 /// The volume history's surface ids are the recorder's; the saved surface history may number
 /// faces differently only before its first recorded edit, which the offset skips.
 SurfaceMapOptions volume_options()
@@ -1175,9 +1190,18 @@ SurfaceMapOptions volume_options()
 
 } // namespace
 
+struct VolumeMap::Shared
+{
+    std::mutex mutex;
+    /// Per operation: 0 not built yet, 1 built, 2 failed.
+    std::vector<char> built;
+    VolumeMapStats stats;
+};
+
 VolumeMap::VolumeMap(const history::SurfaceHistory& surface, history::VolumeHistory volume)
     : m_volume(std::move(volume))
     , m_surface(surface, volume_options())
+    , m_shared(std::make_unique<Shared>())
 {
     // The volume history must be the one recorded with this surface history: its operations'
     // edits, their surface vertices, are this history's.
@@ -1263,7 +1287,7 @@ VolumeMap::VolumeMap(const history::SurfaceHistory& surface, history::VolumeHist
         }
         m_faces.push_back(std::move(f));
     }
-    m_built.assign(m_volume.edits.size(), 0);
+    m_shared->built.assign(m_volume.edits.size(), 0);
 }
 
 VolumeMap::~VolumeMap() = default;
@@ -1296,7 +1320,10 @@ std::optional<uint32_t> VolumeMap::region_of_groups(const std::set<std::string>&
 
 std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const
 {
-    if (m_built[k] == 2) return nullptr;
+    {
+        std::lock_guard<std::mutex> lock(m_shared->mutex);
+        if (m_shared->built[k] == 2) return nullptr;
+    }
     const auto& e = m_volume.edits[k];
     std::vector<const SurfaceMap::Cell*> cells;
     for (uint64_t d = 0; d < e.n_edits; ++d) {
@@ -1304,25 +1331,45 @@ std::unique_ptr<VolumeMap::OpMap> VolumeMap::op(const size_t k) const
             cells.push_back(c);
         }
     }
-    // the stats count each operation once, however often it is built
-    VolumeMapStats scratch;
-    VolumeMapStats& stats = m_built[k] ? scratch : m_stats;
+    // Built outside the lock, which only the stats of its first build are added under.
+    VolumeMapStats stats;
+    std::unique_ptr<OpMap> om;
+    std::string why;
     try {
-        auto om = Builder(e, *m_faces[k], std::move(cells), stats).build();
-        if (!m_built[k]) ++m_stats.built;
-        m_built[k] = 1;
-        return om;
+        om = Builder(e, *m_faces[k], std::move(cells), stats).build();
     } catch (const Fail& f) {
-        ++m_stats.failed;
-        ++m_stats.failures[f.what()];
-        m_built[k] = 2;
-        return nullptr;
+        why = f.what();
+    } catch (const std::exception& x) {
+        // what the history's checks let through: no reason to stop the other operations
+        why = std::string("its data does not fit together: ") + x.what();
     }
+    std::lock_guard<std::mutex> lock(m_shared->mutex);
+    char& built = m_shared->built[k];
+    if (om) {
+        if (built == 0) {
+            ++stats.built;
+            add(m_shared->stats, stats);
+            built = 1;
+        }
+        return om;
+    }
+    if (built != 2) {
+        ++m_shared->stats.failed;
+        ++m_shared->stats.failures[why];
+        built = 2;
+    }
+    return nullptr;
 }
 
 void VolumeMap::build_all() const
 {
-    for (size_t k = 0; k < m_built.size(); ++k) op(k);
+    for (size_t k = 0; k < m_volume.edits.size(); ++k) op(k);
+}
+
+VolumeMapStats VolumeMap::stats() const
+{
+    std::lock_guard<std::mutex> lock(m_shared->mutex);
+    return m_shared->stats;
 }
 
 std::vector<VolumePoint> VolumeMap::to_output(std::vector<VolumePoint> points) const
@@ -1378,6 +1425,8 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
         grid[key(to)].push_back(n);
     };
 
+    // this call's points' stats, added to the map's at its end
+    VolumeMapStats seen;
     const size_t n_edits = m_volume.edits.size();
     for (size_t step = 0; step < n_edits; ++step) {
         const size_t k = forward ? step : n_edits - 1 - step;
@@ -1437,7 +1486,7 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
                 tried = true;
             }
             if (!om) {
-                ++m_stats.through_failed;
+                ++seen.through_failed;
                 continue;
             }
             Tet t = T1[bt];
@@ -1448,15 +1497,15 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
             try {
                 mapped = om->apply(t, b, forward);
             } catch (const Fail&) {
-                ++m_stats.through_failed;
+                ++seen.through_failed;
                 continue;
             }
             const auto it = region_after.find(sorted(t));
             if (it == region_after.end()) {
-                ++m_stats.through_failed;
+                ++seen.through_failed;
                 continue;
             }
-            if (it->second != pts[n].region) ++m_stats.region_changed;
+            if (it->second != pts[n].region) ++seen.region_changed;
             // in a tet no pair maps and whose corners stay: the point stays, exactly
             if (!mapped && t == t0 &&
                 std::all_of(t.begin(), t.end(), [&](Vid v) { return X1[v] == X2[v]; })) {
@@ -1467,6 +1516,8 @@ std::vector<VolumePoint> VolumeMap::map(std::vector<VolumePoint> pts, const bool
             move_point(n, y);
         }
     }
+    std::lock_guard<std::mutex> lock(m_shared->mutex);
+    add(m_shared->stats, seen);
     return pts;
 }
 
