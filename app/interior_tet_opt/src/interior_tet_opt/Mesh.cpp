@@ -54,9 +54,10 @@ void InteriorTetOpt::initialize(
 
 bool InteriorTetOpt::split_edge_before(const Tuple& loc0)
 {
-    if (loc0.is_boundary_edge(*this)) split_cache.local().bnd = true;
-
     auto& cache = split_cache.local();
+    // Assigned on every split: the cache is per thread and outlives the operation, so a flag
+    // only ever set would freeze every vertex this thread splits after its first boundary edge.
+    cache.bnd = loc0.is_boundary_edge(*this);
     cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
     cache.v2_id = loc1.vid(*this);
@@ -96,7 +97,8 @@ bool InteriorTetOpt::split_edge_after(const Tuple& loc)
         if (q > cache.max_quality) return false;
     }
 
-    if (split_cache.local().bnd) m_vertex_attribute[v_id].freeze = true;
+    // Written either way, so the new vertex is frozen exactly when it lies on the boundary.
+    m_vertex_attribute[v_id].freeze = cache.bnd;
 
     // surface
     // m_vertex_attribute[v_id].m_is_on_surface = split_cache.local().is_edge_on_surface;
