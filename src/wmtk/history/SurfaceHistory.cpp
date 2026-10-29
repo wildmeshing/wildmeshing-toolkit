@@ -35,6 +35,7 @@ namespace {
 //   vertices were before the edit. Saving and loading both replay the history to know it.
 //   metadata length, metadata bytes
 //   n_output_vertex_ids, then each plus one (0: none)
+//   n_input_vertex_ids, then each plus one (0: none)
 constexpr char kMagic[8] = {'W', 'M', 'T', 'K', 'H', 'I', 'S', 'T'};
 constexpr uint32_t kVersion = 7;
 /// The corners of a face of a surface history.
@@ -469,6 +470,8 @@ std::vector<uint8_t> SurfaceHistory::to_bytes() const
     w.bytes(metadata.data(), metadata.size());
     w.varint(output_vertex_ids.size());
     for (const uint64_t v : output_vertex_ids) w.varint(v == kNoVertex ? 0 : v + 1);
+    w.varint(input_vertex_ids.size());
+    for (const uint64_t v : input_vertex_ids) w.varint(v == kNoVertex ? 0 : v + 1);
     return bytes;
 }
 
@@ -596,10 +599,12 @@ SurfaceHistory parse(const std::vector<uint8_t>& bytes, const std::string& name)
     }
     h.metadata.resize(r.count());
     r.bytes(h.metadata.data(), h.metadata.size());
-    h.output_vertex_ids.resize(r.count());
-    for (uint64_t& v : h.output_vertex_ids) {
-        const uint64_t n = r.varint();
-        v = n == 0 ? kNoVertex : n - 1;
+    for (auto* ids : {&h.output_vertex_ids, &h.input_vertex_ids}) {
+        ids->resize(r.count());
+        for (uint64_t& v : *ids) {
+            const uint64_t n = r.varint();
+            v = n == 0 ? kNoVertex : n - 1;
+        }
     }
     return h;
 }

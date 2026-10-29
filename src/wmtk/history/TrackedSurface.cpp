@@ -102,7 +102,10 @@ TrackedSurfaceRecorder::TrackedSurfaceRecorder(
     , m_replay(m_history)
     , m_known(m_history.vertices)
     , m_next_face(m_history.faces.size())
-{}
+{
+    // The snapshot's vertices by the mesh's ids, which name a point on the first state.
+    m_history.input_vertex_ids.assign(m_mesh_of.begin(), m_mesh_of.end());
+}
 
 std::vector<uint64_t> TrackedSurfaceRecorder::mesh_vertex_ids() const
 {

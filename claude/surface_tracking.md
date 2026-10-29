@@ -37,6 +37,9 @@ Map points with the `surface_map` application of the same `wmtk_app` binary:
 - On the input: `face b0 b1 b2`. `face` is a triangle of the input files, counting from 0 over
   all of them in order, as the files hold them. `b` are barycentric coordinates with respect to
   that triangle's corners, in file order.
+- On the input of a history that starts at a tet mesh's tracked surface (`simwild` on a
+  `.msh`): `v0 v1 v2 b0 b1 b2`, as on a tet output, with the `v` vertices of the tet mesh the
+  history starts from (`<output>_history_input.msh`).
 - On the output of a surface application (`isotropic_remeshing`): `face b0 b1 b2`, with `face`
   a triangle of the output file.
 - On the output of a tet application (`tetwild`, `simwild`): `v0 v1 v2 b0 b1 b2`. The `v` are
@@ -53,7 +56,7 @@ From C++ (`components/surface_map/wmtk/components/surface_map/Tracking.hpp`):
 const auto tracking = surface_map::Tracking::load("out.wmtkhist");
 std::vector<surface_map::InputPoint> pts = {{face, {b0, b1, b2}}};
 auto on_output = tracking.to_output(pts);    // OutputPoint: .face, or .vertices for a tet output
-auto back = tracking.to_input(on_output);    // InputPoint
+auto back = tracking.to_input(on_output);    // InputPoint: .face, or .vertices (input_by_vertices)
 auto triangles = tracking.output_triangles(); // the output's tracked faces, in its own ids
 ```
 
@@ -86,6 +89,9 @@ Remapping attributes:
 - **`metadata`:** free text. The applications store their JSON parameters there, which is how
   `surface_map` finds an application's input files when it is not given them.
 - **`output_vertex_ids`:** for applications whose output numbers vertices its own way.
+- **`input_vertex_ids`:** the same for the first state, for a history that starts at a tet
+  mesh's tracked surface rather than at input files: the mesh's id of each snapshot vertex
+  (`TrackedSurfaceRecorder` fills it). Empty for a history from files.
 
 Edits are described on the complex alone -- vertex and face ids, positions -- never on the
 mesh class that did them. A TriMesh and the tracked surface of a TetMesh record in the same
@@ -291,7 +297,7 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 |---|---|---|---|
 | `isotropic_remeshing`, `qslim`, `shortest_edge_collapse` | the input file as read | the output file | output triangle + barycentrics |
 | `tetwild` | the input files as read | the tracked faces of `<output>_final.msh` (after any filter) | three tet vertex ids + barycentrics |
-| `simwild`, `.msh` input | the input's tag interfaces | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
+| `simwild`, `.msh` input | the tag interfaces of `<output>_history_input.msh` (input points: three of its vertex ids + barycentrics) | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 | `simwild`, surface input | the input files as read | the tag interfaces of `<output>.msh` | three tet vertex ids + barycentrics |
 
 ## The map: `surface_map`
@@ -360,8 +366,8 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
 
   `folded_cells()` counts local maps between patches folded over in 3D. They are still
   bijections, but stretched.
-- **`Tracking`.** The user-facing wrapper: input points by file triangles; output points by
-  triangles or by `output_vertex_ids` triplets.
+- **`Tracking`.** The user-facing wrapper: input points by file triangles or by
+  `input_vertex_ids` triplets; output points by triangles or by `output_vertex_ids` triplets.
 - **`transfer_fields` / `surface_io`.** Fields of a gmsh input carried onto the output.
   - Faces take their centroid's value; corners are evaluated just inside their face.
   - Every output face also gets `input_face`, the input face it maps to.

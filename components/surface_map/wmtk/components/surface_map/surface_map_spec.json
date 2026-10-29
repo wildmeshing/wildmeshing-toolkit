@@ -107,13 +107,13 @@
     "pointer": "/points",
     "type": "string",
     "default": "",
-    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild)."
+    "doc": "map: a text file of points, one per line, numbers separated by blanks, '#' starting a comment. On the input (direction to_output): `face b0 b1 b2`, a triangle of the input files -- the triangles of all of them, in order, as the files hold them, from 0 -- and barycentric coordinates with respect to its corners in file order; for a history that starts at a tet mesh's tracked surface (simwild on a .msh input), `v0 v1 v2 b0 b1 b2`, three vertices of the tet mesh the history starts from (<output>_history_input.msh) at the corners of a tracked face, in any order, with barycentric coordinates in that order. On the output (direction to_input): `face b0 b1 b2`, a triangle of the output file, for an application whose output is a surface (isotropic_remeshing); `v0 v1 v2 b0 b1 b2`, three vertices of the output tet mesh at the corners of a tracked face, in any order, with barycentric coordinates in that order, for one whose output is a tet mesh (tetwild, simwild)."
   },
   {
     "pointer": "/output_points",
     "type": "string",
     "default": "",
-    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order: on the output as described for `points` (to_output), on the input as `face b0 b1 b2` (to_input). A point with no image has the id -1."
+    "doc": "map: where to write the mapped points, one line per point of `points`, in the same order, as described for `points` on the side they are mapped to. A point with no image has the id -1."
   },
   {
     "pointer": "/direction",

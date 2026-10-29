@@ -18,13 +18,24 @@ namespace wmtk::components::surface_map {
 /// No face, no vertex: a point that has no image.
 constexpr uint64_t kNoId = std::numeric_limits<uint64_t>::max();
 
-/// A point on an application's input: a triangle of its input files -- the triangles of all of
-/// them, in order, as the files hold them -- and barycentric coordinates with respect to that
-/// triangle's corners in file order.
+/**
+ * @brief A point on an application's input.
+ *
+ * A history that starts at input files (every application but simwild on a tet mesh) names it by
+ * a triangle of those files -- the triangles of all of them, in order, as the files hold them --
+ * and barycentric coordinates with respect to that triangle's corners in file order. One that
+ * starts at a tet mesh's tracked surface (simwild on a .msh), which is no element of a file,
+ * names it by three vertices of that mesh -- the corners of a tracked face -- and barycentric
+ * coordinates in their order, as an OutputPoint of a tet output does.
+ */
 struct InputPoint
 {
+    /// Histories from input files: the input triangle.
     uint64_t face = kNoId;
     Eigen::Vector3d bary = Eigen::Vector3d::Constant(1. / 3);
+    /// Histories from a tet mesh: its vertices at the corners of the tracked face holding the
+    /// point. Last, so that {face, bary} still names a point on input files.
+    std::array<uint64_t, 3> vertices = {{kNoId, kNoId, kNoId}};
 };
 
 /**
@@ -62,15 +73,19 @@ public:
     static Tracking load(const std::string& path, const SurfaceMapOptions& options = {});
 
     /// Whether output points are named by vertex triplets (a tet output) rather than triangles.
-    bool output_by_vertices() const { return !m_output_ids.empty(); }
+    bool output_by_vertices() const { return !m_output.ids.empty(); }
+    /// Whether input points are named by vertex triplets (a history that starts at a tet mesh's
+    /// tracked surface) rather than triangles of the input files.
+    bool input_by_vertices() const { return !m_input.ids.empty(); }
 
     /// Input points to the output. `warnings`, if given, gets where this call found the map not
     /// a bijection (SurfaceMap::to_output).
     std::vector<OutputPoint> to_output(
         const std::vector<InputPoint>& points,
         MapWarnings* warnings = nullptr) const;
-    /// Output points to the input, the inverse map. A tet output's point may list the face's
-    /// three vertices in any order, its barycentric coordinates following them.
+    /// Output points to the input, the inverse map. A point named by vertices, on either side,
+    /// may list the face's three vertices in any order, its barycentric coordinates following
+    /// them.
     std::vector<InputPoint> to_input(
         const std::vector<OutputPoint>& points,
         MapWarnings* warnings = nullptr) const;
@@ -79,16 +94,48 @@ public:
     /// ids, the triplets an OutputPoint may name; for a surface output, its triangles, by index.
     std::vector<std::array<uint64_t, 3>> output_triangles() const;
 
+    /// The input's tracked surface likewise: for a history from a tet mesh, its tracked faces by
+    /// the mesh's vertex ids, the triplets an InputPoint may name; otherwise the triangles of the
+    /// input files, by index.
+    std::vector<std::array<uint64_t, 3>> input_triangles() const;
+
     /// The triangles of the input files, in order, as the history holds them.
     const std::vector<std::array<uint64_t, 3>>& input_faces() const { return m_map.input_faces(); }
     const SurfaceMap& map() const { return m_map; }
 
 private:
+    /// A side of the map whose points may be named by the vertices of a mesh: the mesh's id of
+    /// each vertex of the history's state there (empty: points are named by faces), and back.
+    struct Naming
+    {
+        std::vector<uint64_t> ids;
+        std::map<uint64_t, uint64_t> history_vertex;
+    };
+    /// A point named by vertices, as a point of `faces`: the live face with those corners, the
+    /// coordinates in its corner order. No face if none has them.
+    static SurfacePoint by_vertices(
+        const Naming& naming,
+        const std::vector<std::array<uint64_t, 3>>& faces,
+        const std::map<std::array<uint64_t, 3>, uint64_t>& face_of,
+        const std::array<uint64_t, 3>& vertices,
+        const Eigen::Vector3d& bary);
+    /// The live faces by their sorted corners.
+    static std::map<std::array<uint64_t, 3>, uint64_t> faces_by_corners(
+        const std::vector<std::array<uint64_t, 3>>& faces,
+        const std::vector<uint8_t>& alive);
+    /// The live faces of a side, by the naming's vertex ids if it has them.
+    static std::vector<std::array<uint64_t, 3>> triangles(
+        const Naming& naming,
+        const std::vector<std::array<uint64_t, 3>>& faces,
+        const std::vector<uint8_t>& alive);
+
     SurfaceMap m_map;
-    /// The output's id of each vertex of the history's last state; empty for a surface output.
-    std::vector<uint64_t> m_output_ids;
-    /// Output vertex -> vertex of the last state.
-    std::map<uint64_t, uint64_t> m_history_vertex;
+    /// The output's vertex ids (empty for a surface output) and the input mesh's (empty for a
+    /// history from files).
+    Naming m_output, m_input;
+    /// The live faces of the last and the first state by their sorted corners, for the sides
+    /// named by vertices.
+    std::map<std::array<uint64_t, 3>, uint64_t> m_output_face_of, m_input_face_of;
 };
 
 } // namespace wmtk::components::surface_map

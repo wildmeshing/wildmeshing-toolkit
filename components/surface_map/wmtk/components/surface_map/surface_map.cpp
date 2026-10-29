@@ -114,6 +114,8 @@ void map_points(
     timer.start();
     const Tracking tracking(h, options_of(json_params));
     logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
+    // A point named by a face is `face b0 b1 b2`, one named by vertices `v0 v1 v2 b0 b1 b2`.
+    const size_t n_in = tracking.input_by_vertices() ? 6 : 4;
     const size_t n_out = tracking.output_by_vertices() ? 6 : 4;
     std::ofstream out(output_points);
     if (!out) log_and_throw_error("Could not write {}", output_points);
@@ -123,8 +125,16 @@ void map_points(
     timer.start();
     if (forward) {
         std::vector<InputPoint> pts;
-        for (const auto& r : read_points(points_path, 4)) {
-            pts.push_back({id_of(r[0]), Eigen::Vector3d(r[1], r[2], r[3])});
+        for (const auto& r : read_points(points_path, n_in)) {
+            InputPoint p;
+            if (tracking.input_by_vertices()) {
+                p.vertices = {{id_of(r[0]), id_of(r[1]), id_of(r[2])}};
+                p.bary = Eigen::Vector3d(r[3], r[4], r[5]);
+            } else {
+                p.face = id_of(r[0]);
+                p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+            }
+            pts.push_back(p);
         }
         total = pts.size();
         for (const OutputPoint& p : tracking.to_output(pts, &warnings)) {
@@ -153,9 +163,15 @@ void map_points(
         }
         total = pts.size();
         for (const InputPoint& p : tracking.to_input(pts, &warnings)) {
-            lost += p.face == kNoId;
-            out << id_text(p.face) << " " << p.bary[0] << " " << p.bary[1] << " " << p.bary[2]
-                << "\n";
+            const bool none =
+                tracking.input_by_vertices() ? p.vertices[0] == kNoId : p.face == kNoId;
+            lost += none;
+            if (tracking.input_by_vertices()) {
+                for (const uint64_t v : p.vertices) out << id_text(none ? kNoId : v) << " ";
+            } else {
+                out << id_text(p.face) << " ";
+            }
+            out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
         }
     }
     logger().info(

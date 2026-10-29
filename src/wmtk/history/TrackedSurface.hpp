@@ -40,7 +40,8 @@ public:
     /// A tracked face's corners, in the order that orients it.
     using Orient = std::function<Triangle(const Triangle&)>;
 
-    /// The tracked surface now, any corner order; `orient` orders the faces of the snapshot.
+    /// The tracked surface now, any corner order; `orient` orders the faces of the snapshot,
+    /// whose vertices' mesh ids the history keeps (SurfaceHistory::input_vertex_ids).
     /// `feature_edges`: the mesh's feature curves on it (SurfaceHistory::feature_edges), by mesh
     /// vertex ids. The mesh must keep them by the edits' rules.
     TrackedSurfaceRecorder(

@@ -4,13 +4,16 @@
 
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/components/surface_map/Tracking.hpp>
+#include <wmtk/components/surface_map/surface_map.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <random>
+#include <sstream>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -112,4 +115,121 @@ TEST_CASE("tracking-example-simwild", "[simwild][tracking]" + release_only)
     size_t lost = 0;
     for (const InputPoint& s : tracking.to_input(corners)) lost += s.face == kNoId;
     CHECK(lost == 0);
+}
+
+TEST_CASE("tracking-example-simwild-tet-input", "[simwild][tracking]")
+{
+    // A tet mesh as input: the history starts at its tracked surface, the interfaces between its
+    // tags, which no input file holds as triangles. A point on it is named as one on the output
+    // is: three vertices of the mesh the history starts from -- written next to the output as
+    // <output>_history_input.msh -- and barycentric coordinates.
+    const fs::path dir = fs::current_path() / "tracking_example_simwild_tet_input";
+    fs::create_directories(dir);
+    const fs::path output = dir / "double_sphere";
+    const fs::path tracking_file = dir / "double_sphere.wmtkhist";
+    simwild::simwild({
+        {"application", "simwild"},
+        {"operation", "remeshing"},
+        {"input", {(fs::path(WMTK_DATA_DIR) / "models" / "double_sphere.msh").string()}},
+        {"output", output.string()},
+        {"history_output", tracking_file.string()},
+        {"max_iterations", 2},
+    });
+    const MeshData start = io::read_mesh(output.string() + "_history_input.msh");
+    const MeshData end = io::read_mesh(output.string() + ".msh");
+    const auto at =
+        [](const MeshData& m, const std::array<uint64_t, 3>& v, const Eigen::Vector3d& b) {
+            Eigen::Vector3d q = Eigen::Vector3d::Zero();
+            for (int k = 0; k < 3; ++k) q += b[k] * m.V.row(v[k]).transpose();
+            return q;
+        };
+
+    const Tracking tracking = Tracking::load(tracking_file.string());
+    REQUIRE(tracking.input_by_vertices());
+    REQUIRE(tracking.output_by_vertices());
+    // The input's tracked faces by the start mesh's vertices, where the history has them.
+    const auto triangles = tracking.input_triangles();
+    REQUIRE(!triangles.empty());
+    for (size_t f = 0; f < triangles.size(); ++f) {
+        for (int k = 0; k < 3; ++k) {
+            REQUIRE(triangles[f][k] < uint64_t(start.V.rows()));
+            const auto& p = tracking.map().input_vertices()[tracking.input_faces()[f][k]];
+            REQUIRE(start.V.row(triangles[f][k]).transpose() == p);
+        }
+    }
+
+    // Points on those faces, their corners listed in any order, to the output and back.
+    std::mt19937 rng(3);
+    std::uniform_real_distribution<double> u(0, 1);
+    std::vector<InputPoint> pts;
+    for (int i = 0; i < 300; ++i) {
+        double a = u(rng), b = u(rng);
+        if (a + b > 1) {
+            a = 1 - a;
+            b = 1 - b;
+        }
+        InputPoint p;
+        p.vertices = triangles[rng() % triangles.size()];
+        p.bary = Eigen::Vector3d(1 - a - b, a, b);
+        if (i % 2) {
+            std::swap(p.vertices[0], p.vertices[2]);
+            std::swap(p.bary[0], p.bary[2]);
+        }
+        pts.push_back(p);
+    }
+    surface_map::MapWarnings warnings;
+    const std::vector<OutputPoint> there = tracking.to_output(pts, &warnings);
+    const std::vector<InputPoint> back = tracking.to_input(there, &warnings);
+    CHECK(warnings.total() == 0);
+    double round_trip = 0, moved = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(there[i].vertices[0] != kNoId);
+        REQUIRE(back[i].vertices[0] != kNoId);
+        round_trip = std::max(
+            round_trip,
+            (at(start, back[i].vertices, back[i].bary) - at(start, pts[i].vertices, pts[i].bary))
+                .norm());
+        moved = std::max(
+            moved,
+            (at(end, there[i].vertices, there[i].bary) - at(start, pts[i].vertices, pts[i].bary))
+                .norm());
+    }
+    CHECK(round_trip < 1e-8);
+    CHECK(moved < 0.2);
+    // A triplet that is no tracked face has no image.
+    InputPoint none;
+    none.vertices = {{triangles[0][0], triangles[0][1], uint64_t(start.V.rows())}};
+    CHECK(tracking.to_output({none})[0].vertices[0] == kNoId);
+
+    // The same from the command line: `v0 v1 v2 b0 b1 b2` on either side.
+    const fs::path points = dir / "points.txt";
+    {
+        std::ofstream o(points);
+        o.precision(17);
+        for (const InputPoint& p : pts) {
+            for (const uint64_t v : p.vertices) o << v << " ";
+            o << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+        }
+    }
+    const fs::path mapped = dir / "points_on_output.txt";
+    surface_map::surface_map({
+        {"application", "surface_map"},
+        {"history", tracking_file.string()},
+        {"operation", "map"},
+        {"points", points.string()},
+        {"output_points", mapped.string()},
+        {"direction", "to_output"},
+    });
+    std::ifstream in(mapped);
+    size_t i = 0, same = 0;
+    for (std::string line; std::getline(in, line); ++i) {
+        std::istringstream ss(line);
+        std::array<uint64_t, 3> v;
+        Eigen::Vector3d b;
+        ss >> v[0] >> v[1] >> v[2] >> b[0] >> b[1] >> b[2];
+        REQUIRE(i < there.size());
+        same += v == there[i].vertices && (b - there[i].bary).norm() < 1e-12;
+    }
+    CHECK(i == pts.size());
+    CHECK(same == pts.size());
 }

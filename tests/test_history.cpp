@@ -156,8 +156,8 @@ struct Bytes
     }
     /// "WMTKHIST", version 7, three corners.
     Bytes& header() { return raw("WMTKHIST").u8(7).u8(0).u8(0).u8(0).u8(3); }
-    /// No metadata, no output vertex ids.
-    Bytes& trailer() { return vi(0).vi(0); }
+    /// No metadata, no output or input vertex ids.
+    Bytes& trailer() { return vi(0).vi(0).vi(0); }
 };
 
 } // namespace
@@ -249,6 +249,7 @@ TEST_CASE("history-bytes-are-the-file", "[history]")
     m.consolidate_mesh();
     rec->history().metadata = R"({"application": "test"})";
     rec->history().output_vertex_ids = {3, history::kNoVertex, 1};
+    rec->history().input_vertex_ids = {7, 0, history::kNoVertex, 2};
 
     const auto dir = std::filesystem::temp_directory_path() /
                      ("wmtk_history_bytes_" + std::to_string(std::random_device{}()));
@@ -273,6 +274,7 @@ TEST_CASE("history-bytes-are-the-file", "[history]")
     CHECK(g.to_bytes() == bytes);
     CHECK(h.metadata == rec->history().metadata);
     CHECK(h.output_vertex_ids == rec->history().output_vertex_ids);
+    CHECK(h.input_vertex_ids == rec->history().input_vertex_ids);
     REQUIRE(h.edits.size() == rec->history().edits.size());
 
     // Anything that is not a history is refused, by what it is.

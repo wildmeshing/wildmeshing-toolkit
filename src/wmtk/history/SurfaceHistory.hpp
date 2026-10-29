@@ -113,6 +113,13 @@ struct SurfaceHistory
      * TriMesh application's are.
      */
     std::vector<uint64_t> output_vertex_ids;
+    /**
+     * The id the mesh the history starts from gives each vertex of the first state -- for a
+     * history that starts at a tet mesh's tracked surface rather than at input files, so that a
+     * point on it is named by the mesh's three vertices, as output_vertex_ids names one on the
+     * last. Empty when the first state is the input files' triangles, as read.
+     */
+    std::vector<uint64_t> input_vertex_ids;
 
     /// To and from a history file (read_history, write_history).
     void save(const std::string& path) const;
