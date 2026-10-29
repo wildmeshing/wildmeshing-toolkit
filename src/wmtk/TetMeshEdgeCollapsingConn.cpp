@@ -1,5 +1,6 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/history/History.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 
 #include <wmtk/utils/TetMeshElementTopology.h>
 #include <wmtk/utils/VectorUtils.h>

@@ -28,4 +28,10 @@ using CurveReplay = BasicReplay<2>;
 using TrackedSurfaceRecorder = TrackedRecorder<3>;
 using TrackedCurveRecorder = TrackedRecorder<2>;
 
+// VolumeHistory.hpp
+enum class VolumeOp : uint8_t;
+struct VolumeCapture;
+struct VolumeHistory;
+class VolumeRecorder;
+
 } // namespace wmtk::history

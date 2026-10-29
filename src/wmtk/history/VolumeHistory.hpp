@@ -105,6 +105,17 @@ struct VolumeHistory
     static VolumeHistory load(const std::string& path);
 };
 
+/// The tets around an operation, by mesh vertex ids, with their tags; each vertex's position and
+/// surface vertex (kNoVertex: none). What a VolumeRecorder commits.
+struct VolumeCapture
+{
+    std::vector<std::array<size_t, 4>> tets;
+    std::vector<std::vector<int64_t>> tags;
+    std::vector<size_t> vertices;
+    std::vector<Eigen::Vector3d> positions;
+    std::vector<uint64_t> surface;
+};
+
 /**
  * @brief Records a VolumeHistory alongside a TrackedSurfaceRecorder. An operation captures the
  * tets around it before it changes the mesh and at its commit point (TetMesh does both), and
@@ -120,16 +131,7 @@ public:
     VolumeRecorder();
     ~VolumeRecorder();
 
-    /// The tets around an operation, by mesh vertex ids, with their tags; each vertex's
-    /// position and surface vertex (kNoVertex: none).
-    struct Capture
-    {
-        std::vector<std::array<size_t, 4>> tets;
-        std::vector<std::vector<int64_t>> tags;
-        std::vector<size_t> vertices;
-        std::vector<Eigen::Vector3d> positions;
-        std::vector<uint64_t> surface;
-    };
+    using Capture = VolumeCapture;
     void commit(
         VolumeOp op,
         std::array<size_t, 2> surface_edits,

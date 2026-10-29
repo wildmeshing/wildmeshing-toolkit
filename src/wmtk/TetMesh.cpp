@@ -2,6 +2,7 @@
 
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
+#include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -10,6 +11,13 @@
 #include <vector>
 
 namespace wmtk {
+
+struct TetMesh::VolumeRecording
+{
+    std::shared_ptr<history::VolumeRecorder> recorder;
+    std::function<Eigen::Vector3d(size_t)> position;
+    wmtk::threading::enumerable_thread_specific<history::VolumeCapture> before;
+};
 
 // Atomically reserve `n` contiguous fresh tet slots from the preallocated storage.
 // Returns the first index of the block, or -1 if the reservation would exceed the
@@ -989,7 +997,7 @@ void TetMesh::consolidate_mesh()
         v_cnt++;
     }
     if (m_surface_history) m_surface_history->renumber(map_v_ids);
-    if (m_volume_history) m_volume_history->renumber(map_v_ids);
+    if (m_volume_history) m_volume_history->recorder->renumber(map_v_ids);
     auto t_cnt = 0;
     std::vector<size_t> map_t_ids(tet_capacity(), -1);
     for (auto i = 0; i < tet_capacity(); i++) {
@@ -1685,15 +1693,15 @@ std::shared_ptr<history::VolumeRecorder> TetMesh::start_volume_history(
     if (!m_surface_history) {
         log_and_throw_error("start_volume_history: the surface history is not being recorded");
     }
-    m_volume_position = std::move(position);
-    m_volume_history = std::make_shared<history::VolumeRecorder>();
-    return m_volume_history;
+    m_volume_history = std::make_shared<VolumeRecording>();
+    m_volume_history->recorder = std::make_shared<history::VolumeRecorder>();
+    m_volume_history->position = std::move(position);
+    return m_volume_history->recorder;
 }
 
 void TetMesh::stop_volume_history()
 {
     m_volume_history.reset();
-    m_volume_position = nullptr;
 }
 
 size_t TetMesh::resync_surface_history()
@@ -1843,9 +1851,9 @@ std::array<size_t, 2> TetMesh::surface_history_commit(
     return m_surface_history->commit(std::move(c));
 }
 
-history::VolumeRecorder::Capture TetMesh::volume_capture(const std::vector<size_t>& vs) const
+history::VolumeCapture TetMesh::volume_capture(const std::vector<size_t>& vs) const
 {
-    history::VolumeRecorder::Capture c;
+    history::VolumeCapture c;
     std::vector<size_t> tids;
     for (const size_t v : vs) {
         const auto& ring = m_vertex_connectivity[v].m_conn_tets;
@@ -1859,14 +1867,14 @@ history::VolumeRecorder::Capture TetMesh::volume_capture(const std::vector<size_
         c.tags.push_back(tet_tags(tid));
     }
     c.vertices = vertices_of_tets(tids);
-    for (const size_t v : c.vertices) c.positions.push_back(m_volume_position(v));
+    for (const size_t v : c.vertices) c.positions.push_back(m_volume_history->position(v));
     c.surface = m_surface_history->vertex_ids(c.vertices);
     return c;
 }
 
 void TetMesh::volume_history_before(const std::vector<size_t>& vs)
 {
-    m_volume_history_before.local() = volume_capture(vs);
+    m_volume_history->before.local() = volume_capture(vs);
 }
 
 void TetMesh::volume_history_commit(
@@ -1875,9 +1883,10 @@ void TetMesh::volume_history_commit(
     const std::vector<size_t>& op_vertices,
     const std::vector<size_t>& vs_after)
 {
-    auto& before = m_volume_history_before.local();
+    auto& before = m_volume_history->before.local();
     if (surface_edits[1] > surface_edits[0]) {
-        m_volume_history->commit(op, surface_edits, op_vertices, before, volume_capture(vs_after));
+        m_volume_history->recorder
+            ->commit(op, surface_edits, op_vertices, before, volume_capture(vs_after));
     }
     before = {};
 }

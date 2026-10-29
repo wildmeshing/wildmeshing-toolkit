@@ -26,7 +26,6 @@
 #include <vector>
 
 #include <wmtk/history/Fwd.hpp>
-#include <wmtk/history/VolumeHistory.hpp>
 
 namespace wmtk {
 class TetMesh
@@ -1716,13 +1715,12 @@ private:
         const std::vector<size_t>& vs_after,
         bool all);
 
-    std::shared_ptr<history::VolumeRecorder> m_volume_history;
-    std::function<Eigen::Vector3d(size_t)> m_volume_position;
-    /// The tets around the operation this thread is in, as they were before it.
-    wmtk::threading::enumerable_thread_specific<history::VolumeRecorder::Capture>
-        m_volume_history_before;
+    /// The volume history being recorded (TetMesh.cpp): its recorder, the positions it is given,
+    /// and the tets around the operation each thread is in, as they were before it.
+    struct VolumeRecording;
+    std::shared_ptr<VolumeRecording> m_volume_history;
     /// The tets at the vertices `vs`, with what a volume history keeps of them.
-    history::VolumeRecorder::Capture volume_capture(const std::vector<size_t>& vs) const;
+    history::VolumeCapture volume_capture(const std::vector<size_t>& vs) const;
     /// An operation's tets before it changes the mesh, and at its commit point, given the
     /// surface edits it made: recorded if it made any.
     void volume_history_before(const std::vector<size_t>& vs);
