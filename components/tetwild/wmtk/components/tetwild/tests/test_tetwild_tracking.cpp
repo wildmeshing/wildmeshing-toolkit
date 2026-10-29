@@ -257,3 +257,34 @@ TEST_CASE("tracking-example-tetwild-volume", "[tetwild][tracking]" + release_onl
     CHECK(outside > 0);
     CHECK(outside_found == 0);
 }
+
+TEST_CASE("tetwild-volume-history-refusals", "[tetwild][tracking]")
+{
+    // What the volume history cannot follow is refused before any work: the coarsening pass's
+    // local smoothing, which moves a ball of vertices inside one collapse, and a volume history
+    // without the surface history it follows.
+    const fs::path dir = fs::current_path() / "tetwild_volume_history_refusals";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const fs::path output = dir / "sphere";
+    const nlohmann::json base = {
+        {"application", "tetwild"},
+        {"input", {(fs::path(WMTK_DATA_DIR) / "models" / "sphere.obj").string()}},
+        {"output", output.string()},
+        {"history_output", output.string() + ".wmtkhist"},
+        {"volume_history_output", output.string() + ".wmtkvol"},
+        {"max_iterations", 1},
+        {"write_vtu", false},
+    };
+    nlohmann::json j = base;
+    j["coarsen_pass"] = true;
+    j["coarsen_local_smoothing_passes"] = 2;
+    CHECK_THROWS_AS(tetwild::tetwild(j), std::runtime_error);
+    j = base;
+    j["history_output"] = "";
+    CHECK_THROWS_AS(tetwild::tetwild(j), std::runtime_error);
+    j = base;
+    j["use_legacy_code"] = true;
+    CHECK_THROWS_AS(tetwild::tetwild(j), std::runtime_error);
+    CHECK_FALSE(fs::exists(output.string() + ".wmtkvol"));
+}

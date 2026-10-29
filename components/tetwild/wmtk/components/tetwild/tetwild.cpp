@@ -225,6 +225,23 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     if (!history_output.empty() && !record_history) {
         logger().warn("history_output: not recorded, use_legacy_code rebuilds the mesh");
     }
+    // The volume around it too, its own choice, recorded alongside from the insertion on (see
+    // below). It follows the surface history. And the coarsening pass's local smoothing moves a
+    // whole ball of vertices inside one collapse, of which the volume history, which records
+    // the stars of the edge's ends, sees none: refused, as use_legacy_code is.
+    const std::string volume_history_output = json_params["volume_history_output"];
+    if (!volume_history_output.empty()) {
+        if (!record_history) {
+            log_and_throw_error(
+                "volume_history_output needs history_output (and not "
+                "use_legacy_code): the volume history follows the surface's");
+        }
+        if (params.coarsen_pass && params.coarsen_local_smoothing_passes > 0) {
+            log_and_throw_error(
+                "volume_history_output needs coarsen_local_smoothing_passes 0 with coarsen_pass: "
+                "the volume history does not see the vertices a coarsening collapse smooths");
+        }
+    }
     history::SurfaceHistory input_history; // the files as read, welded, simplified
 
     std::vector<Eigen::Vector3d> verts;
@@ -946,17 +963,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     // From here on the tracked surface is recorded, starting where the insertion left it.
     if (record_history) mesh_new.record_surface_history(component_io.history_metadata(json_params));
-    // The whole volume around it too, its own choice: the map of the volume starts at the tet
-    // mesh written here, and ends at the mesh before the filter (<output>_history_output.msh).
-    // Both are files next to the output, so not on the memory route, which has none: there the
+    // The whole volume around it too, if asked: the map of the volume starts at the tet mesh
+    // written here, and ends at the mesh before the filter (<output>_history_output.msh). Both
+    // are files next to the output, so not on the memory route, which has none: there the
     // volume history is recorded all the same, and maps points by their positions.
-    const std::string volume_history_output = json_params["volume_history_output"];
     if (!volume_history_output.empty()) {
-        if (!record_history) {
-            log_and_throw_error(
-                "volume_history_output needs history_output (and not "
-                "use_legacy_code): the volume history follows the surface's");
-        }
         if (!component_io.memory()) mesh_new.output_mesh(output_path + "_history_input.msh");
         mesh_new.record_volume_history();
     }

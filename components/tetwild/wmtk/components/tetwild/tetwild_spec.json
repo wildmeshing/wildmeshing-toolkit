@@ -392,7 +392,7 @@
     "pointer": "/volume_history_output",
     "type": "string",
     "default": "",
-    "doc": "With history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the whole volume -- one region, the tracked surface kept on itself -- from the tet mesh the optimization starts from, written as <output>_history_input.msh, to the mesh before the filter, written as <output>_history_output.msh. Neither mesh is written on the memory route, which has no output file; the volume history is, and maps points by their positions there. It takes several times the room of the surface history. Empty: no recording."
+    "doc": "With history_output. Also record the tets around every operation that changes the tracked surface, and save them here (see wmtk/history/VolumeHistory.hpp): with the surface history, the tracking component rebuilds a map of the whole volume -- one region, the tracked surface kept on itself -- from the tet mesh the optimization starts from, written as <output>_history_input.msh, to the mesh before the filter, written as <output>_history_output.msh. Neither mesh is written on the memory route, which has no output file; the volume history is, and maps points by their positions there. It takes several times the room of the surface history. Not with use_legacy_code, nor with coarsen_pass and coarsen_local_smoothing_passes above 0: the coarsening composite smooths a ball of vertices inside one collapse, which the volume history does not see. Empty: no recording."
   },
   {
     "pointer": "/DEBUG_output",
