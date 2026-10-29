@@ -1186,7 +1186,8 @@ void TopoOffsetTetMesh::init_offset_potential()
         // for the debug frames' band_gap_bars (gather_vtu_frame()), without the value table;
         // nothing else reads it unless one of the other conditions holds.
         const bool exact_rule = m_offset_params.band_volume_rule == "exact" ||
-                                m_offset_params.band_volume_rule == "front_flux";
+                                m_offset_params.band_volume_rule == "front_flux" ||
+                                m_offset_params.band_volume_rule == "exact_swept";
         if (exact_rule ||
             (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
             m_offset_params.debug_output) {
