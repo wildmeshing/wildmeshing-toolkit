@@ -55,23 +55,17 @@ TetMeshData tet_mesh_data(const MeshData& msh)
             log_and_throw_error("volume tracking: the tets' tags are not one row per tet");
         }
     }
-    std::map<std::array<uint64_t, 4>, size_t> index;
-    std::vector<std::set<std::string>> groups;
+    // A row per tet, as io::read_mesh gives them: it lists each tet of a file once already (the
+    // older layout's copies of a tet, one per group, are one row), so a tet's id is its row.
+    std::vector<std::set<std::string>> groups(size_t(T.rows()));
     for (Eigen::Index r = 0; r < T.rows(); ++r) {
         std::array<uint64_t, 4> t;
         for (int k = 0; k < 4; ++k) t[k] = uint64_t(T(r, k));
-        std::array<uint64_t, 4> key = t;
-        std::sort(key.begin(), key.end());
-        const auto [jt, fresh] = index.emplace(key, m.tets.size());
-        if (fresh) {
-            m.tets.push_back(t);
-            groups.emplace_back();
-        }
+        m.tets.push_back(t);
         for (size_t j = 0; j < labels.size(); ++j) {
-            if (member(r, Eigen::Index(j)) != 0) groups[jt->second].insert(labels[j]);
+            if (member(r, Eigen::Index(j)) != 0) groups[size_t(r)].insert(labels[j]);
         }
     }
-    index.clear();
     std::map<std::set<std::string>, uint32_t> set_index;
     for (auto& g : groups) {
         const auto [it, fresh] = set_index.emplace(std::move(g), uint32_t(m.group_sets.size()));

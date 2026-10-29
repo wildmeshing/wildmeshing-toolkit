@@ -13,11 +13,11 @@
 
 namespace wmtk::components::tracking {
 
-/// A tet mesh as a MeshData holds it (tet_mesh_data()): each tet once, in the order its rows
-/// list it -- for a file io::write_mesh wrote, by element tag, the row it was given -- with the
-/// names of the physical groups that list it, the columns of its `tags` (simwild's: a group per
-/// tag the tet has, "ambient" for the untagged ones), as an index into the sets of names there
-/// are.
+/// A tet mesh as a MeshData holds it (tet_mesh_data()): a tet per row of its tets, in their order
+/// -- for a file, the rows io::read_mesh gives, by element tag, which for one io::write_mesh
+/// wrote is the row it was given -- with the names of the physical groups that list it, the
+/// columns of its `tags` (simwild's: a group per tag the tet has, "ambient" for the untagged
+/// ones), as an index into the sets of names there are.
 struct TetMeshData
 {
     std::vector<Eigen::Vector3d> vertices;

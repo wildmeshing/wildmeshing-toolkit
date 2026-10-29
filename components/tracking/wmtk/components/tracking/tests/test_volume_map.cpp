@@ -4,6 +4,7 @@
 #include <wmtk/components/tracking/volume_io.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 #include <wmtk/io/mesh_io.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -915,6 +916,85 @@ TEST_CASE("volume-tet-locator", "[volume_map]")
     CHECK(
         TetLocator(std::make_shared<const TetMeshData>()).locate(Eigen::Vector3d::Zero()).first ==
         -1);
+}
+
+TEST_CASE("volume-read-tet-msh", "[volume_map]")
+{
+    const TetMeshData cube = kuhn_cube(2);
+    MeshData m;
+    m.V.resize(Eigen::Index(cube.vertices.size()), 3);
+    for (size_t v = 0; v < cube.vertices.size(); ++v) {
+        m.V.row(Eigen::Index(v)) = cube.vertices[v].transpose();
+    }
+    auto& T = m.cells[CellType::Tetrahedron].connectivity;
+    T.resize(Eigen::Index(cube.tets.size()) + 1, 4);
+    for (size_t t = 0; t < cube.tets.size(); ++t) {
+        for (int k = 0; k < 4; ++k) T(Eigen::Index(t), k) = int64_t(cube.tets[t][k]);
+    }
+    T.row(T.rows() - 1) = T.row(3); // a tet twice: two rows, two tets
+    SECTION("io::write_mesh, groups in tags columns (simwild)")
+    {
+        // two tags, the untagged tets "ambient", as io::collect_tags labels them
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(T.rows(), 3);
+        for (Eigen::Index r = 0; r < T.rows(); ++r) {
+            tags(r, r % 3) = 1;
+            if (r % 5 == 0) tags(r, 1) = 1;
+        }
+        m.cells[CellType::Tetrahedron].attributes["tags"] = {tags, {"tag_0", "tag_1", "ambient"}};
+        const std::string path = temp_path("write_mesh") + ".msh";
+        io::write_mesh(path, m);
+        const TetMeshData d = read_tet_msh(path);
+        const MeshData r = io::read_mesh(path);
+        std::filesystem::remove(path);
+        // the rows io::read_mesh gives, in order, each with its groups
+        const auto& R = r.cells.at(CellType::Tetrahedron).connectivity;
+        REQUIRE(d.tets.size() == size_t(R.rows()));
+        REQUIRE(d.tets.size() == size_t(T.rows()));
+        for (size_t t = 0; t < d.tets.size(); ++t) {
+            for (int k = 0; k < 4; ++k) CHECK(d.tets[t][k] == uint64_t(T(Eigen::Index(t), k)));
+            std::set<std::string> want;
+            const char* names[3] = {"tag_0", "tag_1", "ambient"};
+            for (int j = 0; j < 3; ++j) {
+                if (tags(Eigen::Index(t), j)) want.insert(names[j]);
+            }
+            CHECK(d.group_sets[d.groups[t]] == want);
+        }
+        CHECK(tet_mesh_data(m).tets == d.tets);
+    }
+    SECTION("MshData, no groups (tetwild)")
+    {
+        wmtk::MshData msh;
+        msh.add_tet_vertices(cube.vertices.size(), [&](size_t k) { return cube.vertices[k]; });
+        msh.add_tets(cube.tets.size(), [&](size_t k) {
+            std::array<size_t, 4> t;
+            for (int c = 0; c < 4; ++c) t[c] = size_t(cube.tets[k][c]);
+            return t;
+        });
+        msh.add_tet_attribute<1>("t energy", [](size_t) { return 1.; });
+        const std::string path = temp_path("mshdata") + ".msh";
+        msh.save(path, true);
+        const TetMeshData d = read_tet_msh(path);
+        std::filesystem::remove(path);
+        CHECK(d.tets == cube.tets);
+        CHECK(d.vertices == cube.vertices);
+        REQUIRE(d.group_sets.size() == 1);
+        CHECK(d.group_sets[0].empty());
+    }
+    SECTION("a tet once per group (the older layout)")
+    {
+        // io::read_mesh makes each tet one row with all its groups, and so does read_tet_msh
+        const std::string path = std::string(WMTK_DATA_DIR) + "/models/double_sphere.msh";
+        const TetMeshData d = read_tet_msh(path);
+        const MeshData r = io::read_mesh(path);
+        CHECK(d.tets.size() == size_t(r.cells.at(CellType::Tetrahedron).connectivity.rows()));
+        std::set<std::array<uint64_t, 4>> distinct;
+        for (auto t : d.tets) {
+            std::sort(t.begin(), t.end());
+            distinct.insert(t);
+        }
+        CHECK(distinct.size() == d.tets.size());
+        CHECK(d.group_sets.size() > 1);
+    }
 }
 
 TEST_CASE("volume-chebyshev", "[volume_map]")

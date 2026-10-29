@@ -235,8 +235,8 @@ private:
 nlohmann::json warnings_report(const MapWarnings& w);
 nlohmann::json warnings_report(const CurveMapWarnings& w);
 
-/// A point of a tet mesh file: one of its tets -- each tet once, in the order the file first
-/// lists it -- and barycentric coordinates with respect to its corners in file order.
+/// A point of a tet mesh file: one of its tets -- the rows io::read_mesh gives (TetMeshData) --
+/// and barycentric coordinates with respect to its corners in file order.
 struct TetPoint
 {
     uint64_t tet = kNoId;
