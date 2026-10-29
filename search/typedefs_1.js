@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['orient_0',['Orient',['../classwmtk_1_1history_1_1_tracked_surface_recorder.html#a8d0923729b24f602e60f9e33f2905489',1,'wmtk::history::TrackedSurfaceRecorder']]]
+  ['face_0',['Face',['../structwmtk_1_1history_1_1_history.html#a20e9a9ae04fcf4294500bc8fd019a369',1,'wmtk::history::History']]],
+  ['feature_1',['Feature',['../structwmtk_1_1history_1_1_history.html#a3eaaf63feee478b15f296999a7ad3a93',1,'wmtk::history::History']]]
 ];

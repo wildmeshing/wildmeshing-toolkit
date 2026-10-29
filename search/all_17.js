@@ -2,8 +2,8 @@ var searchData=
 [
   ['u_0',['u',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#aa77efac2d7008c60c37c83116b58cbea',1,'wmtk::components::topological_offset::ExactBandIntegral::Local::U'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html#aaaf64cc25554ceec9fa764896bad804e',1,'wmtk::components::topological_offset::ExactBandIntegral::MaxInfo::U']]],
   ['unionenvelope_1',['UnionEnvelope',['../classwmtk_1_1_union_envelope.html',1,'wmtk']]],
-  ['unknown_2',['unknown',['../structwmtk_1_1history_1_1_tracked_surface_recorder_1_1_stats.html#a42d8f3eb3dfb5cd6db4ca2a5758a08d3',1,'wmtk::history::TrackedSurfaceRecorder::Stats']]],
-  ['unlocated_3',['unlocated',['../structwmtk_1_1components_1_1surface__map_1_1_map_warnings.html#ac985e526c434679d9461e1a73fea8576',1,'wmtk::components::surface_map::MapWarnings']]],
+  ['unknown_2',['unknown',['../structwmtk_1_1history_1_1_tracked_recorder_1_1_stats.html#aee81131d6122bbd117810225b511bb27',1,'wmtk::history::TrackedRecorder::Stats']]],
+  ['unlocated_3',['unlocated',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_warnings.html#a1903856f444d9d7553e76c9197c3f76b',1,'wmtk::components::tracking::CurveMapWarnings::unlocated'],['../structwmtk_1_1components_1_1tracking_1_1_map_warnings.html#a950e306acb8bfbc3d4bfe983e94daf38',1,'wmtk::components::tracking::MapWarnings::unlocated']]],
   ['unlockstatistics_4',['UnlockStatistics',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_unlock_statistics.html',1,'wmtk::components::prismatic_mesh']]],
   ['unstructured_20mesh_20editing_20algorithms_5',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
   ['update_6',['Explicit Attribute Update',['../index.html#autotoc_md57',1,'']]],

@@ -4,7 +4,7 @@ var searchData=
   ['offset_5famips_5fweight_1',['offset_amips_weight',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a55460593856f4b53bb3f711bc3842430',1,'wmtk::components::topological_offset::Parameters']]],
   ['offset_5fattempted_2',['offset_attempted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#ad78db8606c5e72a6ede4367f459b9079',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::offset_attempted'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a2135cdeca923a30e24ffe3c094de39af',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::offset_attempted']]],
   ['offset_5ffield_3',['offset_field',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a56a89926b6a243f85fe52d0d734afe17',1,'wmtk::components::topological_offset::Parameters']]],
-  ['old_5fto_5fnew_4',['old_to_new',['../structwmtk_1_1components_1_1surface__map_1_1_surface_map_1_1_step.html#a8afbf1e16bbe82d6f1acc48191200e63',1,'wmtk::components::surface_map::SurfaceMap::Step']]],
+  ['old_5fto_5fnew_4',['old_to_new',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_1_1_step.html#a817d82200932b8f0d4146a1d57e82dfd',1,'wmtk::components::tracking::CurveMap::Step::old_to_new'],['../structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_step.html#a793e2da0b6c5c5cfe66dd72827831fa0',1,'wmtk::components::tracking::SurfaceMap::Step::old_to_new']]],
   ['on_5fcurve_5',['on_curve',['../classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a915d89d3b7fcf6b9acab20fd9b534bf0',1,'wmtk::components::topological_offset::EdgeExtra2d']]],
   ['on_5ffail_6',['on_fail',['../structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937',1,'wmtk::ExecutePass']]],
   ['on_5ffixed_5fvertex_7',['on_fixed_vertex',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a1cffaee94b7cbdb831c469eafb9b3f03',1,'wmtk::components::tetwild::orig::TetVertex']]],
@@ -14,6 +14,7 @@ var searchData=
   ['optimize_5fenvelope_5faround_5fsimplified_11',['optimize_envelope_around_simplified',['../structwmtk_1_1_optimizer_parameters.html#a34a7ae8497a0194dbd52399cbba57a59',1,'wmtk::OptimizerParameters']]],
   ['optimize_5foffset_12',['optimize_offset',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a952bf15651085cd44b09b9fb2db09bf8',1,'wmtk::components::topological_offset::Parameters']]],
   ['order2_5fenvelope_5fratio_13',['order2_envelope_ratio',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911',1,'wmtk::components::simwild::Parameters::order2_envelope_ratio'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html#af7ed2109c7f32cc4fa9a0a548fda50e1',1,'wmtk::components::tetwild::Parameters::order2_envelope_ratio']]],
-  ['output_5fvertex_5fids_14',['output_vertex_ids',['../structwmtk_1_1history_1_1_surface_history.html#a330272a78246d9d2c9ce82a91e7728cb',1,'wmtk::history::SurfaceHistory']]],
-  ['overflowed_15',['overflowed',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c',1,'wmtk::ExecutePass::PassStats']]]
+  ['output_5fvertex_5fids_14',['output_vertex_ids',['../structwmtk_1_1history_1_1_history.html#a28e237b61624f75b6bd91f44e6b8e5d9',1,'wmtk::history::History']]],
+  ['overflowed_15',['overflowed',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c',1,'wmtk::ExecutePass::PassStats']]],
+  ['overlapping_16',['overlapping',['../structwmtk_1_1components_1_1tracking_1_1_curve_map_warnings.html#a210f79ac87df83e23c7ad65d9dbcf1a5',1,'wmtk::components::tracking::CurveMapWarnings']]]
 ];

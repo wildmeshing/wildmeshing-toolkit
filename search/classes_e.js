@@ -16,5 +16,6 @@ var searchData=
   ['orexpr_13',['OrExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_or_expr.html',1,'wmtk::components::simwild::expression_parser']]],
   ['orientationlink_14',['OrientationLink',['../structwmtk_1_1utils_1_1_orientation_link.html',1,'wmtk::utils']]],
   ['orientationrepair_15',['OrientationRepair',['../structwmtk_1_1utils_1_1_orientation_repair.html',1,'wmtk::utils']]],
-  ['outputpoint_16',['OutputPoint',['../structwmtk_1_1components_1_1surface__map_1_1_output_point.html',1,'wmtk::components::surface_map']]]
+  ['outputcurvepoint_16',['OutputCurvePoint',['../structwmtk_1_1components_1_1tracking_1_1_output_curve_point.html',1,'wmtk::components::tracking']]],
+  ['outputpoint_17',['OutputPoint',['../structwmtk_1_1components_1_1tracking_1_1_output_point.html',1,'wmtk::components::tracking']]]
 ];

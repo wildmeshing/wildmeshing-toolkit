@@ -92,9 +92,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a98bcc7298749bc8a7df1419a241dcf83" id="r_a98bcc7298749bc8a7df1419a241dcf83"><td class="memItemLeft" align="right" valign="top"><a id="a98bcc7298749bc8a7df1419a241dcf83" name="a98bcc7298749bc8a7df1419a241dcf83"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>memory</b> () const</td></tr>
 <tr class="separator:a98bcc7298749bc8a7df1419a241dcf83"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa991275a0509836ffed4c7dd553bbf56" id="r_aa991275a0509836ffed4c7dd553bbf56"><td class="memItemLeft" align="right" valign="top"><a id="aa991275a0509836ffed4c7dd553bbf56" name="aa991275a0509836ffed4c7dd553bbf56"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>save_history</b> (const <a class="el" href="structwmtk_1_1history_1_1_surface_history.html">history::SurfaceHistory</a> &amp;h, const std::string &amp;path)</td></tr>
-<tr class="separator:aa991275a0509836ffed4c7dd553bbf56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71f8bd944e7ac143422ec44f5694bad4" id="r_a71f8bd944e7ac143422ec44f5694bad4"><td class="memTemplParams" colspan="2"><a id="a71f8bd944e7ac143422ec44f5694bad4" name="a71f8bd944e7ac143422ec44f5694bad4"></a>
+template&lt;int N&gt; </td></tr>
+<tr class="memitem:a71f8bd944e7ac143422ec44f5694bad4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>save_history</b> (const <a class="el" href="structwmtk_1_1history_1_1_history.html">history::History</a>&lt; N &gt; &amp;h, const std::string &amp;path)</td></tr>
+<tr class="separator:a71f8bd944e7ac143422ec44f5694bad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae99fff819aa15106f04f2dd1b230ea22" id="r_ae99fff819aa15106f04f2dd1b230ea22"><td class="memItemLeft" align="right" valign="top"><a id="ae99fff819aa15106f04f2dd1b230ea22" name="ae99fff819aa15106f04f2dd1b230ea22"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>history_metadata</b> (const nlohmann::json &amp;params) const</td></tr>
 <tr class="separator:ae99fff819aa15106f04f2dd1b230ea22"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,9 +120,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const 
 <tr class="memitem:a55d0db9e2e7246260fb7e6880ab42207" id="r_a55d0db9e2e7246260fb7e6880ab42207"><td class="memItemLeft" align="right" valign="top"><a id="a55d0db9e2e7246260fb7e6880ab42207" name="a55d0db9e2e7246260fb7e6880ab42207"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>triangles</b> (const std::vector&lt; std::string &gt; &amp;names, MatrixXd &amp;V, MatrixXi &amp;F, double rel, double abs, std::vector&lt; int &gt; *provenance=nullptr, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr) const</td></tr>
 <tr class="separator:a55d0db9e2e7246260fb7e6880ab42207"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accf922f08f0b6da44afc5de021e1b874" id="r_accf922f08f0b6da44afc5de021e1b874"><td class="memItemLeft" align="right" valign="top"><a id="accf922f08f0b6da44afc5de021e1b874" name="accf922f08f0b6da44afc5de021e1b874"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;E, double rel=-1, double abs=-1) const</td></tr>
-<tr class="separator:accf922f08f0b6da44afc5de021e1b874"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb32574b9d6ae9e8666f1716599d1913" id="r_afb32574b9d6ae9e8666f1716599d1913"><td class="memItemLeft" align="right" valign="top"><a id="afb32574b9d6ae9e8666f1716599d1913" name="afb32574b9d6ae9e8666f1716599d1913"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>edges</b> (const std::string &amp;name, MatrixXd &amp;V, MatrixXi &amp;E, double rel=-1, double abs=-1, <a class="el" href="structwmtk_1_1io_1_1_read_provenance.html">ReadProvenance</a> *read=nullptr) const</td></tr>
+<tr class="separator:afb32574b9d6ae9e8666f1716599d1913"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ce0bbc5f01604eb6b617f382926abb4" id="r_a4ce0bbc5f01604eb6b617f382926abb4"><td class="memItemLeft" align="right" valign="top"><a id="a4ce0bbc5f01604eb6b617f382926abb4" name="a4ce0bbc5f01604eb6b617f382926abb4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>prepare</b> (nlohmann::json &amp;j, const std::string &amp;component) const</td></tr>
 <tr class="separator:a4ce0bbc5f01604eb6b617f382926abb4"><td class="memSeparator" colspan="2">&#160;</td></tr>

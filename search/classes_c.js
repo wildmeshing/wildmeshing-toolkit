@@ -2,7 +2,7 @@ var searchData=
 [
   ['manextracttetmesh_0',['ManExtractTetMesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html',1,'wmtk::components::manifold_extraction']]],
   ['manextracttrimesh_1',['ManExtractTriMesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html',1,'wmtk::components::manifold_extraction']]],
-  ['mapwarnings_2',['MapWarnings',['../structwmtk_1_1components_1_1surface__map_1_1_map_warnings.html',1,'wmtk::components::surface_map']]],
+  ['mapwarnings_2',['MapWarnings',['../structwmtk_1_1components_1_1tracking_1_1_map_warnings.html',1,'wmtk::components::tracking']]],
   ['maxcase_3',['MaxCase',['../structexact__band__max__data_1_1_max_case.html',1,'exact_band_max_data']]],
   ['maxface_4',['MaxFace',['../structexact__band__max__data_1_1_max_face.html',1,'exact_band_max_data']]],
   ['maxinfo_5',['MaxInfo',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html',1,'wmtk::components::topological_offset::ExactBandIntegral']]],

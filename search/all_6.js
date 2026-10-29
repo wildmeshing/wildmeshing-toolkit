@@ -7,7 +7,7 @@ var searchData=
   ['data_4',['data',['../classwmtk_1_1threading_1_1collector.html#a641ee7ff44b9fd25dd59f6e7c31a587a',1,'wmtk::threading::collector']]],
   ['data_20worth_20knowing_5',['Two things about the data worth knowing',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md47',1,'']]],
   ['datawriter_6',['DataWriter',['../classwmtk_1_1io_1_1_data_writer.html',1,'wmtk::io']]],
-  ['dead_7',['dead',['../structwmtk_1_1components_1_1surface__map_1_1_surface_map_1_1_step.html#a639c14c8ed90d0848ec428076d1f8f3d',1,'wmtk::components::surface_map::SurfaceMap::Step']]],
+  ['dead_7',['dead',['../structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_step.html#a492cb4134410b17dc5f6e7b871bb4498',1,'wmtk::components::tracking::SurfaceMap::Step']]],
   ['debug_5fcrossings_8',['debug_crossings',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a96f3f0c18c99c5a6463d1880ae2747d7',1,'wmtk::components::topological_offset::Parameters']]],
   ['debug_5fremote_5foutput_9',['debug_remote_output',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ad227d2292ee4aba06c3a6c912c7fea44',1,'wmtk::components::topological_offset::Parameters']]],
   ['debugtimeline_10',['DebugTimeline',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_debug_timeline.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
@@ -33,6 +33,7 @@ var searchData=
   ['distance_5fbound_30',['distance_bound',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a8ab4b9dbf6a32b35015c60914d455b4c',1,'wmtk::components::topological_offset::ExactBandIntegral::distance_bound(const Eigen::Vector3d *t, const int n) const'],['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a067f37bdf63a0ab9a2a7a1ff077b26c7',1,'wmtk::components::topological_offset::ExactBandIntegral::distance_bound(const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t) const']]],
   ['distancesplit_31',['distancesplit',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_distance_split.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::DistanceSplit'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_distance_split.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::DistanceSplit']]],
   ['dominant_20conversion_32',['Prism dominant conversion',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2prismatic__mesh_2_r_e_a_d_m_e.html#autotoc_md4',1,'']]],
-  ['dry_5frun_33',['dry_run',['../classwmtk_1_1_tet_mesh.html#a9cbc5de6e447ac4f5259e12c9ac7232c',1,'wmtk::TetMesh::dry_run()'],['../classwmtk_1_1_tri_mesh.html#a789b9eed645cf43c42234f005becd6e5',1,'wmtk::TriMesh::dry_run()']]],
-  ['dsu_34',['DSU',['../structwmtk_1_1utils_1_1detail_1_1_d_s_u.html',1,'wmtk::utils::detail']]]
+  ['drop_5ffeatures_33',['drop_features',['../classwmtk_1_1history_1_1_basic_replay.html#ad86c6a54af6a667d729cd996a7e2d334',1,'wmtk::history::BasicReplay']]],
+  ['dry_5frun_34',['dry_run',['../classwmtk_1_1_tet_mesh.html#a9cbc5de6e447ac4f5259e12c9ac7232c',1,'wmtk::TetMesh::dry_run()'],['../classwmtk_1_1_tri_mesh.html#a789b9eed645cf43c42234f005becd6e5',1,'wmtk::TriMesh::dry_run()']]],
+  ['dsu_35',['DSU',['../structwmtk_1_1utils_1_1detail_1_1_d_s_u.html',1,'wmtk::utils::detail']]]
 ];

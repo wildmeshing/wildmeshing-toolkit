@@ -6,7 +6,7 @@ var searchData=
   ['edge_5fvrt_5fcoord_3',['edge_vrt_coord',['../structwmtk_1_1utils_1_1_embed_features_input.html#ab5a8e131800abaae1fbae0cf1b572c0b',1,'wmtk::utils::EmbedFeaturesInput']]],
   ['edit_5foperation_5fmaps_4',['edit_operation_maps',['../structwmtk_1_1_execute_pass.html#aece7de4f87c75dd0ba113a39e9b18a04',1,'wmtk::ExecutePass']]],
   ['elems_5',['elems',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_work.html#a6e63bcbd2a54f7720622ec5ac1673a52',1,'wmtk::components::topological_offset::ExactBandIntegral::Work']]],
-  ['embedding_6',['embedding',['../structwmtk_1_1components_1_1surface__map_1_1_surface_map_1_1_step.html#a78c033ac7668a34d26b78a17713d9efd',1,'wmtk::components::surface_map::SurfaceMap::Step']]],
+  ['embedding_6',['embedding',['../structwmtk_1_1components_1_1tracking_1_1_surface_map_1_1_step.html#a969daf37ec28299eea660c8ad0850009',1,'wmtk::components::tracking::SurfaceMap::Step']]],
   ['empty_5fvol_7',['empty_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#a20c7fd49f143b6dc709e4f4f9e3b71f6',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
   ['envelope_8',['envelope',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a1d785e4d12bdfdfa9f5bfaae8613eac7',1,'wmtk::optimization::SmoothRejectCounters']]],
   ['envelope_5fname_9',['envelope_name',['../structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264',1,'wmtk::components::simwild::InputData']]],

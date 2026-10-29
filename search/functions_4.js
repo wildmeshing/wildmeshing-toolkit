@@ -12,5 +12,6 @@ var searchData=
   ['dist_5fto_5ftriangles_9',['dist_to_triangles',['../namespacevisualize__offset.html#a9375667b94fc06c15d975eeb5579cd5b',1,'visualize_offset']]],
   ['distance_10',['distance',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a1bba23fbecd75ab350910f47660e0db6',1,'wmtk::components::topological_offset::ExactBandIntegral']]],
   ['distance_5fbound_11',['distance_bound',['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a067f37bdf63a0ab9a2a7a1ff077b26c7',1,'wmtk::components::topological_offset::ExactBandIntegral::distance_bound(const std::array&lt; Eigen::Vector3d, 4 &gt; &amp;t) const'],['../classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html#a8ab4b9dbf6a32b35015c60914d455b4c',1,'wmtk::components::topological_offset::ExactBandIntegral::distance_bound(const Eigen::Vector3d *t, const int n) const']]],
-  ['dry_5frun_12',['dry_run',['../classwmtk_1_1_tet_mesh.html#a9cbc5de6e447ac4f5259e12c9ac7232c',1,'wmtk::TetMesh::dry_run()'],['../classwmtk_1_1_tri_mesh.html#a789b9eed645cf43c42234f005becd6e5',1,'wmtk::TriMesh::dry_run()']]]
+  ['drop_5ffeatures_12',['drop_features',['../classwmtk_1_1history_1_1_basic_replay.html#ad86c6a54af6a667d729cd996a7e2d334',1,'wmtk::history::BasicReplay']]],
+  ['dry_5frun_13',['dry_run',['../classwmtk_1_1_tet_mesh.html#a9cbc5de6e447ac4f5259e12c9ac7232c',1,'wmtk::TetMesh::dry_run()'],['../classwmtk_1_1_tri_mesh.html#a789b9eed645cf43c42234f005becd6e5',1,'wmtk::TriMesh::dry_run()']]]
 ];

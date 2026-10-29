@@ -239,16 +239,33 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots<
 <tr class="memitem:a9939b4491bd9afc357468072368ab392" id="r_a9939b4491bd9afc357468072368ab392"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">consolidate_mesh</a> ()</td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2fe8e5154680afc64adefa61a187cc5" id="r_ab2fe8e5154680afc64adefa61a187cc5"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab2fe8e5154680afc64adefa61a187cc5">start_history</a> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memitem:ab2fe8e5154680afc64adefa61a187cc5" id="r_ab2fe8e5154680afc64adefa61a187cc5"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_basic_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab2fe8e5154680afc64adefa61a187cc5">start_history</a> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
 <tr class="memdesc:ab2fe8e5154680afc64adefa61a187cc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record every operation this mesh commits from now on (see wmtk/history).  <br /></td></tr>
 <tr class="separator:ab2fe8e5154680afc64adefa61a187cc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22fc598ae995fefe3df71d104c2ca565" id="r_a22fc598ae995fefe3df71d104c2ca565"><td class="memItemLeft" align="right" valign="top"><a id="a22fc598ae995fefe3df71d104c2ca565" name="a22fc598ae995fefe3df71d104c2ca565"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_history</b> ()</td></tr>
 <tr class="memdesc:a22fc598ae995fefe3df71d104c2ca565"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording. The recorder keeps the edits it has. <br /></td></tr>
 <tr class="separator:a22fc598ae995fefe3df71d104c2ca565"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90be1ec37c03c2ed25ee11d65784e627" id="r_a90be1ec37c03c2ed25ee11d65784e627"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a90be1ec37c03c2ed25ee11d65784e627">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
-<tr class="memdesc:a90be1ec37c03c2ed25ee11d65784e627"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
-<tr class="separator:a90be1ec37c03c2ed25ee11d65784e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a485a9fe1ebee4ddb303bef4ca2d07fa4" id="r_a485a9fe1ebee4ddb303bef4ca2d07fa4"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">history::TrackedCurveRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a485a9fe1ebee4ddb303bef4ca2d07fa4">start_curve_history</a> (std::function&lt; Eigen::Vector3d(size_t)&gt; position)</td></tr>
+<tr class="memdesc:a485a9fe1ebee4ddb303bef4ca2d07fa4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Record every change to the tracked curves from now on (see <a class="el" href="_tracked_recorder_8hpp_source.html">wmtk/history/TrackedRecorder.hpp</a>).  <br /></td></tr>
+<tr class="separator:a485a9fe1ebee4ddb303bef4ca2d07fa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5e95f8cfd998b86edcc260c460cabf1" id="r_ad5e95f8cfd998b86edcc260c460cabf1"><td class="memItemLeft" align="right" valign="top"><a id="ad5e95f8cfd998b86edcc260c460cabf1" name="ad5e95f8cfd998b86edcc260c460cabf1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>stop_curve_history</b> ()</td></tr>
+<tr class="memdesc:ad5e95f8cfd998b86edcc260c460cabf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop recording curves. The recorder keeps what it has. <br /></td></tr>
+<tr class="separator:ad5e95f8cfd998b86edcc260c460cabf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcc8019a1b012d05d166e679073dc8f8" id="r_abcc8019a1b012d05d166e679073dc8f8"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abcc8019a1b012d05d166e679073dc8f8">resync_curve_history</a> (const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;edges)</td></tr>
+<tr class="separator:abcc8019a1b012d05d166e679073dc8f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ca9fcd2b0c3d89588c5f04aa7ef73dc" id="r_a3ca9fcd2b0c3d89588c5f04aa7ef73dc"><td class="memItemLeft" align="right" valign="top"><a id="a3ca9fcd2b0c3d89588c5f04aa7ef73dc" name="a3ca9fcd2b0c3d89588c5f04aa7ef73dc"></a>
+std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_edges</b> () const</td></tr>
+<tr class="memdesc:a3ca9fcd2b0c3d89588c5f04aa7ef73dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every tracked edge, each with its smaller vertex first. <br /></td></tr>
+<tr class="separator:a3ca9fcd2b0c3d89588c5f04aa7ef73dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60bc73dd766cb0999ddf6654fd3f8691" id="r_a60bc73dd766cb0999ddf6654fd3f8691"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a60bc73dd766cb0999ddf6654fd3f8691">is_tracked_edge</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
+<tr class="separator:a60bc73dd766cb0999ddf6654fd3f8691"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2757d84ad5f4dd861b3c6400563aafb" id="r_ac2757d84ad5f4dd861b3c6400563aafb"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ac2757d84ad5f4dd861b3c6400563aafb">tracked_feature_points</a> () const</td></tr>
+<tr class="separator:ac2757d84ad5f4dd861b3c6400563aafb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40c28fe9145ac083d838cf8ca698b129" id="r_a40c28fe9145ac083d838cf8ca698b129"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a40c28fe9145ac083d838cf8ca698b129">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
+<tr class="memdesc:a40c28fe9145ac083d838cf8ca698b129"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
+<tr class="separator:a40c28fe9145ac083d838cf8ca698b129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af239b4f32ec1733261c301c351283dbc" id="r_af239b4f32ec1733261c301c351283dbc"><td class="memItemLeft" align="right" valign="top"><a id="af239b4f32ec1733261c301c351283dbc" name="af239b4f32ec1733261c301c351283dbc"></a>
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>switch_vertex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:af239b4f32ec1733261c301c351283dbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2fe6f785e3cd6443b9f2b8b923a3be13">Tuple::switch_vertex</a> funciton <br /></td></tr>
@@ -518,6 +535,13 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_capacity</
 <tr class="separator:a30fbe4786afbf362d26131cf9bad91f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f6364a3f9a0a3c0db81d69e65c50750" id="r_a1f6364a3f9a0a3c0db81d69e65c50750"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a1f6364a3f9a0a3c0db81d69e65c50750">commit_history</a> (<a class="el" href="structwmtk_1_1history_1_1_edit.html">history::Edit</a> &amp;&amp;e)</td></tr>
 <tr class="separator:a1f6364a3f9a0a3c0db81d69e65c50750"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44f0b75f1d3930ece19be0eeb78afc6e" id="r_a44f0b75f1d3930ece19be0eeb78afc6e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a44f0b75f1d3930ece19be0eeb78afc6e">tracked_edges_around</a> (const std::vector&lt; size_t &gt; &amp;vs) const</td></tr>
+<tr class="separator:a44f0b75f1d3930ece19be0eeb78afc6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac32daba33a21b1b37394e8807db7010e" id="r_ac32daba33a21b1b37394e8807db7010e"><td class="memItemLeft" align="right" valign="top"><a id="ac32daba33a21b1b37394e8807db7010e" name="ac32daba33a21b1b37394e8807db7010e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>curve_history_before</b> (const std::vector&lt; size_t &gt; &amp;vs)</td></tr>
+<tr class="separator:ac32daba33a21b1b37394e8807db7010e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f8c847ccb1c6bef619dd345586ebcf3" id="r_a2f8c847ccb1c6bef619dd345586ebcf3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a2f8c847ccb1c6bef619dd345586ebcf3">curve_history_commit</a> (<a class="el" href="namespacewmtk_1_1history.html#a80245a4e38e1fedcc8865161400746e4">history::EditKind</a> kind, std::vector&lt; size_t &gt; v, const std::vector&lt; size_t &gt; &amp;vs_after)</td></tr>
+<tr class="separator:a2f8c847ccb1c6bef619dd345586ebcf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0da6d2c873a318123efd93f1a40f532" id="r_af0da6d2c873a318123efd93f1a40f532"><td class="memItemLeft" align="right" valign="top"><a id="af0da6d2c873a318123efd93f1a40f532" name="af0da6d2c873a318123efd93f1a40f532"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="separator:af0da6d2c873a318123efd93f1a40f532"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -554,11 +578,18 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_fac
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_use_link_condition</b> = true</td></tr>
 <tr class="separator:a49fe052d14ea52972f23f6ab3afa8df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79516a5d31532929a3b3b916b814ff93" id="r_a79516a5d31532929a3b3b916b814ff93"><td class="memItemLeft" align="right" valign="top"><a id="a79516a5d31532929a3b3b916b814ff93" name="a79516a5d31532929a3b3b916b814ff93"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_history</b></td></tr>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_basic_recorder.html">history::Recorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_history</b></td></tr>
 <tr class="separator:a79516a5d31532929a3b3b916b814ff93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfc8b14ffcac1fecff6f18eb42ad658d" id="r_abfc8b14ffcac1fecff6f18eb42ad658d"><td class="memItemLeft" align="right" valign="top"><a id="abfc8b14ffcac1fecff6f18eb42ad658d" name="abfc8b14ffcac1fecff6f18eb42ad658d"></a>
 std::function&lt; Eigen::Vector3d(size_t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_history_position</b></td></tr>
 <tr class="separator:abfc8b14ffcac1fecff6f18eb42ad658d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fb55602feeb42ab6d5ed0f814652be9" id="r_a6fb55602feeb42ab6d5ed0f814652be9"><td class="memItemLeft" align="right" valign="top"><a id="a6fb55602feeb42ab6d5ed0f814652be9" name="a6fb55602feeb42ab6d5ed0f814652be9"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">history::TrackedCurveRecorder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_curve_history</b></td></tr>
+<tr class="separator:a6fb55602feeb42ab6d5ed0f814652be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad88218a1e11c00b6a500e01db2c95317" id="r_ad88218a1e11c00b6a500e01db2c95317"><td class="memItemLeft" align="right" valign="top"><a id="ad88218a1e11c00b6a500e01db2c95317" name="ad88218a1e11c00b6a500e01db2c95317"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_curve_history_before</b></td></tr>
+<tr class="memdesc:ad88218a1e11c00b6a500e01db2c95317"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tracked edges around the running operation, before it changed anything. <br /></td></tr>
+<tr class="separator:ad88218a1e11c00b6a500e01db2c95317"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a852800c3ada3a82e38a4d955ff2e6794" id="r_a852800c3ada3a82e38a4d955ff2e6794"><td class="memItemLeft" align="right" valign="top"><a id="a852800c3ada3a82e38a4d955ff2e6794" name="a852800c3ada3a82e38a4d955ff2e6794"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html#a204d98a521bf730c6ddf2080a6aa416c">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:a852800c3ada3a82e38a4d955ff2e6794"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -961,6 +992,49 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a2f8c847ccb1c6bef619dd345586ebcf3" name="a2f8c847ccb1c6bef619dd345586ebcf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f8c847ccb1c6bef619dd345586ebcf3">&#9670;&#160;</a></span>curve_history_commit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TriMesh::curve_history_commit </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1history.html#a80245a4e38e1fedcc8865161400746e4">history::EditKind</a>&#160;</td>
+          <td class="paramname"><em>kind</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; size_t &gt;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vs_after</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Reports the operation to the curve recorder: the tracked edges at <code>vs_after</code> against those curve_history_before() saw, and the vertices it wrote (the vertex journal, so call it before <a class="el" href="classwmtk_1_1_tri_mesh.html#a225083671f68132708976d88be0e2de4" title="End the modification phase.">release_protect_attributes()</a>). </p>
 
 </div>
 </div>
@@ -1512,6 +1586,35 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a60bc73dd766cb0999ddf6654fd3f8691" name="a60bc73dd766cb0999ddf6654fd3f8691"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60bc73dd766cb0999ddf6654fd3f8691">&#9670;&#160;</a></span>is_tracked_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TriMesh::is_tracked_edge </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>e</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether edge <code>e</code> is on a tracked curve, for a curve history. None is, unless an application says so. Called from inside an operation for the edges at the vertices it holds, so it must read through const attribute access. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ef395bf3f904af127a5a9e5dfb68a33">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="ad012cd93eef2a2c97ebfd48f2faee3e1" name="ad012cd93eef2a2c97ebfd48f2faee3e1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad012cd93eef2a2c97ebfd48f2faee3e1">&#9670;&#160;</a></span>on_slot_storage_grown()</h2>
 
@@ -1615,28 +1718,20 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a90be1ec37c03c2ed25ee11d65784e627" name="a90be1ec37c03c2ed25ee11d65784e627"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90be1ec37c03c2ed25ee11d65784e627">&#9670;&#160;</a></span>remove_tris_by_ids()</h2>
+<a id="a40c28fe9145ac083d838cf8ca698b129" name="a40c28fe9145ac083d838cf8ca698b129"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40c28fe9145ac083d838cf8ca698b129">&#9670;&#160;</a></span>remove_tris_by_ids()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void wmtk::TriMesh::remove_tris_by_ids </td>
+          <td class="memname">void TriMesh::remove_tris_by_ids </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>fids</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Mark the given triangles, and any vertex left without an incident triangle, as removed. </p>
@@ -1670,6 +1765,25 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 <p>Serial points only: make <code>cells</code> fresh cell slots and <code>verts</code> fresh vertex slots available, growing the storage (connectivity and attributes) by at least half if not. </p>
+
+</div>
+</div>
+<a id="abcc8019a1b012d05d166e679073dc8f8" name="abcc8019a1b012d05d166e679073dc8f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcc8019a1b012d05d166e679073dc8f8">&#9670;&#160;</a></span>resync_curve_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t TriMesh::resync_curve_history </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edges</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Brings the recorded curves in line with <code>edges</code>, every tracked edge, after a change outside the operations. Returns how many segments it removed and added: 0 when nothing changed, or when not recording. </p>
 
 </div>
 </div>
@@ -2033,6 +2147,27 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
+<a id="a485a9fe1ebee4ddb303bef4ca2d07fa4" name="a485a9fe1ebee4ddb303bef4ca2d07fa4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a485a9fe1ebee4ddb303bef4ca2d07fa4">&#9670;&#160;</a></span>start_curve_history()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_tracked_recorder.html">history::TrackedCurveRecorder</a> &gt; TriMesh::start_curve_history </td>
+          <td>(</td>
+          <td class="paramtype">std::function&lt; Eigen::Vector3d(size_t)&gt;&#160;</td>
+          <td class="paramname"><em>position</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Record every change to the tracked curves from now on (see <a class="el" href="_tracked_recorder_8hpp_source.html">wmtk/history/TrackedRecorder.hpp</a>). </p>
+<p>The tracked curves are the edges <a class="el" href="classwmtk_1_1_tri_mesh.html#a60bc73dd766cb0999ddf6654fd3f8691">is_tracked_edge()</a> names, with the feature points <a class="el" href="classwmtk_1_1_tri_mesh.html#ac2757d84ad5f4dd861b3c6400563aafb">tracked_feature_points()</a> names. Snapshots them and returns the recorder. Every operation then reports the tracked edges around it at its commit point, a consolidation renumbers the recorder's vertices, and <a class="el" href="classwmtk_1_1_tri_mesh.html#a40c28fe9145ac083d838cf8ca698b129" title="Mark the given triangles, and any vertex left without an incident triangle, as removed.">remove_tris_by_ids()</a> resyncs it. <code>position(v)</code> gives vertex v's position: it is called at the snapshot, and then from inside an operation while its locks are held, so it must read through const attribute access. Recording changes nothing the operations do. </p>
+
+</div>
+</div>
 <a id="ab2fe8e5154680afc64adefa61a187cc5" name="ab2fe8e5154680afc64adefa61a187cc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab2fe8e5154680afc64adefa61a187cc5">&#9670;&#160;</a></span>start_history()</h2>
 
@@ -2040,7 +2175,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_recorder.html">history::Recorder</a> &gt; TriMesh::start_history </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1history_1_1_basic_recorder.html">history::Recorder</a> &gt; TriMesh::start_history </td>
           <td>(</td>
           <td class="paramtype">std::function&lt; Eigen::Vector3d(size_t)&gt;&#160;</td>
           <td class="paramname"><em>position</em></td><td>)</td>
@@ -2264,6 +2399,61 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 <p>a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a683f9597a1eef47b6b64ee818484c510">Tuple::switch_face</a> funciton </p>
 <dl class="section note"><dt>Note</dt><dd>Returns nullptr if current <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> referes to a boundary triangle </dd></dl>
+
+</div>
+</div>
+<a id="a44f0b75f1d3930ece19be0eeb78afc6e" name="a44f0b75f1d3930ece19be0eeb78afc6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44f0b75f1d3930ece19be0eeb78afc6e">&#9670;&#160;</a></span>tracked_edges_around()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; TriMesh::tracked_edges_around </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vs</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The tracked edges at the vertices <code>vs</code>, each with its smaller vertex first. Reads only the triangles at those vertices, which an operation holding them may read. </p>
+
+</div>
+</div>
+<a id="ac2757d84ad5f4dd861b3c6400563aafb" name="ac2757d84ad5f4dd861b3c6400563aafb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2757d84ad5f4dd861b3c6400563aafb">&#9670;&#160;</a></span>tracked_feature_points()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::vector&lt; size_t &gt; wmtk::TriMesh::tracked_feature_points </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The feature points of the tracked curves, for a curve history: vertices the operations keep by the history's rules (a collapse of one renames it to the survivor). None, unless an application says otherwise. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a07578dd9862dd28ee72a9463abca1263">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>

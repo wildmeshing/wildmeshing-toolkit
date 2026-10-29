@@ -6,7 +6,7 @@ var searchData=
   ['hausdorff_20numbers_3',['Reading the two Hausdorff numbers',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md45',1,'']]],
   ['heaptrimmer_4',['HeapTrimmer',['../classwmtk_1_1_heap_trimmer.html',1,'wmtk']]],
   ['hi_5',['hi',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_feature.html#a8dcadb6bb69430a17b9a0dcaecbe5548',1,'wmtk::components::topological_offset::ExactBandIntegral::Feature']]],
-  ['history_6',['history',['../classwmtk_1_1history_1_1_recorder.html#a58804dc82ac17bf63784f6172ee704e2',1,'wmtk::history::Recorder::history()'],['../classwmtk_1_1history_1_1_tracked_surface_recorder.html#a92d4a080a757efed55d6cce1a077bf6b',1,'wmtk::history::TrackedSurfaceRecorder::history()']]],
+  ['history_6',['history',['../structwmtk_1_1history_1_1_history.html',1,'wmtk::history::History&lt; N &gt;'],['../classwmtk_1_1history_1_1_basic_recorder.html#a3da10bfc604815091452a5f16ffa4d63',1,'wmtk::history::BasicRecorder::history()'],['../classwmtk_1_1history_1_1_tracked_recorder.html#a523609adfb28b4f20ac2e57199e78045',1,'wmtk::history::TrackedRecorder::history()']]],
   ['hs_7',['hs',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#acafea64be41d7b1363b0a5ae4482b859',1,'wmtk::components::topological_offset::ExactBandIntegral::Local']]],
   ['hybridcell_8',['HybridCell',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_hybrid_cell.html',1,'wmtk::components::prismatic_mesh']]]
 ];

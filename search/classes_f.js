@@ -10,6 +10,5 @@ var searchData=
   ['prismaticmeshinput_7',['PrismaticMeshInput',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prismatic_mesh_input.html',1,'wmtk::components::prismatic_mesh']]],
   ['prismdominantmesh_8',['PrismDominantMesh',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_dominant_mesh.html',1,'wmtk::components::prismatic_mesh']]],
   ['prismjacobianminimum_9',['PrismJacobianMinimum',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_jacobian_minimum.html',1,'wmtk::components::prismatic_mesh']]],
-  ['prismjacobianvalue_10',['PrismJacobianValue',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_jacobian_value.html',1,'wmtk::components::prismatic_mesh']]],
-  ['pyexpression_11',['PyExpression',['../class_py_expression.html',1,'']]]
+  ['prismjacobianvalue_10',['PrismJacobianValue',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_jacobian_value.html',1,'wmtk::components::prismatic_mesh']]]
 ];

@@ -88,7 +88,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;string&gt;</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;wmtk/Types.hpp&gt;</span></div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &lt;wmtk/history/SurfaceHistory.hpp&gt;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &lt;wmtk/history/History.hpp&gt;</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="keyword">namespace </span>wmtk::components::simwild {</div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
@@ -111,7 +111,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264">   32</a></span>    std::string <a class="code hl_variable" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a649f89853b470fa73d7aec9104709264">envelope_name</a>;</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#af1e2f58b096db1b6a1d4b073d6bd5a5e">   37</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#af1e2f58b096db1b6a1d4b073d6bd5a5e">has_input_history</a> = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_struct" href="structwmtk_1_1history_1_1_surface_history.html">history::SurfaceHistory</a> input_history;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_struct" href="structwmtk_1_1history_1_1_history.html">history::SurfaceHistory</a> input_history;</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    std::vector&lt;std::pair&lt;std::array&lt;std::array&lt;double, 3&gt;, 3&gt;, std::vector&lt;uint32_t&gt;&gt;&gt;</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        facet_sources;</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>};</div>
@@ -145,7 +145,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1_input_data_html_a94eb94cfe63d4a5dbf64c2907f30fec5"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a94eb94cfe63d4a5dbf64c2907f30fec5">wmtk::components::simwild::InputData::F_tagged</a></div><div class="ttdeci">MatrixXi F_tagged</div><div class="ttdef"><b>Definition</b> read_image_msh.hpp:22</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1_input_data_html_abb756344817dcf785378af2152cd2ebd"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#abb756344817dcf785378af2152cd2ebd">wmtk::components::simwild::InputData::F_envelope_labels</a></div><div class="ttdeci">std::vector&lt; uint64_t &gt; F_envelope_labels</div><div class="ttdef"><b>Definition</b> read_image_msh.hpp:30</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1_input_data_html_af1e2f58b096db1b6a1d4b073d6bd5a5e"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#af1e2f58b096db1b6a1d4b073d6bd5a5e">wmtk::components::simwild::InputData::has_input_history</a></div><div class="ttdeci">bool has_input_history</div><div class="ttdef"><b>Definition</b> read_image_msh.hpp:37</div></div>
-<div class="ttc" id="astructwmtk_1_1history_1_1_surface_history_html"><div class="ttname"><a href="structwmtk_1_1history_1_1_surface_history.html">wmtk::history::SurfaceHistory</a></div><div class="ttdoc">A triangle complex and the edits it went through, in commit order.</div><div class="ttdef"><b>Definition</b> SurfaceHistory.hpp:88</div></div>
+<div class="ttc" id="astructwmtk_1_1history_1_1_history_html"><div class="ttname"><a href="structwmtk_1_1history_1_1_history.html">wmtk::history::History</a></div><div class="ttdoc">A complex and the edits it went through, in commit order.</div><div class="ttdef"><b>Definition</b> History.hpp:101</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

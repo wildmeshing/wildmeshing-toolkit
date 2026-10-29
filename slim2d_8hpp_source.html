@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/surface_map/wmtk/components/surface_map/slim2d.hpp Source File</title>
+<title>Wildmeshing Toolkit: /home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/tracking/wmtk/components/tracking/slim2d.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -74,7 +74,7 @@ $(document).ready(function() { init_codefold(0); });
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b5099aed8f846241ba2b467ff5893918.html">surface_map</a></li><li class="navelem"><a class="el" href="dir_35b68e589da14d474188d52d62893ba9.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_841ef119aa9bdcc857ab7d7283d4fa20.html">components</a></li><li class="navelem"><a class="el" href="dir_87c3a2d7aa8c5b8d4336f5c45cdb4add.html">surface_map</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_6cec31a91e66e0c8e3b409a6240b3061.html">tracking</a></li><li class="navelem"><a class="el" href="dir_214e5d3dfd5884e66aa033ac6af37ccb.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_a632537bb73946aa882b5499a7688cea.html">components</a></li><li class="navelem"><a class="el" href="dir_b5b4aba269a633a850c31ea2a72a4bc5.html">tracking</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -88,25 +88,25 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;array&gt;</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">namespace </span>wmtk::components::surface_map {</div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">namespace </span>wmtk::components::tracking {</div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
 <div class="foldopen" id="foldopen00018" data-start="{" data-end="};">
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html">   18</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html">SlimElement</a></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html">   18</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html">SlimElement</a></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>{</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    std::array&lt;int, 3&gt; v;</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html#abcaf3cc308c26431054a0c5c2f219012">   22</a></span>    Eigen::Matrix2d <a class="code hl_variable" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html#abcaf3cc308c26431054a0c5c2f219012">rest_inv</a> = Eigen::Matrix2d::Identity();</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html#ac4b29f4362994c66e3c831641b3b3cf2">   22</a></span>    Eigen::Matrix2d <a class="code hl_variable" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html#ac4b29f4362994c66e3c831641b3b3cf2">rest_inv</a> = Eigen::Matrix2d::Identity();</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keywordtype">double</span> weight = 0;</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>};</div>
 </div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><a class="code hl_struct" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html">SlimElement</a> slim_element(</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html">SlimElement</a> slim_element(</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="keyword">const</span> std::array&lt;int, 3&gt;&amp; v,</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="keyword">const</span> Eigen::Vector3d&amp; p0,</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keyword">const</span> Eigen::Vector3d&amp; p1,</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keyword">const</span> Eigen::Vector3d&amp; p2,</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="keywordtype">double</span> weight);</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><a class="code hl_struct" href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html">SlimElement</a> slim_element(</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><a class="code hl_struct" href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html">SlimElement</a> slim_element(</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keyword">const</span> std::array&lt;int, 3&gt;&amp; v,</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keyword">const</span> Eigen::Vector2d&amp; q0,</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keyword">const</span> Eigen::Vector2d&amp; q1,</div>
@@ -121,9 +121,9 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="keyword">const</span> std::vector&lt;SlimElement&gt;&amp; elements,</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keywordtype">int</span> iterations);</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>} <span class="comment">// namespace wmtk::components::surface_map</span></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1surface__map_1_1_slim_element_html"><div class="ttname"><a href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html">wmtk::components::surface_map::SlimElement</a></div><div class="ttdoc">A triangle of a 2D layout and the shape it should keep.</div><div class="ttdef"><b>Definition</b> slim2d.hpp:19</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1surface__map_1_1_slim_element_html_abcaf3cc308c26431054a0c5c2f219012"><div class="ttname"><a href="structwmtk_1_1components_1_1surface__map_1_1_slim_element.html#abcaf3cc308c26431054a0c5c2f219012">wmtk::components::surface_map::SlimElement::rest_inv</a></div><div class="ttdeci">Eigen::Matrix2d rest_inv</div><div class="ttdoc">The inverse of the rest edge matrix [x1 - x0, x2 - x0].</div><div class="ttdef"><b>Definition</b> slim2d.hpp:22</div></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>} <span class="comment">// namespace wmtk::components::tracking</span></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tracking_1_1_slim_element_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html">wmtk::components::tracking::SlimElement</a></div><div class="ttdoc">A triangle of a 2D layout and the shape it should keep.</div><div class="ttdef"><b>Definition</b> slim2d.hpp:19</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tracking_1_1_slim_element_html_ac4b29f4362994c66e3c831641b3b3cf2"><div class="ttname"><a href="structwmtk_1_1components_1_1tracking_1_1_slim_element.html#ac4b29f4362994c66e3c831641b3b3cf2">wmtk::components::tracking::SlimElement::rest_inv</a></div><div class="ttdeci">Eigen::Matrix2d rest_inv</div><div class="ttdoc">The inverse of the rest edge matrix [x1 - x0, x2 - x0].</div><div class="ttdef"><b>Definition</b> slim2d.hpp:22</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

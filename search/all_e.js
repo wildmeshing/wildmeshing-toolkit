@@ -20,7 +20,7 @@ var searchData=
   ['linear_5fgrowth_5fsteps_17',['linear_growth_steps',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac1047594d4296d877622524357a9e95d',1,'wmtk::components::topological_offset::Parameters']]],
   ['link_5fcondition_18',['link_condition',['../classwmtk_1_1_tet_mesh.html#a5dde52f8c3642ed037019ff31daf6330',1,'wmtk::TetMesh']]],
   ['live_19',['live',['../classwmtk_1_1_slot_pool.html#ad31b543781963ff6b8adc725e1f206cd',1,'wmtk::SlotPool']]],
-  ['load_20',['load',['../classwmtk_1_1components_1_1surface__map_1_1_tracking.html#a0588c5f0f2fb37d6b7dbe5f1da165835',1,'wmtk::components::surface_map::Tracking::load()'],['../namespacevisualize__offset.html#aa87cad65c4e7292ef55569475ac79e5f',1,'visualize_offset.load()']]],
+  ['load_20',['load',['../classwmtk_1_1components_1_1tracking_1_1_tracking.html#ae94a113544b04581f0f68685415c58ae',1,'wmtk::components::tracking::Tracking::load()'],['../classwmtk_1_1components_1_1tracking_1_1_curve_tracking.html#ad5c5c6559e4bb91a0c309940461b0394',1,'wmtk::components::tracking::CurveTracking::load()'],['../namespacevisualize__offset.html#aa87cad65c4e7292ef55569475ac79e5f',1,'visualize_offset.load()']]],
   ['load_5ffield_5fmodule_21',['load_field_module',['../namespacevisualize__error__field.html#a58b080728e27b7bbd7bdfb7c7c41f852',1,'visualize_error_field']]],
   ['load_5fphi_5fgrid_22',['load_phi_grid',['../namespacevisualize__offset.html#a4be0ee062681c3e3b184b1c1b90755de',1,'visualize_offset']]],
   ['loc_23',['loc',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_local.html#abed8785135b7a07864c72f5f3b27b279',1,'wmtk::components::topological_offset::ExactBandIntegral::Local']]],

@@ -19,6 +19,6 @@ var searchData=
   ['build_5fboundary_5fenvelopes_16',['build_boundary_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['build_5fenvelopes_17',['build_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a59431ba8a452b5f2784fed374efa9381',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['build_5ffinal_5fenvelopes_18',['build_final_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a43a5922857a7b4517da0d3e2d7fdfe00',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['build_5fwarnings_19',['build_warnings',['../classwmtk_1_1components_1_1surface__map_1_1_surface_map.html#a1e303f71ce8cafffca7ee1032a58270a',1,'wmtk::components::surface_map::SurfaceMap']]],
-  ['by_5fvertices_20',['by_vertices',['../classwmtk_1_1components_1_1surface__map_1_1_tracking.html#a77963e1a2f468323779e6f990de8aa11',1,'wmtk::components::surface_map::Tracking']]]
+  ['build_5fwarnings_19',['build_warnings',['../classwmtk_1_1components_1_1tracking_1_1_curve_map.html#a46e7585ebdb9ebc64a885729fc597135',1,'wmtk::components::tracking::CurveMap::build_warnings()'],['../classwmtk_1_1components_1_1tracking_1_1_surface_map.html#a0858e66fd7b4d82c35d78709d086c4cc',1,'wmtk::components::tracking::SurfaceMap::build_warnings()']]],
+  ['by_5fvertices_20',['by_vertices',['../classwmtk_1_1components_1_1tracking_1_1_tracking.html#ac266f0acd997a55e99a773473a26f698',1,'wmtk::components::tracking::Tracking']]]
 ];

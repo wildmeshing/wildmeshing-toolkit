@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['history_0',['history',['../classwmtk_1_1history_1_1_recorder.html#a58804dc82ac17bf63784f6172ee704e2',1,'wmtk::history::Recorder::history()'],['../classwmtk_1_1history_1_1_tracked_surface_recorder.html#a92d4a080a757efed55d6cce1a077bf6b',1,'wmtk::history::TrackedSurfaceRecorder::history()']]]
+  ['history_0',['history',['../classwmtk_1_1history_1_1_basic_recorder.html#a3da10bfc604815091452a5f16ffa4d63',1,'wmtk::history::BasicRecorder::history()'],['../classwmtk_1_1history_1_1_tracked_recorder.html#a523609adfb28b4f20ac2e57199e78045',1,'wmtk::history::TrackedRecorder::history()']]]
 ];

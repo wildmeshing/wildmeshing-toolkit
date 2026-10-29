@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['triangle_0',['Triangle',['../classwmtk_1_1history_1_1_tracked_surface_recorder.html#af051e8c314bf5f2107f8de96aafc3ae7',1,'wmtk::history::TrackedSurfaceRecorder']]]
+  ['orient_0',['Orient',['../classwmtk_1_1history_1_1_tracked_recorder.html#a204fd56520f06519f7b4cad472af09dc',1,'wmtk::history::TrackedRecorder']]]
 ];
