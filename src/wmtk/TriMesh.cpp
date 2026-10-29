@@ -1895,10 +1895,21 @@ void TriMesh::consolidate_mesh()
 
     resize_mutex(vcap);
 
-    // Resize user class attributes to the preallocated capacity
-    if (p_vertex_attrs) p_vertex_attrs->resize(vcap);
-    if (p_edge_attrs) p_edge_attrs->resize(tcap * 3);
-    if (p_face_attrs) p_face_attrs->resize(tcap);
+    // Resize user class attributes to the preallocated capacity, and clear the spare region the
+    // compaction left behind: the slots past the live range still hold the records moved out of
+    // them, and the next operations are handed those slots as fresh.
+    if (p_vertex_attrs) {
+        p_vertex_attrs->resize(vcap);
+        p_vertex_attrs->reset_from(v_cnt);
+    }
+    if (p_edge_attrs) {
+        p_edge_attrs->resize(tcap * 3);
+        p_edge_attrs->reset_from(t_cnt * 3);
+    }
+    if (p_face_attrs) {
+        p_face_attrs->resize(tcap);
+        p_face_attrs->reset_from(t_cnt);
+    }
 
     // assert(check_edge_manifold());
     assert(check_mesh_connectivity_validity());

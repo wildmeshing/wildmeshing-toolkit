@@ -119,6 +119,63 @@ TEST_CASE("edge_collapsing", "[tuple_operation]")
     REQUIRE(mesh.check_mesh_connectivity_validity());
 }
 
+TEST_CASE("consolidate_resets_freed_attribute_slots_tet", "[tuple_operation]")
+{
+    // The 3D twin of the 2D test: the slots past the live range consolidate_mesh() leaves are the
+    // next ones operations are handed, so they must not keep the records compacted out of them.
+    struct Tag
+    {
+        int64_t tag = 0;
+    };
+    class TaggedMesh : public TetMesh
+    {
+    public:
+        AttributeCollection<Tag> vertex_attrs;
+        AttributeCollection<Tag> edge_attrs;
+        AttributeCollection<Tag> face_attrs;
+        AttributeCollection<Tag> tet_attrs;
+        TaggedMesh()
+        {
+            p_vertex_attrs = &vertex_attrs;
+            p_edge_attrs = &edge_attrs;
+            p_face_attrs = &face_attrs;
+            p_tet_attrs = &tet_attrs;
+        }
+    };
+
+    TaggedMesh mesh;
+    mesh.init(5, {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}, {{0, 1, 3, 4}}});
+    std::vector<TetMesh::Tuple> new_edge, dummy;
+    REQUIRE(mesh.split_edge(mesh.tuple_from_face(0, 0), new_edge));
+    REQUIRE(mesh.collapse_edge(new_edge[1], dummy));
+
+    for (size_t i = 0; i < mesh.vert_capacity(); ++i) mesh.vertex_attrs[i].tag = 1;
+    for (size_t i = 0; i < 6 * mesh.tet_capacity(); ++i) mesh.edge_attrs[i].tag = 1;
+    for (size_t i = 0; i < 4 * mesh.tet_capacity(); ++i) mesh.face_attrs[i].tag = 1;
+    for (size_t i = 0; i < mesh.tet_capacity(); ++i) mesh.tet_attrs[i].tag = 1;
+
+    const size_t n_verts = mesh.get_vertices().size();
+    const size_t n_tets = mesh.get_tets().size();
+    REQUIRE(n_verts < mesh.vert_capacity());
+    REQUIRE(n_tets < mesh.tet_capacity());
+    mesh.consolidate_mesh();
+    REQUIRE(mesh.vert_capacity() == n_verts);
+    REQUIRE(mesh.tet_capacity() == n_tets);
+
+    for (size_t i = 0; i < mesh.vertex_attrs.size(); ++i) {
+        CHECK(mesh.vertex_attrs[i].tag == (i < mesh.vert_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.edge_attrs.size(); ++i) {
+        CHECK(mesh.edge_attrs[i].tag == (i < 6 * mesh.tet_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.face_attrs.size(); ++i) {
+        CHECK(mesh.face_attrs[i].tag == (i < 4 * mesh.tet_capacity() ? 1 : 0));
+    }
+    for (size_t i = 0; i < mesh.tet_attrs.size(); ++i) {
+        CHECK(mesh.tet_attrs[i].tag == (i < mesh.tet_capacity() ? 1 : 0));
+    }
+}
+
 TEST_CASE("edge_collapsing_invalid", "[tuple_operation]")
 {
     auto mesh = TetMesh();

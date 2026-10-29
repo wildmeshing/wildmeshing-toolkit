@@ -1036,17 +1036,24 @@ void TetMesh::consolidate_mesh()
     m_tet_connectivity.resize(tcap);
     resize_vertex_mutex(vcap);
 
+    // Clear the spare region the compaction left behind as well: the slots past the live range
+    // still hold the records moved out of them, and the next operations are handed those slots
+    // as fresh.
     if (p_vertex_attrs) {
         p_vertex_attrs->resize(vcap);
+        p_vertex_attrs->reset_from(v_cnt);
     }
     if (p_edge_attrs) {
         p_edge_attrs->resize(6 * tcap);
+        p_edge_attrs->reset_from(6 * t_cnt);
     }
     if (p_face_attrs) {
         p_face_attrs->resize(4 * tcap);
+        p_face_attrs->reset_from(4 * t_cnt);
     }
     if (p_tet_attrs) {
         p_tet_attrs->resize(tcap);
+        p_tet_attrs->reset_from(t_cnt);
     }
 
     assert(check_mesh_connectivity_validity());
