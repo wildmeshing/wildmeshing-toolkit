@@ -5,6 +5,9 @@ target_link_libraries(wildmeshing PUBLIC
     pybind11_json
     nlohmann_json::nlohmann_json
 )
+# The component registry (components_*.hpp), which components/CMakeLists.txt generates in app/
+# for wmtk_app, the integration tests and this module.
+target_include_directories(wildmeshing PRIVATE "${PROJECT_SOURCE_DIR}/app")
 
 if(NOT MSVC)
     target_compile_options(wildmeshing PUBLIC -fPIC)
@@ -18,7 +21,7 @@ set_target_properties(wildmeshing PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${WMTK_PYTHON_PACKAGE_DIR}")
 add_custom_target(wildmeshing_python_sources
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../python/wildmeshing" "${WMTK_PYTHON_PACKAGE_DIR}")
+        "${CMAKE_CURRENT_SOURCE_DIR}/../wildmeshing" "${WMTK_PYTHON_PACKAGE_DIR}")
 add_dependencies(wildmeshing wildmeshing_python_sources)
 
 include(GNUInstallDirs)

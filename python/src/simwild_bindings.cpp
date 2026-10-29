@@ -19,7 +19,7 @@ namespace {
 
 // Parsed tag expression evaluable from Python over sets of group NAMES.
 // Single source of truth for the grammar shared with the Python-side ops
-// (simwild.polyfem_ops.mesh_core delegates here instead of mirroring the
+// (wildmeshing.polyfem_ops.mesh_core delegates here instead of mirroring the
 // parser).
 class PyExpression
 {

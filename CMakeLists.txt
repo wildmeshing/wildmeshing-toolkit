@@ -172,7 +172,12 @@ set(WMTK_GENERATED_INCLUDE_DIR "${PROJECT_BINARY_DIR}/generated")
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # wmtk_app
-    add_subdirectory(app) # also contains python bindings
+    add_subdirectory(app)
+
+    # Python bindings: the compiled module wildmeshing._core
+    if(WMTK_PYBIND)
+        add_subdirectory(python/src)
+    endif()
 
     include(CTest)
 
